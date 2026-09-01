@@ -1,0 +1,14 @@
+{
+  // O service worker roda em outro escopo global: nada de `window`, e sim
+  // `ServiceWorkerGlobalScope`. Carregar a lib "webworker" junto com a "dom" no
+  // mesmo programa gera conflito de identificadores, então ele é verificado
+  // isoladamente por `npm run typecheck`.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["esnext", "webworker"],
+    "types": ["@serwist/next/typings"],
+    "noEmit": true
+  },
+  "include": ["src/app/sw.ts"],
+  "exclude": []
+}

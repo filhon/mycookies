@@ -1,0 +1,31 @@
+rules_version = '2';
+
+// MyCookie's — acesso estritamente privado.
+// Regra de ouro: NADA na raiz. Todo documento mora sob users/{uid}, então
+// "vazar dado" exigiria vazar o próprio UID autenticado.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Negação padrão para qualquer caminho não previsto abaixo.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /users/{uid} {
+      // `admin` é uma custom claim setada uma única vez via Admin SDK para a
+      // conta da Maynara. Checar claim custa ZERO leitura — um allowlist em
+      // documento (`get(/admins/$(uid))`) seria cobrado a cada avaliação.
+      function ehDona() {
+        return request.auth != null
+            && request.auth.uid == uid
+            && request.auth.token.admin == true;
+      }
+
+      allow read, write: if ehDona();
+
+      match /{documento=**} {
+        allow read, write: if ehDona();
+      }
+    }
+  }
+}

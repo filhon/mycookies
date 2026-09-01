@@ -1,0 +1,254 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Tokens brutos. Marca fixa em cima, superfícies invertem no escuro.
+   ============================================================ */
+
+:root {
+  color-scheme: light dark;
+
+  /* --- Marca: constante nos dois temas --- */
+  --mc-wine-900: oklch(0.24 0.085 18);
+  --mc-wine-800: oklch(0.3 0.105 18);
+  --mc-wine-700: oklch(0.36 0.128 18);
+  --mc-wine-600: oklch(0.43 0.14 20);
+  --mc-wine-300: oklch(0.72 0.09 20);
+  --mc-wine-100: oklch(0.93 0.028 22);
+
+  --mc-gold-600: oklch(0.58 0.09 72);
+  --mc-gold-500: oklch(0.73 0.095 78);
+  --mc-gold-100: oklch(0.94 0.035 82);
+
+  /* Tinta sobre superfície vinho. Creme, nunca branco puro. */
+  --mc-on-wine: oklch(0.96 0.012 85);
+  --mc-on-wine-muted: oklch(0.8 0.02 60);
+
+  /* --- Superfícies: tema claro --- */
+  --mc-canvas: oklch(0.955 0.014 88);
+  --mc-surface: oklch(0.985 0.008 88);
+  --mc-surface-sunken: oklch(0.925 0.016 86);
+  --mc-border: oklch(0.88 0.016 80);
+  --mc-border-strong: oklch(0.8 0.02 78);
+  --mc-ink: oklch(0.26 0.022 40);
+  --mc-ink-muted: oklch(0.52 0.02 50);
+  --mc-ink-subtle: oklch(0.64 0.018 55);
+
+  /* --- Semânticos --- */
+  --mc-positive: oklch(0.52 0.115 152);
+  --mc-positive-soft: oklch(0.94 0.03 152);
+  --mc-attention: oklch(0.66 0.15 55);
+  --mc-attention-soft: oklch(0.95 0.04 65);
+  --mc-negative: oklch(0.55 0.2 27);
+  --mc-negative-soft: oklch(0.95 0.03 27);
+  --mc-info: oklch(0.52 0.095 245);
+  --mc-info-soft: oklch(0.95 0.02 245);
+
+  --mc-focus: var(--mc-wine-700);
+
+  /* Sombra de papel: baixa, quente, quase imperceptível. */
+  --mc-shadow-raised:
+    0 1px 2px oklch(0.3 0.03 40 / 0.06), 0 4px 12px oklch(0.3 0.03 40 / 0.05);
+  --mc-shadow-overlay:
+    0 -2px 8px oklch(0.3 0.03 40 / 0.06), 0 12px 32px oklch(0.3 0.03 40 / 0.14);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --mc-canvas: oklch(0.19 0.014 20);
+    --mc-surface: oklch(0.235 0.016 20);
+    --mc-surface-sunken: oklch(0.165 0.012 20);
+    --mc-border: oklch(0.32 0.018 20);
+    --mc-border-strong: oklch(0.42 0.02 20);
+    --mc-ink: oklch(0.94 0.012 85);
+    --mc-ink-muted: oklch(0.7 0.014 80);
+    --mc-ink-subtle: oklch(0.56 0.014 75);
+
+    --mc-wine-100: oklch(0.32 0.06 20);
+    --mc-gold-100: oklch(0.32 0.045 70);
+
+    --mc-positive: oklch(0.72 0.13 152);
+    --mc-positive-soft: oklch(0.28 0.05 152);
+    --mc-attention: oklch(0.78 0.14 62);
+    --mc-attention-soft: oklch(0.3 0.06 55);
+    --mc-negative: oklch(0.68 0.18 27);
+    --mc-negative-soft: oklch(0.3 0.07 27);
+    --mc-info: oklch(0.72 0.1 245);
+    --mc-info-soft: oklch(0.28 0.04 245);
+
+    --mc-focus: var(--mc-wine-300);
+
+    --mc-shadow-raised:
+      0 1px 2px oklch(0 0 0 / 0.3), 0 4px 12px oklch(0 0 0 / 0.25);
+    --mc-shadow-overlay:
+      0 -2px 8px oklch(0 0 0 / 0.3), 0 12px 32px oklch(0 0 0 / 0.5);
+  }
+}
+
+/* ============================================================
+   Mapeamento para o tema do Tailwind
+   ============================================================ */
+
+@theme inline {
+  --color-wine-900: var(--mc-wine-900);
+  --color-wine-800: var(--mc-wine-800);
+  --color-wine-700: var(--mc-wine-700);
+  --color-wine-600: var(--mc-wine-600);
+  --color-wine-300: var(--mc-wine-300);
+  --color-wine-100: var(--mc-wine-100);
+
+  --color-gold-600: var(--mc-gold-600);
+  --color-gold-500: var(--mc-gold-500);
+  --color-gold-100: var(--mc-gold-100);
+
+  --color-on-wine: var(--mc-on-wine);
+  --color-on-wine-muted: var(--mc-on-wine-muted);
+
+  --color-canvas: var(--mc-canvas);
+  --color-surface: var(--mc-surface);
+  --color-sunken: var(--mc-surface-sunken);
+  --color-line: var(--mc-border);
+  --color-line-strong: var(--mc-border-strong);
+  --color-ink: var(--mc-ink);
+  --color-ink-muted: var(--mc-ink-muted);
+  --color-ink-subtle: var(--mc-ink-subtle);
+
+  --color-positive: var(--mc-positive);
+  --color-positive-soft: var(--mc-positive-soft);
+  --color-attention: var(--mc-attention);
+  --color-attention-soft: var(--mc-attention-soft);
+  --color-negative: var(--mc-negative);
+  --color-negative-soft: var(--mc-negative-soft);
+  --color-info: var(--mc-info);
+  --color-info-soft: var(--mc-info-soft);
+
+  --font-sans: var(--fonte-interface), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--fonte-display), Georgia, "Times New Roman", serif;
+
+  --text-display: 2rem;
+  --text-display--line-height: 1.15;
+  --text-display--letter-spacing: -0.015em;
+  --text-title: 1.5rem;
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.01em;
+  --text-heading: 1.25rem;
+  --text-heading--line-height: 1.3;
+  --text-subheading: 1.0625rem;
+  --text-subheading--line-height: 1.4;
+  --text-body: 1rem;
+  --text-body--line-height: 1.55;
+  --text-label: 0.875rem;
+  --text-label--line-height: 1.4;
+  --text-micro: 0.75rem;
+  --text-micro--line-height: 1.35;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.25rem;
+
+  --shadow-raised: var(--mc-shadow-raised);
+  --shadow-overlay: var(--mc-shadow-overlay);
+
+  --ease-quart: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+
+@layer base {
+  * {
+    border-color: var(--mc-border);
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--mc-canvas);
+    color: var(--mc-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior-y: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--mc-focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background-color: var(--mc-wine-700);
+    color: var(--mc-on-wine);
+  }
+
+  /* Some o spinner nativo: quantidade é digitada, não incrementada com o dedo. */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
+
+/* ============================================================
+   Utilitários de marca
+   ============================================================ */
+
+/** Numerais tabulares: colunas de dinheiro precisam alinhar na vírgula. */
+@utility num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/**
+ * Grão do papel creme da embalagem. Sobreposição fixa, sem custo de imagem
+ * e sem interceptar toque.
+ */
+@utility textura-papel {
+  position: relative;
+  isolation: isolate;
+
+  &::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)'/%3E%3C/svg%3E");
+  }
+}
+
+/** Filete dourado da embalagem. Único uso de dourado em área. */
+@utility filete-dourado {
+  box-shadow: inset 0 2px 0 0 var(--mc-gold-500);
+}
+
+/** Área de toque mínima. 44px é o piso, não a meta. */
+@utility toque {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@utility area-segura-inferior {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@layer base {
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

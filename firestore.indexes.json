@@ -1,0 +1,19 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "insumos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "arquivado", "order": "ASCENDING" },
+        { "fieldPath": "nomeBusca", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "insumos",
+      "fieldPath": "historicoPrecos",
+      "indexes": []
+    }
+  ]
+}
