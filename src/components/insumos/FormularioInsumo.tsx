@@ -7,6 +7,7 @@ import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Painel } from "@/components/ui/Painel";
 import { ResumoCusto } from "./ResumoCusto";
 import { calcularCustoInsumo } from "@/lib/domain/custoInsumo";
+import { parseParaNumero } from "@/lib/domain/money";
 import { errosPorCampo, esquemaInsumo } from "@/lib/domain/schemas";
 import { GRUPOS_UNIDADE, ROTULO_UNIDADE_COMPRA } from "@/lib/domain/unidades";
 import { Archive } from "lucide-react";
@@ -66,12 +67,6 @@ function doInsumo(insumo: Insumo): EstadoFormulario {
   };
 }
 
-/** Vírgula é o separador decimal do teclado brasileiro. Aceitar ponto também. */
-function paraNumero(texto: string): number {
-  const valor = Number(texto.replace(",", "."));
-  return Number.isFinite(valor) ? valor : 0;
-}
-
 export function FormularioInsumo({
   aberto,
   aoFechar,
@@ -107,8 +102,8 @@ export function FormularioInsumo({
     valor: EstadoFormulario[C],
   ) => setEstado((anterior) => ({ ...anterior, [campo]: valor }));
 
-  const quantidade = paraNumero(estado.quantidadeCompra);
-  const perda = paraNumero(estado.perdaPercentual);
+  const quantidade = parseParaNumero(estado.quantidadeCompra);
+  const perda = parseParaNumero(estado.perdaPercentual);
 
   const custo = useMemo(
     () =>
@@ -136,7 +131,7 @@ export function FormularioInsumo({
       marca: estado.marca || undefined,
       fornecedor: estado.fornecedor || undefined,
       estoqueAtual: estado.estoqueAtual
-        ? paraNumero(estado.estoqueAtual)
+        ? parseParaNumero(estado.estoqueAtual)
         : undefined,
     });
 

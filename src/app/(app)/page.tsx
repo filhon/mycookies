@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Settings } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
@@ -32,6 +32,18 @@ export default function PaginaHoje() {
       <CabecalhoPagina
         titulo={conta ? `${saudacao}, ${conta.proprietaria}` : saudacao}
         descricao={data.charAt(0).toUpperCase() + data.slice(1)}
+        acao={
+          // No desktop a configuração mora na barra lateral. No celular não há
+          // barra lateral, e ela não cabe entre os cinco destinos da navegação
+          // inferior: fica aqui, na tela de entrada, como em todo aplicativo.
+          <Link
+            href="/configuracao"
+            aria-label="Configuração"
+            className="toque flex items-center justify-center rounded-md text-ink-muted transition-colors duration-150 ease-quart hover:bg-sunken hover:text-ink lg:hidden"
+          >
+            <Settings aria-hidden className="size-5" strokeWidth={1.75} />
+          </Link>
+        }
       />
 
       <section aria-labelledby="titulo-entregas" className="mt-6">

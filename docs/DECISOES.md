@@ -291,6 +291,61 @@ servidor. Cadastro entra nesse módulo, junto de trial e cobrança — que é on
 seria porta sem nada atrás: quem entra ganha uma conta vazia, e o projeto ganha a fatura de
 leitura.
 
+---
+
+## D17 · Configuração é sugerida na tela e gravada só ao salvar
+
+**Status:** vigente · decidida em 2026-09-01 na spec `002-precificacao`, sessão 2A
+
+**Contexto.** A tela `/configuracao` precisa começar preenchida (160 horas produtivas, Pix
+sem taxa, débito 1,99%, crédito 4,99%): campo vazio e obrigatório trava o cadastro e um
+rateio zerado produz preço errado com cara de certo. Mas a conta nova não tem o documento
+`configuracao/geral`, e alguém precisa decidir de onde vêm esses números.
+
+**Decisão.** Os padrões moram em `CONFIGURACAO_SUGERIDA`, no código, e a tela os exibe sem
+gravar nada. O documento nasce na primeira vez que a Maynara toca em "Salvar", em uma
+escrita só, com `setDoc(..., { merge: true })`. Não há semeadura na criação da conta, nem
+salvamento automático por campo.
+
+**Consequência.** Sugestão não vira dado por engano: enquanto ela não salvar, uma ficha
+técnica sabe que não há configuração e avisa, em vez de calcular com número que o sistema
+inventou. O `merge` é o que permite a esta tela não ser dona do documento inteiro:
+`categoriasProduto` e o que os módulos seguintes acrescentarem sobrevivem a um salvamento
+feito por uma versão da tela que nem conhece esses campos.
+
+O preço é que a tela guarda estado não salvo: as formas de pagamento editadas no painel
+mudam a memória e só vão ao banco no salvamento da página. Por isso a barra de alterações
+pendentes é fixa e visível no celular, e não um aviso discreto. Autosalvamento por campo
+seria uma escrita por tecla digitada, e `custoIndiretoPorHora` é derivado do par
+despesas/horas: gravar um dos dois sozinho publica um rateio que a usuária não pediu.
+
+Vale notar o que a tela **não** faz: ela não mostra preço sugerido a partir de custo. A
+aritmética de markup e margem é da sessão 2B e mora em `precificacao.ts`, com teste. Um
+segundo lugar calculando preço seria um segundo lugar para divergir. O bloco de preço
+padrão mostra o efeito do arredondamento, que já é de `money.ts`.
+
+---
+
+## D18 · Forma de pagamento é item do documento de configuração
+
+**Status:** vigente
+
+**Contexto.** As formas de pagamento têm id, são editadas uma a uma e são referenciadas por
+venda. Isso normalmente pede uma coleção.
+
+**Decisão.** Elas vivem no array `formasPagamento` dentro de `configuracao/geral`, com id
+gerado no aparelho (`novoId()`), e desativadas por `ativo: false` em vez de removidas.
+
+**Consequência.** São meia dúzia de itens que o app precisa ter em memória o tempo todo, em
+toda tela de preço e de venda: uma coleção custaria uma consulta a mais para trazer o que já
+vem junto com o resto da configuração. O id nasce offline porque não há ida ao servidor para
+pedir um, e ele só precisa ser único dentro do próprio documento.
+
+A desativação segue a mesma regra de insumo e ficha, pelo mesmo motivo: pedido antigo aponta
+para o id da forma, e o histórico de quanto a maquininha comeu precisa continuar auditável.
+O limite conhecido é o teto de 1 MB do documento, que meia dúzia de formas não chega perto
+de ameaçar; se um dia houver dezenas, a conversa é outra.
+
 **O que dava para consertar hoje foi consertado.** A pior parte do modelo de claim era a
 instrução "saia e entre novamente" — o token em cache vale uma hora e segura a claim recém
 concedida do lado de fora. `reconferirAcesso()` força a renovação com

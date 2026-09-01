@@ -77,6 +77,15 @@ export function digitosParaCentavos(digitos: string): Centavos {
   return Number(apenasDigitos.slice(0, 11));
 }
 
+/**
+ * Lê um número comum (não monetário) digitado em teclado brasileiro.
+ * "1,5" e "1.5" valem o mesmo; o que não for número vira zero.
+ */
+export function parseParaNumero(texto: string): number {
+  const valor = Number(texto.replace(",", "."));
+  return Number.isFinite(valor) ? valor : 0;
+}
+
 export function arredondarPreco(
   centavos: Centavos,
   regra: RegraArredondamento,
