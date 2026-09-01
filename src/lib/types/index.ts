@@ -1,4 +1,5 @@
 export * from "./common";
+export * from "./conta";
 export * from "./configuracao";
 export * from "./insumos";
 export * from "./fichas";
@@ -6,25 +7,27 @@ export * from "./vendas";
 export * from "./financeiro";
 
 /**
- * Mapa único de caminhos do Firestore.
+ * Mapa único de caminhos do Firestore. É o único lugar que conhece o formato.
  *
- * Todo dado vive sob `users/{uid}/…`. A regra de segurança fica trivial e
- * impossível de furar: `request.auth.uid == uid`. Nenhuma coleção na raiz,
- * nenhum documento acessível sem dono.
+ * Todo dado vive sob `contas/{contaId}/…`, e nunca sob o login: `uid` diz quem
+ * entrou, `contaId` diz de quem é o dado. Nenhuma coleção na raiz além de
+ * `contas`, nenhum documento acessível sem conta. A regra de segurança lê o
+ * vínculo direto da custom claim, sem custo de leitura.
  */
 export const caminhos = {
-  usuario: (uid: string) => `users/${uid}`,
-  configuracao: (uid: string) => `users/${uid}/configuracao`,
-  configuracaoGeral: (uid: string) => `users/${uid}/configuracao/geral`,
-  insumos: (uid: string) => `users/${uid}/insumos`,
-  fichas: (uid: string) => `users/${uid}/fichas`,
-  clientes: (uid: string) => `users/${uid}/clientes`,
-  pedidos: (uid: string) => `users/${uid}/pedidos`,
-  listasCompra: (uid: string) => `users/${uid}/listasCompra`,
-  transacoes: (uid: string) => `users/${uid}/transacoes`,
-  metas: (uid: string) => `users/${uid}/metas`,
-  agregados: (uid: string) => `users/${uid}/agregados`,
-  resumoMensal: (uid: string, competencia: string) =>
-    `users/${uid}/agregados/${competencia}`,
-  resumoGlobal: (uid: string) => `users/${uid}/agregados/global`,
+  conta: (contaId: string) => `contas/${contaId}`,
+  configuracao: (contaId: string) => `contas/${contaId}/configuracao`,
+  configuracaoGeral: (contaId: string) =>
+    `contas/${contaId}/configuracao/geral`,
+  insumos: (contaId: string) => `contas/${contaId}/insumos`,
+  fichas: (contaId: string) => `contas/${contaId}/fichas`,
+  clientes: (contaId: string) => `contas/${contaId}/clientes`,
+  pedidos: (contaId: string) => `contas/${contaId}/pedidos`,
+  listasCompra: (contaId: string) => `contas/${contaId}/listasCompra`,
+  transacoes: (contaId: string) => `contas/${contaId}/transacoes`,
+  metas: (contaId: string) => `contas/${contaId}/metas`,
+  agregados: (contaId: string) => `contas/${contaId}/agregados`,
+  resumoMensal: (contaId: string, competencia: string) =>
+    `contas/${contaId}/agregados/${competencia}`,
+  resumoGlobal: (contaId: string) => `contas/${contaId}/agregados/global`,
 } as const;

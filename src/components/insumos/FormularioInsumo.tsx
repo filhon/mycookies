@@ -17,7 +17,7 @@ import {
   type DadosInsumo,
 } from "@/lib/firebase/mutations/insumos";
 import type { CategoriaInsumo, Insumo, UnidadeCompra } from "@/lib/types";
-import { useUid } from "@/providers/AuthProvider";
+import { useContaId } from "@/providers/AuthProvider";
 
 const CATEGORIAS: { valor: CategoriaInsumo; rotulo: string }[] = [
   { valor: "INGREDIENTE", rotulo: "Ingrediente" },
@@ -82,7 +82,7 @@ export function FormularioInsumo({
   /** Ausente = novo cadastro. */
   insumo?: Insumo;
 }) {
-  const uid = useUid();
+  const contaId = useContaId();
   const [estado, setEstado] = useState<EstadoFormulario>(
     insumo ? doInsumo(insumo) : VAZIO,
   );
@@ -151,9 +151,9 @@ export function FormularioInsumo({
     try {
       const dados: DadosInsumo = resultado.data;
       if (insumo) {
-        await atualizarInsumo(uid, insumo, dados);
+        await atualizarInsumo(contaId, insumo, dados);
       } else {
-        await criarInsumo(uid, dados);
+        await criarInsumo(contaId, dados);
       }
       aoFechar();
     } catch {
@@ -168,7 +168,7 @@ export function FormularioInsumo({
     setFalha(null);
     setSalvando(true);
     try {
-      await arquivarInsumo(uid, insumo.id);
+      await arquivarInsumo(contaId, insumo.id);
       aoFechar();
     } catch {
       setFalha("Não foi possível arquivar agora. Tente de novo em instantes.");

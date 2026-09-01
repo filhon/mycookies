@@ -1,8 +1,8 @@
 rules_version = '2';
 
 // MyCookie's — acesso estritamente privado.
-// Regra de ouro: NADA na raiz. Todo documento mora sob users/{uid}, então
-// "vazar dado" exigiria vazar o próprio UID autenticado.
+// Regra de ouro: NADA fora de contas/{contaId}. O dono do dado é o negócio,
+// não o login: quem entrou traz na claim o mapa das contas que pode abrir.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -11,20 +11,24 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    match /users/{uid} {
-      // `admin` é uma custom claim setada uma única vez via Admin SDK para a
-      // conta da Maynara. Checar claim custa ZERO leitura — um allowlist em
-      // documento (`get(/admins/$(uid))`) seria cobrado a cada avaliação.
-      function ehDona() {
+    match /contas/{contaId} {
+      // A claim `contas` é um mapa { contaId: papel }, emitida via Admin SDK
+      // por scripts/conceder-acesso.mjs. Checar claim custa ZERO leitura — um
+      // allowlist em documento (`get(/membros/$(uid))`) seria cobrado a cada
+      // avaliação de regra, inclusive nas negadas.
+      //
+      // O papel não é conferido: hoje só existe 'DONA', e regra escrita para
+      // papel que não existe é regra que ninguém testou. Basta estar no mapa.
+      function temAcesso() {
         return request.auth != null
-            && request.auth.uid == uid
-            && request.auth.token.admin == true;
+            && 'contas' in request.auth.token
+            && request.auth.token.contas[contaId] != null;
       }
 
-      allow read, write: if ehDona();
+      allow read, write: if temAcesso();
 
       match /{documento=**} {
-        allow read, write: if ehDona();
+        allow read, write: if temAcesso();
       }
     }
   }

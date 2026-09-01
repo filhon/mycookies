@@ -5,6 +5,7 @@ import { CalendarDays } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
+import { useAuth } from "@/providers/AuthProvider";
 
 const SAUDACAO_POR_HORA = (hora: number) => {
   if (hora < 12) return "Bom dia";
@@ -13,6 +14,7 @@ const SAUDACAO_POR_HORA = (hora: number) => {
 };
 
 export default function PaginaHoje() {
+  const { conta } = useAuth();
   const agora = new Date();
   const data = new Intl.DateTimeFormat("pt-BR", {
     weekday: "long",
@@ -20,10 +22,15 @@ export default function PaginaHoje() {
     month: "long",
   }).format(agora);
 
+  // Sem nome próprio em código: ele vem de `conta.proprietaria`. Enquanto a
+  // primeira leitura não chega, a saudação vai sozinha — melhor um cumprimento
+  // curto por um instante do que um nome de mentira que depois troca na tela.
+  const saudacao = SAUDACAO_POR_HORA(agora.getHours());
+
   return (
     <>
       <CabecalhoPagina
-        titulo={`${SAUDACAO_POR_HORA(agora.getHours())}, Maynara`}
+        titulo={conta ? `${saudacao}, ${conta.proprietaria}` : saudacao}
         descricao={data.charAt(0).toUpperCase() + data.slice(1)}
       />
 

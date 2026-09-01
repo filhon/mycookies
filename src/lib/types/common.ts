@@ -42,6 +42,18 @@ export const CONVERSAO_UNIDADE: Record<
 };
 
 /**
+ * Versão do formato do documento, gravada em toda escrita.
+ *
+ * Sem ela, daqui a um ano a forma de um documento se adivinha pela presença de
+ * campos. Quando algum campo mudar de significado, este alias vira `1 | 2` e o
+ * compilador aponta cada lugar que precisa decidir entre as duas formas.
+ */
+export type VersaoSchema = 1;
+
+/** O que toda mutação grava. Único lugar onde o número aparece. */
+export const VERSAO_SCHEMA: VersaoSchema = 1;
+
+/**
  * Campos presentes em todo documento.
  *
  * `id` NÃO é persistido no Firestore — é injetado pelo FirestoreDataConverter
@@ -49,6 +61,8 @@ export const CONVERSAO_UNIDADE: Record<
  */
 export interface DocumentoBase {
   id: string;
+  /** Versão do formato deste documento. Ver `VersaoSchema`. */
+  v: VersaoSchema;
   criadoEm: Timestamp;
   atualizadoEm: Timestamp;
   /**

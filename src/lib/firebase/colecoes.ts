@@ -12,6 +12,7 @@ import { caminhos } from "@/lib/types";
 import type {
   Cliente,
   ConfiguracaoGeral,
+  Conta,
   FichaTecnica,
   Insumo,
   ListaCompras,
@@ -49,34 +50,44 @@ function col<T extends { id: string }>(
   return collection(obterDb(), caminho).withConverter(conversor<T>());
 }
 
-export const colInsumos = (uid: string) => col<Insumo>(caminhos.insumos(uid));
-export const colFichas = (uid: string) =>
-  col<FichaTecnica>(caminhos.fichas(uid));
-export const colClientes = (uid: string) =>
-  col<Cliente>(caminhos.clientes(uid));
-export const colPedidos = (uid: string) => col<Pedido>(caminhos.pedidos(uid));
-export const colListasCompra = (uid: string) =>
-  col<ListaCompras>(caminhos.listasCompra(uid));
-export const colTransacoes = (uid: string) =>
-  col<Transacao>(caminhos.transacoes(uid));
-export const colMetas = (uid: string) => col<Meta>(caminhos.metas(uid));
+/** Documento raiz da conta. Tudo mais é subcoleção dele. */
+export const docConta = (contaId: string): DocumentReference<Conta> =>
+  doc(obterDb(), caminhos.conta(contaId)).withConverter(conversor<Conta>());
 
-export const docInsumo = (uid: string, id: string): DocumentReference<Insumo> =>
-  doc(colInsumos(uid), id);
-export const docFicha = (uid: string, id: string) => doc(colFichas(uid), id);
-export const docPedido = (uid: string, id: string) => doc(colPedidos(uid), id);
+export const colInsumos = (contaId: string) =>
+  col<Insumo>(caminhos.insumos(contaId));
+export const colFichas = (contaId: string) =>
+  col<FichaTecnica>(caminhos.fichas(contaId));
+export const colClientes = (contaId: string) =>
+  col<Cliente>(caminhos.clientes(contaId));
+export const colPedidos = (contaId: string) =>
+  col<Pedido>(caminhos.pedidos(contaId));
+export const colListasCompra = (contaId: string) =>
+  col<ListaCompras>(caminhos.listasCompra(contaId));
+export const colTransacoes = (contaId: string) =>
+  col<Transacao>(caminhos.transacoes(contaId));
+export const colMetas = (contaId: string) => col<Meta>(caminhos.metas(contaId));
 
-export const docConfiguracao = (uid: string) =>
-  doc(obterDb(), caminhos.configuracaoGeral(uid)).withConverter(
+export const docInsumo = (
+  contaId: string,
+  id: string,
+): DocumentReference<Insumo> => doc(colInsumos(contaId), id);
+export const docFicha = (contaId: string, id: string) =>
+  doc(colFichas(contaId), id);
+export const docPedido = (contaId: string, id: string) =>
+  doc(colPedidos(contaId), id);
+
+export const docConfiguracao = (contaId: string) =>
+  doc(obterDb(), caminhos.configuracaoGeral(contaId)).withConverter(
     conversor<ConfiguracaoGeral>(),
   );
 
-export const docResumoMensal = (uid: string, competencia: string) =>
-  doc(obterDb(), caminhos.resumoMensal(uid, competencia)).withConverter(
+export const docResumoMensal = (contaId: string, competencia: string) =>
+  doc(obterDb(), caminhos.resumoMensal(contaId, competencia)).withConverter(
     conversor<ResumoMensal>(),
   );
 
-export const docResumoGlobal = (uid: string) =>
-  doc(obterDb(), caminhos.resumoGlobal(uid)).withConverter(
+export const docResumoGlobal = (contaId: string) =>
+  doc(obterDb(), caminhos.resumoGlobal(contaId)).withConverter(
     conversor<ResumoGlobal>(),
   );

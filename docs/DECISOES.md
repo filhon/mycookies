@@ -15,7 +15,7 @@ Status é `vigente`, `provisória` (tem prazo de validade conhecido) ou `substit
 
 ## D01 · Escopo de dados por conta, não por login
 
-**Status:** provisória · decidida em 2026-09-01
+**Status:** substituída por D14 · decidida em 2026-09-01, executada em 2026-09-01
 
 **Contexto.** Hoje existe uma usuária. Todo dado mora em `users/{uid}/...`, o que torna a
 regra de segurança trivial: `request.auth.uid == uid`.
@@ -27,7 +27,8 @@ regra de segurança trivial: `request.auth.uid == uid`.
 contador com acesso, ou uma pessoa com dois negócios, o caminho está errado. Migrar com zero
 dados é renomear oito arquivos; migrar com clientes pagantes é projeto de cutover. Por isso
 a decisão tem prazo: **executar antes do Módulo 2**, porque cada módulo novo adiciona
-arquivos que carregam `uid`.
+arquivos que carregam `uid`. O prazo foi cumprido: a spec `000-contas` rodou no mesmo dia,
+com um documento no banco e zero migração. O arranjo que ficou está em D14.
 
 ---
 
@@ -117,7 +118,8 @@ múltiplos escritores na mesma conta, quando a ordem entre eles passar a importa
 
 **Consequência.** Avaliação de regra com zero leitura. Um allowlist em documento
 (`get(/admins/$(uid))`) seria cobrado a cada acesso. O preço é que conceder acesso exige
-re-emitir o token, ou seja, sair e entrar de novo. A claim vira mapa de contas em D01.
+re-emitir o token, ou seja, sair e entrar de novo. A claim virou mapa de contas em D14; o
+mecanismo, que é o que esta decisão registra, continua o mesmo.
 
 ---
 
@@ -207,3 +209,90 @@ experimental.
 **Consequência.** A cena que decide é a Maynara com o celular na bancada às duas da tarde,
 cozinha iluminada. Painel escuro nessa luz é ilegível, e seria também o reflexo previsível
 de "ferramenta de gestão que não quer parecer planilha". Detalhes em `DESIGN.md`.
+
+---
+
+## D14 · Conta como dono do dado, claim como mapa de contas
+
+**Status:** vigente · substitui D01
+
+**Contexto.** Execução da spec `000-contas`. `users/{uid}` amarrava o dado ao login.
+
+**Decisão.** Todo dado mora em `contas/{contaId}/…`. O vínculo login → conta é uma custom
+claim com a forma `{ contas: { [contaId]: papel } }`, e `papel` é string livre com `'DONA'`
+como único valor emitido. O documento `contas/{contaId}` guarda só `nome`, `proprietaria`,
+`criadaEm` e `v`.
+
+**Consequência.** `uid` volta a significar apenas "quem entrou". Uma ajudante, um contador
+com acesso de leitura ou um segundo negócio passam a ser mais um par no mapa, sem tocar em
+caminho, regra ou consulta. Três escolhas ficam registradas porque um leitor futuro vai
+questioná-las:
+
+- **A regra não confere o papel**, só a presença da chave no mapa. Regra escrita para papel
+  que não existe é regra que ninguém testou. Quando existir o segundo tipo de acesso, o
+  vocabulário nasce junto com o caso de uso — não antes.
+- **`AuthProvider` toma a primeira chave da claim como conta ativa**, e não há seletor de
+  conta na interface: com uma conta, escolher é ruído. É o único ponto que passa a consultar
+  uma preferência no dia em que houver a segunda.
+- **O documento da conta é assinatura, não leitura avulsa.** Renomear o negócio aparece sem
+  recarregar o app, e o cache do Firestore devolve a versão local antes de haver rede.
+
+O que ficou de fora, e por quê: cadastro, convite, seleção de conta, tela de membros e
+cobrança viram código morto se a hipótese do SaaS não se confirmar. O gancho existe; o
+resto espera o segundo usuário real.
+
+---
+
+## D15 · Versão de schema gravada em todo documento
+
+**Status:** vigente
+
+**Contexto.** Carona da spec `000-contas`. Sem marca de versão, daqui a um ano a forma de um
+documento se adivinha pela presença de campos — e "este insumo tem `perdaPercentual`?" é uma
+pergunta que não distingue documento antigo de documento incompleto.
+
+**Decisão.** `DocumentoBase` ganha `v: VersaoSchema`, e toda mutação grava `VERSAO_SCHEMA`.
+O campo vale também para os documentos que não herdam de `DocumentoBase` — `ConfiguracaoGeral`,
+`ResumoMensal` e `ResumoGlobal` —, porque o motivo é o mesmo e a exceção seria arbitrária.
+
+**Consequência.** `VersaoSchema` é o literal `1`, e não `number`: quando o formato mudar, o
+alias vira `1 | 2` e o compilador aponta cada lugar que precisa decidir entre as duas formas.
+Uma migração silenciosa deixa de ser possível. O preço é um campo de quatro bytes por
+documento e um alias a manter.
+
+---
+
+## D16 · Acesso concedido por script até existir servidor
+
+**Status:** provisória
+
+**Contexto.** Um sistema que pretende ser comercial não pode depender de alguém rodar
+`node` para liberar cliente. A pergunta é legítima e reaparece toda vez que alguém abre
+`scripts/conceder-acesso.mjs`, então fica registrada com o motivo e com o gatilho.
+
+**Decisão.** Cadastro self-serve fica fora até existir código de servidor confiável. Até lá,
+`conceder-acesso.mjs` é a versão manual do endpoint que vai existir.
+
+**Consequência.** O que torna isso uma questão de backend, e não de tela: **custom claim só
+se escreve com o Admin SDK, por construção.** É exatamente essa restrição que sustenta D07 —
+se o cliente pudesse escrever a própria permissão, a claim não valeria nada e a regra
+voltaria a custar leitura. Logo "tela de cadastro" não é uma tela: é uma Cloud Function ou
+um route handler, e a tela são os 10% fáceis.
+
+Disso decorre que o script não é trabalho descartável: o corpo dele — `getUserByEmail`,
+criar `contas/{contaId}`, `setCustomUserClaims` — é o corpo do futuro endpoint. Muda quem
+chama, não o que faz.
+
+**Prazo de validade: o mesmo de D10, o segundo cliente pagante.** Não é coincidência. Os
+dois casos esbarram na mesma parede: agregado incrementado pelo cliente e permissão
+concedida pelo cliente são inseguros pelo mesmo motivo, e caem juntos quando houver
+servidor. Cadastro entra nesse módulo, junto de trial e cobrança — que é onde os campos
+`plano`, `status` e `trialAte` de `Conta` estavam esperando. Cadastro solto, sem cobrança,
+seria porta sem nada atrás: quem entra ganha uma conta vazia, e o projeto ganha a fatura de
+leitura.
+
+**O que dava para consertar hoje foi consertado.** A pior parte do modelo de claim era a
+instrução "saia e entre novamente" — o token em cache vale uma hora e segura a claim recém
+concedida do lado de fora. `reconferirAcesso()` força a renovação com
+`getIdTokenResult(true)`, e a tela de acesso negado virou um botão. É o mesmo mecanismo que
+um cadastro self-serve vai precisar logo depois do `createUserWithEmailAndPassword`.

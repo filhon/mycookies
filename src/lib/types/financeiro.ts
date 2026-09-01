@@ -5,6 +5,7 @@ import type {
   DataISO,
   DocumentoBase,
   Percentual,
+  VersaoSchema,
 } from "./common";
 
 export type TipoTransacao = "ENTRADA" | "SAIDA";
@@ -76,7 +77,7 @@ export interface ResumoDia {
 }
 
 /**
- * Documento agregado do mês: `users/{uid}/agregados/{'YYYY-MM'}`.
+ * Documento agregado do mês: `contas/{contaId}/agregados/{'YYYY-MM'}`.
  *
  * É o coração da otimização de leitura. O dashboard inteiro — KPIs, gráfico
  * diário, ranking de produtos e progresso da meta — sai de UM read.
@@ -85,6 +86,7 @@ export interface ResumoDia {
  */
 export interface ResumoMensal {
   id: CompetenciaMensal;
+  v: VersaoSchema;
   competencia: CompetenciaMensal;
 
   entradas: Centavos;
@@ -120,11 +122,12 @@ export interface ResumoMensal {
 }
 
 /**
- * Documento único de contadores globais: `users/{uid}/agregados/global`.
+ * Documento único de contadores globais: `contas/{contaId}/agregados/global`.
  * Serve para badges e telas iniciais sem `count()` nem varredura.
  */
 export interface ResumoGlobal {
   id: "global";
+  v: VersaoSchema;
   totalInsumos: number;
   totalFichas: number;
   totalClientes: number;

@@ -1,5 +1,5 @@
 import type { Timestamp } from "firebase/firestore";
-import type { Centavos, Percentual } from "./common";
+import type { Centavos, Percentual, VersaoSchema } from "./common";
 
 /** Método de precificação escolhido na ficha técnica. */
 export type MetodoPrecificacao = "MARKUP" | "MARGEM";
@@ -57,11 +57,13 @@ export interface PrecificacaoPadrao {
 }
 
 /**
- * TODA a configuração do app em UM documento: `users/{uid}/configuracao/geral`.
+ * TODA a configuração do app em UM documento:
+ * `contas/{contaId}/configuracao/geral`.
  * O app inteiro sobe com 1 read, e ele fica no cache offline para sempre.
  */
 export interface ConfiguracaoGeral {
   id: "geral";
+  v: VersaoSchema;
   nomeNegocio: string;
   operacional: CustosOperacionais;
   precificacao: PrecificacaoPadrao;

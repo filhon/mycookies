@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit && tsc -p tsconfig.sw.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "conceder-admin": "node scripts/conceder-admin.mjs"
+    "conceder-acesso": "node scripts/conceder-acesso.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",

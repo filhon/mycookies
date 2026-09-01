@@ -7,6 +7,12 @@ build/
 .env.local
 .env*.local
 
+# Chave de conta de serviço do Admin SDK. Commitar isso entrega o projeto
+# inteiro: ela ignora as regras do Firestore.
+chave-servico.json
+*-service-account*.json
+*firebase-adminsdk*.json
+
 public/sw.js
 public/sw.js.map
 public/swe-worker-*.js

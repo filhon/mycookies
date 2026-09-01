@@ -14,7 +14,8 @@ npm run lint
 npm run typecheck    # app + service worker
 npm test             # vitest, só o núcleo de domínio
 npm run build
-npm run conceder-admin -- <email>   # claim de acesso, exige GOOGLE_APPLICATION_CREDENTIALS
+npm run conceder-acesso -- <email> <contaId>   # cria a conta e emite a claim;
+                                               # exige GOOGLE_APPLICATION_CREDENTIALS
 ```
 
 **Portão de conclusão:** nenhuma tarefa está pronta antes de `lint`, `typecheck`, `test` e
@@ -60,6 +61,10 @@ Quebrar qualquer um destes é regressão, não escolha de estilo.
   use `Timestamp.now()`. Nada de `runTransaction()` em caminho crítico: transação exige rede.
 - **Nunca apagar documento.** `arquivado: true`, porque fichas e pedidos antigos referenciam
   o id e o histórico de custo precisa continuar auditável.
+- **Todo dado mora em `contas/{contaId}/…`, nunca sob o login.** `uid` diz quem entrou,
+  `contaId` diz de quem é o dado. O mapa `caminhos` é o único lugar que conhece o formato.
+- **Toda escrita grava `v: VERSAO_SCHEMA`.** Sem isso a forma de um documento se adivinha
+  pela presença de campos.
 - **Alvo de toque mínimo de 44×44px**, ação primária no celular com 52px.
 - **Cor nunca é o único portador de significado.** O vinho da marca e o vermelho de erro são
   vizinhos de matiz: todo estado negativo carrega ícone ou texto.

@@ -15,6 +15,7 @@ import {
 import { obterDb } from "../client";
 import { colFichas, colInsumos, docInsumo, docResumoGlobal } from "../colecoes";
 import { calcularCustoInsumo, chaveDeBusca } from "@/lib/domain/custoInsumo";
+import { VERSAO_SCHEMA } from "@/lib/types";
 import type {
   CategoriaInsumo,
   Centavos,
@@ -81,12 +82,13 @@ function entradaHistorico(dados: DadosInsumo): HistoricoPreco {
 }
 
 export async function criarInsumo(
-  uid: string,
+  contaId: string,
   dados: DadosInsumo,
 ): Promise<string> {
   const momento = agora();
 
   const novo: Omit<Insumo, "id"> = {
+    v: VERSAO_SCHEMA,
     nome: dados.nome.trim(),
     nomeBusca: chaveDeBusca(dados.nome),
     categoria: dados.categoria,
@@ -110,12 +112,12 @@ export async function criarInsumo(
     arquivado: false,
   };
 
-  const referencia = await addDoc(colInsumos(uid), novo as Insumo);
+  const referencia = await addDoc(colInsumos(contaId), novo as Insumo);
 
   // Contador do agregado global: `increment` entra na fila e funciona offline.
   await setDoc(
-    docResumoGlobal(uid),
-    { totalInsumos: increment(1), atualizadoEm: momento },
+    docResumoGlobal(contaId),
+    { v: VERSAO_SCHEMA, totalInsumos: increment(1), atualizadoEm: momento },
     { merge: true },
   );
 
@@ -123,7 +125,7 @@ export async function criarInsumo(
 }
 
 export async function atualizarInsumo(
-  uid: string,
+  contaId: string,
   anterior: Insumo,
   dados: DadosInsumo,
 ): Promise<void> {
@@ -135,7 +137,8 @@ export async function atualizarInsumo(
 
   const momento = agora();
 
-  await updateDoc(docInsumo(uid, anterior.id), {
+  await updateDoc(docInsumo(contaId, anterior.id), {
+    v: VERSAO_SCHEMA,
     nome: dados.nome.trim(),
     nomeBusca: chaveDeBusca(dados.nome),
     categoria: dados.categoria,
@@ -159,8 +162,8 @@ export async function atualizarInsumo(
 
   if (precoMudou) {
     await Promise.all([
-      podarHistorico(uid, anterior),
-      marcarFichasDesatualizadas(uid, anterior.id),
+      podarHistorico(contaId, anterior),
+      marcarFichasDesatualizadas(contaId, anterior.id),
     ]);
   }
 }
@@ -169,15 +172,18 @@ export async function atualizarInsumo(
  * `arrayUnion` não tem teto. Depois de gravar, corta o histórico nas últimas
  * doze compras: o documento precisa continuar barato de ler.
  */
-async function podarHistorico(uid: string, anterior: Insumo): Promise<void> {
+async function podarHistorico(
+  contaId: string,
+  anterior: Insumo,
+): Promise<void> {
   const total = (anterior.historicoPrecos?.length ?? 0) + 1;
   if (total <= LIMITE_HISTORICO) return;
 
-  const atual = await getDoc(docInsumo(uid, anterior.id));
+  const atual = await getDoc(docInsumo(contaId, anterior.id));
   const historico = atual.data()?.historicoPrecos ?? [];
   if (historico.length <= LIMITE_HISTORICO) return;
 
-  await updateDoc(docInsumo(uid, anterior.id), {
+  await updateDoc(docInsumo(contaId, anterior.id), {
     historicoPrecos: historico
       .slice()
       .sort((a, b) => b.data.toMillis() - a.data.toMillis())
@@ -191,17 +197,19 @@ async function podarHistorico(uid: string, anterior: Insumo): Promise<void> {
  * "custo desatualizado" aparece antes que um preço errado vire orçamento.
  */
 export async function marcarFichasDesatualizadas(
-  uid: string,
+  contaId: string,
   insumoId: string,
 ): Promise<number> {
   const afetadas = await getDocs(
-    query(colFichas(uid), where("insumoIds", "array-contains", insumoId)),
+    query(colFichas(contaId), where("insumoIds", "array-contains", insumoId)),
   );
   if (afetadas.empty) return 0;
 
   const lote = writeBatch(obterDb());
   afetadas.forEach((ficha) => {
-    lote.update(doc(colFichas(uid), ficha.id), { custoDesatualizado: true });
+    lote.update(doc(colFichas(contaId), ficha.id), {
+      custoDesatualizado: true,
+    });
   });
   await lote.commit();
 
@@ -213,33 +221,33 @@ export async function marcarFichasDesatualizadas(
  * histórico de custo precisa continuar auditável.
  */
 export async function arquivarInsumo(
-  uid: string,
+  contaId: string,
   insumoId: string,
 ): Promise<void> {
   const momento = agora();
-  await updateDoc(docInsumo(uid, insumoId), {
+  await updateDoc(docInsumo(contaId, insumoId), {
     arquivado: true,
     atualizadoEm: momento,
   });
   await setDoc(
-    docResumoGlobal(uid),
-    { totalInsumos: increment(-1), atualizadoEm: momento },
+    docResumoGlobal(contaId),
+    { v: VERSAO_SCHEMA, totalInsumos: increment(-1), atualizadoEm: momento },
     { merge: true },
   );
 }
 
 export async function restaurarInsumo(
-  uid: string,
+  contaId: string,
   insumoId: string,
 ): Promise<void> {
   const momento = agora();
-  await updateDoc(docInsumo(uid, insumoId), {
+  await updateDoc(docInsumo(contaId, insumoId), {
     arquivado: false,
     atualizadoEm: momento,
   });
   await setDoc(
-    docResumoGlobal(uid),
-    { totalInsumos: increment(1), atualizadoEm: momento },
+    docResumoGlobal(contaId),
+    { v: VERSAO_SCHEMA, totalInsumos: increment(1), atualizadoEm: momento },
     { merge: true },
   );
 }

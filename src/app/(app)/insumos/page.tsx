@@ -14,7 +14,7 @@ import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { colInsumos } from "@/lib/firebase/colecoes";
 import { useColecao } from "@/lib/hooks/useColecao";
 import type { CategoriaInsumo, Insumo } from "@/lib/types";
-import { useUid } from "@/providers/AuthProvider";
+import { useContaId } from "@/providers/AuthProvider";
 import { cn } from "@/lib/utils/cn";
 
 const FILTROS: { valor: CategoriaInsumo | "TODOS"; rotulo: string }[] = [
@@ -27,7 +27,7 @@ const FILTROS: { valor: CategoriaInsumo | "TODOS"; rotulo: string }[] = [
 ];
 
 export default function PaginaInsumos() {
-  const uid = useUid();
+  const contaId = useContaId();
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<CategoriaInsumo | "TODOS">("TODOS");
   const [emEdicao, setEmEdicao] = useState<Insumo | undefined>();
@@ -42,11 +42,11 @@ export default function PaginaInsumos() {
   const consulta = useMemo(
     () =>
       query(
-        colInsumos(uid),
+        colInsumos(contaId),
         where("arquivado", "==", false),
         orderBy("nomeBusca"),
       ),
-    [uid],
+    [contaId],
   );
 
   const { dados, carregando, erro, pendente } = useColecao<Insumo>(consulta);
