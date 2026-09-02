@@ -1,10 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Pencil, Target, TriangleAlert } from "lucide-react";
+import {
+  Check,
+  ClipboardList,
+  Pencil,
+  Target,
+  TriangleAlert,
+} from "lucide-react";
 import { Botao } from "@/components/ui/Botao";
 import { rotuloMes } from "@/lib/domain/datas";
-import { esforcoRestante, medirMeta } from "@/lib/domain/metas";
+import {
+  esforcoRestante,
+  medirMeta,
+  pedidosNecessariosDe,
+} from "@/lib/domain/metas";
 import { formatarMoeda, formatarPercentual } from "@/lib/domain/money";
 import type { Centavos, CompetenciaMensal, Meta } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
@@ -21,6 +31,7 @@ export function BlocoMeta({
   competencia,
   meta,
   realizado,
+  ticketMedio,
   aoAbrir,
 }: {
   competencia: CompetenciaMensal;
@@ -28,6 +39,11 @@ export function BlocoMeta({
   meta: Meta | null;
   /** `entradas` do mês. É a mesma verdade do agregado, não uma segunda conta. */
   realizado: Centavos;
+  /**
+   * O valor médio de um pedido pago no mês, refeito na leitura. Zero enquanto
+   * não houver pedido pago, e aí a linha de pedidos não aparece.
+   */
+  ticketMedio: Centavos;
   aoAbrir: () => void;
 }) {
   // O dia é lido uma vez, na montagem: o ritmo não pode mudar no meio de um
@@ -78,6 +94,10 @@ export function BlocoMeta({
     medida.unidadesPorSemanaRestante,
     medida.diasRestantes,
   );
+
+  // Refeito na leitura pelo mesmo motivo do ritmo: o ticket médio anda a cada
+  // pedido pago, e a meta não é reescrita junto (`DECISOES.md#d30`).
+  const pedidos = pedidosNecessariosDe(meta.faturamentoAlvo, ticketMedio);
 
   const mesFechado = medida.diasRestantes === 0;
   const naoComecou = medida.diaAtual === 0;
@@ -197,6 +217,31 @@ export function BlocoMeta({
               </strong>{" "}
               por doce.
             </p>
+
+            {/* A mesma meta na outra unidade: doce é o que ela produz, pedido é
+                o que ela vende. A linha só existe quando há pedido pago no mês
+                para tirar um ticket médio de verdade (`DECISOES.md#d36`). */}
+            {pedidos > 0 && (
+              <p className="mt-2 flex items-start gap-2 border-t border-line pt-2 text-label text-ink-muted">
+                <ClipboardList
+                  aria-hidden
+                  className="mt-0.5 size-4 shrink-0 text-ink-subtle"
+                  strokeWidth={1.75}
+                />
+                <span className="max-w-[52ch]">
+                  Ou{" "}
+                  <strong className="num font-semibold text-ink">
+                    {pedidos}
+                  </strong>{" "}
+                  {pedidos === 1 ? "pedido" : "pedidos"} do tamanho dos deste
+                  mês, que estão saindo a{" "}
+                  <strong className="num font-semibold text-ink">
+                    {formatarMoeda(ticketMedio)}
+                  </strong>{" "}
+                  cada.
+                </span>
+              </p>
+            )}
           </>
         )}
       </div>

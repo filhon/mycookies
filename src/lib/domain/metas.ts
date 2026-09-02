@@ -278,6 +278,27 @@ export function esforcoRestante(
     : { unidades: unidadesRestantes, prazo: "FIM_DO_MES" };
 }
 
+/**
+ * Quantos pedidos fecham a meta, pelo valor médio de um pedido do mês.
+ *
+ * O divisor é `ResumoMensal.ticketMedio` — o ticket médio **real**, que existe
+ * desde que o pedido pago virou dado — e não `Meta.ticketMedioReferencia`, que
+ * continua guardando o preço médio de um *doce*. São duas perguntas diferentes,
+ * e dividir o alvo pelo preço de um doce faria o campo afirmar "cada pedido tem
+ * um doce", que é justamente o que `DECISOES.md#d28` recusou.
+ *
+ * Zero enquanto não houver pedido pago no mês, e zero é ausência: a linha não
+ * aparece, em vez de aparecer dizendo que zero pedidos bastam.
+ */
+export function pedidosNecessariosDe(
+  faturamentoAlvo: Centavos,
+  ticketMedio: Centavos,
+): number {
+  if (faturamentoAlvo <= 0 || ticketMedio <= 0) return 0;
+  // Para cima: 12,5 pedidos não existe, e 12 não fecham a meta.
+  return Math.ceil(faturamentoAlvo / ticketMedio);
+}
+
 /** O que o preço médio precisa saber de uma ficha. Nada além disso. */
 export interface FichaComPreco {
   ativo: boolean;

@@ -8,7 +8,11 @@ import { Botao } from "@/components/ui/Botao";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Painel } from "@/components/ui/Painel";
 import { rotuloMes } from "@/lib/domain/datas";
-import { planejarMeta, precoMedioDasFichas } from "@/lib/domain/metas";
+import {
+  pedidosNecessariosDe,
+  planejarMeta,
+  precoMedioDasFichas,
+} from "@/lib/domain/metas";
 import { formatarMoeda } from "@/lib/domain/money";
 import { errosPorCampo, esquemaMeta } from "@/lib/domain/schemas";
 import { colFichas } from "@/lib/firebase/colecoes";
@@ -36,6 +40,7 @@ export function FormularioMeta({
   competencia,
   meta,
   realizado,
+  ticketMedio,
   chave: chaveAtual,
 }: {
   aberto: boolean;
@@ -46,6 +51,8 @@ export function FormularioMeta({
   meta: Meta | null;
   /** `entradas` do mês, para o espelho nascer com o progresso certo. */
   realizado: Centavos;
+  /** O valor médio de um pedido pago no mês, para `pedidosNecessarios`. */
+  ticketMedio: Centavos;
   /** Muda a cada abertura, como no lançamento: o painel fica montado. */
   chave: string;
 }) {
@@ -91,6 +98,7 @@ export function FormularioMeta({
     faturamentoAlvo: alvo,
     precoMedioUnitario,
   });
+  const pedidos = pedidosNecessariosDe(alvo, ticketMedio);
 
   function mudarPreco(centavos: Centavos) {
     setPrecoManual(true);
@@ -111,7 +119,14 @@ export function FormularioMeta({
     setFalha(null);
     setSalvando(true);
     try {
-      await salvarMeta(contaId, competencia, resultado.data, realizado, meta);
+      await salvarMeta(
+        contaId,
+        competencia,
+        resultado.data,
+        realizado,
+        ticketMedio,
+        meta,
+      );
       setSalvando(false);
       aoFechar();
     } catch {
@@ -206,17 +221,32 @@ export function FormularioMeta({
                 : "Diga por quanto sai um doce e o número de doces aparece aqui."}
             </p>
           ) : (
-            <p className="max-w-[46ch] text-label text-ink">
-              São{" "}
-              <strong className="num font-semibold">
-                {plano.unidadesNecessarias}
-              </strong>{" "}
-              doces em {mes}, ou{" "}
-              <strong className="num font-semibold">
-                {plano.unidadesPorSemana}
-              </strong>{" "}
-              por semana.
-            </p>
+            <>
+              <p className="max-w-[46ch] text-label text-ink">
+                São{" "}
+                <strong className="num font-semibold">
+                  {plano.unidadesNecessarias}
+                </strong>{" "}
+                doces em {mes}, ou{" "}
+                <strong className="num font-semibold">
+                  {plano.unidadesPorSemana}
+                </strong>{" "}
+                por semana.
+              </p>
+
+              {/* A mesma meta contada em pedidos, quando já houve pedido pago
+                  no mês para tirar um ticket médio de verdade. */}
+              {pedidos > 0 && (
+                <p className="mt-1.5 max-w-[46ch] text-label text-ink-muted">
+                  Ou{" "}
+                  <strong className="num font-semibold text-ink">
+                    {pedidos}
+                  </strong>{" "}
+                  {pedidos === 1 ? "pedido" : "pedidos"} do tamanho dos deste
+                  mês, que saíram a {formatarMoeda(ticketMedio)} cada.
+                </p>
+              )}
+            </>
           )}
         </div>
 

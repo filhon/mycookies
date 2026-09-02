@@ -25,6 +25,15 @@
       ]
     },
     {
+      "collectionGroup": "pedidos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "arquivado", "order": "ASCENDING" },
+        { "fieldPath": "competenciaPagamento", "order": "ASCENDING" },
+        { "fieldPath": "pagoEm", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "clientes",
       "queryScope": "COLLECTION",
       "fields": [

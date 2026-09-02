@@ -4,21 +4,27 @@ import type {
   DataISO,
   FormaPagamento,
   ResumoDia,
+  ResumoProduto,
   TipoTransacao,
 } from "@/lib/types";
 import { taxaCobrada } from "./custosOperacionais";
 import { diaDeISO } from "./datas";
 
 /**
- * O motor do agregado mensal.
+ * O motor do agregado mensal, nas suas duas metades.
  *
- * Duas funções fazem a mesma conta por caminhos diferentes de propósito:
- * `deltaDaTransacao` diz o que muda quando um lançamento entra ou sai, e
- * `agregarTransacoes` reconstrói o mês inteiro do zero. Agregado mantido por
- * incremento torce em silêncio — um delta perdido não dá erro, não aparece em
- * log e só é notado quando o lucro do mês parece estranho. As duas existem para
- * que o teste possa exigir que concordem, e é o teste que percebe a torção
- * antes da usuária (`DECISOES.md#d10` e `#d23`).
+ * Cada metade tem duas funções que fazem a mesma conta por caminhos diferentes,
+ * de propósito: o `delta` diz o que muda quando um documento entra ou sai, e o
+ * `agregar` reconstrói o mês inteiro do zero. Agregado mantido por incremento
+ * torce em silêncio — um delta perdido não dá erro, não aparece em log e só é
+ * notado quando o lucro do mês parece estranho. Os pares existem para que o
+ * teste possa exigir que concordem, e é o teste que percebe a torção antes da
+ * usuária (`DECISOES.md#d10` e `#d23`).
+ *
+ * A metade da transação (`entradas`, `saidas`, `lucro`, taxa) e a do pedido
+ * (`qtdPedidos`, `receitaPedidos`, `produtos`) escrevem no mesmo documento e
+ * **não se sobrepõem em campo nenhum**: um pedido pago produz os dois deltas, e
+ * eles são somados antes de virar uma escrita só.
  */
 
 /** O que o agregado precisa saber de um lançamento. Nada além disso. */
@@ -35,16 +41,51 @@ export interface TransacaoAgregavel {
   custoTaxa: Centavos;
 }
 
-/** `+1` aplica a transação no agregado, `−1` desfaz a contribuição dela. */
+/** Uma linha do pedido, como o agregado a consome. */
+export interface ItemAgregavel {
+  fichaTecnicaId: string;
+  nomeSnapshot: string;
+  quantidade: number;
+  /** O que a cliente pagou por esta linha, já congelado no pedido. */
+  subtotal: Centavos;
+  /** O que a linha custou para produzir, pelo custo congelado. */
+  custo: Centavos;
+}
+
+/**
+ * O que o agregado precisa saber de um pedido **pago**.
+ *
+ * `pagoEmISO` é o dia do pagamento, e nunca o da entrega: o painel é regime de
+ * caixa, e um pedido entregue em 30/09 e pago em 02/10 conta em outubro
+ * (`DECISOES.md#d36`).
+ */
+export interface PedidoAgregavel {
+  pagoEmISO: DataISO;
+  total: Centavos;
+  custoTotalEstimado: Centavos;
+  itens: ItemAgregavel[];
+}
+
+/** `+1` aplica a contribuição no agregado, `−1` a desfaz. */
 export type Sinal = 1 | -1;
 
-/** A parte do `ResumoMensal` que nasce de transação. O resto é do pedido. */
+/** As parcelas do `ResumoMensal` que se mantêm por incremento, as duas metades. */
 export interface ParcelasDoAgregado {
+  // ---- Metade da transação ----
   entradas: Centavos;
   saidas: Centavos;
   custoTaxasPagamento: Centavos;
   lucro: Centavos;
   porCategoriaSaida: Partial<Record<CategoriaTransacao, Centavos>>;
+
+  // ---- Metade do pedido ----
+  qtdPedidos: number;
+  qtdItensVendidos: number;
+  receitaPedidos: Centavos;
+  custoDoVendido: Centavos;
+  produtos: Record<string, ResumoProduto>;
+
+  /** As duas metades escrevem aqui: entradas/saídas de um lado, pedidos do outro. */
   porDia: Record<string, ResumoDia>;
 }
 
@@ -54,8 +95,35 @@ export const PARCELAS_ZERADAS: ParcelasDoAgregado = {
   custoTaxasPagamento: 0,
   lucro: 0,
   porCategoriaSaida: {},
+  qtdPedidos: 0,
+  qtdItensVendidos: 0,
+  receitaPedidos: 0,
+  custoDoVendido: 0,
+  produtos: {},
   porDia: {},
 };
+
+/** A metade do pedido, zerada: é o que um delta de transação traz dela. */
+function semPedido() {
+  return {
+    qtdPedidos: 0,
+    qtdItensVendidos: 0,
+    receitaPedidos: 0,
+    custoDoVendido: 0,
+    produtos: {} as Record<string, ResumoProduto>,
+  };
+}
+
+/** A metade da transação, zerada: um pedido não move dinheiro por si só. */
+function semTransacao() {
+  return {
+    entradas: 0,
+    saidas: 0,
+    custoTaxasPagamento: 0,
+    lucro: 0,
+    porCategoriaSaida: {} as Partial<Record<CategoriaTransacao, Centavos>>,
+  };
+}
 
 /**
  * O que a maquininha cobra de uma entrada.
@@ -101,14 +169,64 @@ export function deltaDaTransacao(
   const custoTaxasPagamento = ehEntrada ? sinal * transacao.custoTaxa : 0;
 
   return {
+    ...semPedido(),
     entradas,
     saidas,
     custoTaxasPagamento,
     lucro: entradas - saidas - custoTaxasPagamento,
     porCategoriaSaida: ehEntrada ? {} : { [transacao.categoria]: valor },
     porDia: {
-      // `pedidos` é do Módulo 3 e nunca é tocado por transação.
+      // `pedidos` é da metade do pedido e nunca é tocado por transação — nem
+      // quando a transação nasceu de um pedido pago: lá são dois deltas.
       [diaDeISO(transacao.dataISO)]: { entradas, saidas, pedidos: 0 },
+    },
+  };
+}
+
+/**
+ * O que somar no agregado por causa de um pedido pago.
+ *
+ * Não move um centavo de `entradas`, `saidas` nem `lucro`: quem move dinheiro é
+ * a transação que o pagamento cria. Marcar um pedido como pago produz os dois
+ * deltas, e eles são somados antes de virar uma escrita só do agregado — senão
+ * o espelho da meta seria reescrito duas vezes, a segunda com o total de antes.
+ *
+ * O lucro por produto **não desconta desconto, entrega nem maquininha**: as três
+ * são do pedido inteiro e não têm como ser rateadas por item sem inventar um
+ * critério. Quem desconta tudo é `lucro`, que é do mês.
+ */
+export function deltaDoPedido(
+  pedido: PedidoAgregavel,
+  sinal: Sinal,
+): ParcelasDoAgregado {
+  const produtos: Record<string, ResumoProduto> = {};
+  let quantidadeItens = 0;
+
+  for (const item of pedido.itens) {
+    quantidadeItens += item.quantidade;
+
+    // A mesma ficha pode aparecer em duas linhas do pedido: acumula, não
+    // sobrescreve.
+    const linha = (produtos[item.fichaTecnicaId] ??= {
+      nome: item.nomeSnapshot,
+      quantidade: 0,
+      receita: 0,
+      lucro: 0,
+    });
+    linha.quantidade += sinal * item.quantidade;
+    linha.receita += sinal * item.subtotal;
+    linha.lucro += sinal * (item.subtotal - item.custo);
+  }
+
+  return {
+    ...semTransacao(),
+    qtdPedidos: sinal,
+    qtdItensVendidos: sinal * quantidadeItens,
+    receitaPedidos: sinal * pedido.total,
+    custoDoVendido: sinal * pedido.custoTotalEstimado,
+    produtos,
+    porDia: {
+      [diaDeISO(pedido.pagoEmISO)]: { entradas: 0, saidas: 0, pedidos: sinal },
     },
   };
 }
@@ -147,6 +265,7 @@ export function agregarTransacoes(
   }
 
   return {
+    ...semPedido(),
     entradas,
     saidas,
     custoTaxasPagamento,
@@ -154,6 +273,71 @@ export function agregarTransacoes(
     porCategoriaSaida,
     porDia,
   };
+}
+
+/**
+ * A metade do pedido, somada do zero.
+ *
+ * Segunda implementação da mesma verdade de `deltaDoPedido`, escrita sem usar
+ * aquela função, pelo mesmo motivo de `agregarTransacoes`: se as duas
+ * concordassem por construção, o teste não provaria nada.
+ */
+export function agregarPedidos(pedidos: PedidoAgregavel[]): ParcelasDoAgregado {
+  let qtdPedidos = 0;
+  let qtdItensVendidos = 0;
+  let receitaPedidos = 0;
+  let custoDoVendido = 0;
+  const produtos: Record<string, ResumoProduto> = {};
+  const porDia: Record<string, ResumoDia> = {};
+
+  for (const pedido of pedidos) {
+    qtdPedidos += 1;
+    receitaPedidos += pedido.total;
+    custoDoVendido += pedido.custoTotalEstimado;
+
+    const dia = diaDeISO(pedido.pagoEmISO);
+    const linhaDoDia = (porDia[dia] ??= { entradas: 0, saidas: 0, pedidos: 0 });
+    linhaDoDia.pedidos += 1;
+
+    for (const item of pedido.itens) {
+      qtdItensVendidos += item.quantidade;
+
+      const anterior = produtos[item.fichaTecnicaId];
+      produtos[item.fichaTecnicaId] = {
+        // O nome mais recente vence: `nomeSnapshot` é de quando o item entrou
+        // no pedido, e o ranking do mês fala do que ela vende hoje.
+        nome: item.nomeSnapshot,
+        quantidade: (anterior?.quantidade ?? 0) + item.quantidade,
+        receita: (anterior?.receita ?? 0) + item.subtotal,
+        lucro: (anterior?.lucro ?? 0) + (item.subtotal - item.custo),
+      };
+    }
+  }
+
+  return {
+    ...semTransacao(),
+    qtdPedidos,
+    qtdItensVendidos,
+    receitaPedidos,
+    custoDoVendido,
+    produtos,
+    porDia,
+  };
+}
+
+/**
+ * O mês inteiro, as duas metades. É o corpo de "Recalcular o mês".
+ *
+ * Depois desta função, recalcular **não precisa mais ler o agregado antes de
+ * reescrevê-lo**: a leitura só existia para preservar `porDia[].pedidos`, que
+ * era do módulo que ainda não existia (`DECISOES.md#d23`, segunda
+ * consequência). Uma consulta a mais, uma leitura a menos.
+ */
+export function agregarMes(
+  transacoes: TransacaoAgregavel[],
+  pedidos: PedidoAgregavel[],
+): ParcelasDoAgregado {
+  return somarParcelas(agregarTransacoes(transacoes), agregarPedidos(pedidos));
 }
 
 /**
@@ -193,12 +377,35 @@ export function somarParcelas(
     }
   }
 
+  // Mesma regra das categorias: o produto cuja contribuição foi revertida some
+  // do ranking em vez de ficar como uma linha de zero unidades.
+  const produtos: Record<string, ResumoProduto> = { ...base.produtos };
+  for (const [fichaId, linha] of Object.entries(delta.produtos)) {
+    const anterior = produtos[fichaId];
+    const total: ResumoProduto = {
+      nome: linha.nome || (anterior?.nome ?? ""),
+      quantidade: (anterior?.quantidade ?? 0) + linha.quantidade,
+      receita: (anterior?.receita ?? 0) + linha.receita,
+      lucro: (anterior?.lucro ?? 0) + linha.lucro,
+    };
+    if (total.quantidade === 0 && total.receita === 0 && total.lucro === 0) {
+      delete produtos[fichaId];
+    } else {
+      produtos[fichaId] = total;
+    }
+  }
+
   return {
     entradas: base.entradas + delta.entradas,
     saidas: base.saidas + delta.saidas,
     custoTaxasPagamento: base.custoTaxasPagamento + delta.custoTaxasPagamento,
     lucro: base.lucro + delta.lucro,
     porCategoriaSaida,
+    qtdPedidos: base.qtdPedidos + delta.qtdPedidos,
+    qtdItensVendidos: base.qtdItensVendidos + delta.qtdItensVendidos,
+    receitaPedidos: base.receitaPedidos + delta.receitaPedidos,
+    custoDoVendido: base.custoDoVendido + delta.custoDoVendido,
+    produtos,
     porDia,
   };
 }
@@ -220,8 +427,45 @@ export function parcelasDoResumo(
     custoTaxasPagamento: resumo?.custoTaxasPagamento ?? 0,
     lucro: resumo?.lucro ?? 0,
     porCategoriaSaida: resumo?.porCategoriaSaida ?? {},
+    qtdPedidos: resumo?.qtdPedidos ?? 0,
+    qtdItensVendidos: resumo?.qtdItensVendidos ?? 0,
+    receitaPedidos: resumo?.receitaPedidos ?? 0,
+    custoDoVendido: resumo?.custoDoVendido ?? 0,
+    produtos: resumo?.produtos ?? {},
     porDia: resumo?.porDia ?? {},
   };
+}
+
+/**
+ * O valor médio de um pedido pago no mês.
+ *
+ * Razão, e razão não se incrementa: ela é gravada no mesmo ponto em que as
+ * parcelas mudam e **refeita na leitura** a partir de `receitaPedidos` e
+ * `qtdPedidos`, que são exatos porque são incrementos. Quem desenha a tela usa
+ * esta versão, e não a gravada — a regra de `DECISOES.md#d30`.
+ */
+export function ticketMedioDe(
+  receitaPedidos: Centavos,
+  qtdPedidos: number,
+): Centavos {
+  return qtdPedidos > 0 ? Math.round(receitaPedidos / qtdPedidos) : 0;
+}
+
+/**
+ * O ranking de produtos do mês, do que mais faturou para o que menos faturou.
+ *
+ * Descarta a linha zerada pelo mesmo motivo de `saidasOrdenadas`: um produto
+ * cuja contribuição foi revertida sobra no documento como três zeros, porque
+ * `increment` não apaga chave. "Recalcular o mês" limpa; a tela não precisa
+ * esperar por isso.
+ */
+export function produtosOrdenados(
+  produtos: Record<string, ResumoProduto>,
+): { fichaId: string; produto: ResumoProduto }[] {
+  return Object.entries(produtos)
+    .map(([fichaId, produto]) => ({ fichaId, produto }))
+    .filter(({ produto }) => produto.quantidade > 0 || produto.receita !== 0)
+    .sort((a, b) => b.produto.receita - a.produto.receita);
 }
 
 /** As saídas do mês em ordem de tamanho: para onde o dinheiro foi de fato. */

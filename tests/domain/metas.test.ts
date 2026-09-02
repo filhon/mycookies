@@ -4,6 +4,7 @@ import {
   esforcoRestante,
   espelhoDaMeta,
   medirMeta,
+  pedidosNecessariosDe,
   planejarMeta,
   posicaoNoMes,
   precoMedioDasFichas,
@@ -353,5 +354,28 @@ describe("precoMedioDasFichas", () => {
 
   it("devolve zero quando não sobra ficha nenhuma", () => {
     expect(precoMedioDasFichas([ficha(0), ficha(500, false)])).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sessão 3B · a meta ganha o que `#d28` deixou esperando.
+// ---------------------------------------------------------------------------
+
+describe("pedidosNecessariosDe", () => {
+  it("fecha o caso de aceite: R$ 3.000,00 com ticket médio de R$ 240,00", () => {
+    // 300000 ÷ 24000 = 12,5 pedidos, e 12 não fecham a meta.
+    expect(pedidosNecessariosDe(300000, 24000)).toBe(13);
+  });
+
+  it("não divide o alvo pelo preço de um doce", () => {
+    // O divisor é o valor médio de um PEDIDO. Pelo preço de um cookie, a meta
+    // diria 435 pedidos — que é a conta de doces, com o nome errado (`#d28`).
+    expect(pedidosNecessariosDe(300000, 690)).not.toBe(13);
+  });
+
+  it("devolve zero enquanto não houver pedido pago no mês", () => {
+    // Zero é ausência de ticket médio, e ausência não aparece na tela.
+    expect(pedidosNecessariosDe(300000, 0)).toBe(0);
+    expect(pedidosNecessariosDe(0, 24000)).toBe(0);
   });
 });

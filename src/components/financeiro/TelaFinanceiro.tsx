@@ -9,7 +9,7 @@ import { FormularioMeta } from "@/components/metas/FormularioMeta";
 import { Botao } from "@/components/ui/Botao";
 import { EsqueletoLista, Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
-import { parcelasDoResumo } from "@/lib/domain/caixa";
+import { parcelasDoResumo, ticketMedioDe } from "@/lib/domain/caixa";
 import {
   competenciaAtual,
   dataISODe,
@@ -24,7 +24,7 @@ import type { ContextoMeta } from "@/lib/firebase/mutations/metas";
 import {
   consultaTransacoesDoMes,
   recalcularMes,
-} from "@/lib/firebase/mutations/transacoes";
+} from "@/lib/firebase/mutations/agregado";
 import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
 import type {
   CompetenciaMensal,
@@ -37,9 +37,11 @@ import { useContaId } from "@/providers/AuthProvider";
 import { FormularioTransacao } from "./FormularioTransacao";
 import { LinhaTransacao } from "./LinhaTransacao";
 import { MovimentoPorDia } from "./MovimentoPorDia";
+import { ProdutosDoMes } from "./ProdutosDoMes";
 import { ResultadoDoMes } from "./ResultadoDoMes";
 import { SaidasPorCategoria } from "./SaidasPorCategoria";
 import { SeletorMes } from "./SeletorMes";
+import { VendasPorPedido } from "./VendasPorPedido";
 
 export function TelaFinanceiro() {
   const contaId = useContaId();
@@ -94,6 +96,12 @@ export function TelaFinanceiro() {
   );
 
   const parcelas = parcelasDoResumo(resumo.dado);
+  // A razão é refeita na leitura, e não lida do documento: quem é exato são
+  // `receitaPedidos` e `qtdPedidos`, porque são incrementos (`#d36`).
+  const ticketMedio = ticketMedioDe(
+    parcelas.receitaPedidos,
+    parcelas.qtdPedidos,
+  );
   const carregando =
     lancamentos.carregando || resumo.carregando || meta.carregando;
 
@@ -195,13 +203,14 @@ export function TelaFinanceiro() {
             competencia={competencia}
             meta={meta.dado}
             realizado={parcelas.entradas}
+            ticketMedio={ticketMedio}
             aoAbrir={abrirPainelMeta}
           />
 
           <div className="overflow-hidden rounded-lg border border-line bg-surface">
             <EstadoVazio
               titulo={`Nada lançado em ${rotuloCompetencia(competencia)}`}
-              descricao="Por enquanto cada venda entra aqui na mão, junto das compras e das despesas. Quando o módulo de pedidos chegar, o pedido pago vira lançamento sozinho — e o que você digita aqui continua valendo para a venda de balcão que nunca virou pedido."
+              descricao="As compras e as despesas entram aqui na mão, e a venda de balcão também. A encomenda não precisa: no dia em que você marca o pedido como pago, ele vira um lançamento sozinho, com a taxa da maquininha já descontada."
               acao={
                 <Botao
                   variante="primaria"
@@ -225,10 +234,17 @@ export function TelaFinanceiro() {
             competencia={competencia}
             meta={meta.dado}
             realizado={parcelas.entradas}
+            ticketMedio={ticketMedio}
             aoAbrir={abrirPainelMeta}
           />
 
+          {/* As duas seções de pedido somem sozinhas em mês sem pedido pago:
+              zero ali é ausência, e ausência não vira linha de R$ 0,00. */}
+          <VendasPorPedido parcelas={parcelas} />
+
           <MovimentoPorDia competencia={competencia} porDia={parcelas.porDia} />
+
+          <ProdutosDoMes produtos={parcelas.produtos} />
 
           <SaidasPorCategoria
             porCategoriaSaida={parcelas.porCategoriaSaida}
@@ -327,6 +343,7 @@ export function TelaFinanceiro() {
         competencia={competencia}
         meta={meta.dado}
         realizado={parcelas.entradas}
+        ticketMedio={ticketMedio}
       />
     </>
   );

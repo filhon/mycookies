@@ -410,18 +410,20 @@ porque é o mesmo agregado.
 
 ## Critérios de aceite 3B
 
-- [ ] Os números do caso de aceite batem exatamente, em teste.
-- [ ] `deltaDoPedido` aplicado em sequência e `agregarPedidos` concordam, em teste.
-- [ ] **O teste da 4A passa sem uma linha alterada.**
-- [ ] Marcar como pago cria a transação e grava `transacaoId`; desfazer arquiva e reverte.
-- [ ] Editar um pedido pago corrige a transação e o agregado.
-- [ ] O agregado usa a data do pagamento, e a agenda continua usando a data de entrega.
-- [ ] "Recalcular o mês" refaz as duas metades e não precisa mais ler o agregado antes.
-- [ ] `custoInsumos` virou `custoDoVendido`, e a tela o chama de "custo do que você vendeu".
-- [ ] Pedido entregue e não pago aparece em "a receber", e não no resultado do mês.
-- [ ] Os agregados do cliente andam com o pagamento e voltam com o desfazer.
-- [ ] `pedidosNecessarios` deixa de ser zero e passa a aparecer.
-- [ ] Portão de conclusão passando.
+- [x] Os números do caso de aceite batem exatamente, em teste.
+- [x] `deltaDoPedido` aplicado em sequência e `agregarPedidos` concordam, em teste.
+- [x] **O teste da 4A passa sem uma linha alterada.**
+- [x] Marcar como pago cria a transação e grava `transacaoId`; desfazer arquiva e reverte.
+- [x] Editar um pedido pago corrige a transação e o agregado.
+- [x] O agregado usa a data do pagamento, e a agenda continua usando a data de entrega.
+- [x] "Recalcular o mês" refaz as duas metades e não precisa mais ler o agregado antes.
+- [x] `custoInsumos` virou `custoDoVendido`, e a tela o chama de "custo do que você vendeu".
+- [x] Pedido entregue e não pago aparece em "a receber", e não no resultado do mês.
+- [x] Os agregados do cliente andam com o pagamento e voltam com o desfazer —
+      `ultimoPedidoEm` é a exceção registrada em `DECISOES.md#d37`.
+- [x] `pedidosNecessarios` deixa de ser zero e passa a aparecer — dividido pelo ticket médio
+      real do mês, e não por `ticketMedioReferencia`. O porquê está em `DECISOES.md#d38`.
+- [x] Portão de conclusão passando.
 
 ---
 

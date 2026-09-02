@@ -202,6 +202,43 @@ export function ehConcluido(status: StatusPedido): boolean {
   return status === "ENTREGUE" || status === "CANCELADO";
 }
 
+export interface AReceber {
+  total: Centavos;
+  quantidade: number;
+  /** Dos que estão a receber, quantos já foram entregues. */
+  entregues: number;
+}
+
+/**
+ * O dinheiro combinado que ainda não entrou.
+ *
+ * Existe porque o painel financeiro é regime de caixa: um pedido entregue e não
+ * pago não está no resultado do mês, e sem esta linha ele não estaria em lugar
+ * nenhum — o painel mentiria por omissão (`DECISOES.md#d36`).
+ *
+ * O orçamento fica de fora: proposta que a cliente ainda não aceitou não é
+ * dinheiro a receber, é dinheiro a combinar. Cancelado, pelo motivo oposto.
+ *
+ * Soma em memória sobre os pedidos que a tela já carregou: nenhum agregado
+ * novo, nenhuma consulta nova.
+ */
+export function aReceber(
+  pedidos: { status: StatusPedido; pago: boolean; total: Centavos }[],
+): AReceber {
+  const abertos = pedidos.filter(
+    (pedido) =>
+      !pedido.pago &&
+      pedido.status !== "ORCAMENTO" &&
+      pedido.status !== "CANCELADO",
+  );
+
+  return {
+    total: abertos.reduce((soma, pedido) => soma + pedido.total, 0),
+    quantidade: abertos.length,
+    entregues: abertos.filter((pedido) => pedido.status === "ENTREGUE").length,
+  };
+}
+
 export const ROTULO_STATUS_PEDIDO: Record<StatusPedido, string> = {
   ORCAMENTO: "Orçamento",
   CONFIRMADO: "Confirmado",

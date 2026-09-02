@@ -6,9 +6,10 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { colClientes, docCliente, docResumoGlobal } from "../colecoes";
+import { ticketMedioDe } from "@/lib/domain/caixa";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { VERSAO_SCHEMA } from "@/lib/types";
-import type { Cliente } from "@/lib/types";
+import type { Centavos, Cliente } from "@/lib/types";
 
 /**
  * Cadastro leve, e opcional.
@@ -17,10 +18,8 @@ import type { Cliente } from "@/lib/types";
  * e basta. O cadastro existe para a cliente que volta — a que tem telefone,
  * endereço e um jeito de embalar que ela precisa lembrar.
  *
- * Os agregados (`totalPedidos`, `totalGasto`, `ticketMedio`, `ultimoPedidoEm`)
- * nascem zerados e continuam zerados nesta sessão: eles são de dinheiro, e
- * dinheiro é a sessão 3B. Zero que não aparece em tela é ausência, não
- * resultado — a mesma regra de `DECISOES.md#d28`.
+ * Os agregados nascem zerados e andam com o **pagamento**, e não com o pedido:
+ * `totalGasto` é dinheiro que entrou, pela mesma regra do painel do mês.
  */
 export interface DadosCliente {
   nome: string;
@@ -88,6 +87,50 @@ export async function atualizarCliente(
     instagram: dados.instagram?.trim() ?? null,
     endereco: dados.endereco?.trim() ?? null,
     observacoes: dados.observacoes?.trim() ?? null,
+    atualizadoEm: agora(),
+  });
+}
+
+/** O que os agregados do cliente precisam saber dele antes de andar. */
+export type ClienteAgregavel = Pick<
+  Cliente,
+  "id" | "totalPedidos" | "totalGasto"
+>;
+
+export interface DeltaDoCliente {
+  /** `+1` no pagamento, `−1` no desfazer, `0` quando só o valor mudou. */
+  pedidos: number;
+  gasto: Centavos;
+}
+
+/**
+ * Move os agregados da cliente junto com o pagamento do pedido.
+ *
+ * `totalPedidos` e `totalGasto` são incrementos, e por isso revertem exatos.
+ * `ticketMedio` é razão e não se incrementa: vai por valor, a partir do que a
+ * tela já sabe — a mesma regra do ticket médio do mês (`DECISOES.md#d36`).
+ *
+ * `ultimoPedidoEm` **não volta atrás no desfazer**, e é de propósito: o campo
+ * guarda uma data e não uma soma, e não há histórico para restaurar a anterior.
+ * Uma data recuada para um valor que ninguém registrou seria pior do que uma
+ * data que ficou parada.
+ */
+export async function aplicarPedidoNoCliente(
+  contaId: string,
+  cliente: ClienteAgregavel,
+  delta: DeltaDoCliente,
+  /** A data do pagamento, ou `null` quando o pagamento não é o que mudou. */
+  pagoEm: Timestamp | null,
+): Promise<void> {
+  const totalPedidos = cliente.totalPedidos + delta.pedidos;
+  const totalGasto = cliente.totalGasto + delta.gasto;
+
+  await updateDoc(docCliente(contaId, cliente.id), {
+    v: VERSAO_SCHEMA,
+    totalPedidos: increment(delta.pedidos),
+    totalGasto: increment(delta.gasto),
+    ticketMedio: ticketMedioDe(totalGasto, totalPedidos),
+    ...(pagoEm ? { ultimoPedidoEm: pagoEm } : {}),
     atualizadoEm: agora(),
   });
 }

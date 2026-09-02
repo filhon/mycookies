@@ -1,13 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
+  agregarMes,
+  agregarPedidos,
   agregarTransacoes,
   deltaDaTransacao,
+  deltaDoPedido,
   PARCELAS_ZERADAS,
   parcelasDoResumo,
+  produtosOrdenados,
   saidasOrdenadas,
   somarParcelas,
   taxaDaEntrada,
+  ticketMedioDe,
   type ParcelasDoAgregado,
+  type PedidoAgregavel,
   type TransacaoAgregavel,
 } from "@/lib/domain/caixa";
 import { competenciaDeISO } from "@/lib/domain/datas";
@@ -413,6 +419,344 @@ describe("saidasOrdenadas", () => {
     ).toEqual([
       { categoria: "COMPRA_INSUMO", valor: 9000 },
       { categoria: "DESPESA_FIXA", valor: 3000 },
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sessão 3B · a segunda metade do agregado: o pedido pago.
+//
+// Nada abaixo desta linha altera o que está acima. O bloco da 4A é a rede que
+// prova que a metade da transação não se mexeu quando a do pedido nasceu.
+// ---------------------------------------------------------------------------
+
+const COOKIE = {
+  fichaTecnicaId: "cookie",
+  nomeSnapshot: "Cookie tradicional",
+  quantidade: 20,
+  subtotal: 13800,
+  custo: 8820,
+};
+
+const CAIXA_COM_6 = {
+  fichaTecnicaId: "caixa6",
+  nomeSnapshot: "Caixa com 6",
+  quantidade: 2,
+  subtotal: 9980,
+  custo: 6400,
+};
+
+/** O pedido do caso de aceite da 3A, pago no dia 15/09 no crédito. */
+const PEDIDO_DA_ANA: PedidoAgregavel = {
+  pagoEmISO: "2026-09-15",
+  total: 24000,
+  custoTotalEstimado: 15220,
+  itens: [COOKIE, CAIXA_COM_6],
+};
+
+/** O lançamento que o pagamento cria, com a taxa congelada do pedido. */
+const VENDA_DO_PEDIDO: TransacaoAgregavel = {
+  tipo: "ENTRADA",
+  categoria: "VENDA",
+  valor: 24000,
+  dataISO: "2026-09-15",
+  custoTaxa: 1198,
+};
+
+/** Marcar como pago é aplicar os dois deltas somados, em uma escrita só. */
+function pagar(
+  base: ParcelasDoAgregado,
+  pedido: PedidoAgregavel,
+  venda: TransacaoAgregavel,
+  sinal: 1 | -1 = 1,
+): ParcelasDoAgregado {
+  return somarParcelas(
+    base,
+    somarParcelas(deltaDaTransacao(venda, sinal), deltaDoPedido(pedido, sinal)),
+  );
+}
+
+describe("deltaDoPedido · caso de aceite de 2026-09", () => {
+  const antes = agregarTransacoes(SETEMBRO);
+  const depois = pagar(antes, PEDIDO_DA_ANA, VENDA_DO_PEDIDO);
+
+  it("parte do mês que a spec 004 deixou", () => {
+    expect(antes.entradas).toBe(24500);
+    expect(antes.saidas).toBe(12000);
+    expect(antes.custoTaxasPagamento).toBe(689);
+    expect(antes.lucro).toBe(11811);
+  });
+
+  it("soma o dinheiro pela transação, com a taxa junto", () => {
+    expect(depois.entradas).toBe(48500);
+    expect(depois.custoTaxasPagamento).toBe(1887);
+    expect(depois.lucro).toBe(34613);
+  });
+
+  it("soma o pedido, os itens e o custo do que foi vendido", () => {
+    expect(depois.qtdPedidos).toBe(1);
+    expect(depois.qtdItensVendidos).toBe(22);
+    expect(depois.receitaPedidos).toBe(24000);
+    expect(depois.custoDoVendido).toBe(15220);
+  });
+
+  it("conta o pedido no dia do pagamento, junto do dinheiro dele", () => {
+    expect(depois.porDia["15"]).toEqual({
+      entradas: 24000,
+      saidas: 0,
+      pedidos: 1,
+    });
+  });
+
+  it("monta o ranking de produtos sem ratear desconto, entrega nem maquininha", () => {
+    expect(depois.produtos).toEqual({
+      cookie: {
+        nome: "Cookie tradicional",
+        quantidade: 20,
+        receita: 13800,
+        lucro: 4980,
+      },
+      caixa6: {
+        nome: "Caixa com 6",
+        quantidade: 2,
+        receita: 9980,
+        lucro: 3580,
+      },
+    });
+  });
+
+  it("põe o que mais faturou primeiro", () => {
+    expect(
+      produtosOrdenados(depois.produtos).map((linha) => linha.fichaId),
+    ).toEqual(["cookie", "caixa6"]);
+  });
+
+  it("refaz o ticket médio na leitura, e não o incrementa", () => {
+    expect(ticketMedioDe(depois.receitaPedidos, depois.qtdPedidos)).toBe(24000);
+    // Mês sem pedido pago não tem ticket médio: zero é ausência, e é o que
+    // impede a divisão por zero de virar Infinity no painel.
+    expect(ticketMedioDe(0, 0)).toBe(0);
+  });
+
+  it("não mexe no que é da transação", () => {
+    const so = deltaDoPedido(PEDIDO_DA_ANA, 1);
+    expect(so.entradas).toBe(0);
+    expect(so.saidas).toBe(0);
+    expect(so.lucro).toBe(0);
+    expect(so.custoTaxasPagamento).toBe(0);
+    expect(so.porCategoriaSaida).toEqual({});
+  });
+});
+
+describe("delta do pedido e reconstrução concordam", () => {
+  const SEGUNDO_PEDIDO: PedidoAgregavel = {
+    pagoEmISO: "2026-09-20",
+    total: 6900,
+    custoTotalEstimado: 4410,
+    itens: [{ ...COOKIE, quantidade: 10, subtotal: 6900, custo: 4410 }],
+  };
+
+  const VENDA_DO_SEGUNDO: TransacaoAgregavel = {
+    tipo: "ENTRADA",
+    categoria: "VENDA",
+    valor: 6900,
+    dataISO: "2026-09-20",
+    custoTaxa: 0,
+  };
+
+  it("aplicar os deltas em sequência dá o mesmo que somar do zero", () => {
+    const porDeltas = [PEDIDO_DA_ANA, SEGUNDO_PEDIDO].reduce(
+      (acumulado, pedido) => somarParcelas(acumulado, deltaDoPedido(pedido, 1)),
+      PARCELAS_ZERADAS,
+    );
+
+    expect(porDeltas).toEqual(agregarPedidos([PEDIDO_DA_ANA, SEGUNDO_PEDIDO]));
+  });
+
+  it("junta duas vendas da mesma ficha em uma linha do ranking", () => {
+    const dois = agregarPedidos([PEDIDO_DA_ANA, SEGUNDO_PEDIDO]);
+
+    expect(dois.produtos.cookie).toEqual({
+      nome: "Cookie tradicional",
+      quantidade: 30,
+      receita: 20700,
+      // 4980 do primeiro pedido, 2490 do segundo.
+      lucro: 7470,
+    });
+    expect(dois.qtdPedidos).toBe(2);
+    expect(dois.qtdItensVendidos).toBe(32);
+  });
+
+  it("o mês inteiro por deltas bate com o mês inteiro pelas duas metades", () => {
+    const porDelta = pagar(
+      pagar(agregarTransacoes(SETEMBRO), PEDIDO_DA_ANA, VENDA_DO_PEDIDO),
+      SEGUNDO_PEDIDO,
+      VENDA_DO_SEGUNDO,
+    );
+
+    const reconstruido = agregarMes(
+      [...SETEMBRO, VENDA_DO_PEDIDO, VENDA_DO_SEGUNDO],
+      [PEDIDO_DA_ANA, SEGUNDO_PEDIDO],
+    );
+
+    expect(porDelta).toEqual(reconstruido);
+  });
+
+  it("mês sem pedido nenhum é exatamente o mês da 4A", () => {
+    // A prova de que a metade nova não mexeu na velha: reconstruir o mês com
+    // uma lista vazia de pedidos devolve o que a 4A devolvia.
+    expect(agregarMes(SETEMBRO, [])).toEqual(agregarTransacoes(SETEMBRO));
+    expect(agregarPedidos([])).toEqual(PARCELAS_ZERADAS);
+  });
+});
+
+describe("desfazer o pagamento devolve cada número", () => {
+  const antes = agregarTransacoes(SETEMBRO);
+  const pago = pagar(antes, PEDIDO_DA_ANA, VENDA_DO_PEDIDO);
+  const desfeito = pagar(pago, PEDIDO_DA_ANA, VENDA_DO_PEDIDO, -1);
+
+  it("volta ao mês de antes, campo por campo", () => {
+    expect(desfeito).toEqual(antes);
+  });
+
+  it("some com o produto revertido em vez de deixá-lo zerado", () => {
+    expect(desfeito.produtos).toEqual({});
+  });
+
+  it("some com o dia que só existia por causa do pagamento", () => {
+    expect(pago.porDia["15"]).toBeDefined();
+    expect(desfeito.porDia["15"]).toBeUndefined();
+  });
+
+  it("devolve o ticket médio para zero", () => {
+    expect(ticketMedioDe(desfeito.receitaPedidos, desfeito.qtdPedidos)).toBe(0);
+  });
+});
+
+describe("editar um pedido pago é reverter mais aplicar", () => {
+  // A cliente subiu para 24 cookies: total 26760, custo 16984, taxa 1335.
+  const MAIOR: PedidoAgregavel = {
+    pagoEmISO: "2026-09-15",
+    total: 26760,
+    custoTotalEstimado: 16984,
+    itens: [
+      { ...COOKIE, quantidade: 24, subtotal: 16560, custo: 10584 },
+      CAIXA_COM_6,
+    ],
+  };
+
+  const VENDA_MAIOR: TransacaoAgregavel = {
+    tipo: "ENTRADA",
+    categoria: "VENDA",
+    valor: 26760,
+    dataISO: "2026-09-15",
+    custoTaxa: 1335,
+  };
+
+  const depois = pagar(
+    pagar(
+      pagar(agregarTransacoes(SETEMBRO), PEDIDO_DA_ANA, VENDA_DO_PEDIDO),
+      PEDIDO_DA_ANA,
+      VENDA_DO_PEDIDO,
+      -1,
+    ),
+    MAIOR,
+    VENDA_MAIOR,
+  );
+
+  it("corrige o dinheiro e a taxa junto", () => {
+    // 24500 + 26760 · 689 + 1335 · 51260 − 12000 − 2024.
+    expect(depois.entradas).toBe(51260);
+    expect(depois.custoTaxasPagamento).toBe(2024);
+    expect(depois.lucro).toBe(37236);
+  });
+
+  it("corrige a receita, o custo e a contagem de itens", () => {
+    expect(depois.qtdPedidos).toBe(1);
+    expect(depois.qtdItensVendidos).toBe(26);
+    expect(depois.receitaPedidos).toBe(26760);
+    expect(depois.custoDoVendido).toBe(16984);
+  });
+
+  it("corrige o ranking sem deixar a quantidade antiga para trás", () => {
+    expect(depois.produtos.cookie).toEqual({
+      nome: "Cookie tradicional",
+      quantidade: 24,
+      receita: 16560,
+      lucro: 5976,
+    });
+  });
+
+  it("chega no mesmo lugar que reconstruir o mês", () => {
+    expect(depois).toEqual(agregarMes([...SETEMBRO, VENDA_MAIOR], [MAIOR]));
+  });
+});
+
+describe("o agregado usa a data do pagamento, e não a da entrega", () => {
+  it("um pedido entregue em setembro e pago em outubro conta em outubro", () => {
+    const emOutubro: PedidoAgregavel = {
+      ...PEDIDO_DA_ANA,
+      pagoEmISO: "2026-10-02",
+    };
+
+    // O agregado é um documento por competência, e os dois deltas caem no de
+    // outubro: o de setembro nem chega a ser aberto.
+    expect(competenciaDeISO(emOutubro.pagoEmISO)).toBe("2026-10");
+
+    const outubro = pagar(PARCELAS_ZERADAS, emOutubro, {
+      ...VENDA_DO_PEDIDO,
+      dataISO: "2026-10-02",
+    });
+
+    expect(outubro.porDia["02"]).toEqual({
+      entradas: 24000,
+      saidas: 0,
+      pedidos: 1,
+    });
+    expect(outubro.porDia["30"]).toBeUndefined();
+    expect(outubro.qtdPedidos).toBe(1);
+  });
+});
+
+describe("parcelasDoResumo lê a metade nova", () => {
+  it("completa um agregado escrito antes da 3B existir", () => {
+    expect(parcelasDoResumo({ entradas: 24500, saidas: 12000 })).toEqual({
+      ...PARCELAS_ZERADAS,
+      entradas: 24500,
+      saidas: 12000,
+    });
+  });
+});
+
+describe("produtosOrdenados", () => {
+  it("descarta a linha que sobrou zerada no documento", () => {
+    // `increment` não apaga chave: o produto revertido fica no banco como três
+    // zeros até "Recalcular o mês" passar.
+    expect(
+      produtosOrdenados({
+        cookie: {
+          nome: "Cookie tradicional",
+          quantidade: 0,
+          receita: 0,
+          lucro: 0,
+        },
+        caixa6: {
+          nome: "Caixa com 6",
+          quantidade: 2,
+          receita: 9980,
+          lucro: 3580,
+        },
+      }),
+    ).toEqual([
+      {
+        fichaId: "caixa6",
+        produto: {
+          nome: "Caixa com 6",
+          quantidade: 2,
+          receita: 9980,
+          lucro: 3580,
+        },
+      },
     ]);
   });
 });

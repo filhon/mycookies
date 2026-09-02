@@ -590,7 +590,7 @@ número. Um documento a menos para a interface explicar.
 
 ## D28 · `ticketMedioReferencia` guarda preço de cardápio, e `pedidosNecessarios` fica em zero
 
-**Status:** provisória — vence com o Módulo 3
+**Status:** vigente na primeira metade, resolvida na segunda por D38
 
 **Contexto.** `Meta` foi tipada para um mundo com pedidos: `ticketMedioReferencia` é o valor
 médio de um pedido e `pedidosNecessarios` é quantos pedidos fecham a meta. O Módulo 4 veio
@@ -804,3 +804,137 @@ de ficha:
 - **`BlocoFicha` e `BuscaItem` viraram `components/ui/Bloco` e `components/ui/BuscaItem`.** Era
   a condição que o próprio `BlocoFicha` registrava — promover no terceiro caso —, e o editor
   de pedido é o terceiro. Nada mudou no comportamento dos dois.
+
+---
+
+## D36 · O agregado usa a data do pagamento; a agenda, a da entrega
+
+**Status:** vigente · decidida em 2026-09-02 na spec `003-pedidos`, sessão 3B
+
+**Contexto.** `Pedido.competencia` foi tipada como "chave de agregação do dashboard" e é
+derivada de `dataEntrega`. O painel financeiro, porém, é regime de caixa: `entradas` é
+dinheiro que entrou, e a spec 004 construiu o mês inteiro em cima disso.
+
+**Decisão.** Um pedido entra no agregado quando é **pago**, e na competência do **pagamento**.
+`Pedido.competenciaPagamento` é campo novo, derivado de `pagoEm` na escrita e ausente
+enquanto o pedido não foi pago. `Pedido.competencia` continua existindo e continua sendo a
+chave da agenda: o mês em que se entrega. O comentário do tipo foi corrigido junto.
+
+**Consequência.** Um pedido entregue em 30/09 e pago em 02/10 conta em outubro nos dois lados
+— na transação e na contagem de pedidos —, e um pedido pago adiantado conta no mês em que o
+dinheiro entrou. É a única leitura compatível com o resto do painel; a alternativa faria
+`qtdPedidos` e `entradas` falarem de meses diferentes dentro do mesmo documento.
+
+O campo é gravado, e não deduzido na leitura, pelo mesmo motivo de `Transacao.competencia`:
+sem ele não existe a consulta "os pedidos pagos deste mês", e sem essa consulta "Recalcular o
+mês" não conseguiria refazer a metade do pedido — teria que varrer as transações, colher os
+`pedidoId` e ler um documento por pedido.
+
+A consequência incômoda precisa aparecer na tela, senão o painel mente por omissão: **o
+pedido entregue e não pago não está em lugar nenhum.** Por isso `/pedidos` ganhou a linha de
+"a receber", somada em memória sobre os pedidos que a tela já carregou — nenhum agregado
+novo, nenhuma consulta nova. O orçamento fica de fora dela: proposta que a cliente ainda não
+aceitou é dinheiro a combinar, e não a receber.
+
+Dois campos mudaram de nome ou nasceram junto, e os dois são de nomenclatura honesta:
+
+- **`ResumoMensal.custoInsumos` virou `custoDoVendido`.** O campo nunca tinha sido escrito por
+  ninguém, então não houve migração. O nome mentia sobre o conteúdo: o que ele guarda é o
+  custo total do que foi vendido, mão de obra e rateio inclusos, e não o que ela gastou
+  comprando insumo — que já mora em `porCategoriaSaida.COMPRA_INSUMO`. Manter o nome
+  garantiria que alguém, um dia, somasse as duas coisas achando que são a mesma. Na tela ele
+  se chama "custo do que você vendeu", nunca "custo de insumos".
+- **`ResumoMensal.receitaPedidos` é campo novo.** Sem ele `ticketMedio` não teria como ser
+  exato: seria mantido por escrita de valor a partir de um total que a tela precisaria ler, e
+  é assim que agregado torce. Ele também não é a mesma coisa que `entradas` — a venda de
+  balcão lançada à mão entra em `entradas` e não aqui.
+
+---
+
+## D37 · A metade do pedido tem o mesmo par, e o agregado ganha um dono
+
+**Status:** vigente · decidida em 2026-09-02 na spec `003-pedidos`, sessão 3B
+
+**Contexto.** `#d23` fechou o risco do agregado com um escritor. A 3B traz o segundo, e ele
+escreve no mesmo documento: agregado com dois escritores é onde um número torce em silêncio.
+
+**Decisão.** A metade do pedido nasce com o mesmo par: `deltaDoPedido` (o que muda quando um
+pedido é pago ou desfeito) e `agregarPedidos` (a metade reconstruída do zero), com
+`agregarMes` compondo as duas metades. `tests/domain/caixa.test.ts` exige que os dois
+caminhos concordem no caso de aceite, ao editar e ao desfazer — e o bloco da 4A ficou
+**intacto**, como prova de que a metade velha não se mexeu.
+
+Junto disso, `src/lib/firebase/mutations/agregado.ts` passou a ser o único lugar que escreve
+`agregados/{'YYYY-MM'}`: `incrementosDoAgregado`, `aplicarNoAgregado` e `recalcularMes` saíram
+de `transacoes.ts` para lá.
+
+**Consequência.** O segundo escritor não pode reimplementar a escrita um pouco diferente do
+primeiro, que é o defeito que este arranjo existe para tornar impossível. Quatro escolhas de
+execução ficam registradas porque surpreendem:
+
+- **`deltaDoPedido` não move um centavo de `entradas`, `saidas` nem `lucro`.** Quem move
+  dinheiro é a transação que o pagamento cria. As duas metades não se sobrepõem em campo
+  nenhum, e é isso que permite somá-las sem conferir nada.
+- **Marcar como pago aplica os dois deltas somados, em uma escrita só.** Não é economia de
+  escrita: cada chamada a `aplicarNoAgregado` reescreve o espelho da meta **por valor**, e
+  aplicar uma de cada vez faria a segunda gravar o espelho de antes da primeira (`#d29`).
+- **"Recalcular o mês" não lê mais o agregado antes de reescrevê-lo.** A leitura só existia
+  para preservar `porDia[].pedidos`, que este módulo passou a calcular (`#d23`, segunda
+  consequência). Uma consulta a mais, uma leitura a menos.
+- **Desfazer o pagamento não lê a transação.** Ela nasceu do mesmo número do pedido — valor,
+  taxa e dia —, então o pedido sabe exatamente o que reverter. É o que permite desfazer sem
+  rede, e é a mesma razão de `#d24` congelar `custoTaxa`.
+
+`ticketMedio` é razão, e razão não se incrementa: segue a regra que `#d30` fixou para o
+espelho da meta, gravada no mesmo ponto em que as parcelas mudam e **refeita na leitura** a
+partir de `receitaPedidos` e `qtdPedidos`, que são exatos porque são incrementos. O mesmo
+vale para `Cliente.ticketMedio`.
+
+Um limite conhecido, e ele é do `increment`: **o produto cuja contribuição foi revertida sobra
+zerado no documento**, porque `increment` não apaga chave. Quem o tira do ranking é
+`produtosOrdenados`, na leitura; quem o tira do documento é "Recalcular o mês". A alternativa
+seria ler o agregado antes de cada pagamento para saber se a chave deve sumir, e leitura no
+caminho de gravar é exatamente o que `#d29` recusou.
+
+Outro, no cliente: **`ultimoPedidoEm` não volta atrás no desfazer.** `totalPedidos` e
+`totalGasto` são incrementos e revertem exatos; a data não é soma, e não há histórico de onde
+restaurar a anterior. Uma data recuada para um valor que ninguém registrou seria pior do que
+uma data que ficou parada.
+
+---
+
+## D38 · A meta conta pedidos pelo ticket médio real, e doces pelo preço de cardápio
+
+**Status:** vigente · decidida em 2026-09-02 na spec `003-pedidos`, sessão 3B · resolve `#d28`
+
+**Contexto.** `#d28` deixou `pedidosNecessarios` em zero e emprestou `ticketMedioReferencia`
+para guardar o **preço médio de um doce**, porque pedido não existia. A spec 003 previa que o
+campo virasse o valor médio de um _pedido_ quando o Módulo 3 chegasse. Só que a 4B inteira
+foi construída sobre a outra leitura: `unidadesNecessarias`, `unidadesPorSemana`,
+`unidadesRestantes` e o cartão da tela Hoje dizem a meta **em doces**, que é a unidade em que
+a Maynara produz, e todos dividem o alvo por `ticketMedioReferencia`.
+
+**Decisão.** O campo não troca de sentido. `ticketMedioReferencia` continua guardando o preço
+médio de um doce, sugerido pela média das fichas e editável — e continua sendo o único campo
+da meta que a usuária ajusta à mão. `pedidosNecessarios` passa a ser gravado e exibido, e o
+divisor dele é `ResumoMensal.ticketMedio`, o valor médio **real** de um pedido pago no mês.
+
+**Consequência.** O caso de aceite fecha igual: com alvo de R$ 3.000,00 e ticket médio de
+R$ 240,00, `ceil(300000 ÷ 24000) = 13` pedidos. E as duas contas continuam verdadeiras ao
+mesmo tempo — 435 doces por mês e 13 pedidos —, porque cada uma usa o divisor que lhe
+corresponde. Usar um campo só para as duas faria a meta afirmar "cada pedido tem um doce",
+que é justamente o que `#d28` recusou.
+
+O bloco de meta ganhou uma linha, e não uma tela: "ou 13 pedidos do tamanho dos deste mês".
+Ela só aparece quando há pedido pago na competência — sem isso não há ticket médio de
+verdade, e zero continua sendo ausência.
+
+**O que isso custa, e por que vale.** A spec pedia que `ticketMedioReferencia` passasse a ser
+sugerido pelo ticket médio real; isso não foi feito, e é a única divergência desta sessão em
+relação à letra da spec. Fazê-lo exigiria um segundo campo em `Meta` para o preço do doce —
+uma quarta mudança de schema, além das três que a spec autorizou — ou quebraria os números da
+4B, que é a metade da meta que a usuária de fato lê. A conta que a spec queria está entregue;
+o campo que a carrega é outro.
+
+`Meta.pedidosNecessarios` é gravado no salvamento e refeito na leitura, pela mesma regra de
+`#d30`: o ticket médio anda a cada pedido pago, e a meta não é reescrita junto.

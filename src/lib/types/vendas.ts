@@ -76,7 +76,13 @@ export interface Pedido extends DocumentoBase {
   dataEntrega: Timestamp;
   /** Redundante com dataEntrega, mas permite filtrar a agenda sem range query. */
   dataEntregaISO: DataISO;
-  /** 'YYYY-MM' da dataEntrega — chave de agregação do dashboard. */
+  /**
+   * 'YYYY-MM' da dataEntrega — a chave da **agenda**: o mês em que se entrega.
+   *
+   * Não é a chave do painel financeiro. O painel é regime de caixa, e lá o
+   * pedido entra na competência do **pagamento**, que é `competenciaPagamento`
+   * (`DECISOES.md#d36`).
+   */
   competencia: CompetenciaMensal;
 
   entrega: {
@@ -99,6 +105,15 @@ export interface Pedido extends DocumentoBase {
 
   pago: boolean;
   pagoEm?: Timestamp;
+  /**
+   * 'YYYY-MM' de `pagoEm`, e **ausente enquanto o pedido não foi pago**.
+   *
+   * É a chave de agregação do painel financeiro, e é gravada em vez de deduzida
+   * pelo mesmo motivo de `Transacao.competencia`: sem ela não existe a consulta
+   * "os pedidos pagos deste mês", e sem essa consulta "Recalcular o mês" não
+   * consegue refazer a metade do agregado que nasce de pedido.
+   */
+  competenciaPagamento?: CompetenciaMensal;
   /** Vínculo com a entrada no fluxo de caixa, criada quando o pedido é pago. */
   transacaoId?: string;
 

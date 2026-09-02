@@ -47,17 +47,27 @@ import {
   arquivarPedido,
   atualizarPedido,
   criarPedido,
+  desfazerPagamento,
+  marcarPedidoPago,
   mudarStatusPedido,
+  type ContextoPagamento,
   type DadosPedido,
   type ItemDoPedido,
 } from "@/lib/firebase/mutations/pedidos";
+import { parcelasDoResumo } from "@/lib/domain/caixa";
+import { competenciaDeISO } from "@/lib/domain/datas";
+import { docMeta, docResumoMensal } from "@/lib/firebase/colecoes";
+import { useDocumento } from "@/lib/hooks/useColecao";
+import { BlocoPagamento } from "./BlocoPagamento";
 import type {
   Centavos,
   Cliente,
   ConfiguracaoGeral,
   DataISO,
   FichaTecnica,
+  Meta,
   Pedido,
+  ResumoMensal,
   StatusPedido,
 } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
@@ -207,6 +217,11 @@ export function FormularioPedido({
     pedido?.status ?? "ORCAMENTO",
   );
 
+  // O dia do pagamento nasce hoje, e não na data da entrega: o normal é ela
+  // tocar no botão no dia em que o dinheiro entrou. Mudar a data é um toque, e
+  // é o que ela faz quando está pondo um pedido antigo em dia.
+  const [pagoEmISO, setPagoEmISO] = useState<DataISO>(hoje);
+
   const [erros, setErros] = useState<Record<string, string>>({});
   const [errosItens, setErrosItens] = useState<Record<number, string>>({});
   const [falha, setFalha] = useState<string | null>(null);
@@ -236,6 +251,50 @@ export function FormularioPedido({
   const clienteVinculado = clientes.find(
     (candidata) => candidata.id === valores.clienteId,
   );
+
+  /**
+   * O mês em que o dinheiro entra (ou entrou).
+   *
+   * De um pedido já pago é o gravado: desfazer em outubro um pagamento de
+   * setembro tira o dinheiro de setembro. De um pedido em aberto é o dia que
+   * ela escolheu no bloco de pagamento.
+   */
+  const competenciaPagamento =
+    pedido?.competenciaPagamento ?? competenciaDeISO(pagoEmISO);
+
+  // A tela assina os dois documentos para que a mutação não leia nada: o
+  // espelho da meta e o ticket médio são escritos por valor, e lançar precisa
+  // funcionar sem rede (`DECISOES.md#d29`).
+  const referenciaResumo = useMemo(
+    () => docResumoMensal(contaId, competenciaPagamento),
+    [contaId, competenciaPagamento],
+  );
+  const referenciaMeta = useMemo(
+    () => docMeta(contaId, competenciaPagamento),
+    [contaId, competenciaPagamento],
+  );
+
+  const resumoDoPagamento = useDocumento<ResumoMensal>(referenciaResumo);
+  const metaDoPagamento = useDocumento<Meta>(referenciaMeta);
+
+  const parcelasDoPagamento = parcelasDoResumo(resumoDoPagamento.dado);
+
+  const contextoPagamento: ContextoPagamento = {
+    competencia: competenciaPagamento,
+    meta: metaDoPagamento.dado,
+    entradas: parcelasDoPagamento.entradas,
+    receitaPedidos: parcelasDoPagamento.receitaPedidos,
+    qtdPedidos: parcelasDoPagamento.qtdPedidos,
+  };
+
+  /** Os agregados da cliente só andam quando o pedido aponta para um cadastro. */
+  const clienteDoPedido = clienteVinculado
+    ? {
+        id: clienteVinculado.id,
+        totalPedidos: clienteVinculado.totalPedidos,
+        totalGasto: clienteVinculado.totalGasto,
+      }
+    : null;
 
   const itensResolvidos: ItemDoPedido[] = valores.itens.map((linha) => ({
     fichaTecnicaId: linha.fichaTecnicaId,
@@ -412,11 +471,65 @@ export function FormularioPedido({
     setSalvando(true);
 
     try {
-      if (pedido) await atualizarPedido(contaId, pedido.id, dadosDoPedido());
-      else await criarPedido(contaId, dadosDoPedido());
+      if (pedido) {
+        // Pedido já pago corrige a transação e o agregado junto: reverter mais
+        // aplicar, como na 4A. Sem isso o caixa ficaria com um número que o
+        // pedido não reconhece.
+        await atualizarPedido(
+          contaId,
+          pedido,
+          dadosDoPedido(),
+          contextoPagamento,
+          clienteDoPedido,
+        );
+      } else {
+        await criarPedido(contaId, dadosDoPedido());
+      }
       router.push("/pedidos");
     } catch {
       setFalha("Não foi possível salvar agora. Tente de novo em instantes.");
+      setSalvando(false);
+    }
+  }
+
+  async function pagar() {
+    if (!pedido) return;
+    setFalha(null);
+    setSalvando(true);
+    try {
+      await marcarPedidoPago(
+        contaId,
+        pedido,
+        pagoEmISO,
+        formas,
+        contextoPagamento,
+        clienteDoPedido,
+      );
+      setSalvando(false);
+    } catch {
+      setFalha(
+        "Não foi possível marcar como pago agora. Tente de novo em instantes.",
+      );
+      setSalvando(false);
+    }
+  }
+
+  async function desfazer() {
+    if (!pedido) return;
+    setFalha(null);
+    setSalvando(true);
+    try {
+      await desfazerPagamento(
+        contaId,
+        pedido,
+        contextoPagamento,
+        clienteDoPedido,
+      );
+      setSalvando(false);
+    } catch {
+      setFalha(
+        "Não foi possível desfazer o pagamento agora. Tente de novo em instantes.",
+      );
       setSalvando(false);
     }
   }
@@ -430,7 +543,25 @@ export function FormularioPedido({
     setFalha(null);
     setSalvando(true);
     try {
-      await mudarStatusPedido(contaId, { id: pedido.id, status }, proximo);
+      // Cancelar um pedido pago é desfazer o pagamento primeiro: o dinheiro
+      // precisa sair do caixa junto, senão o mês conta uma venda que não
+      // aconteceu. A mutação recusa a ordem inversa.
+      let pago = pedido.pago;
+      if (proximo === "CANCELADO" && pago) {
+        await desfazerPagamento(
+          contaId,
+          pedido,
+          contextoPagamento,
+          clienteDoPedido,
+        );
+        pago = false;
+      }
+
+      await mudarStatusPedido(
+        contaId,
+        { id: pedido.id, status, pago },
+        proximo,
+      );
       setStatus(proximo);
       setSalvando(false);
     } catch {
@@ -814,6 +945,21 @@ export function FormularioPedido({
             </p>
           )}
         </Bloco>
+
+        {/* Depois do pagamento, porque é a ordem em que a encomenda acontece:
+            ela combina, produz, entrega, e só então recebe. O pedido que ainda
+            não existe não tem o que pagar. */}
+        {pedido && (
+          <BlocoPagamento
+            pedido={pedido}
+            pagoEmISO={pagoEmISO}
+            aoMudarData={setPagoEmISO}
+            aoPagar={() => void pagar()}
+            aoDesfazer={() => void desfazer()}
+            ocupado={salvando}
+            semAgregado={resumoDoPagamento.carregando}
+          />
+        )}
 
         <Bloco
           icone={NotebookPen}

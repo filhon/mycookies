@@ -61,10 +61,11 @@ export interface Meta extends DocumentoBase {
   /**
    * O valor de referência do forecast, sugerido e editável.
    *
-   * Enquanto não há pedido, guarda o **preço médio de um doce** — a média das
-   * fichas ativas —, porque é o único sentido possível para o campo sem
-   * histórico de venda. Vira valor médio de um pedido no Módulo 3
-   * (`DECISOES.md#d28`).
+   * Guarda o **preço médio de um doce** — a média das fichas ativas, editável.
+   * É a unidade em que a meta é dita ("102 doces por semana"), que é a unidade
+   * em que a Maynara produz. O valor médio de um *pedido* não mora aqui: ele é
+   * `ResumoMensal.ticketMedio`, exato porque nasce de dois incrementos
+   * (`DECISOES.md#d28` e `#d36`).
    */
   ticketMedioReferencia: Centavos;
 
@@ -72,9 +73,14 @@ export interface Meta extends DocumentoBase {
   /**
    * ceil(faturamentoAlvo / valor médio de um pedido).
    *
-   * Gravado como zero e **fora de toda tela** até o Módulo 3: pedido não existe
-   * ainda, e preencher com o preço unitário faria o campo dizer "cada pedido
-   * tem um doce" (`DECISOES.md#d28`).
+   * O divisor **não** é `ticketMedioReferencia`: é `ResumoMensal.ticketMedio`,
+   * o valor médio real de um pedido pago no mês. Os dois números medem coisas
+   * diferentes — um doce e um pedido —, e usar o mesmo campo para os dois faria
+   * a meta dizer "cada pedido tem um doce" (`DECISOES.md#d36`).
+   *
+   * Gravado no salvamento e refeito na leitura, como o espelho da meta: o
+   * ticket médio anda a cada pedido pago, e a meta não é reescrita junto
+   * (`#d30`). Zero é ausência de pedido pago no mês, e ausência não aparece.
    */
   pedidosNecessarios: number;
   /** Doces a vender no mês, pelo preço médio unitário. */
@@ -119,9 +125,25 @@ export interface ResumoMensal {
 
   qtdPedidos: number;
   qtdItensVendidos: number;
+  /**
+   * Σ do total dos pedidos pagos no mês.
+   *
+   * Não é a mesma coisa que `entradas`: a venda de balcão lançada à mão entra
+   * em `entradas` e não em `receitaPedidos`. Existe para que `ticketMedio` seja
+   * razão de dois incrementos exatos, em vez de um valor que a tela teria de
+   * ler antes de gravar (`DECISOES.md#d36`).
+   */
+  receitaPedidos: Centavos;
+  /** receitaPedidos / qtdPedidos. Razão: gravada por valor, refeita na leitura. */
   ticketMedio: Centavos;
 
-  custoInsumos: Centavos;
+  /**
+   * O custo total do que foi vendido — mão de obra e rateio inclusos —, e não o
+   * que ela gastou comprando insumo, que mora em
+   * `porCategoriaSaida.COMPRA_INSUMO`. Na tela se chama "custo do que você
+   * vendeu", nunca "custo de insumos" (`DECISOES.md#d36`).
+   */
+  custoDoVendido: Centavos;
   custoTaxasPagamento: Centavos;
 
   /** Quebra das saídas por categoria — alimenta o gráfico de despesas. */

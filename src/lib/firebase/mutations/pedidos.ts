@@ -1,5 +1,25 @@
-import { addDoc, Timestamp, updateDoc } from "firebase/firestore";
+import { addDoc, deleteField, Timestamp, updateDoc } from "firebase/firestore";
 import { colPedidos, docPedido } from "../colecoes";
+import {
+  aplicarNoAgregado,
+  diaDoPagamento,
+  pedidoAgregavel,
+  type PedidoNoCaixa,
+} from "./agregado";
+import { aplicarPedidoNoCliente, type ClienteAgregavel } from "./clientes";
+import {
+  arquivarDocumentoDaTransacao,
+  corrigirValorDaTransacao,
+  gravarTransacao,
+} from "./transacoes";
+import type { ContextoMeta } from "./metas";
+import {
+  deltaDaTransacao,
+  deltaDoPedido,
+  somarParcelas,
+  ticketMedioDe,
+  type ParcelasDoAgregado,
+} from "@/lib/domain/caixa";
 import { competenciaDeISO, dataDeISO } from "@/lib/domain/datas";
 import {
   codigoDoPedido,
@@ -10,6 +30,7 @@ import {
 import { VERSAO_SCHEMA } from "@/lib/types";
 import type {
   Centavos,
+  CompetenciaMensal,
   DataISO,
   FormaPagamento,
   ItemPedido,
@@ -165,15 +186,255 @@ export async function criarPedido(
   return referencia.id;
 }
 
+/**
+ * O que a tela sabe do mês do pagamento, para que a mutação não leia nada.
+ *
+ * Mesma troca de `DECISOES.md#d29`, agora com dois números a mais: o espelho da
+ * meta e o ticket médio são escritos por valor, e os dois precisam do estado do
+ * agregado antes do delta. A tela de pedido já assina o agregado e a meta do
+ * mês do pagamento — são dois documentos pequenos.
+ */
+export interface ContextoPagamento extends ContextoMeta {
+  /** `receitaPedidos` do agregado antes deste delta. */
+  receitaPedidos: Centavos;
+  /** `qtdPedidos` do agregado antes deste delta. */
+  qtdPedidos: number;
+}
+
+/**
+ * O ticket médio como fica depois do delta, ou `null` quando não há como saber.
+ *
+ * `null` deixa o campo fora da escrita, e campo fora de um `merge` mantém o que
+ * está lá: melhor um ticket médio parado do que um reescrito a partir de um
+ * total que esta chamada não conhecia. Quem conserta é "Recalcular o mês".
+ */
+function ticketMedioApos(
+  competencia: CompetenciaMensal,
+  parcelas: ParcelasDoAgregado,
+  contexto: ContextoPagamento | null,
+): Centavos | null {
+  if (!contexto || contexto.competencia !== competencia) return null;
+
+  return ticketMedioDe(
+    contexto.receitaPedidos + parcelas.receitaPedidos,
+    contexto.qtdPedidos + parcelas.qtdPedidos,
+  );
+}
+
+/** "Pedido P-260915-K3F · Ana Beatriz" — o que a linha do caixa diz. */
+function descricaoDaVenda(pedido: Pick<Pedido, "codigo" | "clienteNome">) {
+  return `Pedido ${pedido.codigo} · ${pedido.clienteNome}`;
+}
+
+/** O que a contribuição no caixa precisa saber do pedido. Nada além disso. */
+type PedidoPago = PedidoNoCaixa & { custoTaxaPagamento: Centavos };
+
+/**
+ * A contribuição do pedido pago no agregado: a do lançamento e a do pedido.
+ *
+ * As duas nascem juntas e são somadas antes de virar escrita, porque cada
+ * chamada a `aplicarNoAgregado` reescreve o espelho da meta por valor: aplicar
+ * uma de cada vez faria a segunda gravar o espelho de antes da primeira.
+ *
+ * O lançamento é reconstruído a partir do próprio pedido, e não lido do banco:
+ * os dois nasceram do mesmo número no pagamento, então o pedido sabe exatamente
+ * o que reverter — e reverter sem ler é o que permite desfazer sem rede.
+ */
+function contribuicaoDoPedidoPago(
+  pedido: PedidoPago,
+  pagoEmISO: DataISO,
+  sinal: 1 | -1,
+): ParcelasDoAgregado {
+  return somarParcelas(
+    deltaDaTransacao(
+      {
+        tipo: "ENTRADA",
+        categoria: "VENDA",
+        valor: pedido.total,
+        dataISO: pagoEmISO,
+        custoTaxa: pedido.custoTaxaPagamento,
+      },
+      sinal,
+    ),
+    deltaDoPedido(pedidoAgregavel(pedido, pagoEmISO), sinal),
+  );
+}
+
 export async function atualizarPedido(
   contaId: string,
-  pedidoId: string,
+  anterior: Pedido,
   dados: DadosPedido,
+  /** Só faz falta quando o pedido já está pago. */
+  contexto: ContextoPagamento | null = null,
+  cliente: ClienteAgregavel | null = null,
 ): Promise<void> {
-  await updateDoc(docPedido(contaId, pedidoId), {
-    ...corpoDoPedido(dados),
+  const corpo = corpoDoPedido(dados);
+
+  await updateDoc(docPedido(contaId, anterior.id), {
+    ...corpo,
     atualizadoEm: agora(),
   });
+
+  if (!anterior.pago || !anterior.pagoEm) return;
+
+  // Editar um pedido pago é reverter mais aplicar, como na 4A. O dia do
+  // pagamento não se mexe aqui: o que mudou foi a encomenda, não a data em que
+  // o dinheiro entrou.
+  const pagoEmISO = diaDoPagamento(anterior);
+  const competencia =
+    anterior.competenciaPagamento ?? competenciaDeISO(pagoEmISO);
+
+  if (anterior.transacaoId) {
+    await corrigirValorDaTransacao(contaId, anterior.transacaoId, {
+      valor: corpo.total,
+      custoTaxa: corpo.custoTaxaPagamento,
+      descricao: descricaoDaVenda({
+        codigo: anterior.codigo,
+        clienteNome: corpo.clienteNome,
+      }),
+    });
+  }
+
+  const parcelas = somarParcelas(
+    contribuicaoDoPedidoPago(anterior, pagoEmISO, -1),
+    contribuicaoDoPedidoPago(corpo, pagoEmISO, 1),
+  );
+
+  await aplicarNoAgregado(
+    contaId,
+    competencia,
+    parcelas,
+    contexto,
+    ticketMedioApos(competencia, parcelas, contexto),
+  );
+
+  if (cliente) {
+    await aplicarPedidoNoCliente(
+      contaId,
+      cliente,
+      { pedidos: 0, gasto: corpo.total - anterior.total },
+      null,
+    );
+  }
+}
+
+/**
+ * O pedido vira dinheiro no caixa.
+ *
+ * Três documentos andam juntos: o lançamento nasce, o pedido guarda o vínculo e
+ * a competência do pagamento, e o agregado recebe as duas contribuições
+ * somadas. A cliente cadastrada é o quarto, quando existe.
+ *
+ * A data que manda é a do **pagamento**, e não a da entrega: o painel é regime
+ * de caixa, e um pedido entregue em 30/09 e pago em 02/10 conta em outubro
+ * (`DECISOES.md#d36`).
+ */
+export async function marcarPedidoPago(
+  contaId: string,
+  pedido: Pedido,
+  pagoEmISO: DataISO,
+  formas: FormaPagamento[],
+  contexto: ContextoPagamento | null,
+  cliente: ClienteAgregavel | null,
+): Promise<void> {
+  if (pedido.pago) return;
+
+  const competencia = competenciaDeISO(pagoEmISO);
+  const pagoEm = Timestamp.fromDate(dataDeISO(pagoEmISO));
+
+  const { id: transacaoId } = await gravarTransacao(
+    contaId,
+    {
+      tipo: "ENTRADA",
+      categoria: "VENDA",
+      descricao: descricaoDaVenda(pedido),
+      valor: pedido.total,
+      dataISO: pagoEmISO,
+      formaPagamentoId: pedido.formaPagamentoId ?? undefined,
+      recorrente: false,
+      pedidoId: pedido.id,
+      // A taxa do pedido e a do lançamento precisam ser o mesmo número, e o
+      // número que vale é o que o rodapé mostrou para ela (`#d24`).
+      custoTaxa: pedido.custoTaxaPagamento,
+    },
+    formas,
+  );
+
+  await updateDoc(docPedido(contaId, pedido.id), {
+    pago: true,
+    pagoEm,
+    competenciaPagamento: competencia,
+    transacaoId,
+    atualizadoEm: agora(),
+  });
+
+  const parcelas = contribuicaoDoPedidoPago(pedido, pagoEmISO, 1);
+  await aplicarNoAgregado(
+    contaId,
+    competencia,
+    parcelas,
+    contexto,
+    ticketMedioApos(competencia, parcelas, contexto),
+  );
+
+  if (cliente) {
+    await aplicarPedidoNoCliente(
+      contaId,
+      cliente,
+      { pedidos: 1, gasto: pedido.total },
+      pagoEm,
+    );
+  }
+}
+
+/**
+ * Desfaz o pagamento: o lançamento é **arquivado, nunca apagado**, e cada
+ * número volta ao que era.
+ *
+ * O agregado do mês do pagamento é que se mexe, e não o de hoje: um pagamento
+ * de setembro desfeito em outubro sai de setembro.
+ */
+export async function desfazerPagamento(
+  contaId: string,
+  pedido: Pedido,
+  contexto: ContextoPagamento | null,
+  cliente: ClienteAgregavel | null,
+): Promise<void> {
+  if (!pedido.pago || !pedido.pagoEm) return;
+
+  const pagoEmISO = diaDoPagamento(pedido);
+  const competencia =
+    pedido.competenciaPagamento ?? competenciaDeISO(pagoEmISO);
+
+  if (pedido.transacaoId) {
+    await arquivarDocumentoDaTransacao(contaId, pedido.transacaoId);
+  }
+
+  await updateDoc(docPedido(contaId, pedido.id), {
+    pago: false,
+    pagoEm: deleteField(),
+    competenciaPagamento: deleteField(),
+    transacaoId: deleteField(),
+    atualizadoEm: agora(),
+  });
+
+  const parcelas = contribuicaoDoPedidoPago(pedido, pagoEmISO, -1);
+  await aplicarNoAgregado(
+    contaId,
+    competencia,
+    parcelas,
+    contexto,
+    ticketMedioApos(competencia, parcelas, contexto),
+  );
+
+  if (cliente) {
+    await aplicarPedidoNoCliente(
+      contaId,
+      cliente,
+      { pedidos: -1, gasto: -pedido.total },
+      null,
+    );
+  }
 }
 
 /**
@@ -188,12 +449,20 @@ export async function atualizarPedido(
  */
 export async function mudarStatusPedido(
   contaId: string,
-  pedido: Pick<Pedido, "id" | "status">,
+  pedido: Pick<Pedido, "id" | "status" | "pago">,
   proximo: StatusPedido,
 ): Promise<void> {
   if (!podeIrPara(pedido.status, proximo)) {
     throw new Error(
       `Um pedido em "${ROTULO_STATUS_PEDIDO[pedido.status]}" não vai direto para "${ROTULO_STATUS_PEDIDO[proximo]}".`,
+    );
+  }
+
+  // Cancelar um pedido pago sem desfazer o pagamento deixaria o dinheiro no
+  // caixa de uma venda que não aconteceu. A ordem é sempre desfazer primeiro.
+  if (proximo === "CANCELADO" && pedido.pago) {
+    throw new Error(
+      "Este pedido está pago. Desfaça o pagamento antes de cancelar, para que o dinheiro saia do caixa junto.",
     );
   }
 

@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-02 (sessão 3A). **Toda sessão atualiza este arquivo antes de
+Atualizado em 2026-09-02 (sessão 3B). **Toda sessão atualiza este arquivo antes de
 encerrar.**
 
 ## Onde estamos
@@ -9,18 +9,22 @@ Módulo 1 entregue, o refactor de contas (`specs/000-contas.md`) executado por c
 Módulo 2 fechado (2A entregou `/configuracao`, 2B entregou a ficha técnica com a calculadora
 de preço), o **Módulo 4 fechado** (4A entregou a coleção `transacoes`, o agregado mensal e a
 tela `/financeiro`; 4B entregou a coleção `metas`, o espelho no agregado, o bloco de meta no
-painel e o cartão da tela Hoje) e o **Módulo 3 começado**: a 3A entregou as coleções
-`pedidos` e `clientes`, as telas `/pedidos` e `/pedidos/[id]` e a agenda da tela Hoje.
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), 167 testes,
+painel e o cartão da tela Hoje) e o **Módulo 3 em duas de três sessões**: a 3A entregou as
+coleções `pedidos` e `clientes`, as telas `/pedidos` e `/pedidos/[id]` e a agenda da tela
+Hoje; a 3B ligou o pedido ao caixa e preencheu a metade do agregado que a spec 004 tinha
+deixado em zero.
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), 196 testes,
 build com 12 rotas estáticas mais `/fichas/[id]` e `/pedidos/[id]` dinâmicas e service worker
 gerado.
 
 **O app está de pé.** Projeto `mycookies-mrc`, `.env.local` preenchido, regras publicadas,
 chave de conta de serviço no disco (fora do git, coberta por `*firebase-adminsdk*.json`).
 **Os índices estão todos publicados**: a 4A rodou `firebase deploy --only firestore:indexes`
-e levou junto o de `fichas`, pendente desde a 2B; a 3A rodou de novo com os dois novos.
-Confirmado com `firebase firestore:indexes`: `insumos`, `fichas`, `transacoes`, `pedidos`
-(`arquivado` + `dataEntregaISO`) e `clientes` (`arquivado` + `nomeBusca`).
+e levou junto o de `fichas`, pendente desde a 2B; a 3A rodou de novo com os dois novos, e a
+3B com o do pedido pago. Confirmado com `firebase firestore:indexes`: `insumos`, `fichas`,
+`transacoes`, `clientes` (`arquivado` + `nomeBusca`) e `pedidos` em dois — `arquivado` +
+`dataEntregaISO` para a agenda, e `arquivado` + `competenciaPagamento` + `pagoEm` desc para
+"Recalcular o mês".
 
 A conta existe e o acesso foi concedido de ponta a ponta, com o script rodando contra o
 projeto de verdade:
@@ -38,23 +42,24 @@ Falta a verificação visual em navegador, que nunca foi feita.
 
 ## Módulos
 
-| #   | Módulo                                      | Estado                        | Spec                        |
-| --- | ------------------------------------------- | ----------------------------- | --------------------------- |
-| 0   | Fundação: design system, shell, acesso, PWA | pronto                        | —                           |
-| 1   | Insumos e embalagens                        | pronto                        | —                           |
-| —   | Contas e tenancy                            | pronto                        | `specs/000-contas.md`       |
-| 2   | Custos operacionais e precificação          | pronto (2A e 2B)              | `specs/002-precificacao.md` |
-| 3   | Vendas, pedidos e lista de compras          | **3A pronta; 3B é a próxima** | `specs/003-pedidos.md`      |
-| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)              | `specs/004-caixa.md`        |
+| #   | Módulo                                      | Estado                              | Spec                        |
+| --- | ------------------------------------------- | ----------------------------------- | --------------------------- |
+| 0   | Fundação: design system, shell, acesso, PWA | pronto                              | —                           |
+| 1   | Insumos e embalagens                        | pronto                              | —                           |
+| —   | Contas e tenancy                            | pronto                              | `specs/000-contas.md`       |
+| 2   | Custos operacionais e precificação          | pronto (2A e 2B)                    | `specs/002-precificacao.md` |
+| 3   | Vendas, pedidos e lista de compras          | **3A e 3B prontas; 3C é a próxima** | `specs/003-pedidos.md`      |
+| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                    | `specs/004-caixa.md`        |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
 `4A` caixa e `4B` metas e previsão, as duas entregues.
 
-Por vir antes do 3, o Módulo 4 alimenta só metade de `ResumoMensal` — a metade da transação,
-mais o espelho da meta. A metade do pedido (`qtdPedidos`, `ticketMedio`, `produtos`,
-`porDia[].pedidos`) fica em zero e **não pode aparecer na interface**, porque zero ali é
-ausência e não resultado. A spec traz a tabela de qual campo é de quem.
+O Módulo 4 veio antes do 3 e alimentou só metade de `ResumoMensal`. **A 3B fechou a outra
+metade**: `qtdPedidos`, `qtdItensVendidos`, `receitaPedidos`, `custoDoVendido`, `ticketMedio`,
+`produtos` e `porDia[].pedidos` são escritos pelo pedido pago. A regra de que zero é ausência
+continua valendo na tela: as seções de pedido do painel somem em mês sem pedido pago, em vez
+de mostrarem R$ 0,00 com cara de resultado.
 
 ## O que a sessão 2A deixou pronto
 
@@ -211,6 +216,52 @@ Fora do escopo literal da spec, e por quê:
 - **Selo "Passou da data"** no grupo cujo dia já passou e ainda tem pedido aberto. Sem ele, um
   pedido atrasado aparece no topo da lista sem explicar por quê.
 
+## O que a sessão 3B deixou pronto
+
+- `src/lib/domain/caixa.ts` cresceu para as **duas metades**: `deltaDoPedido` /
+  `agregarPedidos` são o par novo, `agregarMes` compõe as duas, e `somarParcelas`,
+  `parcelasDoResumo` e `PARCELAS_ZERADAS` acompanharam. Mais `ticketMedioDe` (a razão, refeita
+  na leitura) e `produtosOrdenados` (o ranking, sem a linha que sobrou zerada).
+- `src/lib/firebase/mutations/agregado.ts`, **arquivo novo e único escritor de
+  `agregados/{'YYYY-MM'}`**: `incrementosDoAgregado`, `aplicarNoAgregado`, `recalcularMes`,
+  `consultaTransacoesDoMes`, `consultaPedidosPagosDoMes`, `transacaoAgregavel`,
+  `pedidoAgregavel` e `diaDoPagamento`. As três primeiras vieram de `transacoes.ts`.
+- `mutations/pedidos.ts`: `marcarPedidoPago`, `desfazerPagamento` e o `ContextoPagamento`.
+  `atualizarPedido` passou a receber o pedido inteiro (e não só o id) porque editar um pedido
+  pago é reverter mais aplicar. `mudarStatusPedido` recusa cancelar um pedido pago.
+- `mutations/transacoes.ts`: as três escritas cruas que o pedido pago reusa —
+  `gravarTransacao`, `corrigirValorDaTransacao` e `arquivarDocumentoDaTransacao` —, que
+  gravam o documento e **não** tocam no agregado. `DadosTransacao` ganhou `pedidoId` e
+  `custoTaxa`.
+- `mutations/clientes.ts`: `aplicarPedidoNoCliente`, com `totalPedidos` e `totalGasto` por
+  incremento e `ticketMedio` por valor.
+- `mutations/metas.ts`: `salvarMeta` grava `pedidosNecessarios` a partir do ticket médio real.
+- `src/components/financeiro/VendasPorPedido.tsx` e `ProdutosDoMes.tsx`, as duas seções novas
+  do painel. `BlocoMeta` ganhou a linha de pedidos, e `/pedidos` ganhou a faixa de "a receber".
+- `src/components/pedidos/BlocoPagamento.tsx`: marcar como pago, com a data do pagamento, e
+  desfazer com confirmação.
+- Schema: `ResumoMensal.custoInsumos` virou `custoDoVendido`, `ResumoMensal.receitaPedidos` e
+  `Pedido.competenciaPagamento` nasceram. Nenhum tinha dado gravado, então não houve migração.
+  O comentário de `Pedido.competencia` foi corrigido: ela é a chave da agenda, e não a do
+  painel.
+- Índice de `pedidos` por `arquivado` + `competenciaPagamento` + `pagoEm` desc, publicado.
+- Testes: o caso de aceite da 3B número por número em `tests/domain/caixa.test.ts`, com delta
+  e reconstrução conferidos nos dois caminhos, mais desfazer, editar um pedido pago e a
+  competência do pagamento. `aReceber` em `pedido.test.ts` e `pedidosNecessariosDe` em
+  `metas.test.ts`. **O bloco da 4A não teve uma linha alterada**, que era o critério.
+- Decisões novas em `DECISOES.md#d36` a `#d38`.
+
+Fora do escopo literal da spec, e por quê:
+
+- **`agregado.ts` como módulo próprio.** A spec fala em "o agregado ganha um segundo
+  escritor"; deixar a escrita dentro de `transacoes.ts` faria o segundo escritor importar do
+  primeiro, e `recalcularMes` passou a precisar das duas consultas. Motivo em `#d37`.
+- **Selo "Pago" na linha da lista.** Sem ele, "a receber" seria um total sem nenhuma linha
+  visível que o explicasse.
+- **A meta em pedidos usa `ResumoMensal.ticketMedio`, e não `ticketMedioReferencia`.** É a
+  única divergência em relação à letra da spec, e ela está registrada com o custo da
+  alternativa em `#d38`.
+
 ## O que mudou no refactor de contas
 
 Vale saber antes de escrever qualquer código novo, porque muda a assinatura de tudo que
@@ -276,59 +327,75 @@ Da 3A, o que só o navegador responde:
   aparece sozinho, e o título vira "Os próximos dias" quando não há nada hoje.
 - **Cancelar e reabrir um pedido.** O documento continua lá, o status muda, e a lista o joga
   para "Já saíram da agenda".
-- **Nenhum número de pedido pode aparecer em `/financeiro`.** Se aparecer, alguma coisa desta
-  sessão escreveu no agregado, e isso é da 3B.
+- **Nenhum número de pedido aparece em `/financeiro` até o pedido ser pago.** Criar, confirmar
+  e entregar não movem um centavo: quem move é o botão de marcar como pago, da 3B.
 
-Depois disso, a **sessão 3B**, em `specs/003-pedidos.md`: o pedido pago vira transação e
-alimenta a metade do agregado que a spec 004 deixou em zero. É a sessão perigosa das três — o
-agregado ganha um segundo escritor —, e a spec diz o que cortar se o tempo apertar: a meta
-primeiro, o cliente depois, **nunca o par `delta`/`agregar`**.
+Da 3B, o que só o navegador responde — e é aqui que o risco desta sessão de fato se resolve:
 
-O que a 3B herda, e precisa saber antes de começar:
+- **Marcar o pedido do caso de aceite como pago em 15/09** e conferir, em `/financeiro`: os
+  R$ 485,00 de entradas, os R$ 18,87 de maquininha, os R$ 346,13 de sobra, 1 pedido, ticket
+  médio de R$ 240,00, R$ 152,20 de "custo do que você vendeu", e o ranking com o cookie
+  (R$ 138,00 / sobram R$ 49,80) na frente da caixa (R$ 99,80 / sobram R$ 35,80).
+- **"Recalcular o mês" logo em seguida precisa devolver exatamente os mesmos números.** Se
+  devolver outros, um delta está errado entre a tela e a escrita — e agora são dois escritores.
+- **Desfazer o pagamento** e ver cada número voltar, com o lançamento arquivado e não apagado.
+  Depois recalcular de novo: é o que limpa o produto que ficou zerado no documento (`#d37`).
+- **Editar um pedido já pago** (24 cookies em vez de 20) e ver o lançamento do caixa mudar
+  para R$ 267,60 junto, sem criar um segundo.
+- **Pagar em outubro um pedido entregue em setembro.** O dinheiro precisa cair em outubro nos
+  dois lados, e o pedido continuar na agenda de setembro.
+- **A faixa de "a receber" em `/pedidos`**, com um pedido entregue e não pago: ele não pode
+  aparecer no resultado do mês, e precisa aparecer ali.
+- **Cancelar um pedido pago.** A tela desfaz o pagamento antes de cancelar; se a ordem
+  inverter, a mutação recusa com uma frase.
 
-- **`derivarPedido` já entrega tudo que o delta precisa**: `total`, `custoTotalEstimado`,
-  `custoTaxaPagamento` e `quantidadeItens`. A taxa da maquininha do pedido nasce de
-  `taxaCobrada`, a mesma que a transação usa — os dois lados precisam continuar assim.
-- **`Pedido.pago` é gravado como `false` e nunca muda nesta sessão.** `pagoEm`,
-  `transacaoId` e `competenciaPagamento` ainda não existem no documento.
-- **`Pedido.competencia` é a competência da entrega**, e o comentário do tipo precisa ser
-  corrigido quando o agregado passar a usar a do pagamento.
-- **O status é escrito por `mudarStatusPedido`**, fora do "Salvar" (`DECISOES.md#d34`). O
-  caminho de "marcar como pago" provavelmente mora ao lado dele, e não dentro do formulário.
-- **Os agregados de `Cliente` estão zerados e fora da tela**, esperando a 3B.
-- **O mesmo documento de agregado passa a ser escrito pelos dois módulos.**
-  `porDia[].pedidos`, `qtdPedidos`, `qtdItensVendidos`, `ticketMedio` e `produtos` esperam
-  alimentação. O caminho já existe e é `aplicarNoAgregado` em
-  `src/lib/firebase/mutations/transacoes.ts`.
-- **O pedido pago cria a transação**, e `Pedido.transacaoId` existe para esse vínculo. O
-  lançamento manual continua valendo para a venda de balcão que nunca virou pedido.
-- **`recalcularMes` preserva `porDia[].pedidos`** lendo o agregado antes de reescrevê-lo
-  (`DECISOES.md#d23`), e a 3B pode aposentar essa leitura quando passar a calcular a metade
-  do pedido.
-- **`Meta.pedidosNecessarios` e `ResumoMensal.ticketMedio` continuam em zero e fora de tela**
-  (`DECISOES.md#d28`). A 3A não encostou em nenhum dos dois.
+Depois disso, a **sessão 3C**, em `specs/003-pedidos.md`: a coleção `listasCompra`, a tela
+`/compras` e o motor `explodirDemanda` / `montarLista`.
+
+O que a 3C herda, e precisa saber antes de começar:
+
+- **`Pedido.fichaIds` já é espelho consultável por `array-contains`**, e foi gravado desde a
+  3A justamente para a pergunta "quais pedidos levam esta ficha?".
+- **Os pedidos que entram na lista são os de `dataEntrega` no período**, com status
+  `CONFIRMADO`, `EM_PRODUCAO` ou `PRONTO`. A data da agenda é `dataEntregaISO` e continua
+  sendo dela: `competenciaPagamento` é do caixa e não tem nada a ver com a compra
+  (`DECISOES.md#d36`).
+- **A explosão para no primeiro nível** (`#d11`), e as três guardas do risco da spec —
+  ficha arquivada, insumo arquivado, rendimento zero — precisam devolver zero com explicação
+  em vez de `NaN`. `nomeSnapshot` do item é o que permite dizer o nome do que não explodiu.
+- **`atualizarInsumo` e `marcarFichasDesatualizadas` já existem** em `mutations/insumos.ts`, e
+  são o que a correção de preço no mercado reusa.
+- **A perda divide, e o estoque é descontado depois dela.** A mesma conta de
+  `calcularCustoInsumo`, em `custoInsumo.ts`.
+- **`/compras` não entra na navegação inferior**: cinco destinos é o teto
+  (`src/components/layout/navegacao.ts`). Chega-se por `/pedidos` e por um cartão na tela Hoje.
+- **Falta o índice de `listasCompra`** por `arquivado` + `criadoEm` desc; todos os outros
+  estão publicados.
 
 ## Dívidas conhecidas
 
 Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobertas.
 
-| Dívida                                                                 | Onde                             | Quando resolver                                                             |
-| ---------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------- |
-| Ícones só em SVG; falta PNG 180×180 para `apple-touch-icon` do iOS     | `public/icons/`                  | Antes do primeiro uso real no iPhone                                        |
-| Nenhuma verificação visual em navegador foi feita                      | —                                | Agora: é a próxima ação, e a 3A acrescentou o que conferir                  |
-| Regras publicadas, mas nunca exercitadas por um cliente real           | `firestore.rules`                | Na verificação em navegador: é lá que a regra é de fato testada             |
-| Acesso concedido por script, sem cadastro self-serve                   | `scripts/conceder-acesso.mjs`    | Segundo cliente pagante, junto de D10 (`DECISOES.md#d16`)                   |
-| `sair()` não limpa o cache do IndexedDB                                | `src/providers/AuthProvider.tsx` | Só ao virar SaaS: hoje é vantagem, em aparelho compartilhado vira vazamento |
-| Agregados incrementados no cliente                                     | `src/lib/firebase/mutations/`    | Segundo cliente pagante (`DECISOES.md#d10`)                                 |
-| `@hookform/resolvers` instalado e não usado: a validação é `safeParse` | `package.json`                   | Se um segundo formulário pedir resolver; hoje removê-lo é a opção honesta   |
-| Agregado do mês pode ficar torto se um delta se perder no caminho      | `mutations/transacoes.ts`        | Tem escape: "Recalcular o mês" na tela. A troca real é a mesma de D10       |
-| Mudar um lançamento de mês não move o espelho da meta do mês destino   | `mutations/transacoes.ts`        | Mesmo escape e mesma troca: `DECISOES.md#d29`                               |
-| Meta não guarda histórico: reescrever o alvo apaga o anterior          | `mutations/metas.ts`             | Se "que meta eu tinha antes" virar pergunta real (`DECISOES.md#d27`)        |
-| `FichaTecnica.ativo` é sempre `true`, sem tela que o desligue          | `src/lib/types/fichas.ts`        | Se "produto fora de linha" virar diferente de "arquivado"                   |
-| Quantidade volta em unidade base: 0,5 kg reabre como 500 g             | `FormularioFicha.tsx`            | Se ela reclamar; exigiria gravar a unidade digitada, e não só o valor       |
-| `Bloco` e `BlocoConfiguracao` continuam primos                         | `src/components/`                | Se a configuração precisar do mesmo bloco; hoje ela tem rodapé próprio      |
-| `/pedidos` carrega todo pedido não arquivado, sem recorte de data      | `ListaPedidos.tsx`               | Quando o primeiro ano de pedidos pesar: vira range sobre `dataEntregaISO`   |
-| Cliente não tem tela própria: dá para cadastrar e editar, não arquivar | `mutations/clientes.ts`          | Junto dos agregados de cliente, na 3B (`DECISOES.md#d35`)                   |
-| Editar um pedido e sair sem salvar descarta em silêncio                | `FormularioPedido.tsx`           | Mesma dívida do editor de ficha e da configuração; se acontecer de verdade  |
-| `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`       | `src/lib/types/configuracao.ts`  | Quando algum leitor precisar do nome: hoje ninguém lê esse campo            |
-| Sair da configuração com alteração pendente descarta em silêncio       | `TelaConfiguracao.tsx`           | Se acontecer de verdade; a barra fixa de "não salvas" é a defesa atual      |
+| Dívida                                                                       | Onde                             | Quando resolver                                                             |
+| ---------------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------- |
+| Ícones só em SVG; falta PNG 180×180 para `apple-touch-icon` do iOS           | `public/icons/`                  | Antes do primeiro uso real no iPhone                                        |
+| Nenhuma verificação visual em navegador foi feita                            | —                                | Agora: é a próxima ação, e a 3A acrescentou o que conferir                  |
+| Regras publicadas, mas nunca exercitadas por um cliente real                 | `firestore.rules`                | Na verificação em navegador: é lá que a regra é de fato testada             |
+| Acesso concedido por script, sem cadastro self-serve                         | `scripts/conceder-acesso.mjs`    | Segundo cliente pagante, junto de D10 (`DECISOES.md#d16`)                   |
+| `sair()` não limpa o cache do IndexedDB                                      | `src/providers/AuthProvider.tsx` | Só ao virar SaaS: hoje é vantagem, em aparelho compartilhado vira vazamento |
+| Agregados incrementados no cliente                                           | `src/lib/firebase/mutations/`    | Segundo cliente pagante (`DECISOES.md#d10`)                                 |
+| `@hookform/resolvers` instalado e não usado: a validação é `safeParse`       | `package.json`                   | Se um segundo formulário pedir resolver; hoje removê-lo é a opção honesta   |
+| Agregado do mês pode ficar torto se um delta se perder no caminho            | `mutations/agregado.ts`          | Tem escape: "Recalcular o mês" na tela. A troca real é a mesma de D10       |
+| Mudar um lançamento de mês não move o espelho da meta do mês destino         | `mutations/transacoes.ts`        | Mesmo escape e mesma troca: `DECISOES.md#d29`                               |
+| Produto revertido sobra zerado no agregado até recalcular                    | `mutations/agregado.ts`          | `produtosOrdenados` o esconde na leitura; recalcular limpa (`#d37`)         |
+| `ultimoPedidoEm` do cliente não volta atrás ao desfazer um pagamento         | `mutations/clientes.ts`          | Só com histórico de pagamentos, que não existe (`#d37`)                     |
+| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê          | `mutations/clientes.ts`          | Quando "quem mais compra de mim" virar pergunta real (`#d35`)               |
+| Meta não guarda histórico: reescrever o alvo apaga o anterior                | `mutations/metas.ts`             | Se "que meta eu tinha antes" virar pergunta real (`DECISOES.md#d27`)        |
+| `FichaTecnica.ativo` é sempre `true`, sem tela que o desligue                | `src/lib/types/fichas.ts`        | Se "produto fora de linha" virar diferente de "arquivado"                   |
+| Quantidade volta em unidade base: 0,5 kg reabre como 500 g                   | `FormularioFicha.tsx`            | Se ela reclamar; exigiria gravar a unidade digitada, e não só o valor       |
+| `Bloco` e `BlocoConfiguracao` continuam primos                               | `src/components/`                | Se a configuração precisar do mesmo bloco; hoje ela tem rodapé próprio      |
+| `/pedidos` carrega todo pedido não arquivado, sem recorte de data            | `ListaPedidos.tsx`               | Quando o primeiro ano de pedidos pesar: vira range sobre `dataEntregaISO`   |
+| Não dá para arquivar uma cliente: só cadastrar e editar, de dentro do pedido | `mutations/clientes.ts`          | Junto da tela de clientes, quando ela existir (`DECISOES.md#d35`)           |
+| Editar um pedido e sair sem salvar descarta em silêncio                      | `FormularioPedido.tsx`           | Mesma dívida do editor de ficha e da configuração; se acontecer de verdade  |
+| `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`             | `src/lib/types/configuracao.ts`  | Quando algum leitor precisar do nome: hoje ninguém lê esse campo            |
+| Sair da configuração com alteração pendente descarta em silêncio             | `TelaConfiguracao.tsx`           | Se acontecer de verdade; a barra fixa de "não salvas" é a defesa atual      |

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   agruparPorEntrega,
+  aReceber,
   codigoDoPedido,
   custoDoItem,
   derivarPedido,
@@ -288,5 +289,41 @@ describe("resumoDosItens", () => {
 
   it("pedido vazio não vira linha em branco", () => {
     expect(resumoDosItens([])).toBe("Sem itens");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sessão 3B · o dinheiro combinado que ainda não entrou.
+// ---------------------------------------------------------------------------
+
+describe("aReceber", () => {
+  const AGENDA: { status: StatusPedido; pago: boolean; total: number }[] = [
+    { status: "ORCAMENTO", pago: false, total: 5000 },
+    { status: "CONFIRMADO", pago: false, total: 24000 },
+    { status: "EM_PRODUCAO", pago: false, total: 8000 },
+    { status: "PRONTO", pago: true, total: 12000 },
+    { status: "ENTREGUE", pago: false, total: 6900 },
+    { status: "CANCELADO", pago: false, total: 30000 },
+  ];
+
+  it("soma o que foi combinado e ainda não foi pago", () => {
+    // 24000 + 8000 + 6900. O orçamento e o cancelado ficam de fora, e o pago
+    // já está no resultado do mês.
+    expect(aReceber(AGENDA)).toEqual({
+      total: 38900,
+      quantidade: 3,
+      entregues: 1,
+    });
+  });
+
+  it("conta separado o entregue e não pago, que é o que some do painel", () => {
+    expect(aReceber(AGENDA).entregues).toBe(1);
+  });
+
+  it("agenda sem nada a receber devolve zero, e não uma linha de R$ 0,00", () => {
+    expect(aReceber([])).toEqual({ total: 0, quantidade: 0, entregues: 0 });
+    expect(
+      aReceber([{ status: "ENTREGUE", pago: true, total: 24000 }]),
+    ).toEqual({ total: 0, quantidade: 0, entregues: 0 });
   });
 });

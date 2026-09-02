@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, Truck, TriangleAlert } from "lucide-react";
+import { Check, ChevronRight, Truck, TriangleAlert } from "lucide-react";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Selo } from "@/components/ui/Selo";
 import { SeloStatus } from "./SeloStatus";
@@ -35,6 +35,18 @@ export function LinhaPedido({ pedido }: { pedido: Pedido }) {
 
           <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <SeloStatus status={pedido.status} />
+            {/* O selo de pago é o que separa a agenda do caixa: sem ele, "a
+                receber" seria um número sem nenhuma linha que o explique. */}
+            {pedido.pago && (
+              <Selo
+                tom="positivo"
+                icone={
+                  <Check aria-hidden className="size-3.5" strokeWidth={2} />
+                }
+              >
+                Pago
+              </Selo>
+            )}
             {pedido.entrega.tipo === "ENTREGA" && (
               <Selo
                 tom="neutro"

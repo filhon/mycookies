@@ -3,6 +3,7 @@ import { docMeta, docResumoMensal } from "../colecoes";
 import {
   espelhoDaMeta,
   medirMeta,
+  pedidosNecessariosDe,
   planejarMeta,
   type EspelhoMeta,
 } from "@/lib/domain/metas";
@@ -77,10 +78,10 @@ export function espelhoAposDelta(
  * a meta em vez de criar uma segunda. `merge` preserva o que esta tela não
  * conhece — `lucroAlvo` hoje, o que os módulos seguintes acrescentarem depois.
  *
- * `pedidosNecessarios` fica em zero de propósito: quantos pedidos são
- * necessários depende do valor médio de um pedido, e pedido não existe neste
- * módulo. Preenchê-lo com o preço unitário faria o campo dizer "cada pedido tem
- * um doce", que é falso. Ele espera o Módulo 3.
+ * `pedidosNecessarios` é dividido pelo ticket médio **real** do mês, e não pelo
+ * preço médio de um doce: são duas perguntas diferentes, e a segunda faria o
+ * campo dizer "cada pedido tem um doce" (`DECISOES.md#d36`). Fica em zero
+ * enquanto não houver pedido pago, e zero não aparece em tela.
  */
 export async function salvarMeta(
   contaId: string,
@@ -88,6 +89,8 @@ export async function salvarMeta(
   dados: DadosMeta,
   /** `entradas` do mês, que é o realizado da meta. */
   realizado: Centavos,
+  /** O valor médio de um pedido pago no mês, ou zero se não houver nenhum. */
+  ticketMedio: Centavos,
   /** A meta que já existia, se existia: preserva a data de criação. */
   existente: Meta | null,
 ): Promise<void> {
@@ -102,7 +105,10 @@ export async function salvarMeta(
       faturamentoAlvo: dados.faturamentoAlvo,
       ticketMedioReferencia: dados.precoMedioUnitario,
 
-      pedidosNecessarios: 0,
+      pedidosNecessarios: pedidosNecessariosDe(
+        dados.faturamentoAlvo,
+        ticketMedio,
+      ),
       unidadesNecessarias: plano.unidadesNecessarias,
       semanasNoMes: plano.semanasNoMes,
       unidadesPorSemana: plano.unidadesPorSemana,
