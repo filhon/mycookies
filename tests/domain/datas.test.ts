@@ -8,6 +8,7 @@ import {
   diaDeISO,
   diasNoMes,
   rotuloCompetencia,
+  rotuloMes,
 } from "@/lib/domain/datas";
 
 describe("dataISODe e competenciaDe", () => {
@@ -69,5 +70,10 @@ describe("competenciaVizinha", () => {
 describe("rotuloCompetencia", () => {
   it("escreve o mês por extenso em português", () => {
     expect(rotuloCompetencia("2026-09")).toBe("setembro de 2026");
+  });
+
+  it("escreve o mês sozinho para caber dentro de uma frase", () => {
+    expect(rotuloMes("2026-09")).toBe("setembro");
+    expect(rotuloMes("2026-01")).toBe("janeiro");
   });
 });

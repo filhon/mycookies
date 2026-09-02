@@ -192,6 +192,27 @@ export const esquemaTransacao = z.object({
 
 export type EntradaTransacao = z.infer<typeof esquemaTransacao>;
 
+/**
+ * A meta do mês. Dois números, e os dois precisam ser positivos.
+ *
+ * Alvo zero não é meta modesta, é ausência de meta; e preço médio zero faria a
+ * conta de quantos doces perguntar quantas vezes o zero cabe em três mil. As
+ * duas guardas existem no domínio também (`metas.ts`), porque lá elas protegem
+ * documento antigo e aqui protegem o dedo errado.
+ */
+export const esquemaMeta = z.object({
+  faturamentoAlvo: z
+    .number()
+    .int()
+    .positive("Diga quanto você quer faturar neste mês."),
+  precoMedioUnitario: z
+    .number()
+    .int()
+    .positive("Diga por quanto sai um doce, em média."),
+});
+
+export type EntradaMeta = z.infer<typeof esquemaMeta>;
+
 /** Converte as falhas do zod em um mapa campo → primeira mensagem. */
 export function errosPorCampo(erro: z.ZodError): Record<string, string> {
   const mapa: Record<string, string> = {};

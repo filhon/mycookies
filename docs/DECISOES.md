@@ -560,3 +560,112 @@ cai no dia 2 às 21h — um lançamento do dia 3 apareceria no dia 2, e uma vend
 mudaria de competência. `dataDeISO` monta a data pelos componentes locais, e há teste para
 isso. Se um dia aparecer aritmética de calendário de verdade (fuso de cliente em outro país,
 recorrência real), a conversa recomeça — com um caso de uso na mão.
+
+---
+
+## D27 · A meta tem a competência como id
+
+**Status:** vigente · decidida em 2026-09-02 na spec `004-caixa`, sessão 4B
+
+**Contexto.** `metas` é uma coleção, e o normal seria id gerado com a competência em um
+campo. Isso pede uma consulta e um índice para achar a meta do mês, e deixa a porta aberta
+para duas metas do mesmo mês existirem ao mesmo tempo.
+
+**Decisão.** A meta mora em `metas/{'YYYY-MM'}`, com a competência como id do documento.
+Salvar de novo o mesmo mês corrige a meta que já existe, com `merge` para não apagar o que
+esta tela não conhece (`lucroAlvo` hoje, o que vier depois amanhã).
+
+**Consequência.** "Um mês tem uma meta só" passa a ser estrutural em vez de combinado: não
+existe estado em que duas metas disputem o mesmo mês, e a tela busca a meta pelo mesmo
+endereço em que busca o agregado — uma leitura direta, sem consulta e sem índice novo. O
+preço é que meta não é histórico: reescrever o alvo de setembro apaga o alvo anterior de
+setembro, e não há registro de que ele existiu. Para uma única usuária ajustando a própria
+meta, o histórico seria ruído; se um dia a pergunta "que meta eu tinha antes" aparecer, ela
+nasce como coleção de versões, e não como segunda meta ativa.
+
+Por isso também não existe arquivar meta: `ativo` fica `true`, e mudar de ideia é mudar o
+número. Um documento a menos para a interface explicar.
+
+---
+
+## D28 · `ticketMedioReferencia` guarda preço de cardápio, e `pedidosNecessarios` fica em zero
+
+**Status:** provisória — vence com o Módulo 3
+
+**Contexto.** `Meta` foi tipada para um mundo com pedidos: `ticketMedioReferencia` é o valor
+médio de um pedido e `pedidosNecessarios` é quantos pedidos fecham a meta. O Módulo 4 veio
+antes do 3, e pedido não existe: não há histórico de venda de onde tirar ticket médio.
+
+**Decisão.** `ticketMedioReferencia` guarda o **preço médio de um doce**, sugerido pela média
+de `precificacao.precoVenda` das fichas ativas e editável pela usuária. `pedidosNecessarios`
+é gravado como zero e **não aparece em tela nenhuma**.
+
+**Consequência.** É o único sentido possível para o campo hoje, e é o sentido que a tela
+inteira usa: a meta é dita em doces por semana, que é a unidade em que a Maynara produz.
+Preencher `pedidosNecessarios` com o preço unitário faria o campo afirmar "cada pedido tem
+um doce", que é falso — e número falso em painel financeiro é o pior defeito deste projeto.
+Zero ali é ausência, e ausência não se mostra.
+
+O que muda quando o Módulo 3 chegar: `pedidosNecessarios` ganha alimentação, e
+`ticketMedioReferencia` passa a ter duas fontes possíveis. A decisão de qual vale nasce lá,
+com o dado na mão.
+
+Ficha sem preço fica fora da média, e não entra como R$ 0,00: preço zero é ficha ainda não
+precificada, e contá-la puxaria a média para baixo inflando a quantidade de doces da meta.
+
+---
+
+## D29 · O espelho da meta é escrito pela tela, e nunca lido pela mutação
+
+**Status:** vigente
+
+**Contexto.** `ResumoMensal.meta` espelha o progresso para que o cartão da tela Hoje saia de
+uma leitura (`#d09`). O espelho não pode ser mantido por `increment` como o resto do
+agregado: `progresso` e `unidadesRestantes` não são lineares no realizado. Alguém precisa
+saber o alvo e o total de entradas na hora de gravar um lançamento.
+
+**Decisão.** Quem sabe é a tela, que já assina o agregado e a meta. `criarTransacao`,
+`atualizarTransacao` e `arquivarTransacao` recebem um `ContextoMeta`
+(`{ competencia, meta, entradas }`) e reescrevem o espelho inteiro dentro da mesma escrita
+que aplica os incrementos. `recalcularMes` recebe a meta pelo mesmo motivo.
+
+**Consequência.** Lançar continua funcionando sem rede, que é o requisito que decide: uma
+leitura no caminho de gravar tornaria o lançamento dependente de conexão, e a feira é onde
+ela lança. Dois limites conhecidos, os dois com a mesma rede de segurança de `#d23`:
+
+- **Editar um lançamento de setembro para outubro move o espelho de setembro, e não o de
+  outubro.** A tela conhece o mês que está mostrando, e o agregado de outubro recebe o
+  dinheiro mas fica com o espelho de antes até a próxima escrita naquele mês, ou até
+  "Recalcular o mês". É o caso mais raro do módulo pagando pelo caso mais comum.
+- **`realizado` é gravado por valor, e `entradas` por incremento.** Se a tela gravar duas
+  vezes antes de a assinatura devolver o total novo, o espelho fica atrás por um lançamento.
+  Recalcular o mês reescreve os dois a partir das transações.
+
+Mês sem meta não ganha espelho pela metade: a chave `meta` simplesmente não entra na
+escrita, e `mergeFields` só a lista quando há meta — listar sem ter o campo apagaria o
+espelho que a chamada não conhece.
+
+---
+
+## D30 · O que no espelho depende do calendário é refeito na leitura
+
+**Status:** vigente
+
+**Contexto.** Consequência direta de `#d29`. Duas linhas do espelho dependem do dia de hoje
+e não do dinheiro: `unidadesPorSemanaRestante` e `noRitmo`. O espelho é reescrito quando o
+dinheiro se move, então uma venda no dia 5 congela um esforço calculado com 26 dias pela
+frente. Lido no dia 20, esse número diz que falta menos do que falta.
+
+**Decisão.** `ritmoDoEspelho` refaz as duas na leitura, a partir do que o próprio espelho já
+traz certo: `unidadesRestantes` e `realizado` vêm do dinheiro, e o resto é calendário. Os
+campos continuam gravados, porque `ResumoMensal.meta` os define e o Módulo 3 vai reescrever
+o mesmo documento — mas quem desenha a tela usa a versão refeita.
+
+**Consequência.** O número nunca aparece menor do que é, e continua custando uma leitura só:
+nenhuma consulta a mais, nenhum documento a mais. Vale a pena porque esforço subestimado em
+meta é pior do que meta nenhuma — ela produziria menos acreditando que está no ritmo.
+
+Da mesma família, e no mesmo módulo: `esforcoRestante` troca "por semana" por "até o fim do
+mês" quando restam menos de sete dias. Repartir 261 doces por dois sétimos de semana devolve
+914 doces por semana, que é uma conta correta e uma informação inútil — no dia 29 o número
+honesto é o total que falta.

@@ -15,6 +15,7 @@ import {
 } from "@/lib/domain/caixa";
 import { formatarMoeda } from "@/lib/domain/money";
 import { errosPorCampo, esquemaTransacao } from "@/lib/domain/schemas";
+import type { ContextoMeta } from "@/lib/firebase/mutations/metas";
 import {
   arquivarTransacao,
   atualizarTransacao,
@@ -104,6 +105,7 @@ export function FormularioTransacao({
   contaId,
   transacao,
   formas,
+  contextoMeta,
   dataPadrao,
   chave: chaveAtual,
 }: {
@@ -113,6 +115,12 @@ export function FormularioTransacao({
   /** Ausente = lançamento novo. */
   transacao?: Transacao;
   formas: FormaPagamento[];
+  /**
+   * O que a meta do mês exibido precisa para andar junto com o dinheiro. Vem
+   * da tela porque ela já assina a meta e o agregado: assim a escrita não
+   * depende de uma leitura, e lançar continua funcionando sem rede.
+   */
+  contextoMeta: ContextoMeta;
   dataPadrao: DataISO;
   /**
    * Muda a cada abertura. O painel fica montado para poder animar a saída, e
@@ -204,9 +212,15 @@ export function FormularioTransacao({
     setSalvando(true);
     try {
       if (transacao) {
-        await atualizarTransacao(contaId, transacao, resultado.data, formas);
+        await atualizarTransacao(
+          contaId,
+          transacao,
+          resultado.data,
+          formas,
+          contextoMeta,
+        );
       } else {
-        await criarTransacao(contaId, resultado.data, formas);
+        await criarTransacao(contaId, resultado.data, formas, contextoMeta);
       }
       setSalvando(false);
       aoFechar();
@@ -221,7 +235,7 @@ export function FormularioTransacao({
     setFalha(null);
     setSalvando(true);
     try {
-      await arquivarTransacao(contaId, transacao);
+      await arquivarTransacao(contaId, transacao, contextoMeta);
       setSalvando(false);
       aoFechar();
     } catch {

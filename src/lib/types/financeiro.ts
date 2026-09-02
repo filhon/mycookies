@@ -58,11 +58,24 @@ export interface Meta extends DocumentoBase {
   faturamentoAlvo: Centavos;
   lucroAlvo?: Centavos;
 
-  /** Ticket médio usado no forecast (histórico ou definido à mão). */
+  /**
+   * O valor de referência do forecast, sugerido e editável.
+   *
+   * Enquanto não há pedido, guarda o **preço médio de um doce** — a média das
+   * fichas ativas —, porque é o único sentido possível para o campo sem
+   * histórico de venda. Vira valor médio de um pedido no Módulo 3
+   * (`DECISOES.md#d28`).
+   */
   ticketMedioReferencia: Centavos;
 
   // ---- Forecast (derivado, gravado para o card de meta ler direto) ----
-  /** ceil(faturamentoAlvo / ticketMedioReferencia) */
+  /**
+   * ceil(faturamentoAlvo / valor médio de um pedido).
+   *
+   * Gravado como zero e **fora de toda tela** até o Módulo 3: pedido não existe
+   * ainda, e preencher com o preço unitário faria o campo dizer "cada pedido
+   * tem um doce" (`DECISOES.md#d28`).
+   */
   pedidosNecessarios: number;
   /** Doces a vender no mês, pelo preço médio unitário. */
   unidadesNecessarias: number;
@@ -118,7 +131,16 @@ export interface ResumoMensal {
   /** Chave = fichaTecnicaId. Negócio pequeno: dezenas de chaves, não milhares. */
   produtos: Record<string, ResumoProduto>;
 
-  /** Espelho do progresso da meta, atualizado junto com as entradas. */
+  /**
+   * Espelho do progresso da meta, reescrito junto com as entradas.
+   *
+   * `realizado` é a mesma coisa que `entradas`: é a segunda fonte de verdade do
+   * módulo, e existe para o cartão da tela Hoje sair de uma leitura só. Quem
+   * escreve é `mutations/transacoes.ts` e `mutations/metas.ts`, sempre por
+   * valor e nunca por incremento (`DECISOES.md#d29`); `unidadesPorSemanaRestante`
+   * e `noRitmo` também dependem do dia, e por isso são refeitos na leitura por
+   * `ritmoDoEspelho` (`#d30`).
+   */
   meta?: {
     faturamentoAlvo: Centavos;
     realizado: Centavos;

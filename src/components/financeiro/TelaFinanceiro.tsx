@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { Plus, RotateCcw } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
+import { BlocoMeta } from "@/components/metas/BlocoMeta";
+import { FormularioMeta } from "@/components/metas/FormularioMeta";
 import { Botao } from "@/components/ui/Botao";
 import { EsqueletoLista, Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
@@ -13,7 +15,12 @@ import {
   dataISODe,
   rotuloCompetencia,
 } from "@/lib/domain/datas";
-import { docConfiguracao, docResumoMensal } from "@/lib/firebase/colecoes";
+import {
+  docConfiguracao,
+  docMeta,
+  docResumoMensal,
+} from "@/lib/firebase/colecoes";
+import type { ContextoMeta } from "@/lib/firebase/mutations/metas";
 import {
   consultaTransacoesDoMes,
   recalcularMes,
@@ -22,6 +29,7 @@ import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
 import type {
   CompetenciaMensal,
   ConfiguracaoGeral,
+  Meta,
   ResumoMensal,
   Transacao,
 } from "@/lib/types";
@@ -48,6 +56,9 @@ export function TelaFinanceiro() {
   const [painelAberto, setPainelAberto] = useState(false);
   const [aberturas, setAberturas] = useState(0);
 
+  const [painelMetaAberto, setPainelMetaAberto] = useState(false);
+  const [aberturasMeta, setAberturasMeta] = useState(0);
+
   const [recalculando, setRecalculando] = useState(false);
   const [avisoRecalculo, setAvisoRecalculo] = useState<string | null>(null);
 
@@ -59,6 +70,10 @@ export function TelaFinanceiro() {
     () => docResumoMensal(contaId, competencia),
     [contaId, competencia],
   );
+  const referenciaMeta = useMemo(
+    () => docMeta(contaId, competencia),
+    [contaId, competencia],
+  );
   const referenciaConfiguracao = useMemo(
     () => docConfiguracao(contaId),
     [contaId],
@@ -66,6 +81,7 @@ export function TelaFinanceiro() {
 
   const lancamentos = useColecao<Transacao>(consulta);
   const resumo = useDocumento<ResumoMensal>(referenciaResumo);
+  const meta = useDocumento<Meta>(referenciaMeta);
   const configuracao = useDocumento<ConfiguracaoGeral>(referenciaConfiguracao);
 
   const formas = useMemo(
@@ -78,11 +94,24 @@ export function TelaFinanceiro() {
   );
 
   const parcelas = parcelasDoResumo(resumo.dado);
-  const carregando = lancamentos.carregando || resumo.carregando;
+  const carregando =
+    lancamentos.carregando || resumo.carregando || meta.carregando;
 
   // O mês existe se ele tem lançamento, e não se o documento de agregado
   // existe: um mês em que tudo foi arquivado não tem resultado a mostrar.
   const temMovimento = lancamentos.dados.length > 0;
+
+  /**
+   * O que a meta precisa saber para andar junto com o dinheiro.
+   *
+   * A tela já assina os dois documentos, então a mutação não precisa ler nada
+   * para reescrever o espelho — e lançar continua funcionando sem rede.
+   */
+  const contextoMeta: ContextoMeta = {
+    competencia,
+    meta: meta.dado,
+    entradas: parcelas.entradas,
+  };
 
   function abrirPainel(transacao?: Transacao) {
     setTransacaoEmEdicao(transacao ?? null);
@@ -90,11 +119,16 @@ export function TelaFinanceiro() {
     setPainelAberto(true);
   }
 
+  function abrirPainelMeta() {
+    setAberturasMeta((anterior) => anterior + 1);
+    setPainelMetaAberto(true);
+  }
+
   async function recalcular() {
     setAvisoRecalculo(null);
     setRecalculando(true);
     try {
-      await recalcularMes(contaId, competencia);
+      await recalcularMes(contaId, competencia, meta.dado);
       setAvisoRecalculo(
         `Pronto: ${rotuloCompetencia(competencia)} foi refeito a partir dos ${lancamentos.dados.length} lançamentos da lista.`,
       );
@@ -133,7 +167,9 @@ export function TelaFinanceiro() {
       </CabecalhoPagina>
 
       <div className="mt-4 flex min-h-8 items-center justify-end">
-        <SeloSincronizacao pendente={lancamentos.pendente || resumo.pendente} />
+        <SeloSincronizacao
+          pendente={lancamentos.pendente || resumo.pendente || meta.pendente}
+        />
       </div>
 
       {lancamentos.erro ? (
@@ -152,27 +188,45 @@ export function TelaFinanceiro() {
           </div>
         </div>
       ) : !temMovimento ? (
-        <div className="mt-2 overflow-hidden rounded-lg border border-line bg-surface">
-          <EstadoVazio
-            titulo={`Nada lançado em ${rotuloCompetencia(competencia)}`}
-            descricao="Por enquanto cada venda entra aqui na mão, junto das compras e das despesas. Quando o módulo de pedidos chegar, o pedido pago vira lançamento sozinho — e o que você digita aqui continua valendo para a venda de balcão que nunca virou pedido."
-            acao={
-              <Botao
-                variante="primaria"
-                tamanho="lg"
-                onClick={() => abrirPainel()}
-                iconeInicial={
-                  <Plus aria-hidden className="size-5" strokeWidth={2} />
-                }
-              >
-                Lançar o primeiro
-              </Botao>
-            }
+        <div className="mt-2 space-y-4">
+          {/* A meta vem antes do convite a lançar: começo de mês é exatamente
+              quando ela define quanto quer faturar, e o mês ainda está vazio. */}
+          <BlocoMeta
+            competencia={competencia}
+            meta={meta.dado}
+            realizado={parcelas.entradas}
+            aoAbrir={abrirPainelMeta}
           />
+
+          <div className="overflow-hidden rounded-lg border border-line bg-surface">
+            <EstadoVazio
+              titulo={`Nada lançado em ${rotuloCompetencia(competencia)}`}
+              descricao="Por enquanto cada venda entra aqui na mão, junto das compras e das despesas. Quando o módulo de pedidos chegar, o pedido pago vira lançamento sozinho — e o que você digita aqui continua valendo para a venda de balcão que nunca virou pedido."
+              acao={
+                <Botao
+                  variante="primaria"
+                  tamanho="lg"
+                  onClick={() => abrirPainel()}
+                  iconeInicial={
+                    <Plus aria-hidden className="size-5" strokeWidth={2} />
+                  }
+                >
+                  Lançar o primeiro
+                </Botao>
+              }
+            />
+          </div>
         </div>
       ) : (
         <div className="mt-2 space-y-4">
           <ResultadoDoMes parcelas={parcelas} />
+
+          <BlocoMeta
+            competencia={competencia}
+            meta={meta.dado}
+            realizado={parcelas.entradas}
+            aoAbrir={abrirPainelMeta}
+          />
 
           <MovimentoPorDia competencia={competencia} porDia={parcelas.porDia} />
 
@@ -257,11 +311,22 @@ export function TelaFinanceiro() {
         contaId={contaId}
         transacao={transacaoEmEdicao ?? undefined}
         formas={formas}
+        contextoMeta={contextoMeta}
         dataPadrao={
           competencia === mesCorrente
             ? dataISODe(new Date())
             : `${competencia}-01`
         }
+      />
+
+      <FormularioMeta
+        chave={String(aberturasMeta)}
+        aberto={painelMetaAberto}
+        aoFechar={() => setPainelMetaAberto(false)}
+        contaId={contaId}
+        competencia={competencia}
+        meta={meta.dado}
+        realizado={parcelas.entradas}
       />
     </>
   );

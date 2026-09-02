@@ -24,6 +24,8 @@ const NOME_CURTO_DO_MES = new Intl.DateTimeFormat("pt-BR", {
   year: "numeric",
 });
 
+const SO_O_MES = new Intl.DateTimeFormat("pt-BR", { month: "long" });
+
 const DIA_E_MES = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
   month: "short",
@@ -94,6 +96,12 @@ export function rotuloCompetencia(competencia: CompetenciaMensal): string {
 export function rotuloCompetenciaCurto(competencia: CompetenciaMensal): string {
   const [ano, mes] = competencia.split("-").map(Number);
   return NOME_CURTO_DO_MES.format(new Date(ano ?? 1970, (mes ?? 1) - 1, 1));
+}
+
+/** 'setembro' — o mês sozinho, para caber dentro de uma frase. */
+export function rotuloMes(competencia: CompetenciaMensal): string {
+  const [ano, mes] = competencia.split("-").map(Number);
+  return SO_O_MES.format(new Date(ano ?? 1970, (mes ?? 1) - 1, 1));
 }
 
 /** '03 de set.' — o dia de um lançamento na lista. */

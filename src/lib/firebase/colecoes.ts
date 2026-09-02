@@ -77,6 +77,16 @@ export const docFicha = (contaId: string, id: string) =>
 export const docPedido = (contaId: string, id: string) =>
   doc(colPedidos(contaId), id);
 
+/**
+ * A meta de um mês, com a competência como id.
+ *
+ * Um mês tem uma meta só: o id ser `'YYYY-MM'` torna isso estrutural em vez de
+ * combinado, dispensa consulta e índice para achar a meta da vez, e faz o
+ * documento cair no mesmo endereço do agregado que ele espelha.
+ */
+export const docMeta = (contaId: string, competencia: string) =>
+  doc(colMetas(contaId), competencia);
+
 export const docConfiguracao = (contaId: string) =>
   doc(obterDb(), caminhos.configuracaoGeral(contaId)).withConverter(
     conversor<ConfiguracaoGeral>(),

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CalendarDays, Settings } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
+import { CartaoMetaHoje } from "@/components/metas/CartaoMetaHoje";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { useAuth } from "@/providers/AuthProvider";
@@ -45,6 +46,12 @@ export default function PaginaHoje() {
           </Link>
         }
       />
+
+      {/* O número que ela persegue vem antes da agenda: é o que decide o que
+          vai para o forno hoje. */}
+      <div className="mt-6">
+        <CartaoMetaHoje />
+      </div>
 
       <section aria-labelledby="titulo-entregas" className="mt-6">
         <h2

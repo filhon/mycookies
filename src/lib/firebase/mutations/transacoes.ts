@@ -23,6 +23,8 @@ import {
   type TransacaoAgregavel,
 } from "@/lib/domain/caixa";
 import { competenciaDeISO, dataDeISO } from "@/lib/domain/datas";
+import { espelhoDaMeta, medirMeta } from "@/lib/domain/metas";
+import { espelhoAposDelta, type ContextoMeta } from "./metas";
 import { VERSAO_SCHEMA } from "@/lib/types";
 import type {
   CategoriaTransacao,
@@ -30,6 +32,7 @@ import type {
   CompetenciaMensal,
   DataISO,
   FormaPagamento,
+  Meta,
   ResumoDia,
   TipoTransacao,
   Transacao,
@@ -146,20 +149,34 @@ function incrementosDoAgregado(parcelas: ParcelasDoAgregado) {
 }
 
 /**
- * Soma um delta no agregado do mês.
+ * Soma um delta no agregado do mês, e move o espelho da meta junto.
  *
  * `increment` entra na fila offline, que é a razão de ele existir aqui em vez
  * de uma transação: transação exige rede, e offline é o estado normal desta
  * usuária (`DECISOES.md#d09` e `#d10`).
+ *
+ * O espelho não pode ser incremento: `progresso` e `unidadesRestantes` não são
+ * lineares no realizado. Ele é escrito por inteiro, a partir do que a tela já
+ * sabe — e por isso o contexto vem de fora, sem custar uma leitura no caminho
+ * de gravar um lançamento.
  */
 async function aplicarNoAgregado(
   contaId: string,
   competencia: CompetenciaMensal,
   parcelas: ParcelasDoAgregado,
+  contexto: ContextoMeta | null,
 ): Promise<void> {
+  const meta = espelhoAposDelta(competencia, parcelas.entradas, contexto);
+
   await setDoc(
     docResumoMensal(contaId, competencia),
-    { ...incrementosDoAgregado(parcelas), competencia },
+    {
+      ...incrementosDoAgregado(parcelas),
+      competencia,
+      // Chave ausente em `merge` deixa o que está lá: mês sem meta não ganha um
+      // espelho pela metade só porque houve uma venda.
+      ...(meta ? { meta } : {}),
+    },
     { merge: true },
   );
 }
@@ -168,6 +185,7 @@ export async function criarTransacao(
   contaId: string,
   dados: DadosTransacao,
   formas: FormaPagamento[],
+  contextoMeta: ContextoMeta | null,
 ): Promise<string> {
   const momento = agora();
   const corpo = corpoDaTransacao(dados, formas);
@@ -184,6 +202,7 @@ export async function criarTransacao(
     contaId,
     corpo.competencia,
     deltaDaTransacao(agregavel(corpo), 1),
+    contextoMeta,
   );
 
   return referencia.id;
@@ -202,6 +221,7 @@ export async function atualizarTransacao(
   anterior: Transacao,
   dados: DadosTransacao,
   formas: FormaPagamento[],
+  contextoMeta: ContextoMeta | null,
 ): Promise<void> {
   const corpo = corpoDaTransacao(dados, formas);
 
@@ -223,12 +243,13 @@ export async function atualizarTransacao(
       contaId,
       corpo.competencia,
       somarParcelas(reverso, aplicado),
+      contextoMeta,
     );
     return;
   }
 
-  await aplicarNoAgregado(contaId, anterior.competencia, reverso);
-  await aplicarNoAgregado(contaId, corpo.competencia, aplicado);
+  await aplicarNoAgregado(contaId, anterior.competencia, reverso, contextoMeta);
+  await aplicarNoAgregado(contaId, corpo.competencia, aplicado, contextoMeta);
 }
 
 /**
@@ -239,6 +260,7 @@ export async function atualizarTransacao(
 export async function arquivarTransacao(
   contaId: string,
   transacao: Transacao,
+  contextoMeta: ContextoMeta | null,
 ): Promise<void> {
   await updateDoc(doc(colTransacoes(contaId), transacao.id), {
     arquivado: true,
@@ -249,6 +271,7 @@ export async function arquivarTransacao(
     contaId,
     transacao.competencia,
     deltaDaTransacao(agregavel(transacao), -1),
+    contextoMeta,
   );
 }
 
@@ -258,12 +281,17 @@ export async function arquivarTransacao(
  * Não é o caminho normal — é o que prova que os deltas estão certos, e o que
  * conserta o mês se algum se perder. Reescreve só a metade do agregado que
  * nasce de transação: `mergeFields` substitui exatamente os campos listados e
- * não encosta em `qtdPedidos`, `produtos`, `custoInsumos` nem `meta`, que são
- * do Módulo 3 e da sessão 4B.
+ * não encosta em `qtdPedidos`, `produtos` nem `custoInsumos`, que são do
+ * Módulo 3.
+ *
+ * O espelho da meta entra na lista porque `realizado` é `entradas`: se um delta
+ * se perdeu, ele se perdeu nos dois. A meta vem da tela, que já a assina — e
+ * refazer o mês sem refazer o espelho deixaria metade do conserto pela metade.
  */
 export async function recalcularMes(
   contaId: string,
   competencia: CompetenciaMensal,
+  meta: Meta | null,
 ): Promise<ParcelasDoAgregado> {
   const referencia = docResumoMensal(contaId, competencia);
 
@@ -290,6 +318,19 @@ export async function recalcularMes(
     }
   }
 
+  const espelho = meta
+    ? espelhoDaMeta(
+        medirMeta(
+          {
+            competencia,
+            faturamentoAlvo: meta.faturamentoAlvo,
+            precoMedioUnitario: meta.ticketMedioReferencia,
+          },
+          parcelas.entradas,
+        ),
+      )
+    : null;
+
   await setDoc(
     referencia,
     {
@@ -301,6 +342,7 @@ export async function recalcularMes(
       lucro: parcelas.lucro,
       porCategoriaSaida: parcelas.porCategoriaSaida,
       porDia,
+      ...(espelho ? { meta: espelho } : {}),
       atualizadoEm: agora(),
     },
     {
@@ -313,6 +355,10 @@ export async function recalcularMes(
         "lucro",
         "porCategoriaSaida",
         "porDia",
+        // Mês sem meta não lista o campo: `mergeFields` com uma chave ausente
+        // do objeto apaga o campo no documento, e apagar espelho de meta que
+        // esta chamada não conhece seria estragar o que veio consertar.
+        ...(espelho ? ["meta"] : []),
         "atualizadoEm",
       ],
     },

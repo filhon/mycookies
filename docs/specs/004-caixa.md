@@ -192,15 +192,15 @@ dois caminhos — delta a delta e reconstrução — com o mesmo resultado.
 
 ## Critérios de aceite 4A
 
-- [ ] Os números do caso de aceite batem exatamente, em teste.
-- [ ] `deltaDaTransacao` aplicado em sequência e `agregarTransacoes` concordam, em teste.
-- [ ] Editar valor, categoria ou data corrige o agregado; mudar de mês move entre os dois.
-- [ ] Arquivar reverte a contribuição; nenhuma transação é apagada.
-- [ ] "Recalcular o mês" reconstrói o agregado a partir das transações.
-- [ ] Nenhum campo alimentado por pedido aparece na tela.
-- [ ] Mês sem lançamento nenhum não mostra painel zerado como se fosse resultado.
-- [ ] Índices publicados, incluindo o de `fichas` que ficou pendente da spec 002.
-- [ ] Portão de conclusão passando.
+- [x] Os números do caso de aceite batem exatamente, em teste.
+- [x] `deltaDaTransacao` aplicado em sequência e `agregarTransacoes` concordam, em teste.
+- [x] Editar valor, categoria ou data corrige o agregado; mudar de mês move entre os dois.
+- [x] Arquivar reverte a contribuição; nenhuma transação é apagada.
+- [x] "Recalcular o mês" reconstrói o agregado a partir das transações.
+- [x] Nenhum campo alimentado por pedido aparece na tela.
+- [x] Mês sem lançamento nenhum não mostra painel zerado como se fosse resultado.
+- [x] Índices publicados, incluindo o de `fichas` que ficou pendente da spec 002.
+- [x] Portão de conclusão passando.
 
 ---
 
@@ -294,13 +294,13 @@ Esses números vão para `tests/domain/metas.test.ts` como estão.
 
 ## Critérios de aceite 4B
 
-- [ ] Os números do caso de aceite batem exatamente, em teste.
-- [ ] Alvo zero, preço médio zero e conta sem fichas devolvem zero com explicação, não `NaN`.
-- [ ] O preço médio vem sugerido das fichas ativas e é editável.
-- [ ] `pedidosNecessarios` não aparece em tela nenhuma.
-- [ ] Lançar, editar e arquivar transação move o progresso da meta.
-- [ ] A tela Hoje mostra quantos doces por semana faltam.
-- [ ] Portão de conclusão passando.
+- [x] Os números do caso de aceite batem exatamente, em teste.
+- [x] Alvo zero, preço médio zero e conta sem fichas devolvem zero com explicação, não `NaN`.
+- [x] O preço médio vem sugerido das fichas ativas e é editável.
+- [x] `pedidosNecessarios` não aparece em tela nenhuma.
+- [x] Lançar, editar e arquivar transação move o progresso da meta.
+- [x] A tela Hoje mostra quantos doces por semana faltam.
+- [x] Portão de conclusão passando.
 
 ---
 
