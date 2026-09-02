@@ -67,6 +67,7 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 | 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)      | `specs/003-pedidos.md`      |
 | 4   | Caixa, metas e previsão                     | pronto (4A e 4B)          | `specs/004-caixa.md`        |
 | 5   | Prontidão: conserto e verificação           | 5A pronto, **5B a fazer** | `specs/005-prontidao.md`    |
+| 6   | Leitura de nota fiscal por IA               | spec escrita, a fazer     | `specs/006-nota-fiscal.md`  |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -377,6 +378,21 @@ toca o Firestore. Decisões em `DECISOES.md#d14` e `#d15`.
 - `reconferirAcesso()` força a renovação do token: a tela de acesso negado tem botão em vez
   da instrução "saia e entre novamente". Por que o acesso ainda é concedido por script, e
   quando isso muda: `DECISOES.md#d16`.
+
+## A spec 006, escrita e não começada
+
+`specs/006-nota-fiscal.md` foi escrita em 2026-09-02: fotografar ou anexar a nota fiscal da
+compra, conferir numa lista o que foi lido, e cadastrar os insumos de uma vez, com a compra
+virando saída no caixa. É a primeira vez que o projeto fala com serviço externo — o Gemini
+para ler, e a API pública de CNPJ para saber o nome da loja, as duas por uma rota do app — e
+a primeira vez que tem servidor de verdade.
+
+**Ela não começa antes da 5B.** Grava em `insumos` e em `transacoes` por um caminho novo, e
+abrir caminho novo sobre caminho velho que nunca foi visto rodando é achar dois defeitos ao
+mesmo tempo sem saber de quem é qual. A spec pede quatro aprovações antes da primeira linha:
+`firebase-admin` virando dependência de produção, o campo opcional `Transacao.notaChave`, o
+custo variável de um serviço pago dentro do produto, e o segundo host externo de que a rota
+passa a depender.
 
 ## Próxima ação
 
