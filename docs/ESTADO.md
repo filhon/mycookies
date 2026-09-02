@@ -1,7 +1,7 @@
 # Estado do projeto
 
-Atualizado em 2026-09-02 (sessão 3C). **Toda sessão atualiza este arquivo antes de
-encerrar.**
+Atualizado em 2026-09-02 (sessão 3C, mais a primeira rodada de verificação visual).
+**Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
 
@@ -45,7 +45,8 @@ claim de fcbfilipesantos@gmail.com  { contas: { mycookies: "DONA" } }
 Para trocar, `npm run conceder-acesso -- <email> mycookies "MyCookie's" <NomeNovo>` — o
 script atualiza os campos quando a conta já existe.
 
-Falta a verificação visual em navegador, que nunca foi feita.
+A verificação visual começou: as telas de desktop no tema escuro foram conferidas contra as
+specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 
 ## Módulos
 
@@ -331,7 +332,20 @@ toca o Firestore. Decisões em `DECISOES.md#d14` e `#d15`.
 
 ## Próxima ação
 
-**Ver tudo em navegador.** Os índices já estão publicados, então `npm run dev` basta.
+**Salvar a configuração na primeira vez não funciona.** `TelaConfiguracao` semeia o formulário
+com `CONFIGURACAO_SUGERIDA` e semeia a base de comparação com o mesmo valor, então `alterado`
+nasce falso e o botão Salvar nasce desabilitado. Quem nunca salvou não tem como aceitar a
+sugestão sem alterar um campo e desalterar — e é essa tela que destrava o rateio da ficha, as
+formas de pagamento do pedido e o preço médio da meta. Contraria o critério de aceite da 2A
+("carrega e grava em uma leitura e uma escrita") e o `DECISOES.md#d17`. O conserto: quando não
+há documento, a base é a ausência, e a frase de status diz que aqueles são valores sugeridos.
+
+**Ver o resto em navegador.** Os índices já estão publicados, então `npm run dev` basta.
+
+Das capturas de desktop, o que continua sem resposta: o tema **claro**, que é o padrão do
+`DESIGN.md` e não foi fotografado; o **celular** inteiro; e os **rodapés fixos** do editor de
+ficha e do editor de pedido, que não aparecem em captura de página inteira — precisam de
+captura de viewport, com dados dentro.
 
 A verificação visual continua sendo a dívida mais antiga do projeto, e agora tem mais o que
 conferir: saudação vindo do banco, insumo gravando em `contas/mycookies/insumos`,
@@ -419,6 +433,22 @@ Da 3C, o que só o navegador responde:
   em vez de as pílulas descreverem uma lista que não é a da tela.
 - **Fechar a lista e montar outra.** A nova precisa nascer sem nenhum item marcado.
 
+## O que a verificação visual já corrigiu
+
+A primeira rodada de capturas em navegador (desktop, tema escuro) achou duas coisas:
+
+- **Largura de coluna padronizada.** Havia três larguras de conteúdo em uso e nenhuma
+  decidida: listas em 1024px centralizadas, editores e `/compras` em 768px encostados à
+  esquerda, configuração em 672px. Agora toda tela usa a coluna do shell, e os campos que
+  ficariam largos demais foram pareados em grade de duas colunas. `DECISOES.md#d42`.
+- **Rodapé de painel sem respiro no pé.** `area-segura-inferior` define `padding-bottom` e é
+  emitida depois das utilidades do Tailwind, então apagava o `py-4` do rodapé do `Painel` em
+  vez de somar: no desktop o `env()` vale zero e os botões encostavam na borda; no celular o
+  inset do aparelho substituía o respiro. Nasceu `rodape-seguro`, que soma os dois, e o
+  comentário das duas utilidades agora diz qual serve para quê. Vale para os cinco painéis:
+  insumo, transação, meta, cliente e forma de pagamento.
+- **Configuração não podia ser salva na primeira vez.** Segue aberto: ver "Próxima ação".
+
 ## Dívidas conhecidas
 
 Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobertas.
@@ -426,7 +456,7 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | Dívida                                                                       | Onde                             | Quando resolver                                                             |
 | ---------------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------- |
 | Ícones só em SVG; falta PNG 180×180 para `apple-touch-icon` do iOS           | `public/icons/`                  | Antes do primeiro uso real no iPhone                                        |
-| Nenhuma verificação visual em navegador foi feita                            | —                                | Agora: é a próxima ação, e a 3A acrescentou o que conferir                  |
+| Verificação visual só no desktop e só no tema escuro                         | —                                | Agora: falta o tema claro (que é o padrão) e o celular inteiro              |
 | Regras publicadas, mas nunca exercitadas por um cliente real                 | `firestore.rules`                | Na verificação em navegador: é lá que a regra é de fato testada             |
 | Acesso concedido por script, sem cadastro self-serve                         | `scripts/conceder-acesso.mjs`    | Segundo cliente pagante, junto de D10 (`DECISOES.md#d16`)                   |
 | `sair()` não limpa o cache do IndexedDB                                      | `src/providers/AuthProvider.tsx` | Só ao virar SaaS: hoje é vantagem, em aparelho compartilhado vira vazamento |

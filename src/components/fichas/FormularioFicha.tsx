@@ -552,7 +552,7 @@ export function FormularioFicha({
       </header>
 
       {/* Espaço no pé para o painel de preço não cobrir o último bloco. */}
-      <div className="mt-4 max-w-3xl space-y-4 pb-44 lg:pb-40">
+      <div className="mt-4 space-y-4 pb-44 lg:pb-40">
         {rateioZerado && (
           <Faixa tom="atencao">
             <p>
@@ -641,23 +641,25 @@ export function FormularioFicha({
             )}
           </fieldset>
 
-          <Campo
-            rotulo="Nome"
-            required
-            autoFocus={!ficha}
-            placeholder="Cookie de chocolate meio amargo"
-            erro={form.formState.errors.nome?.message}
-            {...form.register("nome")}
-          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Campo
+              rotulo="Nome"
+              required
+              autoFocus={!ficha}
+              placeholder="Cookie de chocolate meio amargo"
+              erro={form.formState.errors.nome?.message}
+              {...form.register("nome")}
+            />
 
-          <Campo
-            rotulo="Categoria"
-            list="categorias-de-ficha"
-            placeholder="Cookie"
-            dica="Serve para agrupar na lista e no relatório de vendas."
-            erro={form.formState.errors.categoria?.message}
-            {...form.register("categoria")}
-          />
+            <Campo
+              rotulo="Categoria"
+              list="categorias-de-ficha"
+              placeholder="Cookie"
+              dica="Serve para agrupar na lista e no relatório de vendas."
+              erro={form.formState.errors.categoria?.message}
+              {...form.register("categoria")}
+            />
+          </div>
           <datalist id="categorias-de-ficha">
             {categoriasConhecidas.map((categoria) => (
               <option key={categoria} value={categoria} />
@@ -810,7 +812,9 @@ export function FormularioFicha({
           titulo="O custo do lote"
           descricao="A conta que a sua concorrente não fez."
         >
-          <dl className="space-y-2 text-label">
+          {/* Recibo, não tabela: a coluna para antes da borda para o rótulo e o
+              valor não ficarem em pontas opostas da tela. */}
+          <dl className="max-w-xl space-y-2 text-label">
             <Parcela rotulo="Insumos" valor={derivado.custo.custoInsumos} />
             <Parcela rotulo="Embalagem" valor={derivado.custo.custoEmbalagem} />
             {ehKit && (
@@ -889,24 +893,26 @@ export function FormularioFicha({
             </div>
           </fieldset>
 
-          {valores.metodo === "MARGEM" ? (
-            <Campo
-              rotulo="Quero que sobre"
-              inputMode="decimal"
-              sufixo="%"
-              dica="Do preço de venda, depois de descontar custo e taxas."
-              erro={form.formState.errors.margemDesejada?.message}
-              {...form.register("margemDesejada")}
-            />
-          ) : (
-            <Campo
-              rotulo="Multiplico o custo por"
-              inputMode="decimal"
-              sufixo="×"
-              erro={form.formState.errors.markup?.message}
-              {...form.register("markup")}
-            />
-          )}
+          <div className="grid gap-4 sm:grid-cols-2">
+            {valores.metodo === "MARGEM" ? (
+              <Campo
+                rotulo="Quero que sobre"
+                inputMode="decimal"
+                sufixo="%"
+                dica="Do preço de venda, depois de descontar custo e taxas."
+                erro={form.formState.errors.margemDesejada?.message}
+                {...form.register("margemDesejada")}
+              />
+            ) : (
+              <Campo
+                rotulo="Multiplico o custo por"
+                inputMode="decimal"
+                sufixo="×"
+                erro={form.formState.errors.markup?.message}
+                {...form.register("markup")}
+              />
+            )}
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Campo

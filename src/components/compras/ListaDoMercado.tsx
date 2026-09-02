@@ -207,9 +207,7 @@ export function ListaDoMercado({
         />
       </CabecalhoPagina>
 
-      <div
-        className={cn("mt-4 max-w-3xl space-y-4", lista && "pb-52 lg:pb-44")}
-      >
+      <div className={cn("mt-4 space-y-4", lista && "pb-52 lg:pb-44")}>
         {/* A lista na tela é a gravada, e o período acima é o escolhido. Quando
             os dois divergem, dizer isso é obrigatório: sem a frase, as pílulas
             estariam descrevendo uma lista que não é a que está embaixo delas. */}

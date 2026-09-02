@@ -623,7 +623,7 @@ export function FormularioPedido({
       </header>
 
       {/* Espaço no pé para o rodapé de totais não cobrir o último bloco. */}
-      <div className="mt-4 max-w-3xl space-y-4 pb-48 lg:pb-44">
+      <div className="mt-4 space-y-4 pb-48 lg:pb-44">
         {pedido ? (
           <Bloco
             icone={ClipboardList}
@@ -675,32 +675,34 @@ export function FormularioPedido({
           titulo="Para quem é"
           descricao="O nome basta. A cliente que compra uma vez na feira não precisa virar cadastro."
         >
-          <Campo
-            rotulo="Nome da cliente"
-            required
-            autoFocus={!pedido}
-            placeholder="Ana Beatriz"
-            value={valores.clienteNome}
-            erro={erros.clienteNome}
-            onChange={(evento) => {
-              definir("clienteNome", evento.target.value);
-              // Mudar o nome à mão desfaz o vínculo: o cadastro aponta para
-              // outra pessoa a partir daqui.
-              if (valores.clienteId) definir("clienteId", "");
-            }}
-          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Campo
+              rotulo="Nome da cliente"
+              required
+              autoFocus={!pedido}
+              placeholder="Ana Beatriz"
+              value={valores.clienteNome}
+              erro={erros.clienteNome}
+              onChange={(evento) => {
+                definir("clienteNome", evento.target.value);
+                // Mudar o nome à mão desfaz o vínculo: o cadastro aponta para
+                // outra pessoa a partir daqui.
+                if (valores.clienteId) definir("clienteId", "");
+              }}
+            />
 
-          <Campo
-            rotulo="Telefone"
-            type="tel"
-            inputMode="tel"
-            placeholder="(11) 90000-0000"
-            dica="Opcional. É por onde a encomenda foi combinada."
-            value={valores.clienteTelefone}
-            onChange={(evento) =>
-              definir("clienteTelefone", evento.target.value)
-            }
-          />
+            <Campo
+              rotulo="Telefone"
+              type="tel"
+              inputMode="tel"
+              placeholder="(11) 90000-0000"
+              dica="Opcional. É por onde a encomenda foi combinada."
+              value={valores.clienteTelefone}
+              onChange={(evento) =>
+                definir("clienteTelefone", evento.target.value)
+              }
+            />
+          </div>
 
           {clienteVinculado ? (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -846,16 +848,18 @@ export function FormularioPedido({
           titulo="Quando e como"
           descricao="A data manda na agenda: é por ela que o pedido aparece na tela Hoje."
         >
-          <Campo
-            rotulo="Data da entrega"
-            type="date"
-            required
-            value={valores.dataEntregaISO}
-            erro={erros.dataEntregaISO}
-            onChange={(evento) =>
-              definir("dataEntregaISO", evento.target.value)
-            }
-          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Campo
+              rotulo="Data da entrega"
+              type="date"
+              required
+              value={valores.dataEntregaISO}
+              erro={erros.dataEntregaISO}
+              onChange={(evento) =>
+                definir("dataEntregaISO", evento.target.value)
+              }
+            />
+          </div>
 
           <fieldset>
             <legend className="text-label font-medium text-ink">

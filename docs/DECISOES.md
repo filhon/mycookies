@@ -1025,3 +1025,32 @@ Vale a mesma regra para `itens` do kit, que é a embalagem dele. E a recursão p
 nível **por construção**, com dois laços em vez de uma chamada recursiva: `#d11` garante que
 kit não contém kit, e escrever isso como dois laços é o que dispensa detecção de ciclo em vez
 de confiar que ninguém vai gravar um dado torto.
+
+---
+
+## D42 · Uma largura de coluna só, e quem estreita é o campo
+
+**Status:** vigente · decidida em 2026-09-02 na verificação visual
+
+**Contexto.** Cada sessão escolheu a sua largura de conteúdo sem que nenhuma delas fosse
+decidida em lugar nenhum: listas em `max-w-5xl` centralizadas pelo shell, editor de ficha,
+editor de pedido e lista de compras em `max-w-3xl`, configuração em `max-w-2xl`. As duas
+últimas larguras vinham sem `mx-auto`, então a coluna encostava à esquerda enquanto o
+cabeçalho — que sangra com `-mx-8` — continuava ocupando os 1024px inteiros. O resultado é
+cabeçalho mais largo que o corpo, conteúdo deslocado para a esquerda, e os rodapés fixos de
+preço, de pedido e de compras (todos `max-w-5xl` centralizados) mais largos que o formulário
+a que pertencem.
+
+**Decisão.** Uma largura só, a do shell: `max-w-5xl` centralizada, em toda tela. Nenhum
+componente de tela volta a declarar largura de coluna. O que estreita é o campo dentro do
+bloco, em grade de duas colunas, e não a página.
+
+**Consequência.** Cabeçalho, conteúdo e rodapé fixo passam a ter a mesma largura e o mesmo
+eixo em todas as telas, que é o que o `DESIGN.md` chama de "conteúdo em coluna com largura
+máxima" sem nunca ter dito qual. Campos que ficariam com 900px de largura foram pareados:
+hora e horas por mês, despesas fixas, margem e outras taxas e arredondamento na configuração;
+nome e categoria na ficha; nome e telefone e a data da entrega no pedido. O recibo do custo do
+lote ganhou `max-w-xl` próprio, porque rótulo e valor em pontas opostas de uma tela de 1024px
+é exatamente a planilha que o `PRODUCT.md` lista como anti-referência.
+
+Prosa continua limitada por medida em `ch`, como já era.

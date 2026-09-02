@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import {
   useId,
   type InputHTMLAttributes,
@@ -151,20 +152,31 @@ export function Seletor({
       obrigatorio={required}
       className={className}
     >
-      <select
-        id={id}
-        aria-invalid={erro ? true : undefined}
-        aria-describedby={erro ? `${id}-erro` : dica ? `${id}-dica` : undefined}
-        className={cn(
-          BASE_CONTROLE,
-          "appearance-none bg-size-[1rem] bg-[right:0.75rem_center] bg-no-repeat pr-10",
-          'bg-[url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23807066%27 stroke-width=%272%27 stroke-linecap=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E")]',
-          erro ? "border-negative" : "border-line-strong",
-        )}
-        {...props}
-      >
-        {children}
-      </select>
+      {/* A seta é um ícone de verdade, e não um SVG embutido no CSS: dentro de
+          uma URL de dados não se lê variável, e a cor ficaria presa a um valor
+          solto que não acompanha o tema. */}
+      <div className="relative">
+        <select
+          id={id}
+          aria-invalid={erro ? true : undefined}
+          aria-describedby={
+            erro ? `${id}-erro` : dica ? `${id}-dica` : undefined
+          }
+          className={cn(
+            BASE_CONTROLE,
+            "appearance-none pr-10",
+            erro ? "border-negative" : "border-line-strong",
+          )}
+          {...props}
+        >
+          {children}
+        </select>
+        <ChevronDown
+          aria-hidden
+          strokeWidth={1.75}
+          className="pointer-events-none absolute inset-y-0 right-3 my-auto size-5 text-ink-muted"
+        />
+      </div>
     </Envelope>
   );
 }

@@ -298,10 +298,11 @@ export function TelaConfiguracao() {
         <SeloSincronizacao pendente={pendente} />
       </div>
 
-      {/* Coluna estreita de propósito: isto é leitura e digitação, não tabela. */}
+      {/* Mesma coluna de todas as telas: quem estreita é o campo dentro do
+          bloco, nunca a página, senão o cabeçalho fica mais largo que o corpo. */}
       <div
         className={cn(
-          "mt-2 max-w-2xl space-y-4",
+          "mt-2 space-y-4",
           // Espaço para a barra de salvar não cobrir o último bloco.
           alterado && "pb-20 lg:pb-0",
         )}
@@ -337,23 +338,25 @@ export function TelaConfiguracao() {
             </>
           }
         >
-          <CampoMoeda
-            rotulo="Quanto vale a sua hora"
-            valor={estado.valorHoraTrabalho}
-            aoMudar={(centavos) => definir("valorHoraTrabalho", centavos)}
-            erro={erros.valorHoraTrabalho}
-          />
-          <Campo
-            rotulo="Horas que você produz por mês"
-            inputMode="decimal"
-            sufixo="h"
-            value={estado.horasProdutivasMes}
-            erro={erros.horasProdutivasMes}
-            dica="Não é o mês inteiro: é o tempo de bancada, forno e embalagem."
-            onChange={(evento) =>
-              definir("horasProdutivasMes", evento.target.value)
-            }
-          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <CampoMoeda
+              rotulo="Quanto vale a sua hora"
+              valor={estado.valorHoraTrabalho}
+              aoMudar={(centavos) => definir("valorHoraTrabalho", centavos)}
+              erro={erros.valorHoraTrabalho}
+            />
+            <Campo
+              rotulo="Horas que você produz por mês"
+              inputMode="decimal"
+              sufixo="h"
+              value={estado.horasProdutivasMes}
+              erro={erros.horasProdutivasMes}
+              dica="Não é o mês inteiro: é o tempo de bancada, forno e embalagem."
+              onChange={(evento) =>
+                definir("horasProdutivasMes", evento.target.value)
+              }
+            />
+          </div>
         </BlocoConfiguracao>
 
         <BlocoConfiguracao
@@ -409,12 +412,14 @@ export function TelaConfiguracao() {
             )
           }
         >
-          <CampoMoeda
-            rotulo="Despesas fixas do mês"
-            valor={estado.despesasFixasMensais}
-            aoMudar={(centavos) => definir("despesasFixasMensais", centavos)}
-            erro={erros.despesasFixasMensais}
-          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <CampoMoeda
+              rotulo="Despesas fixas do mês"
+              valor={estado.despesasFixasMensais}
+              aoMudar={(centavos) => definir("despesasFixasMensais", centavos)}
+              erro={erros.despesasFixasMensais}
+            />
+          </div>
         </BlocoConfiguracao>
 
         <CustoPorHora operacional={operacional} />
@@ -504,60 +509,62 @@ export function TelaConfiguracao() {
             </div>
           </fieldset>
 
-          {estado.metodoPadrao === "MARGEM" ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {estado.metodoPadrao === "MARGEM" ? (
+              <Campo
+                rotulo="Quero que sobre"
+                inputMode="decimal"
+                sufixo="%"
+                value={estado.margemPadrao}
+                erro={erros.margemPadrao}
+                dica="Do preço de venda, depois de descontar custo e taxas."
+                onChange={(evento) =>
+                  definir("margemPadrao", evento.target.value)
+                }
+              />
+            ) : (
+              <Campo
+                rotulo="Multiplico o custo por"
+                inputMode="decimal"
+                sufixo="×"
+                value={estado.markupPadrao}
+                erro={erros.markupPadrao}
+                dica="2,5 quer dizer que um doce de R$ 4,00 de custo sai por R$ 10,00."
+                onChange={(evento) =>
+                  definir("markupPadrao", evento.target.value)
+                }
+              />
+            )}
+
             <Campo
-              rotulo="Quero que sobre"
+              rotulo="Outras taxas sobre o preço"
               inputMode="decimal"
               sufixo="%"
-              value={estado.margemPadrao}
-              erro={erros.margemPadrao}
-              dica="Do preço de venda, depois de descontar custo e taxas."
+              value={estado.outrasTaxasPadrao}
+              erro={erros.outrasTaxasPadrao}
+              dica="Imposto ou comissão de aplicativo, fora a maquininha. Se não tem, deixe zero."
               onChange={(evento) =>
-                definir("margemPadrao", evento.target.value)
+                definir("outrasTaxasPadrao", evento.target.value)
               }
             />
-          ) : (
-            <Campo
-              rotulo="Multiplico o custo por"
-              inputMode="decimal"
-              sufixo="×"
-              value={estado.markupPadrao}
-              erro={erros.markupPadrao}
-              dica="2,5 quer dizer que um doce de R$ 4,00 de custo sai por R$ 10,00."
+
+            <Seletor
+              rotulo="Arredondamento"
+              value={estado.arredondamento}
               onChange={(evento) =>
-                definir("markupPadrao", evento.target.value)
+                definir(
+                  "arredondamento",
+                  evento.target.value as RegraArredondamento,
+                )
               }
-            />
-          )}
-
-          <Campo
-            rotulo="Outras taxas sobre o preço"
-            inputMode="decimal"
-            sufixo="%"
-            value={estado.outrasTaxasPadrao}
-            erro={erros.outrasTaxasPadrao}
-            dica="Imposto ou comissão de aplicativo, fora a maquininha. Se não tem, deixe zero."
-            onChange={(evento) =>
-              definir("outrasTaxasPadrao", evento.target.value)
-            }
-          />
-
-          <Seletor
-            rotulo="Arredondamento"
-            value={estado.arredondamento}
-            onChange={(evento) =>
-              definir(
-                "arredondamento",
-                evento.target.value as RegraArredondamento,
-              )
-            }
-          >
-            {REGRAS.map((regra) => (
-              <option key={regra} value={regra}>
-                {ROTULO_ARREDONDAMENTO[regra]}
-              </option>
-            ))}
-          </Seletor>
+            >
+              {REGRAS.map((regra) => (
+                <option key={regra} value={regra}>
+                  {ROTULO_ARREDONDAMENTO[regra]}
+                </option>
+              ))}
+            </Seletor>
+          </div>
         </BlocoConfiguracao>
 
         {falha && (

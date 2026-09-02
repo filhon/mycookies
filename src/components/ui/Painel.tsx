@@ -165,7 +165,7 @@ export function Painel({
         </div>
 
         {rodape && (
-          <footer className="area-segura-inferior shrink-0 border-t border-line bg-surface px-5 py-4">
+          <footer className="rodape-seguro shrink-0 border-t border-line bg-surface px-5 pt-4">
             {rodape}
           </footer>
         )}

@@ -45,6 +45,11 @@
 
   --mc-focus: var(--mc-wine-700);
 
+  /* Tinta dos controles que o navegador desenha sozinho: caixa de marcar,
+     rádio e o dia escolhido no calendário nativo. Sem isto eles saem no azul
+     do sistema, que não é cor da marca. */
+  --mc-accent: var(--mc-wine-700);
+
   /* Sombra de papel: baixa, quente, quase imperceptível. */
   --mc-shadow-raised:
     0 1px 2px oklch(0.3 0.03 40 / 0.06), 0 4px 12px oklch(0.3 0.03 40 / 0.05);
@@ -76,6 +81,7 @@
     --mc-info-soft: oklch(0.28 0.04 245);
 
     --mc-focus: var(--mc-wine-300);
+    --mc-accent: var(--mc-wine-300);
 
     --mc-shadow-raised:
       0 1px 2px oklch(0 0 0 / 0.3), 0 4px 12px oklch(0 0 0 / 0.25);
@@ -168,6 +174,7 @@
   body {
     background-color: var(--mc-canvas);
     color: var(--mc-ink);
+    accent-color: var(--mc-accent);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -183,6 +190,21 @@
   ::selection {
     background-color: var(--mc-wine-700);
     color: var(--mc-on-wine);
+  }
+
+  /**
+   * O ícone do seletor de data é desenhado pelo navegador e só aceita peso, não
+   * cor. Baixar a opacidade o aproxima do `--mc-ink-muted` dos nossos ícones,
+   * nos dois temas. O calendário que ele abre é interface do navegador e não
+   * tem superfície de CSS nenhuma.
+   */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.65;
+    transition: opacity 150ms var(--ease-quart);
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
   }
 
   /* Some o spinner nativo: quantidade é digitada, não incrementada com o dedo. */
@@ -236,8 +258,25 @@
   min-width: 44px;
 }
 
+/**
+ * Só a faixa do aparelho, para quem não tem respiro próprio no pé — a
+ * navegação inferior, cujos itens já carregam o próprio padding.
+ *
+ * Cuidado: isto define `padding-bottom` e é emitido depois das utilidades do
+ * Tailwind, então em cima de um `py-4` ele não soma, ele apaga. Rodapé com
+ * respiro próprio usa `rodape-seguro`.
+ */
 @utility area-segura-inferior {
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/**
+ * Rodapé de painel e de folha inferior: o respiro do botão somado à faixa do
+ * aparelho. No desktop o `env()` é zero e sobra o respiro; no celular os dois
+ * se somam, e o botão não encosta no indicador de tela cheia.
+ */
+@utility rodape-seguro {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
 }
 
 @layer base {
