@@ -15,8 +15,15 @@ pedido ao caixa e preencheu a metade do agregado que a spec 004 tinha deixado em
 entregou a coleção `listasCompra` e a tela `/compras`, que fecha o ciclo do produto — do
 pedido combinado até o carrinho no mercado.
 
-**Todas as specs escritas estão executadas.** Não há próxima sessão de spec: o que falta é a
+**Todas as specs de módulo estão executadas.** O que falta não é módulo: é a spec
+`005-prontidao.md`, escrita em 2026-09-02 depois de uma verificação do estado real do
+repositório. Ela tem duas sessões — `5A` conserta o que impede o primeiro uso, `5B` faz a
 verificação em navegador, que é a dívida mais antiga do projeto.
+
+**O sistema não está pronto para produção.** O bloqueio é um só e está identificado no
+código: uma conta nova não consegue salvar a configuração, e sem `configuracao/geral` a
+ficha calcula sem rateio, o pedido fica sem forma de pagamento e o caixa sem taxa de
+maquininha. Detalhes e conserto na spec 005, sessão 5A.
 
 Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), 228 testes,
 build com 13 rotas estáticas mais `/fichas/[id]` e `/pedidos/[id]` dinâmicas e service worker
@@ -58,6 +65,7 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 | 2   | Custos operacionais e precificação          | pronto (2A e 2B)     | `specs/002-precificacao.md` |
 | 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C) | `specs/003-pedidos.md`      |
 | 4   | Caixa, metas e previsão                     | pronto (4A e 4B)     | `specs/004-caixa.md`        |
+| 5   | Prontidão: conserto e verificação           | **a fazer (5A, 5B)** | `specs/005-prontidao.md`    |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -332,6 +340,15 @@ toca o Firestore. Decisões em `DECISOES.md#d14` e `#d15`.
 
 ## Próxima ação
 
+**Executar a sessão 5A de `specs/005-prontidao.md`**, que é o que destrava o primeiro uso, e
+em seguida a 5B, que é a verificação em navegador. A spec traz o roteiro em ordem, porque
+cada passo constrói o estado que o seguinte consome; as listas por sessão abaixo continuam
+aqui como a matéria-prima de onde ele saiu.
+
+O portão de conclusão foi rodado de verdade em 2026-09-02 e passa nos quatro: lint, typecheck,
+228 testes e build. Portão passando não é o mesmo que sistema pronto — nenhum dos quatro toca
+no Firestore.
+
 **Salvar a configuração na primeira vez não funciona.** `TelaConfiguracao` semeia o formulário
 com `CONFIGURACAO_SUGERIDA` e semeia a base de comparação com o mesmo valor, então `alterado`
 nasce falso e o botão Salvar nasce desabilitado. Quem nunca salvou não tem como aceitar a
@@ -455,13 +472,13 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 
 | Dívida                                                                       | Onde                             | Quando resolver                                                             |
 | ---------------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------- |
-| Ícones só em SVG; falta PNG 180×180 para `apple-touch-icon` do iOS           | `public/icons/`                  | Antes do primeiro uso real no iPhone                                        |
-| Verificação visual só no desktop e só no tema escuro                         | —                                | Agora: falta o tema claro (que é o padrão) e o celular inteiro              |
-| Regras publicadas, mas nunca exercitadas por um cliente real                 | `firestore.rules`                | Na verificação em navegador: é lá que a regra é de fato testada             |
+| Ícones só em SVG; falta PNG 180×180 para `apple-touch-icon` do iOS           | `public/icons/`                  | **Spec 005, sessão 5A**: sem ele o iPhone instala uma miniatura da página   |
+| Verificação visual só no desktop e só no tema escuro                         | —                                | **Spec 005, sessão 5B**: falta o tema claro (que é o padrão) e o celular    |
+| Regras publicadas, mas nunca exercitadas por um cliente real                 | `firestore.rules`                | **Spec 005, sessão 5B**, passo 1: é lá que a regra é de fato testada        |
 | Acesso concedido por script, sem cadastro self-serve                         | `scripts/conceder-acesso.mjs`    | Segundo cliente pagante, junto de D10 (`DECISOES.md#d16`)                   |
 | `sair()` não limpa o cache do IndexedDB                                      | `src/providers/AuthProvider.tsx` | Só ao virar SaaS: hoje é vantagem, em aparelho compartilhado vira vazamento |
 | Agregados incrementados no cliente                                           | `src/lib/firebase/mutations/`    | Segundo cliente pagante (`DECISOES.md#d10`)                                 |
-| `@hookform/resolvers` instalado e não usado: a validação é `safeParse`       | `package.json`                   | Se um segundo formulário pedir resolver; hoje removê-lo é a opção honesta   |
+| `@hookform/resolvers` instalado e não usado: a validação é `safeParse`       | `package.json`                   | **Spec 005, sessão 5A**: sai como carona, por ser peso morto no pacote      |
 | Agregado do mês pode ficar torto se um delta se perder no caminho            | `mutations/agregado.ts`          | Tem escape: "Recalcular o mês" na tela. A troca real é a mesma de D10       |
 | Mudar um lançamento de mês não move o espelho da meta do mês destino         | `mutations/transacoes.ts`        | Mesmo escape e mesma troca: `DECISOES.md#d29`                               |
 | Produto revertido sobra zerado no agregado até recalcular                    | `mutations/agregado.ts`          | `produtosOrdenados` o esconde na leitura; recalcular limpa (`#d37`)         |
