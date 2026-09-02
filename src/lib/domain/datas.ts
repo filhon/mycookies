@@ -31,6 +31,12 @@ const DIA_E_MES = new Intl.DateTimeFormat("pt-BR", {
   month: "short",
 });
 
+const DIA_POR_EXTENSO = new Intl.DateTimeFormat("pt-BR", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+
 function doisDigitos(valor: number): string {
   return String(valor).padStart(2, "0");
 }
@@ -107,4 +113,31 @@ export function rotuloMes(competencia: CompetenciaMensal): string {
 /** '03 de set.' — o dia de um lançamento na lista. */
 export function rotuloDia(iso: DataISO): string {
   return DIA_E_MES.format(dataDeISO(iso));
+}
+
+/**
+ * O dia `passo` dias adiante (ou atrás), em ISO. `Date` normaliza a virada de
+ * mês e de ano sozinho, e a conta acontece toda no fuso do aparelho.
+ */
+export function diaVizinho(iso: DataISO, passo: number): DataISO {
+  const data = dataDeISO(iso);
+  data.setDate(data.getDate() + passo);
+  return dataISODe(data);
+}
+
+/**
+ * 'Hoje', 'Amanhã', 'Ontem' ou 'Sábado, 12 de setembro' — o cabeçalho de um dia
+ * na agenda.
+ *
+ * Os três primeiros existem porque é assim que ela fala do próprio dia: uma
+ * entrega de hoje anunciada como "quarta-feira, 2 de setembro" obriga a
+ * conferir o calendário para saber que é agora.
+ */
+export function rotuloAgenda(iso: DataISO, hoje: DataISO): string {
+  if (iso === hoje) return "Hoje";
+  if (iso === diaVizinho(hoje, 1)) return "Amanhã";
+  if (iso === diaVizinho(hoje, -1)) return "Ontem";
+
+  const escrito = DIA_POR_EXTENSO.format(dataDeISO(iso));
+  return escrito.charAt(0).toUpperCase() + escrito.slice(1);
 }

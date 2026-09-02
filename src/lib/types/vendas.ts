@@ -55,7 +55,12 @@ export interface Pedido extends DocumentoBase {
    * para sortear um número sequencial no ato do pedido.
    */
   codigo: string;
-  /** Sequencial humano, atribuído por Cloud Function quando o doc sincroniza. */
+  /**
+   * Sequencial humano. **Nunca gravado**, e de propósito: contar em um lugar só
+   * exige `runTransaction`, transação exige rede, e um pedido anotado na feira
+   * sem sinal não pode esperar um número. Quem identifica o pedido é `codigo`.
+   * O campo fica para o dia em que houver servidor (`DECISOES.md#d31`).
+   */
   numero?: number;
 
   clienteId?: string;

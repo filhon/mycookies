@@ -23,12 +23,12 @@ import {
   Tag,
   TriangleAlert,
 } from "lucide-react";
+import { Bloco } from "@/components/ui/Bloco";
 import { Botao } from "@/components/ui/Botao";
+import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
 import { Campo, Seletor } from "@/components/ui/Campo";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
-import { BlocoFicha } from "./BlocoFicha";
-import { BuscaItem, type OpcaoBusca } from "./BuscaItem";
 import { LinhaComponenteFicha, LinhaItemFicha } from "./LinhaItemFicha";
 import { PainelPreco } from "./PainelPreco";
 import {
@@ -588,7 +588,7 @@ export function FormularioFicha({
           </Faixa>
         )}
 
-        <BlocoFicha
+        <Bloco
           icone={Tag}
           titulo="O produto"
           descricao="Como ele aparece na hora de montar um pedido."
@@ -663,9 +663,9 @@ export function FormularioFicha({
               <option key={categoria} value={categoria} />
             ))}
           </datalist>
-        </BlocoFicha>
+        </Bloco>
 
-        <BlocoFicha
+        <Bloco
           icone={Clock}
           titulo="Rendimento e tempo"
           descricao="Quanto sai de um lote e quanto tempo ele toma do começo ao fim: forno, bancada e embalagem."
@@ -699,10 +699,10 @@ export function FormularioFicha({
               {...form.register("tempoProducaoMinutos")}
             />
           </div>
-        </BlocoFicha>
+        </Bloco>
 
         {ehKit && (
-          <BlocoFicha
+          <Bloco
             icone={ChefHat}
             titulo="O que vai no kit"
             descricao="As fichas prontas que entram nesta caixa. Um kit não leva outro kit dentro."
@@ -745,10 +745,10 @@ export function FormularioFicha({
                 );
               })}
             </ListaDeLinhas>
-          </BlocoFicha>
+          </Bloco>
         )}
 
-        <BlocoFicha
+        <Bloco
           icone={ehKit ? Package : ChefHat}
           titulo={ehKit ? "Embalagem do kit" : "O que vai dentro"}
           descricao={
@@ -803,9 +803,9 @@ export function FormularioFicha({
               );
             })}
           </ListaDeLinhas>
-        </BlocoFicha>
+        </Bloco>
 
-        <BlocoFicha
+        <Bloco
           icone={Receipt}
           titulo="O custo do lote"
           descricao="A conta que a sua concorrente não fez."
@@ -848,9 +848,9 @@ export function FormularioFicha({
               </dd>
             </div>
           </dl>
-        </BlocoFicha>
+        </Bloco>
 
-        <BlocoFicha
+        <Bloco
           icone={Percent}
           titulo="Como calcular o preço"
           descricao="A taxa entra aqui porque ela sai do seu lucro, não do bolso da cliente."
@@ -926,7 +926,7 @@ export function FormularioFicha({
               {...form.register("outrasTaxas")}
             />
           </div>
-        </BlocoFicha>
+        </Bloco>
 
         {falha && (
           <p role="alert" className="text-label text-negative">

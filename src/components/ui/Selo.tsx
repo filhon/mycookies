@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils/cn";
 
-type Tom = "neutro" | "marca" | "positivo" | "atencao" | "negativo" | "info";
+export type TomSelo =
+  "neutro" | "marca" | "positivo" | "atencao" | "negativo" | "info";
+
+type Tom = TomSelo;
 
 const TONS: Record<Tom, string> = {
   neutro: "bg-sunken text-ink-muted",

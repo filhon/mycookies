@@ -3,14 +3,15 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils/cn";
 
 /**
- * Uma seção do editor de ficha.
+ * Uma seção de editor: ícone, título, uma frase de contexto e o conteúdo.
  *
- * Parece o bloco da configuração e não é ele: aquele existe para carregar a
- * frase de consequência embaixo de campos de digitação, enquanto este precisa
- * deixar uma lista de itens sangrar até a borda e viver sem rodapé. Quando
- * houver um terceiro caso, os dois viram um primitivo em `components/ui`.
+ * Nasceu no editor de ficha e virou primitivo quando o editor de pedido pediu
+ * a mesma anatomia — era a condição que o próprio componente registrava. Parece
+ * o bloco da configuração e não é ele: aquele existe para carregar a frase de
+ * consequência embaixo de campos de digitação, enquanto este precisa deixar uma
+ * lista de itens sangrar até a borda e viver sem rodapé.
  */
-export function BlocoFicha({
+export function Bloco({
   icone: Icone,
   titulo,
   descricao,

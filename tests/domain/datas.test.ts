@@ -7,6 +7,8 @@ import {
   dataISODe,
   diaDeISO,
   diasNoMes,
+  diaVizinho,
+  rotuloAgenda,
   rotuloCompetencia,
   rotuloMes,
 } from "@/lib/domain/datas";
@@ -64,6 +66,33 @@ describe("competenciaVizinha", () => {
   it("vira o ano nos dois sentidos", () => {
     expect(competenciaVizinha("2026-12", 1)).toBe("2027-01");
     expect(competenciaVizinha("2026-01", -1)).toBe("2025-12");
+  });
+});
+
+describe("diaVizinho", () => {
+  it("anda um dia para cada lado", () => {
+    expect(diaVizinho("2026-09-15", 1)).toBe("2026-09-16");
+    expect(diaVizinho("2026-09-15", -1)).toBe("2026-09-14");
+  });
+
+  it("vira o mês e o ano sem passar por UTC", () => {
+    expect(diaVizinho("2026-09-30", 1)).toBe("2026-10-01");
+    expect(diaVizinho("2026-01-01", -1)).toBe("2025-12-31");
+    expect(diaVizinho("2028-02-28", 1)).toBe("2028-02-29");
+  });
+});
+
+describe("rotuloAgenda", () => {
+  it("fala do dia dela como ela fala", () => {
+    expect(rotuloAgenda("2026-09-15", "2026-09-15")).toBe("Hoje");
+    expect(rotuloAgenda("2026-09-16", "2026-09-15")).toBe("Amanhã");
+    expect(rotuloAgenda("2026-09-14", "2026-09-15")).toBe("Ontem");
+  });
+
+  it("escreve o dia da semana por extenso quando está mais longe", () => {
+    expect(rotuloAgenda("2026-09-20", "2026-09-15")).toBe(
+      "Domingo, 20 de setembro",
+    );
   });
 });
 

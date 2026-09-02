@@ -669,3 +669,138 @@ Da mesma família, e no mesmo módulo: `esforcoRestante` troca "por semana" por 
 mês" quando restam menos de sete dias. Repartir 261 doces por dois sétimos de semana devolve
 914 doces por semana, que é uma conta correta e uma informação inútil — no dia 29 o número
 honesto é o total que falta.
+
+---
+
+## D31 · O pedido é identificado por código de aparelho, e `numero` fica sem uso
+
+**Status:** vigente · decidida em 2026-09-02 na spec `003-pedidos`, sessão 3A
+
+**Contexto.** `Pedido` foi tipado com dois identificadores: `codigo`, curto e legível, e
+`numero`, o sequencial humano que toda nota fiscal tem. `ResumoGlobal` foi tipado com
+`ultimoNumeroPedido`, `pedidosAbertos` e `proximaEntrega` para sustentar o segundo e para
+poupar consultas.
+
+**Decisão.** `codigo` nasce no aparelho — `P-AAMMDD-XXX`, com três caracteres do `novoId()` —
+e é a identidade do pedido. **`numero` não é gravado**, e os três campos de `ResumoGlobal`
+ficam em zero. `totalClientes`, esse sim, é incrementado, pelo mesmo caminho de
+`totalInsumos` e `totalFichas`.
+
+**Consequência.** Um sequencial exige alguém contando em um lugar só, contar exige
+`runTransaction`, e transação exige rede — proibida em caminho crítico (`CLAUDE.md`). O
+pedido anotado na feira, sem sinal, não pode esperar um número. O preço é que o código não
+ordena: `P-260915-K3F` não diz que veio antes de `P-260915-A2C`. Quem ordena é
+`dataEntregaISO`, e é por ela que a agenda anda.
+
+`pedidosAbertos` e `proximaEntrega` ficam de fora por um motivo diferente e mais forte:
+**campo mantido por incremento que ninguém lê é campo que torce em silêncio.** A agenda já
+responde as duas perguntas com a consulta que a tela Hoje faz de qualquer jeito, e um
+contador a mais seria mais uma coisa para "Recalcular" ter que consertar um dia.
+
+---
+
+## D32 · Preço e custo congelam quando o item entra no pedido
+
+**Status:** vigente · decidida em 2026-09-02 na spec `003-pedidos`, sessão 3A
+
+**Contexto.** `D08` decidiu que `ItemPedido` guarda `nomeSnapshot`, `precoUnitario` e
+`custoUnitarioSnapshot`. Faltava dizer **quando** o congelamento acontece, e o que fazer
+quando a ficha muda de preço depois.
+
+**Decisão.** O item congela preço e custo no instante em que entra no pedido. Mudar a
+quantidade multiplica o congelado e nunca busca o preço de hoje. Enquanto o pedido é
+`ORCAMENTO`, e só enquanto é, a linha cujo preço divergiu da ficha ganha um selo com o preço
+de agora e a ação **"usar o preço de hoje"**, que troca preço e custo juntos.
+
+**Consequência.** É o mesmo vocabulário do `custoDesatualizado` da ficha (`#d05`) e a mesma
+regra de `#d21`: o sistema mostra e oferece, nunca reprecifica pelas costas dela. De
+`CONFIRMADO` em diante o selo some, porque o preço combinado com a cliente é o preço — um
+orçamento aceito não muda de valor porque o chocolate subiu.
+
+Preço e custo andam juntos na troca de propósito: aceitar o preço de hoje e manter o custo de
+antes produziria um lucro que nunca existiu. E a ficha arquivada depois do pedido não quebra
+a linha: sem ficha para comparar, o selo não aparece e o congelado continua valendo — que é
+exatamente o que um pedido antigo deve mostrar.
+
+---
+
+## D33 · A taxa de entrega é receita, e aparece em linha própria
+
+**Status:** vigente · decidida em 2026-09-02 na spec `003-pedidos`, sessão 3A
+
+**Contexto.** `total = subtotal − desconto + entrega.taxa`. Falta decidir de que lado a taxa
+de entrega cai no lucro do pedido.
+
+**Decisão.** Ela entra no total e **não** entra no custo. `lucroEstimado` carrega a taxa
+dentro, e por isso o rodapé do editor mostra a entrega em linha própria e a frase de sobra
+diz quanto dela é entrega.
+
+**Consequência.** Sumir com ela do total seria esconder receita; descontá-la como custo
+exigiria um campo de custo de entrega que não existe, o que seria inventar dado. Dizer o
+número na tela é o que evita a leitura errada: dos R$ 75,82 que sobram do caso de aceite,
+R$ 10,00 são a entrega, e ela precisa ver isso antes de achar que o doce está rendendo mais
+do que rende.
+
+A taxa da maquininha incide sobre o total com a entrega dentro, porque é sobre o total que a
+maquininha cobra. Quem calcula é `taxaCobrada`, a mesma de `custosOperacionais.ts` — o pedido
+e a transação do caixa precisam nascer do mesmo cálculo (`#d24`), e a 3B depende disso.
+
+---
+
+## D34 · O status anda por regra testada, e cancelar não é arquivar
+
+**Status:** vigente · decidida em 2026-09-02 na spec `003-pedidos`, sessão 3A
+
+**Contexto.** Seis estados e uma tela cheia de botões é o desenho em que a regra de transição
+acaba espalhada por `disabled` de componente, e cada tela nova a reinventa um pouco diferente.
+
+**Decisão.** `transicoesPermitidas(status)` mora em `pedido.ts`, é testada, e devolve um passo
+adiante, um passo atrás e `CANCELADO`. Cancelado só reabre como orçamento. A mutação
+`mudarStatusPedido` confere a mesma regra antes de escrever, e a tela desenha os botões a
+partir dela.
+
+**Consequência.** Voltar um passo é sempre permitido porque marcar "pronto" sem querer não
+pode custar um pedido. A conferência na mutação não é redundância decorativa: a tela pode
+estar aberta há meia hora oferecendo uma transição que já não vale.
+
+Duas escolhas de execução ficam registradas:
+
+- **O status é escrito na hora, fora do "Salvar".** É uma ação com verbo próprio ("marcar
+  como pronto"), e não um campo de formulário: um botão de estado que só valesse depois de
+  salvar seria mentira sobre o que acabou de acontecer. O pedido novo é o único caso em que
+  o estado é escolha de formulário — ele nasce como orçamento ou já confirmado, porque a
+  encomenda fechada no WhatsApp não deveria custar dois passos.
+- **Cancelar é `status`, arquivar é `arquivado`.** Cancelado continua na lista, contável e
+  reabrível; arquivado some da lista e é o que se faz com o pedido anotado duas vezes. A tela
+  diz essa diferença na confirmação de arquivar, senão os dois viram sinônimos no primeiro
+  dia de uso.
+
+---
+
+## D35 · Cliente é cadastro opcional, aberto de dentro do pedido
+
+**Status:** vigente · decidida em 2026-09-02 na spec `003-pedidos`, sessão 3A
+
+**Contexto.** `Cliente` é uma coleção com nome, contato e agregados. O caminho óbvio seria uma
+tela `/clientes` com lista, cadastro e edição, e um seletor obrigatório no pedido.
+
+**Decisão.** Não há tela de clientes. `clienteNome` é obrigatório e é snapshot; `clienteId` é
+opcional. O editor de pedido sugere cadastros que combinam com o nome digitado, oferece
+vincular, e abre o cadastro em painel quando ela quiser guardar telefone, Instagram, endereço
+e observações.
+
+**Consequência.** A cliente que compra uma vez na feira não vira ficha de cadastro, e a venda
+rápida não vira formulário. O que se perde é a lista de clientes — não há onde ver "todas as
+minhas clientes" nem arquivar uma —, e isso nasce junto com os agregados de dinheiro, que são
+da 3B. Vincular também traz o endereço para a entrega, porque o sistema não pede o que já sabe.
+
+Duas consequências de código, registradas porque um leitor futuro vai comparar com o editor
+de ficha:
+
+- **O editor de pedido usa `useState`, e não `react-hook-form`.** `D22` continua valendo como
+  está: aquela biblioteca resolve lista dinâmica de campos registrados, e aqui a linha carrega
+  preço e custo congelados, que são estado e não entrada de teclado. Uma chave local por linha
+  faz o mesmo que `useFieldArray` fazia lá.
+- **`BlocoFicha` e `BuscaItem` viraram `components/ui/Bloco` e `components/ui/BuscaItem`.** Era
+  a condição que o próprio `BlocoFicha` registrava — promover no terceiro caso —, e o editor
+  de pedido é o terceiro. Nada mudou no comportamento dos dois.

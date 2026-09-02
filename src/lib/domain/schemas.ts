@@ -213,12 +213,92 @@ export const esquemaMeta = z.object({
 
 export type EntradaMeta = z.infer<typeof esquemaMeta>;
 
+/**
+ * Cadastro leve de cliente: só o nome é obrigatório.
+ *
+ * Quatro campos opcionais e nenhum deles trava a venda, porque a cliente que
+ * compra uma vez na feira não vira ficha de cadastro — o pedido dela guarda o
+ * nome e segue (`clienteId` é opcional em `Pedido`).
+ */
+export const esquemaCliente = z.object({
+  nome: z.string().trim().min(2, "Diga o nome da cliente."),
+  telefone: z.string().trim().optional(),
+  instagram: z.string().trim().optional(),
+  endereco: z.string().trim().optional(),
+  observacoes: z.string().trim().optional(),
+});
+
+export type EntradaCliente = z.infer<typeof esquemaCliente>;
+
+/**
+ * O pedido inteiro, validado sobre os números já convertidos.
+ *
+ * As linhas entram aqui, e não só os campos de topo, pelo mesmo motivo da
+ * ficha: ela adiciona o produto por toque e esquece de digitar quantos. E
+ * pedido sem item nenhum não é rascunho — é uma encomenda que não existe, com
+ * data de entrega marcada.
+ */
+export const esquemaPedido = z.object({
+  clienteNome: z.string().trim().min(2, "Diga para quem é este pedido."),
+  clienteTelefone: z.string().trim().optional(),
+  dataEntregaISO: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Escolha a data da entrega."),
+  status: z.enum([
+    "ORCAMENTO",
+    "CONFIRMADO",
+    "EM_PRODUCAO",
+    "PRONTO",
+    "ENTREGUE",
+    "CANCELADO",
+  ]),
+  tipoEntrega: z.enum(["RETIRADA", "ENTREGA"]),
+  taxaEntrega: z
+    .number()
+    .int()
+    .min(0, "A taxa de entrega não pode ser negativa."),
+  endereco: z.string().trim().optional(),
+  desconto: z.number().int().min(0, "O desconto não pode ser negativo."),
+  formaPagamentoId: z.string().trim().optional(),
+  itens: z
+    .array(
+      z.object({
+        fichaTecnicaId: z.string().min(1),
+        quantidade: z.number().positive("Diga quantas unidades vão."),
+      }),
+    )
+    .min(1, "Um pedido precisa de pelo menos um produto."),
+  observacoes: z.string().trim().optional(),
+});
+
+export type EntradaPedidoFormulario = z.infer<typeof esquemaPedido>;
+
 /** Converte as falhas do zod em um mapa campo → primeira mensagem. */
 export function errosPorCampo(erro: z.ZodError): Record<string, string> {
   const mapa: Record<string, string> = {};
   for (const problema of erro.issues) {
     const campo = String(problema.path[0] ?? "");
     if (campo && !mapa[campo]) mapa[campo] = problema.message;
+  }
+  return mapa;
+}
+
+/**
+ * As falhas de uma lista, por índice de linha: `itens.2.quantidade` cai no 2.
+ *
+ * Sem isto, o erro da terceira linha apareceria embaixo da lista inteira, e ela
+ * teria que conferir item por item para descobrir qual está sem quantidade.
+ */
+export function errosDeLinha(
+  erro: z.ZodError,
+  lista: string,
+): Record<number, string> {
+  const mapa: Record<number, string> = {};
+  for (const problema of erro.issues) {
+    if (problema.path[0] !== lista) continue;
+    const indice = problema.path[1];
+    if (typeof indice !== "number" || mapa[indice]) continue;
+    mapa[indice] = problema.message;
   }
   return mapa;
 }
