@@ -38,6 +38,32 @@ export interface DadosInsumo {
   estoqueMinimo?: number;
 }
 
+/**
+ * O insumo já gravado, de volta na forma que `atualizarInsumo` recebe.
+ *
+ * Existe para quem quer mudar um campo só e não tem o formulário na mão — a
+ * correção de preço no mercado, que grava o insumo a partir da lista de compras.
+ * Sem isto, aquele caminho reescreveria a forma do documento por conta própria.
+ */
+export function dadosDoInsumo(insumo: Insumo): DadosInsumo {
+  return {
+    nome: insumo.nome,
+    categoria: insumo.categoria,
+    ...(insumo.marca ? { marca: insumo.marca } : {}),
+    ...(insumo.fornecedor ? { fornecedor: insumo.fornecedor } : {}),
+    precoCompra: insumo.precoCompra,
+    quantidadeCompra: insumo.quantidadeCompra,
+    unidadeCompra: insumo.unidadeCompra,
+    perdaPercentual: insumo.perdaPercentual,
+    ...(insumo.estoqueAtual !== undefined && insumo.estoqueAtual !== null
+      ? { estoqueAtual: insumo.estoqueAtual }
+      : {}),
+    ...(insumo.estoqueMinimo !== undefined && insumo.estoqueMinimo !== null
+      ? { estoqueMinimo: insumo.estoqueMinimo }
+      : {}),
+  };
+}
+
 /** Quantas compras anteriores ficam guardadas dentro do próprio documento. */
 const LIMITE_HISTORICO = 12;
 

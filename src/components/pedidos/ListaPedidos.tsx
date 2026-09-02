@@ -12,6 +12,7 @@ import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { Selo } from "@/components/ui/Selo";
 import { classesBotao } from "@/components/ui/estilosBotao";
+import { AtalhoParaCompras } from "@/components/compras/AtalhoParaCompras";
 import { LinhaPedido } from "./LinhaPedido";
 import { ID_PEDIDO_NOVO } from "./EditorPedido";
 import { dataISODe, rotuloAgenda } from "@/lib/domain/datas";
@@ -81,16 +82,22 @@ export function ListaPedidos() {
         titulo="Pedidos"
         descricao="O que você combinou entregar, para quem, e quanto sobra de cada encomenda."
         acao={
-          <Link
-            href={`/pedidos/${ID_PEDIDO_NOVO}`}
-            className={classesBotao({
-              variante: "primaria",
-              className: "hidden lg:inline-flex",
-            })}
-          >
-            <Plus aria-hidden className="size-5" strokeWidth={2} />
-            Novo pedido
-          </Link>
+          <div className="flex items-center gap-2">
+            {/* A lista de compras não cabe na navegação inferior — cinco
+                destinos é o teto —, e é daqui que ela nasce: o que comprar é
+                consequência do que foi combinado. */}
+            <AtalhoParaCompras />
+            <Link
+              href={`/pedidos/${ID_PEDIDO_NOVO}`}
+              className={classesBotao({
+                variante: "primaria",
+                className: "hidden lg:inline-flex",
+              })}
+            >
+              <Plus aria-hidden className="size-5" strokeWidth={2} />
+              Novo pedido
+            </Link>
+          </div>
         }
       >
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:px-0">

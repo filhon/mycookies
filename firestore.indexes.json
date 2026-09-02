@@ -42,6 +42,14 @@
       ]
     },
     {
+      "collectionGroup": "listasCompra",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "arquivado", "order": "ASCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "transacoes",
       "queryScope": "COLLECTION",
       "fields": [

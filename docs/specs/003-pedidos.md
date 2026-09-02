@@ -563,16 +563,18 @@ Esses números vão para `tests/domain/listaCompras.test.ts` como estão.
 
 ## Critérios de aceite 3C
 
-- [ ] Os números do caso de aceite batem exatamente, em teste.
-- [ ] O kit explode em componentes e para no primeiro nível, em teste.
-- [ ] A perda divide e o estoque é descontado depois dela, em teste.
-- [ ] Insumo com estoque suficiente aparece como "não precisa comprar", e não some.
-- [ ] Regerar preserva o que já foi marcado como comprado.
-- [ ] Orçamento não entra na lista, e a tela diz quantos ficaram de fora.
-- [ ] Corrigir o preço de um insumo pela lista atualiza o insumo e marca as fichas.
-- [ ] Rendimento zero ou ficha arquivada no meio da explosão não quebram a conta.
-- [ ] Índice publicado.
-- [ ] Portão de conclusão passando.
+- [x] Os números do caso de aceite batem exatamente, em teste.
+- [x] O kit explode em componentes e para no primeiro nível, em teste. O componente é contado
+      por lote do kit, como no motor de custo — a divergência em relação à letra da spec está
+      em `DECISOES.md#d41`, e não muda o caso de aceite.
+- [x] A perda divide e o estoque é descontado depois dela, em teste.
+- [x] Insumo com estoque suficiente aparece como "não precisa comprar", e não some.
+- [x] Regerar preserva o que já foi marcado como comprado.
+- [x] Orçamento não entra na lista, e a tela diz quantos ficaram de fora, com atalho para cada.
+- [x] Corrigir o preço de um insumo pela lista atualiza o insumo e marca as fichas.
+- [x] Rendimento zero ou ficha arquivada no meio da explosão não quebram a conta.
+- [x] Índice publicado.
+- [x] Portão de conclusão passando.
 
 ---
 

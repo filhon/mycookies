@@ -78,6 +78,8 @@ export const docPedido = (contaId: string, id: string) =>
   doc(colPedidos(contaId), id);
 export const docCliente = (contaId: string, id: string) =>
   doc(colClientes(contaId), id);
+export const docListaCompras = (contaId: string, id: string) =>
+  doc(colListasCompra(contaId), id);
 
 /**
  * A meta de um mês, com a competência como id.

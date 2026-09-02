@@ -938,3 +938,90 @@ o campo que a carrega é outro.
 
 `Meta.pedidosNecessarios` é gravado no salvamento e refeito na leitura, pela mesma regra de
 `#d30`: o ticket médio anda a cada pedido pago, e a meta não é reescrita junto.
+
+---
+
+## D39 · A demanda é recalculada; o carrinho é gravado
+
+**Status:** vigente · decidida em 2026-09-02 na spec `003-pedidos`, sessão 3C
+
+**Contexto.** `listasCompra` foi tipada como coleção desde o Módulo 0, e a pergunta óbvia é
+por que ela existe: a demanda de insumo é função pura dos pedidos, das fichas e dos insumos,
+e a tela já assina os três. Uma consulta responderia "o que comprar" sem documento nenhum.
+
+**Decisão.** A demanda é recalculada em memória a cada render, por `explodirDemanda` e
+`montarLista`. O documento guarda **o que ela marcou**: `itens[].comprado`, mais o período e
+os `pedidoIds` que o originaram.
+
+**Consequência.** O que justifica a coleção não é a conta, é o carrinho. Recalcular a demanda
+é aritmética barata sobre dados que a tela já tem; meia hora de mercado marcada item a item
+não se recalcula de lugar nenhum. Disso decorrem três coisas que surpreendem:
+
+- **A tela mostra a lista gravada, e não a recalculada.** As duas divergem assim que um pedido
+  é confirmado, e por isso "Refazer" é um botão e não um efeito: regerar sozinha, no meio da
+  feira, mudaria o carrinho embaixo da mão dela. Quando o período escolhido difere do período
+  gravado, a tela diz isso em uma frase, senão as pílulas descreveriam uma lista que não é a
+  que está embaixo delas.
+- **As pendências, essas, são as de agora.** Ficha arquivada e insumo sumido saem do cálculo
+  ao vivo, e não do que estava valendo quando a lista foi montada: é aviso, e aviso velho não
+  serve.
+- **Fechar a lista precisou existir.** Sem arquivar, "Refazer" na semana seguinte preservaria
+  as marcas da compra passada (`preservarComprados`) e a lista nasceria toda comprada. É a
+  única parte desta sessão além da letra da spec, e ela existe para que a regra de preservar
+  as marcas continue verdadeira na segunda ida ao mercado.
+
+---
+
+## D40 · No mercado, a escrita não espera o servidor
+
+**Status:** vigente · decidida em 2026-09-02 na spec `003-pedidos`, sessão 3C
+
+**Contexto.** Toda tela deste sistema grava com `await` e um estado de "salvando" — o editor
+de ficha, o de pedido, o lançamento do caixa. Só que **a promessa de uma escrita do Firestore
+não resolve enquanto não há rede**: ela fica pendente até a reconexão. Nas outras telas isso
+passa, porque elas navegam depois de salvar e o caso comum é ter sinal. Em `/compras` não
+passa: o contexto 2 do `PRODUCT.md` é o mercado, uma mão no carrinho e sinal ruim, e marcar
+item é a interação inteira da tela.
+
+**Decisão.** `/compras` despacha a escrita e não a espera. Marcar, refazer, corrigir preço e
+fechar a lista aplicam no cache local — que é o que desenha a tela — e o `catch` continua
+recebendo a falha de verdade. Nenhum botão fica preso em "salvando".
+
+**Consequência.** A linha aparece marcada no toque, com ou sem rede, e o selo de sincronização
+conta a verdade sobre o que ainda não subiu — que é exatamente o papel dele (`DESIGN.md`,
+Selo de sincronização). O preço vale duas coisas:
+
+- **A correção de preço grava os dois documentos em paralelo**, e não um depois do outro. O
+  insumo e o custo estimado da linha nascem da mesma ação; encadeados, o segundo só sairia na
+  reconexão, e a lista mostraria o custo velho justamente na frente da gôndola.
+- **Dois toques dentro do mesmo quadro podem perder um.** O array de itens é reescrito
+  inteiro, porque o Firestore não atualiza elemento de array por posição, e o segundo toque
+  parte do que a tela tinha. Offline não é o caso perigoso — lá o cache local devolve a marca
+  antes do toque seguinte —, e a janela real é de milissegundos. Se um dia virar problema de
+  verdade, o conserto é `comprado` sair do array e virar um mapa por `insumoId`, que é
+  atualizável por caminho de campo.
+
+---
+
+## D41 · Componente de kit é contado por lote, como no motor de custo
+
+**Status:** vigente · decidida em 2026-09-02 na spec `003-pedidos`, sessão 3C
+
+**Contexto.** A spec descreve a explosão do kit como "cada componente vira
+`quantidade × quantidadePedida` unidades daquela ficha" — sem dividir pelo rendimento do kit.
+`custoFicha.ts` faz o contrário: soma os componentes em `custoTotalLote` e só então divide
+pelo rendimento para chegar ao `custoUnitario`.
+
+**Decisão.** A explosão divide. Um componente é contado **por lote do kit**, como no motor de
+custo: `unidades = componente.quantidade × lotes do kit`.
+
+**Consequência.** Com kit de rendimento 1, que é todo kit que existe hoje, as duas leituras
+dão o mesmo número e o caso de aceite fecha igual — 32 cookies para 20 soltos e 2 caixas de 6.
+A diferença aparece em um kit que renda mais de uma unidade por lote, e aí a versão da spec
+faria a lista comprar insumo para um custo que a ficha não cobrou: o pedido guarda o custo
+congelado que saiu de `custoFicha.ts`, e demanda e custo do mesmo pedido não podem discordar.
+
+Vale a mesma regra para `itens` do kit, que é a embalagem dele. E a recursão para no primeiro
+nível **por construção**, com dois laços em vez de uma chamada recursiva: `#d11` garante que
+kit não contém kit, e escrever isso como dois laços é o que dispensa detecção de ciclo em vez
+de confiar que ninguém vai gravar um dado torto.

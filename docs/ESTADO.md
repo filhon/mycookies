@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-02 (sessão 3B). **Toda sessão atualiza este arquivo antes de
+Atualizado em 2026-09-02 (sessão 3C). **Toda sessão atualiza este arquivo antes de
 encerrar.**
 
 ## Onde estamos
@@ -9,22 +9,29 @@ Módulo 1 entregue, o refactor de contas (`specs/000-contas.md`) executado por c
 Módulo 2 fechado (2A entregou `/configuracao`, 2B entregou a ficha técnica com a calculadora
 de preço), o **Módulo 4 fechado** (4A entregou a coleção `transacoes`, o agregado mensal e a
 tela `/financeiro`; 4B entregou a coleção `metas`, o espelho no agregado, o bloco de meta no
-painel e o cartão da tela Hoje) e o **Módulo 3 em duas de três sessões**: a 3A entregou as
-coleções `pedidos` e `clientes`, as telas `/pedidos` e `/pedidos/[id]` e a agenda da tela
-Hoje; a 3B ligou o pedido ao caixa e preencheu a metade do agregado que a spec 004 tinha
-deixado em zero.
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), 196 testes,
-build com 12 rotas estáticas mais `/fichas/[id]` e `/pedidos/[id]` dinâmicas e service worker
+painel e o cartão da tela Hoje) e o **Módulo 3 fechado**: a 3A entregou as coleções `pedidos`
+e `clientes`, as telas `/pedidos` e `/pedidos/[id]` e a agenda da tela Hoje; a 3B ligou o
+pedido ao caixa e preencheu a metade do agregado que a spec 004 tinha deixado em zero; a 3C
+entregou a coleção `listasCompra` e a tela `/compras`, que fecha o ciclo do produto — do
+pedido combinado até o carrinho no mercado.
+
+**Todas as specs escritas estão executadas.** Não há próxima sessão de spec: o que falta é a
+verificação em navegador, que é a dívida mais antiga do projeto.
+
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), 228 testes,
+build com 13 rotas estáticas mais `/fichas/[id]` e `/pedidos/[id]` dinâmicas e service worker
 gerado.
 
 **O app está de pé.** Projeto `mycookies-mrc`, `.env.local` preenchido, regras publicadas,
 chave de conta de serviço no disco (fora do git, coberta por `*firebase-adminsdk*.json`).
 **Os índices estão todos publicados**: a 4A rodou `firebase deploy --only firestore:indexes`
-e levou junto o de `fichas`, pendente desde a 2B; a 3A rodou de novo com os dois novos, e a
-3B com o do pedido pago. Confirmado com `firebase firestore:indexes`: `insumos`, `fichas`,
-`transacoes`, `clientes` (`arquivado` + `nomeBusca`) e `pedidos` em dois — `arquivado` +
-`dataEntregaISO` para a agenda, e `arquivado` + `competenciaPagamento` + `pagoEm` desc para
-"Recalcular o mês".
+e levou junto o de `fichas`, pendente desde a 2B; a 3A rodou de novo com os dois novos, a 3B
+com o do pedido pago e a 3C com o da lista de compras. Confirmado com
+`firebase firestore:indexes`: `insumos`, `fichas`, `transacoes`, `clientes` (`arquivado` +
+`nomeBusca`), `listasCompra` (`arquivado` + `criadoEm` desc) e `pedidos` em dois — `arquivado`
+
+- `dataEntregaISO` para a agenda, e `arquivado` + `competenciaPagamento` + `pagoEm` desc para
+  "Recalcular o mês".
 
 A conta existe e o acesso foi concedido de ponta a ponta, com o script rodando contra o
 projeto de verdade:
@@ -42,14 +49,14 @@ Falta a verificação visual em navegador, que nunca foi feita.
 
 ## Módulos
 
-| #   | Módulo                                      | Estado                              | Spec                        |
-| --- | ------------------------------------------- | ----------------------------------- | --------------------------- |
-| 0   | Fundação: design system, shell, acesso, PWA | pronto                              | —                           |
-| 1   | Insumos e embalagens                        | pronto                              | —                           |
-| —   | Contas e tenancy                            | pronto                              | `specs/000-contas.md`       |
-| 2   | Custos operacionais e precificação          | pronto (2A e 2B)                    | `specs/002-precificacao.md` |
-| 3   | Vendas, pedidos e lista de compras          | **3A e 3B prontas; 3C é a próxima** | `specs/003-pedidos.md`      |
-| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                    | `specs/004-caixa.md`        |
+| #   | Módulo                                      | Estado               | Spec                        |
+| --- | ------------------------------------------- | -------------------- | --------------------------- |
+| 0   | Fundação: design system, shell, acesso, PWA | pronto               | —                           |
+| 1   | Insumos e embalagens                        | pronto               | —                           |
+| —   | Contas e tenancy                            | pronto               | `specs/000-contas.md`       |
+| 2   | Custos operacionais e precificação          | pronto (2A e 2B)     | `specs/002-precificacao.md` |
+| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C) | `specs/003-pedidos.md`      |
+| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)     | `specs/004-caixa.md`        |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -262,6 +269,50 @@ Fora do escopo literal da spec, e por quê:
   única divergência em relação à letra da spec, e ela está registrada com o custo da
   alternativa em `#d38`.
 
+## O que a sessão 3C deixou pronto
+
+- `src/lib/domain/listaCompras.ts`: `explodirDemanda` (pedido → insumo, em unidade base) e
+  `montarLista` (demanda → pacote e reais), mais `quantidadeFisica`, `agruparPorCorredor`,
+  `resumoDaLista`, `statusDaLista`, `preservarComprados`, `entraNaLista`, `orcamentosDeFora`
+  e `rotuloDeCompra`. Puro, sem Firebase.
+- `tests/domain/listaCompras.test.ts`: o caso de aceite da spec número por número — 32 cookies
+  para 20 soltos e 2 caixas de 6, farinha de 800 g úteis para 842,11 g físicos, saquinho que
+  não se compra porque o estoque cobre, caixa que leva 25 porque é assim que se vende caixa, e
+  os R$ 120,00 da lista. Mais o kit que para no primeiro nível, as três guardas (ficha
+  arquivada, rendimento zero, insumo arquivado), a ordem errada do estoque e a preservação das
+  marcas ao regerar.
+- `src/lib/firebase/mutations/listasCompra.ts`: `consultaListaAtual`, `criarListaCompras`,
+  `regerarListaCompras`, `marcarItemComprado`, `corrigirPrecoNaLista`, `arquivarListaCompras`
+  e `nomeDaLista`. `dadosDoInsumo` nasceu em `mutations/insumos.ts` para que a correção de
+  preço na gôndola reuse `atualizarInsumo` em vez de reescrever a forma do documento.
+- `src/components/compras/`: `TelaCompras` (carrega e só então monta), `ListaDoMercado` (a
+  tela), `LinhaCompra` (a linha com alvo de toque inteiro e o preço corrigível no ato),
+  `RodapeCompras` (o total restante preso ao pé) e `CartaoComprasHoje`.
+- Rota `/compras`, alcançada pelo cabeçalho de `/pedidos` (`AtalhoParaCompras`) e pelo cartão
+  da tela Hoje. **Fora da navegação inferior**: cinco destinos é o teto.
+- `docListaCompras` em `colecoes.ts` e o índice de `listasCompra` publicado.
+- Decisões novas em `DECISOES.md#d39` a `#d41`.
+
+Nada de schema mudou: `ListaCompras` e `ItemListaCompras` já estavam tipados desde o Módulo 0,
+e nenhum campo novo foi preciso. O tamanho do pacote e o preço de hoje não são gravados na
+lista de propósito — eles continuam vindo de `insumos`, que é onde mudam quando ela corrige o
+preço na frente da gôndola.
+
+Fora do escopo literal da spec, e por quê:
+
+- **"Fechar esta lista".** Sem arquivar, "Refazer" na semana seguinte preservaria as marcas da
+  compra anterior e a lista nasceria toda comprada — a regra de preservar o carrinho, que a
+  spec pede, só continua verdadeira na segunda ida ao mercado se existir um jeito de encerrar
+  a primeira. Motivo em `#d39`.
+- **Período em pílulas de 7, 15 e 30 dias.** A spec diz "os pedidos do período" sem dizer qual;
+  uma semana é o horizonte de uma ida ao mercado, e os outros dois são para a semana de festa e
+  o Natal. Uma consulta só, no maior horizonte, e o recorte em memória.
+- **A tela não espera o servidor para gravar.** É a única do sistema que despacha assim, e o
+  motivo — a promessa de escrita do Firestore não resolve sem rede — está em `#d40`.
+- **`quantidadeFisica` e `quantidadeCompra` no resultado do domínio, e não no documento.** A
+  linha gravada segue exatamente `ItemListaCompras`; o que a tela precisa a mais para escrever
+  "1 pacote de 1 kg" ela junta do insumo vivo. Nenhuma mudança de schema por causa de rótulo.
+
 ## O que mudou no refactor de contas
 
 Vale saber antes de escrever qualquer código novo, porque muda a assinatura de tudo que
@@ -349,28 +400,24 @@ Da 3B, o que só o navegador responde — e é aqui que o risco desta sessão de
 - **Cancelar um pedido pago.** A tela desfaz o pagamento antes de cancelar; se a ordem
   inverter, a mutação recusa com uma frase.
 
-Depois disso, a **sessão 3C**, em `specs/003-pedidos.md`: a coleção `listasCompra`, a tela
-`/compras` e o motor `explodirDemanda` / `montarLista`.
+Da 3C, o que só o navegador responde:
 
-O que a 3C herda, e precisa saber antes de começar:
-
-- **`Pedido.fichaIds` já é espelho consultável por `array-contains`**, e foi gravado desde a
-  3A justamente para a pergunta "quais pedidos levam esta ficha?".
-- **Os pedidos que entram na lista são os de `dataEntrega` no período**, com status
-  `CONFIRMADO`, `EM_PRODUCAO` ou `PRONTO`. A data da agenda é `dataEntregaISO` e continua
-  sendo dela: `competenciaPagamento` é do caixa e não tem nada a ver com a compra
-  (`DECISOES.md#d36`).
-- **A explosão para no primeiro nível** (`#d11`), e as três guardas do risco da spec —
-  ficha arquivada, insumo arquivado, rendimento zero — precisam devolver zero com explicação
-  em vez de `NaN`. `nomeSnapshot` do item é o que permite dizer o nome do que não explodiu.
-- **`atualizarInsumo` e `marcarFichasDesatualizadas` já existem** em `mutations/insumos.ts`, e
-  são o que a correção de preço no mercado reusa.
-- **A perda divide, e o estoque é descontado depois dela.** A mesma conta de
-  `calcularCustoInsumo`, em `custoInsumo.ts`.
-- **`/compras` não entra na navegação inferior**: cinco destinos é o teto
-  (`src/components/layout/navegacao.ts`). Chega-se por `/pedidos` e por um cartão na tela Hoje.
-- **Falta o índice de `listasCompra`** por `arquivado` + `criadoEm` desc; todos os outros
-  estão publicados.
+- **Montar a lista com o pedido do caso de aceite confirmado** e conferir a tabela inteira:
+  farinha 1 pacote / R$ 12,50 (com estoque de 500 g e 5% de perda), chocolate 1 / R$ 40,00,
+  manteiga 1 / R$ 17,50, caixa 1 / R$ 50,00, e o saquinho no bloco "não precisa comprar". O
+  rodapé precisa dizer R$ 120,00.
+- **Marcar itens com o app offline.** É o cenário que a `#d40` existe para resolver: a linha
+  precisa marcar no toque, sem botão preso em "salvando", e o selo de sincronização precisa
+  aparecer. Voltar a rede e ver tudo subir.
+- **Corrigir o preço da farinha pela lista.** O custo estimado da linha e o rodapé se refazem
+  na hora, o insumo muda em `/insumos`, e a ficha do cookie ganha o selo de custo desatualizado.
+- **Confirmar um orçamento do período e tocar em Refazer.** O item novo entra e o que já estava
+  marcado continua marcado — é o critério de aceite mais fácil de quebrar.
+- **Arquivar a ficha do cookie e reabrir `/compras`.** O bloco "Isto ficou fora da conta"
+  precisa aparecer com o nome dela, e o resto da lista continuar somando.
+- **Trocar o período de 7 para 30 dias** sem refazer: a frase de divergência precisa aparecer
+  em vez de as pílulas descreverem uma lista que não é a da tela.
+- **Fechar a lista e montar outra.** A nova precisa nascer sem nenhum item marcado.
 
 ## Dívidas conhecidas
 
@@ -399,3 +446,5 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | Editar um pedido e sair sem salvar descarta em silêncio                      | `FormularioPedido.tsx`           | Mesma dívida do editor de ficha e da configuração; se acontecer de verdade  |
 | `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`             | `src/lib/types/configuracao.ts`  | Quando algum leitor precisar do nome: hoje ninguém lê esse campo            |
 | Sair da configuração com alteração pendente descarta em silêncio             | `TelaConfiguracao.tsx`           | Se acontecer de verdade; a barra fixa de "não salvas" é a defesa atual      |
+| Dois toques no mesmo quadro na lista de compras podem perder uma marca       | `ListaDoMercado.tsx`             | Se acontecer: `comprado` sai do array e vira mapa por `insumoId` (`#d40`)   |
+| Estoque continua sendo número digitado: comprar não o movimenta              | `mutations/listasCompra.ts`      | Nunca por baixa automática; se houver caso, nasce com contagem periódica    |

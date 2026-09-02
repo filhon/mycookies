@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Settings } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
+import { CartaoComprasHoje } from "@/components/compras/CartaoComprasHoje";
 import { CartaoMetaHoje } from "@/components/metas/CartaoMetaHoje";
 import { AgendaHoje } from "@/components/pedidos/AgendaHoje";
 import { useAuth } from "@/providers/AuthProvider";
@@ -53,6 +54,10 @@ export default function PaginaHoje() {
       </div>
 
       <AgendaHoje />
+
+      {/* Depois da agenda, porque é a ordem em que o dia acontece: ela vê o que
+          entrega, e daí decide o que precisa comprar para dar conta. */}
+      <CartaoComprasHoje />
     </>
   );
 }
