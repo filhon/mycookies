@@ -6,7 +6,10 @@ import { Campo, Seletor } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Painel } from "@/components/ui/Painel";
 import { ResumoCusto } from "./ResumoCusto";
-import { calcularCustoInsumo } from "@/lib/domain/custoInsumo";
+import {
+  calcularCustoInsumo,
+  CATEGORIAS_INSUMO,
+} from "@/lib/domain/custoInsumo";
 import { parseParaNumero } from "@/lib/domain/money";
 import { errosPorCampo, esquemaInsumo } from "@/lib/domain/schemas";
 import { GRUPOS_UNIDADE, ROTULO_UNIDADE_COMPRA } from "@/lib/domain/unidades";
@@ -19,14 +22,6 @@ import {
 } from "@/lib/firebase/mutations/insumos";
 import type { CategoriaInsumo, Insumo, UnidadeCompra } from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
-
-const CATEGORIAS: { valor: CategoriaInsumo; rotulo: string }[] = [
-  { valor: "INGREDIENTE", rotulo: "Ingrediente" },
-  { valor: "EMBALAGEM", rotulo: "Embalagem" },
-  { valor: "ETIQUETA", rotulo: "Etiqueta" },
-  { valor: "ARMAZENAMENTO", rotulo: "Armazenamento" },
-  { valor: "OUTRO", rotulo: "Outro" },
-];
 
 interface EstadoFormulario {
   nome: string;
@@ -216,7 +211,7 @@ export function FormularioInsumo({
             definir("categoria", evento.target.value as CategoriaInsumo)
           }
         >
-          {CATEGORIAS.map((categoria) => (
+          {CATEGORIAS_INSUMO.map((categoria) => (
             <option key={categoria.valor} value={categoria.valor}>
               {categoria.rotulo}
             </option>

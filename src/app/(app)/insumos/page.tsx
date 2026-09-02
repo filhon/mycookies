@@ -7,6 +7,10 @@ import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { FormularioInsumo } from "@/components/insumos/FormularioInsumo";
 import { LinhaInsumo } from "@/components/insumos/LinhaInsumo";
+import {
+  AvisoLeituraSemRede,
+  EntradaLeitura,
+} from "@/components/notas/EntradaLeitura";
 import { Botao } from "@/components/ui/Botao";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
@@ -77,19 +81,29 @@ export default function PaginaInsumos() {
         titulo="Insumos"
         descricao="Ingredientes e embalagens. É daqui que sai o custo de toda receita."
         acao={
-          <Botao
-            variante="primaria"
-            onClick={abrirNovo}
-            iconeInicial={
-              <Plus aria-hidden className="size-5" strokeWidth={2} />
-            }
-            className="hidden lg:inline-flex"
-          >
-            Novo insumo
-          </Botao>
+          // "Ler uma nota" aparece nos dois tamanhos de tela, e "Novo insumo"
+          // só no desktop: no celular a ação primária é o botão flutuante, e
+          // dois flutuantes disputariam o mesmo polegar.
+          <div className="flex items-start gap-2">
+            <EntradaLeitura />
+            <Botao
+              variante="primaria"
+              onClick={abrirNovo}
+              iconeInicial={
+                <Plus aria-hidden className="size-5" strokeWidth={2} />
+              }
+              className="hidden lg:inline-flex"
+            >
+              Novo insumo
+            </Botao>
+          </div>
         }
       >
         <div className="space-y-3">
+          {/* A frase da entrada desabilitada vai aqui, e não embaixo do botão:
+              é a faixa que tem a largura da página. */}
+          <AvisoLeituraSemRede />
+
           <div className="relative">
             <Search
               aria-hidden
@@ -154,16 +168,22 @@ export default function PaginaInsumos() {
               titulo="Comece pela farinha"
               descricao="Cadastre um insumo com o preço que você paga e a quantidade da embalagem. O sistema converte para custo por grama e usa isso em toda ficha técnica."
               acao={
-                <Botao
-                  variante="primaria"
-                  tamanho="lg"
-                  onClick={abrirNovo}
-                  iconeInicial={
-                    <Plus aria-hidden className="size-5" strokeWidth={2} />
-                  }
-                >
-                  Cadastrar insumo
-                </Botao>
+                <div className="flex flex-col items-center gap-4">
+                  <Botao
+                    variante="primaria"
+                    tamanho="lg"
+                    onClick={abrirNovo}
+                    iconeInicial={
+                      <Plus aria-hidden className="size-5" strokeWidth={2} />
+                    }
+                  >
+                    Cadastrar insumo
+                  </Botao>
+                  {/* A segunda ação: a nota da última compra tem tudo isso
+                      impresso, e a primeira carga é onde digitar mais custa. */}
+                  <EntradaLeitura tamanho="lg" />
+                  <AvisoLeituraSemRede centralizado />
+                </div>
               }
             />
           ) : (

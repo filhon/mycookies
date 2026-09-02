@@ -95,10 +95,13 @@ function camposDerivados(dados: DadosInsumo) {
   };
 }
 
-function entradaHistorico(dados: DadosInsumo): HistoricoPreco {
+function entradaHistorico(
+  dados: DadosInsumo,
+  momento: Timestamp,
+): HistoricoPreco {
   const custo = calcularCustoInsumo(dados);
   return {
-    data: agora(),
+    data: momento,
     precoCompra: dados.precoCompra,
     quantidadeCompra: dados.quantidadeCompra,
     unidadeCompra: dados.unidadeCompra,
@@ -107,13 +110,19 @@ function entradaHistorico(dados: DadosInsumo): HistoricoPreco {
   };
 }
 
-export async function criarInsumo(
-  contaId: string,
+/**
+ * O documento de um insumo novo, montado em um lugar só.
+ *
+ * Existe porque a importação de nota grava em lote, e um lote que reescrevesse
+ * a forma do documento por conta própria seria um segundo lugar decidindo o que
+ * é um insumo — o mesmo motivo de `dadosDoInsumo`, e o mesmo padrão de
+ * `derivarFicha` (`DECISOES.md#d19`): uma função, dois chamadores.
+ */
+export function corpoDeInsumoNovo(
   dados: DadosInsumo,
-): Promise<string> {
-  const momento = agora();
-
-  const novo: Omit<Insumo, "id"> = {
+  momento: Timestamp,
+): Omit<Insumo, "id"> {
+  return {
     v: VERSAO_SCHEMA,
     nome: dados.nome.trim(),
     nomeBusca: chaveDeBusca(dados.nome),
@@ -132,13 +141,70 @@ export async function criarInsumo(
       ? { estoqueMinimo: dados.estoqueMinimo }
       : {}),
     ultimaCompraEm: momento,
-    historicoPrecos: [entradaHistorico(dados)],
+    historicoPrecos: [entradaHistorico(dados, momento)],
     criadoEm: momento,
     atualizadoEm: momento,
     arquivado: false,
   };
+}
 
-  const referencia = await addDoc(colInsumos(contaId), novo as Insumo);
+/**
+ * Os campos de uma atualização, com a entrada de histórico quando o preço
+ * mudou. Mesmo motivo e mesmo par de chamadores de `corpoDeInsumoNovo`.
+ *
+ * Quem decide **o que** a nota tem direito de mudar não é esta função: é
+ * `atualizacaoDaLinha`, no domínio. Aqui só se monta o documento a partir do
+ * `DadosInsumo` que chegou pronto.
+ */
+export function corpoDeAtualizacao(
+  anterior: Insumo,
+  dados: DadosInsumo,
+  momento: Timestamp,
+) {
+  return {
+    v: VERSAO_SCHEMA,
+    nome: dados.nome.trim(),
+    nomeBusca: chaveDeBusca(dados.nome),
+    categoria: dados.categoria,
+    marca: dados.marca?.trim() ?? null,
+    fornecedor: dados.fornecedor?.trim() ?? null,
+    precoCompra: dados.precoCompra,
+    quantidadeCompra: dados.quantidadeCompra,
+    unidadeCompra: dados.unidadeCompra,
+    perdaPercentual: dados.perdaPercentual,
+    ...camposDerivados(dados),
+    estoqueAtual: dados.estoqueAtual ?? null,
+    estoqueMinimo: dados.estoqueMinimo ?? null,
+    atualizadoEm: momento,
+    ...(precoMudou(anterior, dados)
+      ? {
+          ultimaCompraEm: momento,
+          historicoPrecos: arrayUnion(entradaHistorico(dados, momento)),
+        }
+      : {}),
+  };
+}
+
+/** O que faz uma escrita virar uma compra: preço, embalagem ou perda. */
+export function precoMudou(anterior: Insumo, dados: DadosInsumo): boolean {
+  return (
+    anterior.precoCompra !== dados.precoCompra ||
+    anterior.quantidadeCompra !== dados.quantidadeCompra ||
+    anterior.unidadeCompra !== dados.unidadeCompra ||
+    anterior.perdaPercentual !== dados.perdaPercentual
+  );
+}
+
+export async function criarInsumo(
+  contaId: string,
+  dados: DadosInsumo,
+): Promise<string> {
+  const momento = agora();
+
+  const referencia = await addDoc(
+    colInsumos(contaId),
+    corpoDeInsumoNovo(dados, momento) as Insumo,
+  );
 
   // Contador do agregado global: `increment` entra na fila e funciona offline.
   await setDoc(
@@ -155,38 +221,15 @@ export async function atualizarInsumo(
   anterior: Insumo,
   dados: DadosInsumo,
 ): Promise<void> {
-  const precoMudou =
-    anterior.precoCompra !== dados.precoCompra ||
-    anterior.quantidadeCompra !== dados.quantidadeCompra ||
-    anterior.unidadeCompra !== dados.unidadeCompra ||
-    anterior.perdaPercentual !== dados.perdaPercentual;
-
   const momento = agora();
+  const virouCompra = precoMudou(anterior, dados);
 
-  await updateDoc(docInsumo(contaId, anterior.id), {
-    v: VERSAO_SCHEMA,
-    nome: dados.nome.trim(),
-    nomeBusca: chaveDeBusca(dados.nome),
-    categoria: dados.categoria,
-    marca: dados.marca?.trim() ?? null,
-    fornecedor: dados.fornecedor?.trim() ?? null,
-    precoCompra: dados.precoCompra,
-    quantidadeCompra: dados.quantidadeCompra,
-    unidadeCompra: dados.unidadeCompra,
-    perdaPercentual: dados.perdaPercentual,
-    ...camposDerivados(dados),
-    estoqueAtual: dados.estoqueAtual ?? null,
-    estoqueMinimo: dados.estoqueMinimo ?? null,
-    atualizadoEm: momento,
-    ...(precoMudou
-      ? {
-          ultimaCompraEm: momento,
-          historicoPrecos: arrayUnion(entradaHistorico(dados)),
-        }
-      : {}),
-  });
+  await updateDoc(
+    docInsumo(contaId, anterior.id),
+    corpoDeAtualizacao(anterior, dados, momento),
+  );
 
-  if (precoMudou) {
+  if (virouCompra) {
     await Promise.all([
       podarHistorico(contaId, anterior),
       marcarFichasDesatualizadas(contaId, anterior.id),
@@ -198,7 +241,7 @@ export async function atualizarInsumo(
  * `arrayUnion` não tem teto. Depois de gravar, corta o histórico nas últimas
  * doze compras: o documento precisa continuar barato de ler.
  */
-async function podarHistorico(
+export async function podarHistorico(
   contaId: string,
   anterior: Insumo,
 ): Promise<void> {

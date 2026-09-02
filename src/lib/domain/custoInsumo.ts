@@ -1,4 +1,5 @@
 import type {
+  CategoriaInsumo,
   Centavos,
   CentavosFracionados,
   Percentual,
@@ -6,6 +7,21 @@ import type {
   UnidadeCompra,
 } from "@/lib/types";
 import { paraBase, unidadeBaseDe } from "./unidades";
+
+/**
+ * As cinco categorias, na ordem em que aparecem em toda tela que as oferece.
+ *
+ * Mora aqui, e não dentro do formulário de insumo, porque a leitura de nota é o
+ * segundo lugar que precisa oferecer a mesma escolha — e duas listas seriam
+ * duas ordens e dois rótulos esperando para divergir.
+ */
+export const CATEGORIAS_INSUMO: { valor: CategoriaInsumo; rotulo: string }[] = [
+  { valor: "INGREDIENTE", rotulo: "Ingrediente" },
+  { valor: "EMBALAGEM", rotulo: "Embalagem" },
+  { valor: "ETIQUETA", rotulo: "Etiqueta" },
+  { valor: "ARMAZENAMENTO", rotulo: "Armazenamento" },
+  { valor: "OUTRO", rotulo: "Outro" },
+];
 
 export interface EntradaCustoInsumo {
   precoCompra: Centavos;

@@ -1125,3 +1125,292 @@ arredondado dentro de canto arredondado aparece como falha de desenho. **O maska
 de origem** justamente pelo que o torna maskable: o conteúdo dele ocupa 42% do quadrado para
 sobreviver ao recorte circular do Android, e sem recorte nenhum isso vira um biscoito pequeno
 boiando no meio da tela. São dois desenhos porque são dois problemas.
+
+---
+
+## D45 · A chave do Gemini nunca chega ao aparelho
+
+**Status:** vigente · decidida em 2026-09-02 na spec `006-nota-fiscal`, sessão 6A
+
+**Contexto.** `.env.local.example` diz, com razão, que as chaves do Firebase são públicas por
+natureza: elas identificam o projeto e não autorizam nada — quem protege os dados é
+`firestore.rules`. **A chave do Gemini é o oposto disso.** Ela autoriza gasto, e toda variável
+`NEXT_PUBLIC_` está dentro do bundle, que é servido para qualquer navegador.
+
+**Decisão.** `GEMINI_API_KEY` entra em `.env.local` **sem** o prefixo, e o único código que a
+lê é `src/app/api/nota/route.ts`. `GEMINI_MODELO` a acompanha, pelo motivo oposto: o id do
+modelo não é segredo, e precisa poder mudar sem deploy de código.
+
+**Consequência.** É a primeira variável do projeto cuja regra é a inversa da dos vizinhos, e
+por isso o `.env.local.example` explica isso em vez de listar mais uma linha. A conferência
+foi feita e não presumida: um `build` com uma sentinela no lugar da chave, e a sentinela não
+aparece em lugar nenhum de `.next` — nem no servidor, porque `process.env` só é lido em tempo
+de execução. `.next/static` também não contém a string `GEMINI_API_KEY` nem `firebase-admin`.
+
+O que isso custa é o que a `D46` registra: sem servidor não há onde guardar a chave, e é a
+existência dela que obriga a rota a existir.
+
+---
+
+## D46 · A leitura mora numa rota do app, e `firebase-admin` vira dependência de produção
+
+**Status:** vigente · decidida em 2026-09-02 na spec `006-nota-fiscal`, sessão 6A
+
+**Contexto.** `D45` exige código de servidor. O caminho óbvio no papel seria uma Cloud
+Function, porque o projeto já tem um `functions/` — no estado exato em que o `firebase init`
+o deixou, com um `setGlobalOptions` e comentários.
+
+**Decisão.** `src/app/api/nota/route.ts`, um Route Handler. O app já é compilado com servidor
+Node (existem rotas dinâmicas desde a 2B), o código fica no mesmo repositório e na mesma
+língua, e `npm run dev` basta para exercitar tudo. Publicar a primeira função exigiria plano
+Blaze, um segundo artefato de deploy, uma segunda cadeia de build e o emulador dentro do laço
+de desenvolvimento.
+
+**Consequência.** A rota precisa saber quem está chamando, e conferir um ID token do Firebase
+é trabalho do `firebase-admin` — que era `devDependency` usada só pelo script de acesso e
+passou para `dependencies`. **É a aprovação que a spec pediu**, e ela é menor do que parece:
+o pacote já estava instalado, nada novo desceu, e nada disso entra no bundle do cliente —
+`src/app/api/` não é importado por componente nenhum, e o build confirma.
+
+Verificar à mão a assinatura do JWT, para não mexer no `package.json`, ficou descartado. O
+projeto desenha gráfico à mão para não pegar dependência (`#d25`) e tirou o `date-fns` porque
+`Intl` bastava (`#d26`); criptografia é outra classe de risco, e um erro ali não aparece como
+um pixel torto — aparece como um estranho gastando a cota.
+
+Duas coisas ficam registradas porque um leitor futuro vai perguntar:
+
+- **A chamada ao Gemini é `fetch`, e não um SDK.** O contrato é um POST com JSON, e um pacote
+  a mais no `package.json` para montar esse POST seria uma segunda aprovação de dependência
+  de produção pelo que a plataforma já faz. O que se perde é o tipo da resposta, e é por isso
+  que ela passa por `esquemaNotaLida` antes de virar qualquer coisa.
+- **A regra de acesso está escrita duas vezes.** `abreAConta` repete o que `firestore.rules`
+  faz: basta a chave estar no mapa da claim `contas`, e o papel não é conferido (`#d14`). Não
+  é redundância decorativa — é uma **segunda porta para a mesma conta**, e uma porta sem
+  fechadura não vira segura porque a outra tem.
+
+**O que faria a decisão virar:** hospedar o app onde não haja runtime Node, ou o segundo
+cliente pagante, quando a cota por conta passar a ser problema de cobrança e não de código.
+É o mesmo dia de `#d10` e `#d16`.
+
+---
+
+## D47 · O modelo lê palavras; o domínio faz contas
+
+**Status:** vigente · decidida em 2026-09-02 na spec `006-nota-fiscal`, sessão 6A
+
+**Contexto.** Um modelo que lê uma nota fiscal pode devolver a linha já somada, já convertida
+e já em centavos. É tentador, e é a decisão mais cara que esta spec podia tomar errado.
+
+**Decisão.** **Toda palavra da resposta é do modelo. Todo número é do domínio.** O modelo
+devolve o que está impresso, em texto, exatamente como está: `"12,50"`, `"1,01KG"`, `"C/25"`.
+Quem transforma isso em `1250`, em `{ 1,01, "kg" }` e em `{ 25, "un" }` é
+`src/lib/domain/notaFiscal.ts`, puro, sem Firebase e sem React, coberto por teste. O esquema
+zod recusa número onde deveria haver texto, e a resposta estruturada do Gemini declara todo
+campo como `STRING`.
+
+A tradução, essa, é do modelo, e é para isso que ele serve: `"FARINHA TRIGO DONA BENTA 1KG"`
+vira nome `"Farinha de trigo"` e marca `"Dona Benta"`. Isso é linguagem, não aritmética, e ela
+corrige na tela em dois toques se sair errado.
+
+**Consequência.** O motivo raso é `#d02`: dinheiro é centavo inteiro porque erro de
+arredondamento aqui é o defeito mais caro possível, e não se delega arredondamento a um
+sistema probabilístico. O motivo real é maior — **um número que o modelo calculou é um número
+que ninguém pode auditar.** Se a farinha entrar a R$ 125,00 por causa de uma vírgula, o custo
+de toda ficha que a usa muda, e a única defesa seria alguém reconferindo a conta. Com esta
+divisão, a parte perigosa da leitura é justamente a que `npm test` cobre, número por número.
+
+Três escolhas de implementação ficam registradas:
+
+- **`centavosDoTexto` não é `parseParaCentavos`.** Aquele lê um teclado, onde quem digita sabe
+  o que quis dizer e onde o valor ausente é legitimamente zero. Este lê um papel, e ali
+  **`null` não é zero**: uma linha cujo valor não deu para ler precisa ser distinguível de uma
+  linha de graça, senão o rodapé some com dinheiro. E `.` seguido de três casas é separador de
+  milhar, porque é assim que a nota brasileira imprime `1.500`.
+- **A categoria sai de uma tabela de palavras, e não do modelo.** São cinco categorias e
+  algumas dezenas de palavras. Uma tabela é grátis, determinista, testável e corrigível em um
+  toque; a mesma resposta vinda do modelo custa token e não pode ser conferida por teste.
+  `cx` ficou de fora de propósito: "LEITE CX 1L" e "OVOS CX C/30" são comida.
+- **`precoCompra` é o valor _unitário_ da linha, nunca o total.** `Insumo.precoCompra` é o
+  preço de uma embalagem inteira, e uma linha de duas manteigas a R$ 17,50 vale R$ 35,00 no
+  cupom e R$ 17,50 no cadastro. Os dois números vivem separados desde o domínio, porque quem
+  soma R$ 35,00 é o caixa da 6B.
+
+---
+
+## D48 · A rota não escreve no Firestore
+
+**Status:** vigente · decidida em 2026-09-02 na spec `006-nota-fiscal`, sessão 6A
+
+**Contexto.** A rota já tem Admin SDK na mão. Gravar os insumos ali seria uma ida de rede a
+menos e nenhuma regra de segurança no caminho.
+
+**Decisão.** A resposta da rota é um rascunho em memória. Quem grava é a tela, do aparelho,
+depois de ela confirmar, por `mutations/notas.ts` — com `firestore.rules` valendo.
+
+**Consequência.** `PRODUCT.md` diz que o sistema faz a conta e ela toma a decisão. Uma leitura
+que escrevesse direto em `insumos` colocaria um preço alucinado dentro do custo de todas as
+fichas — e descobrir isso é exatamente o que o sistema existe para evitar. O Admin SDK
+contorna as regras por construção, então uma rota que escrevesse seria o primeiro caminho de
+escrita do projeto sem regra nenhuma no meio.
+
+**Uma nota é um lote, e não N salvamentos.** `importarNota` manda todos os documentos em um
+`writeBatch`, com o incremento de `totalInsumos` junto, e só depois marca as fichas afetadas
+com `array-contains-any` em blocos de dez. Vinte chamadas de `criarInsumo` em sequência seriam
+vinte idas ao servidor numa tela que já depende de rede — e deixariam possível o pior estado:
+metade cadastrada, e ela sem saber qual metade.
+
+Para o lote não reescrever a forma do documento por conta própria, o corpo saiu de
+`mutations/insumos.ts`: as duas montagens que moravam dentro de `criarInsumo` e
+`atualizarInsumo` viraram `corpoDeInsumoNovo` e `corpoDeAtualizacao`, exportadas e usadas
+pelos dois caminhos. É o padrão de `derivarFicha` (`#d19`): uma função, dois chamadores.
+`precoMudou` saiu junto, porque é ele que decide se a escrita empurra uma entrada no
+histórico. `entradaHistorico` passou a receber o `Timestamp` em vez de chamar o relógio: numa
+nota, as doze linhas são a mesma compra e precisam ter a mesma hora.
+
+---
+
+## D49 · A foto não é guardada
+
+**Status:** vigente · decidida em 2026-09-02 na spec `006-nota-fiscal`, sessão 6A
+
+**Contexto.** O caminho natural de qualquer leitura de documento é guardar o original. Firebase
+Storage está a um `firebase init` de distância.
+
+**Decisão.** Nada de Storage. Os bytes sobem, a resposta volta, o arquivo é descartado.
+
+**Consequência.** Storage significaria um bucket novo, um conjunto novo de regras, um custo
+novo e um lugar novo onde dado privado mora — tudo isso por uma imagem cujo valor inteiro dura
+os trinta segundos em que ela vira lista. O que precisa sobreviver já sobrevive:
+`historicoPrecos` guarda preço, quantidade, unidade e fornecedor de cada compra, dentro do
+próprio insumo.
+
+Consequência aceita: **reler exige fotografar de novo**, e não existe "ver a nota do mês
+passado". Se um dia isso virar pergunta real, aí nasce o Storage, com a spec dele.
+
+Junto disso, e pelo mesmo motivo de não pagar por pixel que ninguém vai olhar: a imagem é
+reduzida no aparelho para 1600px no maior lado, JPEG a 80%, antes de subir. Foto de celular
+chega com 4000px e alguns megabytes, e o sinal da cozinha dela é o que decide. PDF sobe como
+está — ele já é texto, e recomprimir só estragaria. Falhar a redução não trava nada: o
+original sobe, e quem recusa é o teto de 8 MB da rota.
+
+---
+
+## D50 · Uma tela do sistema exige rede, e diz isso
+
+**Status:** vigente · decidida em 2026-09-02 na spec `006-nota-fiscal`, sessão 6A
+
+**Contexto.** `PRODUCT.md` põe offline como estado normal e o `CLAUDE.md` o lista como
+invariante. A leitura de nota não pode cumprir isso: não há como ler uma nota sem falar com o
+modelo.
+
+**Decisão.** A saída não é fingir. É **dizer**, e é escolher o contexto certo. A leitura de
+nota mora no contexto 4 do `PRODUCT.md` — noite, sentada, planejando —, e não na bancada nem
+no mercado. Sem rede, a entrada aparece desabilitada com a frase, e o cadastro manual continua
+onde sempre esteve, a um toque de distância. **Nenhuma outra tela muda de comportamento por
+causa desta.**
+
+**Consequência.** É a primeira exceção à invariante, e ela é nomeada em vez de contornada. O
+`POST /api/nota` não passa pelo cache do service worker porque `defaultCache` só registra
+rotas de GET — não há o que configurar, e há o que conferir uma vez em navegador.
+
+Duas escolhas de execução:
+
+- **O botão e a frase são componentes separados.** No cabeçalho de `/insumos`, em 360px, uma
+  frase de trinta caracteres ao lado do título espremeria os dois; a frase vai para a faixa
+  que tem a largura da página, e o botão fica onde a ação está. Um `aria-describedby` não
+  resolveria: elemento desabilitado não recebe foco, e a descrição nunca seria lida.
+- **"Ler uma nota" aparece nos dois tamanhos de tela**, e "Novo insumo" continua só no
+  desktop. No celular a ação primária é o botão flutuante que já existe, e não nasce um
+  segundo: dois disputariam o mesmo polegar. Sem isso, o celular — que é onde a foto é
+  tirada — não teria entrada nenhuma para a tela.
+
+A tela é **página, e não painel**, contra a invariante de painel lateral no desktop e folha
+inferior no celular. Aquela regra é sobre formulário de **um** objeto; aqui são seis a vinte
+objetos editáveis, e em 360px isso não cabe numa folha. É a mesma razão pela qual
+`/fichas/[id]` e `/pedidos/[id]` são páginas.
+
+---
+
+## D51 · Ler a segunda nota é atualizar preço, não cadastrar gêmeo
+
+**Status:** vigente · decidida em 2026-09-02 na spec `006-nota-fiscal`, sessão 6A
+
+**Contexto.** É o item que decide se a funcionalidade ainda serve no segundo mês. Sem ele, a
+terceira compra do ano deixa a conta com três farinhas, e a ficha do cookie aponta para a
+primeira.
+
+**Decisão.** Toda linha lida é pareada contra os insumos já cadastrados por `nomeBusca`: exato
+primeiro, prefixo depois, nada se nenhum. Quando o pareamento acerta, a linha **não** cria um
+documento — ela atualiza o que existe, empurra uma entrada em `historicoPrecos` e marca com
+`custoDesatualizado` toda ficha que usa aquele insumo.
+
+**Uma nota traz preço. Ela não traz o que você configurou.** Mudam `precoCompra`,
+`quantidadeCompra`, `unidadeCompra`, e `marca`/`fornecedor` **se estiverem vazios**. Continuam
+como estavam `perdaPercentual`, `estoqueAtual`, `estoqueMinimo`, `categoria` e o nome
+cadastrado. Importar uma nota não pode zerar os 5% de perda da farinha que ela ajustou em
+março — seria o sistema desfazendo o trabalho dela em nome de conveniência.
+
+**Consequência.** A regra de preservação mora no domínio, em `atualizacaoDaLinha`, e o que ela
+protege é o que **não** está no objeto que ela devolve: campo ausente não tem como ser
+sobrescrito. O teste interroga isso diretamente, com `not.toHaveProperty`.
+
+Três escolhas ficam registradas:
+
+- **O pareamento sai do nome atual da linha, e é refeito a cada tecla.** Isso torna a correção
+  do nome o jeito de desfazer um pareamento errado, sem nenhum controle a mais na tela — e o
+  selo "Atualiza · Farinha de trigo · era R$ 11,90" muda à vista enquanto ela digita. Esse
+  "era" é a frase mais importante da tela: é o histórico de preço funcionando onde ela olha.
+- **Prefixo casa em palavra inteira, com piso de três letras.** Sem o corte em palavra,
+  "Farinha" casaria com "Farinheira" e a compra atualizaria o insumo errado. Entre dois
+  candidatos, vence o de nome mais próximo em comprimento.
+- **`marcarFichasDeVarios` existe ao lado de `marcarFichasDesatualizadas`.** A função antiga
+  consulta um insumo por vez, o que numa nota de vinte linhas seriam vinte consultas;
+  `array-contains-any` responde por dez de uma vez, e uma ficha que use dois insumos da mesma
+  nota é marcada uma vez só. As duas ficam: o formulário de insumo continua tendo um insumo só
+  para marcar.
+
+---
+
+## D52 · O CNPJ é o único campo da nota que se autoconfere
+
+**Status:** vigente · decidida em 2026-09-02 na spec `006-nota-fiscal`, sessão 6A
+
+**Contexto.** Toda nota e todo cupom trazem o CNPJ do emitente no cabeçalho, e um CNPJ tem dois
+dígitos verificadores. É o único campo do papel que o sistema confere sozinho — sem rede, sem
+modelo, sem perguntar nada a ela.
+
+**Decisão.** `cnpjValido` roda no domínio, offline, e o CNPJ só entra no rascunho quando fecha.
+Separado disso, e **como enriquecimento e nunca requisito**, a rota pergunta o nome da loja a
+`https://publica.cnpj.ws/cnpj/{cnpj}`: 3 segundos de teto, cache por CNPJ, falha silenciosa.
+Respondendo, `estabelecimento` vira o nome fantasia — "Atacadão", e não "ATACADAO DIST COM E
+IND LTDA" — e a tela mostra cidade e UF ao lado. Não respondendo, o nome lido da nota continua
+valendo e nada na tela quebra.
+
+**Consequência.** O verificador vale mais do que o nome bonito da loja, e é ele que a 6B vai
+consumir: a guarda de duplicidade compara `cnpj + dataISO + total`, e "ATACADAO DIST COM E IND
+LTDA" lido de duas fotos pode sair de dois jeitos — catorze dígitos com verificador, não. O
+nome fantasia resolve o outro lado do mesmo problema: `fornecedor` é texto livre, e três
+compras no mesmo mercado gravariam três grafias, estragando a única pergunta que o campo
+existe para responder um dia ("onde eu compro isto mais barato?").
+
+Três regras, porque a API é pública de verdade e isso tem preço:
+
+- **A chamada é do servidor, e não do navegador.** Uma ida de rede já está acontecendo, e o PWA
+  não ganha um terceiro host na superfície dele.
+- **Cache por CNPJ, com validade longa.** Dado cadastral da Receita muda uma vez por ano, e ela
+  compra no mesmo mercado toda semana: a segunda nota do Atacadão não sai do servidor. Falha
+  não se guarda por um mês — dez minutos —, porque um timeout não é um fato cadastral.
+- **A rota fica com três campos e joga o resto fora.** A resposta traz endereço completo,
+  telefone, e-mail e a **lista de sócios** — nomes de pessoas reais que não têm o que fazer no
+  navegador dela.
+
+O limite da API pública é de **3 consultas por minuto por IP**, e ele é o gatilho desta
+decisão. Com uma usuária e cache, é folgado. Num SaaS, o IP é o do servidor e a fila vira
+compartilhada entre todas as clientes: nesse dia, ou a consulta migra para o navegador — onde
+o IP é o dela —, ou entra uma chave paga. O CNPJ lido continua valendo dos dois jeitos, e é
+por isso que ele entra agora e a consulta é a metade descartável.
+
+O cache mora na memória do processo, e não em documento: ele sobrevive a uma nota e morre num
+reinício, que é exatamente a vida útil que essa informação precisa ter. Com mais de uma
+instância do servidor, cada uma tem a sua — e três por minuto por IP continua sendo folga para
+uma usuária.
