@@ -38,6 +38,17 @@ export interface Transacao extends DocumentoBase {
   listaComprasId?: string;
   formaPagamentoId?: string;
 
+  /**
+   * O que a maquininha ficou desta entrada, congelado no lançamento.
+   *
+   * Zero em toda saída e em toda entrada sem forma de pagamento. É snapshot
+   * pelo mesmo motivo de `ItemPedido.custoUnitarioSnapshot` (`DECISOES.md#d08`):
+   * a taxa cobrada em uma venda é fato histórico, e recalculá-la a partir da
+   * forma de pagamento de hoje faria arquivar um lançamento antigo reverter um
+   * número diferente do que foi somado — o agregado torceria em silêncio.
+   */
+  custoTaxa: Centavos;
+
   recorrente: boolean;
   observacoes?: string;
 }

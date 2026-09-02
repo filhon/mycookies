@@ -159,6 +159,39 @@ export const esquemaFicha = z
 
 export type EntradaFicha = z.infer<typeof esquemaFicha>;
 
+/**
+ * Um lançamento do caixa, validado sobre os números já convertidos.
+ *
+ * `valor` é sempre positivo: o sinal mora em `tipo`, e é o que evita erro de
+ * sinal em soma. Um lançamento de R$ 0,00 não é rascunho — é uma linha que
+ * ocupa a lista sem mover número nenhum.
+ */
+export const esquemaTransacao = z.object({
+  tipo: z.enum(["ENTRADA", "SAIDA"]),
+  categoria: z.enum([
+    "VENDA",
+    "COMPRA_INSUMO",
+    "EMBALAGEM",
+    "DESPESA_FIXA",
+    "EQUIPAMENTO",
+    "MARKETING",
+    "TAXA_PAGAMENTO",
+    "IMPOSTO",
+    "PRO_LABORE",
+    "OUTRO",
+  ]),
+  descricao: z.string().trim().min(2, "Diga o que foi esse lançamento."),
+  valor: z.number().int().positive("Informe o valor do lançamento."),
+  dataISO: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Escolha a data do lançamento."),
+  formaPagamentoId: z.string().trim().optional(),
+  recorrente: z.boolean(),
+  observacoes: z.string().trim().optional(),
+});
+
+export type EntradaTransacao = z.infer<typeof esquemaTransacao>;
+
 /** Converte as falhas do zod em um mapa campo → primeira mensagem. */
 export function errosPorCampo(erro: z.ZodError): Record<string, string> {
   const mapa: Record<string, string> = {};

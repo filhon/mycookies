@@ -455,3 +455,108 @@ Dois efeitos colaterais registrados porque surpreendem:
   segurança o que `useForm()` devolve e desiste do componente inteiro, com aviso no lint.
   `useWatch` é hook e não tem esse problema; o tipo vem parcial e é afirmado, porque todo
   campo nasce com valor em `valoresIniciais`.
+
+---
+
+## D23 · O agregado tem duas implementações, e o teste exige que concordem
+
+**Status:** vigente · decidida em 2026-09-02 na spec `004-caixa`, sessão 4A
+
+**Contexto.** `D09` guarda o mês inteiro em um documento e `D10` o mantém por incremento
+no cliente. É rápido, funciona offline e é silenciosamente perigoso: um delta perdido não
+dá erro, não aparece em log e só é notado quando o lucro do mês parece estranho — e aí não
+há como saber quando começou nem quantos meses estão tortos.
+
+**Decisão.** `src/lib/domain/caixa.ts` traz o par `deltaDaTransacao` (o que muda quando um
+lançamento entra ou sai) e `agregarTransacoes` (o mês somado do zero). A segunda **não** é
+escrita em termos da primeira: são duas implementações da mesma verdade, e
+`tests/domain/caixa.test.ts` exige que uma sequência de deltas produza exatamente o mesmo
+objeto que a reconstrução — no caso de aceite, ao editar, ao arquivar e ao trocar de mês.
+
+**Consequência.** Se as duas divergirem, o teste diz isso antes da usuária. A mesma
+`agregarTransacoes` é o corpo de "Recalcular o mês", que lê as transações da competência e
+reescreve o agregado: a rede de segurança e o oráculo do teste são a mesma função, e é por
+isso que ela vale o código duplicado.
+
+Duas escolhas de implementação ficam registradas porque surpreendem:
+
+- **`somarParcelas` apaga a chave que chega a zero.** Uma categoria sem gasto nenhum não é
+  uma linha de R$ 0,00 no painel, é uma linha que não existe. É também o que torna o
+  resultado de uma sequência de deltas comparável, campo a campo, com o de uma reconstrução:
+  sem isso a categoria revertida sobraria zerada de um lado e ausente do outro.
+- **Recalcular lê o agregado antes de reescrevê-lo.** `mergeFields` substitui `porDia`
+  inteiro, e `porDia[].pedidos` é do Módulo 3. Sem trazer a contagem de volta, recalcular o
+  caixa apagaria uma metade do documento que este módulo nem alimenta. Custa uma leitura,
+  contra a spec, que pedia uma consulta e uma escrita.
+
+---
+
+## D24 · A taxa da maquininha é campo derivado da entrada, e fica congelada nela
+
+**Status:** vigente
+
+**Contexto.** Uma venda no crédito de R$ 120,00 deixa R$ 5,99 na maquininha. Esse valor
+precisa aparecer no painel, e há dois jeitos óbvios de fazer isso: criar uma transação de
+saída automática, ou recalcular a taxa a partir da forma de pagamento sempre que alguém
+precisar dela.
+
+**Decisão.** Nem um nem outro. A venda entra pelo valor bruto com `formaPagamentoId`, a
+taxa é calculada na escrita por `taxaDaEntrada` e gravada em `Transacao.custoTaxa`, e o
+agregado a soma em `custoTaxasPagamento`, com linha própria no painel.
+
+**Consequência.** O Módulo 2 inteiro existe para tornar essa taxa visível na hora de dar o
+preço; dissolvê-la entre aluguel e farinha desfaria o trabalho. E uma transação automática
+poluiria a lista com uma linha que a usuária não lançou e não sabe explicar.
+
+O `custoTaxa` gravado é snapshot pelo mesmo motivo de `ItemPedido.custoUnitarioSnapshot`
+(`D08`), e é a parte que não se pode cortar: **editar é reverter mais aplicar.** Se a taxa
+fosse recalculada a partir da forma de pagamento de hoje, mudar o crédito de 4,99% para
+3,00% faria o arquivamento de uma venda antiga reverter um número diferente do que foi
+somado meses atrás — e o agregado torceria em silêncio, exatamente o risco que `D23`
+existe para fechar. É também o que permite às duas funções do par receberem só a transação,
+sem carregar a configuração junto.
+
+A categoria `TAXA_PAGAMENTO` continua existindo para o que é despesa avulsa de verdade —
+aluguel da maquininha, mensalidade de gateway. A dica do campo diz isso no lugar onde ela
+escolhe, porque sem essa frase a taxa entra duas vezes.
+
+---
+
+## D25 · Gráfico desenhado à mão, sem dependência nova
+
+**Status:** vigente
+
+**Contexto.** O painel do mês precisa de um gráfico de barras por dia.
+
+**Decisão.** São 31 `div` com altura percentual em CSS. Nenhuma biblioteca de gráfico.
+
+**Consequência.** Uma dependência de produção precisaria de aprovação (`CLAUDE.md`) para
+desenhar o que uma `div` desenha, e entraria no pacote de um app que precisa abrir offline
+na bancada. O preço é que acessibilidade e rótulo são responsabilidade nossa: cada dia é um
+item de lista com a leitura em texto para leitor de tela, porque a altura de uma barra não é
+informação para quem não a enxerga.
+
+---
+
+## D26 · `date-fns` sai do projeto; datas usam `Date` local e `Intl`
+
+**Status:** vigente · substitui a dívida registrada em `ESTADO.md`
+
+**Contexto.** `date-fns` estava no `package.json` desde o começo e nunca foi importado. A
+spec `004-caixa` deu o prazo: ou ele ganha uso real na sessão 4A, que é o primeiro módulo em
+que data é dado e não enfeite, ou sai.
+
+**Decisão.** Saiu. `src/lib/domain/datas.ts` faz o que o caixa precisa com a plataforma:
+recortar `'YYYY-MM-DD'`, contar os dias de um mês e escrever o nome dele em português.
+
+**Consequência.** O que a biblioteca resolveria aqui é `slice`, o dia zero do mês seguinte
+(`new Date(ano, mes, 0).getDate()`) e `Intl.DateTimeFormat('pt-BR')` — que já está no
+navegador, conhece o idioma e não pesa no pacote de um app que abre offline. Trazer um
+locale inteiro para escrever "setembro de 2026" seria pagar por tradução que o navegador dá.
+
+O que o módulo de fato protege, e é a razão de ele existir separado: **toda data é lida no
+fuso do aparelho, nunca em UTC.** `new Date('2026-09-03')` é meia-noite UTC, que no Brasil
+cai no dia 2 às 21h — um lançamento do dia 3 apareceria no dia 2, e uma venda do dia 1º
+mudaria de competência. `dataDeISO` monta a data pelos componentes locais, e há teste para
+isso. Se um dia aparecer aritmética de calendário de verdade (fuso de cliente em outro país,
+recorrência real), a conversa recomeça — com um caso de uso na mão.

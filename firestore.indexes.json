@@ -15,6 +15,15 @@
         { "fieldPath": "arquivado", "order": "ASCENDING" },
         { "fieldPath": "nomeBusca", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "transacoes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "arquivado", "order": "ASCENDING" },
+        { "fieldPath": "competencia", "order": "ASCENDING" },
+        { "fieldPath": "data", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [
