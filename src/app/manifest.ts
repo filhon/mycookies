@@ -15,6 +15,10 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: "pt-BR",
     dir: "ltr",
     categories: ["business", "productivity", "food"],
+    // O SVG fica no papel para o qual foi desenhado — conteúdo dentro da zona
+    // segura, para sobreviver ao recorte circular do Android. Os PNGs são o
+    // ícone sem recorte, e são o que garante o mesmo resultado nos dois
+    // sistemas: instalador que não lê SVG cai neles em vez de na página.
     icons: [
       {
         src: "/icons/icone-maskable.svg",
@@ -23,9 +27,15 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: "maskable",
       },
       {
-        src: "/icons/icone-maskable.svg",
-        sizes: "any",
-        type: "image/svg+xml",
+        src: "/icons/icone-192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icons/icone-512.png",
+        sizes: "512x512",
+        type: "image/png",
         purpose: "any",
       },
     ],

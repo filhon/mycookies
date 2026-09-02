@@ -155,7 +155,9 @@ export function TelaConfiguracao() {
     useDocumento<ConfiguracaoGeral>(referencia);
 
   const [estado, setEstado] = useState<EstadoConfiguracao | null>(null);
-  const [base, setBase] = useState("");
+  // `null` é "esta conta nunca salvou": não existe assinatura que se compare a
+  // ausência, e é o que separa "salvo e igual à sugestão" de "nunca salvo".
+  const [base, setBase] = useState<string | null>(null);
   const [erros, setErros] = useState<Record<string, string>>({});
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
@@ -169,7 +171,7 @@ export function TelaConfiguracao() {
   if (estado === null && !carregando && !erro) {
     const inicial = estadoInicial(dado, conta?.nome);
     setEstado(inicial);
-    setBase(assinatura(inicial));
+    setBase(dado ? assinatura(inicial) : null);
   }
 
   // Só bloqueia a tela se a falha veio antes de haver o que editar. Um erro
@@ -221,7 +223,12 @@ export function TelaConfiguracao() {
     horas,
   );
   const energiaGas = operacional.custoEnergiaHora + operacional.custoGasHora;
-  const alterado = assinatura(estado) !== base;
+
+  // Quem nunca salvou tem sempre o que salvar: o que está na tela é sugestão,
+  // e sugestão só vira dado no primeiro Salvar (`DECISOES.md#d17`). Sem isto o
+  // botão nasce desabilitado e a conta nova não tem como aceitar a sugestão.
+  const nuncaSalvou = base === null;
+  const alterado = nuncaSalvou || assinatura(estado) !== base;
 
   function trocarForma(forma: FormaPagamento) {
     setSalvo(false);
@@ -245,7 +252,16 @@ export function TelaConfiguracao() {
     if (!estado) return;
     setFalha(null);
 
-    const dados = paraDados(estado);
+    // O documento da conta é outra assinatura, e pode não ter chegado na hora
+    // em que a configuração semeou o formulário. O nome é relido aqui porque é
+    // o único campo desta tela que não sai do teclado: numa conta nova ele
+    // nasceria vazio e o espelho de `contas/{id}.nome` iria embora da escrita.
+    const paraGravar: EstadoConfiguracao = {
+      ...estado,
+      nomeNegocio: estado.nomeNegocio || (conta?.nome ?? ""),
+    };
+
+    const dados = paraDados(paraGravar);
     const resultado = esquemaConfiguracao.safeParse({
       ...dados.operacional,
       ...dados.precificacao,
@@ -260,7 +276,14 @@ export function TelaConfiguracao() {
     setSalvando(true);
     try {
       await salvarConfiguracao(contaId, dados);
-      setBase(assinatura(estado));
+      // A base passa a ser o que foi gravado. O nome entra por atualização
+      // funcional para não desfazer o que ela tenha digitado durante a escrita.
+      setEstado((anterior) =>
+        anterior
+          ? { ...anterior, nomeNegocio: paraGravar.nomeNegocio }
+          : anterior,
+      );
+      setBase(assinatura(paraGravar));
       setSalvo(true);
     } catch {
       setFalha("Não foi possível salvar agora. Tente de novo em instantes.");
@@ -288,12 +311,16 @@ export function TelaConfiguracao() {
       />
 
       <div className="mt-4 flex min-h-8 items-center justify-between gap-3">
+        {/* Três estados, e não dois: dizer "você mudou" para quem só abriu a
+            tela seria o sistema atribuindo a ela o que ele mesmo sugeriu. */}
         <p className="text-label text-ink-muted" aria-live="polite">
-          {alterado
-            ? "Você mudou coisas que ainda não foram salvas."
-            : salvo
-              ? "Tudo salvo."
-              : ""}
+          {nuncaSalvou
+            ? "Estes são valores sugeridos. Confira e salve para começar."
+            : alterado
+              ? "Você mudou coisas que ainda não foram salvas."
+              : salvo
+                ? "Tudo salvo."
+                : ""}
         </p>
         <SeloSincronizacao pendente={pendente} />
       </div>
@@ -580,7 +607,9 @@ export function TelaConfiguracao() {
         <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-30 px-4 lg:hidden">
           <div className="flex items-center gap-3 rounded-lg border border-line bg-surface p-3 shadow-overlay">
             <p className="min-w-0 flex-1 text-label text-ink-muted">
-              Alterações ainda não salvas
+              {nuncaSalvou
+                ? "Valores sugeridos, ainda não salvos"
+                : "Alterações ainda não salvas"}
             </p>
             <Botao
               variante="primaria"

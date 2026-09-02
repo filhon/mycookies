@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-02 (sessão 3C, mais a primeira rodada de verificação visual).
+Atualizado em 2026-09-02 (sessão 5A).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -18,16 +18,17 @@ pedido combinado até o carrinho no mercado.
 **Todas as specs de módulo estão executadas.** O que falta não é módulo: é a spec
 `005-prontidao.md`, escrita em 2026-09-02 depois de uma verificação do estado real do
 repositório. Ela tem duas sessões — `5A` conserta o que impede o primeiro uso, `5B` faz a
-verificação em navegador, que é a dívida mais antiga do projeto.
+verificação em navegador, que é a dívida mais antiga do projeto. **A 5A está entregue**: a
+configuração pode ser salva na primeira vez, o iPhone tem ícone de verdade e a dependência
+morta saiu do pacote.
 
-**O sistema não está pronto para produção.** O bloqueio é um só e está identificado no
-código: uma conta nova não consegue salvar a configuração, e sem `configuracao/geral` a
-ficha calcula sem rateio, o pedido fica sem forma de pagamento e o caixa sem taxa de
-maquininha. Detalhes e conserto na spec 005, sessão 5A.
+**Falta a prova, e não mais o conserto.** O bloqueio identificado no código foi resolvido,
+mas nenhum número deste sistema jamais saiu de um teclado, passou pelo Firestore e voltou.
+É o que a 5B responde.
 
 Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), 228 testes,
-build com 13 rotas estáticas mais `/fichas/[id]` e `/pedidos/[id]` dinâmicas e service worker
-gerado.
+e build com 13 rotas estáticas — `/apple-icon.png` entrou na lista — mais `/fichas/[id]` e
+`/pedidos/[id]` dinâmicas e service worker gerado.
 
 **O app está de pé.** Projeto `mycookies-mrc`, `.env.local` preenchido, regras publicadas,
 chave de conta de serviço no disco (fora do git, coberta por `*firebase-adminsdk*.json`).
@@ -57,15 +58,15 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 
 ## Módulos
 
-| #   | Módulo                                      | Estado               | Spec                        |
-| --- | ------------------------------------------- | -------------------- | --------------------------- |
-| 0   | Fundação: design system, shell, acesso, PWA | pronto               | —                           |
-| 1   | Insumos e embalagens                        | pronto               | —                           |
-| —   | Contas e tenancy                            | pronto               | `specs/000-contas.md`       |
-| 2   | Custos operacionais e precificação          | pronto (2A e 2B)     | `specs/002-precificacao.md` |
-| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C) | `specs/003-pedidos.md`      |
-| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)     | `specs/004-caixa.md`        |
-| 5   | Prontidão: conserto e verificação           | **a fazer (5A, 5B)** | `specs/005-prontidao.md`    |
+| #   | Módulo                                      | Estado                    | Spec                        |
+| --- | ------------------------------------------- | ------------------------- | --------------------------- |
+| 0   | Fundação: design system, shell, acesso, PWA | pronto                    | —                           |
+| 1   | Insumos e embalagens                        | pronto                    | —                           |
+| —   | Contas e tenancy                            | pronto                    | `specs/000-contas.md`       |
+| 2   | Custos operacionais e precificação          | pronto (2A e 2B)          | `specs/002-precificacao.md` |
+| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)      | `specs/003-pedidos.md`      |
+| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)          | `specs/004-caixa.md`        |
+| 5   | Prontidão: conserto e verificação           | 5A pronto, **5B a fazer** | `specs/005-prontidao.md`    |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -322,6 +323,45 @@ Fora do escopo literal da spec, e por quê:
   linha gravada segue exatamente `ItemListaCompras`; o que a tela precisa a mais para escrever
   "1 pacote de 1 kg" ela junta do insumo vivo. Nenhuma mudança de schema por causa de rótulo.
 
+## O que a sessão 5A deixou pronto
+
+Nenhuma funcionalidade nova: são três consertos, e o terceiro **remove** uma dependência.
+
+- **`TelaConfiguracao` pode ser salva na primeira vez.** A base de comparação passou a ser
+  `string | null`, com `null` significando "esta conta nunca salvou": não existe assinatura
+  que se compare a ausência, então `alterado` nasce verdadeiro e os dois caminhos de salvar
+  — o botão do desktop e a barra fixa do celular — ficam vivos. A frase de status ganhou o
+  terceiro caso ("Estes são valores sugeridos. Confira e salve para começar."), porque com a
+  base em ausência a tela diria "você mudou" para quem só a abriu. `DECISOES.md#d43`.
+- **O nome do negócio é relido no salvamento.** `estadoInicial` lê `conta?.nome`, mas a
+  semeadura dispara com a assinatura da configuração e o documento da conta é outra
+  assinatura, que pode não ter chegado. Numa conta nova o espelho nascia vazio e `paraDados`
+  o omitia da escrita. **Não** virou tarefa de espelho de nome: o campo continua sem leitor e
+  a dívida continua na tabela.
+- **`scripts/gerar-icones.mjs`, mais `src/app/apple-icon.png` (180×180),
+  `public/icons/icone-192.png` e `icone-512.png`.** O Safari não lê SVG como
+  `apple-touch-icon`, e o iPhone instalava uma miniatura da página. O manifesto lista os dois
+  PNGs em `purpose: "any"` e mantém o SVG em `maskable`. Conferido no build: o
+  `<link rel="apple-touch-icon">` sai com `sizes="180x180"` e `type="image/png"`, e
+  `/apple-icon.png` virou rota. `DECISOES.md#d44`.
+- **`@hookform/resolvers` saiu do `package.json`** e do `package-lock.json`. Não era
+  importado em lugar nenhum — a validação é `safeParse` em toda tela (`#d22`) — e era peso
+  morto no pacote de um app que precisa abrir offline na bancada. A linha correspondente saiu
+  da tabela de dívidas.
+
+Fora do escopo literal da spec, e por quê:
+
+- **Os PNGs saem de `src/app/icon.svg`, e não do maskable.** A spec diz "os três saem do SVG
+  existente" e o repositório tem dois. O maskable ocupa 42% do quadrado de propósito, para
+  sobreviver ao recorte circular do Android; sem recorte nenhum isso vira um biscoito pequeno
+  boiando no meio da tela de início. O motivo está em `#d44`, junto do porquê de o `rx` do
+  fundo sair.
+- **O script ficou versionado**, em vez de a rasterização ser feita e esquecida. O desenho vai
+  mudar um dia, e um PNG sem procedência é um arquivo que ninguém sabe refazer.
+
+Nada de schema, de regra de segurança ou de índice mudou, e nenhum teste precisou ser
+alterado: os 228 continuam os mesmos, porque nada disto mora em `src/lib/domain/`.
+
 ## O que mudou no refactor de contas
 
 Vale saber antes de escrever qualquer código novo, porque muda a assinatura de tudo que
@@ -340,22 +380,19 @@ toca o Firestore. Decisões em `DECISOES.md#d14` e `#d15`.
 
 ## Próxima ação
 
-**Executar a sessão 5A de `specs/005-prontidao.md`**, que é o que destrava o primeiro uso, e
-em seguida a 5B, que é a verificação em navegador. A spec traz o roteiro em ordem, porque
-cada passo constrói o estado que o seguinte consome; as listas por sessão abaixo continuam
-aqui como a matéria-prima de onde ele saiu.
+**Executar a sessão 5B de `specs/005-prontidao.md`**, que é a verificação em navegador. A
+spec traz o roteiro em ordem, porque cada passo constrói o estado que o seguinte consome; as
+listas por sessão abaixo continuam aqui como a matéria-prima de onde ele saiu.
 
-O portão de conclusão foi rodado de verdade em 2026-09-02 e passa nos quatro: lint, typecheck,
-228 testes e build. Portão passando não é o mesmo que sistema pronto — nenhum dos quatro toca
-no Firestore.
+O portão de conclusão foi rodado de verdade em 2026-09-02, no fim da 5A, e passa nos quatro:
+lint, typecheck, 228 testes e build. Portão passando não é o mesmo que sistema pronto —
+nenhum dos quatro toca no Firestore.
 
-**Salvar a configuração na primeira vez não funciona.** `TelaConfiguracao` semeia o formulário
-com `CONFIGURACAO_SUGERIDA` e semeia a base de comparação com o mesmo valor, então `alterado`
-nasce falso e o botão Salvar nasce desabilitado. Quem nunca salvou não tem como aceitar a
-sugestão sem alterar um campo e desalterar — e é essa tela que destrava o rateio da ficha, as
-formas de pagamento do pedido e o preço médio da meta. Contraria o critério de aceite da 2A
-("carrega e grava em uma leitura e uma escrita") e o `DECISOES.md#d17`. O conserto: quando não
-há documento, a base é a ausência, e a frase de status diz que aqueles são valores sugeridos.
+**O que a 5A consertou não foi visto rodando.** O conserto é lógica de estado local e não
+tem teste — `npm test` cobre só `src/lib/domain/`. O caso só se exercita numa conta **sem**
+`configuracao/geral`: se a conta `mycookies` já tiver o documento, apagá-lo é o que recria o
+cenário. É o passo 1 do roteiro da 5B, e é lá que `firestore.rules` deixa de ser regra
+publicada e nunca exercida.
 
 **Ver o resto em navegador.** Os índices já estão publicados, então `npm run dev` basta.
 
@@ -452,7 +489,7 @@ Da 3C, o que só o navegador responde:
 
 ## O que a verificação visual já corrigiu
 
-A primeira rodada de capturas em navegador (desktop, tema escuro) achou duas coisas:
+A primeira rodada de capturas em navegador (desktop, tema escuro) achou três coisas:
 
 - **Largura de coluna padronizada.** Havia três larguras de conteúdo em uso e nenhuma
   decidida: listas em 1024px centralizadas, editores e `/compras` em 768px encostados à
@@ -464,34 +501,34 @@ A primeira rodada de capturas em navegador (desktop, tema escuro) achou duas coi
   inset do aparelho substituía o respiro. Nasceu `rodape-seguro`, que soma os dois, e o
   comentário das duas utilidades agora diz qual serve para quê. Vale para os cinco painéis:
   insumo, transação, meta, cliente e forma de pagamento.
-- **Configuração não podia ser salva na primeira vez.** Segue aberto: ver "Próxima ação".
+- **Configuração não podia ser salva na primeira vez.** Consertado na 5A: ver a seção dela e
+  `DECISOES.md#d43`.
 
 ## Dívidas conhecidas
 
 Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobertas.
 
-| Dívida                                                                       | Onde                             | Quando resolver                                                             |
-| ---------------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------- |
-| Ícones só em SVG; falta PNG 180×180 para `apple-touch-icon` do iOS           | `public/icons/`                  | **Spec 005, sessão 5A**: sem ele o iPhone instala uma miniatura da página   |
-| Verificação visual só no desktop e só no tema escuro                         | —                                | **Spec 005, sessão 5B**: falta o tema claro (que é o padrão) e o celular    |
-| Regras publicadas, mas nunca exercitadas por um cliente real                 | `firestore.rules`                | **Spec 005, sessão 5B**, passo 1: é lá que a regra é de fato testada        |
-| Acesso concedido por script, sem cadastro self-serve                         | `scripts/conceder-acesso.mjs`    | Segundo cliente pagante, junto de D10 (`DECISOES.md#d16`)                   |
-| `sair()` não limpa o cache do IndexedDB                                      | `src/providers/AuthProvider.tsx` | Só ao virar SaaS: hoje é vantagem, em aparelho compartilhado vira vazamento |
-| Agregados incrementados no cliente                                           | `src/lib/firebase/mutations/`    | Segundo cliente pagante (`DECISOES.md#d10`)                                 |
-| `@hookform/resolvers` instalado e não usado: a validação é `safeParse`       | `package.json`                   | **Spec 005, sessão 5A**: sai como carona, por ser peso morto no pacote      |
-| Agregado do mês pode ficar torto se um delta se perder no caminho            | `mutations/agregado.ts`          | Tem escape: "Recalcular o mês" na tela. A troca real é a mesma de D10       |
-| Mudar um lançamento de mês não move o espelho da meta do mês destino         | `mutations/transacoes.ts`        | Mesmo escape e mesma troca: `DECISOES.md#d29`                               |
-| Produto revertido sobra zerado no agregado até recalcular                    | `mutations/agregado.ts`          | `produtosOrdenados` o esconde na leitura; recalcular limpa (`#d37`)         |
-| `ultimoPedidoEm` do cliente não volta atrás ao desfazer um pagamento         | `mutations/clientes.ts`          | Só com histórico de pagamentos, que não existe (`#d37`)                     |
-| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê          | `mutations/clientes.ts`          | Quando "quem mais compra de mim" virar pergunta real (`#d35`)               |
-| Meta não guarda histórico: reescrever o alvo apaga o anterior                | `mutations/metas.ts`             | Se "que meta eu tinha antes" virar pergunta real (`DECISOES.md#d27`)        |
-| `FichaTecnica.ativo` é sempre `true`, sem tela que o desligue                | `src/lib/types/fichas.ts`        | Se "produto fora de linha" virar diferente de "arquivado"                   |
-| Quantidade volta em unidade base: 0,5 kg reabre como 500 g                   | `FormularioFicha.tsx`            | Se ela reclamar; exigiria gravar a unidade digitada, e não só o valor       |
-| `Bloco` e `BlocoConfiguracao` continuam primos                               | `src/components/`                | Se a configuração precisar do mesmo bloco; hoje ela tem rodapé próprio      |
-| `/pedidos` carrega todo pedido não arquivado, sem recorte de data            | `ListaPedidos.tsx`               | Quando o primeiro ano de pedidos pesar: vira range sobre `dataEntregaISO`   |
-| Não dá para arquivar uma cliente: só cadastrar e editar, de dentro do pedido | `mutations/clientes.ts`          | Junto da tela de clientes, quando ela existir (`DECISOES.md#d35`)           |
-| Editar um pedido e sair sem salvar descarta em silêncio                      | `FormularioPedido.tsx`           | Mesma dívida do editor de ficha e da configuração; se acontecer de verdade  |
-| `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`             | `src/lib/types/configuracao.ts`  | Quando algum leitor precisar do nome: hoje ninguém lê esse campo            |
-| Sair da configuração com alteração pendente descarta em silêncio             | `TelaConfiguracao.tsx`           | Se acontecer de verdade; a barra fixa de "não salvas" é a defesa atual      |
-| Dois toques no mesmo quadro na lista de compras podem perder uma marca       | `ListaDoMercado.tsx`             | Se acontecer: `comprado` sai do array e vira mapa por `insumoId` (`#d40`)   |
-| Estoque continua sendo número digitado: comprar não o movimenta              | `mutations/listasCompra.ts`      | Nunca por baixa automática; se houver caso, nasce com contagem periódica    |
+| Dívida                                                                       | Onde                             | Quando resolver                                                                |
+| ---------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------ |
+| Verificação visual só no desktop e só no tema escuro                         | —                                | **Spec 005, sessão 5B**: falta o tema claro (que é o padrão) e o celular       |
+| Regras publicadas, mas nunca exercitadas por um cliente real                 | `firestore.rules`                | **Spec 005, sessão 5B**, passo 1: é lá que a regra é de fato testada           |
+| Acesso concedido por script, sem cadastro self-serve                         | `scripts/conceder-acesso.mjs`    | Segundo cliente pagante, junto de D10 (`DECISOES.md#d16`)                      |
+| `sair()` não limpa o cache do IndexedDB                                      | `src/providers/AuthProvider.tsx` | Só ao virar SaaS: hoje é vantagem, em aparelho compartilhado vira vazamento    |
+| Agregados incrementados no cliente                                           | `src/lib/firebase/mutations/`    | Segundo cliente pagante (`DECISOES.md#d10`)                                    |
+| Configuração aberta sem rede e sem cache diz "valores sugeridos"             | `TelaConfiguracao.tsx`           | Não tem conserto: cache vazio não distingue "não existe" de "não sei" (`#d43`) |
+| Agregado do mês pode ficar torto se um delta se perder no caminho            | `mutations/agregado.ts`          | Tem escape: "Recalcular o mês" na tela. A troca real é a mesma de D10          |
+| Mudar um lançamento de mês não move o espelho da meta do mês destino         | `mutations/transacoes.ts`        | Mesmo escape e mesma troca: `DECISOES.md#d29`                                  |
+| Produto revertido sobra zerado no agregado até recalcular                    | `mutations/agregado.ts`          | `produtosOrdenados` o esconde na leitura; recalcular limpa (`#d37`)            |
+| `ultimoPedidoEm` do cliente não volta atrás ao desfazer um pagamento         | `mutations/clientes.ts`          | Só com histórico de pagamentos, que não existe (`#d37`)                        |
+| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê          | `mutations/clientes.ts`          | Quando "quem mais compra de mim" virar pergunta real (`#d35`)                  |
+| Meta não guarda histórico: reescrever o alvo apaga o anterior                | `mutations/metas.ts`             | Se "que meta eu tinha antes" virar pergunta real (`DECISOES.md#d27`)           |
+| `FichaTecnica.ativo` é sempre `true`, sem tela que o desligue                | `src/lib/types/fichas.ts`        | Se "produto fora de linha" virar diferente de "arquivado"                      |
+| Quantidade volta em unidade base: 0,5 kg reabre como 500 g                   | `FormularioFicha.tsx`            | Se ela reclamar; exigiria gravar a unidade digitada, e não só o valor          |
+| `Bloco` e `BlocoConfiguracao` continuam primos                               | `src/components/`                | Se a configuração precisar do mesmo bloco; hoje ela tem rodapé próprio         |
+| `/pedidos` carrega todo pedido não arquivado, sem recorte de data            | `ListaPedidos.tsx`               | Quando o primeiro ano de pedidos pesar: vira range sobre `dataEntregaISO`      |
+| Não dá para arquivar uma cliente: só cadastrar e editar, de dentro do pedido | `mutations/clientes.ts`          | Junto da tela de clientes, quando ela existir (`DECISOES.md#d35`)              |
+| Editar um pedido e sair sem salvar descarta em silêncio                      | `FormularioPedido.tsx`           | Mesma dívida do editor de ficha e da configuração; se acontecer de verdade     |
+| `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`             | `src/lib/types/configuracao.ts`  | Quando algum leitor precisar do nome: hoje ninguém lê esse campo               |
+| Sair da configuração com alteração pendente descarta em silêncio             | `TelaConfiguracao.tsx`           | Se acontecer de verdade; a barra fixa de "não salvas" é a defesa atual         |
+| Dois toques no mesmo quadro na lista de compras podem perder uma marca       | `ListaDoMercado.tsx`             | Se acontecer: `comprado` sai do array e vira mapa por `insumoId` (`#d40`)      |
+| Estoque continua sendo número digitado: comprar não o movimenta              | `mutations/listasCompra.ts`      | Nunca por baixa automática; se houver caso, nasce com contagem periódica       |

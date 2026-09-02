@@ -1054,3 +1054,74 @@ lote ganhou `max-w-xl` próprio, porque rótulo e valor em pontas opostas de uma
 é exatamente a planilha que o `PRODUCT.md` lista como anti-referência.
 
 Prosa continua limitada por medida em `ch`, como já era.
+
+---
+
+## D43 · Ausência não é igualdade: "nunca salvou" é o terceiro estado da configuração
+
+**Status:** vigente · decidida em 2026-09-02 na spec `005-prontidao`, sessão 5A
+
+**Contexto.** `#d17` decidiu que a configuração é sugerida na tela e só vira documento no
+primeiro Salvar. A tela executou isso semeando o formulário com `CONFIGURACAO_SUGERIDA` **e**
+semeando a base de comparação com a assinatura desse mesmo formulário. Com isso `alterado`
+nascia falso numa conta que nunca salvou: no desktop o botão Salvar nascia `disabled`, e no
+celular a barra de salvar — condicionada a `alterado` — nem chegava a existir. A única saída
+era alterar um campo e desalterá-lo.
+
+O raio do defeito é o sistema inteiro, porque sem `configuracao/geral` a ficha calcula sem
+rateio, o pedido não tem forma de pagamento e o caixa não tem taxa de maquininha — e cada uma
+dessas telas avisa apontando para a tela que não salvava.
+
+**Decisão.** A base é `string | null`, e `null` significa "esta conta nunca salvou". Não
+existe assinatura que se compare a ausência: `alterado` nasce verdadeiro, e os dois caminhos
+de salvar ficam vivos. A frase de status ganha o terceiro caso junto — "Estes são valores
+sugeridos. Confira e salve para começar." —, e a barra do celular diz "Valores sugeridos,
+ainda não salvos".
+
+**Consequência.** A causa era a base de comparação, e não o botão: habilitar o botão sem
+mexer na base faria a tela dizer "Você mudou coisas que ainda não foram salvas" para quem só
+a abriu, que é o sistema atribuindo à usuária o que ele mesmo sugeriu. São três estados
+porque são três coisas diferentes — "eu sugeri", "você mudou" e "está salvo" —, e é a versão
+em tela do que `#d17` decidiu no modelo de dados.
+
+Duas coisas ficam registradas porque um leitor futuro vai perguntar:
+
+- **O nome do negócio é relido no salvamento.** `estadoInicial` lê `conta?.nome`, mas a
+  semeadura dispara quando a assinatura da _configuração_ chega, e o documento da conta é
+  outra assinatura que pode não ter chegado (`AuthProvider` expõe `conta: null` até a
+  primeira leitura). A alternativa era esperar as duas leituras, o que penduraria a tela num
+  documento que ela não precisa para funcionar. `nomeNegocio` segue sem leitor e a dívida do
+  espelho continua registrada: isto conserta a semeadura, não o espelho.
+- **Aberta pela primeira vez neste aparelho e sem rede, a tela diz "valores sugeridos" mesmo
+  que a conta já tenha configuração salva.** Do cache vazio não dá para distinguir "não
+  existe" de "ainda não sei", e qualquer heurística acerta um caso quebrando o outro. O caso
+  raro paga pelo comum, como em `#d29`: a conta nova offline é a que precisa salvar.
+
+---
+
+## D44 · O ícone é rasterizado uma vez, por script fora do `package.json`
+
+**Status:** vigente · decidida em 2026-09-02 na spec `005-prontidao`, sessão 5A
+
+**Contexto.** `public/icons/` tinha um arquivo só, `icone-maskable.svg`, e `layout.tsx`
+declarava `appleWebApp.capable: true` sem nenhum `apple-touch-icon`. **O Safari não lê SVG
+nesse papel**: instalado na tela de início do iPhone, o app ganhava uma miniatura da página
+em vez de ícone — a primeira coisa que ela vê todo dia, antes de abrir.
+
+**Decisão.** `src/app/apple-icon.png` (180×180), `public/icons/icone-192.png` e
+`icone-512.png`, gerados por `scripts/gerar-icones.mjs` e versionados. O SVG continua no
+manifesto, agora só em `purpose: "maskable"`; os PNGs entram como `any`.
+
+**Consequência.** Rasterizar é trabalho de uma vez, e não do build: nenhuma dependência de
+produção entra por causa disso, e o app não ganha peso para desenhar o que já está desenhado.
+O script usa o `sharp` que vem no `node_modules` junto do Next e **não** o declara em
+`package.json`, porque ferramenta de uma vez não é dependência do app — se um dia sumir de
+lá, `npm i -D sharp`, rodar e desinstalar. O script erra alto se o desenho mudar de forma,
+porque ninguém confere PNG no diff.
+
+A origem dos três é `src/app/icon.svg`, o desenho do favicon, com um ajuste só: o `rx` do
+fundo sai. Os dois sistemas recortam o ícone da tela de início com a máscara deles, e canto
+arredondado dentro de canto arredondado aparece como falha de desenho. **O maskable não serve
+de origem** justamente pelo que o torna maskable: o conteúdo dele ocupa 42% do quadrado para
+sobreviver ao recorte circular do Android, e sem recorte nenhum isso vira um biscoito pequeno
+boiando no meio da tela. São dois desenhos porque são dois problemas.

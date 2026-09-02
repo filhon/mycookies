@@ -139,19 +139,23 @@ Sai também a linha correspondente da tabela de dívidas de `ESTADO.md`.
 
 ## Critérios de aceite 5A
 
-- [ ] Numa conta sem `configuracao/geral`, a tela abre com o botão Salvar **habilitado** no
+- [x] Numa conta sem `configuracao/geral`, a tela abre com o botão Salvar **habilitado** no
       desktop e com a barra de salvar **visível** no celular.
-- [ ] O primeiro toque em Salvar grava o documento em uma escrita só, sem que nenhum campo
+- [x] O primeiro toque em Salvar grava o documento em uma escrita só, sem que nenhum campo
       precise ser alterado antes — o critério da 2A que a 4ª sessão nunca exerceu.
-- [ ] Antes do primeiro salvamento a tela diz que aqueles são valores sugeridos, e não que
+- [x] Antes do primeiro salvamento a tela diz que aqueles são valores sugeridos, e não que
       a usuária mudou algo.
-- [ ] Depois de salvar, a frase vira "Tudo salvo" e o botão volta a ficar desabilitado até
+- [x] Depois de salvar, a frase vira "Tudo salvo" e o botão volta a ficar desabilitado até
       haver alteração de verdade.
-- [ ] Reabrir a tela mostra o que foi salvo, com o botão desabilitado.
-- [ ] `apple-touch-icon` de 180×180 servido em PNG, e o manifesto lista PNG de 192 e 512
+- [x] Reabrir a tela mostra o que foi salvo, com o botão desabilitado.
+- [x] `apple-touch-icon` de 180×180 servido em PNG, e o manifesto lista PNG de 192 e 512
       além do SVG maskable.
-- [ ] `@hookform/resolvers` fora do `package.json`, com build passando.
-- [ ] Portão de conclusão passando: lint, typecheck, test, build.
+- [x] `@hookform/resolvers` fora do `package.json`, com build passando.
+- [x] Portão de conclusão passando: lint, typecheck, test, build.
+
+Os cinco primeiros são de estado de tela e não têm teste — `npm test` cobre só
+`src/lib/domain/`. Estão conferidos por leitura do código, e a prova em navegador é o passo 1
+da 5B, numa conta sem o documento.
 
 ---
 
