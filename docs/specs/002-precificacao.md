@@ -49,11 +49,11 @@ produtivas, PIX com taxa zero, débito 1,99%, crédito 4,99%.
 
 ## Critérios de aceite 2A
 
-- [ ] A tela carrega e grava em uma leitura e uma escrita.
-- [ ] `custoIndiretoPorHora` é recalculado e gravado a cada salvamento.
-- [ ] Formas de pagamento podem ser adicionadas, editadas e desativadas, nunca apagadas.
-- [ ] Cada bloco mostra o efeito do número em reais por hora.
-- [ ] Portão de conclusão passando.
+- [x] A tela carrega e grava em uma leitura e uma escrita.
+- [x] `custoIndiretoPorHora` é recalculado e gravado a cada salvamento.
+- [x] Formas de pagamento podem ser adicionadas, editadas e desativadas, nunca apagadas.
+- [x] Cada bloco mostra o efeito do número em reais por hora.
+- [x] Portão de conclusão passando.
 
 ---
 
@@ -158,11 +158,11 @@ venda, comparação com concorrente, sugestão automática de margem, impressão
 
 ## Critérios de aceite 2B
 
-- [ ] Os números do caso de aceite batem exatamente, em teste.
-- [ ] Margem mais taxas acima de 100% produz erro explicado, não `Infinity`.
-- [ ] Rendimento zero não quebra a tela.
-- [ ] Ficha sem configuração operacional avisa que o rateio está zerado e leva à
+- [x] Os números do caso de aceite batem exatamente, em teste.
+- [x] Margem mais taxas acima de 100% produz erro explicado, não `Infinity`.
+- [x] Rendimento zero não quebra a tela.
+- [x] Ficha sem configuração operacional avisa que o rateio está zerado e leva à
       `/configuracao`.
-- [ ] Kit soma o custo dos componentes e não aceita outro kit como componente.
-- [ ] Recalcular limpa `custoDesatualizado`.
-- [ ] Portão de conclusão passando.
+- [x] Kit soma o custo dos componentes e não aceita outro kit como componente.
+- [x] Recalcular limpa `custoDesatualizado`.
+- [x] Portão de conclusão passando.

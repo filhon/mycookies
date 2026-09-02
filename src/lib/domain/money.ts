@@ -78,6 +78,25 @@ export function digitosParaCentavos(digitos: string): Centavos {
 }
 
 /**
+ * 31.16 → "31,2%". Uma casa basta: a segunda é precisão que a usuária não
+ * usa para decidir preço, e que só faria o número parecer contábil.
+ */
+export function formatarPercentual(valor: number, casas = 1): string {
+  return `${valor.toLocaleString("pt-BR", {
+    minimumFractionDigits: casas,
+    maximumFractionDigits: casas,
+  })}%`;
+}
+
+/** 1.56 → "1,56×". O múltiplo do custo, na notação que ela reconhece. */
+export function formatarMultiplicador(valor: number): string {
+  return `${valor.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}×`;
+}
+
+/**
  * Lê um número comum (não monetário) digitado em teclado brasileiro.
  * "1,5" e "1.5" valem o mesmo; o que não for número vira zero.
  */

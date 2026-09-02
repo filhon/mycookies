@@ -4,6 +4,7 @@ import {
   useId,
   type InputHTMLAttributes,
   type ReactNode,
+  type Ref,
   type SelectHTMLAttributes,
 } from "react";
 import { cn } from "@/lib/utils/cn";
@@ -66,6 +67,12 @@ export interface CampoProps extends Omit<
   erro?: string;
   sufixo?: ReactNode;
   className?: string;
+  /**
+   * O `ref` chega ao `input`, e não ao envelope. É o que permite entregar o
+   * campo a quem controla o formulário por referência, como o
+   * `register` do react-hook-form no editor de ficha.
+   */
+  ref?: Ref<HTMLInputElement>;
 }
 
 export function Campo({
@@ -120,6 +127,8 @@ export interface SeletorProps extends Omit<
   dica?: ReactNode;
   erro?: string;
   className?: string;
+  /** Mesma razão do `ref` de `Campo`. */
+  ref?: Ref<HTMLSelectElement>;
 }
 
 export function Seletor({

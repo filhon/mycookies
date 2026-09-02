@@ -351,3 +351,107 @@ instrução "saia e entre novamente" — o token em cache vale uma hora e segura
 concedida do lado de fora. `reconferirAcesso()` força a renovação com
 `getIdTokenResult(true)`, e a tela de acesso negado virou um botão. É o mesmo mecanismo que
 um cadastro self-serve vai precisar logo depois do `createUserWithEmailAndPassword`.
+
+---
+
+## D19 · Um caminho só calcula os números da ficha
+
+**Status:** vigente · decidida em 2026-09-01 na spec `002-precificacao`, sessão 2B
+
+**Contexto.** O editor precisa mostrar custo, preço sugerido e lucro enquanto ela digita, e a
+mutação precisa gravar exatamente esses campos (`DECISOES.md#d04`). São dois consumidores da
+mesma aritmética, e o jeito óbvio — a tela calcula para exibir, a mutação recalcula para
+gravar — cria dois lugares para o preço divergir.
+
+**Decisão.** `derivarFicha()`, em `src/lib/domain/custoFicha.ts`, devolve de uma vez custo,
+taxas, preço sugerido, preço arredondado, preço praticado e a verificação sobre ele. O editor
+chama para desenhar o painel; `corpoDaFicha()` chama para montar o documento. Ninguém mais
+soma parcela de custo nem divide por margem.
+
+**Consequência.** O número que ela viu antes de tocar em "Salvar" é o número gravado, por
+construção e não por disciplina. O preço é uma função a mais na camada pura — `custoFicha.ts`
+passa a importar `precificacao.ts`, o que amarra os dois módulos que a spec pediu separados.
+A separação continua valendo para quem só quer uma das duas contas.
+
+A guarda de margem impossível mora nessa mesma camada: `calcularPrecoSugerido` devolve
+`{ ok: false, motivo }` quando margem mais taxas chegam a 100%, porque nesse ponto o divisor é
+zero e daí para cima é negativo. Nenhuma tela precisa lembrar de checar antes de dividir.
+
+---
+
+## D20 · Embalagem é categoria, não campo
+
+**Status:** vigente
+
+**Contexto.** A ficha grava `custoInsumos` e `custoEmbalagem` separados, e alguém precisa
+decidir de que lado cai cada linha. O insumo não tem um campo "é embalagem": tem `categoria`,
+com cinco valores (`DECISOES.md#d03`).
+
+**Decisão.** `ehEmbalagem(categoria)` é verdadeiro para `EMBALAGEM`, `ETIQUETA` e
+`ARMAZENAMENTO`. `INGREDIENTE` e `OUTRO` ficam do lado da receita.
+
+**Consequência.** A divisão existe porque é o custo de embalar que a Maynara esquece de
+cobrar, e vê-lo somado à farinha esconde justamente o que ela precisa enxergar. `OUTRO` cai
+na receita porque é a categoria do que ela não soube classificar, e chamar isso de embalagem
+seria adivinhar em cima de um palpite. Se um dia um insumo precisar do rótulo explícito, o
+campo nasce no insumo e esta função vira uma leitura dele — sem tocar em quem soma.
+
+O mesmo módulo carrega `podeSerComponente()`, que é a forma executável de `D11`: kit não
+entra em kit, ficha não entra em si mesma, e arquivada não entra em nada. A busca de
+componentes filtra por ela, e o teste cobre os três casos — regra de negócio escrita uma vez,
+e não repetida em cada tela que oferecer uma lista de fichas.
+
+---
+
+## D21 · Preço sugerido é oferta, não imposição
+
+**Status:** vigente
+
+**Contexto.** O painel de preço mostra o sugerido pela conta e o praticado de fato, e os dois
+precisam conviver: ela arredonda para a vitrine, cobre a concorrente, ou simplesmente decide
+outro número.
+
+**Decisão.** O formulário guarda `precoManual`. Enquanto for falso, o preço praticado
+acompanha o sugerido a cada tecla digitada na receita. No instante em que ela escreve um
+preço, vira verdadeiro e o número para de se mexer sozinho; um botão "Usar" volta atrás. Toda
+ficha já salva abre com `precoManual` verdadeiro.
+
+**Consequência.** Preço salvo é decisão tomada: encarecer o chocolate muda o custo e o
+sugerido na tela, e **não** muda sozinho o que ela cobra da cliente — o painel mostra a
+margem encolhendo e oferece o novo preço. O contrário seria o sistema reprecificando o
+cardápio pelas costas dela.
+
+O par de estados evita o efeito que sincronizaria um campo com o outro: o preço exibido é
+derivado a cada render, e não copiado para o estado. Ficha aberta e não salva não escreve
+nada, como em `#d17`.
+
+---
+
+## D22 · `react-hook-form` só no editor de ficha
+
+**Status:** vigente
+
+**Contexto.** As telas do projeto usam `useState` mais `zod.safeParse` no salvamento. O
+editor de ficha tem duas listas dinâmicas — itens e componentes — em que remover a terceira
+linha não pode embaralhar as outras.
+
+**Decisão.** `useFieldArray` cuida das listas e `register` dos campos; a validação continua
+sendo `esquemaFicha.safeParse` sobre os números já convertidos, e as falhas do zod viram
+erros de campo por `setError`, com o caminho do problema (`itens.2.quantidade`) virando o
+caminho do formulário.
+
+**Consequência.** Uma biblioteca a mais em uma tela só, com o resto do projeto inalterado. A
+validação não migrou para `zodResolver` porque os campos guardam texto enquanto ela digita —
+"1," é estado legítimo de teclado — e o esquema fala em número: o resolver exigiria um
+esquema sobre a forma do formulário, duplicando as regras que já existem sobre a forma dos
+dados.
+
+Dois efeitos colaterais registrados porque surpreendem:
+
+- **`Campo` e `Seletor` passaram a aceitar `ref`.** `register` precisa da referência do
+  elemento, e no React 19 `ref` é propriedade comum. Uma linha em cada, compatível com todo
+  uso existente.
+- **`useWatch`, e não `form.watch()`.** O compilador do React não consegue memoizar com
+  segurança o que `useForm()` devolve e desiste do componente inteiro, com aviso no lint.
+  `useWatch` é hook e não tem esse problema; o tipo vem parcial e é afirmado, porque todo
+  campo nasce com valor em `valoresIniciais`.

@@ -17,6 +17,9 @@ import type { MetodoPrecificacao } from "./configuracao";
  */
 export type TipoFicha = "SIMPLES" | "KIT";
 
+/** Em que a ficha conta o que sai de um lote. */
+export type UnidadeRendimento = "un" | "porcao" | "g" | "ml";
+
 export interface ComponenteKit {
   fichaId: string;
   nomeSnapshot: string;
@@ -82,7 +85,7 @@ export interface FichaTecnica extends DocumentoBase {
 
   /** Quantas unidades saem de UM lote desta receita (ou 1, para um kit). */
   rendimento: number;
-  unidadeRendimento: "un" | "porcao" | "g" | "ml";
+  unidadeRendimento: UnidadeRendimento;
 
   /**
    * Insumos consumidos. Em uma ficha SIMPLES, ingredientes e embalagem.

@@ -93,6 +93,72 @@ export const esquemaConfiguracao = z.object({
 
 export type EntradaConfiguracao = z.infer<typeof esquemaConfiguracao>;
 
+/** Uma fornada que passa de 24 horas é dedo errado, não receita. */
+const MINUTOS_MAXIMOS_PRODUCAO = 24 * 60;
+
+/**
+ * A ficha inteira em um esquema só, validada no salvamento sobre os números já
+ * convertidos — o mesmo caminho do cadastro de insumo.
+ *
+ * As linhas de item entram aqui, e não só os campos de topo, porque uma linha
+ * com quantidade zerada é o erro mais provável desta tela: ela adiciona o
+ * insumo por toque e esquece de digitar quanto vai.
+ */
+export const esquemaFicha = z
+  .object({
+    nome: z.string().trim().min(2, "Dê um nome a esta ficha."),
+    categoria: z.string().trim(),
+    tipo: z.enum(["SIMPLES", "KIT"]),
+    rendimento: z.number().positive("Diga quantas unidades saem de um lote."),
+    unidadeRendimento: z.enum(["un", "porcao", "g", "ml"]),
+    tempoProducaoMinutos: z
+      .number()
+      .min(0, "O tempo não pode ser negativo.")
+      .max(MINUTOS_MAXIMOS_PRODUCAO, "Uma fornada não leva mais de um dia."),
+    itens: z.array(
+      z.object({
+        insumoId: z.string().min(1),
+        quantidade: z.number().positive("Diga quanto deste insumo vai."),
+      }),
+    ),
+    componentes: z.array(
+      z.object({
+        fichaId: z.string().min(1),
+        quantidade: z.number().positive("Diga quantas unidades entram."),
+      }),
+    ),
+    metodo: z.enum(["MARKUP", "MARGEM"]),
+    markup: z
+      .number()
+      .min(1, "Multiplicar por menos de 1 é vender por menos do que custa.")
+      .max(20, "Multiplicar por mais de 20 não é preço, é engano."),
+    margemDesejada: z
+      .number()
+      .min(0, "A margem não pode ser negativa.")
+      .max(95, "Uma margem de 100% deixaria o preço infinito."),
+    taxaCartaoConsiderada: z
+      .number()
+      .min(0, "A taxa não pode ser negativa.")
+      .max(95, "Uma taxa acima de 95% não sobra para ninguém."),
+    outrasTaxas: z
+      .number()
+      .min(0, "As taxas não podem ser negativas.")
+      .max(95, "Taxas acima de 95% do preço não sobram para ninguém."),
+    precoVenda: z.number().int().min(0, "O preço não pode ser negativo."),
+  })
+  // Ficha vazia não é rascunho, é engano: ela não tem custo, e um custo zero
+  // vira um preço zero que parece resposta.
+  .refine((ficha) => ficha.tipo !== "SIMPLES" || ficha.itens.length > 0, {
+    path: ["itens"],
+    message: "Uma receita precisa de pelo menos um insumo.",
+  })
+  .refine((ficha) => ficha.tipo !== "KIT" || ficha.componentes.length > 0, {
+    path: ["componentes"],
+    message: "Um kit precisa de pelo menos uma ficha dentro dele.",
+  });
+
+export type EntradaFicha = z.infer<typeof esquemaFicha>;
+
 /** Converte as falhas do zod em um mapa campo → primeira mensagem. */
 export function errosPorCampo(erro: z.ZodError): Record<string, string> {
   const mapa: Record<string, string> = {};

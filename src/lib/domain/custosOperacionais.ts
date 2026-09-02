@@ -1,6 +1,7 @@
 import type {
   Centavos,
   FormaPagamento,
+  Percentual,
   RegraArredondamento,
   TipoPagamento,
 } from "@/lib/types";
@@ -80,6 +81,23 @@ export function liquidoRecebido(
   forma: TaxasDaForma,
 ): Centavos {
   return valor - taxaCobrada(valor, forma);
+}
+
+/**
+ * A maior taxa entre as formas ativas.
+ *
+ * É o palpite certo para embutir no preço: um preço que fecha a margem na
+ * forma mais cara fecha em todas as outras. O contrário — usar o Pix, que não
+ * cobra nada — faria toda venda no crédito comer a margem em silêncio.
+ */
+export function maiorTaxaAtiva(formas: FormaPagamento[]): Percentual {
+  return formas.reduce(
+    (maior, forma) =>
+      forma.ativo && forma.taxaPercentual > maior
+        ? forma.taxaPercentual
+        : maior,
+    0,
+  );
 }
 
 export const ROTULO_TIPO_PAGAMENTO: Record<TipoPagamento, string> = {
