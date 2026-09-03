@@ -1990,3 +1990,74 @@ coisa que se consulta raramente, e é o preço de não gastar o sexto destino.
 Com o caminho encerrado a página vira **referência**: os cinco passos na ordem, sem selo de
 estado. As cinco perguntas deixaram de ser feitas (`#d67`), e um selo dizendo "depois" sobre
 um passo que ninguém consultou seria uma afirmação inventada.
+
+---
+
+## D70 · O guia não repete o estado vazio
+
+**Status:** vigente · decidida em 2026-09-03 na spec `008-onboarding`, sessão 8B
+
+**Contexto.** `/comecar` continua existindo depois que o cartão da tela Hoje acaba (`#d69`), e
+a tentação óbvia de uma página de ajuda é recontar o que cada tela faz. Só que cada tela já
+conta: `EstadoVazio` **ensina a tela em que está**, por desenho, com a frase do que aquilo
+resolve e a ação para começar.
+
+**Decisão.** A divisão é de responsabilidade, e não de assunto: **o estado vazio ensina a tela
+em que ele está; o guia ensina o que existe em telas que ela ainda não abriu, e por que uma
+coisa leva à outra.** Onde a tentação de repetir aparecer, o guia manda para a tela e a tela
+ensina. Daí as três seções serem exatamente as que nenhuma tela pode ter:
+
+- **A cadeia do dinheiro**, seis elos em fio vertical, cada um nomeando quem o faz — ela ou o
+  sistema — e a tela onde ele mora. É a resposta para "por que preciso cadastrar tudo isso",
+  que é a pergunta que faz uma pessoa abandonar um sistema na terceira noite.
+- **O que mais tem aqui**, com `/compras`, `/insumos/nota` e `/insumos/contagem`, cada uma com
+  o **momento da semana** em que serve. O momento é o gatilho, e é justamente o que nenhuma
+  tela consegue dizer sobre si mesma: uma tela só fala quando já foi aberta.
+- **Quando não tem internet**, o comportamento mais surpreendente do produto e o único sem
+  tela própria — o que continua funcionando, o selo "Sem conexão, salvando no aparelho"
+  mostrado como é, a leitura de nota que exige rede e diz isso (`#d50`), e a tela nunca aberta
+  que cai em `/offline`.
+
+**Consequência.** Duas cópias da mesma frase divergem, e a errada é sempre a que ela leu. A
+regra também é o que impede a página de crescer sem fim: o limite não é "ela não pode ficar
+com dúvidas", que não tem fundo, e sim "isto cabe em alguma tela?". Se cabe, mora lá.
+
+**Nenhum número de exemplo entra na página.** Número de mentira numa página de ajuda envelhece
+e passa a contradizer a tela, e é o mesmo argumento de `#d17` contra dado semeado, aplicado ao
+texto.
+
+O conteúdo das quatro seções mora nos componentes de `src/components/comecar/`, e **não** em
+`src/lib/domain/`. Os cinco passos foram para o domínio porque duas telas mostram os mesmos
+rótulos — o cartão da tela Hoje e `/comecar` —, e duas cópias divergiriam. Aqui há uma tela
+só, e cópia sem regra atrás dela não é domínio: `domain/` é a aritmética que os testes cobrem.
+
+---
+
+## D71 · Instalar é bloco condicional, sem estado gravado
+
+**Status:** vigente · decidida em 2026-09-03 na spec `008-onboarding`, sessão 8B
+
+**Contexto.** A 5A rasterizou os ícones exatamente para este momento (`#d44`), e nada no
+sistema jamais convidou a instalar. O convite precisa sumir depois de instalado, e o jeito
+óbvio de saber isso seria um booleano em `Conta`.
+
+**Decisão.** Nenhum campo, nenhum estado gravado: a seção inteira de `/comecar` some quando o
+navegador diz que o app já está rodando instalado. A pergunta é feita por
+`matchMedia('(display-mode: standalone)')`, com `navigator.standalone` ao lado para o iPhone
+antigo, e o texto da instrução é escolhido por `matchMedia('(pointer: coarse)')` — uma
+variante para o celular, uma para o computador.
+
+**Consequência.** Um booleano em `Conta` seria um campo para uma pergunta que o navegador já
+responde, e responderia errado: instalar é por aparelho, e ela usa o celular na bancada e o
+computador à noite. Marcado como instalado no celular, o convite sumiria do computador, que é
+onde ela ainda não instalou — o inverso exato do `#d68`, onde terminar o caminho é monotônico
+e vale nos dois aparelhos.
+
+**O texto sai do ponteiro, e nunca do user-agent.** O que decide a instrução é o dedo ou o
+mouse na frente dela, e não o nome do navegador em uma string que mente há vinte anos. O
+iPhone é o caso que mais precisa da frase, porque o Safari não oferece a instalação sozinho: é
+compartilhar e "Adicionar à Tela de Início", e ninguém descobre isso por acaso.
+
+**A seção inteira some, e não só o miolo.** Um título "Instalar na tela de início" sem nada
+embaixo seria pior do que o convite repetido, então o próprio componente carrega o cabeçalho e
+devolve `null` — é a única das quatro seções que decide se existe.

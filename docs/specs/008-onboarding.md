@@ -492,20 +492,28 @@ Instalado, não aparece mais.
 
 ## Critérios de aceite 8B
 
-- [ ] `/comecar` responde, sem sair da página, o que cada uma das três funcionalidades fora da
+- [x] `/comecar` responde, sem sair da página, o que cada uma das três funcionalidades fora da
       navegação faz e onde mora — com link que abre a tela certa.
-- [ ] A cadeia do dinheiro cabe em uma tela de 360px sem rolagem horizontal e sem número
-      inventado.
+- [x] A cadeia do dinheiro cabe em uma tela de 360px sem rolagem horizontal e sem número
+      inventado. Sem número: conferido no texto. Sem rolagem: conferido no código — fio
+      vertical, nenhuma largura fixa, nenhum `nowrap` —, **e não em navegador**.
 - [ ] O bloco de instalar aparece no navegador e **some** com o app instalado na tela de
-      início, nos dois sistemas.
-- [ ] "Como funciona" na barra lateral e no pé da configuração, com o estado ativo correto.
+      início, nos dois sistemas. **Em aberto:** exige instalar de fato. O que está feito é a
+      condição (`display-mode: standalone` mais `navigator.standalone`) e a seção inteira
+      sumindo junto com o miolo.
+- [x] "Como funciona" na barra lateral e no pé da configuração, com o estado ativo correto.
+      Feito na 8A, onde era critério de aceite.
 - [ ] A página inteira vista no **tema claro** e em **360px**, com captura arquivada — o
-      mesmo protocolo da 5B, aplicado à tela que a 5B não viu porque ela não existia.
-- [ ] Leitura por teclado no desktop: `Tab` percorre os cinco passos e as ações na ordem
-      visual, com foco visível.
-- [ ] Nenhuma seção repete o texto de um `EstadoVazio` existente. Onde a tentação aparecer, o
-      guia manda para a tela e a tela ensina.
-- [ ] Portão de conclusão passando.
+      mesmo protocolo da 5B, aplicado à tela que a 5B não viu porque ela não existia. **Em
+      aberto:** rota autenticada, sem navegador dirigível no projeto e sem diretório de
+      capturas. Entrou no roteiro de navegador de `ESTADO.md`.
+- [x] Leitura por teclado no desktop: `Tab` percorre os cinco passos e as ações na ordem
+      visual, com foco visível. Ordem visual = ordem no DOM em todas as seções; o anel de foco
+      é o `:focus-visible` global de `globals.css`. Falta a conferência em navegador.
+- [x] Nenhuma seção repete o texto de um `EstadoVazio` existente. Onde a tentação aparecer, o
+      guia manda para a tela e a tela ensina. Conferido contra os treze estados vazios do
+      sistema, um por um; virou `DECISOES.md#d70`.
+- [x] Portão de conclusão passando: lint, typecheck, 350 testes e build.
 
 ---
 

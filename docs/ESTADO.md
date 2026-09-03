@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-03 (sessão 8A; a spec 008 foi escrita no mesmo dia).
+Atualizado em 2026-09-03 (sessão 8B; a spec 008 foi escrita no mesmo dia).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -33,11 +33,14 @@ recebe `hojeISO` e não desconta contagem vencida, `/compras` diz o que está fa
 **propõe** a contagem com os campos semeados em vez de fingir escrevê-la. A **7C não foi
 precisa**: nada da 7B sobrou.
 
-A spec `008-onboarding.md` está **entregue na 8A**: o sistema passou a se apresentar. Os cinco
-passos moram em `src/lib/domain/onboarding.ts`, o cartão deles abre a tela Hoje enquanto o
-caminho corre, `/comecar` é o mapa que fica, e terminar virou um ato dela gravado em
-`Conta.primeirosPassosEm`. De carona, a tela de login ganhou recuperação de senha. A **8B
-continua a fazer**.
+A spec `008-onboarding.md` está **entregue nas duas sessões**: o sistema passou a se apresentar.
+A 8A fez a espinha — os cinco passos em `src/lib/domain/onboarding.ts`, o cartão deles abrindo a
+tela Hoje enquanto o caminho corre, `/comecar` como o mapa que fica, e terminar virando um ato
+dela gravado em `Conta.primeirosPassosEm` —, e de carona a tela de login ganhou recuperação de
+senha. A **8B pendurou o guia que fica** em `/comecar`, abaixo dos cinco passos: a cadeia do
+dinheiro, as três telas que não cabem no menu de baixo, o que acontece sem internet e o convite
+para instalar na tela de início. A **8C fica reservada** para o que a usuária 0 perguntar
+operando.
 
 **Falta a prova, e não mais o conserto.** Nenhum número deste sistema jamais saiu de um
 teclado, passou pelo Firestore e voltou. É o que a 5B responde.
@@ -55,8 +58,10 @@ teclado, passou pelo Firestore e voltou. É o que a 5B responde.
 > invertida por decisão de quem conduz o projeto. O risco continua de pé e não foi mitigado
 > por nada: **um passo torto no navegador virou um passo torto com o sistema mandando ela ir
 > lá**, e a cópia do `porque` e do `oQueEsperar` dos cinco passos foi escrita a partir do que
-> o código faz, e não do que a 5B viu acontecer. Quando a 5B rodar, reler os cinco textos de
-> `src/lib/domain/onboarding.ts` contra o que as telas de fato pedem é tarefa da 8B.
+> o código faz, e não do que a 5B viu acontecer. **A 8B não pôde fechar isso**: a releitura dos
+> cinco textos de `src/lib/domain/onboarding.ts` só faz sentido contra o que a 5B viu
+> acontecer, e a 5B continua sem rodar. A dívida ficou na tabela com o gatilho corrigido — ela
+> vence depois da 5B, e não numa sessão da 008.
 
 > **A 7A e a 7B rodaram antes da 5B pelo mesmo motivo, e com o mesmo risco.** `007-estoque.md`
 > diz, na abertura, que não deveria rodar antes dela. A ordem foi invertida de novo por decisão
@@ -111,7 +116,7 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 | 5   | Prontidão: conserto e verificação           | 5A pronto, **5B a fazer** | `specs/005-prontidao.md`    |
 | 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)          | `specs/006-nota-fiscal.md`  |
 | 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)          | `specs/007-estoque.md`      |
-| 8   | Onboarding: o caminho das primeiras semanas | 8A pronto, **8B a fazer** | `specs/008-onboarding.md`   |
+| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)          | `specs/008-onboarding.md`   |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -746,6 +751,74 @@ Fora do escopo literal da spec, e por quê:
 gancho e a escrita em `contas/{contaId}` não têm teste automatizado — e nenhum dos quatro
 portões toca o Firestore. O que só o navegador responde está no roteiro abaixo.
 
+## O que a sessão 8B deixou pronto
+
+O guia que fica. **Nenhum estado novo, nenhuma escrita nova, nenhum campo novo** — a 8B é a
+segunda sessão seguida que não move um centavo, e a única do projeto inteiro que não toca em
+`src/lib/`. O que entrou foi conteúdo durável em `/comecar`, abaixo dos cinco passos, e daqui
+para baixo nada depende da conta: as quatro seções renderizam antes de as cinco assinaturas
+responderem, e continuam de pé depois de o caminho ser encerrado.
+
+- `src/components/comecar/SecaoGuia.tsx`: o ritmo das quatro seções — título, uma frase de
+  contexto e o respiro. **Não dá superfície a elas**: cada uma escolhe o próprio recipiente, ou
+  dispensa recipiente nenhum, porque quatro caixas iguais empilhadas seriam a grade de cartões
+  que o `DESIGN.md` recusa.
+- `CadeiaDoDinheiro.tsx`: os seis elos em fio vertical — o que você compra, quanto custa cada
+  grama, quanto custa o doce pronto, por quanto vale a pena vender, o que foi combinado com a
+  cliente, o que de fato entrou no mês. Cada elo diz **quem o faz** (você preenche / o sistema
+  calcula, com ícone e palavra) e leva para a tela onde ele mora. Nenhum número de exemplo.
+- `OQueMaisTem.tsx`: as três de fora da navegação — `/compras`, `/insumos/nota` e
+  `/insumos/contagem` —, cada uma com o que faz, **o momento da semana** em que serve e o link.
+  O momento é o gatilho, e é o que nenhuma tela pode dizer sobre si mesma. A contagem carrega o
+  motivo da `#d63` na voz dela: sem contar, o sistema prefere mandar comprar farinha de novo a
+  deixá-la sem farinha no meio da fornada. A meta ganha o parágrafo do fim, e não um passo.
+- `QuandoNaoTemInternet.tsx`: os quatro fatos que nenhuma tela tem onde repetir — o que continua
+  funcionando, o selo "Sem conexão, salvando no aparelho" **mostrado como ele é** (o `Selo` de
+  verdade, em amostra), a leitura de nota que exige rede e diz isso (`#d50`), e a tela nunca
+  aberta que cai em `/offline`. Sem superfície: texto corrido com um ícone por parágrafo, para
+  quebrar o ritmo das duas listas emolduradas acima.
+- `InstalarNaTela.tsx`: o convite da `#d71`, e a **única das quatro seções que decide se
+  existe** — ela carrega o próprio cabeçalho e devolve `null` com o app instalado, porque um
+  título sem nada embaixo seria pior do que o convite repetido. A pergunta é
+  `matchMedia('(display-mode: standalone)')` com `navigator.standalone` ao lado para o iPhone
+  antigo; o texto sai de `matchMedia('(pointer: coarse)')`, e **nunca** de user-agent.
+- `TelaComecar.tsx`: as quatro seções abaixo dos cinco passos, a descrição do cabeçalho refeita
+  (a página deixou de ser só os cinco), e um `<h2>` de leitor de tela para a lista dos passos,
+  que passou a ser a primeira de cinco seções em vez da página inteira.
+- Decisões novas em `DECISOES.md#d70` e `#d71` — as duas que a spec reservava para esta sessão.
+
+**O item 5 do escopo da 8B já estava feito**: "Como funciona" no pé da barra lateral e o link no
+pé de `/configuracao` entraram na 8A, porque eram critério de aceite dela. Nada no cromo mudou
+nesta sessão.
+
+Nada de schema, de índice, de regra de segurança ou de dependência mudou, e nenhum teste foi
+alterado: os **350 continuam os mesmos**, porque nada disto mora em `src/lib/domain/`.
+
+Fora do escopo literal da spec, e por quê:
+
+- **O conteúdo mora nos componentes, e não em `src/lib/domain/`.** Os cinco passos foram para o
+  domínio porque duas telas mostram os mesmos rótulos e duas cópias divergiriam; aqui há uma
+  tela só, e cópia sem regra atrás dela não é domínio. O motivo está em `#d70`.
+- **Cada elo da cadeia diz quem o faz.** A spec pede "uma frase cada" e o nome da tela. O
+  marcador de autor é adição, e ela paga: é o princípio 1 do `PRODUCT.md` dito onde ele importa
+  — três elos ela preenche, três o sistema faz, e é isso que responde por que cadastrar o
+  pacote de farinha resolve um problema de preço.
+- **O selo do offline aparece de verdade, e não descrito.** A frase "o selo diz que está salvo
+  no aparelho" obriga a reconhecer depois um objeto que ela nunca viu; a amostra é o próprio
+  `Selo` com o texto exato de `SeloSincronizacao`, que é o que ela vai ver quando o sinal cair.
+- **A seção de instalar carrega o próprio `SecaoGuia`.** É a assimetria que a condição da
+  `#d71` exige, e está comentada no arquivo para que ninguém a "conserte" depois.
+
+**O que a 8B não provou, e desta vez é o item mais importante da sessão.** O critério de aceite
+pede a página inteira vista **no tema claro e em 360px, com captura arquivada** — o mesmo
+protocolo da 5B, aplicado à tela que a 5B não viu porque ela não existia. **Isso não foi
+feito**: `/comecar` é rota autenticada, o projeto não tem navegador dirigível instalado, e não
+há diretório de capturas no repositório. O que foi conferido é o que o código responde — nenhuma
+largura fixa, nenhum `nowrap`, nenhuma tabela, e as colunas de texto de todas as quatro seções
+cabendo em 360px por cálculo, não por observação. Os dois critérios que dependem de olho —
+a captura e o bloco de instalar sumindo com o app instalado nos dois sistemas — entram no
+roteiro em navegador abaixo, junto do da 8A.
+
 ## O que mudou no refactor de contas
 
 Vale saber antes de escrever qualquer código novo, porque muda a assinatura de tudo que
@@ -796,24 +869,30 @@ com as sacolas na mão. É o que o roteiro em navegador da 007 mede, e o passo 3
 `/compras` e ver o carrinho encolher — é o único argumento que vai fazê-la contar na semana
 seguinte.
 
-## A spec 008, com a 8A entregue
+## A spec 008, entregue nas duas sessões
 
 `specs/008-onboarding.md` foi escrita em 2026-09-03, e é a primeira que não nasce de dívida da
 tabela: nasce do pedido de que a usuária 0 receba o sistema sem dúvida sobre o que ele faz e em
 que ordem se opera. Duas sessões — a **8A entregou a espinha** (`domain/onboarding.ts`, o campo
-`Conta.primeirosPassosEm`, a rota `/comecar` e o cartão dos cinco passos na tela Hoje), a **8B
-entrega o guia que fica** (a cadeia do dinheiro, as três funcionalidades fora da navegação, o
-offline e a instalação na tela de início) —, com `8C` reservada.
+`Conta.primeirosPassosEm`, a rota `/comecar` e o cartão dos cinco passos na tela Hoje), e a **8B
+entregou o guia que fica** (a cadeia do dinheiro, as três funcionalidades fora da navegação, o
+offline e a instalação na tela de início). A **8C continua reservada**, e desta vez ela tem
+motivo para acontecer: as dúvidas que só aparecem com a usuária 0 operando entram lá, com o
+texto da pergunta que ela fizer.
+
+As três aprovações da spec foram usadas, todas na 8A: o campo novo em `Conta`, a recuperação de
+senha na tela de login, e a rota nova com o item novo no cromo. **A 8B não pediu nenhuma** — ela
+não tem schema, índice, regra nem dependência.
 
 **A 8A rodou antes da 5B, contra o que a própria spec pedia**, por decisão de quem conduz o
 projeto. O risco está registrado acima e continua de pé: a cópia dos cinco passos foi escrita a
-partir do que o código faz, e reler os cinco textos contra o que as telas de fato pedem é
-tarefa da 8B, depois da 5B.
+partir do que o código faz, e reler os cinco textos contra o que as telas de fato pedem
+**continua a fazer** — a 8B não pôde, porque a releitura precisa da 5B, que não rodou. A dívida
+está na tabela com o gatilho na 5B, e não em uma sessão da 008.
 
-**O que a 8B herda da 8A, além do próprio escopo:** o item "Como funciona" da barra lateral e o
-link no pé de `/configuracao` **já estão de pé** — eram critério de aceite da 8A —, então o
-item 5 do escopo da 8B está feito. O que falta lá é conteúdo dentro de `/comecar`, abaixo dos
-cinco passos.
+**A 8B não fechou o critério da captura.** A página inteira em 360px no tema claro, arquivada,
+é o mesmo protocolo da 5B aplicado a uma tela que a 5B não viu — e ele depende de navegador,
+de login e de uma conta de verdade. Está no roteiro abaixo.
 
 Duas coisas que a escrita da 008 achou no código, e que não são dela:
 
@@ -851,10 +930,11 @@ abertura de `/compras` depois do deploy que muda o carrinho de uma usuária que 
 está configurada neste servidor". Nada mais do sistema depende dela: sem a chave, todo o
 restante do roteiro da 5B roda igual.
 
-O portão de conclusão foi rodado de verdade em 2026-09-03, no fim da 8A, e passa nos quatro:
-lint, typecheck, 350 testes e build com 19 rotas — `/comecar` é a que entrou. Portão passando
-não é o mesmo que sistema pronto — nenhum dos quatro toca no Firestore, e nenhum dos quatro
-chama o Gemini.
+O portão de conclusão foi rodado de verdade em 2026-09-03, no fim da 8B, e passa nos quatro:
+lint, typecheck, 350 testes e build com as mesmas 19 rotas da 8A — a 8B não criou rota nenhuma.
+Portão passando não é o mesmo que sistema pronto — nenhum dos quatro toca no Firestore, nenhum
+dos quatro chama o Gemini, e nenhum dos quatro abre um navegador, que é justamente o que os dois
+critérios em aberto da 8B pedem.
 
 Da 8A, o que só o navegador responde — e o primeiro item vale **junto** do passo 1 da 5B, porque
 os dois pedem a mesma conta zerada:
@@ -878,6 +958,25 @@ os dois pedem a mesma conta zerada:
 8. **"Esqueci minha senha" com um e-mail cadastrado e com um que não existe.** A frase precisa
    ser a mesma nos dois, o e-mail precisa chegar no primeiro caso, e nenhum código do Firebase
    pode aparecer na tela.
+
+Da 8B, o que só o navegador responde — e os dois primeiros são critério de aceite em aberto:
+
+1. **A página inteira em 360px, no tema claro, com a captura arquivada.** É o mesmo protocolo da
+   5B aplicado à tela que ela não viu. O que se procura: rolagem horizontal em qualquer das
+   quatro seções, a linha de "quem faz" e o nome da tela brigando na mesma linha no fio da
+   cadeia, e a navegação inferior cobrindo o bloco de instalar, que agora é o último da página.
+2. **O bloco de instalar sumindo com o app instalado, nos dois sistemas.** No iPhone, pela
+   folha de compartilhar do Safari; no Android, pela oferta do próprio navegador. A seção
+   inteira precisa desaparecer, e não só o miolo — é o que `#d71` exige, e é a única das quatro
+   que decide se existe. Vale conferir também no computador, com o app instalado pelo Chrome.
+3. **`Tab` no desktop**, de cima a baixo: os cinco passos, os seis elos da cadeia, as três
+   telas de fora da navegação, o link do Caixa no parágrafo da meta. Ordem visual e anel de
+   foco visível em todos.
+4. **A página com o caminho já encerrado.** Os cinco passos viram referência sem selo, e as
+   quatro seções continuam inteiras — é o que "o guia que fica" quer dizer, e é o estado em que
+   a página vai passar a maior parte da vida dela.
+5. **O tema escuro depois do claro**, com atenção ao fio da cadeia e ao disco de "o sistema
+   calcula", que usam `bg-wine-100` com a tinta invertida.
 
 Da 6B, o que só o navegador responde:
 
@@ -1114,7 +1213,9 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | Duas notas da mesma loja, no mesmo dia, com o total ilegível nas duas colidem | `domain/notaFiscal.ts`            | Falso positivo visível, desfeito em um toque; se acontecer, a chave ganha a hora   |
 | `agregados/global` é escrito por três mutações e lido por ninguém             | `types/financeiro.ts`             | Se algum leitor aparecer; a 008 decidiu não ser ele (`#d67`)                       |
 | `pedidosAbertos`, `proximaEntrega` e `ultimoNumeroPedido` nunca são escritos  | `types/financeiro.ts`             | Spec de limpeza, como a remoção de `estoqueMinimo` na 7A. Ninguém os lê hoje       |
-| `/compras`, `/insumos/nota` e `/insumos/contagem` fora da navegação           | `layout/navegacao.ts`             | **Spec 008**, sessão 8B: a seção "O que mais tem aqui" em `/comecar`               |
 | O cartão, a página, o gancho e a escrita na conta, sem teste                  | `components/comecar/`             | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador          |
-| Os cinco textos do começo saíram do código, e não do que a 5B viu             | `domain/onboarding.ts`            | **Spec 008**, sessão 8B: reler os cinco depois da 5B, que era a ordem pedida       |
+| Os cinco textos do começo saíram do código, e não do que a 5B viu             | `domain/onboarding.ts`            | **Depois da 5B**: a 8B não pôde reler o que ninguém viu acontecer                  |
 | Um passo fecha com o documento existindo, e não com ele estando bom           | `domain/onboarding.ts`            | Não tem conserto: o caminho diz onde ela está, e não se ela fez bem                |
+| `/comecar` nunca foi vista em 360px nem no tema claro, e não há captura       | `components/comecar/`             | Critério da 8B em aberto: depende de navegador, de login e de conta de verdade     |
+| O bloco de instalar nunca foi visto sumindo com o app instalado               | `InstalarNaTela.tsx`              | Critério da 8B em aberto: exige instalar de fato, no iPhone e no Android           |
+| Não há diretório de capturas no repositório, e o protocolo da 5B pede um      | `docs/`                           | Nasce na 5B, que é quem arquiva a primeira. Até lá não há onde guardar             |
