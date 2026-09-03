@@ -52,14 +52,23 @@ const MENSAGENS: Record<string, string> = {
     "Muitas tentativas. Espere um minuto e tente de novo.",
   "auth/network-request-failed":
     "Sem conexão para entrar. Verifique a internet.",
+  "auth/missing-email": "Escreva o seu e-mail no campo acima.",
 };
 
-export function traduzirErroAuth(erro: unknown): string {
+/**
+ * O mesmo mapa serve à entrada e à recuperação de senha, e por isso a frase de
+ * saída é parâmetro: "Não foi possível entrar" não serve para quem estava
+ * pedindo um link de senha nova.
+ */
+export function traduzirErroAuth(
+  erro: unknown,
+  padrao = "Não foi possível entrar. Tente novamente.",
+): string {
   const codigo =
     typeof erro === "object" && erro !== null && "code" in erro
       ? String((erro as { code: unknown }).code)
       : "";
-  return MENSAGENS[codigo] ?? "Não foi possível entrar. Tente novamente.";
+  return MENSAGENS[codigo] ?? padrao;
 }
 
 /**

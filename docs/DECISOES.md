@@ -1845,3 +1845,148 @@ igual". Aqui o número tem procedência: é uma soma que o sistema sabe defender
 duas parcelas para ela conferir a soma em vez de acreditar nela. Enquanto o campo continuar
 sendo o que a compra propôs, a frase fala da compra; no instante em que ela corrige o número, a
 frase passa a falar do número dela.
+
+---
+
+## D65 · O guia é um caminho, e não um tour — e não semeia dado
+
+**Status:** vigente · decidida em 2026-09-03 na spec `008-onboarding`, sessão 8A
+
+**Contexto.** O sistema está completo e nunca se apresenta. São quinze rotas, cinco na
+navegação inferior, e uma cadeia de dependência que existe de verdade — configuração →
+insumos → fichas → pedidos → caixa — sem que nada em tela alguma diga que ela existe. O
+reflexo pronto para isso é um tour: balões numerados perseguindo a tela no primeiro acesso.
+
+**Decisão.** Não há tour. **O guia mostra onde ela está e a leva até lá**: um cartão na tela
+Hoje com o passo de agora, e uma página `/comecar` com os cinco. Nenhum passo bloqueia tela
+nenhuma, nenhum passo é obrigatório, e o sistema inteiro continua funcionando com o cartão
+ignorado. **E o guia não semeia dado**: nenhum insumo de exemplo, nenhuma ficha de
+demonstração, nenhum botão de "carregar dados de teste".
+
+**Consequência.** Um tour toma a decisão de quando ela aprende, e a resposta certa é "quando
+ela for fazer aquilo". Ele também só pode rodar no momento em que não há nada para fazer, que
+é o único momento em que ninguém guarda nada — e `DESIGN.md` reserva modal para confirmação
+destrutiva, pelo mesmo motivo. O preço de não ter tour é que o guia precisa ser encontrado; é
+por isso que ele mora na tela em que o aplicativo abre, e não atrás de um menu.
+
+Sobre o dado de exemplo: `#d17` já decidiu que sugestão não é dado. Um cookie de mentira
+dentro de `/fichas` de uma confeitaria de verdade é pior do que uma lista vazia, e o dia em
+que ela apagar o exemplo é o dia em que ela aprende que o sistema inventa coisas.
+
+---
+
+## D66 · São cinco passos, terminando no caixa, e a meta fica de fora
+
+**Status:** vigente · decidida em 2026-09-03 na spec `008-onboarding`, sessão 8A
+
+**Contexto.** A cadeia tem seis candidatos óbvios a passo, e o sexto seria a meta do mês.
+
+**Decisão.** Cinco: conferir a configuração, cadastrar o que compra, montar a primeira ficha,
+registrar uma encomenda e **marcar a encomenda como paga**. A meta não é passo.
+
+**Consequência.** A meta já tem quem a peça, e quem pede é o `CartaoMetaHoje`, que fica logo
+abaixo do cartão dos primeiros passos na mesma tela: um caminho que a pedisse duplicaria o
+convite e atrasaria o fechamento. E a meta fica melhor **depois** dos cinco, porque o alvo em
+doces sai do preço médio das fichas e o alvo em pedidos sai do ticket médio real (`#d38`) —
+ela define a meta na segunda semana, com número em vez de palpite.
+
+Pagar é passo, e não nota de rodapé do passo 4: registrar e receber são dois dias diferentes e
+duas telas diferentes, e é entre os dois que mora a metade do sistema que ela não descobriria
+sozinha — nenhum número de pedido aparece em `/financeiro` até alguém tocar em "marcar como
+pago" (`#d36`). Deixar isso implícito é deixar a pergunta "por que o caixa está zerado se eu
+vendi?" para o mês seguinte.
+
+Os cinco são a navegação inferior lida em voz alta, com a configuração como o zero que não
+coube no teto de cinco destinos de `navegacao.ts`. Quem termina o caminho aprendeu o menu sem
+que o menu tenha sido explicado.
+
+---
+
+## D67 · O estado do começo é perguntado à coleção, e não ao contador
+
+**Status:** vigente · decidida em 2026-09-03 na spec `008-onboarding`, sessão 8A
+
+**Contexto.** `agregados/global` parece o lugar óbvio para saber se a conta tem insumo, ficha
+e pedido: `totalInsumos`, `totalFichas`, `totalClientes`, `pedidosAbertos`,
+`ultimoNumeroPedido`. **Não é.** Os três primeiros são incrementados no cliente e não têm um
+único leitor em todo o sistema; os dois últimos não têm nem escritor — são campos tipados em
+`types/financeiro.ts` que nunca receberam valor, a mesma doença que a 7A curou em
+`estoqueMinimo` (`#d61`).
+
+**Decisão.** Cada passo pergunta a quem tem a resposta: `useDocumento(docConfiguracao)` para o
+passo 1, e `where('arquivado','==',false)` com `limit(1)` em `insumos`, `fichas`, `pedidos` e
+`transacoes` para os outros quatro. Cinco assinaturas de no máximo um documento cada, sem
+índice composto novo e sem escrita nenhuma.
+
+**Consequência.** Um caminho decidido pelo contador seria o primeiro leitor de um número que
+ninguém nunca conferiu, e o erro cairia do lado caro: **um passo marcado como feito some da
+lista, e o que some não volta a ser ensinado.** Um passo marcado como pendente sem razão custa
+um toque e uma olhada.
+
+O custo é cinco assinaturas nas duas telas do caminho, durante os primeiros dias de uma conta,
+e **elas morrem no dia em que ele termina** (`#d68`): com `primeirosPassosEm` gravado, as
+cinco consultas viram `null` e `useColecao`/`useDocumento` não abrem nada. As consultas também
+só nascem depois que o documento da conta chega — perguntar antes de saber se o caminho acabou
+seria abrir as cinco justamente na conta que não as quer.
+
+Os campos mortos de `agregados/global` não são consertados aqui: eles continuam na tabela de
+dívidas com o gatilho próprio, e removê-los é uma spec de limpeza que ninguém pediu.
+
+---
+
+## D68 · Terminar é um ato dela, e fica gravado na conta
+
+**Status:** vigente · decidida em 2026-09-03 na spec `008-onboarding`, sessão 8A
+
+**Contexto.** O cartão dos primeiros passos precisa acabar. As três formas de decidir isso são
+derivar dos cinco fatos, guardar no aparelho, ou gravar um ato dela.
+
+**Decisão.** `Conta.primeirosPassosEm?: Timestamp`, campo opcional novo, gravado por duas
+portas que não pedem confirmação: **"Concluir"**, no fechamento do cartão com os cinco feitos,
+e **"Não preciso disto agora"**, disponível desde o primeiro render. A escrita é
+`Timestamp.now()`, nunca `serverTimestamp()`, e a tela não espera a promessa.
+
+**Consequência.** Em `Conta` porque o `AuthProvider` já assina esse documento em toda tela do
+sistema: o campo chega de graça, sem leitura nova e sem esperar rede — e é literalmente o que
+o comentário do tipo diz que aquele documento é para ser.
+
+Não em `localStorage`: não existe uma linha de armazenamento de aparelho no projeto inteiro, e
+este seria o pior lugar para estrear. Ela usa o celular na bancada e o computador à noite, e
+terminar em dois aparelhos seria terminar duas vezes.
+
+Não puramente derivado: um caminho que se recalcula é um caminho que volta. Arquivar o último
+insumo em janeiro faria o cartão reaparecer ensinando o que ela faz há meses. O estado do
+começo é monotônico por natureza — ela não desaprende —, e um campo gravado é a forma honesta
+disso.
+
+`serverTimestamp()` grava `null` no cache local até a rede confirmar, e um `null` aqui traria
+o cartão de volta no instante seguinte ao toque: é a invariante de offline do projeto valendo
+no lugar em que ela é mais fácil de esquecer. A mudança de schema é compatível — documento
+antigo sem o campo continua válido —, e nenhuma regra de segurança muda: `firestore.rules` já
+dá `read, write` no documento da conta a quem tem a claim.
+
+---
+
+## D69 · O cartão acaba; a página fica
+
+**Status:** vigente · decidida em 2026-09-03 na spec `008-onboarding`, sessão 8A
+
+**Contexto.** Encerrado o caminho, o mais simples seria sumir com tudo.
+
+**Decisão.** O que acaba é **o cartão da tela Hoje**. `/comecar` continua existindo, com duas
+entradas permanentes: um item **"Como funciona"** no pé da barra lateral, acima de
+Configuração, no desktop; e um link no pé de `/configuracao`, que é a entrada do celular —
+onde a engrenagem do cabeçalho da tela Hoje já leva.
+
+**Consequência.** A terceira semana precisa ter onde perguntar, e nenhum `EstadoVazio` serve
+para isso: ele ensina a tela em que está, e some assim que a tela deixa de estar vazia. É
+também onde a 8B pendura o guia que fica — a cadeia do dinheiro, as três funcionalidades fora
+da navegação, o offline e a instalação na tela de início.
+
+`/comecar` **não entra na navegação inferior**, pelo mesmo motivo que `/compras` e
+`/insumos/nota` não entraram: cinco destinos é o teto. São três toques no celular para uma
+coisa que se consulta raramente, e é o preço de não gastar o sexto destino.
+
+Com o caminho encerrado a página vira **referência**: os cinco passos na ordem, sem selo de
+estado. As cinco perguntas deixaram de ser feitas (`#d67`), e um selo dizendo "depois" sobre
+um passo que ninguém consultou seria uma afirmação inventada.

@@ -406,30 +406,30 @@ antes de salvar a configuração** devolve `[AGORA, FEITO, DEPOIS, DEPOIS, DEPOI
 
 ## Critérios de aceite 8A
 
-- [ ] Numa conta zerada, a tela Hoje mostra o cartão **acima** do cartão de meta, com "0 de 5"
+- [x] Numa conta zerada, a tela Hoje mostra o cartão **acima** do cartão de meta, com "0 de 5"
       e a ação apontando para `/configuracao`.
-- [ ] Cada uma das cinco escritas do caso de aceite move o cartão para o passo seguinte **sem
+- [x] Cada uma das cinco escritas do caso de aceite move o cartão para o passo seguinte **sem
       recarregar a página** — são assinaturas, não leituras avulsas.
-- [ ] Com os cinco feitos, o cartão mostra o fechamento, e "Concluir" grava
+- [x] Com os cinco feitos, o cartão mostra o fechamento, e "Concluir" grava
       `primeirosPassosEm` com `Timestamp.now()` e `v`.
-- [ ] Depois de concluído, o cartão não volta — nem ao recarregar, nem em outro aparelho, nem
+- [x] Depois de concluído, o cartão não volta — nem ao recarregar, nem em outro aparelho, nem
       ao arquivar o último insumo.
-- [ ] "Não preciso disto agora" grava o mesmo campo, sem confirmação e sem apagar `/comecar`.
-- [ ] Com `primeirosPassosEm` gravado, **nenhuma das cinco assinaturas é aberta** — conferido
+- [x] "Não preciso disto agora" grava o mesmo campo, sem confirmação e sem apagar `/comecar`.
+- [x] Com `primeirosPassosEm` gravado, **nenhuma das cinco assinaturas é aberta** — conferido
       na aba de rede do navegador, e não só por leitura do código.
-- [ ] `/comecar` alcançável pela barra lateral (desktop) e pelo pé de `/configuracao`
+- [x] `/comecar` alcançável pela barra lateral (desktop) e pelo pé de `/configuracao`
       (celular), antes e depois da conclusão.
-- [ ] Fora de ordem: o insumo antes da configuração marca o passo 2 e mantém o 1 como o de
+- [x] Fora de ordem: o insumo antes da configuração marca o passo 2 e mantém o 1 como o de
       agora.
-- [ ] Em 360px: alvo mínimo de 44×44px, ação primária de 52px, nenhuma rolagem horizontal, e
+- [x] Em 360px: alvo mínimo de 44×44px, ação primária de 52px, nenhuma rolagem horizontal, e
       a navegação inferior não cobrindo o último bloco de `/comecar`.
-- [ ] **Tema claro conferido**, que é o padrão (`#d13`), e o escuro depois.
-- [ ] Estado de cada passo legível sem cor: ícone ou palavra em todos os três.
-- [ ] Login: "Esqueci minha senha" envia o e-mail, diz a mesma frase existindo ou não o
+- [x] **Tema claro conferido**, que é o padrão (`#d13`), e o escuro depois.
+- [x] Estado de cada passo legível sem cor: ícone ou palavra em todos os três.
+- [x] Login: "Esqueci minha senha" envia o e-mail, diz a mesma frase existindo ou não o
       cadastro, e nenhum código do Firebase vaza para a tela.
-- [ ] `tests/domain/onboarding.test.ts` cobrindo os cinco estados da tabela, o caso fora de
+- [x] `tests/domain/onboarding.test.ts` cobrindo os cinco estados da tabela, o caso fora de
       ordem, o único `AGORA` e a conta concluída.
-- [ ] Portão de conclusão passando: lint, typecheck, test, build.
+- [x] Portão de conclusão passando: lint, typecheck, test, build.
 
 ---
 

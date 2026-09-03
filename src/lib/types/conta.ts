@@ -20,6 +20,18 @@ export interface Conta {
   /** Quem toca o negócio. Alimenta a saudação da tela Hoje. */
   proprietaria: string;
   criadaEm: Timestamp;
+  /**
+   * Quando ela encerrou o caminho dos primeiros passos — concluindo os cinco ou
+   * dizendo que não precisa dele. Ausente enquanto o caminho corre.
+   *
+   * Mora aqui, e não em `localStorage`, porque ela usa o celular na bancada e o
+   * computador à noite: um caminho concluído em um aparelho precisa estar
+   * concluído no outro. E é gravado, e não derivado dos cinco fatos, porque um
+   * caminho que se recalcula é um caminho que volta — arquivar o último insumo
+   * em janeiro faria o cartão reaparecer ensinando o que ela faz há meses
+   * (`DECISOES.md#d68`).
+   */
+  primeirosPassosEm?: Timestamp;
   v: VersaoSchema;
 }
 

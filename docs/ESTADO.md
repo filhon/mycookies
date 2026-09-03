@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-03 (sessão 7B; a spec 008 foi escrita no mesmo dia, e não executada).
+Atualizado em 2026-09-03 (sessão 8A; a spec 008 foi escrita no mesmo dia).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -33,6 +33,12 @@ recebe `hojeISO` e não desconta contagem vencida, `/compras` diz o que está fa
 **propõe** a contagem com os campos semeados em vez de fingir escrevê-la. A **7C não foi
 precisa**: nada da 7B sobrou.
 
+A spec `008-onboarding.md` está **entregue na 8A**: o sistema passou a se apresentar. Os cinco
+passos moram em `src/lib/domain/onboarding.ts`, o cartão deles abre a tela Hoje enquanto o
+caminho corre, `/comecar` é o mapa que fica, e terminar virou um ato dela gravado em
+`Conta.primeirosPassosEm`. De carona, a tela de login ganhou recuperação de senha. A **8B
+continua a fazer**.
+
 **Falta a prova, e não mais o conserto.** Nenhum número deste sistema jamais saiu de um
 teclado, passou pelo Firestore e voltou. É o que a 5B responde.
 
@@ -43,6 +49,15 @@ teclado, passou pelo Firestore e voltou. É o que a 5B responde.
 > mitigado por nada: quando a 5B rodar e algo em `insumos` ou em `fichas` aparecer torto, a
 > primeira pergunta é se o defeito é do caminho velho ou do que a 6A abriu por cima dele.
 
+> **A 8A rodou antes da 5B, e a spec 008 pedia explicitamente o contrário.** A abertura dela
+> diz que a dependência da 5B é diferente das outras duas: a 008 **não abre caminho novo** —
+> ela aponta o dedo para os caminhos existentes, na ordem, com autoridade. A ordem foi
+> invertida por decisão de quem conduz o projeto. O risco continua de pé e não foi mitigado
+> por nada: **um passo torto no navegador virou um passo torto com o sistema mandando ela ir
+> lá**, e a cópia do `porque` e do `oQueEsperar` dos cinco passos foi escrita a partir do que
+> o código faz, e não do que a 5B viu acontecer. Quando a 5B rodar, reler os cinco textos de
+> `src/lib/domain/onboarding.ts` contra o que as telas de fato pedem é tarefa da 8B.
+
 > **A 7A e a 7B rodaram antes da 5B pelo mesmo motivo, e com o mesmo risco.** `007-estoque.md`
 > diz, na abertura, que não deveria rodar antes dela. A ordem foi invertida de novo por decisão
 > de quem conduz o projeto. O que a 7A mexeu no caminho velho é pequeno e nomeável:
@@ -52,10 +67,10 @@ teclado, passou pelo Firestore e voltou. É o que a 5B responde.
 > mudou de arquivo. Se algo em `insumos`, em `/compras` ou na leitura de nota aparecer torto na
 > 5B, estes são os primeiros suspeitos depois dos que a 6A abriu.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **335
-testes**, e build com 15 rotas estáticas — `/insumos/nota` entrou na lista na 6A e
-`/insumos/contagem` na 7A — mais `/api/nota`, `/fichas/[id]` e `/pedidos/[id]` dinâmicas e
-service worker gerado.
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **350
+testes**, e build com 16 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
+`/insumos/contagem` na 7A e `/comecar` na 8A — mais `/api/nota`, `/fichas/[id]` e
+`/pedidos/[id]` dinâmicas e service worker gerado.
 
 **O app está de pé.** Projeto `mycookies-mrc`, `.env.local` preenchido, regras publicadas,
 chave de conta de serviço no disco (fora do git, coberta por `*firebase-adminsdk*.json`).
@@ -96,7 +111,7 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 | 5   | Prontidão: conserto e verificação           | 5A pronto, **5B a fazer** | `specs/005-prontidao.md`    |
 | 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)          | `specs/006-nota-fiscal.md`  |
 | 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)          | `specs/007-estoque.md`      |
-| 8   | Onboarding: o caminho das primeiras semanas | **8A e 8B a fazer**       | `specs/008-onboarding.md`   |
+| 8   | Onboarding: o caminho das primeiras semanas | 8A pronto, **8B a fazer** | `specs/008-onboarding.md`   |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -666,6 +681,71 @@ navegador ao fim da spec 007 é quem fecha isso, e o **passo 1 — abrir `/compr
 de antes desta spec e ver o carrinho crescer** — vale rodar antes de a sessão ser considerada
 fechada, e não depois: é a decisão `#d63` acontecendo sobre dado real.
 
+## O que a sessão 8A deixou pronto
+
+A espinha do onboarding: os cinco passos, o estado deles, e o fim do caminho como um ato dela.
+**Nenhuma tela mudou de comportamento** — esta é a primeira sessão do projeto que não move um
+centavo.
+
+- `src/lib/domain/onboarding.ts`, módulo novo e puro: `CATALOGO_DO_COMECO` (os cinco passos com
+  título, o `porque`, o `oQueEsperar`, o destino e o rótulo da ação), `passosDoComeco`,
+  `proximoPasso` e `progressoDoComeco`, mais os tipos `EstadoPasso`, `IdPasso`, `FatosDoComeco`,
+  `PassoDoComeco` e `PassoBase`. Os rótulos moram no domínio pelo mesmo motivo que
+  `ROTULO_CORREDOR`: duas telas os mostram, e duas cópias da mesma frase divergem.
+- `tests/domain/onboarding.test.ts`: **15 testes** (335 → 350) com o caso de aceite da spec
+  estado por estado — 0 de 5 até 5 de 5, com o destino de cada passo de agora —, o caso fora de
+  ordem (`[AGORA, FEITO, DEPOIS, DEPOIS, DEPOIS]` com o insumo antes da configuração), a conta
+  concluída sem próximo passo, e **as 32 combinações dos cinco fatos** conferindo que nunca há
+  dois `AGORA`, que só falta `AGORA` quando os cinco estão feitos, e que `FEITO` cai exatamente
+  onde o fato está.
+- **Schema:** `Conta.primeirosPassosEm?: Timestamp`, o campo opcional novo. É a aprovação de
+  schema que a spec pediu, e é compatível: documento antigo sem o campo continua válido, não há
+  esquema `zod` de `Conta` para acompanhar, e nenhuma migração é necessária.
+- `src/lib/firebase/mutations/conta.ts`, arquivo novo com uma função — `concluirPrimeirosPassos`,
+  um `updateDoc` com `{ v, primeirosPassosEm: Timestamp.now() }`. **É a primeira escrita do
+  aplicativo no documento da conta**, que até aqui só nascia pelo script `conceder-acesso.mjs`.
+- `src/lib/hooks/useComeco.ts`: as cinco assinaturas da `#d67` — o documento da configuração
+  pelo id e quatro consultas de `arquivado == false` com `limit(1)` —, todas memoizadas e
+  **todas `null` quando o caminho já terminou**, e também enquanto o documento da conta não
+  chegou.
+- `src/components/comecar/`: `CartaoPrimeirosPassos` (o cartão da tela Hoje, com um passo por
+  vez e o estado de fechamento), `TelaComecar` (o mapa dos cinco), `BlocoPasso` (um por passo,
+  sanfona no celular e cinco abertos no desktop) e `Trilha` (os cinco segmentos e o selo de
+  estado com ícone e palavra).
+- Rota `/comecar`, estática como as outras, **fora da navegação inferior**. As duas entradas
+  permanentes: **"Como funciona"** no pé da barra lateral, acima de Configuração, e o link no pé
+  de `/configuracao`, que é a entrada do celular.
+- O cartão fica **acima do `CartaoMetaHoje`** em `(app)/page.tsx` enquanto existir. Quando o
+  caminho termina, ele some e a tela Hoje volta a ser exatamente o que era.
+- **Carona: a senha esquecida.** `(auth)/login` ganhou "Esqueci minha senha", com
+  `sendPasswordResetEmail` do SDK já instalado, uma frase de retorno que é a mesma existindo ou
+  não o cadastro, e os códigos traduzidos no mesmo mapa `MENSAGENS` do `AuthProvider`. Era a
+  única falha do produto que a usuária não contornava por dentro dele.
+- Decisões novas em `DECISOES.md#d65` a `#d69` — as cinco primeiras da abertura da spec 008.
+
+As três aprovações da spec foram usadas: o campo novo em `Conta`, a recuperação de senha na tela
+de login, e a rota nova com o item novo no cromo. Nenhuma dependência entrou, nenhuma regra de
+segurança mudou e nenhum índice novo foi preciso: as quatro consultas são de campo único, que o
+Firestore indexa sozinho.
+
+Fora do escopo literal da spec, e por quê:
+
+- **`CATALOGO_DO_COMECO` é exportado.** Com o caminho encerrado, as cinco perguntas deixam de
+  ser feitas, e `/comecar` precisa dos cinco passos **sem estado** para continuar sendo
+  referência. A alternativa era a página ler estados derivados de "não perguntei nada" e fingir
+  que são a verdade.
+- **As duas entradas permanentes entraram aqui, e não na 8B.** A spec as lista no escopo da 8B e
+  as cobra no critério de aceite da 8A ("`/comecar` alcançável pela barra lateral e pelo pé de
+  `/configuracao`"). Uma rota sem entrada nenhuma seria uma página que só existe para quem
+  digita a URL.
+- **O fechamento diz para onde o guia vai.** "Ao concluir, este cartão sai da tela Hoje. Os
+  cinco passos continuam em Como funciona" — sem isso, o cartão sumiria no toque e viraria uma
+  pergunta na semana seguinte.
+
+**O que a 8A não provou.** `npm test` cobre `src/lib/domain/`, então o cartão, a página, o
+gancho e a escrita em `contas/{contaId}` não têm teste automatizado — e nenhum dos quatro
+portões toca o Firestore. O que só o navegador responde está no roteiro abaixo.
+
 ## O que mudou no refactor de contas
 
 Vale saber antes de escrever qualquer código novo, porque muda a assinatura de tudo que
@@ -716,20 +796,24 @@ com as sacolas na mão. É o que o roteiro em navegador da 007 mede, e o passo 3
 `/compras` e ver o carrinho encolher — é o único argumento que vai fazê-la contar na semana
 seguinte.
 
-## A spec 008, escrita e não executada
+## A spec 008, com a 8A entregue
 
 `specs/008-onboarding.md` foi escrita em 2026-09-03, e é a primeira que não nasce de dívida da
 tabela: nasce do pedido de que a usuária 0 receba o sistema sem dúvida sobre o que ele faz e em
-que ordem se opera. Duas sessões — a **8A** entrega a espinha (`domain/onboarding.ts`, o campo
-`Conta.primeirosPassosEm`, a rota `/comecar` e o cartão dos cinco passos na tela Hoje), a **8B**
-entrega o guia que fica (a cadeia do dinheiro, as três funcionalidades fora da navegação, o
+que ordem se opera. Duas sessões — a **8A entregou a espinha** (`domain/onboarding.ts`, o campo
+`Conta.primeirosPassosEm`, a rota `/comecar` e o cartão dos cinco passos na tela Hoje), a **8B
+entrega o guia que fica** (a cadeia do dinheiro, as três funcionalidades fora da navegação, o
 offline e a instalação na tela de início) —, com `8C` reservada.
 
-**Ela depende da 5B, e desta vez a dependência não deve ser invertida.** A 6A e a 7A passaram na
-frente abrindo caminho novo sobre caminho velho; a 008 não abre caminho — ela aponta o dedo para
-os caminhos existentes, na ordem, com autoridade. Um passo torto no navegador vira um passo torto
-com o sistema mandando ela ir lá, e a cópia dos cinco passos se escreve melhor a partir do que a
-5B viu acontecer do que do que a spec imagina.
+**A 8A rodou antes da 5B, contra o que a própria spec pedia**, por decisão de quem conduz o
+projeto. O risco está registrado acima e continua de pé: a cópia dos cinco passos foi escrita a
+partir do que o código faz, e reler os cinco textos contra o que as telas de fato pedem é
+tarefa da 8B, depois da 5B.
+
+**O que a 8B herda da 8A, além do próprio escopo:** o item "Como funciona" da barra lateral e o
+link no pé de `/configuracao` **já estão de pé** — eram critério de aceite da 8A —, então o
+item 5 do escopo da 8B está feito. O que falta lá é conteúdo dentro de `/comecar`, abaixo dos
+cinco passos.
 
 Duas coisas que a escrita da 008 achou no código, e que não são dela:
 
@@ -737,17 +821,24 @@ Duas coisas que a escrita da 008 achou no código, e que não são dela:
   são incrementados no cliente e não têm um único leitor; `pedidosAbertos`, `proximaEntrega` e
   `ultimoNumeroPedido` são tipados em `types/financeiro.ts` e **nunca receberam valor** — a mesma
   doença que a 7A curou em `estoqueMinimo`. É por isso que a 008 decidiu perguntar às coleções
-  (`#d67`) em vez de confiar no contador.
-- **A tela de login não tem recuperação de senha.** É a única falha do produto que a usuária não
-  consegue contornar por dentro dele: trancada para fora, ela depende de alguém com acesso ao
-  console do Firebase. Entra como carona da 8A, com `sendPasswordResetEmail` do SDK já instalado.
+  (`#d67`) em vez de confiar no contador. **Continua sem conserto**, e continua na tabela.
+- **A tela de login não tinha recuperação de senha.** Era a única falha do produto que a usuária
+  não conseguia contornar por dentro dele: trancada para fora, ela dependia de alguém com acesso
+  ao console do Firebase. **Entrou como carona da 8A**, com `sendPasswordResetEmail` do SDK já
+  instalado e sem dependência nova.
 
 ## Próxima ação
 
 **A sessão 5B de `specs/005-prontidao.md`**, a verificação em navegador. É a dívida mais antiga
 do projeto e agora tem mais o que conferir do que quando foi escrita. O roteiro está na spec, em
-ordem, porque cada passo constrói o estado que o seguinte consome — e os roteiros da 006 e da
-007 entram depois dele.
+ordem, porque cada passo constrói o estado que o seguinte consome — e os roteiros da 006, da 007
+e da 008 entram depois dele.
+
+**A 5B ganhou um motivo a mais para vir agora.** Desde a 8A, o sistema **manda** a usuária ir a
+cada uma das cinco telas, na ordem, com autoridade. Enquanto a 5B não roda, o cartão da tela
+Hoje é uma afirmação sobre telas que nunca gravaram um número de verdade — e um guia que aponta
+para um passo quebrado é pior do que não apontar, porque transfere a culpa para quem seguiu a
+instrução.
 
 **Do roteiro da 007, o passo 1 vale antes de tudo:** abrir `/compras` com o estoque de antes da
 spec e ver o carrinho crescer, com a frase da contagem ausente aparecendo. É a `#d63`
@@ -760,9 +851,33 @@ abertura de `/compras` depois do deploy que muda o carrinho de uma usuária que 
 está configurada neste servidor". Nada mais do sistema depende dela: sem a chave, todo o
 restante do roteiro da 5B roda igual.
 
-O portão de conclusão foi rodado de verdade em 2026-09-03, no fim da 7B, e passa nos quatro:
-lint, typecheck, 335 testes e build com as mesmas 18 rotas da 7A. Portão passando não é o mesmo
-que sistema pronto — nenhum dos quatro toca no Firestore, e nenhum dos quatro chama o Gemini.
+O portão de conclusão foi rodado de verdade em 2026-09-03, no fim da 8A, e passa nos quatro:
+lint, typecheck, 350 testes e build com 19 rotas — `/comecar` é a que entrou. Portão passando
+não é o mesmo que sistema pronto — nenhum dos quatro toca no Firestore, e nenhum dos quatro
+chama o Gemini.
+
+Da 8A, o que só o navegador responde — e o primeiro item vale **junto** do passo 1 da 5B, porque
+os dois pedem a mesma conta zerada:
+
+1. **Entrar numa conta sem `configuracao/geral` e sem coleção nenhuma.** O cartão precisa
+   aparecer acima do cartão de meta, dizendo "0 de 5", com a ação apontando para
+   `/configuracao`.
+2. **As cinco escritas, na ordem do caso de aceite**, cada uma movendo o cartão para o passo
+   seguinte **sem recarregar a página** — são assinaturas, não leituras avulsas.
+3. **Cadastrar um insumo antes de salvar a configuração**, que é o caso fora de ordem: o passo 2
+   fica feito, o 1 continua sendo o de agora, e o progresso diz "1 de 5".
+4. **Tocar em "Concluir" e conferir na aba de rede que nenhuma das cinco assinaturas é aberta na
+   abertura seguinte.** É o critério da `#d67` que só o navegador responde, e é o que separa
+   "escrevi o gancho certo" de "achei que tinha escrito".
+5. **Depois de concluído, arquivar o último insumo.** O cartão não pode voltar — é a `#d68`
+   acontecendo sobre dado real.
+6. **`/comecar` nos dois tamanhos:** no celular, um passo aberto por vez, com a ação primária de
+   52px e a navegação inferior não cobrindo o último bloco em 360px; no desktop, os cinco
+   abertos ao mesmo tempo e `Tab` percorrendo os blocos na ordem visual.
+7. **O tema claro**, que é o padrão (`#d13`) e é onde o cartão e a página nunca foram vistos.
+8. **"Esqueci minha senha" com um e-mail cadastrado e com um que não existe.** A frase precisa
+   ser a mesma nos dois, o e-mail precisa chegar no primeiro caso, e nenhum código do Firebase
+   pode aparecer na tela.
 
 Da 6B, o que só o navegador responde:
 
@@ -999,6 +1114,7 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | Duas notas da mesma loja, no mesmo dia, com o total ilegível nas duas colidem | `domain/notaFiscal.ts`            | Falso positivo visível, desfeito em um toque; se acontecer, a chave ganha a hora   |
 | `agregados/global` é escrito por três mutações e lido por ninguém             | `types/financeiro.ts`             | Se algum leitor aparecer; a 008 decidiu não ser ele (`#d67`)                       |
 | `pedidosAbertos`, `proximaEntrega` e `ultimoNumeroPedido` nunca são escritos  | `types/financeiro.ts`             | Spec de limpeza, como a remoção de `estoqueMinimo` na 7A. Ninguém os lê hoje       |
-| A tela de login não tem recuperação de senha                                  | `src/app/(auth)/login/page.tsx`   | **Carona da 8A**: é a única falha que a usuária não contorna por dentro do produto |
-| A ordem de uso do sistema não está em tela nenhuma                            | —                                 | **Spec 008**, sessão 8A: os cinco passos na tela Hoje                              |
 | `/compras`, `/insumos/nota` e `/insumos/contagem` fora da navegação           | `layout/navegacao.ts`             | **Spec 008**, sessão 8B: a seção "O que mais tem aqui" em `/comecar`               |
+| O cartão, a página, o gancho e a escrita na conta, sem teste                  | `components/comecar/`             | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador          |
+| Os cinco textos do começo saíram do código, e não do que a 5B viu             | `domain/onboarding.ts`            | **Spec 008**, sessão 8B: reler os cinco depois da 5B, que era a ordem pedida       |
+| Um passo fecha com o documento existindo, e não com ele estando bom           | `domain/onboarding.ts`            | Não tem conserto: o caminho diz onde ela está, e não se ela fez bem                |

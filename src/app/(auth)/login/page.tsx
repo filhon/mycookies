@@ -2,10 +2,22 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
+import { sendPasswordResetEmail } from "firebase/auth";
 import { Logotipo, PadraoCookie } from "@/components/marca/Marca";
 import { Botao } from "@/components/ui/Botao";
 import { Campo } from "@/components/ui/Campo";
+import { obterAuth } from "@/lib/firebase/client";
 import { traduzirErroAuth, useAuth } from "@/providers/AuthProvider";
+
+/**
+ * A mesma frase existindo ou não o cadastro.
+ *
+ * Um "esse e-mail não está cadastrado" seria o sistema confirmando, para quem
+ * digitou, quem tem conta aqui. O que ela precisa saber é o que fazer agora, e
+ * isso não depende da resposta.
+ */
+const AVISO_ENVIO =
+  "Se houver uma conta com esse e-mail, o link para criar uma senha nova chega em instantes. Vale olhar também na caixa de spam.";
 
 export default function PaginaLogin() {
   const { usuario, carregando, entrar } = useAuth();
@@ -15,6 +27,8 @@ export default function PaginaLogin() {
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [recuperando, setRecuperando] = useState(false);
+  const [avisoSenha, setAvisoSenha] = useState<string | null>(null);
 
   useEffect(() => {
     if (!carregando && usuario) router.replace("/");
@@ -23,6 +37,7 @@ export default function PaginaLogin() {
   async function aoEnviar(evento: FormEvent) {
     evento.preventDefault();
     setErro(null);
+    setAvisoSenha(null);
     setEnviando(true);
     try {
       await entrar(email, senha);
@@ -30,6 +45,44 @@ export default function PaginaLogin() {
     } catch (falha) {
       setErro(traduzirErroAuth(falha));
       setEnviando(false);
+    }
+  }
+
+  /**
+   * Trancada para fora, ela dependia de alguém com acesso ao console do
+   * Firebase: era a única falha do produto que não se contorna por dentro dele.
+   * `sendPasswordResetEmail` é do SDK que já está instalado.
+   */
+  async function recuperarSenha() {
+    setErro(null);
+
+    if (!email.trim()) {
+      setAvisoSenha("Escreva o seu e-mail no campo acima e toque de novo.");
+      return;
+    }
+
+    setRecuperando(true);
+    try {
+      await sendPasswordResetEmail(obterAuth(), email.trim());
+      setAvisoSenha(AVISO_ENVIO);
+    } catch (falha) {
+      // Cadastro inexistente devolve a mesma frase do envio: quem pergunta pelo
+      // e-mail de outra pessoa não sai daqui sabendo mais do que entrou.
+      const codigo =
+        typeof falha === "object" && falha !== null && "code" in falha
+          ? String((falha as { code: unknown }).code)
+          : "";
+
+      setAvisoSenha(
+        codigo === "auth/user-not-found"
+          ? AVISO_ENVIO
+          : traduzirErroAuth(
+              falha,
+              "Não deu para enviar agora. Tente de novo em instantes.",
+            ),
+      );
+    } finally {
+      setRecuperando(false);
     }
   }
 
@@ -102,6 +155,29 @@ export default function PaginaLogin() {
             >
               Entrar
             </Botao>
+
+            <div className="flex flex-col items-center gap-2">
+              <Botao
+                variante="terciaria"
+                tamanho="sm"
+                onClick={() => void recuperarSenha()}
+                carregando={recuperando}
+                disabled={enviando}
+              >
+                Esqueci minha senha
+              </Botao>
+
+              {/* A resposta é a mesma existindo ou não o cadastro, e nenhum
+                  código do Firebase chega até aqui. */}
+              {avisoSenha && (
+                <p
+                  aria-live="polite"
+                  className="max-w-[42ch] text-center text-label text-ink-muted"
+                >
+                  {avisoSenha}
+                </p>
+              )}
+            </div>
           </form>
         </div>
       </main>

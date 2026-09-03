@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Settings } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
+import { CartaoPrimeirosPassos } from "@/components/comecar/CartaoPrimeirosPassos";
 import { CartaoComprasHoje } from "@/components/compras/CartaoComprasHoje";
 import { CartaoMetaHoje } from "@/components/metas/CartaoMetaHoje";
 import { AgendaHoje } from "@/components/pedidos/AgendaHoje";
@@ -47,9 +48,14 @@ export default function PaginaHoje() {
         }
       />
 
-      {/* O número que ela persegue vem antes da agenda: é o que decide o que
-          vai para o forno hoje. */}
-      <div className="mt-6">
+      {/* Enquanto o caminho do começo não terminou, "o que eu faço agora" vem
+          antes de "como estou indo". Quando ele termina, o cartão some e esta
+          tela volta a ser exatamente o que era. */}
+      <div className="mt-6 space-y-4">
+        <CartaoPrimeirosPassos />
+
+        {/* O número que ela persegue vem antes da agenda: é o que decide o que
+            vai para o forno hoje. */}
         <CartaoMetaHoje />
       </div>
 

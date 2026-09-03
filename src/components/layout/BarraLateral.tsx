@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, Settings } from "lucide-react";
+import { Compass, LogOut, Settings } from "lucide-react";
 import { Cookie } from "@/components/marca/Marca";
 import { useAuth } from "@/providers/AuthProvider";
 import { DESTINOS, destinoAtivo } from "./navegacao";
@@ -64,6 +64,23 @@ export function BarraLateral() {
       </nav>
 
       <div className="space-y-0.5 border-t border-white/10 px-3 py-3">
+        {/* Acima da configuração, no mesmo bloco do pé: o guia é consultado
+            raramente e não gasta o sexto destino de uma navegação que tem
+            cinco. No celular a entrada é o pé de `/configuracao`. */}
+        <Link
+          href="/comecar"
+          className={cn(
+            "toque flex items-center gap-3 rounded-md px-3 py-2.5 text-label font-medium",
+            "transition-colors duration-150 ease-quart",
+            destinoAtivo(caminho, "/comecar")
+              ? "bg-wine-700 text-on-wine"
+              : "text-on-wine-muted hover:bg-wine-800 hover:text-on-wine",
+          )}
+        >
+          <Compass aria-hidden className="size-5 shrink-0" strokeWidth={1.75} />
+          Como funciona
+        </Link>
+
         <Link
           href="/configuracao"
           className={cn(

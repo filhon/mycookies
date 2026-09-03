@@ -1,7 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Check, Clock, CreditCard, Flame, Receipt, Tag } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  Clock,
+  Compass,
+  CreditCard,
+  Flame,
+  Receipt,
+  Tag,
+} from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { Botao } from "@/components/ui/Botao";
@@ -599,6 +609,35 @@ export function TelaConfiguracao() {
             {falha}
           </p>
         )}
+
+        {/* A entrada do guia no celular, onde não há barra lateral. É para cá
+            que a engrenagem do cabeçalho da tela Hoje já leva: são três toques
+            para uma coisa que se consulta raramente, e é o preço de não gastar
+            o sexto destino de uma navegação que tem cinco. */}
+        <Link
+          href="/comecar"
+          className="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-4 transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:px-5"
+        >
+          <Compass
+            aria-hidden
+            className="size-5 shrink-0 text-ink-muted"
+            strokeWidth={1.75}
+          />
+          <span className="min-w-0 flex-1">
+            <span className="block text-body font-medium text-ink">
+              Como funciona
+            </span>
+            <span className="mt-0.5 block text-label text-ink-muted">
+              Os cinco passos do começo, na ordem em que uma coisa depende da
+              outra.
+            </span>
+          </span>
+          <ChevronRight
+            aria-hidden
+            className="size-5 shrink-0 text-ink-subtle"
+            strokeWidth={1.75}
+          />
+        </Link>
       </div>
 
       {/* Barra de salvar acima da navegação inferior: no celular a ação
