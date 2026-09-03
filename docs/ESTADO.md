@@ -45,6 +45,12 @@ operando.
 **Falta a prova, e não mais o conserto.** Nenhum número deste sistema jamais saiu de um
 teclado, passou pelo Firestore e voltou. É o que a 5B responde.
 
+Fora das specs, o projeto foi **preparado para publicar no Vercel** em 2026-09-03: a
+credencial do Admin SDK deixou de exigir um arquivo em disco, a falta dela parou de ser
+confundida com login inválido, e `functions/` saiu do `tsconfig` da raiz — sem isso o build
+da hospedagem falharia. O guia é `docs/DEPLOY.md`. **Nada foi publicado ainda**: preparar não
+é ter subido, e a 5B continua sendo a prova que falta, agora também do lado do servidor.
+
 > **A 6A rodou antes da 5B, e a spec pedia o contrário.** `006-nota-fiscal.md` diz, na
 > abertura, que depende de a 5B ter rodado — abrir um caminho novo sobre um caminho velho que
 > nunca foi visto rodando é descobrir dois defeitos ao mesmo tempo e não saber de quem é qual.
@@ -906,6 +912,45 @@ Duas coisas que a escrita da 008 achou no código, e que não são dela:
   ao console do Firebase. **Entrou como carona da 8A**, com `sendPasswordResetEmail` do SDK já
   instalado e sem dependência nova.
 
+## O que a preparação para o deploy deixou pronto
+
+Fora de spec, a pedido de quem conduz o projeto, em 2026-09-03. Nenhuma funcionalidade nova:
+são dois consertos que só apareceriam no primeiro build da hospedagem, e a documentação do
+resto. O guia inteiro está em **`docs/DEPLOY.md`**.
+
+- **A credencial do Admin SDK deixou de exigir um arquivo.** `applicationDefault()` lê
+  `GOOGLE_APPLICATION_CREDENTIALS` como **caminho**, e em função serverless não há disco onde
+  pôr a chave — que o repositório, de propósito, não versiona. `firebaseAdmin.ts` passou a
+  aceitar `FIREBASE_SERVICE_ACCOUNT` com o **conteúdo** do JSON (ou o mesmo JSON em base64),
+  e sem a variável o caminho é o de antes, letra por letra. `DECISOES.md#d72`.
+- **A falta de credencial ganhou nome próprio.** `credencialDisponivel()` é perguntado antes
+  do token, e `/api/nota` devolve `sem-configuracao` (500) no lugar de `sem-acesso` (401).
+  Publicado sem a variável, o sistema dizia que **o login dela** não abria a conta, e mandava
+  a usuária sair e entrar de novo por causa de um campo vazio no painel da hospedagem. A
+  frase certa já existia desde a 6A. **A ordem da 6A foi preservada**: a chave do Gemini
+  continua sendo lida só depois da porta.
+- **`functions/` saiu do `tsconfig.json` e do `eslint.config.mjs` da raiz.** É andaime do
+  `firebase init`, com ferramentas e dependências próprias que o `npm install` da raiz não
+  instala. Localmente passava porque `functions/node_modules` está no disco desde aquele dia;
+  num build limpo o `tsc` do `next build` não acharia `firebase-functions` e **o build
+  falharia antes de compilar uma linha do app**. `DECISOES.md#d73`.
+- **`.vercelignore`, com a chave de conta de serviço nas três primeiras linhas.** O deploy por
+  Git sobe o que está commitado e obedece ao `.gitignore`; o deploy por linha de comando sobe
+  a **pasta**, e a CLI do Vercel não lê o `.gitignore` — sem este arquivo, a chave que está no
+  disco subiria junto.
+- **`.env.local.example`** ganhou `FIREBASE_SERVICE_ACCOUNT`, com o mesmo aviso invertido da
+  `GEMINI_API_KEY` e o comando que gera o base64.
+
+Nada de schema mudou, nenhuma regra de segurança mudou, nenhum índice novo, nenhuma
+dependência nova, e nenhum teste precisou ser alterado: os 350 continuam os mesmos, porque
+nada disto mora em `src/lib/domain/`.
+
+**O que a preparação não provou.** Nada rodou no Vercel: o portão de conclusão passa nos
+quatro, e nenhum dos quatro publica. O build local confirma o que dá para confirmar daqui —
+17 rotas, `public/sw.js` emitido, e `FIREBASE_SERVICE_ACCOUNT`, `firebase-admin` e
+`private_key` ausentes de `.next/static`, que é a mesma conferência da 6A refeita depois da
+mudança. A lista do que só o primeiro deploy responde está no fim de `docs/DEPLOY.md`.
+
 ## Próxima ação
 
 **A sessão 5B de `specs/005-prontidao.md`**, a verificação em navegador. É a dívida mais antiga
@@ -1219,3 +1264,7 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | `/comecar` nunca foi vista em 360px nem no tema claro, e não há captura       | `components/comecar/`             | Critério da 8B em aberto: depende de navegador, de login e de conta de verdade     |
 | O bloco de instalar nunca foi visto sumindo com o app instalado               | `InstalarNaTela.tsx`              | Critério da 8B em aberto: exige instalar de fato, no iPhone e no Android           |
 | Não há diretório de capturas no repositório, e o protocolo da 5B pede um      | `docs/`                           | Nasce na 5B, que é quem arquiva a primeira. Até lá não há onde guardar             |
+| `LIMITE_ARQUIVO_BYTES` é 8 MB e o Vercel corta o corpo em 4,5 MB (~3,3 MB)    | `domain/notaFiscal.ts`            | Se PDF de nota grande virar rotina: baixar para 3 MB e recusar antes do upload     |
+| A chave de conta de serviço fica legível no painel e não gira sozinha         | `FIREBASE_SERVICE_ACCOUNT`        | No dia do SaaS: gerenciador de segredos com rotação (`#d72`)                       |
+| `credencialDisponivel()` e a leitura de `FIREBASE_SERVICE_ACCOUNT` sem teste  | `lib/server/firebaseAdmin.ts`     | `npm test` cobre só `domain/`; o que fecha isso é o primeiro deploy de verdade     |
+| Nada foi publicado: o build da hospedagem nunca rodou                         | `docs/DEPLOY.md`                  | Some no primeiro deploy; até lá a preparação é hipótese conferida só localmente    |

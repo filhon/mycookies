@@ -11,7 +11,11 @@ import {
   type FalhaNota,
   type NotaLida,
 } from "@/lib/domain/notaFiscal";
-import { abreAConta, conferirToken } from "@/lib/server/firebaseAdmin";
+import {
+  abreAConta,
+  conferirToken,
+  credencialDisponivel,
+} from "@/lib/server/firebaseAdmin";
 
 /**
  * A leitura da nota, em Route Handler e não em Cloud Function.
@@ -147,6 +151,12 @@ function bytesDoBase64(dados: string): number {
 }
 
 export async function POST(requisicao: Request) {
+  // Sem credencial de servidor não há como conferir token nenhum, e todo mundo
+  // levaria 401 — a tela diria que o login dela não abre a conta, que é acusar
+  // a pessoa errada por uma variável que faltou na hospedagem. A chave do
+  // Gemini continua sendo lida só depois da porta, como na 6A.
+  if (!credencialDisponivel()) return falha("sem-configuracao", 500);
+
   const quem = await conferirToken(requisicao.headers.get("authorization"));
   if (!quem) return falha("sem-acesso", 401);
 

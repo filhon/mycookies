@@ -11,6 +11,10 @@ const config = [
       "node_modules/**",
       "public/sw.js",
       "public/swe-worker-*.js",
+      // Andaime do `firebase init`, com tsconfig e eslintrc próprios e
+      // dependências que o `npm install` da raiz não instala. Ver
+      // `DECISOES.md#d73`.
+      "functions/**",
     ],
   },
 ];

@@ -1,0 +1,30 @@
+# O que não sobe para a hospedagem.
+#
+# Deploy por Git sobe o que está commitado, e aí quem manda é o .gitignore.
+# Deploy por `vercel` da linha de comando sobe a PASTA, e a CLI **não** lê o
+# .gitignore: sem este arquivo, a chave de conta de serviço que está no disco
+# subiria junto. Ela ignora as regras do Firestore, então as três primeiras
+# linhas são as que importam. O resto é peso morto no upload.
+#
+# `functions/` está aqui por um segundo motivo, e o build depende dele: o
+# `npm install` da raiz não instala as dependências de lá. A garantia de
+# verdade é o `exclude` do tsconfig.json — esta linha só evita subir o que
+# ninguém vai usar.
+
+*firebase-adminsdk*.json
+*-service-account*.json
+chave-servico.json
+.env
+.env.local
+.env*.local
+
+functions/
+docs/
+tests/
+scripts/
+
+firebase.json
+firestore.rules
+firestore.indexes.json
+vitest.config.ts
+tsconfig.sw.tsbuildinfo

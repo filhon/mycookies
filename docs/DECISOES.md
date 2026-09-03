@@ -2061,3 +2061,79 @@ compartilhar e "Adicionar à Tela de Início", e ninguém descobre isso por acas
 **A seção inteira some, e não só o miolo.** Um título "Instalar na tela de início" sem nada
 embaixo seria pior do que o convite repetido, então o próprio componente carrega o cabeçalho e
 devolve `null` — é a única das quatro seções que decide se existe.
+
+---
+
+## D72 · A credencial de servidor vira conteúdo, e a falta dela tem nome próprio
+
+**Status:** vigente · decidida em 2026-09-03, na preparação do deploy no Vercel
+
+**Contexto.** `src/lib/server/firebaseAdmin.ts` inicializava o Admin SDK com
+`applicationDefault()`, que lê `GOOGLE_APPLICATION_CREDENTIALS` como **caminho de arquivo no
+disco**. Isso funciona no computador de quem desenvolve e em `scripts/conceder-acesso.mjs`, e
+não funciona em função serverless: lá não há disco onde pôr a chave, e o repositório — de
+propósito, e desde sempre — não a versiona (`.gitignore`, linha `*firebase-adminsdk*.json`).
+
+Publicado assim, `/api/nota` responderia **401 a toda chamada**: `conferirToken` embrulha tudo
+em `try`, e credencial ausente sai pelo mesmo `catch` de token expirado.
+
+**Decisão.** A hospedagem passa o **conteúdo**, e não o caminho: `FIREBASE_SERVICE_ACCOUNT`
+carrega o JSON inteiro da chave — ou o mesmo JSON em base64, que é o que sobrevive a um campo
+de painel que come quebra de linha — e vira `cert(...)`. Sem a variável, o caminho é o de
+antes, letra por letra.
+
+Junto, `credencialDisponivel()` passou a ser perguntado **antes** do token, e a rota devolve
+`sem-configuracao` (500) no lugar de `sem-acesso` (401).
+
+**Consequência.** São dois erros que pareciam um. "Este login não abre esta conta. Saia e
+entre de novo" manda a usuária 0 fazer logout e login de novo, repetidamente, por causa de uma
+variável que faltou no painel da hospedagem — a tela acusa a pessoa errada, e a pessoa não tem
+como consertar o que ela está sendo mandada consertar. `sem-configuracao` já existia desde a
+6A, com a frase certa já escrita: "A leitura de nota ainda não está configurada neste
+servidor."
+
+**A ordem da 6A foi preservada.** A propriedade exercitada naquela sessão era que a chave do
+Gemini só é lida **depois** da porta: quem não entrou não descobre se ela está configurada. A
+credencial do Admin SDK não pode obedecer a essa ordem — ela é o que confere o token —, mas a
+inversão revela só a existência dela, e nunca a do Gemini, que continua sendo lida no mesmo
+ponto de antes.
+
+**Base64 aceito, e não exigido.** O JSON colado inteiro funciona no painel do Vercel. O base64
+está aceito porque a mesma variável passa por lugares que reescrevem quebra de linha, e um
+`private_key` truncado falha com "invalid PEM formatted message" — um erro que não diz de onde
+veio. A troca de `\n` por `\n` depois do parse é a mesma guarda, para o JSON que chega
+escapado duas vezes.
+
+**Onde isto muda de novo.** Chave privada em variável de ambiente é o arranjo comum e não é o
+melhor: ela fica legível para quem tiver acesso ao painel e não gira sozinha. Quando o projeto
+virar SaaS, o lugar dela é um gerenciador de segredos com rotação — a fronteira já está no
+lugar certo, porque só este arquivo conhece o formato.
+
+---
+
+## D73 · `functions/` sai do tsconfig e do lint da raiz
+
+**Status:** vigente · decidida em 2026-09-03, na preparação do deploy no Vercel
+
+**Contexto.** `functions/` está no estado em que o `firebase init` o deixou — a 6A registrou
+isso ao explicar por que a leitura de nota é Route Handler e não Cloud Function. Ele tem
+`package.json`, `tsconfig.json` e `.eslintrc.js` próprios, e dependências próprias que **o
+`npm install` da raiz não instala**.
+
+Localmente isso passava despercebido porque `functions/node_modules` existe no disco desde o
+dia do `firebase init`. Num build limpo — que é todo build da hospedagem — o `include` da raiz
+alcança `functions/src/index.ts`, o `tsc` que o `next build` roda não acha
+`firebase-functions`, e o build falha antes de compilar uma linha do app.
+
+**Decisão.** `"functions"` entrou no `exclude` do `tsconfig.json` da raiz e em `ignores` do
+`eslint.config.mjs`. A pasta continua versionada e continua com o seu próprio conjunto de
+ferramentas.
+
+**Consequência.** `npm run typecheck` e `npm run lint` deixam de cobrir um arquivo de andaime
+que ninguém escreveu e que está inteiro comentado. Se um dia existir função de verdade ali,
+ela é verificada pela cadeia dela, que é a mesma que a publicaria — e verificar código de
+Cloud Function com o `tsconfig` de um app Next sempre foi coincidência, e não cobertura.
+
+**Não bastava o `.vercelignore`.** Ele resolve o deploy por linha de comando, que sobe a
+pasta. O deploy por Git sobe o que está commitado, e `functions/` está commitado: a garantia
+que vale nos dois caminhos é o `exclude`.
