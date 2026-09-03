@@ -78,6 +78,7 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 | 4   | Caixa, metas e previsão                     | pronto (4A e 4B)          | `specs/004-caixa.md`        |
 | 5   | Prontidão: conserto e verificação           | 5A pronto, **5B a fazer** | `specs/005-prontidao.md`    |
 | 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)          | `specs/006-nota-fiscal.md`  |
+| 7   | Estoque com idade e contagem da despensa    | **escrita, a fazer**      | `specs/007-estoque.md`      |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -541,6 +542,26 @@ As três aprovações que a spec pedia foram usadas: `firebase-admin` em `depend
 serviços externos na 6A, e `Transacao.notaChave?: string` na 6B — mudança compatível, documento
 antigo sem o campo continua válido.
 
+## A spec 007, escrita e não iniciada
+
+`specs/007-estoque.md` foi escrita em 2026-09-03 e nasce da dívida `Estoque continua sendo
+número digitado`, que a 003 e a 006 já tinham deixado de fora com o mesmo argumento. Duas
+sessões: a **7A** dá idade ao número (`Insumo.estoqueContadoEmISO`), cria
+`src/lib/domain/estoque.ts` e a tela `/insumos/contagem`, que conta a despensa inteira em uma
+escrita; a **7B** faz a lista de compras parar de descontar contagem vencida e faz a compra
+**propor** a contagem em vez de escrevê-la. Baixa automática continua fora, e é justamente o
+que a spec responde.
+
+**Ela não passa na frente da 5B**, e a razão é a mesma que a 006 desrespeitou: a 7B mexe em
+`montarLista`, entregue na 3C e nunca vista rodando contra o Firestore. Mexer nela antes da
+verificação deixaria dois candidatos para qualquer defeito que aparecesse na lista de
+compras.
+
+Três aprovações pendentes, listadas ao fim da spec: o campo novo, a **remoção** de
+`Insumo.estoqueMinimo` (tipado, validado, gravado e sem nenhuma tela que o escreva — o selo
+"Estoque baixo" de `LinhaInsumo` nunca pôde disparar), e a mudança de comportamento em dado
+já gravado, que faz o carrinho crescer na primeira lista depois da 7B.
+
 ## Próxima ação
 
 **A sessão 5B de `specs/005-prontidao.md`**, a verificação em navegador. É a dívida mais antiga
@@ -740,7 +761,8 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`              | `src/lib/types/configuracao.ts`  | Quando algum leitor precisar do nome: hoje ninguém lê esse campo                  |
 | Sair da configuração com alteração pendente descarta em silêncio              | `TelaConfiguracao.tsx`           | Se acontecer de verdade; a barra fixa de "não salvas" é a defesa atual            |
 | Dois toques no mesmo quadro na lista de compras podem perder uma marca        | `ListaDoMercado.tsx`             | Se acontecer: `comprado` sai do array e vira mapa por `insumoId` (`#d40`)         |
-| Estoque continua sendo número digitado: comprar não o movimenta               | `mutations/listasCompra.ts`      | Nunca por baixa automática; se houver caso, nasce com contagem periódica          |
+| Estoque continua sendo número digitado: comprar não o movimenta               | `mutations/listasCompra.ts`      | **Spec 007**: nunca por baixa automática — a contagem ganha data e a lista a lê   |
+| `estoqueMinimo` é gravado e nenhuma tela o escreve: o selo nunca acende       | `LinhaInsumo.tsx`                | **Spec 007, sessão 7A**: o campo sai, e o selo passa a dizer "Contagem vencida"   |
 | A rota, a tela da nota, a gravação em lote e a guarda do caixa sem teste      | `api/nota/`, `components/notas/` | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador         |
 | Cadastrar a nota espera o servidor: sem rede o botão fica preso em carregando | `TelaNota.tsx`                   | Não incomoda hoje — a tela já exigiu rede para ler (`#d50`); se incomodar, `#d40` |
 | O cache de CNPJ vive na memória do processo e morre no reinício               | `api/nota/route.ts`              | Só se a cota de 3/min por IP apertar, que é o dia do segundo cliente (`#d52`)     |
