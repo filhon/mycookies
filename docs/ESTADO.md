@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-03 (sessão 7B).
+Atualizado em 2026-09-03 (sessão 7B; a spec 008 foi escrita no mesmo dia, e não executada).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -96,6 +96,7 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 | 5   | Prontidão: conserto e verificação           | 5A pronto, **5B a fazer** | `specs/005-prontidao.md`    |
 | 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)          | `specs/006-nota-fiscal.md`  |
 | 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)          | `specs/007-estoque.md`      |
+| 8   | Onboarding: o caminho das primeiras semanas | **8A e 8B a fazer**       | `specs/008-onboarding.md`   |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -715,6 +716,32 @@ com as sacolas na mão. É o que o roteiro em navegador da 007 mede, e o passo 3
 `/compras` e ver o carrinho encolher — é o único argumento que vai fazê-la contar na semana
 seguinte.
 
+## A spec 008, escrita e não executada
+
+`specs/008-onboarding.md` foi escrita em 2026-09-03, e é a primeira que não nasce de dívida da
+tabela: nasce do pedido de que a usuária 0 receba o sistema sem dúvida sobre o que ele faz e em
+que ordem se opera. Duas sessões — a **8A** entrega a espinha (`domain/onboarding.ts`, o campo
+`Conta.primeirosPassosEm`, a rota `/comecar` e o cartão dos cinco passos na tela Hoje), a **8B**
+entrega o guia que fica (a cadeia do dinheiro, as três funcionalidades fora da navegação, o
+offline e a instalação na tela de início) —, com `8C` reservada.
+
+**Ela depende da 5B, e desta vez a dependência não deve ser invertida.** A 6A e a 7A passaram na
+frente abrindo caminho novo sobre caminho velho; a 008 não abre caminho — ela aponta o dedo para
+os caminhos existentes, na ordem, com autoridade. Um passo torto no navegador vira um passo torto
+com o sistema mandando ela ir lá, e a cópia dos cinco passos se escreve melhor a partir do que a
+5B viu acontecer do que do que a spec imagina.
+
+Duas coisas que a escrita da 008 achou no código, e que não são dela:
+
+- **`agregados/global` é escrito e nunca lido.** `totalInsumos`, `totalFichas` e `totalClientes`
+  são incrementados no cliente e não têm um único leitor; `pedidosAbertos`, `proximaEntrega` e
+  `ultimoNumeroPedido` são tipados em `types/financeiro.ts` e **nunca receberam valor** — a mesma
+  doença que a 7A curou em `estoqueMinimo`. É por isso que a 008 decidiu perguntar às coleções
+  (`#d67`) em vez de confiar no contador.
+- **A tela de login não tem recuperação de senha.** É a única falha do produto que a usuária não
+  consegue contornar por dentro dele: trancada para fora, ela depende de alguém com acesso ao
+  console do Firebase. Entra como carona da 8A, com `sendPasswordResetEmail` do SDK já instalado.
+
 ## Próxima ação
 
 **A sessão 5B de `specs/005-prontidao.md`**, a verificação em navegador. É a dívida mais antiga
@@ -970,3 +997,8 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | A guarda de duplicidade depende de o modelo ler o mesmo CNPJ nas duas fotos   | `domain/notaFiscal.ts`            | Passo 7 do roteiro da 006 é quem responde; falhando, entra o QR Code da NFC-e      |
 | Nota sem CNPJ legível lança sem guarda: a mesma nota pode entrar duas vezes   | `TelaNota.tsx`                    | Não tem conserto barato: chave por nome sai diferente de duas fotos (`#d54`)       |
 | Duas notas da mesma loja, no mesmo dia, com o total ilegível nas duas colidem | `domain/notaFiscal.ts`            | Falso positivo visível, desfeito em um toque; se acontecer, a chave ganha a hora   |
+| `agregados/global` é escrito por três mutações e lido por ninguém             | `types/financeiro.ts`             | Se algum leitor aparecer; a 008 decidiu não ser ele (`#d67`)                       |
+| `pedidosAbertos`, `proximaEntrega` e `ultimoNumeroPedido` nunca são escritos  | `types/financeiro.ts`             | Spec de limpeza, como a remoção de `estoqueMinimo` na 7A. Ninguém os lê hoje       |
+| A tela de login não tem recuperação de senha                                  | `src/app/(auth)/login/page.tsx`   | **Carona da 8A**: é a única falha que a usuária não contorna por dentro do produto |
+| A ordem de uso do sistema não está em tela nenhuma                            | —                                 | **Spec 008**, sessão 8A: os cinco passos na tela Hoje                              |
+| `/compras`, `/insumos/nota` e `/insumos/contagem` fora da navegação           | `layout/navegacao.ts`             | **Spec 008**, sessão 8B: a seção "O que mais tem aqui" em `/comecar`               |
