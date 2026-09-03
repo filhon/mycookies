@@ -2,8 +2,11 @@ import {
   addDoc,
   deleteField,
   doc,
+  getDocs,
+  query,
   Timestamp,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import { colTransacoes } from "../colecoes";
 import { aplicarNoAgregado, transacaoAgregavel } from "./agregado";
@@ -46,6 +49,13 @@ export interface DadosTransacao {
    * continuaria dizendo outra coisa.
    */
   custoTaxa?: Centavos;
+  /**
+   * Origem, quando o lançamento nasceu de uma nota fiscal lida.
+   *
+   * `CNPJ-dataISO-totalImpresso`. É o que `buscarLancamentoDaNota` consulta
+   * antes de a mesma nota virar uma segunda saída idêntica.
+   */
+  notaChave?: string;
 }
 
 /** `Timestamp.now()`, nunca `serverTimestamp()` (`DECISOES.md#d06`). */
@@ -83,7 +93,40 @@ function corpoDaTransacao(dados: DadosTransacao, formas: FormaPagamento[]) {
     formaPagamentoId,
     observacoes: dados.observacoes?.trim() || undefined,
     pedidoId: dados.pedidoId,
+    // A chave só entra quando existe, e por isso ela é spread e não campo:
+    // chave ausente em `updateDoc` deixa o valor que está lá. É o que preserva
+    // a guarda quando ela corrige a descrição do lançamento em `/financeiro`,
+    // por uma tela que não sabe que a nota existiu.
+    ...(dados.notaChave ? { notaChave: dados.notaChave } : {}),
   };
+}
+
+/**
+ * O lançamento que esta nota já criou, se criou.
+ *
+ * Consulta por igualdade em um campo só — índice automático do Firestore, sem
+ * nada para publicar. O arquivado fica de fora na memória e não na consulta,
+ * porque filtrar por dois campos pediria um índice composto para responder a
+ * mesma pergunta: **lançamento arquivado já foi revertido**, e a nota dele pode
+ * ser lançada de novo.
+ *
+ * Chave vazia devolve `null` sem ir à rede: sem CNPJ legível não há guarda.
+ */
+export async function buscarLancamentoDaNota(
+  contaId: string,
+  notaChave: string,
+): Promise<Transacao | null> {
+  if (!notaChave) return null;
+
+  const encontrados = await getDocs(
+    query(colTransacoes(contaId), where("notaChave", "==", notaChave)),
+  );
+
+  return (
+    encontrados.docs
+      .map((documento) => documento.data())
+      .find((transacao) => !transacao.arquivado) ?? null
+  );
 }
 
 /**

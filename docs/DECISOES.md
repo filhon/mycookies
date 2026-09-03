@@ -1414,3 +1414,130 @@ O cache mora na memória do processo, e não em documento: ele sobrevive a uma n
 reinício, que é exatamente a vida útil que essa informação precisa ter. Com mais de uma
 instância do servidor, cada uma tem a sua — e três por minuto por IP continua sendo folga para
 uma usuária.
+
+---
+
+## D53 · Um lançamento por nota, e o valor é a soma do que ficou
+
+**Status:** vigente · decidida em 2026-09-02 na spec `006-nota-fiscal`, sessão 6B
+
+**Contexto.** Hoje o dinheiro que sai para comprar insumo só entra em `/financeiro` se ela
+digitar o lançamento à mão, numa segunda tela, depois de já ter digitado a compra inteira. Na
+prática, não entra: `porCategoriaSaida.COMPRA_INSUMO` fica vazio, o "quanto sobra" do mês fica
+otimista, e a meta mede um resultado que ignora a maior saída recorrente do negócio. A nota já
+sabe o valor, a data e o estabelecimento.
+
+**Decisão.** A nota vira **um** lançamento, e não um por item: `SAIDA`, categoria
+`COMPRA_INSUMO` — ou `EMBALAGEM` quando toda linha mantida for embalagem —, com a data da nota
+e a descrição "Compra no Atacadão" ("Compra de insumos" quando o nome não sai do papel). O
+valor é a **soma das linhas mantidas**, e nunca o total impresso.
+
+**Consequência.** Nove linhas de chocolate no mesmo dia não são nove decisões financeiras: são
+uma compra. O caixa é lido por dia e por categoria, e uma nota explodida em vinte lançamentos
+transforma `/financeiro` em extrato bancário — o detalhe por item já está guardado onde ele
+serve, que é `historicoPrecos` dentro de cada insumo.
+
+A soma ser a das linhas mantidas é a outra metade, e é a que mexe em dinheiro: o shampoo de
+R$ 29,80 não é do negócio, e se o caixa recebesse os R$ 176,20 impressos o sistema estaria
+dizendo que a confeitaria gastou em shampoo. O "quanto sobra" do mês sairia R$ 29,80 menor por
+uma compra pessoal. Por isso os dois números vivem separados desde a 6A (`#d47`): `precoCompra`
+é o preço de uma embalagem, `valorTotal` é o que a linha vale no cupom, e é o segundo que soma
+aqui.
+
+Quatro escolhas de execução ficam registradas:
+
+- **A categoria decide por `ehEmbalagem`, a mesma da ficha (`#d20`).** Uma segunda definição de
+  "isto é embalagem" seria um segundo lugar para as duas divergirem. Compra mista continua
+  sendo compra de insumo, porque ratear uma nota entre duas categorias exigiria dois
+  lançamentos — que é justamente o que esta decisão recusa.
+- **`ContextoMeta` vai `null`, e isso foi conferido e não presumido.** `espelhoAposDelta` move
+  o espelho a partir de `parcelas.entradas`, e `deltaDaTransacao` de uma saída tem `entradas`
+  zerado: o espelho não se mexeria de qualquer jeito. Passar `null` diz isso no lugar de
+  depender de uma coincidência aritmética.
+- **`custoTaxa` vai zero explícito, e a lista de formas de pagamento não é lida.** Saída não
+  passa por maquininha, e `dados.custoTaxa ?? taxaDaEntrada(...)` para no zero. É o que
+  dispensa esta tela de assinar `configuracao/geral` para gravar um número que seria zero.
+- **O lançamento vem depois do lote de insumos, e a ordem é o que decide o estado ruim.**
+  Falhando o lote, não há lançamento de uma compra que não foi cadastrada. Falhando o
+  lançamento, os insumos ficam e ler a nota de novo conserta — reimportar insumo é atualizar
+  preço, que é idempotente por natureza, e a guarda de `#d54` cuida do resto.
+
+---
+
+## D54 · A guarda de duplicidade sai do CNPJ, e do total impresso
+
+**Status:** vigente · decidida em 2026-09-02 na spec `006-nota-fiscal`, sessão 6B
+
+**Contexto.** Ler a mesma nota de novo — porque a primeira leitura saiu torta, ou porque ela
+esqueceu — criaria uma segunda saída idêntica, e o mês fecharia com R$ 146,40 a menos sem que
+nada na tela explicasse. É o defeito mais caro que esta sessão podia deixar passar, porque ele
+não dá erro: dá um número.
+
+**Decisão.** `Transacao.notaChave?: string`, campo opcional novo:
+`75315333000109-2026-09-02-17620` — os catorze dígitos do CNPJ, a `dataISO` e **o total
+impresso** em centavos. Antes de lançar, uma consulta por igualdade nesse campo. Achando um
+lançamento não arquivado, a tela diz "Esta nota já foi lançada no caixa em 02/09, no valor de
+R$ 146,40" e o bloco do caixa nasce desligado; os insumos seguem cadastráveis à vontade,
+porque reimportar insumo é atualizar preço, que é idempotente por natureza.
+
+**Consequência.** É `#d52` pagando. O nome da loja é o campo mais frágil do cabeçalho —
+"ATACADAO DIST COM E IND LTDA" lido de duas fotos pode sair de dois jeitos —, e catorze dígitos
+com verificador, não. Uma chave frágil erraria nos dois sentidos: deixaria passar a nota
+repetida e barraria a nota nova.
+
+Quatro escolhas ficam registradas, e as três primeiras são o que faz a chave fechar na segunda
+foto:
+
+- **O total é o do papel, e não a soma das linhas mantidas.** Na segunda leitura ela pode tirar
+  linhas diferentes, e uma chave que se mexesse com isso não reconheceria a mesma nota. O que a
+  chave identifica é o documento impresso; o valor lançado, esse, é a soma do que ficou
+  (`#d53`). O teste interroga exatamente isso: mesma nota, remoções diferentes, mesma chave e
+  valores diferentes.
+- **Sem CNPJ legível não há chave, e não há guarda.** A tela não inventa uma a partir do nome,
+  e nada trava: a nota lança normalmente e sem chave. Um total ilegível, esse, não impede a
+  chave — ele entra como zero, e duas notas da mesma loja no mesmo dia com o total ilegível nas
+  duas é o único falso positivo possível. Ele aparece em tela com o valor do lançamento
+  anterior à vista, e um toque o desfaz.
+- **A consulta filtra `arquivado` na memória, e não na consulta.** Filtrar por dois campos
+  pediria um índice composto para responder a mesma pergunta; e lançamento arquivado já foi
+  revertido, então a nota dele pode ser lançada de novo. Um campo, o índice automático do
+  Firestore, nada para publicar.
+- **A chave é escrita por spread condicional em `corpoDaTransacao`.** Chave ausente em
+  `updateDoc` deixa o valor que está lá: é o que preserva a guarda quando ela corrige a
+  descrição do lançamento em `/financeiro`, por um formulário que não sabe que a nota existiu.
+  É o oposto do que `formaPagamentoId` e `pedidoId` fazem com `deleteField()`, e de propósito.
+
+Acrescentar campo opcional é mudança compatível de schema: documento antigo sem o campo
+continua válido, e `notaChave` ausente é o estado de toda transação já gravada. **Foi a
+aprovação de schema que a spec pediu.**
+
+---
+
+## D55 · O bloco do caixa nasce ligado, e a decisão dela para de se mexer
+
+**Status:** vigente · decidida em 2026-09-02 na spec `006-nota-fiscal`, sessão 6B
+
+**Contexto.** O bloco que manda a compra para o caixa podia nascer desligado, que é o padrão
+conservador: o sistema não faz nada que ela não pediu. É a decisão mais discutível da sessão.
+
+**Decisão.** Nasce **ligado**. Uma compra que não chega ao caixa é exatamente o custo invisível
+que este sistema existe para tornar visível, e deixar isso desligado por padrão é escolher o
+número errado como caminho de menor esforço. Desligar é um toque, para o dia em que a compra já
+tiver sido lançada à mão.
+
+**Consequência.** O padrão só é defensável porque a tela diz o que vai acontecer **antes** de
+acontecer, com os dois lados da conta: "Vai para o caixa: R$ 146,40 em 02 de set. Os R$ 29,80
+que você tirou ficam de fora. Aparece em compra de insumo, como 'Compra no Atacadão'." Sem essa
+frase, ligado por padrão seria o sistema gastando o caixa dela em silêncio.
+
+O estado é o par de `#d21`, e não um booleano: `lancamentoManual` nasce `null` e o valor
+efetivo é `lancamentoManual ?? duplicado === null`. Enquanto ela não tocar, vale o padrão —
+ligado, e desligado quando a guarda achou a nota já lançada. No instante em que ela decide, a
+decisão dela para de se mexer sozinha, inclusive se a guarda mudar de ideia depois porque ela
+corrigiu a data. Um booleano só teria que escolher entre desobedecer a ela e ignorar a guarda.
+
+A resposta da guarda chega depois do primeiro render, então o bloco pode aparecer ligado e
+piscar para desligado quando a consulta responde. É a informação chegando quando chega, e não
+um estado errado: fingir "carregando" no lugar esconderia o padrão que a decisão inteira
+defende. Pelo mesmo motivo o achado carrega a chave que o pediu — enquanto a resposta da chave
+nova não chega, a guarda da anterior não continua valendo.

@@ -15,8 +15,10 @@ import {
   precoMudou,
   type DadosInsumo,
 } from "./insumos";
+import { criarTransacao } from "./transacoes";
 import { VERSAO_SCHEMA } from "@/lib/types";
-import type { Insumo } from "@/lib/types";
+import type { LancamentoDaNota } from "@/lib/domain/notaFiscal";
+import type { Centavos, Insumo } from "@/lib/types";
 import { Timestamp } from "firebase/firestore";
 
 /**
@@ -48,6 +50,8 @@ export interface ResultadoImportacao {
   criados: number;
   atualizados: number;
   fichasMarcadas: number;
+  /** O que foi para o caixa, ou `null` quando o bloco estava desligado. */
+  lancado: Centavos | null;
 }
 
 /** O teto de `array-contains-any` numa consulta, com folga. */
@@ -59,9 +63,19 @@ const POR_LOTE = 400;
 export async function importarNota(
   contaId: string,
   linhas: LinhaImportada[],
+  /**
+   * A saída no caixa, ou `null` quando ela desligou o bloco.
+   *
+   * Vem depois dos insumos de propósito, e a ordem é o que decide o estado
+   * ruim: falhando o lote, não há lançamento de uma compra que não foi
+   * cadastrada; falhando o lançamento, os insumos ficam e ler a nota de novo
+   * conserta — reimportar insumo é atualizar preço, que é idempotente por
+   * natureza, e a guarda de duplicidade cuida do resto.
+   */
+  lancamento: LancamentoDaNota | null = null,
 ): Promise<ResultadoImportacao> {
   if (linhas.length === 0) {
-    return { criados: 0, atualizados: 0, fichasMarcadas: 0 };
+    return { criados: 0, atualizados: 0, fichasMarcadas: 0, lancado: null };
   }
 
   const momento = Timestamp.now();
@@ -119,7 +133,40 @@ export async function importarNota(
     criados: novos.length,
     atualizados: atualizados.length,
     fichasMarcadas,
+    lancado: lancamento ? await lancarNoCaixa(contaId, lancamento) : null,
   };
+}
+
+/**
+ * A compra vira uma saída, pelo mesmo caminho de `/financeiro`.
+ *
+ * `ContextoMeta` vai `null` porque saída não move o espelho da meta: `realizado`
+ * espelha `entradas`, e `deltaDaTransacao` de uma saída tem `entradas` zerado
+ * (`DECISOES.md#d29`). E `custoTaxa` vai zero explícito para que a lista de
+ * formas de pagamento não precise ser lida numa tela que não fala de
+ * maquininha — saída não passa por uma.
+ */
+async function lancarNoCaixa(
+  contaId: string,
+  lancamento: LancamentoDaNota,
+): Promise<Centavos> {
+  await criarTransacao(
+    contaId,
+    {
+      tipo: "SAIDA",
+      categoria: lancamento.categoria,
+      descricao: lancamento.descricao,
+      valor: lancamento.valor,
+      dataISO: lancamento.dataISO,
+      custoTaxa: 0,
+      recorrente: false,
+      ...(lancamento.notaChave ? { notaChave: lancamento.notaChave } : {}),
+    },
+    [],
+    null,
+  );
+
+  return lancamento.valor;
 }
 
 /**

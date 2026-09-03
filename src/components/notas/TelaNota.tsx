@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { orderBy, query, where } from "firebase/firestore";
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   Check,
@@ -18,6 +18,7 @@ import { Botao } from "@/components/ui/Botao";
 import { Campo } from "@/components/ui/Campo";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { classesBotao } from "@/components/ui/estilosBotao";
+import { BlocoCaixa } from "./BlocoCaixa";
 import {
   CartaoLinhaNota,
   linhaCompleta,
@@ -31,6 +32,7 @@ import {
   atualizacaoDaLinha,
   cadastroDaLinha,
   conferirTotal,
+  lancamentoDaNota,
   MENSAGEM_FALHA,
   normalizarNota,
   parearComInsumos,
@@ -46,9 +48,10 @@ import {
   type LinhaImportada,
   type ResultadoImportacao,
 } from "@/lib/firebase/mutations/notas";
+import { buscarLancamentoDaNota } from "@/lib/firebase/mutations/transacoes";
 import { useColecao } from "@/lib/hooks/useColecao";
 import { useConexao } from "@/lib/hooks/useDispositivo";
-import type { Insumo } from "@/lib/types";
+import type { Insumo, Transacao } from "@/lib/types";
 import { prepararParaLeitura } from "@/lib/utils/imagem";
 import { useAuth, useContaId } from "@/providers/AuthProvider";
 
@@ -58,6 +61,26 @@ interface Cabecalho {
   estabelecimento: string;
   cidade: string;
   dataISO: string;
+  /**
+   * Catorze dígitos, ou "" quando o verificador não fecha.
+   *
+   * Não é campo: ninguém digita CNPJ. Ele viaja no cabeçalho porque é dele que
+   * sai a chave da guarda de duplicidade do caixa.
+   */
+  cnpj: string;
+}
+
+const CABECALHO_VAZIO: Cabecalho = {
+  estabelecimento: "",
+  cidade: "",
+  dataISO: "",
+  cnpj: "",
+};
+
+/** O lançamento que a guarda achou, junto da chave que o pediu. */
+interface Guarda {
+  chave: string;
+  achado: Transacao | null;
 }
 
 /**
@@ -91,14 +114,21 @@ export function TelaNota() {
   const [falha, setFalha] = useState<FalhaNota | null>(null);
   const [erroAoGravar, setErroAoGravar] = useState<string | null>(null);
 
-  const [cabecalho, setCabecalho] = useState<Cabecalho>({
-    estabelecimento: "",
-    cidade: "",
-    dataISO: "",
-  });
+  const [cabecalho, setCabecalho] = useState<Cabecalho>(CABECALHO_VAZIO);
   const [total, setTotal] = useState(0);
   const [linhas, setLinhas] = useState<LinhaEditada[]>([]);
   const [removidas, setRemovidas] = useState<LinhaEditada[]>([]);
+
+  /**
+   * `null` enquanto ela não tocar no bloco do caixa: aí vale o padrão, que é
+   * ligado — e desligado quando a guarda achou a mesma nota já lançada. No
+   * instante em que ela decide, a decisão dela para de se mexer sozinha. É o
+   * mesmo par de estados de `precoManual` no editor de ficha (`#d21`).
+   */
+  const [lancamentoManual, setLancamentoManual] = useState<boolean | null>(
+    null,
+  );
+  const [guarda, setGuarda] = useState<Guarda>({ chave: "", achado: null });
 
   const [salvando, setSalvando] = useState(false);
   const [resultado, setResultado] = useState<ResultadoImportacao | null>(null);
@@ -126,6 +156,46 @@ export function TelaNota() {
     removido: somarLinhas(removidas),
   };
 
+  // Um lançamento por nota, com o valor sendo a soma das linhas **mantidas** e
+  // não o total impresso: o shampoo que ela tirou não é do negócio.
+  const lancamento = useMemo(
+    () => lancamentoDaNota(linhas, cabecalho, total),
+    [linhas, cabecalho, total],
+  );
+
+  /**
+   * A guarda contra lançar a mesma nota duas vezes.
+   *
+   * Refeita quando a chave muda, porque a data do cabeçalho é editável e é
+   * metade dela. O achado carrega a chave que o pediu: enquanto a resposta da
+   * chave nova não chega, a guarda da anterior não continua valendo.
+   *
+   * Falhar não é erro em tela: sem resposta a guarda simplesmente não vale,
+   * como a consulta de CNPJ da 6A — o que ela protege é o caixa, e o cadastro
+   * dos insumos nunca depende disso.
+   */
+  const chaveDaGuarda = lancamento.notaChave;
+  const duplicado = guarda.chave === chaveDaGuarda ? guarda.achado : null;
+
+  const lancarNoCaixa = lancamentoManual ?? duplicado === null;
+
+  useEffect(() => {
+    if (etapa !== "conferindo" || !chaveDaGuarda) return;
+
+    let valendo = true;
+    const responder = (achado: Transacao | null) => {
+      if (valendo) setGuarda({ chave: chaveDaGuarda, achado });
+    };
+
+    void buscarLancamentoDaNota(contaId, chaveDaGuarda)
+      .then(responder)
+      .catch(() => responder(null));
+
+    return () => {
+      valendo = false;
+    };
+  }, [contaId, chaveDaGuarda, etapa]);
+
   function recomecar() {
     setEtapa("escolher");
     setFalha(null);
@@ -134,7 +204,8 @@ export function TelaNota() {
     setRemovidas([]);
     setResultado(null);
     setTotal(0);
-    setCabecalho({ estabelecimento: "", cidade: "", dataISO: "" });
+    setCabecalho(CABECALHO_VAZIO);
+    setLancamentoManual(null);
   }
 
   function receber(rascunho: RascunhoNota) {
@@ -145,10 +216,12 @@ export function TelaNota() {
       // e um campo de data em branco é mais trabalho do que uma data para
       // corrigir.
       dataISO: rascunho.dataISO || dataISODe(new Date()),
+      cnpj: rascunho.cnpj,
     });
     setTotal(rascunho.total);
     setLinhas(rascunho.linhas.map(linhaEditada));
     setRemovidas([]);
+    setLancamentoManual(null);
     setEtapa("conferindo");
   }
 
@@ -219,7 +292,13 @@ export function TelaNota() {
         return { dados: cadastroDaLinha(linha, cabecalho.estabelecimento) };
       });
 
-      setResultado(await importarNota(contaId, importadas));
+      setResultado(
+        await importarNota(
+          contaId,
+          importadas,
+          lancarNoCaixa ? lancamento : null,
+        ),
+      );
       setEtapa("pronto");
     } catch {
       setErroAoGravar(
@@ -420,6 +499,16 @@ export function TelaNota() {
               />
             )}
 
+            {linhas.length > 0 && (
+              <BlocoCaixa
+                lancamento={lancamento}
+                removido={resumo.removido}
+                ligado={lancarNoCaixa}
+                aoAlternar={setLancamentoManual}
+                duplicado={duplicado}
+              />
+            )}
+
             {erroAoGravar && <Aviso>{erroAoGravar}</Aviso>}
           </>
         )}
@@ -571,7 +660,7 @@ function Pronto({
   resultado: ResultadoImportacao;
   aoLerOutra: () => void;
 }) {
-  const { criados, atualizados, fichasMarcadas } = resultado;
+  const { criados, atualizados, fichasMarcadas, lancado } = resultado;
 
   return (
     <div className="overflow-hidden rounded-lg border border-line bg-surface">
@@ -606,6 +695,14 @@ function Pronto({
               </strong>{" "}
               {fichasMarcadas === 1 ? "ficha ficou" : "fichas ficaram"} com o
               custo desatualizado. Abra e salve para o preço acompanhar.
+            </p>
+          )}
+          {lancado !== null && (
+            <p>
+              <strong className="num font-semibold text-ink">
+                {formatarMoeda(lancado)}
+              </strong>{" "}
+              saíram do caixa nesta compra, e já aparecem no resultado do mês.
             </p>
           )}
         </div>

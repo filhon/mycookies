@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-02 (sessão 6A).
+Atualizado em 2026-09-02 (sessão 6B).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -21,9 +21,10 @@ sessões — `5A` conserta o que impede o primeiro uso, `5B` faz a verificação
 primeira vez, o iPhone tem ícone de verdade e a dependência morta saiu do pacote. A **5B
 continua a fazer**.
 
-A spec `006-nota-fiscal.md` teve a **sessão 6A entregue**: a nota fotografada vira uma lista
-conferível e cadastra os insumos de uma vez. É a primeira vez que o projeto tem servidor de
-verdade e fala com serviço externo.
+A spec `006-nota-fiscal.md` está **entregue nas duas sessões**: a 6A fez a nota fotografada
+virar uma lista conferível que cadastra os insumos de uma vez — a primeira vez que o projeto
+tem servidor de verdade e fala com serviço externo —, e a **6B ligou a compra ao caixa**, com a
+guarda contra lançar a mesma nota duas vezes. A **6C não foi precisa**: nada da 6B sobrou.
 
 **Falta a prova, e não mais o conserto.** Nenhum número deste sistema jamais saiu de um
 teclado, passou pelo Firestore e voltou. É o que a 5B responde.
@@ -35,9 +36,9 @@ teclado, passou pelo Firestore e voltou. É o que a 5B responde.
 > mitigado por nada: quando a 5B rodar e algo em `insumos` ou em `fichas` aparecer torto, a
 > primeira pergunta é se o defeito é do caminho velho ou do que a 6A abriu por cima dele.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **273
-testes**, e build com 14 rotas estáticas — `/insumos/nota` entrou na lista — mais `/api/nota`,
-`/fichas/[id]` e `/pedidos/[id]` dinâmicas e service worker gerado.
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **282
+testes**, e build com 14 rotas estáticas — `/insumos/nota` entrou na lista na 6A — mais
+`/api/nota`, `/fichas/[id]` e `/pedidos/[id]` dinâmicas e service worker gerado.
 
 **O app está de pé.** Projeto `mycookies-mrc`, `.env.local` preenchido, regras publicadas,
 chave de conta de serviço no disco (fora do git, coberta por `*firebase-adminsdk*.json`).
@@ -76,7 +77,7 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 | 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)      | `specs/003-pedidos.md`      |
 | 4   | Caixa, metas e previsão                     | pronto (4A e 4B)          | `specs/004-caixa.md`        |
 | 5   | Prontidão: conserto e verificação           | 5A pronto, **5B a fazer** | `specs/005-prontidao.md`    |
-| 6   | Leitura de nota fiscal por IA               | 6A pronto, **6B a fazer** | `specs/006-nota-fiscal.md`  |
+| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)          | `specs/006-nota-fiscal.md`  |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -459,6 +460,59 @@ Tudo o mais — uma foto de verdade virando lista, o tempo da leitura no celular
 com o teclado aberto, a nota tirada torta — está na lista de navegador abaixo, e depende de
 `GEMINI_API_KEY` estar preenchida em `.env.local`, o que ainda não está.
 
+## O que a sessão 6B deixou pronto
+
+A compra virando saída no caixa, que era a última metade da frase da spec 006.
+
+- `src/lib/domain/notaFiscal.ts` ganhou o bloco do caixa, puro e testado:
+  `lancamentoDaNota`, `chaveDaNota`, `descricaoDaCompra` e `categoriaDaCompra`, mais o tipo
+  `LancamentoDaNota`. A categoria sai de `ehEmbalagem`, a mesma da ficha (`#d20`), e não de
+  uma segunda tabela.
+- `tests/domain/notaFiscal.test.ts`: **9 testes novos** (45 → 54, e 273 → 282 no total), com o
+  caso de aceite da 6B número por número — os R$ 146,40 lançados contra os R$ 176,20 impressos,
+  a chave `75315333000109-2026-09-02-17620`, a mesma nota com remoções diferentes devolvendo a
+  **mesma chave e valores diferentes**, `EMBALAGEM` só quando toda linha mantida for embalagem,
+  e os três jeitos de não haver chave (sem CNPJ, verificador torto, data fora do formato).
+- `Transacao.notaChave?: string`, o campo opcional novo. **É a aprovação de schema que a spec
+  pediu**, e ela é compatível: documento antigo sem o campo continua válido.
+- `mutations/transacoes.ts`: `DadosTransacao.notaChave`, a chave escrita por **spread
+  condicional** em `corpoDaTransacao` — chave ausente em `updateDoc` deixa o valor que está lá,
+  e é isso que preserva a guarda quando ela corrige a descrição do lançamento em
+  `/financeiro` —, e `buscarLancamentoDaNota`, a consulta por igualdade em um campo só.
+- `mutations/notas.ts`: `importarNota` ganhou o terceiro parâmetro, o lançamento, e o faz
+  **depois** do lote de insumos. `ResultadoImportacao.lancado` diz quanto foi para o caixa, ou
+  `null` quando o bloco estava desligado.
+- `src/components/notas/BlocoCaixa.tsx`: o bloco que nasce ligado e diz as duas metades da
+  conta antes de lançar, mais a frase da guarda quando a nota já foi lançada.
+- `TelaNota.tsx`: o CNPJ passou a viajar no cabeçalho (não é campo: ninguém digita CNPJ), a
+  guarda é refeita quando a chave muda, e a etapa "pronto" diz quanto saiu do caixa.
+- Decisões novas em `DECISOES.md#d53` a `#d55`.
+
+Nenhum índice novo: a consulta é por um campo só, e o índice de campo único o Firestore cria
+sozinho. Nenhuma regra de segurança mudou. Nenhuma dependência entrou.
+
+Fora do escopo literal da spec, e por quê:
+
+- **A chave usa o total impresso, e não a soma das linhas mantidas.** A spec diz "o total em
+  centavos" e o exemplo dela (`…-17620`) é o impresso; ficou explícito porque a diferença é o
+  que faz a guarda funcionar: na segunda leitura ela pode tirar linhas diferentes, e uma chave
+  que se mexesse com isso não reconheceria a mesma nota. O teste interroga isso diretamente.
+- **O bloco ligado é um par de estados, e não um booleano.** `lancamentoManual ?? duplicado ===
+null`, o mesmo arranjo de `precoManual` (`#d21`). Um booleano teria que escolher entre
+  desobedecer a ela e ignorar a guarda quando a data fosse corrigida depois. Motivo em `#d55`.
+- **`custoTaxa: 0` explícito, e `formas` vazio.** Saída não passa por maquininha, e isso
+  dispensa a tela de assinar `configuracao/geral` para gravar um zero.
+
+**Confirmado em `metas.ts` antes de passar `null`**, como a spec exigia em vez de confiar na
+frase dela: `espelhoAposDelta` move o espelho a partir de `parcelas.entradas`, e
+`deltaDaTransacao` de uma saída tem `entradas` zerado. O espelho não se moveria de qualquer
+jeito; `null` diz isso no lugar de depender da coincidência.
+
+**O que a 6B não provou.** O mesmo de sempre: `npm test` cobre `src/lib/domain/`, então a
+guarda, o bloco e a gravação da saída não têm teste automatizado. O roteiro em navegador da
+spec continua sendo o que fecha isso, e o passo 7 — a mesma nota fotografada de dois ângulos —
+é o único jeito de saber se a chave por CNPJ fecha com uma foto de verdade.
+
 ## O que mudou no refactor de contas
 
 Vale saber antes de escrever qualquer código novo, porque muda a assinatura de tudo que
@@ -475,45 +529,51 @@ toca o Firestore. Decisões em `DECISOES.md#d14` e `#d15`.
   da instrução "saia e entre novamente". Por que o acesso ainda é concedido por script, e
   quando isso muda: `DECISOES.md#d16`.
 
-## A spec 006, com a 6A entregue e a 6B a fazer
+## A spec 006, entregue nas duas sessões
 
 `specs/006-nota-fiscal.md` foi escrita em 2026-09-02: fotografar ou anexar a nota fiscal da
 compra, conferir numa lista o que foi lido, e cadastrar os insumos de uma vez, com a compra
-virando saída no caixa. **A 6A entregou tudo menos a última metade da frase.**
+virando saída no caixa. **A 6A entregou tudo menos a última metade da frase, e a 6B entregou
+essa metade.** A 6C, que a spec reservava para o que a 6B achasse e não coubesse nela, **não
+foi precisa**.
 
-O que a **6B** ainda deve, e que esta sessão deliberadamente não tocou:
-
-- Um lançamento por nota — e não um por item — em `criarTransacao`, com o valor sendo a soma
-  das linhas **mantidas** e não o total impresso: o shampoo de R$ 29,80 não é do negócio.
-- O bloco de caixa na tela de conferência, **nascendo ligado**, dizendo o que vai lançar antes
-  de lançar.
-- `Transacao.notaChave?: string` — `75315333000109-2026-09-02-17620` —, a guarda contra lançar
-  a mesma nota duas vezes. É a aprovação de schema que continua pendente, e ela é compatível:
-  documento antigo sem o campo continua válido. O CNPJ que alimenta essa chave **já está de
-  pé**: `normalizarNota` devolve os catorze dígitos quando o verificador fecha, e `""` quando
-  não.
-- Confirmar em `metas.ts` que saída não move o espelho da meta antes de passar `ContextoMeta`
-  como `null`.
+As três aprovações que a spec pedia foram usadas: `firebase-admin` em `dependencies` e os dois
+serviços externos na 6A, e `Transacao.notaChave?: string` na 6B — mudança compatível, documento
+antigo sem o campo continua válido.
 
 ## Próxima ação
 
-Duas coisas, e a ordem entre elas é uma decisão a tomar:
+**A sessão 5B de `specs/005-prontidao.md`**, a verificação em navegador. É a dívida mais antiga
+do projeto, é a única coisa a fazer que restou nas specs escritas, e agora tem mais o que
+conferir do que quando foi escrita. O roteiro está na spec, em ordem, porque cada passo
+constrói o estado que o seguinte consome — e o roteiro da 006, ao fim da 6B, entra depois dele.
 
-1. **A sessão 5B de `specs/005-prontidao.md`**, a verificação em navegador — que continua
-   sendo a dívida mais antiga do projeto, e que agora tem mais o que conferir do que quando
-   foi escrita. O roteiro está na spec, em ordem, porque cada passo constrói o estado que o
-   seguinte consome.
-2. **A sessão 6B**, a compra virando saída no caixa.
+**Antes dela: preencher `GEMINI_API_KEY` em `.env.local`.** A variável está documentada em
+`.env.local.example`, a chave se emite em <https://aistudio.google.com/apikey>, e sem ela
+`POST /api/nota` responde 500 com `sem-configuracao` — a tela diz "a leitura de nota ainda não
+está configurada neste servidor". Nada mais do sistema depende dela: sem a chave, todo o
+restante do roteiro da 5B roda igual.
 
-**Antes de qualquer uma das duas: preencher `GEMINI_API_KEY` em `.env.local`.** A variável
-está documentada em `.env.local.example`, a chave se emite em
-<https://aistudio.google.com/apikey>, e sem ela `POST /api/nota` responde 500 com
-`sem-configuracao` — a tela diz "a leitura de nota ainda não está configurada neste servidor".
-Nada mais do sistema depende dela.
+O portão de conclusão foi rodado de verdade em 2026-09-02, no fim da 6B, e passa nos quatro:
+lint, typecheck, 282 testes e build com as mesmas 17 rotas da 6A. Portão passando não é o mesmo
+que sistema pronto — nenhum dos quatro toca no Firestore, e nenhum dos quatro chama o Gemini.
 
-O portão de conclusão foi rodado de verdade em 2026-09-02, no fim da 6A, e passa nos quatro:
-lint, typecheck, 273 testes e build. Portão passando não é o mesmo que sistema pronto —
-nenhum dos quatro toca no Firestore, e nenhum dos quatro chama o Gemini.
+Da 6B, o que só o navegador responde:
+
+- **A mesma nota lida duas vezes, fotografada de ângulos diferentes.** É a chave por CNPJ que
+  precisa fechar, e não a foto: se o modelo ler o CNPJ de dois jeitos, a guarda não vale nada.
+  Na segunda leitura, o bloco do caixa precisa nascer **desligado**, com a frase dizendo o dia
+  e o valor do lançamento que já existe.
+- **Cadastrar com o bloco desligado** não pode mover um centavo do agregado — e cadastrar com
+  ele ligado precisa fazer os R$ 146,40 aparecerem em "compra de insumo" na quebra por
+  categoria, com o dia da nota no gráfico de barras.
+- **"Recalcular o mês" logo depois** precisa devolver exatamente os mesmos números. É o
+  critério de `#d23` e `#d37` com um terceiro caminho escrevendo no agregado.
+- **Arquivar a saída em `/financeiro`** reverte tudo, como qualquer lançamento — não há caminho
+  especial de reversão para lançamento nascido de nota. Depois disso, reler a nota precisa
+  poder lançar de novo: a guarda ignora arquivado.
+- **Uma nota só de embalagem** precisa cair em `EMBALAGEM`, e não em compra de insumo.
+- **Uma nota sem CNPJ legível** lança normalmente e sem chave, e nada disso vira erro em tela.
 
 Da 6A, o que só o navegador responde:
 
@@ -681,8 +741,11 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | Sair da configuração com alteração pendente descarta em silêncio              | `TelaConfiguracao.tsx`           | Se acontecer de verdade; a barra fixa de "não salvas" é a defesa atual            |
 | Dois toques no mesmo quadro na lista de compras podem perder uma marca        | `ListaDoMercado.tsx`             | Se acontecer: `comprado` sai do array e vira mapa por `insumoId` (`#d40`)         |
 | Estoque continua sendo número digitado: comprar não o movimenta               | `mutations/listasCompra.ts`      | Nunca por baixa automática; se houver caso, nasce com contagem periódica          |
-| A rota, a tela da nota e a gravação em lote não têm teste automatizado        | `api/nota/`, `components/notas/` | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador         |
+| A rota, a tela da nota, a gravação em lote e a guarda do caixa sem teste      | `api/nota/`, `components/notas/` | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador         |
 | Cadastrar a nota espera o servidor: sem rede o botão fica preso em carregando | `TelaNota.tsx`                   | Não incomoda hoje — a tela já exigiu rede para ler (`#d50`); se incomodar, `#d40` |
 | O cache de CNPJ vive na memória do processo e morre no reinício               | `api/nota/route.ts`              | Só se a cota de 3/min por IP apertar, que é o dia do segundo cliente (`#d52`)     |
 | Reler uma nota exige fotografar de novo: a imagem não é guardada              | `api/nota/route.ts`              | Se "ver a nota do mês passado" virar pergunta real, nasce com Storage (`#d49`)    |
 | A 6A rodou antes da 5B, contra a dependência declarada na spec 006            | —                                | Some quando a 5B rodar; até lá, defeito em `insumos` tem duas origens possíveis   |
+| A guarda de duplicidade depende de o modelo ler o mesmo CNPJ nas duas fotos   | `domain/notaFiscal.ts`           | Passo 7 do roteiro da 006 é quem responde; falhando, entra o QR Code da NFC-e     |
+| Nota sem CNPJ legível lança sem guarda: a mesma nota pode entrar duas vezes   | `TelaNota.tsx`                   | Não tem conserto barato: chave por nome sai diferente de duas fotos (`#d54`)      |
+| Duas notas da mesma loja, no mesmo dia, com o total ilegível nas duas colidem | `domain/notaFiscal.ts`           | Falso positivo visível, desfeito em um toque; se acontecer, a chave ganha a hora  |

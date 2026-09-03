@@ -3,12 +3,16 @@ import { calcularCustoInsumo } from "@/lib/domain/custoInsumo";
 import {
   atualizacaoDaLinha,
   cadastroDaLinha,
+  categoriaDaCompra,
   categoriaSugerida,
   centavosDoTexto,
+  chaveDaNota,
   cnpjValido,
   conferirTotal,
+  descricaoDaCompra,
   embalagemDoTexto,
   esquemaNotaLida,
+  lancamentoDaNota,
   normalizarNota,
   parearComInsumos,
   somarLinhas,
@@ -577,5 +581,94 @@ describe("o que a gravação preserva", () => {
 
     expect(mudanca).not.toHaveProperty("marca");
     expect(mudanca).not.toHaveProperty("fornecedor");
+  });
+});
+
+describe("a compra vira saída no caixa", () => {
+  const rascunho = normalizarNota(NOTA);
+  /** O que sobra depois de ela tirar o shampoo, que não é do negócio. */
+  const mantidas = rascunho.linhas.slice(0, 5);
+
+  it("o valor é a soma do que ficou, e não o total impresso", () => {
+    const lancamento = lancamentoDaNota(mantidas, rascunho, rascunho.total);
+
+    // 12,50 + 40,00 + 35,00 + 50,00 + 8,90 — os 29,80 do shampoo ficam fora.
+    expect(lancamento.valor).toBe(14640);
+    expect(rascunho.total).toBe(17620);
+  });
+
+  it("um lançamento por nota, com a data e a descrição da compra", () => {
+    const lancamento = lancamentoDaNota(mantidas, rascunho, rascunho.total);
+
+    expect(lancamento.descricao).toBe("Compra no ATACADAO DIST COM E IND LTDA");
+    expect(lancamento.categoria).toBe("COMPRA_INSUMO");
+    expect(lancamento.dataISO).toBe("2026-09-02");
+  });
+
+  it("sem nome de loja, a descrição continua dizendo o que é", () => {
+    expect(descricaoDaCompra("")).toBe("Compra de insumos");
+    expect(descricaoDaCompra("  Atacadão  ")).toBe("Compra no Atacadão");
+  });
+
+  it("é EMBALAGEM só quando toda linha mantida for embalagem", () => {
+    // As linhas 4 e 5 do caso de aceite: caixa de papel e saco de celofane.
+    expect(categoriaDaCompra(rascunho.linhas.slice(3, 5))).toBe("EMBALAGEM");
+    // Com a farinha junto, a compra volta a ser compra de insumo.
+    expect(categoriaDaCompra(mantidas)).toBe("COMPRA_INSUMO");
+    expect(categoriaDaCompra([])).toBe("COMPRA_INSUMO");
+  });
+});
+
+describe("chaveDaNota · a guarda contra lançar a mesma nota duas vezes", () => {
+  const rascunho = normalizarNota(NOTA);
+
+  it("é CNPJ, dia e o total impresso, nessa ordem", () => {
+    expect(chaveDaNota(rascunho.cnpj, rascunho.dataISO, rascunho.total)).toBe(
+      "75315333000109-2026-09-02-17620",
+    );
+  });
+
+  it("não se mexe quando a segunda leitura tira linhas diferentes", () => {
+    const primeira = lancamentoDaNota(
+      rascunho.linhas.slice(0, 5),
+      rascunho,
+      rascunho.total,
+    );
+    const segunda = lancamentoDaNota(
+      rascunho.linhas.slice(0, 4),
+      rascunho,
+      rascunho.total,
+    );
+
+    // O que a chave identifica é o papel, e não o que ela decidiu manter: por
+    // isso ela sai do total impresso, e não da soma das linhas.
+    expect(segunda.notaChave).toBe(primeira.notaChave);
+    expect(segunda.valor).not.toBe(primeira.valor);
+  });
+
+  it("nota sem CNPJ legível não tem chave, e a guarda não vale", () => {
+    const semCabecalho = normalizarNota({ ...NOTA, cnpj: "" });
+    expect(semCabecalho.cnpj).toBe("");
+
+    const lancamento = lancamentoDaNota(
+      semCabecalho.linhas,
+      semCabecalho,
+      semCabecalho.total,
+    );
+
+    expect(lancamento.notaChave).toBe("");
+    // E nada trava: o valor, a data e a categoria continuam de pé.
+    expect(lancamento.valor).toBe(17620);
+    expect(lancamento.dataISO).toBe("2026-09-02");
+  });
+
+  it("CNPJ com o verificador torto não vira chave", () => {
+    expect(chaveDaNota("75.315.333/0001-08", "2026-09-02", 17620)).toBe("");
+    expect(chaveDaNota("00.000.000/0000-00", "2026-09-02", 17620)).toBe("");
+  });
+
+  it("sem data no formato do papel também não há chave", () => {
+    expect(chaveDaNota("75.315.333/0001-09", "", 17620)).toBe("");
+    expect(chaveDaNota("75.315.333/0001-09", "02/09/2026", 17620)).toBe("");
   });
 });

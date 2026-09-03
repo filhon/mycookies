@@ -1,7 +1,9 @@
 import { z } from "zod";
+import { ehEmbalagem } from "./custoFicha";
 import { chaveDeBusca } from "./custoInsumo";
 import type {
   CategoriaInsumo,
+  CategoriaTransacao,
   Centavos,
   DataISO,
   Percentual,
@@ -729,5 +731,101 @@ export function atualizacaoDaLinha(
     ...(anterior.fornecedor?.trim() || !fornecedor.trim()
       ? {}
       : { fornecedor: fornecedor.trim() }),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// A compra vira saída no caixa
+// ---------------------------------------------------------------------------
+
+/**
+ * O que a nota vira em `transacoes`: **um lançamento, e não um por item.**
+ *
+ * Nove linhas de chocolate no mesmo dia não são nove decisões financeiras: são
+ * uma compra. O caixa é lido por dia e por categoria, e uma nota explodida em
+ * vinte lançamentos transforma `/financeiro` em extrato bancário. O detalhe por
+ * item já está guardado onde ele serve, que é `historicoPrecos` dentro de cada
+ * insumo.
+ */
+export interface LancamentoDaNota {
+  descricao: string;
+  categoria: CategoriaTransacao;
+  /** A soma das linhas **mantidas**, e nunca o total impresso na nota. */
+  valor: Centavos;
+  dataISO: DataISO;
+  /** "" quando o CNPJ não fecha: sem chave não há guarda, e nada trava. */
+  notaChave: string;
+}
+
+/**
+ * `75315333000109-2026-09-02-17620` — CNPJ, dia e o total **impresso**.
+ *
+ * É a decisão 8 (`DECISOES.md#d52`) pagando: o nome da loja é o campo mais
+ * frágil do cabeçalho, e uma chave que dependesse dele falharia exatamente
+ * quando a segunda foto saísse um pouco diferente da primeira. Catorze dígitos
+ * com verificador saem iguais das duas fotos.
+ *
+ * O total é o do **papel**, e não a soma das linhas mantidas: na segunda leitura
+ * ela pode tirar linhas diferentes, e uma chave que se mexesse com isso não
+ * reconheceria a mesma nota. O que a chave identifica é o documento impresso.
+ *
+ * Sem CNPJ legível não há chave — e sem chave a tela não inventa uma a partir do
+ * nome, porque uma chave frágil erra nos dois sentidos: deixa passar a nota
+ * repetida e barra a nota nova.
+ */
+export function chaveDaNota(
+  cnpj: string,
+  dataISO: DataISO,
+  totalImpresso: Centavos,
+): string {
+  const digitos = digitosDoCnpj(cnpj);
+  if (!cnpjValido(digitos) || !FORMATO_ISO.test(dataISO)) return "";
+
+  return `${digitos}-${dataISO}-${totalImpresso}`;
+}
+
+/** "Compra no Atacadão", ou "Compra de insumos" quando o nome não sai da nota. */
+export function descricaoDaCompra(estabelecimento: string): string {
+  const nome = (estabelecimento ?? "").trim();
+  return nome ? `Compra no ${nome}` : "Compra de insumos";
+}
+
+/**
+ * `EMBALAGEM` quando **toda** linha mantida for embalagem; `COMPRA_INSUMO` no
+ * resto.
+ *
+ * A regra de o que é embalagem é a mesma da ficha (`ehEmbalagem`, `#d20`): uma
+ * segunda definição aqui seria um segundo lugar para as duas divergirem. Uma
+ * compra mista continua sendo compra de insumo, porque é o que ela é na maior
+ * parte — e ratear uma nota entre duas categorias exigiria dois lançamentos, que
+ * é justamente o que esta sessão decidiu não fazer.
+ */
+export function categoriaDaCompra(linhas: LinhaRascunho[]): CategoriaTransacao {
+  if (linhas.length === 0) return "COMPRA_INSUMO";
+
+  return linhas.every((linha) => ehEmbalagem(linha.categoria))
+    ? "EMBALAGEM"
+    : "COMPRA_INSUMO";
+}
+
+/**
+ * O lançamento que a compra vira, dito antes de acontecer.
+ *
+ * O valor é a soma do que **ficou**: o shampoo de R$ 29,80 não é do negócio, e
+ * se o caixa recebesse os R$ 176,20 impressos o sistema estaria dizendo que a
+ * confeitaria gastou em shampoo — o "quanto sobra" do mês sairia R$ 29,80 menor
+ * por uma compra pessoal.
+ */
+export function lancamentoDaNota(
+  linhas: LinhaRascunho[],
+  cabecalho: { estabelecimento: string; cnpj: string; dataISO: DataISO },
+  totalImpresso: Centavos,
+): LancamentoDaNota {
+  return {
+    descricao: descricaoDaCompra(cabecalho.estabelecimento),
+    categoria: categoriaDaCompra(linhas),
+    valor: somarLinhas(linhas),
+    dataISO: cabecalho.dataISO,
+    notaChave: chaveDaNota(cabecalho.cnpj, cabecalho.dataISO, totalImpresso),
   };
 }

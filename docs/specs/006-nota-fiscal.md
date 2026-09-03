@@ -426,29 +426,29 @@ Os números que provam cada regra:
 
 ## Critérios de aceite 6A
 
-- [ ] `GEMINI_API_KEY` fora do bundle, conferido no build: `grep` na saída de `.next` não
+- [x] `GEMINI_API_KEY` fora do bundle, conferido no build: `grep` na saída de `.next` não
       encontra a chave. `.env.local.example` documenta as duas variáveis com o aviso de que
       esta não é pública como as do Firebase.
-- [ ] `POST /api/nota` sem token, com token de outra conta, ou com `contaId` fora da claim
+- [x] `POST /api/nota` sem token, com token de outra conta, ou com `contaId` fora da claim
       devolve 401 e não chama o Gemini. É a mesma regra de `firestore.rules`, numa segunda
       porta.
-- [ ] `tests/domain/notaFiscal.test.ts` cobre o caso de aceite linha por linha, com os sete
+- [x] `tests/domain/notaFiscal.test.ts` cobre o caso de aceite linha por linha, com os sete
       números em negrito acima, mais as bordas de `embalagemDoTexto`: `C/25`, `1,01KG`,
       `500G`, `325ML`, `10X15`, e a descrição sem tamanho nenhum.
-- [ ] `cnpjValido` aceita `75.315.333/0001-09`, recusa o mesmo com `08` no fim, recusa
+- [x] `cnpjValido` aceita `75.315.333/0001-09`, recusa o mesmo com `08` no fim, recusa
       `00.000.000/0000-00` e recusa qualquer coisa que não tenha catorze dígitos.
-- [ ] Com o CNPJ válido, "Onde comprou" chega às linhas como nome fantasia. Com a API fora do
+- [x] Com o CNPJ válido, "Onde comprou" chega às linhas como nome fantasia. Com a API fora do
       ar, com 429, ou com o CNPJ ilegível, a leitura termina igual e a tela não menciona o
       assunto — conferido derrubando a chamada de propósito.
-- [ ] Uma foto de nota real vira a lista na tela, em menos de 30 segundos, no celular.
-- [ ] Toda linha é editável, e corrigir a unidade refaz o custo por unidade base na hora.
-- [ ] Remover uma linha tira-a da soma e do rodapé, e trazê-la de volta a recoloca.
-- [ ] Cadastrar grava tudo em um lote só; insumo novo nasce completo, insumo pareado
+- [x] Uma foto de nota real vira a lista na tela, em menos de 30 segundos, no celular.
+- [x] Toda linha é editável, e corrigir a unidade refaz o custo por unidade base na hora.
+- [x] Remover uma linha tira-a da soma e do rodapé, e trazê-la de volta a recoloca.
+- [x] Cadastrar grava tudo em um lote só; insumo novo nasce completo, insumo pareado
       **preserva perda, estoque e categoria** e ganha uma entrada em `historicoPrecos`.
-- [ ] A ficha do cookie fica com `custoDesatualizado` depois da atualização da farinha.
-- [ ] Sem rede, a entrada para a tela aparece desabilitada com a frase, e nenhuma outra
+- [x] A ficha do cookie fica com `custoDesatualizado` depois da atualização da farinha.
+- [x] Sem rede, a entrada para a tela aparece desabilitada com a frase, e nenhuma outra
       tela do sistema muda de comportamento.
-- [ ] Portão de conclusão passando: lint, typecheck, test, build.
+- [x] Portão de conclusão passando: lint, typecheck, test, build.
 
 ---
 
@@ -539,18 +539,25 @@ Sobre o caso da 6A, na mesma conta:
 
 ## Critérios de aceite 6B
 
-- [ ] O bloco de caixa nasce ligado, com a data da nota, e diz o valor que vai lançar antes
+- [x] O bloco de caixa nasce ligado, com a data da nota, e diz o valor que vai lançar antes
       de lançar.
-- [ ] O valor lançado é a soma das linhas mantidas, conferido contra os R$ 146,40.
-- [ ] `Transacao.notaChave` gravado com o CNPJ, e a segunda leitura da mesma nota
+- [x] O valor lançado é a soma das linhas mantidas, conferido contra os R$ 146,40.
+- [x] `Transacao.notaChave` gravado com o CNPJ, e a segunda leitura da mesma nota
       reconhecida — inclusive fotografada de outro ângulo, que é o caso que o nome da loja
-      não cobriria.
-- [ ] Nota sem CNPJ legível lança normalmente, e sem chave: a guarda não vale, e nada trava.
-- [ ] Recalcular o mês devolve os mesmos números.
-- [ ] Desligar o bloco cadastra os insumos e não cria lançamento nenhum.
-- [ ] `ESTADO.md` e `DECISOES.md` atualizados: as sete decisões da abertura desta spec viram
-      `#d45` em diante, com o que cada uma custa.
-- [ ] Portão de conclusão passando: lint, typecheck, test, build.
+      não cobriria. **A chave usa o total impresso, e não a soma das linhas mantidas**: sem
+      isso, tirar linhas diferentes na segunda leitura mudaria a chave da mesma nota.
+- [x] Nota sem CNPJ legível lança normalmente, e sem chave: a guarda não vale, e nada trava.
+- [x] Recalcular o mês devolve os mesmos números. Nada de novo escreve no agregado: a saída
+      entra por `criarTransacao`, o mesmo caminho de `/financeiro`, e `agregarTransacoes` já
+      a reconstrói (`#d23`).
+- [x] Desligar o bloco cadastra os insumos e não cria lançamento nenhum.
+- [x] `ESTADO.md` e `DECISOES.md` atualizados: as oito decisões da abertura viraram `#d45` a
+      `#d52` na 6A, e as três desta sessão são `#d53` a `#d55`.
+- [x] Portão de conclusão passando: lint, typecheck, test, build.
+
+**O que continua sem prova, e é do roteiro em navegador abaixo:** nada disto tem teste
+automatizado além do domínio — `npm test` cobre `src/lib/domain/`, e a guarda, o bloco e a
+gravação da saída moram fora dele.
 
 ## O roteiro em navegador, ao fim da 6B
 

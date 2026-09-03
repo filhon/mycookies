@@ -39,6 +39,23 @@ export interface Transacao extends DocumentoBase {
   formaPagamentoId?: string;
 
   /**
+   * A nota fiscal que originou este lançamento: `CNPJ-dataISO-totalImpresso`,
+   * por exemplo `75315333000109-2026-09-02-17620`.
+   *
+   * É a guarda contra lançar a mesma nota duas vezes: antes de lançar, uma
+   * consulta por igualdade neste campo — índice de campo único, criado
+   * automaticamente pelo Firestore. Ler a mesma nota de novo, porque a primeira
+   * leitura saiu torta ou porque ela esqueceu, criaria uma segunda saída
+   * idêntica e o mês fecharia a menos sem que nada na tela explicasse.
+   *
+   * Ausente é o estado normal: só nasce com ele o lançamento que veio de uma
+   * nota **com CNPJ legível**. Sem CNPJ não há chave e não há guarda, e a tela
+   * não inventa uma a partir do nome da loja, que é o campo mais frágil do
+   * cabeçalho (`DECISOES.md#d52`).
+   */
+  notaChave?: string;
+
+  /**
    * O que a maquininha ficou desta entrada, congelado no lançamento.
    *
    * Zero em toda saída e em toda entrada sem forma de pagamento. É snapshot
