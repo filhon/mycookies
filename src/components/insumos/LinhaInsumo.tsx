@@ -2,18 +2,19 @@
 
 import { ChevronRight, TriangleAlert } from "lucide-react";
 import { Selo } from "@/components/ui/Selo";
-import { contagemDoInsumo } from "@/lib/domain/estoque";
+import { contagemDoInsumo, rotuloDeIdade } from "@/lib/domain/estoque";
 import { formatarCustoUnitario, formatarMoeda } from "@/lib/domain/money";
 import { formatarQuantidade } from "@/lib/domain/unidades";
 import type { DataISO, Insumo } from "@/lib/types";
 
 /**
- * O selo que era "Estoque baixo" e nunca pôde acender.
+ * A linha do insumo, com o que a despensa tem e desde quando.
  *
- * Ele dependia de um limiar por insumo que nenhuma tela escrevia — vinte
- * palpites a manter, cada um envelhecendo do mesmo jeito que o estoque
- * envelhecia. O que ficou no lugar é uma afirmação verificável sobre um número
- * que existe: esta contagem passou de um mês.
+ * O selo era "Estoque baixo" e nunca pôde acender: dependia de um limiar por
+ * insumo que nenhuma tela escrevia — vinte palpites a manter, cada um
+ * envelhecendo do mesmo jeito que o estoque envelhecia. O que ficou no lugar é
+ * uma afirmação verificável sobre um número que existe: esta contagem passou de
+ * um mês, e a lista de compras parou de descontá-la.
  */
 export function LinhaInsumo({
   insumo,
@@ -26,7 +27,8 @@ export function LinhaInsumo({
 }) {
   // `contagemDoInsumo`, e não `frescorDaContagem` direto: é ele que sabe que
   // data sem número não é contagem, e que `null` no documento é ausência.
-  const contagemVencida = contagemDoInsumo(insumo, hoje).frescor === "VENCIDA";
+  const contagem = contagemDoInsumo(insumo, hoje);
+  const contagemVencida = contagem.frescor === "VENCIDA";
 
   return (
     <li>
@@ -50,6 +52,15 @@ export function LinhaInsumo({
                 {insumo.perdaPercentual}% de perda
               </>
             )}
+          </p>
+
+          {/* A despensa, e desde quando. Sem a idade o número é um palpite
+              antigo tratado como verdade — que é exatamente o que a lista de
+              compras deixou de fazer. */}
+          <p className="num mt-0.5 truncate text-label text-ink-subtle">
+            {contagem.anotado === null
+              ? "nunca contada"
+              : `${formatarQuantidade(contagem.anotado, insumo.unidadeBase)} na despensa · ${rotuloDeIdade(contagem)}`}
           </p>
 
           {contagemVencida && (

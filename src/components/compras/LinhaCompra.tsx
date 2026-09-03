@@ -1,13 +1,20 @@
 "use client";
 
-import { Check, Pencil } from "lucide-react";
+import { Check, Pencil, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { Botao } from "@/components/ui/Botao";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
+import { contagemDoInsumo, rotuloDeIdade } from "@/lib/domain/estoque";
 import { formatarMoeda } from "@/lib/domain/money";
 import { rotuloDeCompra } from "@/lib/domain/listaCompras";
 import { formatarQuantidade } from "@/lib/domain/unidades";
-import type { Centavos, Insumo, ItemListaCompras } from "@/lib/types";
+import type {
+  Centavos,
+  DataISO,
+  Insumo,
+  ItemListaCompras,
+  UnidadeBase,
+} from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -25,12 +32,14 @@ import { cn } from "@/lib/utils/cn";
 export function LinhaCompra({
   item,
   insumo,
+  hoje,
   aoMarcar,
   aoCorrigirPreco,
 }: {
   item: ItemListaCompras;
   /** O cadastro de hoje: é dele que saem o tamanho do pacote e o preço. */
   insumo?: Insumo;
+  hoje: DataISO;
   aoMarcar: (comprado: boolean) => void;
   aoCorrigirPreco: (insumo: Insumo, precoCompra: Centavos) => void;
 }) {
@@ -44,6 +53,10 @@ export function LinhaCompra({
         insumo.unidadeCompra,
       )
     : `${item.quantidadePacotes} ${item.quantidadePacotes === 1 ? "pacote" : "pacotes"}`;
+
+  // A idade sai do insumo **vivo**, e não da linha gravada: uma idade congelada
+  // dentro de um documento que ninguém reescreve envelhece errado.
+  const contagem = fraseDaContagem(insumo, item.unidadeBase, hoje);
 
   return (
     <li className={cn(comprado && "bg-sunken")}>
@@ -84,6 +97,26 @@ export function LinhaCompra({
               {formatarQuantidade(item.quantidadeComprar, item.unidadeBase)} em
               falta
             </span>
+
+            {/* O que a lista fez com o que está no armário. A contagem fresca
+                não diz nada: ela funcionou, e não há notícia. */}
+            {contagem && (
+              <span
+                className={cn(
+                  "num mt-1 flex items-center gap-1.5 text-micro",
+                  contagem.ignorada ? "text-attention" : "text-ink-subtle",
+                )}
+              >
+                {contagem.ignorada && (
+                  <TriangleAlert
+                    aria-hidden
+                    className="size-3 shrink-0"
+                    strokeWidth={2}
+                  />
+                )}
+                <span className="truncate">{contagem.frase}</span>
+              </span>
+            )}
           </span>
         </button>
 
@@ -133,6 +166,49 @@ export function LinhaCompra({
       )}
     </li>
   );
+}
+
+/**
+ * O que a lista fez com a contagem, quando há algo a dizer.
+ *
+ * Quatro estados, três frases. `FRESCA` cala: a contagem foi usada, o desconto
+ * aconteceu, e anunciar isso seria ruído em toda linha da tela. `ENVELHECENDO`
+ * diz a idade sem alarme — uma contagem de doze dias ainda é a melhor
+ * informação que existe sobre aquele armário. `VENCIDA` e `NUNCA` dizem que o
+ * número **não** foi descontado, que é a explicação do carrinho maior, e vêm com
+ * ícone: a cor nunca é o único portador de significado.
+ *
+ * Sem número anotado não há frase: dizer "nunca contada" em um insumo que nunca
+ * teve estoque nenhum é dizer o óbvio em vinte linhas de uma vez, e a frase do
+ * topo já conta quantos são.
+ */
+function fraseDaContagem(
+  insumo: Insumo | undefined,
+  unidadeBase: UnidadeBase,
+  hoje: DataISO,
+): { frase: string; ignorada: boolean } | null {
+  if (!insumo) return null;
+
+  const contagem = contagemDoInsumo(insumo, hoje);
+  if (contagem.frescor === "FRESCA") return null;
+
+  if (contagem.frescor === "ENVELHECENDO") {
+    return {
+      frase: `${formatarQuantidade(contagem.quantidade ?? 0, unidadeBase)} · ${rotuloDeIdade(contagem)}`,
+      ignorada: false,
+    };
+  }
+
+  if (contagem.anotado === null) return null;
+
+  const quanto = formatarQuantidade(contagem.anotado, unidadeBase);
+  return {
+    frase:
+      contagem.frescor === "VENCIDA"
+        ? `${quanto} anotados, mas a contagem passou de um mês: não descontamos`
+        : `${quanto} anotados, sem contagem: não descontamos`,
+    ignorada: true,
+  };
 }
 
 /**
@@ -193,21 +269,42 @@ function EditorDePreco({
 }
 
 /**
- * O que o estoque já cobre.
+ * O que a contagem já cobre.
  *
  * Fica em bloco próprio, no fim, e **não some**: sumir com o item seria pedir
  * que ela confira de cabeça se esqueceu alguma coisa. Sem alvo de toque, porque
  * não há o que marcar — ela não vai comprar isto hoje.
+ *
+ * A idade vem junto do número, e do insumo vivo: "você tem 50 un" sem dizer
+ * desde quando é a mesma promessa que esta spec existe para desfazer. Este bloco
+ * só tem linha quando alguma contagem valeu — uma contagem vencida não cobre
+ * nada, e o item vai para o carrinho.
  */
-export function LinhaJaTem({ item }: { item: ItemListaCompras }) {
+export function LinhaJaTem({
+  item,
+  insumo,
+  hoje,
+}: {
+  item: ItemListaCompras;
+  insumo?: Insumo;
+  hoje: DataISO;
+}) {
+  const idade = insumo ? rotuloDeIdade(contagemDoInsumo(insumo, hoje)) : null;
+
   return (
-    <li className="flex min-h-14 items-center justify-between gap-3 px-4 py-3 lg:px-5">
+    <li className="flex min-h-14 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 lg:px-5">
       <p className="min-w-0 truncate text-body text-ink">{item.nome}</p>
       <p className="num shrink-0 text-label text-ink-muted">
         precisa de{" "}
         {formatarQuantidade(item.quantidadeNecessaria, item.unidadeBase)}
         <span className="mx-1.5 text-ink-subtle">·</span>
         você tem {formatarQuantidade(item.estoqueAtual, item.unidadeBase)}
+        {idade && (
+          <>
+            <span className="mx-1.5 text-ink-subtle">·</span>
+            {idade}
+          </>
+        )}
       </p>
     </li>
   );

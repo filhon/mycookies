@@ -4,9 +4,9 @@ import type {
   UnidadeBase,
   UnidadeCompra,
 } from "@/lib/types";
+import { agruparPorCorredor } from "./corredores";
 import { diasEntre } from "./datas";
-import { agruparPorCorredor } from "./listaCompras";
-import { paraBase } from "./unidades";
+import { formatarQuantidade, paraBase } from "./unidades";
 
 /**
  * Estoque é medição, e não saldo.
@@ -201,6 +201,14 @@ export function sugestaoDaContagem(
   return contagem.quantidade + entrada;
 }
 
+/** De onde a entrada veio, que é o que a linha da contagem precisa dizer. */
+export type OrigemDaEntrada = "NOTA" | "LISTA";
+
+const ORIGEM: Record<OrigemDaEntrada, { de: string; sujeito: string }> = {
+  NOTA: { de: "da nota", sujeito: "a nota" },
+  LISTA: { de: "da compra", sujeito: "a compra" },
+};
+
 /** Uma linha de compra, no bastante para virar entrada em unidade base. */
 export interface LinhaDeCompra {
   insumoId: string;
@@ -318,6 +326,45 @@ export function linhasParaContar(
 }
 
 /**
+ * De onde a sugestão saiu, em uma frase.
+ *
+ * Uma sugestão sem procedência é um número que ela não tem como conferir: os
+ * mesmos 1620 g podem ser "620 que eu contei mais 1 kg que entrou na compra" ou
+ * um palpite do sistema, e a diferença entre os dois é tudo o que esta spec
+ * constrói.
+ *
+ * Devolve `null` quando não há sugestão — sem compra o campo nasce vazio, e não
+ * há nada a explicar.
+ */
+export function procedenciaDaSugestao(
+  linha: LinhaDeContagem,
+  origem: OrigemDaEntrada,
+): string | null {
+  if (linha.sugestao === null) return null;
+
+  const { contagem, entrada, unidadeBase } = linha;
+  const quanto = (valor: number) => formatarQuantidade(valor, unidadeBase);
+  const { de, sujeito } = ORIGEM[origem];
+
+  // Sem contagem confiável não há soma, e a frase diz isso em vez de fingir um
+  // saldo: "não sei mais 1 kg" não são 1,5 kg.
+  if (contagem.quantidade === null) {
+    return `sem contagem recente · sugerimos ${quanto(entrada)}, que ${sujeito} trouxe`;
+  }
+
+  // Ler a nota e depois fechar a lista da mesma compra encontraria a contagem
+  // feita há minutos e somaria os mesmos pacotes de novo.
+  if (contagem.idadeEmDias === 0) {
+    return `contada hoje · ${sujeito} não foi somada de novo`;
+  }
+
+  const dias = contagem.idadeEmDias ?? 0;
+  return `${quanto(contagem.quantidade)} contados há ${dias} ${
+    dias === 1 ? "dia" : "dias"
+  } + ${quanto(entrada)} ${de}`;
+}
+
+/**
  * O que ela digitou em uma linha, lido como os três estados que a tela precisa.
  *
  * Vazio é **"não contei esta"**, e `0` é **"contei, e não tem"**. São coisas
@@ -332,6 +379,18 @@ export function numeroContado(texto: string): number | null {
 
   const valor = Number(limpo.replace(",", "."));
   return Number.isFinite(valor) && valor >= 0 ? valor : null;
+}
+
+/**
+ * O inverso de `numeroContado`: a sugestão da compra virando texto de campo.
+ *
+ * Arredonda em três casas antes de escrever porque a entrada passa por
+ * `paraBase`, e 2 × 0,5 kg em ponto flutuante sabe voltar como
+ * 999,9999999999999 — um número que ela nunca digitaria e que não quer dizer
+ * nada na despensa. A vírgula é a dela: é assim que o campo vai ser reeditado.
+ */
+export function textoContado(valor: number): string {
+  return String(Number(valor.toFixed(3))).replace(".", ",");
 }
 
 export interface ResumoDaContagem {

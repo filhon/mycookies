@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { orderBy, query, where } from "firebase/firestore";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   Check,
   CircleAlert,
+  ClipboardList,
   RotateCcw,
   ScanLine,
   Store,
@@ -27,6 +29,7 @@ import {
 } from "./CartaoLinhaNota";
 import { RodapeNota, type ResumoDaNota } from "./RodapeNota";
 import { dataISODe } from "@/lib/domain/datas";
+import { entradasDaNota } from "@/lib/domain/estoque";
 import { formatarMoeda } from "@/lib/domain/money";
 import {
   atualizacaoDaLinha,
@@ -41,6 +44,7 @@ import {
   type NotaLida,
   type RascunhoNota,
 } from "@/lib/domain/notaFiscal";
+import { guardarSemente } from "@/lib/estado/sementeDaContagem";
 import { colInsumos } from "@/lib/firebase/colecoes";
 import { dadosDoInsumo } from "@/lib/firebase/mutations/insumos";
 import {
@@ -98,6 +102,7 @@ export function TelaNota() {
   const contaId = useContaId();
   const { usuario } = useAuth();
   const online = useConexao();
+  const router = useRouter();
 
   const consulta = useMemo(
     () =>
@@ -132,6 +137,16 @@ export function TelaNota() {
 
   const [salvando, setSalvando] = useState(false);
   const [resultado, setResultado] = useState<ResultadoImportacao | null>(null);
+
+  /**
+   * O que a compra trouxe, por `insumoId` e em unidade base.
+   *
+   * Só existe depois de gravar, e por um motivo: o id do insumo que nasce nesta
+   * nota vem de `importarNota`. Antes disso o celofane não tem onde ser semeado.
+   */
+  const [entradas, setEntradas] = useState<Map<string, number>>(
+    () => new Map(),
+  );
 
   const seletor = useRef<HTMLInputElement>(null);
 
@@ -203,6 +218,7 @@ export function TelaNota() {
     setLinhas([]);
     setRemovidas([]);
     setResultado(null);
+    setEntradas(new Map());
     setTotal(0);
     setCabecalho(CABECALHO_VAZIO);
     setLancamentoManual(null);
@@ -292,13 +308,34 @@ export function TelaNota() {
         return { dados: cadastroDaLinha(linha, cabecalho.estabelecimento) };
       });
 
-      setResultado(
-        await importarNota(
-          contaId,
-          importadas,
-          lancarNoCaixa ? lancamento : null,
+      const gravado = await importarNota(
+        contaId,
+        importadas,
+        lancarNoCaixa ? lancamento : null,
+      );
+
+      // O que entrou, para a oferta de contagem que vem a seguir. `insumoIds`
+      // vem na ordem das linhas, e é o que dá endereço ao insumo que acabou de
+      // nascer. A conta em si é do domínio: quantidade × embalagem, em unidade
+      // base — duas embalagens de 500 g são 1000 g, e não 500.
+      setEntradas(
+        entradasDaNota(
+          linhas.flatMap((linha, indice) => {
+            const insumoId = gravado.insumoIds[indice];
+            if (!insumoId) return [];
+            return [
+              {
+                insumoId,
+                embalagens: linha.embalagens,
+                quantidadeCompra: linha.quantidadeCompra,
+                unidadeCompra: linha.unidadeCompra,
+              },
+            ];
+          }),
         ),
       );
+
+      setResultado(gravado);
       setEtapa("pronto");
     } catch {
       setErroAoGravar(
@@ -514,7 +551,18 @@ export function TelaNota() {
         )}
 
         {etapa === "pronto" && resultado && (
-          <Pronto resultado={resultado} aoLerOutra={recomecar} />
+          <Pronto
+            resultado={resultado}
+            aoLerOutra={recomecar}
+            aoGuardar={
+              entradas.size > 0
+                ? () => {
+                    guardarSemente({ origem: "NOTA", entradas });
+                    router.push("/insumos/contagem");
+                  }
+                : undefined
+            }
+          />
         )}
       </div>
 
@@ -653,12 +701,24 @@ function ForaDaCompra({
   );
 }
 
+/**
+ * O fim da leitura, e o começo da despensa.
+ *
+ * A compra sabe **quanto entrou** e não sabe **o que saiu desde então**. Somar a
+ * entrada ao estoque e gravar seria inventar a metade que falta — entrada
+ * automática sem baixa automática deixa o número subindo para sempre. Então a
+ * ação existe, vem primeiro, e leva a uma tela em que ela confirma: é o `#d17`
+ * aplicado ao armário.
+ */
 function Pronto({
   resultado,
   aoLerOutra,
+  aoGuardar,
 }: {
   resultado: ResultadoImportacao;
   aoLerOutra: () => void;
+  /** Ausente quando nada da nota virou entrada — não há o que guardar. */
+  aoGuardar?: () => void;
 }) {
   const { criados, atualizados, fichasMarcadas, lancado } = resultado;
 
@@ -707,15 +767,33 @@ function Pronto({
           )}
         </div>
 
+        {aoGuardar && (
+          <p className="mt-5 max-w-[46ch] text-label text-ink-muted">
+            O que você comprou ainda não entrou na despensa. Guardar abre a
+            contagem já preenchida com o que a nota trouxe — você confere na
+            prateleira e salva.
+          </p>
+        )}
+
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href="/insumos"
-            className={classesBotao({ variante: "secundaria", tamanho: "lg" })}
-          >
-            Ver os insumos
-          </Link>
+          {aoGuardar && (
+            <Botao
+              variante="primaria"
+              tamanho="lg"
+              onClick={aoGuardar}
+              iconeInicial={
+                <ClipboardList
+                  aria-hidden
+                  className="size-5"
+                  strokeWidth={1.75}
+                />
+              }
+            >
+              Guardar na despensa
+            </Botao>
+          )}
           <Botao
-            variante="primaria"
+            variante={aoGuardar ? "secundaria" : "primaria"}
             tamanho="lg"
             onClick={aoLerOutra}
             iconeInicial={
@@ -724,6 +802,12 @@ function Pronto({
           >
             Ler outra nota
           </Botao>
+          <Link
+            href="/insumos"
+            className={classesBotao({ variante: "secundaria", tamanho: "lg" })}
+          >
+            Ver os insumos
+          </Link>
         </div>
       </div>
     </div>

@@ -9,9 +9,11 @@ import {
   IDADE_VENCE_DIAS,
   linhasParaContar,
   numeroContado,
+  procedenciaDaSugestao,
   resumoDaContagem,
   rotuloDeIdade,
   sugestaoDaContagem,
+  textoContado,
   type InsumoParaContar,
 } from "@/lib/domain/estoque";
 
@@ -391,6 +393,112 @@ describe("linhasParaContar", () => {
     const porNome = new Map(semeadas.map((linha) => [linha.nome, linha]));
     expect(porNome.get("Farinha")?.sugestao).toBe(1620);
     expect(porNome.get("Chocolate")?.sugestao).toBe(1010);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A compra semeando a contagem: o caso de aceite da 7B.
+//
+// A nota da 006 lida em 03/09, com a contagem da 7A feita em 30/08 — 4 dias.
+// ---------------------------------------------------------------------------
+
+describe("procedenciaDaSugestao", () => {
+  /** As cinco linhas da tabela da spec, semeadas pela nota. */
+  const semeadas = linhasParaContar(
+    [
+      insumo({ ...contadoHa(4, 620), id: "farinha", nome: "Farinha" }),
+      insumo({ ...contadoHa(4, 0), id: "chocolate", nome: "Chocolate" }),
+      insumo({ ...contadoHa(4, 480), id: "manteiga", nome: "Manteiga" }),
+      insumo({
+        id: "caixa",
+        nome: "Caixa",
+        categoria: "EMBALAGEM",
+        unidadeBase: "un",
+      }),
+      insumo({
+        id: "celofane",
+        nome: "Saquinho de celofane",
+        categoria: "EMBALAGEM",
+        unidadeBase: "un",
+      }),
+    ],
+    new Map([
+      ["farinha", 1000],
+      ["chocolate", 1010],
+      ["manteiga", 1000],
+      ["caixa", 25],
+      ["celofane", 100],
+    ]),
+    HOJE,
+  );
+
+  const porNome = new Map(semeadas.map((linha) => [linha.nome, linha]));
+
+  it("os cinco números da tabela caem nos campos", () => {
+    expect(porNome.get("Farinha")?.sugestao).toBe(1620);
+    // Zero contado soma: 0 + 1010 = 1010, o mesmo número que sairia de "nunca
+    // contado", por um caminho diferente e com outra frase.
+    expect(porNome.get("Chocolate")?.sugestao).toBe(1010);
+    // Duas embalagens de 500 g são 1000 g de entrada, e não 500.
+    expect(porNome.get("Manteiga")?.sugestao).toBe(1480);
+    expect(porNome.get("Caixa")?.sugestao).toBe(25);
+    expect(porNome.get("Saquinho de celofane")?.sugestao).toBe(100);
+  });
+
+  it("a soma diz as duas parcelas", () => {
+    const farinha = porNome.get("Farinha");
+    expect(farinha && procedenciaDaSugestao(farinha, "NOTA")).toBe(
+      "620 g contados há 4 dias + 1 kg da nota",
+    );
+  });
+
+  it("sem contagem recente, a frase diz isso em vez de fingir um saldo", () => {
+    const caixa = porNome.get("Caixa");
+    expect(caixa && procedenciaDaSugestao(caixa, "NOTA")).toBe(
+      "sem contagem recente · sugerimos 25 un, que a nota trouxe",
+    );
+  });
+
+  it("a contagem de hoje diz que a compra não foi somada de novo", () => {
+    // Ler a nota, guardar na despensa e depois fechar a lista da mesma compra:
+    // a segunda oferta encontra as contagens de hoje e não dobra nada.
+    const [linha] = linhasParaContar(
+      [insumo({ ...contadoHa(0, 1620), id: "farinha", nome: "Farinha" })],
+      new Map([["farinha", 1000]]),
+      HOJE,
+    );
+
+    expect(linha?.sugestao).toBe(1620);
+    expect(linha && procedenciaDaSugestao(linha, "LISTA")).toBe(
+      "contada hoje · a compra não foi somada de novo",
+    );
+  });
+
+  it("a origem muda as palavras, e nunca o número", () => {
+    const manteiga = porNome.get("Manteiga");
+    expect(manteiga && procedenciaDaSugestao(manteiga, "LISTA")).toBe(
+      "480 g contados há 4 dias + 1 kg da compra",
+    );
+  });
+
+  it("sem sugestão não há procedência", () => {
+    const [semCompra] = linhasParaContar(INSUMOS, SEM_ENTRADAS, HOJE);
+    expect(semCompra && procedenciaDaSugestao(semCompra, "NOTA")).toBeNull();
+  });
+});
+
+describe("textoContado", () => {
+  it("é o inverso de numeroContado, com a vírgula dela", () => {
+    expect(textoContado(1620)).toBe("1620");
+    expect(textoContado(1.5)).toBe("1,5");
+    expect(numeroContado(textoContado(1.5))).toBe(1.5);
+  });
+
+  it("apara a sujeira de ponto flutuante que a conversão deixa", () => {
+    // 2 × 0,5 kg sabe voltar como 999,9999999999999, e esse não é um número
+    // que ela digitaria nem que queira dizer alguma coisa na despensa.
+    expect(textoContado(999.9999999999999)).toBe("1000");
+    expect(textoContado(1479.9999999999998)).toBe("1480");
   });
 });
 

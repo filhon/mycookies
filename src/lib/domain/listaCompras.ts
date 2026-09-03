@@ -7,7 +7,9 @@ import type {
   UnidadeBase,
   UnidadeCompra,
 } from "@/lib/types";
+import { compararParaOMercado } from "./corredores";
 import { PERDA_MAXIMA } from "./custoInsumo";
+import { estoqueParaLista } from "./estoque";
 
 /**
  * O motor da lista de compras: do pedido combinado até o carrinho no mercado.
@@ -225,9 +227,11 @@ export interface InsumoParaLista {
   perdaPercentual: Percentual;
   estoqueAtual?: number;
   /**
-   * O dia em que ela contou. Ainda não é lido aqui: quem passa a olhar a idade
-   * antes de descontar é `estoqueParaLista`, na 7B. Nesta sessão o campo existe
-   * para a tela poder entregar o insumo inteiro sem uma segunda forma de dado.
+   * O dia em que ela contou.
+   *
+   * É o campo que decide **se** `estoqueAtual` entra na conta. Ausente, ou
+   * velho demais, o número não é descontado: um número sem data não é uma
+   * medida, é um palpite antigo tratado como verdade.
    */
   estoqueContadoEmISO?: DataISO;
 }
@@ -241,6 +245,14 @@ export interface LinhaDaLista {
   quantidadeNecessaria: number;
   /** O que precisa sair do mercado para sobrar o necessário depois da perda. */
   quantidadeFisica: number;
+  /**
+   * O que foi de fato descontado, e não o que está gravado no insumo.
+   *
+   * Zero quando a contagem venceu ou nunca existiu: a linha guarda o número que
+   * entrou na conta, e o **motivo** fica no insumo vivo, que a tela tem na mão.
+   * Gravar o frescor aqui seria congelar uma idade que envelhece sozinha dentro
+   * de um documento que ninguém reescreve.
+   */
   estoqueAtual: number;
   /** max(0, física − estoque). É o que falta de fato. */
   quantidadeComprar: number;
@@ -311,6 +323,13 @@ function pacotesPara(comprar: number, quantidadeBase: number): number {
  * de farinha no armário também vão perder 5% quando forem usados. Descontar
  * antes misturaria uma grandeza com a outra.
  *
+ * **E o estoque só entra na conta se a contagem ainda valer.** Quem responde
+ * isso é `estoqueParaLista`, contra `hojeISO`: contagem vencida e contagem
+ * inexistente valem zero, e a lista compra a quantidade física inteira. A
+ * escolha é entre dois erros e eles não custam o mesmo — descontar número velho
+ * erra para baixo e produz a compra faltando, e é este mesmo arquivo que
+ * registra qual dos dois é o inaceitável, no comentário de `MotivoPendencia`.
+ *
  * `custoEstimado` conta pacotes inteiros, e não a fração necessária: é o número
  * que ela vai gastar de fato, que é a única versão desse número que serve para
  * alguma coisa.
@@ -321,6 +340,7 @@ function pacotesPara(comprar: number, quantidadeBase: number): number {
 export function montarLista(
   demanda: Demanda,
   insumos: InsumoParaLista[],
+  hojeISO: DataISO,
 ): ListaMontada {
   const porId = new Map(insumos.map((insumo) => [insumo.id, insumo]));
   const pendencias: Pendencia[] = [...demanda.pendencias];
@@ -335,7 +355,7 @@ export function montarLista(
 
     const necessaria = pedido.quantidade;
     const fisica = quantidadeFisica(necessaria, insumo.perdaPercentual);
-    const estoque = Math.max(0, insumo.estoqueAtual ?? 0);
+    const estoque = estoqueParaLista(insumo, hojeISO);
 
     const falta = fisica - estoque;
     const comprar = falta > FOLGA ? falta : 0;
@@ -373,67 +393,8 @@ export function montarLista(
 }
 
 // ---------------------------------------------------------------------------
-// A ordem do mercado, e o estado da lista
+// O estado da lista
 // ---------------------------------------------------------------------------
-
-/**
- * A ordem em que se anda no mercado, e não a ordem alfabética das categorias.
- *
- * Ingrediente primeiro porque é o grosso do carrinho; embalagem e etiqueta
- * depois, que é onde elas ficam; o resto no fim.
- */
-export const ORDEM_CATEGORIA_COMPRA: CategoriaInsumo[] = [
-  "INGREDIENTE",
-  "EMBALAGEM",
-  "ETIQUETA",
-  "ARMAZENAMENTO",
-  "OUTRO",
-];
-
-export const ROTULO_CORREDOR: Record<CategoriaInsumo, string> = {
-  INGREDIENTE: "Ingredientes",
-  EMBALAGEM: "Embalagens",
-  ETIQUETA: "Etiquetas",
-  ARMAZENAMENTO: "Armazenamento",
-  OUTRO: "Outros",
-};
-
-function posicaoNoMercado(categoria: CategoriaInsumo): number {
-  const posicao = ORDEM_CATEGORIA_COMPRA.indexOf(categoria);
-  return posicao === -1 ? ORDEM_CATEGORIA_COMPRA.length : posicao;
-}
-
-function compararParaOMercado(
-  a: { categoria: CategoriaInsumo; nome: string },
-  b: { categoria: CategoriaInsumo; nome: string },
-): number {
-  const corredor =
-    posicaoNoMercado(a.categoria) - posicaoNoMercado(b.categoria);
-  return corredor !== 0 ? corredor : a.nome.localeCompare(b.nome);
-}
-
-export interface CorredorDoMercado<T> {
-  categoria: CategoriaInsumo;
-  itens: T[];
-}
-
-/** Os itens reunidos por corredor, na ordem em que ela passa por eles. */
-export function agruparPorCorredor<
-  T extends { categoria: CategoriaInsumo; nome: string },
->(itens: T[]): CorredorDoMercado<T>[] {
-  const grupos = new Map<CategoriaInsumo, T[]>();
-
-  for (const item of [...itens].sort(compararParaOMercado)) {
-    const corredor = grupos.get(item.categoria);
-    if (corredor) corredor.push(item);
-    else grupos.set(item.categoria, [item]);
-  }
-
-  return [...grupos.entries()].map(([categoria, lista]) => ({
-    categoria,
-    itens: lista,
-  }));
-}
 
 /** Uma linha da lista já gravada, do ponto de vista de quem empurra o carrinho. */
 export interface ItemNoCarrinho {

@@ -2,22 +2,24 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { orderBy, query, where } from "firebase/firestore";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, ShoppingBasket } from "lucide-react";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { LinhaContagem } from "./LinhaContagem";
 import { RodapeContagem } from "./RodapeContagem";
+import { agruparPorCorredor, ROTULO_CORREDOR } from "@/lib/domain/corredores";
 import { dataISODe } from "@/lib/domain/datas";
 import {
   linhasParaContar,
   numeroContado,
   resumoDaContagem,
+  textoContado,
 } from "@/lib/domain/estoque";
-import { agruparPorCorredor, ROTULO_CORREDOR } from "@/lib/domain/listaCompras";
+import { lerSemente, limparSemente } from "@/lib/estado/sementeDaContagem";
 import { colInsumos } from "@/lib/firebase/colecoes";
 import {
   salvarContagem,
@@ -28,9 +30,9 @@ import type { Insumo } from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
 
 /**
- * Nenhuma compra semeia os campos nesta sessão: a semeadura pela nota e pelo
- * fechamento da lista é da 7B. O mapa vazio mora fora do componente para não
- * nascer de novo a cada render e refazer as linhas por nada.
+ * Sem compra atrás dela, a tela nasce com todos os campos vazios. O mapa vazio
+ * mora fora do componente para não nascer de novo a cada render e refazer as
+ * linhas por nada.
  */
 const SEM_ENTRADAS = new Map<string, number>();
 
@@ -56,6 +58,12 @@ export function TelaContagem() {
   const [digitados, setDigitados] = useState<Record<string, string>>({});
   const [falha, setFalha] = useState<string | null>(null);
 
+  // A semente é lida uma vez, na montagem, e só é apagada depois de os campos
+  // nascerem: consumi-la aqui deixaria a tela sem semente se ela chegasse antes
+  // dos insumos, que é exatamente o caso quando a lista vem do cache.
+  const [semente] = useState(lerSemente);
+  const semeados = useRef(false);
+
   const consulta = useMemo(
     () =>
       query(
@@ -74,9 +82,31 @@ export function TelaContagem() {
   } = useColecao<Insumo>(consulta);
 
   const linhas = useMemo(
-    () => linhasParaContar(insumos, SEM_ENTRADAS, hoje),
-    [insumos, hoje],
+    () => linhasParaContar(insumos, semente?.entradas ?? SEM_ENTRADAS, hoje),
+    [insumos, semente, hoje],
   );
+
+  /**
+   * Os campos que a compra semeia, uma vez só.
+   *
+   * Uma vez só porque `linhas` se refaz a cada chegada do Firestore, e semear de
+   * novo apagaria o que ela já corrigiu. O que a semente escreve é a sugestão de
+   * `sugestaoDaContagem`, e a linha diz de onde ela saiu — a decisão continua
+   * sendo dela, e o que muda é só quanto ela precisa digitar.
+   */
+  useEffect(() => {
+    if (semeados.current || !semente || linhas.length === 0) return;
+    semeados.current = true;
+
+    setDigitados(
+      Object.fromEntries(
+        linhas
+          .filter((linha) => linha.sugestao !== null)
+          .map((linha) => [linha.insumoId, textoContado(linha.sugestao ?? 0)]),
+      ),
+    );
+    limparSemente();
+  }, [linhas, semente]);
 
   const valores = useMemo(() => {
     const mapa: Record<string, number | null> = {};
@@ -140,11 +170,33 @@ export function TelaContagem() {
           <SeloSincronizacao pendente={pendente} />
         </div>
 
+        {/* Vinda da compra, "digite só o que você conferir" seria uma instrução
+            para campos que já nasceram cheios. */}
         <p className="mt-1 max-w-[60ch] text-label text-ink-muted lg:text-body">
-          Digite só o que você conferir. Zero também é contagem: é você dizendo
-          que acabou.
+          {semente
+            ? "Confira na prateleira antes de salvar. Zero também é contagem: é você dizendo que acabou."
+            : "Digite só o que você conferir. Zero também é contagem: é você dizendo que acabou."}
         </p>
       </header>
+
+      {/* A oferta da compra: os campos já vêm somados, e cada linha diz de onde
+          o número saiu. A compra sabe quanto entrou e não sabe o que saiu desde
+          então — por isso ela propõe, e nunca grava sozinha. */}
+      {semente && (
+        <p className="mt-4 flex items-start gap-2.5 rounded-lg border border-line bg-sunken px-4 py-3 text-label text-ink">
+          <ShoppingBasket
+            aria-hidden
+            className="mt-0.5 size-4 shrink-0 text-ink-muted"
+            strokeWidth={1.75}
+          />
+          <span className="max-w-[62ch]">
+            Os campos já vêm com o que{" "}
+            {semente.origem === "NOTA" ? "a nota" : "a compra"} trouxe, somado à
+            sua última contagem. Confira na prateleira e corrija o que não bater
+            — nada é gravado antes de você salvar.
+          </span>
+        </p>
+      )}
 
       <div className="mt-4 space-y-4 pb-52 lg:pb-44">
         {carregando ? (
@@ -197,6 +249,7 @@ export function TelaContagem() {
                   <LinhaContagem
                     key={linha.insumoId}
                     linha={linha}
+                    origem={semente?.origem}
                     texto={digitados[linha.insumoId] ?? ""}
                     aoMudar={(texto) =>
                       setDigitados((anteriores) => ({

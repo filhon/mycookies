@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   Archive,
   CalendarRange,
   CircleAlert,
+  ClipboardList,
   FileQuestion,
   RefreshCw,
   ShoppingCart,
@@ -17,9 +19,10 @@ import { Botao } from "@/components/ui/Botao";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { LinhaCompra, LinhaJaTem } from "./LinhaCompra";
 import { RodapeCompras } from "./RodapeCompras";
+import { agruparPorCorredor, ROTULO_CORREDOR } from "@/lib/domain/corredores";
 import { diaVizinho, rotuloDia } from "@/lib/domain/datas";
+import { contagemDoInsumo, entradasDaLista } from "@/lib/domain/estoque";
 import {
-  agruparPorCorredor,
   entraNaLista,
   explodirDemanda,
   EXPLICACAO_PENDENCIA,
@@ -27,10 +30,10 @@ import {
   orcamentosDeFora,
   precisaComprar,
   resumoDaLista,
-  ROTULO_CORREDOR,
   type Pendencia,
 } from "@/lib/domain/listaCompras";
 import { resumoDosItens } from "@/lib/domain/pedido";
+import { guardarSemente } from "@/lib/estado/sementeDaContagem";
 import {
   arquivarListaCompras,
   corrigirPrecoNaLista,
@@ -43,6 +46,7 @@ import type {
   DataISO,
   FichaTecnica,
   Insumo,
+  ItemListaCompras,
   ListaCompras,
   Pedido,
 } from "@/lib/types";
@@ -86,6 +90,8 @@ export function ListaDoMercado({
   hoje: DataISO;
   pendente: boolean;
 }) {
+  const router = useRouter();
+
   // O período nasce do que está gravado, e não de um padrão que ignoraria a
   // lista já montada: reabrir a tela no mercado precisa devolver o mesmo
   // recorte que ela usou para montar o carrinho.
@@ -106,8 +112,8 @@ export function ListaDoMercado({
 
   /** A lista como ela ficaria se fosse montada agora. É o que "Refazer" grava. */
   const montada = useMemo(
-    () => montarLista(explodirDemanda(noPeriodo, fichas), insumos),
-    [noPeriodo, fichas, insumos],
+    () => montarLista(explodirDemanda(noPeriodo, fichas), insumos, hoje),
+    [noPeriodo, fichas, insumos, hoje],
   );
 
   const porInsumo = useMemo(
@@ -174,11 +180,71 @@ export function ListaDoMercado({
     setConfirmandoFechar(false);
   };
 
-  const itens = lista?.itens ?? [];
+  const itens = useMemo(() => lista?.itens ?? [], [lista]);
   const aComprar = itens.filter(precisaComprar);
   const jaTem = itens.filter((item) => !precisaComprar(item));
   const resumo = resumoDaLista(itens);
   const corredores = agruparPorCorredor(aComprar);
+
+  /**
+   * Os insumos do carrinho em que a lista não confiou.
+   *
+   * É o que a frase do topo conta. A conta é sobre os itens **gravados**, e não
+   * sobre a lista recalculada: é o carrinho que ela está olhando que precisa de
+   * explicação.
+   */
+  const semContagem = useMemo(
+    () =>
+      itens.filter((item) => {
+        const insumo = porInsumo.get(item.insumoId);
+        if (!insumo) return false;
+        const { frescor } = contagemDoInsumo(insumo, hoje);
+        return frescor === "VENCIDA" || frescor === "NUNCA";
+      }),
+    [itens, porInsumo, hoje],
+  );
+
+  /**
+   * A lista gravada ficou para trás do que a conta diria hoje.
+   *
+   * Medida em `quantidadePacotes`, e deliberadamente não específica de estoque:
+   * a mesma comparação pega mudança de embalagem e pedido confirmado depois.
+   * Sem a frase, contar a despensa pareceria não fazer nada — `/compras` desenha
+   * `lista.itens`, e quem refaz é o botão.
+   *
+   * Cala quando o período divergiu, porque aí a frase do período já está
+   * mandando refazer, e duas frases dizendo a mesma coisa é uma a mais.
+   */
+  const desatualizada = useMemo(() => {
+    if (!lista || lista.periodoFim !== periodoFim) return false;
+
+    const agora = new Map(
+      montada.linhas.map((linha) => [linha.insumoId, linha.quantidadePacotes]),
+    );
+    if (agora.size !== itens.length) return true;
+
+    return itens.some(
+      (item) => agora.get(item.insumoId) !== item.quantidadePacotes,
+    );
+  }, [lista, periodoFim, montada, itens]);
+
+  /**
+   * O que ela marcou como comprado, pronto para semear a contagem.
+   *
+   * O tamanho do pacote sai do insumo vivo, e não da linha gravada: é lá que ele
+   * muda quando a marca do mercado muda.
+   */
+  const entradasDaCompra = useMemo(
+    () => entradasDaLista(itens, insumos),
+    [itens, insumos],
+  );
+
+  const guardarNaDespensa = () => {
+    if (!lista) return;
+    guardarSemente({ origem: "LISTA", entradas: entradasDaCompra });
+    fechar();
+    router.push("/insumos/contagem");
+  };
 
   return (
     <>
@@ -232,6 +298,30 @@ export function ListaDoMercado({
             incluir as de até {rotuloDia(periodoFim)} — o que você já marcou
             continua marcado.
           </p>
+        )}
+
+        {/* Contar depois de montar a lista não muda a lista gravada: `/compras`
+            desenha `lista.itens`, e quem refaz é o botão. Sem esta frase,
+            contar pareceria não fazer nada — e ela não contaria de novo na
+            semana seguinte, que é a aposta desta spec inteira.
+
+            A frase nomeia a contagem primeiro porque é a causa mais provável e
+            é a que ela acabou de provocar, mas não afirma só isso: a mesma
+            comparação de `quantidadePacotes` pega um pedido confirmado agora e
+            um pacote de tamanho diferente, e uma frase que jurasse "você
+            contou" seria falsa nesses dois casos. */}
+        {desatualizada && (
+          <p className="rounded-lg border border-line bg-sunken px-4 py-3 text-label text-ink-muted">
+            A conta mudou depois que esta lista foi montada — uma contagem da
+            despensa, um pedido novo, outro tamanho de pacote. Toque em{" "}
+            <strong className="font-semibold text-ink">Refazer</strong> para
+            descontar o que você tem agora — o que já está marcado continua
+            marcado.
+          </p>
+        )}
+
+        {semContagem.length > 0 && (
+          <SemContagemRecente itens={semContagem} total={itens.length} />
         )}
 
         {!lista ? (
@@ -289,6 +379,7 @@ export function ListaDoMercado({
                       key={item.insumoId}
                       item={item}
                       insumo={porInsumo.get(item.insumoId)}
+                      hoje={hoje}
                       aoMarcar={(comprado) => marcar(item.insumoId, comprado)}
                       aoCorrigirPreco={(insumo, preco) =>
                         corrigirPreco(insumo, preco)
@@ -312,13 +403,18 @@ export function ListaDoMercado({
                     Não precisa comprar
                   </h2>
                   <p className="mt-1 max-w-[56ch] text-label text-ink-muted">
-                    O estoque que você anotou já cobre estes. Eles ficam à vista
+                    A contagem que você fez já cobre estes. Eles ficam à vista
                     para você conferir, em vez de sumirem da lista.
                   </p>
                 </div>
                 <ul className="divide-y divide-line">
                   {jaTem.map((item) => (
-                    <LinhaJaTem key={item.insumoId} item={item} />
+                    <LinhaJaTem
+                      key={item.insumoId}
+                      item={item}
+                      insumo={porInsumo.get(item.insumoId)}
+                      hoje={hoje}
+                    />
                   ))}
                 </ul>
               </section>
@@ -348,13 +444,53 @@ export function ListaDoMercado({
                 limpa, sem nenhum item já marcado. É o que se faz quando a
                 compra terminou.
               </p>
+
+              {/* A compra sabe quanto entrou e não sabe o que saiu desde então:
+                  somar e gravar seria inventar a metade que falta. Então ela
+                  propõe, com os campos já preenchidos, e a decisão continua
+                  sendo de quem está de pé na frente da despensa. */}
+              {entradasDaCompra.size > 0 && (
+                <p className="mt-2 max-w-[60ch] text-label text-ink-muted">
+                  Você marcou{" "}
+                  <strong className="num font-semibold text-ink">
+                    {entradasDaCompra.size}
+                  </strong>{" "}
+                  {entradasDaCompra.size === 1 ? "item" : "itens"} como
+                  {entradasDaCompra.size === 1 ? " comprado" : " comprados"}.
+                  Guardar na despensa abre a contagem já somada com o que
+                  entrou, para você conferir enquanto tira das sacolas.
+                </p>
+              )}
+
               <div className="mt-3 flex flex-wrap gap-2">
                 <Botao tamanho="sm" onClick={() => setConfirmandoFechar(false)}>
                   Continuar comprando
                 </Botao>
-                <Botao tamanho="sm" variante="primaria" onClick={fechar}>
+                <Botao
+                  tamanho="sm"
+                  variante={
+                    entradasDaCompra.size > 0 ? "secundaria" : "primaria"
+                  }
+                  onClick={fechar}
+                >
                   Fechar a lista
                 </Botao>
+                {entradasDaCompra.size > 0 && (
+                  <Botao
+                    tamanho="sm"
+                    variante="primaria"
+                    onClick={guardarNaDespensa}
+                    iconeInicial={
+                      <ClipboardList
+                        aria-hidden
+                        className="size-4"
+                        strokeWidth={1.75}
+                      />
+                    }
+                  >
+                    Fechar e guardar na despensa
+                  </Botao>
+                )}
               </div>
             </div>
           ) : (
@@ -449,6 +585,69 @@ function Periodo({
         <SeloSincronizacao pendente={pendente} />
       </div>
     </div>
+  );
+}
+
+/**
+ * A frase que explica um carrinho maior do que ela esperava.
+ *
+ * A lista deixou de descontar o que não sabe: contagem vencida e contagem
+ * inexistente valem "não sei", e ela compra a quantidade física inteira. A
+ * escolha é entre dois erros e eles não custam o mesmo — descontar um número
+ * velho erra para baixo e produz a fornada de sexta que não acontece; não
+ * descontar erra para cima e produz um pacote a mais na prateleira, que volta na
+ * semana seguinte.
+ *
+ * **Sem esta frase a decisão seria indefensável.** Uma lista que passa a comprar
+ * mais e não diz por quê é pior do que a lista de antes, e por isso o atalho
+ * para contar vem junto do motivo, e não em outra tela.
+ */
+function SemContagemRecente({
+  itens,
+  total,
+}: {
+  itens: ItemListaCompras[];
+  total: number;
+}) {
+  const quantos = itens.length;
+  const todos = quantos === total;
+
+  return (
+    <section
+      aria-labelledby="sem-contagem"
+      className="rounded-lg border border-line-strong bg-sunken p-4 lg:p-5"
+    >
+      <h2
+        id="sem-contagem"
+        className="flex items-center gap-2 text-subheading font-semibold text-ink"
+      >
+        <ClipboardList
+          aria-hidden
+          className="size-5 shrink-0 text-ink-muted"
+          strokeWidth={1.75}
+        />
+        {todos
+          ? "A lista está comprando tudo"
+          : "Parte da lista está sendo comprada inteira"}
+      </h2>
+
+      <p className="mt-2 max-w-[62ch] text-label text-ink">
+        {todos ? "Sem descontar o que você já tem: " : "Sem descontar: "}
+        <strong className="num font-semibold">
+          {quantos} {quantos === 1 ? "insumo está" : "insumos estão"}
+        </strong>{" "}
+        sem contagem recente. Contar leva dois minutos e pode tirar itens do
+        carrinho.
+      </p>
+
+      <p className="num mt-1.5 max-w-[62ch] text-label text-ink-muted">
+        {itens.map((item) => item.nome).join(" · ")}
+      </p>
+
+      <div className="mt-3">
+        <EntradaContagem tamanho="sm" />
+      </div>
+    </section>
   );
 }
 

@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { agruparPorCorredor } from "@/lib/domain/corredores";
 import {
-  agruparPorCorredor,
   entraNaLista,
   explodirDemanda,
   montarLista,
   orcamentosDeFora,
+  precisaComprar,
   preservarComprados,
   quantidadeFisica,
   resumoDaLista,
@@ -12,9 +13,10 @@ import {
   statusDaLista,
   type FichaParaExplodir,
   type InsumoParaLista,
+  type ListaMontada,
   type PedidoParaExplodir,
 } from "@/lib/domain/listaCompras";
-import type { StatusPedido } from "@/lib/types";
+import type { DataISO, StatusPedido } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
 // O cenário do caso de aceite da spec 003, sessão 3C.
@@ -81,47 +83,66 @@ function insumo(
   };
 }
 
-const INSUMOS: InsumoParaLista[] = [
-  insumo({
-    id: "farinha",
-    nome: "Farinha",
-    // A diferença proposital em relação à spec 002: aqui a farinha tem 5%, e é
-    // o que faz esta tabela exercitar a divisão pelo fator de correção.
-    perdaPercentual: 5,
-    precoCompra: 1250,
-    estoqueAtual: 500,
-  }),
-  insumo({ id: "chocolate", nome: "Chocolate", precoCompra: 4000 }),
-  insumo({
-    id: "manteiga",
-    nome: "Manteiga",
-    quantidadeBase: 500,
-    quantidadeCompra: 500,
-    unidadeCompra: "g",
-    precoCompra: 1750,
-  }),
-  insumo({
-    id: "saquinho",
-    nome: "Saquinho",
-    categoria: "EMBALAGEM",
-    unidadeBase: "un",
-    quantidadeBase: 100,
-    quantidadeCompra: 100,
-    unidadeCompra: "un",
-    precoCompra: 3000,
-    estoqueAtual: 50,
-  }),
-  insumo({
-    id: "caixa",
-    nome: "Caixa",
-    categoria: "EMBALAGEM",
-    unidadeBase: "un",
-    quantidadeBase: 25,
-    quantidadeCompra: 25,
-    unidadeCompra: "un",
-    precoCompra: 5000,
-  }),
-];
+/**
+ * O dia em que a lista é montada.
+ *
+ * Desde a 7B `montarLista` recebe a data, porque estoque sem data não é medida:
+ * é a `estoqueContadoEmISO` de cada insumo que decide se o número entra na
+ * conta. Toda fixture daqui conta a despensa **hoje**, que é o cenário A — e é
+ * o que faz os R$ 120,00 da 3C continuarem sendo os mesmos R$ 120,00.
+ */
+const HOJE = "2026-09-03";
+
+/** Os cinco insumos da 3C, com a despensa contada no dia que se pedir. */
+function insumosContadosEm(contadoEmISO: DataISO | null): InsumoParaLista[] {
+  const contagem = contadoEmISO ? { estoqueContadoEmISO: contadoEmISO } : {};
+
+  return [
+    insumo({
+      id: "farinha",
+      nome: "Farinha",
+      // A diferença proposital em relação à spec 002: aqui a farinha tem 5%, e é
+      // o que faz esta tabela exercitar a divisão pelo fator de correção.
+      perdaPercentual: 5,
+      precoCompra: 1250,
+      estoqueAtual: 500,
+      ...contagem,
+    }),
+    insumo({ id: "chocolate", nome: "Chocolate", precoCompra: 4000 }),
+    insumo({
+      id: "manteiga",
+      nome: "Manteiga",
+      quantidadeBase: 500,
+      quantidadeCompra: 500,
+      unidadeCompra: "g",
+      precoCompra: 1750,
+    }),
+    insumo({
+      id: "saquinho",
+      nome: "Saquinho",
+      categoria: "EMBALAGEM",
+      unidadeBase: "un",
+      quantidadeBase: 100,
+      quantidadeCompra: 100,
+      unidadeCompra: "un",
+      precoCompra: 3000,
+      estoqueAtual: 50,
+      ...contagem,
+    }),
+    insumo({
+      id: "caixa",
+      nome: "Caixa",
+      categoria: "EMBALAGEM",
+      unidadeBase: "un",
+      quantidadeBase: 25,
+      quantidadeCompra: 25,
+      unidadeCompra: "un",
+      precoCompra: 5000,
+    }),
+  ];
+}
+
+const INSUMOS = insumosContadosEm(HOJE);
 
 function demandaDe(insumoId: string, pedidos = [PEDIDO], fichas = FICHAS) {
   return explodirDemanda(pedidos, fichas).linhas.find(
@@ -129,10 +150,21 @@ function demandaDe(insumoId: string, pedidos = [PEDIDO], fichas = FICHAS) {
   );
 }
 
-function linhaDe(insumoId: string) {
-  return montarLista(explodirDemanda([PEDIDO], FICHAS), INSUMOS).linhas.find(
-    (linha) => linha.insumoId === insumoId,
+/** A lista do pedido do caso de aceite, com a contagem feita no dia que se der. */
+function listaContadaEm(contadoEmISO: DataISO | null) {
+  return montarLista(
+    explodirDemanda([PEDIDO], FICHAS),
+    insumosContadosEm(contadoEmISO),
+    HOJE,
   );
+}
+
+function linhaDe(insumoId: string) {
+  return montarLista(
+    explodirDemanda([PEDIDO], FICHAS),
+    INSUMOS,
+    HOJE,
+  ).linhas.find((linha) => linha.insumoId === insumoId);
 }
 
 // ---------------------------------------------------------------------------
@@ -288,6 +320,7 @@ describe("guardas da explosão", () => {
       INSUMOS.map((item) =>
         item.id === "chocolate" ? { ...item, arquivado: true } : item,
       ),
+      HOJE,
     );
 
     expect(lista.pendencias).toContainEqual({
@@ -339,7 +372,7 @@ describe("montarLista", () => {
   });
 
   it("o insumo que ela já tem continua na lista, em vez de sumir", () => {
-    const lista = montarLista(explodirDemanda([PEDIDO], FICHAS), INSUMOS);
+    const lista = montarLista(explodirDemanda([PEDIDO], FICHAS), INSUMOS, HOJE);
     expect(lista.linhas.some((linha) => linha.insumoId === "saquinho")).toBe(
       true,
     );
@@ -354,7 +387,7 @@ describe("montarLista", () => {
   });
 
   it("o custo estimado da lista é R$ 120,00", () => {
-    const lista = montarLista(explodirDemanda([PEDIDO], FICHAS), INSUMOS);
+    const lista = montarLista(explodirDemanda([PEDIDO], FICHAS), INSUMOS, HOJE);
 
     // 1250 + 4000 + 1750 + 0 + 5000
     expect(lista.custoEstimado).toBe(12000);
@@ -368,7 +401,7 @@ describe("montarLista", () => {
   });
 
   it("os itens saem na ordem em que se anda no mercado", () => {
-    const lista = montarLista(explodirDemanda([PEDIDO], FICHAS), INSUMOS);
+    const lista = montarLista(explodirDemanda([PEDIDO], FICHAS), INSUMOS, HOJE);
 
     expect(lista.linhas.map((linha) => linha.nome)).toEqual([
       "Chocolate",
@@ -377,6 +410,116 @@ describe("montarLista", () => {
       "Caixa",
       "Saquinho",
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A idade da contagem, e o que ela custa. O caso de aceite da 7B.
+//
+// Os mesmos cinco insumos e o mesmo pedido. O que muda é **a data da contagem**,
+// e mais nada.
+// ---------------------------------------------------------------------------
+
+describe("a lista para de confiar em número velho", () => {
+  /** Cenário A: contadas hoje. É o cenário da 3C, número por número. */
+  const fresca = listaContadaEm(HOJE);
+  /** Cenário B: contadas em 20/08, 14 dias atrás. */
+  const envelhecendo = listaContadaEm("2026-08-20");
+  /** Cenário C: contadas em 20/07, 45 dias atrás. */
+  const vencida = listaContadaEm("2026-07-20");
+  /** O mesmo cenário C por outro caminho: número gravado e nenhuma data. */
+  const semData = listaContadaEm(null);
+
+  function linha(lista: ListaMontada, insumoId: string) {
+    return lista.linhas.find((atual) => atual.insumoId === insumoId);
+  }
+
+  it("contagem de hoje: os R$ 120,00 da 3C, intactos", () => {
+    expect(fresca.custoEstimado).toBe(12000);
+    expect(linha(fresca, "farinha")?.estoqueAtual).toBe(500);
+    expect(linha(fresca, "saquinho")?.estoqueAtual).toBe(50);
+  });
+
+  it("contagem de 14 dias: os mesmos R$ 120,00, e nada some", () => {
+    // Uma contagem de duas semanas ainda é a melhor informação que existe sobre
+    // aquele armário. O que muda entre A e B são as palavras da tela.
+    expect(envelhecendo.custoEstimado).toBe(12000);
+    expect(linha(envelhecendo, "saquinho")?.quantidadePacotes).toBe(0);
+  });
+
+  it("contagem de 45 dias: R$ 150,00, porque a lista deixa de descontar", () => {
+    expect(vencida.custoEstimado).toBe(15000);
+    expect(linha(vencida, "farinha")?.estoqueAtual).toBe(0);
+    expect(linha(vencida, "saquinho")?.estoqueAtual).toBe(0);
+  });
+
+  it("número gravado sem data nenhuma dá os mesmos R$ 150,00", () => {
+    // É o estoque de todo insumo cadastrado antes desta spec. Não existe data
+    // honesta a inventar para ele, e `atualizadoEm` é do documento e não da
+    // contagem — então ele entra como "não sei".
+    expect(semData.custoEstimado).toBe(15000);
+    expect(linha(semData, "farinha")?.estoqueAtual).toBe(0);
+  });
+
+  it("o saquinho é o preço de vencer, e ele é R$ 30,00", () => {
+    // A única linha em que a contagem decidia alguma coisa, e é exatamente a
+    // diferença entre o cenário A e o C.
+    expect(linha(fresca, "saquinho")?.quantidadePacotes).toBe(0);
+    expect(linha(fresca, "saquinho")?.custoEstimado).toBe(0);
+
+    expect(linha(vencida, "saquinho")?.quantidadeComprar).toBeCloseTo(32, 6);
+    expect(linha(vencida, "saquinho")?.quantidadePacotes).toBe(1);
+    expect(linha(vencida, "saquinho")?.custoEstimado).toBe(3000);
+
+    expect(vencida.custoEstimado - fresca.custoEstimado).toBe(3000);
+  });
+
+  it("a farinha prova que vencer não custa sempre: R$ 12,50 nos três", () => {
+    // 342,11 g e 842,11 g fecham no mesmo pacote de 1 kg. Deixar de descontar
+    // uma contagem vencida não é multiplicar a compra — é parar de apostar.
+    for (const lista of [fresca, envelhecendo, vencida, semData]) {
+      expect(linha(lista, "farinha")?.custoEstimado).toBe(1250);
+      expect(linha(lista, "farinha")?.quantidadePacotes).toBe(1);
+    }
+
+    expect(linha(fresca, "farinha")?.quantidadeComprar).toBeCloseTo(
+      342.105263,
+      5,
+    );
+    expect(linha(vencida, "farinha")?.quantidadeComprar).toBeCloseTo(
+      842.105263,
+      5,
+    );
+  });
+
+  it('o bloco "Não precisa comprar" desaparece quando a contagem vence', () => {
+    // Ele existe para o que o estoque cobre, e uma contagem vencida não cobre
+    // nada. No cenário A ele tem o saquinho; no C, nenhuma linha.
+    const cobertos = (lista: ListaMontada) =>
+      lista.linhas.filter((atual) => !precisaComprar(atual));
+
+    expect(cobertos(fresca).map((atual) => atual.nome)).toEqual(["Saquinho"]);
+    expect(cobertos(envelhecendo).map((atual) => atual.nome)).toEqual([
+      "Saquinho",
+    ]);
+    expect(cobertos(vencida)).toEqual([]);
+  });
+
+  it("a linha guarda o que foi descontado, e não o que está gravado", () => {
+    // `estoqueAtual` da linha é o número que entrou na conta. O motivo mora no
+    // insumo vivo: uma idade congelada num documento que ninguém reescreve
+    // envelheceria errado.
+    expect(linha(vencida, "farinha")?.estoqueAtual).toBe(0);
+    expect(linha(vencida, "farinha")?.quantidadeFisica).toBeCloseTo(
+      842.105263,
+      5,
+    );
+  });
+
+  it("a contagem do dia 30 ainda desconta, e a do dia 31 não", () => {
+    // As bordas exatas de `IDADE_VENCE_DIAS`, vistas de dentro da lista.
+    expect(listaContadaEm("2026-08-04").custoEstimado).toBe(12000);
+    expect(listaContadaEm("2026-08-03").custoEstimado).toBe(15000);
   });
 });
 
@@ -417,8 +560,10 @@ describe("a perda divide, e o estoque vem depois dela", () => {
           nome: "Farinha",
           perdaPercentual: 5,
           estoqueAtual: 1000,
+          estoqueContadoEmISO: HOJE,
         }),
       ],
+      HOJE,
     );
 
     // 950 / 0,95 = 1000 exatos, e o estoque é 1000.

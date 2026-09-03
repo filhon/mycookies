@@ -1,29 +1,43 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, ShoppingBasket } from "lucide-react";
 import { BASE_CONTROLE } from "@/components/ui/Campo";
-import { numeroContado, rotuloDeIdade } from "@/lib/domain/estoque";
-import type { LinhaDeContagem } from "@/lib/domain/estoque";
+import {
+  numeroContado,
+  procedenciaDaSugestao,
+  rotuloDeIdade,
+  textoContado,
+} from "@/lib/domain/estoque";
+import type { LinhaDeContagem, OrigemDaEntrada } from "@/lib/domain/estoque";
 import { formatarQuantidade } from "@/lib/domain/unidades";
 import { cn } from "@/lib/utils/cn";
 
 /**
  * Uma linha da contagem: o nome, o campo, e a frase que explica o número velho.
  *
- * **O campo nasce vazio**, e é a coisa mais importante desta tela. Semeá-lo com
- * o valor anterior seria mais confortável de digitar e destruiria a única coisa
- * que esta tela constrói: a diferença entre um número conferido e um número
- * herdado. Vazio é "não contei esta"; `0` é "contei, e não tem".
+ * **O campo nasce vazio quando não houve compra**, e é a coisa mais importante
+ * desta tela. Semeá-lo com o valor anterior seria mais confortável de digitar e
+ * destruiria a única coisa que esta tela constrói: a diferença entre um número
+ * conferido e um número herdado. Vazio é "não contei esta"; `0` é "contei, e não
+ * tem".
+ *
+ * A exceção é a compra, e ela não é a mesma coisa: ali o campo nasce com
+ * `contagem + o que entrou`, um número que o sistema tem como defender — e a
+ * frase embaixo diz as duas parcelas, para ela conferir a soma em vez de
+ * acreditar nela.
  *
  * A referência fica embaixo do nome, e não embaixo do campo: em 360px o campo
  * tem 112px, e "500 g · contada há 12 dias" quebraria em três linhas ali.
  */
 export function LinhaContagem({
   linha,
+  origem,
   texto,
   aoMudar,
 }: {
   linha: LinhaDeContagem;
+  /** De onde a semente veio. Ausente quando ela chegou por `/compras`. */
+  origem?: OrigemDaEntrada;
   texto: string;
   aoMudar: (texto: string) => void;
 }) {
@@ -31,6 +45,14 @@ export function LinhaContagem({
   const valor = numeroContado(texto);
   const ilegivel = digitado && valor === null;
   const contado = valor !== null;
+
+  // A procedência vale enquanto o campo ainda é o que a compra propôs. No
+  // instante em que ela corrige o número, a frase passa a falar do número dela.
+  const proposto =
+    origem !== undefined &&
+    linha.sugestao !== null &&
+    texto === textoContado(linha.sugestao);
+  const procedencia = proposto ? procedenciaDaSugestao(linha, origem) : null;
 
   return (
     <li className={cn("px-4 py-3 lg:px-5", contado && "bg-sunken")}>
@@ -46,27 +68,38 @@ export function LinhaContagem({
           <p
             id={`contagem-${linha.insumoId}-referencia`}
             className={cn(
-              "num mt-0.5 flex items-center gap-1.5 text-label",
+              "num mt-0.5 flex items-start gap-1.5 text-label",
               ilegivel
                 ? "text-negative"
-                : contado
+                : contado && !procedencia
                   ? "text-ink"
                   : "text-ink-muted",
             )}
           >
-            {contado && !ilegivel && (
-              <Check
+            {procedencia ? (
+              <ShoppingBasket
                 aria-hidden
-                className="size-3.5 shrink-0 text-positive"
-                strokeWidth={2.5}
+                className="mt-0.5 size-3.5 shrink-0 text-ink-subtle"
+                strokeWidth={2}
               />
+            ) : (
+              contado &&
+              !ilegivel && (
+                <Check
+                  aria-hidden
+                  className="mt-0.5 size-3.5 shrink-0 text-positive"
+                  strokeWidth={2.5}
+                />
+              )
             )}
-            <span className="truncate">
+            {/* A procedência pode quebrar em duas linhas: "620 g contados há 4
+                dias + 1 kg da nota" não cabe em 360px, e cortá-la esconderia
+                justamente a parcela que ela precisa conferir. */}
+            <span className={cn(!procedencia && "truncate")}>
               {ilegivel
                 ? "não deu para ler este número"
-                : contado
-                  ? consequencia(valor, linha)
-                  : referencia(linha)}
+                : (procedencia ??
+                  (contado ? consequencia(valor, linha) : referencia(linha)))}
             </span>
           </p>
         </div>

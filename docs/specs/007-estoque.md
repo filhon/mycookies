@@ -590,30 +590,30 @@ contagem da 7A feita em **30/08** (4 dias):
 
 ## Critérios de aceite 7B
 
-- [ ] `tests/domain/listaCompras.test.ts` continua passando com os R$ 120,00 intactos, agora
+- [x] `tests/domain/listaCompras.test.ts` continua passando com os R$ 120,00 intactos, agora
       com `hojeISO` e contagem fresca em toda fixture.
-- [ ] Os três cenários em teste: **R$ 120,00** fresca, **R$ 120,00** envelhecendo,
+- [x] Os três cenários em teste: **R$ 120,00** fresca, **R$ 120,00** envelhecendo,
       **R$ 150,00** vencida, mais o cenário sem data nenhuma, que precisa dar os mesmos
       R$ 150,00.
-- [ ] O saquinho sai do bloco "Não precisa comprar" e entra no carrinho a R$ 30,00 quando a
+- [x] O saquinho sai do bloco "Não precisa comprar" e entra no carrinho a R$ 30,00 quando a
       contagem vence, e o bloco desaparece por não ter mais linha.
-- [ ] A farinha custa R$ 12,50 nos três cenários, provado em teste: vencer não multiplica.
-- [ ] `estoqueParaLista` devolve zero para contagem vencida e para ausência, e o número
+- [x] A farinha custa R$ 12,50 nos três cenários, provado em teste: vencer não multiplica.
+- [x] `estoqueParaLista` devolve zero para contagem vencida e para ausência, e o número
       contado para fresca e envelhecendo.
-- [ ] `/compras` diz a frase da contagem ausente, a idade na linha, e a frase da lista mais
+- [x] `/compras` diz a frase da contagem ausente, a idade na linha, e a frase da lista mais
       velha que a contagem — esta última apagando-se sozinha depois de "Refazer".
-- [ ] A etapa "pronto" da nota oferece a contagem semeada, e os cinco números da tabela
+- [x] A etapa "pronto" da nota oferece a contagem semeada, e os cinco números da tabela
       acima aparecem nos campos, cada um com a sua frase de procedência.
-- [ ] Fechar a lista oferece a contagem semeada pelo que foi marcado como comprado.
-- [ ] Ler a nota, guardar na despensa e depois fechar a lista da mesma compra **não** dobra
+- [x] Fechar a lista oferece a contagem semeada pelo que foi marcado como comprado.
+- [x] Ler a nota, guardar na despensa e depois fechar a lista da mesma compra **não** dobra
       nenhum número.
-- [ ] `LinhaInsumo` mostra a contagem e a idade, com o selo `atencao` de "Contagem vencida" —
+- [x] `LinhaInsumo` mostra a contagem e a idade, com o selo `atencao` de "Contagem vencida" —
       com ícone e texto, e nunca só a cor.
-- [ ] `ESTADO.md` e `DECISOES.md` atualizados: as sete decisões da abertura viraram `#d56` a
+- [x] `ESTADO.md` e `DECISOES.md` atualizados: as sete decisões da abertura viraram `#d56` a
       `#d62` na 7A, e as duas desta sessão são `#d63` e `#d64`. **A linha "Estoque continua
       sendo número digitado" sai da tabela de dívidas**, e a linha nova que entra é a da
       contagem que depende de ela contar.
-- [ ] Portão de conclusão passando: lint, typecheck, test, build.
+- [x] Portão de conclusão passando: lint, typecheck, test, build.
 
 **O que continua sem prova, e é do roteiro em navegador abaixo:** `npm test` cobre
 `src/lib/domain/`, então a tela de contagem, o lote e as três frases de `/compras` moram fora

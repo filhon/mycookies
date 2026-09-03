@@ -1741,3 +1741,107 @@ propósito — aquele corpo reescreve o documento a partir de um `DadosInsumo`, 
 contou não pode ser sobrescrito por um caminho que não estava falando daquilo. E não marca ficha
 nenhuma: quem envelhece ficha é preço, embalagem e perda (`precoMudou`), e contar a despensa não
 muda o custo de um cookie.
+
+---
+
+## D63 · Contagem vencida vale "não sei", e a lista deixa de descontar
+
+**Status:** vigente · decidida em 2026-09-03 na spec `007-estoque`, sessão 7B
+
+**Contexto.** `montarLista` descontava `estoqueAtual` em silêncio, sem saber de quando ele era.
+Desde a 7A o número tem data (`#d57`) e o prazo existe no domínio (`#d60`), mas
+`estoqueParaLista` não tinha chamador: a lista continuava descontando os 500 g de farinha
+digitados em março.
+
+**Decisão.** `montarLista(demanda, insumos, hojeISO)` passa a chamar `estoqueParaLista` no
+lugar de `Math.max(0, insumo.estoqueAtual ?? 0)`. Contagem `VENCIDA` e contagem inexistente
+valem **zero**: a lista compra a quantidade física inteira, e `/compras` diz por quê em três
+frases — a do carrinho comprando tudo, com o atalho para contar; a idade na linha; e a da
+lista mais velha do que a conta de hoje.
+
+Nada novo é gravado. `LinhaDaLista.estoqueAtual` passa a significar **o que foi descontado**,
+e não o que está no insumo — zero quando a contagem venceu. O motivo não entra em
+`ItemListaCompras` porque ele está no insumo vivo, que a tela já tem na mão desde a 3C: uma
+idade congelada dentro de um documento que ninguém reescreve envelheceria errado.
+
+**Consequência.** A escolha é entre dois erros, e eles não custam o mesmo. Descontar um número
+vencido erra para baixo e produz a compra faltando: a fornada de sexta não acontece, e o
+pedido é da cliente. Não descontar erra para cima e produz um pacote a mais na prateleira —
+dinheiro parado, e ele volta na semana seguinte. `listaCompras.ts` já registrava qual dos dois
+é o inaceitável, no comentário de `MotivoPendencia`: "uma lista que some com um item faz a
+Maynara chegar em casa sem chocolate".
+
+O preço está medido: no caso de aceite da 3C, a contagem vencida custa **R$ 30,00** — os
+saquinhos, a única linha em que a contagem decidia alguma coisa. A farinha custa os mesmos
+R$ 12,50 nos três cenários, porque 342,11 g e 842,11 g fecham no mesmo pacote de 1 kg: deixar
+de descontar não é multiplicar a compra, é parar de apostar.
+
+**Isto vale para o estoque já gravado**, e é a única parte desta spec com efeito imediato em
+dinheiro. Todo insumo cadastrado antes dela tem número e não tem data, e não existe data
+honesta a inventar — `atualizadoEm` é do documento, e não da contagem. Então ele entra como
+`NUNCA`, e na primeira abertura de `/compras` **o carrinho cresce**. Não há script de
+migração e não deve haver: a migração é a frase na tela, e o conserto são dois minutos em
+`/insumos/contagem`.
+
+**A frase da lista desatualizada não jura que foi a contagem.** A divergência é medida em
+`quantidadePacotes`, que é o que a spec pede, e essa comparação também pega um pedido
+confirmado agora e um pacote de tamanho diferente. A frase nomeia a contagem primeiro, porque
+é a causa mais provável e a que ela acabou de provocar, mas lista as outras duas em vez de
+afirmar uma só — dizer "você contou a despensa" quando ela confirmou um orçamento seria
+mentir na tela que esta spec existe para tornar confiável.
+
+**Uma consequência de arquitetura:** `agruparPorCorredor` e a ordem do mercado saíram de
+`listaCompras.ts` para `domain/corredores.ts`. `estoque.ts` já importava o agrupamento, e
+`listaCompras.ts` passou a importar `estoqueParaLista`: deixar os dois onde estavam fecharia
+um ciclo entre os módulos. A ordem do corredor não é propriedade de nenhum dos dois — é de
+quem empurra o carrinho, e a despensa se percorre na mesma ordem da gôndola.
+
+---
+
+## D64 · A compra propõe a contagem, e a semente viaja fora da URL
+
+**Status:** vigente · decidida em 2026-09-03 na spec `007-estoque`, sessão 7B
+
+**Contexto.** Depois da `#d63` a lista precisa de contagem para descontar qualquer coisa, e o
+risco alto da spec passa a ser ela não contar. O momento em que contar é barato é aquele em
+que ela já está de pé na frente da despensa com as sacolas na mão: ao fim da leitura de nota e
+ao fechar a lista de compras.
+
+**Decisão.** Nesses dois momentos a contagem é **oferecida com os campos semeados**, e nunca
+gravada. A semente é `contagem anterior + o que entrou`, linha por linha, por
+`sugestaoDaContagem`, e cada linha diz de onde a sugestão saiu — "620 g contados há 4 dias +
+1 kg da nota". Ela confirma, corrige ou ignora. É o `#d17` aplicado ao armário.
+
+Duas regras caem daí, e as duas estão em teste: **sem contagem recente a sugestão é só o que
+entrou** ("não sei mais 1 kg" não são 1,5 kg), e **contagem de hoje não recebe soma** — ler a
+nota, guardar na despensa e depois fechar a lista da mesma compra encontraria a contagem feita
+há minutos e somaria os mesmos pacotes de novo.
+
+**A semente atravessa como estado de navegação**, em `lib/estado/sementeDaContagem.ts`, e não
+como parâmetro de URL.
+
+**Consequência.** Somar a entrada e gravar seria inventar a metade que falta: uma compra sabe
+**quanto entrou** e não sabe **o que saiu desde então**. É a tentação que o "Fora de escopo" da
+006 nomeou — entrada automática sem baixa automática deixa o estoque subindo para sempre —, e
+é por isso que a baixa automática pode continuar fora (`#d09`).
+
+Sobre a URL: são de seis a vinte pares `insumoId → quantidade`, e uma querystring com isso
+dentro é um lugar novo onde número de negócio pode ser reescrito à mão, num link colado. Custa
+um módulo de vinte linhas e fecha essa porta. O módulo guarda estado e não é contexto de React
+porque o que ele guarda não pertence a nenhuma árvore: quem escreve são `/insumos/nota` e
+`/compras`, quem lê é `/insumos/contagem`, e as três são páginas irmãs. **Morrer no
+recarregamento é a intenção** — uma semente que sobrevivesse ao F5 semearia os campos de uma
+compra que ela já guardou. A tela sem semente é a mesma tela, com os campos vazios.
+
+O que isto custou fora do previsto: `importarNota` passou a devolver `insumoIds`, o id do
+insumo que cada linha tocou, na ordem em que elas chegaram. Sem ele o insumo que **nasce**
+naquela nota — o celofane do caso de aceite — não teria endereço para ser semeado. O id de um
+documento novo é gerado no cliente antes da escrita, então isto é uma leitura e não uma
+segunda ida ao servidor.
+
+E o campo semeado não contradiz o `#d59`. Lá o campo nasce vazio porque o valor anterior é um
+número **herdado**, e semeá-lo tornaria "não mexi" indistinguível de "conferi e continua
+igual". Aqui o número tem procedência: é uma soma que o sistema sabe defender, e a linha diz as
+duas parcelas para ela conferir a soma em vez de acreditar nela. Enquanto o campo continuar
+sendo o que a compra propôs, a frase fala da compra; no instante em que ela corrige o número, a
+frase passa a falar do número dela.

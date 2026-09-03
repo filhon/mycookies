@@ -52,6 +52,15 @@ export interface ResultadoImportacao {
   fichasMarcadas: number;
   /** O que foi para o caixa, ou `null` quando o bloco estava desligado. */
   lancado: Centavos | null;
+  /**
+   * O id do insumo que cada linha tocou, **na ordem em que elas chegaram**.
+   *
+   * Existe para a oferta de contagem logo depois: sem ele, o celofane que
+   * acabou de nascer não teria como ser semeado com os 100 un que a nota
+   * trouxe. O id de um documento novo é gerado no cliente, antes da escrita, o
+   * que torna isto uma leitura e não uma segunda ida ao servidor.
+   */
+  insumoIds: string[];
 }
 
 /** O teto de `array-contains-any` numa consulta, com folga. */
@@ -75,31 +84,43 @@ export async function importarNota(
   lancamento: LancamentoDaNota | null = null,
 ): Promise<ResultadoImportacao> {
   if (linhas.length === 0) {
-    return { criados: 0, atualizados: 0, fichasMarcadas: 0, lancado: null };
+    return {
+      criados: 0,
+      atualizados: 0,
+      fichasMarcadas: 0,
+      lancado: null,
+      insumoIds: [],
+    };
   }
 
   const momento = Timestamp.now();
   const lote = writeBatch(obterDb());
+
+  // A referência de cada linha sai antes da escrita, e é o que preserva a
+  // ordem: `doc()` sobre a coleção gera o id no cliente, sem ida ao servidor.
+  const alvos = linhas.map((linha) => ({
+    linha,
+    referencia: linha.anterior
+      ? docInsumo(contaId, linha.anterior.id)
+      : doc(colInsumos(contaId)),
+  }));
+
+  for (const { linha, referencia } of alvos) {
+    if (linha.anterior) {
+      lote.update(
+        referencia,
+        corpoDeAtualizacao(linha.anterior, linha.dados, momento),
+      );
+    } else {
+      lote.set(referencia, corpoDeInsumoNovo(linha.dados, momento) as Insumo);
+    }
+  }
 
   const novos = linhas.filter((linha) => !linha.anterior);
   const atualizados = linhas.filter(
     (linha): linha is LinhaImportada & { anterior: Insumo } =>
       linha.anterior !== undefined,
   );
-
-  for (const linha of novos) {
-    lote.set(
-      doc(colInsumos(contaId)),
-      corpoDeInsumoNovo(linha.dados, momento) as Insumo,
-    );
-  }
-
-  for (const linha of atualizados) {
-    lote.update(
-      docInsumo(contaId, linha.anterior.id),
-      corpoDeAtualizacao(linha.anterior, linha.dados, momento),
-    );
-  }
 
   if (novos.length > 0) {
     lote.set(
@@ -134,6 +155,7 @@ export async function importarNota(
     atualizados: atualizados.length,
     fichasMarcadas,
     lancado: lancamento ? await lancarNoCaixa(contaId, lancamento) : null,
+    insumoIds: alvos.map((alvo) => alvo.referencia.id),
   };
 }
 
