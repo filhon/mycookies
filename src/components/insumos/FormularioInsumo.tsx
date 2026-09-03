@@ -139,7 +139,15 @@ export function FormularioInsumo({
     setSalvando(true);
 
     try {
-      const dados: DadosInsumo = resultado.data;
+      // A data da contagem é carregada adiante, e não redatada: este formulário
+      // fala de preço e de embalagem, e quem conta a despensa é a tela de
+      // contagem. Sem isto, editar o preço aqui apagaria a idade do estoque.
+      const dados: DadosInsumo = {
+        ...resultado.data,
+        ...(insumo?.estoqueContadoEmISO
+          ? { estoqueContadoEmISO: insumo.estoqueContadoEmISO }
+          : {}),
+      };
       if (insumo) {
         await atualizarInsumo(contaId, insumo, dados);
       } else {
@@ -310,7 +318,7 @@ export function FormularioInsumo({
               sufixo={custo.unidadeBase}
               value={estado.estoqueAtual}
               erro={erros.estoqueAtual}
-              dica="Usado pela lista de compras para não mandar comprar o que já tem."
+              dica="Usado pela lista de compras para não mandar comprar o que já tem. Para contar a despensa inteira de uma vez, use Contar a despensa, em Compras."
               onChange={(evento) =>
                 definir("estoqueAtual", evento.target.value)
               }

@@ -10,6 +10,7 @@ import {
   RefreshCw,
   ShoppingCart,
 } from "lucide-react";
+import { EntradaContagem } from "@/components/estoque/EntradaContagem";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { Botao } from "@/components/ui/Botao";
@@ -185,16 +186,26 @@ export function ListaDoMercado({
         titulo="Lista de compras"
         descricao="O que os pedidos já fechados vão exigir do mercado, em pacote e em reais."
         acao={
-          lista && (
-            <Botao
-              onClick={montar}
-              iconeInicial={
-                <RefreshCw aria-hidden className="size-4" strokeWidth={1.75} />
-              }
-            >
-              Refazer
-            </Botao>
-          )
+          // Em coluna no celular: as duas ações lado a lado espremeriam o
+          // título em 360px. Contar aparece **também quando não há lista** —
+          // domingo à noite sem pedido confirmado é exatamente quando ela conta.
+          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-start">
+            <EntradaContagem />
+            {lista && (
+              <Botao
+                onClick={montar}
+                iconeInicial={
+                  <RefreshCw
+                    aria-hidden
+                    className="size-4"
+                    strokeWidth={1.75}
+                  />
+                }
+              >
+                Refazer
+              </Botao>
+            )}
+          </div>
         }
       >
         <Periodo

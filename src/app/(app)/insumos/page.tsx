@@ -15,6 +15,7 @@ import { Botao } from "@/components/ui/Botao";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
+import { dataISODe } from "@/lib/domain/datas";
 import { colInsumos } from "@/lib/firebase/colecoes";
 import { useColecao } from "@/lib/hooks/useColecao";
 import type { CategoriaInsumo, Insumo } from "@/lib/types";
@@ -32,6 +33,9 @@ const FILTROS: { valor: CategoriaInsumo | "TODOS"; rotulo: string }[] = [
 
 export default function PaginaInsumos() {
   const contaId = useContaId();
+  // O dia congela na abertura: é contra ele que a idade de cada contagem é
+  // medida, e uma tela que o relesse a cada render mediria contra outro relógio.
+  const [hoje] = useState(() => dataISODe(new Date()));
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<CategoriaInsumo | "TODOS">("TODOS");
   const [emEdicao, setEmEdicao] = useState<Insumo | undefined>();
@@ -208,6 +212,7 @@ export default function PaginaInsumos() {
               <LinhaInsumo
                 key={insumo.id}
                 insumo={insumo}
+                hoje={hoje}
                 aoAbrir={abrirEdicao}
               />
             ))}

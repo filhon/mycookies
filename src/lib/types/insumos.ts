@@ -2,6 +2,7 @@ import type { Timestamp } from "firebase/firestore";
 import type {
   Centavos,
   CentavosFracionados,
+  DataISO,
   DocumentoBase,
   Percentual,
   UnidadeBase,
@@ -57,8 +58,15 @@ export interface Insumo extends DocumentoBase {
   custoUnidadeBaseCorrigido: CentavosFracionados;
 
   // ---- Estoque (opcional, alimenta a lista de compras) ----
+  /** O que ela viu na despensa na última vez que contou. */
   estoqueAtual?: number;
-  estoqueMinimo?: number;
+  /**
+   * O dia em que ela contou, e não o instante: a idade se conta em dias, e uma
+   * data que atravessa como `DataISO` mantém `domain/estoque.ts` sem Firebase.
+   *
+   * Ausente é "nunca contado" — e a lista não desconta o que não sabe.
+   */
+  estoqueContadoEmISO?: DataISO;
   ultimaCompraEm?: Timestamp;
 
   /**

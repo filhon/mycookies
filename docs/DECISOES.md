@@ -1541,3 +1541,203 @@ piscar para desligado quando a consulta responde. É a informação chegando qua
 um estado errado: fingir "carregando" no lugar esconderia o padrão que a decisão inteira
 defende. Pelo mesmo motivo o achado carrega a chave que o pediu — enquanto a resposta da chave
 nova não chega, a guarda da anterior não continua valendo.
+
+---
+
+## D56 · Estoque é medição, e não saldo
+
+**Status:** vigente · decidida em 2026-09-03 na spec `007-estoque`, sessão 7A
+
+**Contexto.** `Insumo.estoqueAtual` era um número solto, com exatamente um leitor em todo o
+sistema — `montarLista` — que o subtraía em silêncio, sem saber de quando ele era. Os 500 g de
+farinha digitados em março continuavam sendo descontados em setembro, e a lista errava nos dois
+sentidos sem avisar.
+
+**Decisão.** Estoque passa a ser uma **medição com data**, e não um saldo. Um saldo é
+consequência de movimentos; o sistema não vê os movimentos da despensa — nem a fornada de
+quinta à noite, nem o pacote aberto para provar —, então ele não tem como manter um. O que ele
+guarda é o que ela viu, e quando viu.
+
+**Consequência.** É a decisão de que a spec inteira depende: se estoque é medição, ele
+envelhece, e um sistema que sabe a idade de um número pode parar de confiar nele. É isso que o
+número solto não permitia fazer.
+
+Baixa automática na produção continua fora, e agora com um argumento melhor do que "ela produz
+fora do sistema": um saldo que só o sistema mexe fica errado na primeira fornada não registrada,
+e esta decisão é a resposta ao problema que a baixa automática prometia resolver.
+
+---
+
+## D57 · A data da contagem é um dia, e não um instante
+
+**Status:** vigente · decidida em 2026-09-03 na spec `007-estoque`, sessão 7A
+
+**Contexto.** A idade da contagem precisava de uma data no documento. O reflexo era `Timestamp`,
+que é o que todo o resto de `Insumo` usa para tempo.
+
+**Decisão.** `Insumo.estoqueContadoEmISO?: DataISO`, campo opcional novo. `DataISO`, e não
+`Timestamp`.
+
+**Consequência.** Dois motivos, e o segundo é uma invariante. **A precisão honesta é o dia:**
+ela conta na manhã de terça e assa na tarde de terça, e "contado há 6 horas" seria uma exatidão
+que a despensa não tem — a idade que interessa se conta em dias. E `src/lib/domain/` nunca
+importa Firebase: uma data que atravessa a fronteira como `DataISO` mantém `estoque.ts` puro, do
+lado certo da linha, e `datas.ts` já sabe trabalhar com essa forma.
+
+`datas.ts` ganhou `diasEntre(deISO, ateISO)`, que era a única peça que faltava lá. Ela arredonda
+a divisão em vez de truncar, porque um dia de horário de verão tem 23 ou 25 horas e truncar
+contaria um dia a menos na virada.
+
+Acrescentar campo opcional é mudança compatível de schema: documento antigo sem o campo continua
+válido, e a ausência tem significado definido — "nunca contado". **Foi uma das aprovações que a
+spec pediu.**
+
+---
+
+## D58 · Quem conta escreve a data; quem não contou a carrega adiante
+
+**Status:** vigente · decidida em 2026-09-03 na spec `007-estoque`, sessão 7A
+
+**Contexto.** A data podia sair de um diff: "o número mudou, então alguém contou". Sairia de
+graça, sem campo novo em `DadosInsumo` e sem nenhuma tela precisar saber da regra.
+
+**Decisão.** A data **não** sai de um diff. `estoqueContadoEmISO` entra em `DadosInsumo`, é
+escrita por quem contou, e carregada adiante por quem não contou — que é exatamente o serviço que
+`dadosDoInsumo` já presta aos outros campos.
+
+**Consequência.** O contra-exemplo prova a regra: contar a despensa e achar os mesmos 50
+saquinhos da semana passada **não** atualizaria a data, e a lista continuaria desconfiando de um
+número que ela acabou de conferir na prateleira. Encontrar o mesmo número é uma contagem, e é uma
+das mais valiosas.
+
+Pelo mesmo motivo o inverso também vale, e são três caminhos a proteger:
+
+- **`corrigirPrecoNaLista`** chama `atualizarInsumo` com `dadosDoInsumo`, que agora carrega a
+  data adiante. Ela olhou a etiqueta da gôndola, e não o armário.
+- **`atualizacaoDaLinha`**, da nota, continua devolvendo só preço e embalagem: o campo fica de
+  fora daquele objeto justamente para não ter como ser sobrescrito.
+- **`FormularioInsumo`** monta `DadosInsumo` do zero a partir do formulário, então ele repõe a
+  data do insumo em edição explicitamente. Sem isso, editar o preço ali apagaria a idade do
+  estoque — `corpoDeAtualizacao` grava `null` para todo campo ausente.
+
+O efeito colateral aceito: apagar o campo "Estoque atual" no formulário deixa uma data sem
+número. `contagemDoInsumo` trata isso como `NUNCA` — data sem número não é contagem —, em vez de
+inventar um zero que ninguém contou.
+
+---
+
+## D59 · O campo nasce vazio, e zero é uma contagem
+
+**Status:** vigente · decidida em 2026-09-03 na spec `007-estoque`, sessão 7A
+
+**Contexto.** Semear cada campo da tela de contagem com o número anterior é mais confortável de
+digitar: ela corrige o que mudou e passa adiante o resto.
+
+**Decisão.** O campo **nasce vazio**, com o número anterior e a idade dele ao lado, como
+referência. Vazio significa "não contei esta"; `0` significa "contei, e não tem". Só a linha
+tocada é gravada.
+
+**Consequência.** Um campo semeado com o valor anterior tornaria "não mexi" indistinguível de
+"conferi e continua igual", e uma tela que gravasse as trinta e quatro linhas datava trinta e
+duas que ela nunca olhou. **É a mentira que a spec existe para remover, cometida pela própria
+tela que veio consertá-la.**
+
+É a terceira vez que este projeto encontra o mesmo problema, depois do `#d43` (ausência não é
+igualdade, na configuração) e do `#d21`/`#d55` (o par de estados em vez do booleano). A leitura
+do que ela digitou mora em `numeroContado`, no domínio, e devolve `number | null`: texto que não
+vira número também é ausência, porque gravar zero porque ela digitou uma letra seria inventar uma
+contagem.
+
+Contagem é por insumo, e não por despensa: o que ela não contou continua com a data que tinha e
+vence no prazo dele.
+
+---
+
+## D60 · A contagem tem prazo, e o prazo é do domínio
+
+**Status:** vigente · decidida em 2026-09-03 na spec `007-estoque`, sessão 7A
+
+**Contexto.** Uma contagem com data ainda precisa de uma regra que diga quando ela deixa de
+valer. Sem prazo, "medição com data" seria a mesma coisa que o número solto, com um campo a mais.
+
+**Decisão.** Quatro estados e dois números, em `domain/estoque.ts`: `FRESCA` até 7 dias,
+`ENVELHECENDO` de 8 a 30, `VENCIDA` acima de 30, `NUNCA` sem data. `IDADE_FRESCA_DIAS` e
+`IDADE_VENCE_DIAS` são exportados porque a tela também os diz.
+
+**Consequência.** **Sete dias porque é o ciclo dela:** ela compra no mesmo mercado toda semana, e
+o horizonte padrão da lista de compras são 7 dias — uma contagem vale uma ida ao mercado sem
+precisar de aviso. **Trinta porque é o maior horizonte da própria lista**, e porque depois de um
+mês todo número da despensa passou por uma compra e por várias fornadas: não sobrou observação
+nenhuma dentro dele.
+
+O estado intermediário existe para não jogar o trabalho dela no lixo: uma contagem de doze dias
+ainda é a melhor informação que existe sobre aquele armário, e descartá-la porque passou de uma
+semana seria trocar um número razoável por nenhum.
+
+Os dois números saem do ciclo dela e do horizonte da própria lista, e não de uma teoria de
+estoque: mudá-los é uma linha, e a tela diz o número que estiver lá. Data no futuro é dedo errado
+e vale `FRESCA` — quem digitou 2027 acabou de contar, e desconfiar do número por causa do ano
+seria punir a contagem mais recente que existe.
+
+`estoqueParaLista` é a função que traduz isso para a lista de compras, e **na 7A ela ainda não
+tem chamador**: quem passa a usá-la é `montarLista`, na 7B. Está aqui porque é a mesma regra, e
+separá-la do módulo seria dividir uma decisão em dois lugares.
+
+---
+
+## D61 · `estoqueMinimo` sai, e o selo passa a dizer "Contagem vencida"
+
+**Status:** vigente · decidida em 2026-09-03 na spec `007-estoque`, sessão 7A
+
+**Contexto.** `Insumo.estoqueMinimo` era tipado, validado por `esquemaInsumo` e gravado pelas
+duas montagens de documento — e **nenhuma tela do sistema o escrevia**. Seu único leitor era
+`estoqueBaixo`, em `LinhaInsumo`, que por isso nunca pôde disparar: o selo "Estoque baixo" que o
+`DESIGN.md` lista como uso do token `--attention` não existia em tela nenhuma.
+
+**Decisão.** O campo sai do tipo, do `esquemaInsumo`, do `DadosInsumo`, das duas montagens de
+documento e do selo. Nenhum documento da conta tinha valor real ali, então não houve dado a
+migrar. O selo continua existindo, e passa a dizer **"Contagem vencida"**.
+
+**Consequência.** A pergunta que um limiar responderia é "o que está acabando?", e ela passa a
+ter duas respostas melhores, as duas de graça: a contagem diz **o que zerou** no momento em que
+ela conta, sem limiar nenhum para inventar item por item; e a lista de compras diz o que falta
+contra a demanda real dos pedidos fechados, que é a versão útil da mesma pergunta. Um mínimo por
+insumo seriam vinte palpites a manter, cada um envelhecendo do mesmo jeito que o estoque
+envelhecia.
+
+O selo trocou um estado que nunca acontecia por uma afirmação verificável sobre um número que
+existe. Alerta de estoque baixo por limiar fica fora do sistema: é este campo voltando com outro
+nome.
+
+**Foi a segunda aprovação que a spec pediu**, e é remoção de campo — portanto da dona do negócio,
+e não de quem implementa.
+
+---
+
+## D62 · A contagem não espera o servidor
+
+**Status:** vigente · decidida em 2026-09-03 na spec `007-estoque`, sessão 7A
+
+**Contexto.** Salvar a contagem podia ser `await` com o botão em "salvando", como fazem o
+cadastro de insumo, o editor de ficha e `TelaNota`.
+
+**Decisão.** A tela despacha o `writeBatch` e **não o espera**, do jeito de `/compras` (`#d40`).
+O cache local já aplicou, a tela volta para `/compras` no toque, e o `SeloSincronizacao` conta a
+verdade sobre o que ainda não subiu.
+
+**Consequência.** **A despensa é o pior sinal da casa.** É o fundo, atrás da cozinha, e é onde a
+contagem acontece por definição. A promessa de uma escrita do Firestore não resolve enquanto não
+há rede — ela fica pendente até a reconexão —, então um `await` aqui deixaria o botão preso em
+"salvando" exatamente no lugar em que esta tela existe para funcionar. É a dívida que `TelaNota`
+tem e aceita (`#d50`): lá a tela já exigiu rede para ler; aqui não há nada a ler de fora.
+
+O que se perde: salvar volta para `/compras` no mesmo toque, então uma falha de permissão
+apareceria numa tela que ela já deixou. É a mesma troca de `#d40`, e pelo mesmo motivo — a falha
+plausível aqui é ausência de rede, e ausência de rede não é falha.
+
+A escrita toca **dois campos**, e não o documento inteiro: `estoqueAtual` e
+`estoqueContadoEmISO`, mais `v` e `atualizadoEm`. Não passa por `corpoDeAtualizacao` de
+propósito — aquele corpo reescreve o documento a partir de um `DadosInsumo`, e o que ela não
+contou não pode ser sobrescrito por um caminho que não estava falando daquilo. E não marca ficha
+nenhuma: quem envelhece ficha é preço, embalagem e perda (`precoMudou`), e contar a despensa não
+muda o custo de um cookie.

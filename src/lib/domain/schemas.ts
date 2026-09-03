@@ -24,7 +24,6 @@ export const esquemaInsumo = z.object({
   marca: z.string().trim().optional(),
   fornecedor: z.string().trim().optional(),
   estoqueAtual: z.number().min(0).optional(),
-  estoqueMinimo: z.number().min(0).optional(),
 });
 
 export type EntradaInsumo = z.infer<typeof esquemaInsumo>;

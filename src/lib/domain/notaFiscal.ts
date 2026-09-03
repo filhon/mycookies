@@ -711,10 +711,10 @@ export interface InsumoParaAtualizar {
  *
  * Mudam `precoCompra`, `quantidadeCompra`, `unidadeCompra`, e `marca` e
  * `fornecedor` **se estiverem vazios**. Continuam como estavam
- * `perdaPercentual`, `estoqueAtual`, `estoqueMinimo`, `categoria` e o nome
+ * `perdaPercentual`, `estoqueAtual`, `estoqueContadoEmISO`, `categoria` e o nome
  * cadastrado — que ficam de fora deste objeto justamente para não terem como
  * ser sobrescritos. Importar uma nota não pode zerar os 5% de perda da farinha
- * que ela ajustou em março.
+ * que ela ajustou em março, e ler a nota não é contar a despensa.
  */
 export function atualizacaoDaLinha(
   anterior: InsumoParaAtualizar,

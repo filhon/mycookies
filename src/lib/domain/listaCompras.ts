@@ -224,6 +224,12 @@ export interface InsumoParaLista {
   precoCompra: Centavos;
   perdaPercentual: Percentual;
   estoqueAtual?: number;
+  /**
+   * O dia em que ela contou. Ainda não é lido aqui: quem passa a olhar a idade
+   * antes de descontar é `estoqueParaLista`, na 7B. Nesta sessão o campo existe
+   * para a tela poder entregar o insumo inteiro sem uma segunda forma de dado.
+   */
+  estoqueContadoEmISO?: DataISO;
 }
 
 export interface LinhaDaLista {

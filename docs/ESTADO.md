@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-02 (sessão 6B).
+Atualizado em 2026-09-03 (sessão 7A).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -26,6 +26,12 @@ virar uma lista conferível que cadastra os insumos de uma vez — a primeira ve
 tem servidor de verdade e fala com serviço externo —, e a **6B ligou a compra ao caixa**, com a
 guarda contra lançar a mesma nota duas vezes. A **6C não foi precisa**: nada da 6B sobrou.
 
+A spec `007-estoque.md` está **com a 7A entregue**: o estoque ganhou data
+(`Insumo.estoqueContadoEmISO`), nasceu `src/lib/domain/estoque.ts` com o prazo da contagem, e
+`/insumos/contagem` conta a despensa inteira em uma escrita só. **A lista de compras ainda não
+mudou de comportamento** — quem faz `montarLista` parar de descontar contagem vencida é a 7B, e
+a ordem é de propósito: primeiro existe o jeito de contar, depois o motivo de contar.
+
 **Falta a prova, e não mais o conserto.** Nenhum número deste sistema jamais saiu de um
 teclado, passou pelo Firestore e voltou. É o que a 5B responde.
 
@@ -36,9 +42,17 @@ teclado, passou pelo Firestore e voltou. É o que a 5B responde.
 > mitigado por nada: quando a 5B rodar e algo em `insumos` ou em `fichas` aparecer torto, a
 > primeira pergunta é se o defeito é do caminho velho ou do que a 6A abriu por cima dele.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **282
-testes**, e build com 14 rotas estáticas — `/insumos/nota` entrou na lista na 6A — mais
-`/api/nota`, `/fichas/[id]` e `/pedidos/[id]` dinâmicas e service worker gerado.
+> **A 7A rodou antes da 5B pelo mesmo motivo, e com o mesmo risco.** `007-estoque.md` diz, na
+> abertura, que não deveria rodar antes dela. A ordem foi invertida de novo por decisão de quem
+> conduz o projeto. O que a 7A mexeu no caminho velho é pequeno e nomeável, e vale saber qual é
+> antes de a 5B rodar: `corpoDeInsumoNovo` e `corpoDeAtualizacao` ganharam um campo e perderam
+> outro, e `dadosDoInsumo` carrega um campo a mais. Se algo em `insumos` aparecer torto na 5B,
+> estes três são os primeiros suspeitos depois dos que a 6A abriu.
+
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **318
+testes**, e build com 15 rotas estáticas — `/insumos/nota` entrou na lista na 6A e
+`/insumos/contagem` na 7A — mais `/api/nota`, `/fichas/[id]` e `/pedidos/[id]` dinâmicas e
+service worker gerado.
 
 **O app está de pé.** Projeto `mycookies-mrc`, `.env.local` preenchido, regras publicadas,
 chave de conta de serviço no disco (fora do git, coberta por `*firebase-adminsdk*.json`).
@@ -78,7 +92,7 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 | 4   | Caixa, metas e previsão                     | pronto (4A e 4B)          | `specs/004-caixa.md`        |
 | 5   | Prontidão: conserto e verificação           | 5A pronto, **5B a fazer** | `specs/005-prontidao.md`    |
 | 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)          | `specs/006-nota-fiscal.md`  |
-| 7   | Estoque com idade e contagem da despensa    | **escrita, a fazer**      | `specs/007-estoque.md`      |
+| 7   | Estoque com idade e contagem da despensa    | 7A pronto, **7B a fazer** | `specs/007-estoque.md`      |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -514,6 +528,65 @@ guarda, o bloco e a gravação da saída não têm teste automatizado. O roteiro
 spec continua sendo o que fecha isso, e o passo 7 — a mesma nota fotografada de dois ângulos —
 é o único jeito de saber se a chave por CNPJ fecha com uma foto de verdade.
 
+## O que a sessão 7A deixou pronto
+
+O ciclo da contagem: abrir, ver o que tem e desde quando, digitar, salvar em uma escrita.
+**A lista de compras não mudou de comportamento** — isso é a 7B.
+
+- `src/lib/domain/estoque.ts`, módulo novo e puro: `frescorDaContagem` (os quatro estados),
+  `contagemDoInsumo` (onde `VENCIDA` vira `quantidade: null`), `estoqueParaLista`,
+  `rotuloDeIdade`, `sugestaoDaContagem`, `entradasDaNota`, `entradasDaLista`,
+  `linhasParaContar`, `numeroContado` e `resumoDaContagem`, mais `IDADE_FRESCA_DIAS` (7) e
+  `IDADE_VENCE_DIAS` (30), exportados porque a tela também os diz.
+- `datas.ts` ganhou `diasEntre(deISO, ateISO)`, que era a peça que faltava lá. Arredonda em vez
+  de truncar por causa do dia de 23 ou 25 horas do horário de verão.
+- `tests/domain/estoque.test.ts`: **32 testes** com o caso de aceite da spec linha por linha —
+  os cinco insumos da 3C, farinha 620, chocolate 0, manteiga 480, saquinho 50, caixa intocada, e
+  o rodapé em "4 de 5 contados · 1 zerado" —, as quatro bordas de idade (7, 8, 30 e 31 dias,
+  mais a ausência e a data no futuro) e as quatro regras de `sugestaoDaContagem`, inclusive a de
+  hoje, que não soma. Mais `diasEntre` em `datas.test.ts`, com a virada de mês e de ano.
+- **Schema:** `Insumo.estoqueContadoEmISO?: DataISO` nasceu e `Insumo.estoqueMinimo` **saiu** —
+  do tipo, do `esquemaInsumo`, do `DadosInsumo`, das duas montagens de documento e do selo.
+  Nenhum documento tinha valor real ali, então não houve migração.
+- `src/lib/firebase/mutations/estoque.ts`, com `salvarContagem`: um `writeBatch` que grava
+  `{ v, estoqueAtual, estoqueContadoEmISO, atualizadoEm }` e **nada mais**. Não passa por
+  `corpoDeAtualizacao` e não marca ficha nenhuma.
+- `src/components/estoque/`: `TelaContagem` (a página), `LinhaContagem` (o campo nascendo vazio,
+  com a referência do número velho embaixo do nome), `RodapeContagem` (o quinto rodapé fixo do
+  sistema) e `EntradaContagem` (o atalho, que a 7B reusa na nota e no fechamento da lista).
+- Rota `/insumos/contagem`, alcançada pelo cabeçalho de `/compras` — **inclusive quando não há
+  lista**, porque domingo à noite sem pedido confirmado é exatamente quando ela conta.
+- `LinhaInsumo` perdeu `estoqueBaixo` e ganhou o selo **"Contagem vencida"**, que é uma
+  afirmação verificável sobre um número que existe.
+- Decisões novas em `DECISOES.md#d56` a `#d62` — as sete primeiras da abertura da spec 007.
+
+Duas aprovações da spec foram usadas, e a terceira **não**: o campo novo e a remoção de
+`estoqueMinimo` estão feitos; a mudança de comportamento da lista de compras em dado já gravado
+é da 7B e não aconteceu nesta sessão. Nenhuma dependência entrou, nenhuma regra de segurança
+mudou e nenhum índice novo foi preciso: a tela de contagem usa a mesma consulta de `/insumos`.
+
+Fora do escopo literal da spec, e por quê:
+
+- **`sugestaoDaContagem` não recebe `hojeISO`.** A tabela da spec pede três parâmetros, e o
+  terceiro seria uma segunda data para discordar da primeira: `ContagemDoInsumo` já foi lida
+  contra hoje e carrega `idadeEmDias`, que é o que a regra de "contagem de hoje não soma"
+  consulta.
+- **`contagemDoInsumo` trata data sem número como `NUNCA`.** O formulário de insumo pode apagar
+  o estoque e carregar a data adiante; sem número não há o que datar. Está em `#d58`.
+- **O selo de `/insumos` foi trocado nesta sessão**, e não na 7B. A remoção de `estoqueMinimo` é
+  da 7A, e deixar o selo morrer entre uma sessão e outra seria uma regressão de propósito. A
+  linha mais rica — contagem, idade e o número — continua sendo da 7B.
+- **`FormularioInsumo` repõe `estoqueContadoEmISO` ao salvar.** Não é um campo da tela: é o que
+  impede que editar o preço ali apague a idade do estoque, porque `corpoDeAtualizacao` grava
+  `null` para todo campo ausente.
+- **A dica do campo "Estoque atual"** passou a apontar para a tela de contagem. Ele continua
+  existindo, e agora é o caminho secundário.
+
+**O que a 7A não provou.** `npm test` cobre `src/lib/domain/`, então a tela, o lote e o selo não
+têm teste automatizado — e desta vez nem a porta de uma rota foi exercitada, porque não há rota
+nova de servidor. Tudo o que depende de o número sair do teclado, passar pelo Firestore e voltar
+está na lista de navegador, e vale rodar junto do roteiro da 7B.
+
 ## O que mudou no refactor de contas
 
 Vale saber antes de escrever qualquer código novo, porque muda a assinatura de tudo que
@@ -542,32 +615,37 @@ As três aprovações que a spec pedia foram usadas: `firebase-admin` em `depend
 serviços externos na 6A, e `Transacao.notaChave?: string` na 6B — mudança compatível, documento
 antigo sem o campo continua válido.
 
-## A spec 007, escrita e não iniciada
+## A spec 007, com a 7A entregue
 
 `specs/007-estoque.md` foi escrita em 2026-09-03 e nasce da dívida `Estoque continua sendo
 número digitado`, que a 003 e a 006 já tinham deixado de fora com o mesmo argumento. Duas
-sessões: a **7A** dá idade ao número (`Insumo.estoqueContadoEmISO`), cria
+sessões: a **7A** deu idade ao número (`Insumo.estoqueContadoEmISO`), criou
 `src/lib/domain/estoque.ts` e a tela `/insumos/contagem`, que conta a despensa inteira em uma
 escrita; a **7B** faz a lista de compras parar de descontar contagem vencida e faz a compra
 **propor** a contagem em vez de escrevê-la. Baixa automática continua fora, e é justamente o
 que a spec responde.
 
-**Ela não passa na frente da 5B**, e a razão é a mesma que a 006 desrespeitou: a 7B mexe em
-`montarLista`, entregue na 3C e nunca vista rodando contra o Firestore. Mexer nela antes da
-verificação deixaria dois candidatos para qualquer defeito que aparecesse na lista de
-compras.
+**A 7A está entregue e a 7B continua a fazer.** O que falta dela, em uma frase: `montarLista`
+passa a receber `hojeISO` e a chamar `estoqueParaLista` (que já existe e já está testada), as
+três frases de `/compras` nascem, e a semeadura pela nota e pelo fechamento da lista liga
+`entradasDaNota` e `entradasDaLista` — que também já existem — na tela de contagem, pelo estado
+de navegação e não pela URL. **A 7B não pode entregar o "não desconta" sem as frases:** uma
+lista que passa a comprar mais e não diz por quê é pior do que a lista de hoje.
 
-Três aprovações pendentes, listadas ao fim da spec: o campo novo, a **remoção** de
-`Insumo.estoqueMinimo` (tipado, validado, gravado e sem nenhuma tela que o escreva — o selo
-"Estoque baixo" de `LinhaInsumo` nunca pôde disparar), e a mudança de comportamento em dado
-já gravado, que faz o carrinho crescer na primeira lista depois da 7B.
+Duas das três aprovações da spec foram usadas na 7A — o campo novo e a **remoção** de
+`Insumo.estoqueMinimo`. A terceira continua pendente e é da 7B: a lista de compras muda de
+comportamento em dado já gravado, e o carrinho da primeira lista depois dela **cresce**. Não há
+script de migração, e não deve haver: não existe data honesta para o estoque já gravado. A
+migração é a frase na tela, e o conserto são dois minutos em `/insumos/contagem`.
 
 ## Próxima ação
 
 **A sessão 5B de `specs/005-prontidao.md`**, a verificação em navegador. É a dívida mais antiga
-do projeto, é a única coisa a fazer que restou nas specs escritas, e agora tem mais o que
-conferir do que quando foi escrita. O roteiro está na spec, em ordem, porque cada passo
-constrói o estado que o seguinte consome — e o roteiro da 006, ao fim da 6B, entra depois dele.
+do projeto e agora tem mais o que conferir do que quando foi escrita. O roteiro está na spec, em
+ordem, porque cada passo constrói o estado que o seguinte consome — e o roteiro da 006, ao fim
+da 6B, entra depois dele. **A 7B é o passo seguinte**, e ela tem roteiro próprio ao fim da spec
+007, com o passo 1 (abrir `/compras` e ver o carrinho crescer) valendo antes de a sessão ser
+considerada fechada, e não depois.
 
 **Antes dela: preencher `GEMINI_API_KEY` em `.env.local`.** A variável está documentada em
 `.env.local.example`, a chave se emite em <https://aistudio.google.com/apikey>, e sem ela
@@ -717,6 +795,26 @@ Da 3C, o que só o navegador responde:
   em vez de as pílulas descreverem uma lista que não é a da tela.
 - **Fechar a lista e montar outra.** A nova precisa nascer sem nenhum item marcado.
 
+Da 7A, o que só o navegador responde — e é aqui que o risco desta sessão de fato se resolve:
+
+- **Contar a despensa inteira no celular**, com o teclado aberto e o rodapé fixo. É o quinto
+  rodapé fixo do sistema e a tela com mais campos numéricos dele. A pergunta é se o campo da
+  linha que ela está digitando fica visível.
+- **Contar uma linha com o mesmo número de antes.** A data precisa virar hoje — é a `#d58`, e é
+  a que mais fácil se implementa errado.
+- **Contar uma linha com `0`, e deixar outra em branco.** A de `0` grava `estoqueAtual: 0` e a
+  data; a em branco não aparece no documento e continua com a data que tinha. Conferido no
+  banco, e não só na tela.
+- **Contar com o app sem rede**, que é o cenário da `#d62`. A tela não pode ficar presa em
+  "salvando", ela volta para `/compras` no toque, e o selo de sincronização precisa contar a
+  verdade. Voltar a rede e ver subir.
+- **Corrigir o preço da farinha pela lista**, e conferir em `/insumos` que a data da contagem
+  **não** se mexeu. Depois editar o mesmo insumo pelo formulário, salvar, e conferir de novo.
+- **Contar um insumo e reabrir `/compras`.** Nesta sessão o carrinho **não** muda: a lista ainda
+  desconta como sempre descontou. Se ele mudar, alguma coisa da 7B entrou sem querer.
+- **Um insumo com contagem de mais de 30 dias** precisa mostrar o selo "Contagem vencida" em
+  `/insumos`, com ícone e texto.
+
 ## O que a verificação visual já corrigiu
 
 A primeira rodada de capturas em navegador (desktop, tema escuro) achou três coisas:
@@ -738,36 +836,38 @@ A primeira rodada de capturas em navegador (desktop, tema escuro) achou três co
 
 Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobertas.
 
-| Dívida                                                                        | Onde                             | Quando resolver                                                                   |
-| ----------------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------- |
-| Verificação visual só no desktop e só no tema escuro                          | —                                | **Spec 005, sessão 5B**: falta o tema claro (que é o padrão) e o celular          |
-| Regras publicadas, mas nunca exercitadas por um cliente real                  | `firestore.rules`                | **Spec 005, sessão 5B**, passo 1: é lá que a regra é de fato testada              |
-| Acesso concedido por script, sem cadastro self-serve                          | `scripts/conceder-acesso.mjs`    | Segundo cliente pagante, junto de D10 (`DECISOES.md#d16`)                         |
-| `sair()` não limpa o cache do IndexedDB                                       | `src/providers/AuthProvider.tsx` | Só ao virar SaaS: hoje é vantagem, em aparelho compartilhado vira vazamento       |
-| Agregados incrementados no cliente                                            | `src/lib/firebase/mutations/`    | Segundo cliente pagante (`DECISOES.md#d10`)                                       |
-| Configuração aberta sem rede e sem cache diz "valores sugeridos"              | `TelaConfiguracao.tsx`           | Não tem conserto: cache vazio não distingue "não existe" de "não sei" (`#d43`)    |
-| Agregado do mês pode ficar torto se um delta se perder no caminho             | `mutations/agregado.ts`          | Tem escape: "Recalcular o mês" na tela. A troca real é a mesma de D10             |
-| Mudar um lançamento de mês não move o espelho da meta do mês destino          | `mutations/transacoes.ts`        | Mesmo escape e mesma troca: `DECISOES.md#d29`                                     |
-| Produto revertido sobra zerado no agregado até recalcular                     | `mutations/agregado.ts`          | `produtosOrdenados` o esconde na leitura; recalcular limpa (`#d37`)               |
-| `ultimoPedidoEm` do cliente não volta atrás ao desfazer um pagamento          | `mutations/clientes.ts`          | Só com histórico de pagamentos, que não existe (`#d37`)                           |
-| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê           | `mutations/clientes.ts`          | Quando "quem mais compra de mim" virar pergunta real (`#d35`)                     |
-| Meta não guarda histórico: reescrever o alvo apaga o anterior                 | `mutations/metas.ts`             | Se "que meta eu tinha antes" virar pergunta real (`DECISOES.md#d27`)              |
-| `FichaTecnica.ativo` é sempre `true`, sem tela que o desligue                 | `src/lib/types/fichas.ts`        | Se "produto fora de linha" virar diferente de "arquivado"                         |
-| Quantidade volta em unidade base: 0,5 kg reabre como 500 g                    | `FormularioFicha.tsx`            | Se ela reclamar; exigiria gravar a unidade digitada, e não só o valor             |
-| `Bloco` e `BlocoConfiguracao` continuam primos                                | `src/components/`                | Se a configuração precisar do mesmo bloco; hoje ela tem rodapé próprio            |
-| `/pedidos` carrega todo pedido não arquivado, sem recorte de data             | `ListaPedidos.tsx`               | Quando o primeiro ano de pedidos pesar: vira range sobre `dataEntregaISO`         |
-| Não dá para arquivar uma cliente: só cadastrar e editar, de dentro do pedido  | `mutations/clientes.ts`          | Junto da tela de clientes, quando ela existir (`DECISOES.md#d35`)                 |
-| Editar um pedido e sair sem salvar descarta em silêncio                       | `FormularioPedido.tsx`           | Mesma dívida do editor de ficha e da configuração; se acontecer de verdade        |
-| `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`              | `src/lib/types/configuracao.ts`  | Quando algum leitor precisar do nome: hoje ninguém lê esse campo                  |
-| Sair da configuração com alteração pendente descarta em silêncio              | `TelaConfiguracao.tsx`           | Se acontecer de verdade; a barra fixa de "não salvas" é a defesa atual            |
-| Dois toques no mesmo quadro na lista de compras podem perder uma marca        | `ListaDoMercado.tsx`             | Se acontecer: `comprado` sai do array e vira mapa por `insumoId` (`#d40`)         |
-| Estoque continua sendo número digitado: comprar não o movimenta               | `mutations/listasCompra.ts`      | **Spec 007**: nunca por baixa automática — a contagem ganha data e a lista a lê   |
-| `estoqueMinimo` é gravado e nenhuma tela o escreve: o selo nunca acende       | `LinhaInsumo.tsx`                | **Spec 007, sessão 7A**: o campo sai, e o selo passa a dizer "Contagem vencida"   |
-| A rota, a tela da nota, a gravação em lote e a guarda do caixa sem teste      | `api/nota/`, `components/notas/` | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador         |
-| Cadastrar a nota espera o servidor: sem rede o botão fica preso em carregando | `TelaNota.tsx`                   | Não incomoda hoje — a tela já exigiu rede para ler (`#d50`); se incomodar, `#d40` |
-| O cache de CNPJ vive na memória do processo e morre no reinício               | `api/nota/route.ts`              | Só se a cota de 3/min por IP apertar, que é o dia do segundo cliente (`#d52`)     |
-| Reler uma nota exige fotografar de novo: a imagem não é guardada              | `api/nota/route.ts`              | Se "ver a nota do mês passado" virar pergunta real, nasce com Storage (`#d49`)    |
-| A 6A rodou antes da 5B, contra a dependência declarada na spec 006            | —                                | Some quando a 5B rodar; até lá, defeito em `insumos` tem duas origens possíveis   |
-| A guarda de duplicidade depende de o modelo ler o mesmo CNPJ nas duas fotos   | `domain/notaFiscal.ts`           | Passo 7 do roteiro da 006 é quem responde; falhando, entra o QR Code da NFC-e     |
-| Nota sem CNPJ legível lança sem guarda: a mesma nota pode entrar duas vezes   | `TelaNota.tsx`                   | Não tem conserto barato: chave por nome sai diferente de duas fotos (`#d54`)      |
-| Duas notas da mesma loja, no mesmo dia, com o total ilegível nas duas colidem | `domain/notaFiscal.ts`           | Falso positivo visível, desfeito em um toque; se acontecer, a chave ganha a hora  |
+| Dívida                                                                        | Onde                             | Quando resolver                                                                    |
+| ----------------------------------------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------- |
+| Verificação visual só no desktop e só no tema escuro                          | —                                | **Spec 005, sessão 5B**: falta o tema claro (que é o padrão) e o celular           |
+| Regras publicadas, mas nunca exercitadas por um cliente real                  | `firestore.rules`                | **Spec 005, sessão 5B**, passo 1: é lá que a regra é de fato testada               |
+| Acesso concedido por script, sem cadastro self-serve                          | `scripts/conceder-acesso.mjs`    | Segundo cliente pagante, junto de D10 (`DECISOES.md#d16`)                          |
+| `sair()` não limpa o cache do IndexedDB                                       | `src/providers/AuthProvider.tsx` | Só ao virar SaaS: hoje é vantagem, em aparelho compartilhado vira vazamento        |
+| Agregados incrementados no cliente                                            | `src/lib/firebase/mutations/`    | Segundo cliente pagante (`DECISOES.md#d10`)                                        |
+| Configuração aberta sem rede e sem cache diz "valores sugeridos"              | `TelaConfiguracao.tsx`           | Não tem conserto: cache vazio não distingue "não existe" de "não sei" (`#d43`)     |
+| Agregado do mês pode ficar torto se um delta se perder no caminho             | `mutations/agregado.ts`          | Tem escape: "Recalcular o mês" na tela. A troca real é a mesma de D10              |
+| Mudar um lançamento de mês não move o espelho da meta do mês destino          | `mutations/transacoes.ts`        | Mesmo escape e mesma troca: `DECISOES.md#d29`                                      |
+| Produto revertido sobra zerado no agregado até recalcular                     | `mutations/agregado.ts`          | `produtosOrdenados` o esconde na leitura; recalcular limpa (`#d37`)                |
+| `ultimoPedidoEm` do cliente não volta atrás ao desfazer um pagamento          | `mutations/clientes.ts`          | Só com histórico de pagamentos, que não existe (`#d37`)                            |
+| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê           | `mutations/clientes.ts`          | Quando "quem mais compra de mim" virar pergunta real (`#d35`)                      |
+| Meta não guarda histórico: reescrever o alvo apaga o anterior                 | `mutations/metas.ts`             | Se "que meta eu tinha antes" virar pergunta real (`DECISOES.md#d27`)               |
+| `FichaTecnica.ativo` é sempre `true`, sem tela que o desligue                 | `src/lib/types/fichas.ts`        | Se "produto fora de linha" virar diferente de "arquivado"                          |
+| Quantidade volta em unidade base: 0,5 kg reabre como 500 g                    | `FormularioFicha.tsx`            | Se ela reclamar; exigiria gravar a unidade digitada, e não só o valor              |
+| `Bloco` e `BlocoConfiguracao` continuam primos                                | `src/components/`                | Se a configuração precisar do mesmo bloco; hoje ela tem rodapé próprio             |
+| `/pedidos` carrega todo pedido não arquivado, sem recorte de data             | `ListaPedidos.tsx`               | Quando o primeiro ano de pedidos pesar: vira range sobre `dataEntregaISO`          |
+| Não dá para arquivar uma cliente: só cadastrar e editar, de dentro do pedido  | `mutations/clientes.ts`          | Junto da tela de clientes, quando ela existir (`DECISOES.md#d35`)                  |
+| Editar um pedido e sair sem salvar descarta em silêncio                       | `FormularioPedido.tsx`           | Mesma dívida do editor de ficha e da configuração; se acontecer de verdade         |
+| `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`              | `src/lib/types/configuracao.ts`  | Quando algum leitor precisar do nome: hoje ninguém lê esse campo                   |
+| Sair da configuração com alteração pendente descarta em silêncio              | `TelaConfiguracao.tsx`           | Se acontecer de verdade; a barra fixa de "não salvas" é a defesa atual             |
+| Dois toques no mesmo quadro na lista de compras podem perder uma marca        | `ListaDoMercado.tsx`             | Se acontecer: `comprado` sai do array e vira mapa por `insumoId` (`#d40`)          |
+| A lista de compras desconta estoque sem olhar a idade dele                    | `domain/listaCompras.ts`         | **Spec 007, sessão 7B**: `estoqueParaLista` já existe e ainda não tem chamador     |
+| A contagem existe e depende de ela contar: sem contar, a 7B compra o cheio    | `/insumos/contagem`              | Não tem conserto em código: as defesas são o erro barato e a semeadura pela compra |
+| A tela de contagem, o lote e o selo de contagem vencida sem teste             | `components/estoque/`            | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador          |
+| Sair da contagem sem salvar descarta em silêncio                              | `TelaContagem.tsx`               | Mesma dívida do editor de ficha, do de pedido e da configuração                    |
+| A rota, a tela da nota, a gravação em lote e a guarda do caixa sem teste      | `api/nota/`, `components/notas/` | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador          |
+| Cadastrar a nota espera o servidor: sem rede o botão fica preso em carregando | `TelaNota.tsx`                   | Não incomoda hoje — a tela já exigiu rede para ler (`#d50`); se incomodar, `#d40`  |
+| O cache de CNPJ vive na memória do processo e morre no reinício               | `api/nota/route.ts`              | Só se a cota de 3/min por IP apertar, que é o dia do segundo cliente (`#d52`)      |
+| Reler uma nota exige fotografar de novo: a imagem não é guardada              | `api/nota/route.ts`              | Se "ver a nota do mês passado" virar pergunta real, nasce com Storage (`#d49`)     |
+| A 6A rodou antes da 5B, contra a dependência declarada na spec 006            | —                                | Some quando a 5B rodar; até lá, defeito em `insumos` tem duas origens possíveis    |
+| A guarda de duplicidade depende de o modelo ler o mesmo CNPJ nas duas fotos   | `domain/notaFiscal.ts`           | Passo 7 do roteiro da 006 é quem responde; falhando, entra o QR Code da NFC-e      |
+| Nota sem CNPJ legível lança sem guarda: a mesma nota pode entrar duas vezes   | `TelaNota.tsx`                   | Não tem conserto barato: chave por nome sai diferente de duas fotos (`#d54`)       |
+| Duas notas da mesma loja, no mesmo dia, com o total ilegível nas duas colidem | `domain/notaFiscal.ts`           | Falso positivo visível, desfeito em um toque; se acontecer, a chave ganha a hora   |

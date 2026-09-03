@@ -403,25 +403,25 @@ Os números que provam cada regra:
 
 ## Critérios de aceite 7A
 
-- [ ] `tests/domain/estoque.test.ts` cobre o caso de aceite linha por linha, os quatro
+- [x] `tests/domain/estoque.test.ts` cobre o caso de aceite linha por linha, os quatro
       estados de `frescorDaContagem` nas bordas exatas (7, 8, 30 e 31 dias, mais ausência),
       e as quatro regras de `sugestaoDaContagem` — inclusive a de hoje, que não soma.
-- [ ] `diasEntre` em `tests/domain/datas.test.ts`, com a virada de mês e de ano, no fuso do
+- [x] `diasEntre` em `tests/domain/datas.test.ts`, com a virada de mês e de ano, no fuso do
       aparelho e nunca em UTC.
-- [ ] A tela lista todo insumo não arquivado por corredor, com campo vazio e a referência
+- [x] A tela lista todo insumo não arquivado por corredor, com campo vazio e a referência
       certa nos três casos: contagem com data, número sem data, e nunca contado.
-- [ ] Salvar grava **só as linhas tocadas**, em um lote, com a data de hoje — conferido no
+- [x] Salvar grava **só as linhas tocadas**, em um lote, com a data de hoje — conferido no
       banco, com uma linha digitada igual ao valor anterior e uma linha digitada `0`.
-- [ ] Salvar **não** marca ficha nenhuma como `custoDesatualizado`, e **não** empurra entrada
+- [x] Salvar **não** marca ficha nenhuma como `custoDesatualizado`, e **não** empurra entrada
       em `historicoPrecos`.
-- [ ] Corrigir o preço de um insumo por `/compras` **não** mexe em `estoqueContadoEmISO`.
-- [ ] Sem rede, a contagem salva do mesmo jeito: a tela não fica presa em "salvando", e o
+- [x] Corrigir o preço de um insumo por `/compras` **não** mexe em `estoqueContadoEmISO`.
+- [x] Sem rede, a contagem salva do mesmo jeito: a tela não fica presa em "salvando", e o
       selo de sincronização aparece.
-- [ ] `estoqueMinimo` não existe mais em `types`, `schemas`, `mutations` nem em componente, e
+- [x] `estoqueMinimo` não existe mais em `types`, `schemas`, `mutations` nem em componente, e
       `grep` no repositório não o encontra fora de `docs/`.
-- [ ] A lista de compras continua produzindo **exatamente** os R$ 120,00 da 3C. Esta sessão
+- [x] A lista de compras continua produzindo **exatamente** os R$ 120,00 da 3C. Esta sessão
       não muda o comportamento dela.
-- [ ] Portão de conclusão passando: lint, typecheck, test, build.
+- [x] Portão de conclusão passando: lint, typecheck, test, build.
 
 ---
 

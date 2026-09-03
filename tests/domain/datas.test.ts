@@ -6,6 +6,7 @@ import {
   dataDeISO,
   dataISODe,
   diaDeISO,
+  diasEntre,
   diasNoMes,
   diaVizinho,
   rotuloAgenda,
@@ -79,6 +80,36 @@ describe("diaVizinho", () => {
     expect(diaVizinho("2026-09-30", 1)).toBe("2026-10-01");
     expect(diaVizinho("2026-01-01", -1)).toBe("2025-12-31");
     expect(diaVizinho("2028-02-28", 1)).toBe("2028-02-29");
+  });
+});
+
+describe("diasEntre", () => {
+  it("conta os dias entre dois dias do mesmo mês", () => {
+    expect(diasEntre("2026-09-03", "2026-09-03")).toBe(0);
+    expect(diasEntre("2026-09-03", "2026-09-10")).toBe(7);
+    expect(diasEntre("2026-08-20", "2026-09-03")).toBe(14);
+  });
+
+  it("atravessa a virada de mês e de ano", () => {
+    expect(diasEntre("2026-08-31", "2026-09-01")).toBe(1);
+    expect(diasEntre("2026-07-20", "2026-09-03")).toBe(45);
+    expect(diasEntre("2025-12-31", "2026-01-01")).toBe(1);
+    expect(diasEntre("2025-12-25", "2026-01-05")).toBe(11);
+    // 2028 é bissexto: fevereiro tem 29 dias e a conta precisa saber disso.
+    expect(diasEntre("2028-02-01", "2028-03-01")).toBe(29);
+  });
+
+  it("devolve negativo quando a data está no futuro", () => {
+    expect(diasEntre("2026-09-10", "2026-09-03")).toBe(-7);
+  });
+
+  it("conta pelo relógio local, e não por UTC", () => {
+    // As duas datas montadas pelos componentes locais têm a mesma distância em
+    // qualquer fuso. Lidas como meia-noite UTC no Brasil, as duas viram o dia
+    // anterior às 21h — o que ainda dá 1, mas a data de referência já teria
+    // mudado de dia antes de a subtração acontecer.
+    expect(diasEntre("2026-09-02", "2026-09-03")).toBe(1);
+    expect(dataISODe(dataDeISO("2026-09-03"))).toBe("2026-09-03");
   });
 });
 

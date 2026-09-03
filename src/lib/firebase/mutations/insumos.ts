@@ -19,6 +19,7 @@ import { VERSAO_SCHEMA } from "@/lib/types";
 import type {
   CategoriaInsumo,
   Centavos,
+  DataISO,
   HistoricoPreco,
   Insumo,
   Percentual,
@@ -35,7 +36,15 @@ export interface DadosInsumo {
   unidadeCompra: UnidadeCompra;
   perdaPercentual: Percentual;
   estoqueAtual?: number;
-  estoqueMinimo?: number;
+  /**
+   * A data da contagem, carregada adiante por quem não contou.
+   *
+   * Só a tela de contagem escreve isto, e ela não passa por aqui
+   * (`mutations/estoque.ts` toca dois campos e mais nada). Quem chega até este
+   * corpo por outro caminho precisa trazer a data que já estava no documento:
+   * corrigir o preço da farinha na gôndola não pode redatar a despensa.
+   */
+  estoqueContadoEmISO?: DataISO;
 }
 
 /**
@@ -58,8 +67,8 @@ export function dadosDoInsumo(insumo: Insumo): DadosInsumo {
     ...(insumo.estoqueAtual !== undefined && insumo.estoqueAtual !== null
       ? { estoqueAtual: insumo.estoqueAtual }
       : {}),
-    ...(insumo.estoqueMinimo !== undefined && insumo.estoqueMinimo !== null
-      ? { estoqueMinimo: insumo.estoqueMinimo }
+    ...(insumo.estoqueContadoEmISO
+      ? { estoqueContadoEmISO: insumo.estoqueContadoEmISO }
       : {}),
   };
 }
@@ -137,8 +146,8 @@ export function corpoDeInsumoNovo(
     ...(dados.estoqueAtual !== undefined
       ? { estoqueAtual: dados.estoqueAtual }
       : {}),
-    ...(dados.estoqueMinimo !== undefined
-      ? { estoqueMinimo: dados.estoqueMinimo }
+    ...(dados.estoqueContadoEmISO
+      ? { estoqueContadoEmISO: dados.estoqueContadoEmISO }
       : {}),
     ultimaCompraEm: momento,
     historicoPrecos: [entradaHistorico(dados, momento)],
@@ -174,7 +183,7 @@ export function corpoDeAtualizacao(
     perdaPercentual: dados.perdaPercentual,
     ...camposDerivados(dados),
     estoqueAtual: dados.estoqueAtual ?? null,
-    estoqueMinimo: dados.estoqueMinimo ?? null,
+    estoqueContadoEmISO: dados.estoqueContadoEmISO ?? null,
     atualizadoEm: momento,
     ...(precoMudou(anterior, dados)
       ? {

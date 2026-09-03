@@ -2,25 +2,32 @@
 
 import { ChevronRight, TriangleAlert } from "lucide-react";
 import { Selo } from "@/components/ui/Selo";
+import { contagemDoInsumo } from "@/lib/domain/estoque";
 import { formatarCustoUnitario, formatarMoeda } from "@/lib/domain/money";
 import { formatarQuantidade } from "@/lib/domain/unidades";
-import type { Insumo } from "@/lib/types";
+import type { DataISO, Insumo } from "@/lib/types";
 
-function estoqueBaixo(insumo: Insumo): boolean {
-  return (
-    insumo.estoqueAtual !== undefined &&
-    insumo.estoqueMinimo !== undefined &&
-    insumo.estoqueAtual <= insumo.estoqueMinimo
-  );
-}
-
+/**
+ * O selo que era "Estoque baixo" e nunca pôde acender.
+ *
+ * Ele dependia de um limiar por insumo que nenhuma tela escrevia — vinte
+ * palpites a manter, cada um envelhecendo do mesmo jeito que o estoque
+ * envelhecia. O que ficou no lugar é uma afirmação verificável sobre um número
+ * que existe: esta contagem passou de um mês.
+ */
 export function LinhaInsumo({
   insumo,
+  hoje,
   aoAbrir,
 }: {
   insumo: Insumo;
+  hoje: DataISO;
   aoAbrir: (insumo: Insumo) => void;
 }) {
+  // `contagemDoInsumo`, e não `frescorDaContagem` direto: é ele que sabe que
+  // data sem número não é contagem, e que `null` no documento é ausência.
+  const contagemVencida = contagemDoInsumo(insumo, hoje).frescor === "VENCIDA";
+
   return (
     <li>
       <button
@@ -45,13 +52,13 @@ export function LinhaInsumo({
             )}
           </p>
 
-          {estoqueBaixo(insumo) && (
+          {contagemVencida && (
             <Selo
               tom="atencao"
               className="mt-1.5"
               icone={<TriangleAlert aria-hidden className="size-3.5" />}
             >
-              Estoque baixo
+              Contagem vencida
             </Selo>
           )}
         </div>

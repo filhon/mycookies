@@ -125,6 +125,24 @@ export function diaVizinho(iso: DataISO, passo: number): DataISO {
   return dataISODe(data);
 }
 
+/** As horas de um dia inteiro. Serve para contar dias, e não para somá-los. */
+const MS_POR_DIA = 24 * 60 * 60 * 1000;
+
+/**
+ * Quantos dias separam dois dias de calendário. Negativo quando `ateISO` é
+ * anterior a `deISO`.
+ *
+ * As duas datas viram meia-noite local por `dataDeISO`, e não instantes em UTC:
+ * é a mesma decisão do resto do módulo. `Math.round` está aqui porque um dia de
+ * horário de verão tem 23 ou 25 horas — a divisão daria 0,958 ou 1,042, e
+ * truncar contaria um dia a menos na virada.
+ */
+export function diasEntre(deISO: DataISO, ateISO: DataISO): number {
+  const de = dataDeISO(deISO).getTime();
+  const ate = dataDeISO(ateISO).getTime();
+  return Math.round((ate - de) / MS_POR_DIA);
+}
+
 /**
  * 'Hoje', 'Amanhã', 'Ontem' ou 'Sábado, 12 de setembro' — o cabeçalho de um dia
  * na agenda.

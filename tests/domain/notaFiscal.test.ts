@@ -567,6 +567,8 @@ describe("o que a gravação preserva", () => {
     expect(mudanca).not.toHaveProperty("categoria");
     expect(mudanca).not.toHaveProperty("nome");
     expect(mudanca).not.toHaveProperty("estoqueAtual");
+    // Ler a nota não é contar a despensa: a data da contagem não se mexe.
+    expect(mudanca).not.toHaveProperty("estoqueContadoEmISO");
   });
 
   it("marca e fornecedor entram só quando estavam vazios", () => {
