@@ -64,11 +64,17 @@ export interface DerivadosPedido {
 }
 
 /** Quantidade negativa é dedo errado, não desconto: vale zero até ela corrigir. */
-function quantidadeUtil(item: ItemParaPedido): number {
+function quantidadeUtil(item: Pick<ItemParaPedido, "quantidade">): number {
   return item.quantidade > 0 ? item.quantidade : 0;
 }
 
-export function subtotalDoItem(item: ItemParaPedido): Centavos {
+/**
+ * O que uma linha vale. Pede só o que lê: o resumo que vai para a cliente não
+ * tem o custo na mão, e não pode ter (`DECISOES.md#d79`).
+ */
+export function subtotalDoItem(
+  item: Pick<ItemParaPedido, "quantidade" | "precoUnitario">,
+): Centavos {
   return Math.round(item.precoUnitario * quantidadeUtil(item));
 }
 
@@ -308,7 +314,7 @@ export function agruparPorEntrega<T extends { dataEntregaISO: DataISO }>(
 }
 
 /** Números com vírgula, como o teclado brasileiro os escreve. */
-function quantidadeEmTexto(quantidade: number): string {
+export function quantidadeEmTexto(quantidade: number): string {
   return String(quantidade).replace(".", ",");
 }
 

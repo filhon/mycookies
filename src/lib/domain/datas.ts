@@ -144,6 +144,17 @@ export function diasEntre(deISO: DataISO, ateISO: DataISO): number {
 }
 
 /**
+ * 'terça-feira, 15 de setembro' — o dia escrito como se fala, em minúscula.
+ *
+ * Fica minúsculo porque a maior parte dos usos o põe dentro de uma frase
+ * ("Entrega em terça-feira, 15 de setembro"). Quem precisa dele começando
+ * linha capitaliza, que é o que `rotuloAgenda` faz.
+ */
+export function rotuloDiaPorExtenso(iso: DataISO): string {
+  return DIA_POR_EXTENSO.format(dataDeISO(iso));
+}
+
+/**
  * 'Hoje', 'Amanhã', 'Ontem' ou 'Sábado, 12 de setembro' — o cabeçalho de um dia
  * na agenda.
  *
@@ -156,6 +167,6 @@ export function rotuloAgenda(iso: DataISO, hoje: DataISO): string {
   if (iso === diaVizinho(hoje, 1)) return "Amanhã";
   if (iso === diaVizinho(hoje, -1)) return "Ontem";
 
-  const escrito = DIA_POR_EXTENSO.format(dataDeISO(iso));
+  const escrito = rotuloDiaPorExtenso(iso);
   return escrito.charAt(0).toUpperCase() + escrito.slice(1);
 }

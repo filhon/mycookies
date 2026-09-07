@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-07 (spec 009, o teclado e a barra).
+Atualizado em 2026-09-07 (spec 010, o resumo no WhatsApp).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -52,6 +52,12 @@ fixos passaram a compartilhar `RodapeFixo`, e a barra do sistema do app instalad
 nos dois temas. **Os dois roteiros de aceite dela dependem de aparelho e de deploy**, e nenhum
 dos dois rodou: o A precisa de um Android na mão, e o B de publicar e reinstalar o app.
 
+A spec `010-resumo-no-whatsapp.md` está **entregue**, e é a segunda coisa que a operação real
+devolveu: o pedido para de ser digitado duas vezes. Um módulo puro (`domain/whatsapp.ts`), um
+bloco no editor de pedido e um link `wa.me` — nenhum campo novo, nenhuma rota, nenhuma escrita,
+nenhuma linha em `src/lib/firebase/`. **O roteiro de aparelho dela não rodou**: seis passos que
+só o celular e o WhatsApp instalado respondem.
+
 Fora das specs, o projeto foi **preparado para publicar no Vercel** em 2026-09-03: a
 credencial do Admin SDK deixou de exigir um arquivo em disco, a falta dela parou de ser
 confundida com login inválido, e `functions/` saiu do `tsconfig` da raiz — sem isso o build
@@ -85,7 +91,7 @@ da hospedagem falharia. O guia é `docs/DEPLOY.md`. **Nada foi publicado ainda**
 > mudou de arquivo. Se algo em `insumos`, em `/compras` ou na leitura de nota aparecer torto na
 > 5B, estes são os primeiros suspeitos depois dos que a 6A abriu.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **350
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **372
 testes**, e build com 16 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
 `/insumos/contagem` na 7A e `/comecar` na 8A — mais `/api/nota`, `/fichas/[id]` e
 `/pedidos/[id]` dinâmicas e service worker gerado.
@@ -118,19 +124,20 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 
 ## Módulos
 
-| #   | Módulo                                      | Estado                    | Spec                           |
-| --- | ------------------------------------------- | ------------------------- | ------------------------------ |
-| 0   | Fundação: design system, shell, acesso, PWA | pronto                    | —                              |
-| 1   | Insumos e embalagens                        | pronto                    | —                              |
-| —   | Contas e tenancy                            | pronto                    | `specs/000-contas.md`          |
-| 2   | Custos operacionais e precificação          | pronto (2A e 2B)          | `specs/002-precificacao.md`    |
-| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)      | `specs/003-pedidos.md`         |
-| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)          | `specs/004-caixa.md`           |
-| 5   | Prontidão: conserto e verificação           | 5A pronto, **5B a fazer** | `specs/005-prontidao.md`       |
-| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)          | `specs/006-nota-fiscal.md`     |
-| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)          | `specs/007-estoque.md`         |
-| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)          | `specs/008-onboarding.md`      |
-| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros   | `specs/009-teclado-e-barra.md` |
+| #   | Módulo                                      | Estado                    | Spec                              |
+| --- | ------------------------------------------- | ------------------------- | --------------------------------- |
+| 0   | Fundação: design system, shell, acesso, PWA | pronto                    | —                                 |
+| 1   | Insumos e embalagens                        | pronto                    | —                                 |
+| —   | Contas e tenancy                            | pronto                    | `specs/000-contas.md`             |
+| 2   | Custos operacionais e precificação          | pronto (2A e 2B)          | `specs/002-precificacao.md`       |
+| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)      | `specs/003-pedidos.md`            |
+| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)          | `specs/004-caixa.md`              |
+| 5   | Prontidão: conserto e verificação           | 5A pronto, **5B a fazer** | `specs/005-prontidao.md`          |
+| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)          | `specs/006-nota-fiscal.md`        |
+| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)          | `specs/007-estoque.md`            |
+| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)          | `specs/008-onboarding.md`         |
+| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros   | `specs/009-teclado-e-barra.md`    |
+| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro     | `specs/010-resumo-no-whatsapp.md` |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -1012,6 +1019,59 @@ a conferência no desktop em 1280×800 de que nada mudou; o **B** exige publicar
 instalar o app de novo** — sem isso o WebAPK continua com o creme assado e o roteiro mediria a
 instalação antiga.
 
+## O que a spec 010 deixou pronto
+
+O caminho do pedido até a conversa em que ele nasceu. Nenhum campo novo, nenhuma rota, nenhum
+documento escrito, nenhum centavo movido — e **`src/lib/firebase/` não aparece no diff**, que
+era o critério da spec.
+
+- **`src/lib/domain/whatsapp.ts`**, módulo novo e puro: `telefoneParaWhatsApp` (a normalização
+  com DDI), `linkDoWhatsApp` (o `wa.me` com o texto embutido), `mensagemDoPedido` e o tipo
+  `ResumoParaCliente`, que é uma interface própria e **não** o `Pedido` — o que a tela tem na
+  mão enquanto ela digita não é um documento gravado.
+- **`tests/domain/whatsapp.test.ts`: 22 testes** (350 → 372), com o caso de aceite da spec 003
+  comparado como **string inteira**, montada com `formatarMoeda` e nunca digitada à mão (o
+  espaço fino não-quebrável do `Intl` faria um literal falhar mostrando duas strings idênticas).
+  Mais os seis casos da tabela de telefone, o DDD 55 que não é DDI, a quantidade fracionada com
+  vírgula, o nome composto, os dois negritos contados, e as duas formas de `linkDoWhatsApp`.
+- **`src/components/pedidos/BlocoWhatsApp.tsx`**: um `Bloco` com `MessageCircle`, e a ação é um
+  `<a>` com `classesBotao({ variante: "primaria", tamanho: "lg" })`, `target="_blank"` e
+  `rel="noopener noreferrer"`. Sem JavaScript e sem `window.open` para o navegador bloquear.
+- **`FormularioPedido`** ganhou `resumoParaCliente(pedido)`, montado dos valores da tela, e o
+  bloco entrou dentro do `{pedido && …}` **acima** do `BlocoPagamento`: monta, salva, confirma
+  com a cliente, e só então recebe.
+- **`datas.ts` ganhou `rotuloDiaPorExtenso`**, e `rotuloAgenda` passou a ser a capitalização
+  dela. O resultado é idêntico em todo caso, e o teste que já existia é a prova.
+- **`pedido.ts`:** `quantidadeEmTexto` virou exportada, e `subtotalDoItem` passou a pedir
+  `Pick<ItemParaPedido, "quantidade" | "precoUnitario">` — o resumo da cliente não tem o custo
+  na mão, e não pode ter. Nenhum chamador mudou.
+- Decisões novas em `DECISOES.md#d77` a `#d79` — as três da spec.
+
+Nada de schema, de regra de segurança, de índice nem de dependência mudou. As três aprovações
+que a spec pedia foram usadas: o texto da mensagem como está escrito nela, `wa.me` como domínio
+externo alcançável a partir do app (sem chave, sem dado enviado a servidor nenhum: o texto viaja
+na URL, no aparelho dela), e a edição de uma linha em `rotuloAgenda`.
+
+Fora do escopo literal da spec, e por quê:
+
+- **`linkDoWhatsApp` aceita `string | null | undefined`**, e não só `string | undefined`. Quem
+  produz o argumento é `telefoneParaWhatsApp`, que devolve `null`: a assinatura da spec obrigaria
+  um `?? undefined` em todo chamador, e um esquecido renderizaria `https://wa.me/null`.
+- **Uma terceira frase embaixo do botão.** A spec prevê duas — a conversa com o número, e "este
+  pedido não tem telefone". Falta o caso que a própria seção de riscos chama de risco número um:
+  o campo tem texto e o texto não é discável. Dizer "este pedido não tem telefone" ao lado de um
+  telefone visível é uma mentira na tela, então esse caso diz "Não dá para discar (…)" e termina
+  com a mesma frase das outras duas.
+- **Nome de negócio vazio derruba a primeira linha para "Pedido P-…".** Conta que nunca salvou a
+  configuração não tem `nomeNegocio`, e `** · pedido` seria a primeira coisa que uma cliente
+  leria deste sistema. Um ternário, com teste.
+
+**O que a 010 não provou.** O texto inteiro está coberto, e o link também — mas nenhum teste vê
+o `wa.me` abrir. O roteiro de aparelho da spec é curto de propósito e continua inteiro por
+rodar: o WhatsApp abrindo na conversa certa com a mensagem escrita e **não enviada**, os
+negritos em negrito, os acentos que não podem virar `%C3%A7`, voltar sem perder o que ela
+digitou, o pedido sem telefone, e o desktop abrindo o WhatsApp Web em outra aba.
+
 ## Próxima ação
 
 **A sessão 5B de `specs/005-prontidao.md`**, a verificação em navegador. É a dívida mais antiga
@@ -1302,7 +1362,7 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | `/pedidos` carrega todo pedido não arquivado, sem recorte de data             | `ListaPedidos.tsx`                 | Quando o primeiro ano de pedidos pesar: vira range sobre `dataEntregaISO`          |
 | Não dá para arquivar uma cliente: só cadastrar e editar, de dentro do pedido  | `mutations/clientes.ts`            | Junto da tela de clientes, quando ela existir (`DECISOES.md#d35`)                  |
 | Editar um pedido e sair sem salvar descarta em silêncio                       | `FormularioPedido.tsx`             | Mesma dívida do editor de ficha e da configuração; se acontecer de verdade         |
-| `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`              | `src/lib/types/configuracao.ts`    | Quando algum leitor precisar do nome: hoje ninguém lê esse campo                   |
+| `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`              | `src/lib/types/configuracao.ts`    | **Ganhou leitor na 010**: o resumo da cliente. Espelho velho agora sai na mensagem |
 | Sair da configuração com alteração pendente descarta em silêncio              | `TelaConfiguracao.tsx`             | Se acontecer de verdade; a barra fixa de "não salvas" é a defesa atual             |
 | Dois toques no mesmo quadro na lista de compras podem perder uma marca        | `ListaDoMercado.tsx`               | Se acontecer: `comprado` sai do array e vira mapa por `insumoId` (`#d40`)          |
 | A contagem existe e depende de ela contar: sem contar, a lista compra o cheio | `/insumos/contagem`                | Não tem conserto em código: as defesas são o erro barato e a semeadura pela compra |
@@ -1332,3 +1392,7 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | O roteiro A da 009 nunca rodou: nenhuma tela foi vista com o teclado aberto   | `ui/RodapeFixo.tsx`, `globals.css` | Exige Android na mão. Seis telas que funcionavam foram editadas sem teste por trás |
 | A barra vinho nunca foi vista no aparelho: o WebAPK assa a cor na instalação  | `app/manifest.ts`                  | Roteiro B: depende de deploy **e** de desinstalar e reinstalar o app               |
 | 560px é limiar chutado: aparelho pequeno com fonte aumentada pode entrar nele | `globals.css`                      | Degradação feia, não quebra. O conserto é `visualViewport` (`#d74`)                |
+| O `wa.me` nunca foi aberto: ninguém viu a mensagem chegar escrita na conversa | `pedidos/BlocoWhatsApp.tsx`        | Roteiro de aparelho da 010: exige celular com WhatsApp instalado, e depois desktop |
+| O resumo pode ser mandado sem o pedido estar salvo                            | `FormularioPedido.tsx`             | Aceito em `#d78`; se morder, o botão salva antes de abrir o link                   |
+| A mensagem não diz as observações, nem quando são recado da cliente           | `domain/whatsapp.ts`               | Só com um segundo campo de dono declarado — não relaxando este (`#d79`)            |
+| Não se sabe se ela apertou enviar: o link não devolve nada                    | `pedidos/BlocoWhatsApp.tsx`        | Não tem conserto neste canal; gravar "enviado" sem saber seria pior (`#d77`)       |

@@ -2269,3 +2269,96 @@ para ter contra o que aparecer.
 instalar de novo**, o Android continua mostrando o creme velho por até um dia. Se ainda assim
 estiver creme, `chrome://webapks` no aparelho mostra o `theme_color` assado e a data da última
 atualização — é ali que se separa cor errada de instalação velha.
+
+---
+
+## D77 · O canal é um link, e não uma integração
+
+**Status:** vigente · decidida em 2026-09-07, na spec 010
+
+**Contexto.** O pedido nasce numa conversa de WhatsApp e a confirmação volta por lá, hoje
+digitada de novo item por item, com os números copiados da tela para o teclado. A segunda
+digitação é onde o total do app e o total que a cliente leu se separam — e o que vale é o que
+a cliente leu.
+
+**Decisão.** `https://wa.me/<telefone>?text=<texto>`, o click-to-chat oficial. No celular abre
+o aplicativo na conversa daquela pessoa, com a mensagem escrita e **não enviada**; no desktop
+abre o WhatsApp Web. Sem chave, sem cadastro, sem custo por mensagem, sem servidor no meio e
+sem template aprovado. A alternativa séria — a Cloud API do WhatsApp Business — envia de
+verdade, e em troca pede número comercial verificado, template aprovado, um servidor para
+guardar o token e cobrança por conversa. Não é o problema desta spec.
+
+**A ação é um `<a>`, e não um botão.** Sem JavaScript, sem `window.open` para o navegador
+bloquear, com toque longo e menu de contexto funcionando como a pessoa espera. `classesBotao`
+existe exatamente para isso.
+
+**Também não é `navigator.share`.** A bandeja do sistema faz ela escolher a conversa de novo,
+à mão, entre todas — e não existe em navegador de desktop, que é onde ela fecha a semana. O
+pedido já sabe o telefone da cliente.
+
+**Consequência.** Duas, de propósito. **A mensagem nunca sai sozinha:** o link escreve, quem
+envia é ela, com o polegar, depois de ler — o sistema não ganha a capacidade de falar com
+cliente nenhuma sem ela ver. E **sem rede o link não abre**, o que não ganha aviso próprio:
+mandar mensagem já dependia de rede, e não existe WhatsApp offline.
+
+`wa.me` é domínio de terceiro: se o formato do link mudar, o botão quebra em silêncio. É link
+público e estável há anos, e o conserto é de uma linha.
+
+`ponytail:` a URL carrega o texto inteiro, e URL tem teto prático (~2000 caracteres). Um
+pedido de 30 linhas passa longe disso; se um dia encostar, o corte é listar os itens e resumir
+o resto, não trocar de canal.
+
+---
+
+## D78 · A mensagem é o que está na tela, e não o que está gravado
+
+**Status:** vigente · decidida em 2026-09-07, na spec 010
+
+**Contexto.** O bloco só aparece em pedido que já existe — pedido novo não tem código, e um
+resumo sem código não é um pedido, é uma proposta. Mas o texto podia sair de dois lugares: do
+documento gravado ou dos valores atuais do formulário.
+
+**Decisão.** Dos valores do formulário, os mesmos que `derivarPedido` usa para desenhar o
+rodapé de totais. `resumoParaCliente` em `FormularioPedido` é montado do estado da tela, e só
+o `codigo` e o `pago` vêm do documento salvo — que é de onde eles têm que vir, porque nenhum
+dos dois é campo do formulário.
+
+**Consequência.** É a escolha menos óbvia da spec, e o motivo é que o contrário mente mais: se
+ela corrige a quantidade e manda o resumo antes de salvar, a versão "do documento" mandaria
+para a cliente um número que **ninguém está vendo**, contradizendo o total preso ao pé da tela
+naquele instante. O custo aceito é o simétrico — a cliente pode receber um resumo que ainda
+não foi salvo. O Salvar está no cabeçalho fixo, a dois centímetros, e pedido não salvo
+continua sendo o problema que já era.
+
+`ponytail:` se isso morder, o conserto é salvar antes de abrir o link (o botão vira ação
+assíncrona e o link abre depois do `await`). Não está aqui porque transforma um `<a>` de zero
+linhas de JavaScript numa ação que pode falhar, e falhar em cima de um popup que o navegador
+já pode ter bloqueado.
+
+---
+
+## D79 · A mensagem confirma o combinado, e não abre a contabilidade
+
+**Status:** vigente · decidida em 2026-09-07, na spec 010
+
+**Contexto.** O pedido sabe custo, lucro, taxa da maquininha e custo por unidade. Nada disso é
+da cliente.
+
+**Decisão.** `ResumoParaCliente` é uma interface própria, e **não** o tipo `Pedido`: ela lista
+quem, o quê, quanto, quando e como paga, e mais nada. `subtotalDoItem` passou a pedir só
+`quantidade` e `precoUnitario` (`Pick`, e não `ItemParaPedido` inteiro) porque o resumo não
+tem o custo na mão — e não pode ter. `Pagamento:` é o nome da forma, e nunca a taxa dela.
+
+**`Pedido.observacoes` fica de fora**, e é a exclusão que merece explicação. O rótulo do campo
+diz "o que você vai querer lembrar na hora de produzir e de embalar", e o placeholder mistura
+as duas naturezas ("Sem nozes. Laço vinho. Entregar depois das 18h."): é metade recado da
+cliente e metade recado para si mesma, e um campo assim não pode ser reenviado inteiro. O dia
+em que fizer falta, o conserto é um segundo campo com dono declarado, e não relaxar este.
+
+**Consequência.** A cliente às vezes quer confirmar o "sem nozes" e não vai encontrá-lo no
+resumo. É o contra-argumento real, e ele perde para o risco de mandar recado interno para
+fora. Zero é ausência, a mesma regra do painel financeiro: sem desconto a linha some, porque
+"Desconto: R$ 0,00" faz a cliente procurar um desconto que não houve.
+
+**Nenhum emoji, e dois negritos só** — o nome do negócio e o total. A voz do sistema é a da
+confeitaria, e não a de um chatbot.

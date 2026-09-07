@@ -59,6 +59,8 @@ import { competenciaDeISO } from "@/lib/domain/datas";
 import { docMeta, docResumoMensal } from "@/lib/firebase/colecoes";
 import { useDocumento } from "@/lib/hooks/useColecao";
 import { BlocoPagamento } from "./BlocoPagamento";
+import { BlocoWhatsApp } from "./BlocoWhatsApp";
+import type { ResumoParaCliente } from "@/lib/domain/whatsapp";
 import type {
   Centavos,
   Cliente,
@@ -419,6 +421,32 @@ export function FormularioPedido({
             : anterior.endereco,
       };
     });
+  }
+
+  /**
+   * O que a cliente vai ler, montado dos valores **da tela** — os mesmos que
+   * desenham o rodapé de totais, e não os do documento gravado (`#d78`). Se ela
+   * corrigiu a quantidade e ainda não salvou, o resumo manda o que ela está
+   * vendo, e não um número que ninguém tem na frente.
+   */
+  function resumoParaCliente(salvo: Pedido): ResumoParaCliente {
+    return {
+      negocio: configuracao?.nomeNegocio ?? "",
+      codigo: salvo.codigo,
+      clienteNome: valores.clienteNome,
+      itens: itensResolvidos,
+      subtotal: derivado.subtotal,
+      desconto: derivado.desconto,
+      taxaEntrega: derivado.taxaEntrega,
+      total: derivado.total,
+      entrega: {
+        tipo: valores.tipoEntrega,
+        dataISO: valores.dataEntregaISO,
+        endereco: valores.endereco || undefined,
+      },
+      formaNome: forma?.nome,
+      pago: salvo.pago,
+    };
   }
 
   function dadosDoPedido(): DadosPedido {
@@ -953,17 +981,25 @@ export function FormularioPedido({
 
         {/* Depois do pagamento, porque é a ordem em que a encomenda acontece:
             ela combina, produz, entrega, e só então recebe. O pedido que ainda
-            não existe não tem o que pagar. */}
+            não existe não tem o que pagar — nem o que confirmar: um resumo sem
+            código não é um pedido, é uma proposta (`DECISOES.md#d78`). */}
         {pedido && (
-          <BlocoPagamento
-            pedido={pedido}
-            pagoEmISO={pagoEmISO}
-            aoMudarData={setPagoEmISO}
-            aoPagar={() => void pagar()}
-            aoDesfazer={() => void desfazer()}
-            ocupado={salvando}
-            semAgregado={resumoDoPagamento.carregando}
-          />
+          <>
+            <BlocoWhatsApp
+              resumo={resumoParaCliente(pedido)}
+              telefone={valores.clienteTelefone}
+            />
+
+            <BlocoPagamento
+              pedido={pedido}
+              pagoEmISO={pagoEmISO}
+              aoMudarData={setPagoEmISO}
+              aoPagar={() => void pagar()}
+              aoDesfazer={() => void desfazer()}
+              ocupado={salvando}
+              semAgregado={resumoDoPagamento.carregando}
+            />
+          </>
         )}
 
         <Bloco
