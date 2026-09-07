@@ -3,9 +3,11 @@
 import { Check, CircleAlert } from "lucide-react";
 import { Botao } from "@/components/ui/Botao";
 import { Dinheiro } from "@/components/ui/Dinheiro";
+import { RodapeFixo } from "@/components/ui/RodapeFixo";
 import { formatarMoeda } from "@/lib/domain/money";
 import type { Centavos } from "@/lib/types";
 import type { ConferenciaTotal } from "@/lib/domain/notaFiscal";
+import { cn } from "@/lib/utils/cn";
 
 export interface ResumoDaNota {
   /** Quantas linhas vão virar documento. */
@@ -44,51 +46,55 @@ export function RodapeNota({
     incompletas === 0 && (naoExplicado === 0 || conferencia.total <= 0);
 
   return (
-    <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-30 px-4 lg:bottom-0 lg:left-60 lg:px-8">
-      <div className="mx-auto w-full max-w-5xl overflow-hidden rounded-lg border border-line bg-surface shadow-overlay lg:mb-4">
-        <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 px-4 py-3 lg:px-5">
-          <div className="min-w-0">
-            <p className="text-micro font-medium uppercase tracking-wide text-ink-subtle">
-              {contagem(linhas, atualizacoes)}
-            </p>
-            <p className="mt-0.5">
-              <Dinheiro centavos={conferencia.soma} tamanho="lg" />
-            </p>
-          </div>
-
-          <Botao
-            variante="primaria"
-            tamanho="lg"
-            carregando={salvando}
-            disabled={linhas === 0 || incompletas > 0}
-            onClick={aoCadastrar}
-          >
-            {linhas === 1
-              ? "Cadastrar 1 insumo"
-              : `Cadastrar ${linhas} insumos`}
-          </Botao>
+    <RodapeFixo>
+      <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 px-4 py-3 lg:px-5">
+        <div className="min-w-0">
+          <p className="text-micro font-medium uppercase tracking-wide text-ink-subtle">
+            {contagem(linhas, atualizacoes)}
+          </p>
+          <p className="mt-0.5">
+            <Dinheiro centavos={conferencia.soma} tamanho="lg" />
+          </p>
         </div>
 
-        <p className="flex items-start gap-2.5 border-t border-line bg-sunken px-4 py-2.5 text-label text-ink-muted lg:px-5">
-          {tudoCerto ? (
-            <Check
-              aria-hidden
-              className="mt-0.5 size-4 shrink-0 text-positive"
-              strokeWidth={2}
-            />
-          ) : (
-            <CircleAlert
-              aria-hidden
-              className="mt-0.5 size-4 shrink-0 text-attention"
-              strokeWidth={1.75}
-            />
-          )}
-          <span className="max-w-[64ch]" aria-live="polite">
-            <Frase resumo={resumo} naoExplicado={naoExplicado} />
-          </span>
-        </p>
+        <Botao
+          variante="primaria"
+          tamanho="lg"
+          carregando={salvando}
+          disabled={linhas === 0 || incompletas > 0}
+          onClick={aoCadastrar}
+        >
+          {linhas === 1 ? "Cadastrar 1 insumo" : `Cadastrar ${linhas} insumos`}
+        </Botao>
       </div>
-    </div>
+
+      {/* A conferência que fecha é confirmação e some com o teclado aberto;
+            a que não fecha é correção e fica, com o ícone de alerta junto.
+            Ver `DECISOES.md#d75`. */}
+      <p
+        className={cn(
+          "flex items-start gap-2.5 border-t border-line bg-sunken px-4 py-2.5 text-label text-ink-muted lg:px-5",
+          tudoCerto && "apertado:hidden",
+        )}
+      >
+        {tudoCerto ? (
+          <Check
+            aria-hidden
+            className="mt-0.5 size-4 shrink-0 text-positive"
+            strokeWidth={2}
+          />
+        ) : (
+          <CircleAlert
+            aria-hidden
+            className="mt-0.5 size-4 shrink-0 text-attention"
+            strokeWidth={1.75}
+          />
+        )}
+        <span className="max-w-[64ch]" aria-live="polite">
+          <Frase resumo={resumo} naoExplicado={naoExplicado} />
+        </span>
+      </p>
+    </RodapeFixo>
   );
 }
 

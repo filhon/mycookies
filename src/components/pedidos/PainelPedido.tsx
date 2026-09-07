@@ -3,6 +3,7 @@
 import { CornerDownRight, TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 import { Dinheiro } from "@/components/ui/Dinheiro";
+import { RodapeFixo } from "@/components/ui/RodapeFixo";
 import { formatarMoeda } from "@/lib/domain/money";
 import type { DerivadosPedido } from "@/lib/domain/pedido";
 import type { Centavos } from "@/lib/types";
@@ -127,65 +128,64 @@ export function PainelPedido({ derivado }: { derivado: DerivadosPedido }) {
   const { tom, icone, mensagem } = explicar();
 
   return (
-    <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-30 px-4 lg:bottom-0 lg:left-60 lg:px-8">
-      <div className="mx-auto w-full max-w-5xl overflow-hidden rounded-lg border border-line bg-surface shadow-overlay lg:mb-4">
-        <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 px-4 py-3 lg:px-5">
-          <div className="flex flex-wrap gap-x-5 gap-y-2">
-            <Parcela rotulo="Subtotal" valor={derivado.subtotal} />
-            {derivado.desconto > 0 && (
-              <Parcela
-                rotulo="Desconto"
-                valor={derivado.desconto}
-                prefixo="−"
-              />
-            )}
-            {derivado.taxaEntrega > 0 && (
-              <Parcela rotulo="Entrega" valor={derivado.taxaEntrega} />
-            )}
-          </div>
-
-          <div className="text-right">
-            <p className="text-micro font-medium uppercase tracking-wide text-ink-subtle">
-              Total do pedido
-            </p>
-            <p className="mt-0.5">
-              <Dinheiro centavos={derivado.total} tamanho="lg" />
-            </p>
-          </div>
+    <RodapeFixo>
+      <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 px-4 py-3 lg:px-5">
+        <div className="flex flex-wrap gap-x-5 gap-y-2">
+          <Parcela rotulo="Subtotal" valor={derivado.subtotal} />
+          {derivado.desconto > 0 && (
+            <Parcela rotulo="Desconto" valor={derivado.desconto} prefixo="−" />
+          )}
+          {derivado.taxaEntrega > 0 && (
+            <Parcela rotulo="Entrega" valor={derivado.taxaEntrega} />
+          )}
         </div>
 
-        <div
-          className={cn(
-            "border-t px-4 py-2.5 text-label lg:px-5",
-            TONS[derivado.descontoLimitado ? "atencao" : tom],
-          )}
-        >
-          {derivado.descontoLimitado && (
-            <p className="flex items-start gap-2.5">
-              <TriangleAlert
-                aria-hidden
-                className="mt-0.5 size-4 shrink-0 text-attention"
-                strokeWidth={1.75}
-              />
-              <span className="max-w-[64ch]">
-                O desconto não cabia no pedido e entrou como{" "}
-                <Realce>{formatarMoeda(derivado.desconto)}</Realce>: mais do que
-                isso deixaria o total negativo.
-              </span>
-            </p>
-          )}
-          <p
-            className={cn(
-              "flex items-start gap-2.5",
-              derivado.descontoLimitado && "mt-1.5",
-            )}
-          >
-            {icone}
-            <span className="max-w-[64ch]">{mensagem}</span>
+        <div className="text-right">
+          <p className="text-micro font-medium uppercase tracking-wide text-ink-subtle">
+            Total do pedido
+          </p>
+          <p className="mt-0.5">
+            <Dinheiro centavos={derivado.total} tamanho="lg" />
           </p>
         </div>
       </div>
-    </div>
+
+      {/* Mesma regra do painel de preço: a frase some com o teclado aberto
+            quando é boa notícia. O desconto limitado é o segundo gatilho que a
+            mantém viva — ele conta um dado que ela não pediu, o desconto que
+            entrou menor do que ela digitou. Ver `DECISOES.md#d75`. */}
+      <div
+        className={cn(
+          "border-t px-4 py-2.5 text-label lg:px-5",
+          TONS[derivado.descontoLimitado ? "atencao" : tom],
+          !derivado.descontoLimitado && tom !== "atencao" && "apertado:hidden",
+        )}
+      >
+        {derivado.descontoLimitado && (
+          <p className="flex items-start gap-2.5">
+            <TriangleAlert
+              aria-hidden
+              className="mt-0.5 size-4 shrink-0 text-attention"
+              strokeWidth={1.75}
+            />
+            <span className="max-w-[64ch]">
+              O desconto não cabia no pedido e entrou como{" "}
+              <Realce>{formatarMoeda(derivado.desconto)}</Realce>: mais do que
+              isso deixaria o total negativo.
+            </span>
+          </p>
+        )}
+        <p
+          className={cn(
+            "flex items-start gap-2.5",
+            derivado.descontoLimitado && "mt-1.5",
+          )}
+        >
+          {icone}
+          <span className="max-w-[64ch]">{mensagem}</span>
+        </p>
+      </div>
+    </RodapeFixo>
   );
 }
 

@@ -252,6 +252,23 @@
   box-shadow: inset 0 2px 0 0 var(--mc-gold-500);
 }
 
+/**
+ * Espaço vertical apertado no celular — na prática, o teclado aberto.
+ *
+ * `interactiveWidget: "resizes-content"` (em `layout.tsx`) faz o Android
+ * encolher o viewport de layout quando o teclado sobe, então a altura já é o
+ * sinal: nada de `visualViewport`, de listener nem de estado que possa
+ * divergir do que está na tela. O `pointer: coarse` mantém a regra no dedo —
+ * sem ele, uma janela baixa de navegador no desktop começaria a esconder
+ * coisa. Nenhuma regra `apertado:` encolhe alvo de toque: o piso de 44px vale
+ * igual com o teclado aberto. Ver `DECISOES.md#d74`.
+ *
+ * ponytail: 560px é heurística — retrato tem 640px no pior caso, e com o
+ * teclado aberto cai para 350–530. `visualViewport` mede exato e custa um
+ * listener com estado; troque só se um aparelho de verdade cair do lado errado.
+ */
+@custom-variant apertado (@media (max-height: 560px) and (pointer: coarse));
+
 /** Área de toque mínima. 44px é o piso, não a meta. */
 @utility toque {
   min-height: 44px;

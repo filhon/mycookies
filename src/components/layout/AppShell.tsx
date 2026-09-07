@@ -8,8 +8,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       <BarraLateral />
 
       <div className="lg:pl-60">
-        {/* pb-24 no celular reserva a faixa da navegação inferior. */}
-        <main className="mx-auto w-full max-w-5xl px-4 pb-24 lg:px-8 lg:pb-16">
+        {/* pb-24 no celular reserva a faixa da navegação inferior; com o
+            teclado aberto ela não está lá, e a reserva vira vão morto. */}
+        <main className="mx-auto w-full max-w-5xl px-4 pb-24 apertado:pb-4 lg:px-8 lg:pb-16">
           {children}
         </main>
       </div>

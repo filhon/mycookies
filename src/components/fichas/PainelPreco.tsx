@@ -4,6 +4,7 @@ import { CornerDownRight, TriangleAlert, Wand2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Dinheiro } from "@/components/ui/Dinheiro";
+import { RodapeFixo } from "@/components/ui/RodapeFixo";
 import type { DerivadosFicha } from "@/lib/domain/custoFicha";
 import {
   formatarMoeda,
@@ -26,7 +27,8 @@ function Metrica({
   valor,
   acao,
 }: {
-  rotulo: string;
+  /** Nó, e não texto: em espaço apertado parte do rótulo some. */
+  rotulo: ReactNode;
   valor: Centavos | null;
   acao?: ReactNode;
 }) {
@@ -76,7 +78,19 @@ export function PainelPreco({
     derivado.precoArredondado !== null &&
     derivado.precoArredondado !== derivado.precoVenda;
 
-  function explicar(): { tom: Tom; icone: ReactNode; mensagem: ReactNode } {
+  /**
+   * `correcao` separa veredito de pendência, e é o que decide quem sobrevive ao
+   * teclado aberto. Um número que ela digitou e está errado é correção e fica;
+   * "ainda falta preencher o rendimento" fala de um campo que está no
+   * formulário logo acima — o mesmo que a frase estaria cobrindo. Ver
+   * `DECISOES.md#d75`.
+   */
+  function explicar(): {
+    tom: Tom;
+    correcao: boolean;
+    icone: ReactNode;
+    mensagem: ReactNode;
+  } {
     const alerta = (
       <TriangleAlert
         aria-hidden
@@ -88,6 +102,8 @@ export function PainelPreco({
     if (!rendimentoValido) {
       return {
         tom: "atencao",
+        // Pendência, e não veredito: pede um campo que está logo acima.
+        correcao: false,
         icone: alerta,
         mensagem:
           "Diga quantas unidades saem de um lote e o preço por unidade aparece aqui.",
@@ -97,6 +113,7 @@ export function PainelPreco({
     if (derivado.motivoSemPreco === "MARGEM_IMPOSSIVEL") {
       return {
         tom: "atencao",
+        correcao: true,
         icone: alerta,
         mensagem:
           "A margem que você pediu mais as taxas passam de 100% do preço. Não existe preço que caiba nisso: diminua a margem ou a taxa.",
@@ -106,6 +123,7 @@ export function PainelPreco({
     if (derivado.motivoSemPreco === "MARKUP_INVALIDO") {
       return {
         tom: "atencao",
+        correcao: true,
         icone: alerta,
         mensagem:
           "Multiplicar o custo por zero não dá preço nenhum. Escolha por quanto multiplicar.",
@@ -117,6 +135,7 @@ export function PainelPreco({
     if (lucro < 0) {
       return {
         tom: "atencao",
+        correcao: true,
         icone: alerta,
         mensagem: (
           <>
@@ -130,6 +149,7 @@ export function PainelPreco({
 
     return {
       tom: "positivo",
+      correcao: false,
       icone: (
         <CornerDownRight
           aria-hidden
@@ -150,51 +170,69 @@ export function PainelPreco({
     };
   }
 
-  const { tom, icone, mensagem } = explicar();
+  const { tom, correcao, icone, mensagem } = explicar();
 
   return (
-    <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-30 px-4 lg:bottom-0 lg:left-60 lg:px-8">
-      <div className="mx-auto w-full max-w-5xl overflow-hidden rounded-lg border border-line bg-surface shadow-overlay lg:mb-4">
-        <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 px-4 py-3 lg:px-5">
-          <div className="flex gap-5">
-            <Metrica rotulo="Custo da unidade" valor={custo.custoUnitario} />
-            <Metrica
-              rotulo="Sugerido"
-              valor={derivado.precoArredondado}
-              acao={
-                podeVoltarAoSugerido ? (
-                  <button
-                    type="button"
-                    onClick={aoUsarSugerido}
-                    className="toque -my-2 inline-flex items-center gap-1 rounded-md px-2 text-label font-medium text-wine-700 transition-colors duration-150 ease-quart hover:bg-wine-100 dark:text-wine-300"
-                  >
-                    <Wand2 aria-hidden className="size-4" strokeWidth={1.75} />
-                    Usar
-                  </button>
-                ) : undefined
-              }
-            />
-          </div>
-
-          <CampoMoeda
-            rotulo="Preço de venda"
-            valor={derivado.precoVenda}
-            aoMudar={aoMudarPreco}
-            className="w-36 shrink-0"
+    <RodapeFixo>
+      {/* Em espaço apertado os três cabem numa linha só: o rótulo encurta, os
+          vãos fecham e o campo estreita. O `flex-wrap` fica de rede — num
+          aparelho estreito com preço de três dígitos ele quebra em duas linhas
+          em vez de o número ser cortado pelo `overflow-hidden` do cartão. */}
+      <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 px-4 py-3 apertado:gap-x-3 lg:px-5">
+        <div className="flex gap-5 apertado:gap-3">
+          <Metrica
+            rotulo={
+              <>
+                Custo<span className="apertado:hidden"> da unidade</span>
+              </>
+            }
+            valor={custo.custoUnitario}
+          />
+          <Metrica
+            rotulo="Sugerido"
+            valor={derivado.precoArredondado}
+            acao={
+              podeVoltarAoSugerido ? (
+                <button
+                  type="button"
+                  onClick={aoUsarSugerido}
+                  className="toque -my-2 inline-flex items-center gap-1 rounded-md px-2 text-label font-medium text-wine-700 transition-colors duration-150 ease-quart hover:bg-wine-100 dark:text-wine-300"
+                >
+                  <Wand2 aria-hidden className="size-4" strokeWidth={1.75} />
+                  Usar
+                </button>
+              ) : undefined
+            }
           />
         </div>
 
-        <div
-          className={cn(
-            "flex items-start gap-2.5 border-t px-4 py-2.5 text-label lg:px-5",
-            TONS[tom],
-          )}
-        >
-          {icone}
-          <p className="max-w-[64ch]">{mensagem}</p>
-        </div>
+        {/* Único campo do painel, com "R$" dentro e "Custo" e "Sugerido" do
+            lado: com o teclado aberto o rótulo é o que menos se paga, e ele
+            continua sendo o nome do campo para o leitor de tela. */}
+        <CampoMoeda
+          rotulo="Preço de venda"
+          valor={derivado.precoVenda}
+          aoMudar={aoMudarPreco}
+          rotuloSomeApertado
+          className="w-36 shrink-0 apertado:w-32"
+        />
       </div>
-    </div>
+
+      {/* Com o teclado aberto sobra só a correção: um número que ela digitou e
+          está errado. Confirmação repete o que os três números acima já dizem,
+          e pendência pede um campo que está no formulário logo acima — as duas
+          esperam ele fechar. Ver `DECISOES.md#d75`. */}
+      <div
+        className={cn(
+          "flex items-start gap-2.5 border-t px-4 py-2.5 text-label lg:px-5",
+          TONS[tom],
+          !correcao && "apertado:hidden",
+        )}
+      >
+        {icone}
+        <p className="max-w-[64ch]">{mensagem}</p>
+      </div>
+    </RodapeFixo>
   );
 }
 

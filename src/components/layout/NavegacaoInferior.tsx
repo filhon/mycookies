@@ -9,9 +9,12 @@ export function NavegacaoInferior() {
   const caminho = usePathname();
 
   return (
+    /* `apertado:hidden`: com o teclado aberto ninguém troca de módulo no meio
+       de um campo, e o teclado já cobre metade dela com sugestões de texto.
+       Ver `DECISOES.md#d74`. */
     <nav
       aria-label="Navegação principal"
-      className="area-segura-inferior fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface lg:hidden"
+      className="area-segura-inferior fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface apertado:hidden lg:hidden"
     >
       <ul className="flex">
         {DESTINOS.map((destino) => {

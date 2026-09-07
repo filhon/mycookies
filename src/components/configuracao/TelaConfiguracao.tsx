@@ -19,6 +19,7 @@ import { Campo, Seletor } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
+import { RodapeFixo } from "@/components/ui/RodapeFixo";
 import { BlocoConfiguracao, Realce } from "./BlocoConfiguracao";
 import { CustoPorHora } from "./CustoPorHora";
 import { FormularioFormaPagamento } from "./FormularioFormaPagamento";
@@ -643,8 +644,10 @@ export function TelaConfiguracao() {
       {/* Barra de salvar acima da navegação inferior: no celular a ação
           primária não pode depender de rolar até o fim da tela. */}
       {alterado && (
-        <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-30 px-4 lg:hidden">
-          <div className="flex items-center gap-3 rounded-lg border border-line bg-surface p-3 shadow-overlay">
+        /* Sem `apertado:hidden`: esta barra é a ação primária de uma tela que é
+           toda de campos, e é com o teclado aberto que ela vale. */
+        <RodapeFixo className="lg:hidden">
+          <div className="flex items-center gap-3 p-3">
             <p className="min-w-0 flex-1 text-label text-ink-muted">
               {nuncaSalvou
                 ? "Valores sugeridos, ainda não salvos"
@@ -659,7 +662,7 @@ export function TelaConfiguracao() {
               Salvar
             </Botao>
           </div>
-        </div>
+        </RodapeFixo>
       )}
 
       <FormularioFormaPagamento

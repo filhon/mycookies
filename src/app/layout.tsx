@@ -40,10 +40,10 @@ export const viewport: Viewport = {
   // Sem trava de zoom: limitar escala quebra acessibilidade.
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f3eee3" },
-    { media: "(prefers-color-scheme: dark)", color: "#231a1a" },
-  ],
+  // O mesmo vinho do manifesto, de propósito: dois donos para o mesmo pixel
+  // dariam uma barra que combina com a marca no app instalado e com a
+  // superfície na aba do navegador. Ver `DECISOES.md#d76`.
+  themeColor: "#5e1725",
 };
 
 export default function RootLayout({

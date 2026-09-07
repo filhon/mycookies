@@ -589,16 +589,17 @@ export function FormularioPedido({
 
   return (
     <>
-      <header className="sticky top-0 z-30 -mx-4 border-b border-line bg-canvas px-4 pb-3 pt-3 lg:-mx-8 lg:px-8 lg:pb-4 lg:pt-6">
+      {/* Mesmo encolhimento do editor de ficha, e pelo mesmo motivo. */}
+      <header className="sticky top-0 z-30 -mx-4 border-b border-line bg-canvas px-4 py-3 apertado:py-2 lg:-mx-8 lg:px-8 lg:pb-4 lg:pt-6">
         <Link
           href="/pedidos"
-          className="toque -ml-2 inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-ink-muted transition-colors duration-150 ease-quart hover:text-ink"
+          className="toque -ml-2 inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-ink-muted transition-colors duration-150 ease-quart hover:text-ink apertado:hidden"
         >
           <ArrowLeft aria-hidden className="size-4" strokeWidth={1.75} />
           Pedidos
         </Link>
 
-        <div className="mt-1 flex items-center justify-between gap-4">
+        <div className="mt-1 flex items-center justify-between gap-4 apertado:mt-0">
           <div className="min-w-0">
             <h1 className="truncate font-display text-title font-semibold text-ink lg:text-display">
               {titulo}
@@ -623,7 +624,7 @@ export function FormularioPedido({
       </header>
 
       {/* Espaço no pé para o rodapé de totais não cobrir o último bloco. */}
-      <div className="mt-4 space-y-4 pb-48 lg:pb-44">
+      <div className="mt-4 space-y-4 pb-48 apertado:pb-32 lg:pb-44">
         {pedido ? (
           <Bloco
             icone={ClipboardList}

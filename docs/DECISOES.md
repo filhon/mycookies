@@ -2137,3 +2137,135 @@ Cloud Function com o `tsconfig` de um app Next sempre foi coincidência, e não 
 **Não bastava o `.vercelignore`.** Ele resolve o deploy por linha de comando, que sobe a
 pasta. O deploy por Git sobe o que está commitado, e `functions/` está commitado: a garantia
 que vale nos dois caminhos é o `exclude`.
+
+---
+
+## D74 · O sinal de "teclado aberto" é a altura, e é CSS
+
+**Status:** vigente · decidida em 2026-09-07, na spec 009
+
+**Contexto.** No celular, com o teclado aberto em `/fichas/nova`, sobram cerca de 490 px de
+viewport, e três faixas fixas tomam quase tudo: o cabeçalho grudento (~96 px), o resumo
+flutuante (~210 px) e a navegação inferior (~56 px). Sobrava menos de 15% da tela para o
+formulário que ela está preenchendo — no print, a única linha visível era um rótulo, e o campo
+que ela acabara de tocar estava fora de vista.
+
+O jeito exato de saber que o teclado subiu é `window.visualViewport`, com listener de `resize`
+e estado.
+
+**Decisão.** Não é esse. `layout.tsx` já declara `interactiveWidget: "resizes-content"`, que
+faz o Android encolher o viewport de layout quando o teclado sobe — o teclado **já é** altura.
+Nasceu a variante `apertado` em `globals.css`:
+
+```css
+@custom-variant apertado (@media (max-height: 560px) and (pointer: coarse));
+```
+
+Sem JavaScript, sem listener, sem hidratação e sem um estado que possa divergir do que está na
+tela. **560 px** mora no vão entre as duas faixas reais: retrato tem 640 px no pior caso e 780
+a 900 no comum; com o teclado aberto cai para 350 a 530. **`pointer: coarse`** porque a regra é
+do dedo: sem ele, uma janela baixa de navegador no desktop começaria a esconder coisa.
+
+**O que a variante nunca faz:** encolher alvo de toque. Nenhuma regra `apertado:` mexe em `h-`,
+em `min-h-` ou na utilidade `toque`. O piso de 44 px vale com o teclado aberto exatamente como
+vale fechado; o que some é espaço morto e prosa, nunca área de dedo.
+
+**Quem some.** A navegação inferior (`apertado:hidden` no `<nav>`), os quatro botões flutuantes
+de `/insumos`, `/fichas`, `/pedidos` e `/financeiro`, e o link de voltar dos dois editores — o
+botão físico do Android existe e fecha o teclado antes de sair da tela. Encolhem: `pb-24` do
+`AppShell`, `pb-44` e `pb-48` dos dois editores, e o `py-3` dos dois cabeçalhos. **Não** somem
+o `<h1>`, o botão Salvar e a barra de salvar de `/configuracao`, que é a ação primária de uma
+tela toda de campos.
+
+**A ponta solta, aceita.** A variante não distingue "teclado aberto" de "aparelho deitado":
+são a mesma altura. No app instalado isso não acontece, porque o manifesto declara
+`orientation: "portrait"`. No navegador em retrato deitado a navegação inferior some, e ali a
+barra de endereço do próprio navegador continua sendo a saída.
+
+**`ponytail:`** o limiar de 560 px é heurística. `visualViewport` mede exato e custa um listener
+com estado; troque só se algum aparelho de verdade cair do lado errado — a degradação é feia
+(tela sem navegação e sem a frase do resumo), não é quebra.
+
+---
+
+## D75 · Em espaço apertado a frase some; o alerta, não
+
+**Status:** vigente · decidida em 2026-09-07, na spec 009
+
+**Contexto.** Os rodapés fixos têm duas partes, e só uma muda a cada tecla: os números. A frase
+embaixo é prosa, ocupa duas linhas e diz em palavras o que os números acima já dizem em número.
+Ela é a primeira candidata a sumir quando o teclado abre — mas nem toda frase é a mesma coisa.
+
+**Decisão.** O que sobrevive ao teclado aberto é a **correção**, e nada mais.
+
+"Sobram R$ 1,80 por unidade depois da maquininha" é confirmação: repete o que os três números
+acima mostram, e ela pode lê-la quando fechar o teclado. "Neste preço você perde R$ 2,10 por
+unidade" é correção, e esconder uma correção enquanto a pessoa digita o número errado é
+esconder exatamente na hora em que ela importa.
+
+**A primeira redação desta decisão dizia "a linha com `tom: "atencao"` fica", e o tom é grosso
+demais.** A conferência em navegador mostrou por quê: "Diga quantas unidades saem de um lote"
+tem `tom: "atencao"` e ficava — mas ela não corrige número nenhum. É **pendência**: pede um
+campo que está no formulário logo acima, ou seja, exatamente o que a frase estava cobrindo. Em
+`PainelPreco`, `explicar()` passou a devolver `correcao: boolean` ao lado do tom, e é ele que
+decide: `false` no rendimento que falta e na boa notícia, `true` no prejuízo, na margem
+impossível e no markup zerado. O tom continua sendo só cor e ícone.
+
+É também o que preserva a invariante de que todo estado negativo carrega ícone ou texto: não
+adianta o ícone estar num elemento com `display: none`.
+
+**A segunda linha que some é a quebra.** Em `PainelPreco`, num celular estreito, o campo de
+preço não cabe ao lado das duas métricas e o `flex-wrap` o joga para uma segunda linha — mais
+uns 55 px de altura, num rodapé que já toma 200. Em `apertado` os três voltam para a mesma
+linha por três ajustes de largura, e nenhum deles é fonte: o rótulo "Custo da unidade" perde
+o " da unidade" (~60 px, e é o que realmente pesa: encolher os 12 px do rótulo para 11
+devolveria uns 10), os vãos caem de `gap-5` para `gap-3`, e o campo de `w-36` para `w-32`.
+
+**O `flex-wrap` fica.** Trocá-lo por `flex-nowrap` garantiria a linha única e, num aparelho de
+320 px com preço de três dígitos, o `overflow-hidden` do cartão cortaria o número — e um campo
+de dinheiro cortado é pior do que uma linha a mais. Mantido, o caso extremo degrada para o
+layout de hoje, que é exatamente o que já existia.
+
+**O rótulo do campo de preço também some**, e por `apertado:sr-only` — não removido. Ele é o
+único campo do painel, tem "R$" dentro e "Custo" e "Sugerido" ao lado: com o teclado aberto é o
+que menos se paga, e valem uns 26 px (o rótulo mais o vão, porque `sr-only` é `absolute` e sai
+do fluxo do flex). Continua sendo o nome acessível do campo, ligado pelo `htmlFor`, e volta à
+tela quando o teclado fecha. É opt-in por `rotuloSomeApertado` em `CampoMoeda`: a mesma regra
+aplicada aos campos de `/configuracao` esconderia rótulo que ninguém adivinha.
+
+**Onde vale.** `PainelPreco` (`correcao`), `PainelPedido` (tom do lucro **ou**
+`descontoLimitado`, que conta um dado que ela não pediu — o desconto entrou menor do que ela
+digitou), `RodapeNota` (`tudoCerto` some; a conferência que não fecha fica), e `RodapeCompras`
+e `RodapeContagem`, cuja prosa é sempre neutra e sempre some.
+
+---
+
+## D76 · A barra do sistema tem uma cor só, e ela é a da marca
+
+**Status:** vigente · decidida em 2026-09-07, na spec 009
+
+**Contexto.** `layout.tsx` declarava o par certo em `<meta name="theme-color">`: creme no claro
+e `#231a1a` no escuro. No app instalado no Android ele **não ganha**. Quem manda é
+`manifest.ts`, e o manifesto tem um slot de cor só — não existe media query dentro dele. O
+Android assa o `theme_color` dentro do WebAPK na instalação, e a partir daí a barra de status é
+decoração de janela do sistema operacional, e não do documento. O resultado era uma faixa creme
+de 36 px em cima de uma tela quase preta, com os ícones do sistema em preto.
+
+**Decisão.** `theme_color: "#5e1725"` — o vinho que já é o fundo do ladrilho de
+`src/app/icon.svg`. Não é cor nova, não entra em `globals.css` e não vira token: é a cor do
+ícone, e a barra passa a ser a moldura dele. Como o valor tem que estar certo nos **dois**
+temas, escuro nos dois é o que garante ícone do sistema em branco nos dois, sempre com
+contraste — e a resposta a "de que app é esta barra?" é a mesma de manhã e à noite.
+
+**O par com media query some junto.** `viewport.themeColor` virou o mesmo `"#5e1725"`. Manter
+os dois é manter dois donos para o mesmo pixel, com a barra combinando com a marca no app
+instalado e com a superfície na aba do navegador. Uma cor, um lugar, nenhuma divergência para
+descobrir daqui a seis meses. O custo assumido: a barra deixa de acompanhar o tema do aparelho.
+
+**`background_color` não muda.** Continua creme: é a tela de abertura, e o ícone precisa dela
+para ter contra o que aparecer.
+
+**Para conferir depois do deploy.** O WebAPK assa a cor na instalação: sem **desinstalar e
+instalar de novo**, o Android continua mostrando o creme velho por até um dia. Se ainda assim
+estiver creme, `chrome://webapks` no aparelho mostra o `theme_color` assado e a data da última
+atualização — é ali que se separa cor errada de instalação velha.

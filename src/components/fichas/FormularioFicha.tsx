@@ -525,16 +525,19 @@ export function FormularioFicha({
 
   return (
     <>
-      <header className="sticky top-0 z-30 -mx-4 border-b border-line bg-canvas px-4 pb-3 pt-3 lg:-mx-8 lg:px-8 lg:pb-4 lg:pt-6">
+      {/* Com o teclado aberto o cabeçalho encolhe e o link de voltar some: o
+          botão físico de voltar do Android existe e fecha o teclado antes de
+          sair. O título e o Salvar não mudam de tamanho. */}
+      <header className="sticky top-0 z-30 -mx-4 border-b border-line bg-canvas px-4 py-3 apertado:py-2 lg:-mx-8 lg:px-8 lg:pb-4 lg:pt-6">
         <Link
           href="/fichas"
-          className="toque -ml-2 inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-ink-muted transition-colors duration-150 ease-quart hover:text-ink"
+          className="toque -ml-2 inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-ink-muted transition-colors duration-150 ease-quart hover:text-ink apertado:hidden"
         >
           <ArrowLeft aria-hidden className="size-4" strokeWidth={1.75} />
           Fichas técnicas
         </Link>
 
-        <div className="mt-1 flex items-center justify-between gap-4">
+        <div className="mt-1 flex items-center justify-between gap-4 apertado:mt-0">
           <h1 className="min-w-0 truncate font-display text-title font-semibold text-ink lg:text-display">
             {titulo}
           </h1>
@@ -552,7 +555,7 @@ export function FormularioFicha({
       </header>
 
       {/* Espaço no pé para o painel de preço não cobrir o último bloco. */}
-      <div className="mt-4 space-y-4 pb-44 lg:pb-40">
+      <div className="mt-4 space-y-4 pb-44 apertado:pb-32 lg:pb-40">
         {rateioZerado && (
           <Faixa tom="atencao">
             <p>

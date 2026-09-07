@@ -13,6 +13,12 @@ export interface CampoMoedaProps {
   erro?: string;
   obrigatorio?: boolean;
   desabilitado?: boolean;
+  /**
+   * O rótulo sai da tela em espaço apertado — continua no leitor de tela, e
+   * volta assim que o teclado fecha. Só onde o campo já se explica pelo que
+   * está em volta, como o preço no painel da ficha.
+   */
+  rotuloSomeApertado?: boolean;
   className?: string;
 }
 
@@ -29,13 +35,20 @@ export function CampoMoeda({
   erro,
   obrigatorio,
   desabilitado,
+  rotuloSomeApertado,
   className,
 }: CampoMoedaProps) {
   const id = useId();
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <label htmlFor={id} className="text-label font-medium text-ink">
+      <label
+        htmlFor={id}
+        className={cn(
+          "text-label font-medium text-ink",
+          rotuloSomeApertado && "apertado:sr-only",
+        )}
+      >
         {rotulo}
         {obrigatorio && (
           <span className="ml-1 text-ink-subtle" aria-hidden>
