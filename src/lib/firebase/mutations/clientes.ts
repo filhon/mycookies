@@ -1,11 +1,12 @@
 import {
-  addDoc,
+  doc,
   increment,
   setDoc,
   Timestamp,
   updateDoc,
 } from "firebase/firestore";
 import { colClientes, docCliente, docResumoGlobal } from "../colecoes";
+import { despachar } from "./despachar";
 import { ticketMedioDe } from "@/lib/domain/caixa";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { VERSAO_SCHEMA } from "@/lib/types";
@@ -61,14 +62,19 @@ export async function criarCliente(
     arquivado: false,
   };
 
-  const referencia = await addDoc(colClientes(contaId), nova as Cliente);
+  // O id nasce no aparelho, e as duas escritas são despachadas sem espera: uma
+  // cliente cadastrada no meio de um pedido não pode depender de rede (`#d80`).
+  const referencia = doc(colClientes(contaId));
+  despachar(setDoc(referencia, nova as Cliente));
 
   // Mesmo caminho de `totalInsumos` e `totalFichas`: `increment` entra na fila
   // offline e não exige leitura antes de escrever.
-  await setDoc(
-    docResumoGlobal(contaId),
-    { v: VERSAO_SCHEMA, totalClientes: increment(1), atualizadoEm: momento },
-    { merge: true },
+  despachar(
+    setDoc(
+      docResumoGlobal(contaId),
+      { v: VERSAO_SCHEMA, totalClientes: increment(1), atualizadoEm: momento },
+      { merge: true },
+    ),
   );
 
   return referencia.id;
@@ -79,16 +85,18 @@ export async function atualizarCliente(
   clienteId: string,
   dados: DadosCliente,
 ): Promise<void> {
-  await updateDoc(docCliente(contaId, clienteId), {
-    v: VERSAO_SCHEMA,
-    nome: dados.nome.trim(),
-    nomeBusca: chaveDeBusca(dados.nome),
-    telefone: dados.telefone?.trim() ?? null,
-    instagram: dados.instagram?.trim() ?? null,
-    endereco: dados.endereco?.trim() ?? null,
-    observacoes: dados.observacoes?.trim() ?? null,
-    atualizadoEm: agora(),
-  });
+  despachar(
+    updateDoc(docCliente(contaId, clienteId), {
+      v: VERSAO_SCHEMA,
+      nome: dados.nome.trim(),
+      nomeBusca: chaveDeBusca(dados.nome),
+      telefone: dados.telefone?.trim() ?? null,
+      instagram: dados.instagram?.trim() ?? null,
+      endereco: dados.endereco?.trim() ?? null,
+      observacoes: dados.observacoes?.trim() ?? null,
+      atualizadoEm: agora(),
+    }),
+  );
 }
 
 /** O que os agregados do cliente precisam saber dele antes de andar. */
@@ -125,12 +133,14 @@ export async function aplicarPedidoNoCliente(
   const totalPedidos = cliente.totalPedidos + delta.pedidos;
   const totalGasto = cliente.totalGasto + delta.gasto;
 
-  await updateDoc(docCliente(contaId, cliente.id), {
-    v: VERSAO_SCHEMA,
-    totalPedidos: increment(delta.pedidos),
-    totalGasto: increment(delta.gasto),
-    ticketMedio: ticketMedioDe(totalGasto, totalPedidos),
-    ...(pagoEm ? { ultimoPedidoEm: pagoEm } : {}),
-    atualizadoEm: agora(),
-  });
+  despachar(
+    updateDoc(docCliente(contaId, cliente.id), {
+      v: VERSAO_SCHEMA,
+      totalPedidos: increment(delta.pedidos),
+      totalGasto: increment(delta.gasto),
+      ticketMedio: ticketMedioDe(totalGasto, totalPedidos),
+      ...(pagoEm ? { ultimoPedidoEm: pagoEm } : {}),
+      atualizadoEm: agora(),
+    }),
+  );
 }

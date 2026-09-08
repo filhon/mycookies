@@ -437,6 +437,37 @@ export function parcelasDoResumo(
 }
 
 /**
+ * O que a lista de lançamentos prova sobre o agregado do mesmo mês.
+ *
+ * A `/financeiro` já assina as duas fontes, e a consulta da lista é exatamente
+ * o conjunto que alimenta `entradas` e `saidas` do agregado (`arquivado ==
+ * false`, `competencia == mês`). Enquanto forem duas, elas se conferem — e é o
+ * que quebra o silêncio deste módulo: um delta perdido deixa de ser descoberto
+ * por alguém achando um gráfico estranho (`DECISOES.md#d81`).
+ *
+ * Não cobre `produtos` nem `porDia[].pedidos`: prová-los exigiria a consulta de
+ * pedidos pagos do mês, que a tela não assina. O que ela pode provar, ela prova.
+ */
+export function conferirAgregado(
+  lancamentos: { tipo: TipoTransacao; valor: Centavos }[],
+  parcelas: Pick<ParcelasDoAgregado, "entradas" | "saidas">,
+): { confere: boolean; entradas: Centavos; saidas: Centavos } {
+  let entradas = 0;
+  let saidas = 0;
+
+  for (const lancamento of lancamentos) {
+    if (lancamento.tipo === "ENTRADA") entradas += lancamento.valor;
+    else saidas += lancamento.valor;
+  }
+
+  return {
+    confere: entradas === parcelas.entradas && saidas === parcelas.saidas,
+    entradas,
+    saidas,
+  };
+}
+
+/**
  * O valor médio de um pedido pago no mês.
  *
  * Razão, e razão não se incrementa: ela é gravada no mesmo ponto em que as

@@ -3,6 +3,7 @@ import {
   agregarMes,
   agregarPedidos,
   agregarTransacoes,
+  conferirAgregado,
   deltaDaTransacao,
   deltaDoPedido,
   PARCELAS_ZERADAS,
@@ -758,5 +759,93 @@ describe("produtosOrdenados", () => {
         },
       },
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// `conferirAgregado`: o que a lista prova sobre o agregado do mesmo mês.
+// ---------------------------------------------------------------------------
+
+describe("conferirAgregado", () => {
+  it("confere quando a lista e o agregado dizem o mesmo", () => {
+    const lista = [
+      { tipo: "ENTRADA" as const, valor: 14000 },
+      { tipo: "SAIDA" as const, valor: 9000 },
+    ];
+
+    expect(conferirAgregado(lista, { entradas: 14000, saidas: 9000 })).toEqual({
+      confere: true,
+      entradas: 14000,
+      saidas: 9000,
+    });
+  });
+
+  it("mês vazio confere com agregado zerado", () => {
+    expect(conferirAgregado([], { entradas: 0, saidas: 0 })).toEqual({
+      confere: true,
+      entradas: 0,
+      saidas: 0,
+    });
+  });
+
+  it("não confere quando só as saídas divergem", () => {
+    const lista = [
+      { tipo: "ENTRADA" as const, valor: 14000 },
+      { tipo: "SAIDA" as const, valor: 9000 },
+    ];
+
+    expect(conferirAgregado(lista, { entradas: 14000, saidas: 0 })).toEqual({
+      confere: false,
+      entradas: 14000,
+      saidas: 9000,
+    });
+  });
+
+  it("o caso que dá nome à spec: cinco lançamentos contra um agregado que só recebeu um", () => {
+    // O mês da captura: cinco lançamentos no banco, e só a parcela do primeiro
+    // chegou ao agregado — as outras quatro morreram na continuação de `async`
+    // que a aba levou junto (`DECISOES.md#d80`).
+    const lista = [
+      { tipo: "ENTRADA" as const, valor: 28000 },
+      { tipo: "ENTRADA" as const, valor: 100000 },
+      { tipo: "ENTRADA" as const, valor: 20000 },
+      { tipo: "SAIDA" as const, valor: 9000 },
+      { tipo: "SAIDA" as const, valor: 4500 },
+    ];
+
+    const conferencia = conferirAgregado(lista, {
+      entradas: 28000,
+      saidas: 0,
+    });
+
+    expect(conferencia).toEqual({
+      confere: false,
+      entradas: 148000,
+      saidas: 13500,
+    });
+  });
+
+  it("concorda com `agregarTransacoes` sobre os mesmos lançamentos", () => {
+    // A lista da tela e o oráculo da reconstrução não podem discordar: é o que
+    // torna o aviso confiável o bastante para mandar recalcular.
+    const lancamentos = [
+      lancamento({
+        tipo: "ENTRADA",
+        categoria: "VENDA",
+        valor: 14000,
+        dataISO: "2026-09-07",
+        formaPagamentoId: "credito",
+      }),
+      lancamento({
+        tipo: "SAIDA",
+        categoria: "COMPRA_INSUMO",
+        valor: 9000,
+        dataISO: "2026-09-05",
+      }),
+    ];
+
+    const reconstruido = agregarTransacoes(lancamentos);
+
+    expect(conferirAgregado(lancamentos, reconstruido).confere).toBe(true);
   });
 });

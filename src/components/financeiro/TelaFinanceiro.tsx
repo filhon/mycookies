@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, RotateCcw } from "lucide-react";
+import { CircleAlert, Plus, RotateCcw } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { BlocoMeta } from "@/components/metas/BlocoMeta";
@@ -9,7 +9,12 @@ import { FormularioMeta } from "@/components/metas/FormularioMeta";
 import { Botao } from "@/components/ui/Botao";
 import { EsqueletoLista, Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
-import { parcelasDoResumo, ticketMedioDe } from "@/lib/domain/caixa";
+import {
+  conferirAgregado,
+  parcelasDoResumo,
+  ticketMedioDe,
+} from "@/lib/domain/caixa";
+import { formatarMoeda } from "@/lib/domain/money";
 import {
   competenciaAtual,
   dataISODe,
@@ -104,10 +109,22 @@ export function TelaFinanceiro() {
   );
   const carregando =
     lancamentos.carregando || resumo.carregando || meta.carregando;
+  const pendente = lancamentos.pendente || resumo.pendente || meta.pendente;
 
   // O mês existe se ele tem lançamento, e não se o documento de agregado
   // existe: um mês em que tudo foi arquivado não tem resultado a mostrar.
   const temMovimento = lancamentos.dados.length > 0;
+
+  /**
+   * A lista confere o agregado, porque a tela já assina os dois (`#d81`).
+   *
+   * Fica calada enquanto há escrita pendente: as duas assinaturas não
+   * redesenham no mesmo tique, e o agregado pode chegar um quadro depois do
+   * lançamento. Um alarme piscando a cada lançamento seria pior do que o
+   * silêncio que ele veio quebrar.
+   */
+  const conferencia = conferirAgregado(lancamentos.dados, parcelas);
+  const divergente = !pendente && !conferencia.confere;
 
   /**
    * O que a meta precisa saber para andar junto com o dinheiro.
@@ -175,9 +192,7 @@ export function TelaFinanceiro() {
       </CabecalhoPagina>
 
       <div className="mt-4 flex min-h-8 items-center justify-end">
-        <SeloSincronizacao
-          pendente={lancamentos.pendente || resumo.pendente || meta.pendente}
-        />
+        <SeloSincronizacao pendente={pendente} />
       </div>
 
       {lancamentos.erro ? (
@@ -228,6 +243,16 @@ export function TelaFinanceiro() {
         </div>
       ) : (
         <div className="mt-2 space-y-4">
+          {divergente && (
+            <AgregadoAtrasado
+              entradasDaLista={conferencia.entradas}
+              saidasDaLista={conferencia.saidas}
+              parcelas={parcelas}
+              recalculando={recalculando}
+              aoRecalcular={() => void recalcular()}
+            />
+          )}
+
           <ResultadoDoMes parcelas={parcelas} />
 
           <BlocoMeta
@@ -346,5 +371,83 @@ export function TelaFinanceiro() {
         ticketMedio={ticketMedio}
       />
     </>
+  );
+}
+
+/**
+ * O agregado sendo desmentido pela lista que está logo abaixo (`#d81`).
+ *
+ * Ícone e texto carregam o aviso, e não só a cor. Diz os dois números em vez de
+ * só avisar que há um errado — e traz o botão do recálculo junto, porque quem
+ * precisa dele agora não deveria ter de rolar até o pé da tela para achá-lo.
+ */
+function AgregadoAtrasado({
+  entradasDaLista,
+  saidasDaLista,
+  parcelas,
+  recalculando,
+  aoRecalcular,
+}: {
+  entradasDaLista: number;
+  saidasDaLista: number;
+  parcelas: { entradas: number; saidas: number };
+  recalculando: boolean;
+  aoRecalcular: () => void;
+}) {
+  const divergencias = [
+    { rotulo: "entraram", lista: entradasDaLista, resumo: parcelas.entradas },
+    { rotulo: "saíram", lista: saidasDaLista, resumo: parcelas.saidas },
+  ].filter((linha) => linha.lista !== linha.resumo);
+
+  return (
+    <section
+      aria-labelledby="agregado-atrasado"
+      className="rounded-lg border border-attention/30 bg-attention-soft p-4 lg:p-5"
+    >
+      <h2
+        id="agregado-atrasado"
+        className="flex items-center gap-2 text-subheading font-semibold text-ink"
+      >
+        <CircleAlert
+          aria-hidden
+          className="size-5 shrink-0 text-attention"
+          strokeWidth={1.75}
+        />
+        Estes números estão atrasados
+      </h2>
+
+      <ul className="mt-2 space-y-1">
+        {divergencias.map((linha) => (
+          <li key={linha.rotulo} className="max-w-[60ch] text-label text-ink">
+            A lista deste mês soma{" "}
+            <strong className="num font-semibold">
+              {formatarMoeda(linha.lista)}
+            </strong>{" "}
+            que {linha.rotulo}, e o resumo está contando{" "}
+            <strong className="num font-semibold">
+              {formatarMoeda(linha.resumo)}
+            </strong>
+            .
+          </li>
+        ))}
+      </ul>
+
+      <p className="mt-2 max-w-[60ch] text-label text-ink-muted">
+        Os lançamentos abaixo estão todos salvos. Refazer o mês a partir deles
+        põe o resumo no lugar — isso precisa de internet.
+      </p>
+
+      <Botao
+        tamanho="sm"
+        className="mt-3"
+        carregando={recalculando}
+        onClick={aoRecalcular}
+        iconeInicial={
+          <RotateCcw aria-hidden className="size-4" strokeWidth={1.75} />
+        }
+      >
+        Recalcular o mês
+      </Botao>
+    </section>
   );
 }

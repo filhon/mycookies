@@ -19,6 +19,7 @@ import {
 import { dataISODe } from "@/lib/domain/datas";
 import { espelhoDaMeta, medirMeta } from "@/lib/domain/metas";
 import { custoDoItem } from "@/lib/domain/pedido";
+import { despachar } from "./despachar";
 import { espelhoAposDelta, type ContextoMeta } from "./metas";
 import { VERSAO_SCHEMA } from "@/lib/types";
 import type {
@@ -208,6 +209,11 @@ function incrementosDoAgregado(parcelas: ParcelasDoAgregado) {
  * realizado, e `ticketMedio`, porque razão não se incrementa. As duas saem do
  * que a tela já sabe — e por isso o contexto vem de fora, sem custar uma
  * leitura no caminho de gravar.
+ *
+ * A escrita é **despachada e não esperada** (`#d80`). Esperá-la aqui é o que
+ * fazia a parcela do mês se perder: quem chama esta função a chama depois de
+ * outra escrita, e a promessa da primeira não resolve sem rede — o `increment`
+ * nunca chegava a ser enfileirado.
  */
 export async function aplicarNoAgregado(
   contaId: string,
@@ -219,18 +225,20 @@ export async function aplicarNoAgregado(
 ): Promise<void> {
   const meta = espelhoAposDelta(competencia, parcelas.entradas, contexto);
 
-  await setDoc(
-    docResumoMensal(contaId, competencia),
-    {
-      ...incrementosDoAgregado(parcelas),
-      competencia,
-      // Chave ausente em `merge` deixa o que está lá: mês sem meta não ganha um
-      // espelho pela metade só porque houve uma venda, e um lançamento avulso
-      // não reescreve um ticket médio que ele não mudou.
-      ...(meta ? { meta } : {}),
-      ...(ticketMedio === null ? {} : { ticketMedio }),
-    },
-    { merge: true },
+  despachar(
+    setDoc(
+      docResumoMensal(contaId, competencia),
+      {
+        ...incrementosDoAgregado(parcelas),
+        competencia,
+        // Chave ausente em `merge` deixa o que está lá: mês sem meta não ganha
+        // um espelho pela metade só porque houve uma venda, e um lançamento
+        // avulso não reescreve um ticket médio que ele não mudou.
+        ...(meta ? { meta } : {}),
+        ...(ticketMedio === null ? {} : { ticketMedio }),
+      },
+      { merge: true },
+    ),
   );
 }
 
@@ -244,6 +252,10 @@ export async function aplicarNoAgregado(
  *
  * `mergeFields` substitui exatamente os campos listados, e agora a lista é o
  * documento inteiro menos o que não é agregado.
+ *
+ * **É a única escrita deste módulo que continua sendo esperada** (`#d80`): ela
+ * faz duas consultas antes de escrever, já exige rede para existir, e a tela
+ * conta com a rejeição para dizer que o recálculo precisa de internet.
  */
 export async function recalcularMes(
   contaId: string,

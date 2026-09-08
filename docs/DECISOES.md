@@ -2362,3 +2362,114 @@ fora. Zero é ausência, a mesma regra do painel financeiro: sem desconto a linh
 
 **Nenhum emoji, e dois negritos só** — o nome do negócio e o total. A voz do sistema é a da
 confeitaria, e não a de um chatbot.
+
+---
+
+## D80 · A mutação do caixa despacha e não espera
+
+**Status:** vigente · decidida em 2026-09-07, na spec 011
+
+**Contexto.** Toda mutação do caixa era uma fila de escritas esperadas, uma depois da outra.
+`marcarPedidoPago` é a mais longa: grava o lançamento, marca o pedido, aplica no agregado,
+aplica na cliente. E a promessa de uma escrita do Firestore **não resolve enquanto não há
+rede** — ela fica pendente até a reconexão (`@firebase/firestore` 4.17.1, `index.d.ts:4131`,
+"won't resolve while you're offline").
+
+O preço disso no caixa não é um botão preso: é **a parcela do mês perdida em definitivo**. Sem
+sinal, a execução para na primeira linha, `aplicarNoAgregado` nunca é chamada, e o `increment`
+nunca chega a ser enfileirado — o que a fila offline sabe enfileirar é escrita despachada, não
+continuação de `async`. Quando a rede volta, a fila sobe o lançamento e o pedido; a continuação
+morreu junto com a aba. O documento aparece na lista, e o gráfico e o ranking, que leem o
+agregado, ficam com o que sobrou. Foi assim que "Movimento por dia" desenhou uma barra só num
+mês com movimento em vários dias, e "O que mais vendeu" disse 1 unidade de cada num dia de dez
+cookies vendidos e pagos.
+
+**Decisão.** A regra que `#d62` deu à contagem passa a valer para as mutações que mantêm o
+agregado: **nenhuma escrita do Firestore é esperada dentro da mutação.** Todas são despachadas,
+na ordem, e a função retorna. Vale para `transacoes.ts`, `pedidos.ts`, `clientes.ts` e
+`aplicarNoAgregado`. O cache local já aplicou as três ou quatro escritas, os `onSnapshot` da
+tela já redesenharam com elas, e a fila do IndexedDB sobe tudo quando houver rede — inclusive o
+`increment`, que é a razão de ele ter sido escolhido em vez de uma transação (`#d09`, `#d10`).
+
+**`recalcularMes` é a única exceção, e está comentada como tal.** Ela é a rede de segurança,
+faz duas consultas antes de escrever, já exige rede para existir e já diz isso na tela quando
+falha.
+
+**Um auxiliar só, `mutations/despachar.ts`**, de três linhas: engole a rejeição e a registra,
+para que uma escrita recusada não vire `unhandledrejection` numa aba que ninguém está olhando.
+Um lugar, e não um `.catch` repetido em quinze chamadas.
+
+**O que isto tornou impossível: uma escrita da fila depender da resposta de outra.** Havia um
+lugar assim, e o conserto é de uma linha — `gravarTransacao` usava `addDoc` para saber o id que
+`marcarPedidoPago` grava em `transacaoId`. `doc(colTransacoes(contaId))` devolve uma referência
+com id gerado **no aparelho, sem ida ao servidor**, e `setDoc` naquela referência faz o resto.
+É o mesmo mecanismo que `addDoc` usa por dentro; o risco de colisão é o de sempre. O mesmo
+conserto valeu para `criarPedido` e `criarCliente`.
+
+**As assinaturas continuam `async` e continuam devolvendo o que devolviam**, e por isso nenhuma
+tela mudou: elas seguem com `await` e seguem fechando o painel quando a promessa resolve, só
+que agora ela resolve no toque, e não na reconexão.
+
+**Consequência, e é a aprovação que a spec pediu.** Uma escrita recusada pelas regras de
+segurança no caixa não aparece mais como erro no painel: ela falha calada, registrada no
+console, e o número na tela fica diferente do banco até a próxima recarga. É a terceira vez que
+este projeto faz a troca (`#d40`, `#d62`), e desta vez o que falha calado é dinheiro. Foi
+pedida de novo por isso, e aceita pelos mesmos dois motivos: as regras em questão são as mesmas
+que acabaram de deixar a tela ler o mês, e a falha plausível aqui é ausência de rede — que não
+é falha. A alternativa era manter o `await` e aceitar que o caixa não funcione sem rede, o que
+contraria o invariante de `CLAUDE.md` ("Offline é o estado normal"). Se um dia houver papel com
+permissão parcial, isto volta à mesa.
+
+A defesa que fica é o `SeloSincronizacao`, que a tela já desenha e que agora conta a verdade:
+a escrita do agregado está de fato na fila, e `hasPendingWrites` a vê. A segunda é `#d81`.
+
+**Salvar passa a ser instantâneo em todo o caixa.** É o comportamento que `/compras` e a
+contagem já têm, e é o certo — mas é mudança de sensação em telas que ela usa todo dia, e
+merece um olhar no roteiro da 5B.
+
+**As outras cinco mutações com o mesmo `await` em fila ficaram de fora**: `insumos.ts`,
+`fichas.ts`, `listasCompra.ts`, `metas.ts` e `configuracao.ts`. Nelas o preço de uma promessa
+pendente é um botão preso, e não um número perdido: ou escrevem um documento só, ou o que
+escrevem depois não é parcela de agregado que alguém lê — `agregados/global` é escrito por três
+delas e lido por ninguém (`#d67`). Vira uma spec de varredura própria, depois da 5B.
+
+---
+
+## D81 · O agregado pode ser desmentido pela tela
+
+**Status:** vigente · decidida em 2026-09-07, na spec 011
+
+**Contexto.** Agregado mantido por incremento torce em silêncio — é o que `domain/caixa.ts` diz
+no alto do arquivo desde a 4A, e é exatamente o que aconteceu em `#d80`: um delta perdido não
+dá erro, não aparece em log, e só é notado quando alguém olha um gráfico e acha estranho.
+Consertar a causa não fecha o silêncio; fecha só esta ocorrência dele.
+
+**Decisão.** A `/financeiro` já assina as duas fontes — a coleção de lançamentos do mês e o
+documento de agregado do mês. Enquanto forem duas, **elas se conferem.** `conferirAgregado`,
+em `domain/caixa.ts`, soma `entradas` e `saidas` da lista e diz se batem com as do agregado.
+Quando não batem, a tela diz, com ícone e texto, acima de `ResultadoDoMes`, com os dois números
+e o botão "Recalcular o mês" ali dentro — quem precisa dele agora não deveria ter de rolar até
+o pé da tela para achá-lo.
+
+A comparação é exata, e não por aproximação: a consulta da lista (`arquivado == false`,
+`competencia == mês`) é exatamente o conjunto que alimenta aquelas duas parcelas. Custo de
+leitura zero: os dois documentos já estão na tela.
+
+**O bloco fica calado enquanto `pendente` for verdadeiro.** As duas assinaturas não redesenham
+no mesmo tique, e o agregado pode chegar um quadro depois do lançamento. Sem essa guarda, a
+correção viraria um alarme piscando a cada escrita.
+
+**Consequência.** A comparação cobre metade do agregado. `produtos` e `porDia[].pedidos` ficam
+de fora: prová-los exigiria a consulta de pedidos pagos do mês, que a tela não assina — uma
+consulta a mais numa tela que já faz três. Meia rede é mais do que nenhuma, e o que a tela pode
+provar, ela prova.
+
+**Não recalcula sozinha.** O aviso conta; quem aperta é ela. Recálculo automático numa tela que
+abre offline seria uma escrita grande disparada sem pedir, e a falha dela apareceria como mais
+um número estranho. E é um mês por vez, pela tela do mês: varredura de meses, se virar
+necessidade real, nasce com tela própria.
+
+**O estrago já feito não se conserta sozinho.** O `increment` que nunca foi despachado não vai
+aparecer. "Recalcular o mês" é o conserto, e ele reconstrói as duas metades a partir dos
+documentos, sem depender de parcela antiga nenhuma. Uma migração com Admin SDK para uma
+usuária e três meses de dado seria script demais para um botão que existe.

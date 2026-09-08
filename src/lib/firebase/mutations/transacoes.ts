@@ -1,15 +1,16 @@
 import {
-  addDoc,
   deleteField,
   doc,
   getDocs,
   query,
+  setDoc,
   Timestamp,
   updateDoc,
   where,
 } from "firebase/firestore";
 import { colTransacoes } from "../colecoes";
 import { aplicarNoAgregado, transacaoAgregavel } from "./agregado";
+import { despachar } from "./despachar";
 import {
   deltaDaTransacao,
   somarParcelas,
@@ -136,6 +137,11 @@ export async function buscarLancamentoDaNota(
  * precisam entrar no agregado somadas, em uma escrita só. Se cada uma fosse
  * aplicada por conta própria, o espelho da meta seria reescrito duas vezes — e
  * a segunda o reescreveria com o total de antes da primeira (`#d29`).
+ *
+ * O id sai de `doc()` e não de `addDoc`: a referência nasce com id gerado **no
+ * aparelho**, sem ida ao servidor, e é o que permite `marcarPedidoPago` gravar
+ * `transacaoId` sem esperar a rede (`#d80`). É o mesmo mecanismo que `addDoc`
+ * usa por dentro; o risco de colisão é o de sempre.
  */
 export async function gravarTransacao(
   contaId: string,
@@ -152,7 +158,8 @@ export async function gravarTransacao(
     arquivado: false,
   };
 
-  const referencia = await addDoc(colTransacoes(contaId), nova as Transacao);
+  const referencia = doc(colTransacoes(contaId));
+  despachar(setDoc(referencia, nova as Transacao));
   return { id: referencia.id, corpo };
 }
 
@@ -167,12 +174,14 @@ export async function corrigirValorDaTransacao(
   transacaoId: string,
   dados: { valor: Centavos; custoTaxa: Centavos; descricao: string },
 ): Promise<void> {
-  await updateDoc(doc(colTransacoes(contaId), transacaoId), {
-    valor: dados.valor,
-    custoTaxa: dados.custoTaxa,
-    descricao: dados.descricao.trim(),
-    atualizadoEm: agora(),
-  });
+  despachar(
+    updateDoc(doc(colTransacoes(contaId), transacaoId), {
+      valor: dados.valor,
+      custoTaxa: dados.custoTaxa,
+      descricao: dados.descricao.trim(),
+      atualizadoEm: agora(),
+    }),
+  );
 }
 
 /** Arquiva o documento do lançamento sem tocar no agregado. */
@@ -180,10 +189,12 @@ export async function arquivarDocumentoDaTransacao(
   contaId: string,
   transacaoId: string,
 ): Promise<void> {
-  await updateDoc(doc(colTransacoes(contaId), transacaoId), {
-    arquivado: true,
-    atualizadoEm: agora(),
-  });
+  despachar(
+    updateDoc(doc(colTransacoes(contaId), transacaoId), {
+      arquivado: true,
+      atualizadoEm: agora(),
+    }),
+  );
 }
 
 export async function criarTransacao(
@@ -221,15 +232,17 @@ export async function atualizarTransacao(
 ): Promise<void> {
   const corpo = corpoDaTransacao(dados, formas);
 
-  await updateDoc(doc(colTransacoes(contaId), anterior.id), {
-    ...corpo,
-    // Chave ausente em `updateDoc` deixa o valor velho no lugar: trocar de
-    // entrada para saída precisa apagar a forma de pagamento, não escondê-la.
-    formaPagamentoId: corpo.formaPagamentoId ?? deleteField(),
-    observacoes: corpo.observacoes ?? deleteField(),
-    pedidoId: corpo.pedidoId ?? deleteField(),
-    atualizadoEm: agora(),
-  });
+  despachar(
+    updateDoc(doc(colTransacoes(contaId), anterior.id), {
+      ...corpo,
+      // Chave ausente em `updateDoc` deixa o valor velho no lugar: trocar de
+      // entrada para saída precisa apagar a forma de pagamento, não escondê-la.
+      formaPagamentoId: corpo.formaPagamentoId ?? deleteField(),
+      observacoes: corpo.observacoes ?? deleteField(),
+      pedidoId: corpo.pedidoId ?? deleteField(),
+      atualizadoEm: agora(),
+    }),
+  );
 
   const reverso = deltaDaTransacao(transacaoAgregavel(anterior), -1);
   const aplicado = deltaDaTransacao(transacaoAgregavel(corpo), 1);

@@ -1,4 +1,10 @@
-import { addDoc, deleteField, Timestamp, updateDoc } from "firebase/firestore";
+import {
+  deleteField,
+  doc,
+  setDoc,
+  Timestamp,
+  updateDoc,
+} from "firebase/firestore";
 import { colPedidos, docPedido } from "../colecoes";
 import {
   aplicarNoAgregado,
@@ -7,6 +13,7 @@ import {
   type PedidoNoCaixa,
 } from "./agregado";
 import { aplicarPedidoNoCliente, type ClienteAgregavel } from "./clientes";
+import { despachar } from "./despachar";
 import {
   arquivarDocumentoDaTransacao,
   corrigirValorDaTransacao,
@@ -179,10 +186,10 @@ export async function criarPedido(
     arquivado: false,
   };
 
-  const referencia = await addDoc(
-    colPedidos(contaId),
-    novo as unknown as Pedido,
-  );
+  // O id sai de `doc()`, gerado no aparelho, e a escrita é despachada: um
+  // pedido anotado na feira sem sinal não espera o servidor (`#d80`).
+  const referencia = doc(colPedidos(contaId));
+  despachar(setDoc(referencia, novo as unknown as Pedido));
   return referencia.id;
 }
 
@@ -270,10 +277,12 @@ export async function atualizarPedido(
 ): Promise<void> {
   const corpo = corpoDoPedido(dados);
 
-  await updateDoc(docPedido(contaId, anterior.id), {
-    ...corpo,
-    atualizadoEm: agora(),
-  });
+  despachar(
+    updateDoc(docPedido(contaId, anterior.id), {
+      ...corpo,
+      atualizadoEm: agora(),
+    }),
+  );
 
   if (!anterior.pago || !anterior.pagoEm) return;
 
@@ -360,13 +369,15 @@ export async function marcarPedidoPago(
     formas,
   );
 
-  await updateDoc(docPedido(contaId, pedido.id), {
-    pago: true,
-    pagoEm,
-    competenciaPagamento: competencia,
-    transacaoId,
-    atualizadoEm: agora(),
-  });
+  despachar(
+    updateDoc(docPedido(contaId, pedido.id), {
+      pago: true,
+      pagoEm,
+      competenciaPagamento: competencia,
+      transacaoId,
+      atualizadoEm: agora(),
+    }),
+  );
 
   const parcelas = contribuicaoDoPedidoPago(pedido, pagoEmISO, 1);
   await aplicarNoAgregado(
@@ -410,13 +421,15 @@ export async function desfazerPagamento(
     await arquivarDocumentoDaTransacao(contaId, pedido.transacaoId);
   }
 
-  await updateDoc(docPedido(contaId, pedido.id), {
-    pago: false,
-    pagoEm: deleteField(),
-    competenciaPagamento: deleteField(),
-    transacaoId: deleteField(),
-    atualizadoEm: agora(),
-  });
+  despachar(
+    updateDoc(docPedido(contaId, pedido.id), {
+      pago: false,
+      pagoEm: deleteField(),
+      competenciaPagamento: deleteField(),
+      transacaoId: deleteField(),
+      atualizadoEm: agora(),
+    }),
+  );
 
   const parcelas = contribuicaoDoPedidoPago(pedido, pagoEmISO, -1);
   await aplicarNoAgregado(
@@ -466,10 +479,12 @@ export async function mudarStatusPedido(
     );
   }
 
-  await updateDoc(docPedido(contaId, pedido.id), {
-    status: proximo,
-    atualizadoEm: agora(),
-  });
+  despachar(
+    updateDoc(docPedido(contaId, pedido.id), {
+      status: proximo,
+      atualizadoEm: agora(),
+    }),
+  );
 }
 
 /**
@@ -480,8 +495,10 @@ export async function arquivarPedido(
   contaId: string,
   pedidoId: string,
 ): Promise<void> {
-  await updateDoc(docPedido(contaId, pedidoId), {
-    arquivado: true,
-    atualizadoEm: agora(),
-  });
+  despachar(
+    updateDoc(docPedido(contaId, pedidoId), {
+      arquivado: true,
+      atualizadoEm: agora(),
+    }),
+  );
 }
