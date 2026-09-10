@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-07 (spec 011, o caixa que não perde a conta).
+Atualizado em 2026-09-10 (spec 012, o acerto das entregas).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -67,6 +67,13 @@ lançamentos e avisa quando eles discordam (`#d81`). **O estrago já feito não 
 sozinho**: cada mês que o aviso acusar precisa de um "Recalcular o mês" com rede, e setembro de
 2026 é o mês da captura.
 
+A spec `012-entregas-a-pagar.md` está **entregue**, e é a quarta coisa que a operação real
+devolveu — desta vez não é conserto, é dado que nunca foi pedido. A taxa de entrega já entrava
+no caixa quando o pedido era pago; o que **saía** para o entregador, uma vez por semana, não
+passava por lugar nenhum, e o resultado do mês ficava alto por causa disso. Agora `/pedidos` tem
+a faixa "Entregas a pagar", o acerto vira uma saída em `ENTREGA` no caixa, e desfazer devolve
+tudo. **O roteiro de navegador de cinco passos dela não rodou.**
+
 Fora das specs, o projeto foi **preparado para publicar no Vercel** em 2026-09-03: a
 credencial do Admin SDK deixou de exigir um arquivo em disco, a falta dela parou de ser
 confundida com login inválido, e `functions/` saiu do `tsconfig` da raiz — sem isso o build
@@ -100,7 +107,7 @@ da hospedagem falharia. O guia é `docs/DEPLOY.md`. **Nada foi publicado ainda**
 > mudou de arquivo. Se algo em `insumos`, em `/compras` ou na leitura de nota aparecer torto na
 > 5B, estes são os primeiros suspeitos depois dos que a 6A abriu.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **377
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **394
 testes**, e build com 16 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
 `/insumos/contagem` na 7A e `/comecar` na 8A — mais `/api/nota`, `/fichas/[id]` e
 `/pedidos/[id]` dinâmicas e service worker gerado.
@@ -148,6 +155,7 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 | —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros   | `specs/009-teclado-e-barra.md`           |
 | —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro     | `specs/010-resumo-no-whatsapp.md`        |
 | —   | O caixa que não perde a conta               | pronto, sem o roteiro     | `specs/011-caixa-que-nao-perde-conta.md` |
+| —   | O acerto das entregas                       | pronto, sem o roteiro     | `specs/012-entregas-a-pagar.md`          |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -1134,6 +1142,71 @@ pedido como pago **offline** não reproduzir o defeito hoje, a causa é outra e 
 
 **O conserto do estrago já feito é manual e não aconteceu nesta sessão.** Está na próxima ação.
 
+## O que a spec 012 deixou pronto
+
+O outro lado da entrega passou a existir. Duas funções puras viraram cinco, dois campos
+aditivos no pedido, uma categoria nova no caixa, duas mutações e um painel. **Nenhuma rota nova,
+nenhuma consulta nova, nenhum índice novo, nenhuma dependência.**
+
+- `src/lib/domain/pedido.ts` ganhou o bloco do acerto, ao lado de `aReceber`, que é a irmã desta
+  conta: `entregasAPagar` (as quatro exclusões), `resumoDoRepasse`, `descricaoDoRepasse`,
+  `entregasEsquecidas` e `repassesFeitos`, mais os tipos `PedidoParaEntrega`, `EntregaAPagar`,
+  `ResumoDoRepasse` e `RepasseFeito`.
+- `tests/domain/pedido.test.ts`: **17 testes novos** (377 → 394), com o caso de aceite da spec
+  número por número — as 3 linhas na ordem 31/08, 01/09, 05/09, os R$ 47,00, a descrição
+  `"Entregas · 3 pedidos · 31 de ago. a 05 de set."` e o 1 de `entregasEsquecidas` — mais as
+  bordas: retirada fora, taxa zero fora, os cinco status que não são `ENTREGUE` fora, já
+  repassada fora, lista vazia, período de um dia só, e `repassesFeitos` agrupando dois pedidos
+  de um acerto e um de outro.
+- **Schema:** `Pedido.entrega` ganhou `repassadoEm?: Timestamp` e `repasseTransacaoId?: string`;
+  `CategoriaTransacao` ganhou `"ENTREGA"`. As duas aprovações que a spec pedia, as duas
+  aditivas: documento antigo sem os campos lê como "não repassada", que é o estado correto de
+  todo pedido de hoje, e agregado antigo sem a chave continua válido. **Nenhuma migração.**
+- `src/lib/domain/caixa.ts`: `ROTULO_CATEGORIA_TRANSACAO` ganhou `"Entrega"` e `CATEGORIAS_SAIDA`
+  ganhou a linha, depois de `EMBALAGEM`. Mais nada em `caixa.ts` mudou — o agregado já tratava
+  categoria como chave, e não como lista fechada.
+- `mutations/pedidos.ts`: `pedidoParaEntrega` (a conversão de `Timestamp` para `DataISO`, na
+  fronteira), `pagarEntregas` (reusa `criarTransacao` e marca os pedidos num `writeBatch`, por
+  caminho pontilhado) e `desfazerRepasse` (reusa `arquivarTransacao` mais um lote com
+  `deleteField()`). **As duas despacham e não esperam** (`#d80`).
+- `mutations/transacoes.ts`: `arquivarTransacao` passou a pedir `TransacaoReversivel`
+  (`Pick<Transacao, 'id' | 'competencia'> & TransacaoAgregavel`) em vez do documento inteiro.
+  Nenhum chamador mudou.
+- `src/components/pedidos/EntregasAPagar.tsx`, a faixa em `/pedidos` logo abaixo de "A receber",
+  com o mesmo peso visual, e `PainelEntregas.tsx`, o painel: uma linha por entrega já marcada com
+  alvo de toque de 56px, o campo de data do pagamento nascendo hoje, a frase de `#d83` quando há
+  entrega vencida fora da conta, o rodapé com "Pagar R$ 47,00" em 52px, e "Últimos acertos" com
+  desfazer em duas etapas.
+- Decisões novas em `DECISOES.md#d82` a `#d85` — as quatro da spec.
+
+Fora do escopo literal da spec, e por quê:
+
+- **`atualizarPedido` passou a gravar o mapa `entrega` por caminho pontilhado.** Ela gravava o
+  mapa inteiro, e com os dois campos novos isso viraria perda de dinheiro: editar um pedido já
+  acertado apagaria o repasse, a entrega voltaria para a faixa, e ela pagaria o entregador duas
+  vezes. A spec nomeia o risco do caminho pontilhado só na mutação nova; ele valia também na
+  velha. Está em `#d84`.
+- **A faixa não some quando não há entrega a pagar, se houver acerto recente.** A spec diz "some
+  quando não há entrega a pagar", e o roteiro dela pede desfazer no passo 5 — mas o painel é o
+  único caminho até "Desfazer", e ele abre pela faixa. Sem entrega e sem acerto, a faixa some
+  como a spec manda; com acerto recente ela fica calada, com o botão "Ver os últimos acertos".
+- **`pagarEntregas` não recebe as formas de pagamento**, e `desfazerRepasse` recebe o
+  `RepasseFeito` inteiro em vez de `(pedidoIds, transacao)`. Os dois motivos estão em `#d85` e
+  `#d84`: o primeiro parâmetro nunca seria lido, e o segundo é o objeto que o domínio já produz.
+- **`esquemaPedido` não ganhou os dois campos**, contra a letra da spec. Ele é a forma do
+  formulário, e não a do documento (`#d84`).
+- **`DICA_CATEGORIA.ENTREGA`.** Sem a frase, o acerto da semana pode ser lançado à mão em
+  `/financeiro` **e** pelo painel. É o mesmo erro que a dica de `TAXA_PAGAMENTO` existe para
+  evitar.
+- **O painel recomeça ao abrir.** Ele fica montado o tempo todo para poder animar, então
+  desmarcar uma linha e fechar sem pagar deixaria a linha desmarcada na semana seguinte, e o dia
+  do pagamento parado no de então.
+
+**O que a 012 não provou.** O de sempre: `npm test` cobre `src/lib/domain/`, então as cinco
+funções novas têm teste e o lançamento, o lote e o painel não têm. O roteiro de cinco passos da
+spec é o único lugar onde o acerto pode ser visto acontecer — e o passo 4, com a rede em
+Offline, é o que separa esta spec de uma que só funciona na bancada com sinal.
+
 ## Próxima ação
 
 **Recalcular os meses tortos**, com o código no ar e com rede: abrir `/financeiro` e, para cada
@@ -1169,6 +1242,24 @@ lint, typecheck, 350 testes e build com as mesmas 19 rotas da 8A — a 8B não c
 Portão passando não é o mesmo que sistema pronto — nenhum dos quatro toca no Firestore, nenhum
 dos quatro chama o Gemini, e nenhum dos quatro abre um navegador, que é justamente o que os dois
 critérios em aberto da 8B pedem.
+
+Da 012, o que só o navegador responde:
+
+1. **Três pedidos de entrega marcados como `ENTREGUE`, um deles ainda em `PRONTO`.** A faixa
+   aparece em `/pedidos` com o total dos três, e a frase da entrega vencida aparece no painel.
+2. **Desmarcar uma linha**: o total do rodapé e o texto do botão precisam mudar juntos.
+3. **Remarcar, escolher o dia, pagar.** O painel fecha no toque, a faixa some, e `/financeiro`
+   mostra a saída em "Entrega" no dia escolhido — com a barra do dia no gráfico.
+4. **Com a rede em Offline**, repetir com outro conjunto: o painel fecha do mesmo jeito, o selo
+   de sincronização acusa pendência, e o gráfico do mês já mostra a barra vermelha. Religar a
+   rede e recarregar: os mesmos números, agora do servidor. É o passo que separa esta spec de
+   uma que só funciona com sinal.
+5. **Desfazer o acerto**: os pedidos voltam para a faixa e o lançamento aparece arquivado.
+6. **Editar um pedido já acertado** (mudar a quantidade, ou o endereço) e conferir que ele
+   **não** volta para a faixa. É a correção de caminho pontilhado em `atualizarPedido`
+   (`#d84`), e é a linha mais fácil de errar da sessão.
+7. **O painel no celular e no desktop**: folha inferior lá, lateral aqui, com a linha inteira
+   como alvo de toque e o botão de pagar em 52px.
 
 Da 8A, o que só o navegador responde — e o primeiro item vale **junto** do passo 1 da 5B, porque
 os dois pedem a mesma conta zerada:
@@ -1468,3 +1559,7 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | Cinco mutações ainda esperam escrita em fila fora do caixa                    | `insumos`, `fichas`, `listasCompra`, `metas`, `configuracao` | Spec de varredura depois da 5B: lá o preço é botão preso, não parcela perdida (`#d80`) |
 | Escrita recusada pelas regras no caixa falha calada, só no console            | `mutations/despachar.ts`                                     | Volta à mesa se existir papel com permissão parcial (`#d80`)                           |
 | O aviso de divergência não cobre `produtos` nem `porDia[].pedidos`            | `domain/caixa.ts`                                            | Exigiria a `/financeiro` assinar a consulta de pedidos pagos do mês (`#d81`)           |
+| Arquivar o acerto direto em `/financeiro` deixa os pedidos marcados           | `components/financeiro/`                                     | Se acontecer de verdade: vira guarda na tela, como a da nota (`#d52`)                  |
+| `lucroEstimado` do pedido continua com a taxa de entrega dentro               | `domain/pedido.ts`                                           | Quem fecha a conta é o caixa; corrigir mexeria em todo pedido gravado (`#d82`)         |
+| A entrega que ela esqueceu de marcar só é paga na semana seguinte             | `domain/pedido.ts`                                           | Não tem conserto em código: a frase do painel é a defesa (`#d83`)                      |
+| A faixa, o painel, o lote do repasse e a saída em `ENTREGA` sem teste         | `components/pedidos/`                                        | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador              |

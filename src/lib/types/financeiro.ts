@@ -14,6 +14,8 @@ export type CategoriaTransacao =
   | "VENDA"
   | "COMPRA_INSUMO"
   | "EMBALAGEM"
+  /** O acerto da entrega com o entregador, uma vez por semana (`#d85`). */
+  | "ENTREGA"
   | "DESPESA_FIXA"
   | "EQUIPAMENTO"
   | "MARKETING"

@@ -4,7 +4,9 @@ import {
   setDoc,
   Timestamp,
   updateDoc,
+  writeBatch,
 } from "firebase/firestore";
+import { obterDb } from "../client";
 import { colPedidos, docPedido } from "../colecoes";
 import {
   aplicarNoAgregado,
@@ -16,7 +18,9 @@ import { aplicarPedidoNoCliente, type ClienteAgregavel } from "./clientes";
 import { despachar } from "./despachar";
 import {
   arquivarDocumentoDaTransacao,
+  arquivarTransacao,
   corrigirValorDaTransacao,
+  criarTransacao,
   gravarTransacao,
 } from "./transacoes";
 import type { ContextoMeta } from "./metas";
@@ -27,12 +31,16 @@ import {
   ticketMedioDe,
   type ParcelasDoAgregado,
 } from "@/lib/domain/caixa";
-import { competenciaDeISO, dataDeISO } from "@/lib/domain/datas";
+import { competenciaDeISO, dataDeISO, dataISODe } from "@/lib/domain/datas";
 import {
   codigoDoPedido,
   derivarPedido,
+  descricaoDoRepasse,
   podeIrPara,
   ROTULO_STATUS_PEDIDO,
+  type EntregaAPagar,
+  type PedidoParaEntrega,
+  type RepasseFeito,
 } from "@/lib/domain/pedido";
 import { VERSAO_SCHEMA } from "@/lib/types";
 import type {
@@ -277,9 +285,17 @@ export async function atualizarPedido(
 ): Promise<void> {
   const corpo = corpoDoPedido(dados);
 
+  // O mapa `entrega` vai por **caminho pontilhado**, e não inteiro: gravá-lo
+  // inteiro apagaria `repassadoEm` e `repasseTransacaoId`, e a entrega já
+  // acertada voltaria para a faixa de "a pagar" — ela pagaria duas vezes.
+  const { entrega, ...resto } = corpo;
+
   despachar(
     updateDoc(docPedido(contaId, anterior.id), {
-      ...corpo,
+      ...resto,
+      "entrega.tipo": entrega.tipo,
+      "entrega.taxa": entrega.taxa,
+      "entrega.endereco": entrega.endereco,
       atualizadoEm: agora(),
     }),
   );
@@ -485,6 +501,132 @@ export async function mudarStatusPedido(
       atualizadoEm: agora(),
     }),
   );
+}
+
+// ---------------------------------------------------------------------------
+// O acerto das entregas (spec 012)
+// ---------------------------------------------------------------------------
+
+/**
+ * O pedido gravado, do jeito que o acerto das entregas o lê.
+ *
+ * `Timestamp` não atravessa para `domain/` (`#d84` e o comentário de
+ * `estoque.ts`): a conversão acontece aqui, como `pedidoAgregavel` faz com
+ * `pagoEm`.
+ */
+export function pedidoParaEntrega(pedido: Pedido): PedidoParaEntrega {
+  return {
+    id: pedido.id,
+    codigo: pedido.codigo,
+    clienteNome: pedido.clienteNome,
+    dataEntregaISO: pedido.dataEntregaISO,
+    status: pedido.status,
+    entrega: {
+      tipo: pedido.entrega.tipo,
+      taxa: pedido.entrega.taxa,
+      ...(pedido.entrega.repassadoEm
+        ? { repassadoEmISO: dataISODe(pedido.entrega.repassadoEm.toDate()) }
+        : {}),
+      ...(pedido.entrega.repasseTransacaoId
+        ? { repasseTransacaoId: pedido.entrega.repasseTransacaoId }
+        : {}),
+    },
+  };
+}
+
+/**
+ * O acerto da semana com o entregador: uma saída no caixa, e os pedidos
+ * marcados.
+ *
+ * A saída nasce **sem `pedidoId`**: um acerto cobre vários pedidos, e o campo é
+ * de um só. O vínculo existe na direção que importa e que é consultável de
+ * graça — do pedido para o lançamento (`DECISOES.md#d85`).
+ *
+ * `contextoMeta` é `null`, e isso foi conferido em `metas.ts` e não deduzido:
+ * `espelhoAposDelta` move o espelho a partir de `parcelas.entradas`, e o delta
+ * de uma saída tem `entradas` zerado. `null` diz isso em vez de depender da
+ * coincidência — é o mesmo que a 6B fez.
+ *
+ * As formas de pagamento vão vazias porque `custoTaxa` já é zero e explícito:
+ * saída não passa por maquininha, e isso dispensa o painel de assinar
+ * `configuracao/geral` para gravar um zero.
+ *
+ * Despacha e não espera (`#d80`): acertar a semana precisa funcionar na cozinha,
+ * com o celular sem sinal.
+ */
+export async function pagarEntregas(
+  contaId: string,
+  entregas: EntregaAPagar[],
+  dataISO: DataISO,
+): Promise<string> {
+  const transacaoId = await criarTransacao(
+    contaId,
+    {
+      tipo: "SAIDA",
+      categoria: "ENTREGA",
+      descricao: descricaoDoRepasse(entregas),
+      valor: entregas.reduce((soma, entrega) => soma + entrega.valor, 0),
+      dataISO,
+      recorrente: false,
+      custoTaxa: 0,
+    },
+    [],
+    null,
+  );
+
+  // Caminho pontilhado, e não o mapa `entrega` inteiro: gravar o mapa apagaria
+  // o endereço e a taxa. É a linha mais fácil de errar desta spec.
+  const repassadoEm = Timestamp.fromDate(dataDeISO(dataISO));
+  const lote = writeBatch(obterDb());
+  for (const entrega of entregas) {
+    lote.update(docPedido(contaId, entrega.pedidoId), {
+      "entrega.repassadoEm": repassadoEm,
+      "entrega.repasseTransacaoId": transacaoId,
+      atualizadoEm: repassadoEm,
+    });
+  }
+  despachar(lote.commit());
+
+  return transacaoId;
+}
+
+/**
+ * Desfaz um acerto: o lançamento é **arquivado, nunca apagado**, o resultado do
+ * mês volta ao que era, e os pedidos voltam para a faixa.
+ *
+ * O lançamento é reconstruído a partir do próprio grupo, e não lido do banco —
+ * os dois nasceram do mesmo número em `pagarEntregas`, então o grupo sabe
+ * exatamente o que reverter, e reverter sem ler é o que permite desfazer sem
+ * rede. É o mesmo arranjo de `contribuicaoDoPedidoPago`.
+ */
+export async function desfazerRepasse(
+  contaId: string,
+  repasse: RepasseFeito,
+): Promise<void> {
+  await arquivarTransacao(
+    contaId,
+    {
+      id: repasse.transacaoId,
+      competencia: competenciaDeISO(repasse.repassadoEmISO),
+      tipo: "SAIDA",
+      categoria: "ENTREGA",
+      valor: repasse.total,
+      dataISO: repasse.repassadoEmISO,
+      custoTaxa: 0,
+    },
+    null,
+  );
+
+  const momento = agora();
+  const lote = writeBatch(obterDb());
+  for (const pedidoId of repasse.pedidoIds) {
+    lote.update(docPedido(contaId, pedidoId), {
+      "entrega.repassadoEm": deleteField(),
+      "entrega.repasseTransacaoId": deleteField(),
+      atualizadoEm: momento,
+    });
+  }
+  despachar(lote.commit());
 }
 
 /**

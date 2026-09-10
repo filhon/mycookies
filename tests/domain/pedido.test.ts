@@ -5,13 +5,19 @@ import {
   codigoDoPedido,
   custoDoItem,
   derivarPedido,
+  descricaoDoRepasse,
   ehConcluido,
+  entregasAPagar,
+  entregasEsquecidas,
   ofereceOPrecoDeHoje,
   podeIrPara,
+  repassesFeitos,
+  resumoDoRepasse,
   resumoDosItens,
   subtotalDoItem,
   transicoesPermitidas,
   type ItemParaPedido,
+  type PedidoParaEntrega,
 } from "@/lib/domain/pedido";
 import type { FormaPagamento, StatusPedido } from "@/lib/types";
 
@@ -325,5 +331,213 @@ describe("aReceber", () => {
     expect(
       aReceber([{ status: "ENTREGUE", pago: true, total: 24000 }]),
     ).toEqual({ total: 0, quantidade: 0, entregues: 0 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spec 012 · o acerto das entregas, número por número.
+// ---------------------------------------------------------------------------
+
+function pedidoDeEntrega(
+  codigo: string,
+  dataEntregaISO: string,
+  tipo: "RETIRADA" | "ENTREGA",
+  taxa: number,
+  status: StatusPedido,
+  repasse?: { transacaoId: string; emISO: string },
+): PedidoParaEntrega {
+  return {
+    id: codigo.toLowerCase(),
+    codigo,
+    clienteNome: `Cliente de ${codigo}`,
+    dataEntregaISO,
+    status,
+    entrega: {
+      tipo,
+      taxa,
+      ...(repasse
+        ? {
+            repassadoEmISO: repasse.emISO,
+            repasseTransacaoId: repasse.transacaoId,
+          }
+        : {}),
+    },
+  };
+}
+
+// A semana de segunda 31/08 a sábado 05/09/2026, acertada na segunda 07/09.
+const SEMANA: PedidoParaEntrega[] = [
+  pedidoDeEntrega("P-260831-A1B", "2026-08-31", "ENTREGA", 1200, "ENTREGUE"),
+  pedidoDeEntrega("P-260901-C7D", "2026-09-01", "ENTREGA", 1500, "ENTREGUE"),
+  pedidoDeEntrega("P-260903-E2F", "2026-09-03", "RETIRADA", 0, "ENTREGUE"),
+  pedidoDeEntrega("P-260904-G9H", "2026-09-04", "ENTREGA", 1200, "PRONTO"),
+  pedidoDeEntrega("P-260905-J4K", "2026-09-05", "ENTREGA", 2000, "ENTREGUE"),
+  pedidoDeEntrega("P-260828-M5N", "2026-08-28", "ENTREGA", 1500, "ENTREGUE", {
+    transacaoId: "t-agosto",
+    emISO: "2026-08-31",
+  }),
+];
+
+describe("entregasAPagar", () => {
+  it("fecha o caso de aceite: 3 entregas, da mais antiga para a mais nova", () => {
+    const entregas = entregasAPagar(SEMANA);
+
+    expect(entregas.map((entrega) => entrega.codigo)).toEqual([
+      "P-260831-A1B",
+      "P-260901-C7D",
+      "P-260905-J4K",
+    ]);
+    expect(entregas.map((entrega) => entrega.valor)).toEqual([
+      1200, 1500, 2000,
+    ]);
+  });
+
+  it("deixa a retirada de fora: não há entregador para pagar", () => {
+    const so = entregasAPagar([
+      pedidoDeEntrega("P-1", "2026-09-03", "RETIRADA", 1200, "ENTREGUE"),
+    ]);
+    expect(so).toEqual([]);
+  });
+
+  it("deixa a taxa zero de fora: foi ela quem levou", () => {
+    const so = entregasAPagar([
+      pedidoDeEntrega("P-2", "2026-09-03", "ENTREGA", 0, "ENTREGUE"),
+    ]);
+    expect(so).toEqual([]);
+  });
+
+  it("deixa de fora o que ainda não foi entregue, e a data não substitui o status", () => {
+    const abertos: StatusPedido[] = [
+      "ORCAMENTO",
+      "CONFIRMADO",
+      "EM_PRODUCAO",
+      "PRONTO",
+      "CANCELADO",
+    ];
+    for (const status of abertos) {
+      expect(
+        entregasAPagar([
+          pedidoDeEntrega("P-3", "2026-01-01", "ENTREGA", 1200, status),
+        ]),
+      ).toEqual([]);
+    }
+  });
+
+  it("deixa de fora a que já foi repassada", () => {
+    expect(
+      entregasAPagar([
+        pedidoDeEntrega("P-4", "2026-08-28", "ENTREGA", 1500, "ENTREGUE", {
+          transacaoId: "t-agosto",
+          emISO: "2026-08-31",
+        }),
+      ]),
+    ).toEqual([]);
+  });
+
+  it("agenda vazia devolve lista vazia", () => {
+    expect(entregasAPagar([])).toEqual([]);
+  });
+});
+
+describe("resumoDoRepasse", () => {
+  it("fecha o caso de aceite: R$ 47,00 em 3 entregas, de 31/08 a 05/09", () => {
+    expect(resumoDoRepasse(entregasAPagar(SEMANA))).toEqual({
+      total: 4700,
+      quantidade: 3,
+      de: "2026-08-31",
+      ate: "2026-09-05",
+    });
+  });
+
+  it("lista vazia não vira um acerto de R$ 0,00 com período", () => {
+    expect(resumoDoRepasse([])).toEqual({
+      total: 0,
+      quantidade: 0,
+      de: undefined,
+      ate: undefined,
+    });
+  });
+
+  it("desmarcar a linha do meio não muda quem são as pontas", () => {
+    const [primeira, , ultima] = entregasAPagar(SEMANA);
+    expect(resumoDoRepasse([primeira!, ultima!])).toMatchObject({
+      total: 3200,
+      de: "2026-08-31",
+      ate: "2026-09-05",
+    });
+  });
+});
+
+describe("descricaoDoRepasse", () => {
+  it("fecha o caso de aceite", () => {
+    expect(descricaoDoRepasse(entregasAPagar(SEMANA))).toBe(
+      "Entregas · 3 pedidos · 31 de ago. a 05 de set.",
+    );
+  });
+
+  it("um acerto de um dia só diz o dia uma vez", () => {
+    const so = entregasAPagar([
+      pedidoDeEntrega("P-5", "2026-09-05", "ENTREGA", 2000, "ENTREGUE"),
+    ]);
+    expect(descricaoDoRepasse(so)).toBe("Entregas · 1 pedido · 05 de set.");
+  });
+
+  it("sem entrega nenhuma, não inventa período", () => {
+    expect(descricaoDoRepasse([])).toBe("Entregas");
+  });
+});
+
+describe("entregasEsquecidas", () => {
+  it("conta a entrega vencida que ficou parada antes de ENTREGUE", () => {
+    // O P-260904-G9H, que está em PRONTO com a data já passada.
+    expect(entregasEsquecidas(SEMANA, "2026-09-07")).toBe(1);
+  });
+
+  it("data que ainda não chegou não é esquecimento", () => {
+    expect(entregasEsquecidas(SEMANA, "2026-09-04")).toBe(0);
+  });
+
+  it("orçamento e cancelado ficam de fora, como em aReceber", () => {
+    const agenda = [
+      pedidoDeEntrega("P-6", "2026-09-01", "ENTREGA", 1200, "ORCAMENTO"),
+      pedidoDeEntrega("P-7", "2026-09-01", "ENTREGA", 1200, "CANCELADO"),
+      pedidoDeEntrega("P-8", "2026-09-01", "RETIRADA", 0, "PRONTO"),
+    ];
+    expect(entregasEsquecidas(agenda, "2026-09-07")).toBe(0);
+  });
+});
+
+describe("repassesFeitos", () => {
+  const AGOSTO = { transacaoId: "t-agosto", emISO: "2026-08-31" };
+  const SETEMBRO = { transacaoId: "t-setembro", emISO: "2026-09-07" };
+
+  const AGENDA: PedidoParaEntrega[] = [
+    pedidoDeEntrega("P-a", "2026-08-24", "ENTREGA", 1500, "ENTREGUE", AGOSTO),
+    pedidoDeEntrega("P-b", "2026-08-31", "ENTREGA", 1200, "ENTREGUE", SETEMBRO),
+    pedidoDeEntrega("P-c", "2026-09-01", "ENTREGA", 1500, "ENTREGUE", SETEMBRO),
+    pedidoDeEntrega("P-d", "2026-09-05", "ENTREGA", 2000, "ENTREGUE"),
+  ];
+
+  it("agrupa pelo lançamento que pagou, do mais recente para o mais antigo", () => {
+    expect(repassesFeitos(AGENDA)).toEqual([
+      {
+        transacaoId: "t-setembro",
+        pedidoIds: ["p-b", "p-c"],
+        quantidade: 2,
+        total: 2700,
+        repassadoEmISO: "2026-09-07",
+      },
+      {
+        transacaoId: "t-agosto",
+        pedidoIds: ["p-a"],
+        quantidade: 1,
+        total: 1500,
+        repassadoEmISO: "2026-08-31",
+      },
+    ]);
+  });
+
+  it("o que ainda não foi acertado não aparece", () => {
+    expect(repassesFeitos([AGENDA[3]!])).toEqual([]);
   });
 });

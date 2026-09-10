@@ -2473,3 +2473,138 @@ necessidade real, nasce com tela própria.
 aparecer. "Recalcular o mês" é o conserto, e ele reconstrói as duas metades a partir dos
 documentos, sem depender de parcela antiga nenhuma. Uma migração com Admin SDK para uma
 usuária e três meses de dado seria script demais para um botão que existe.
+
+---
+
+## D82 · A entrega é repasse: o que se paga é o que se cobrou
+
+**Status:** vigente · decidida em 2026-09-10 na spec 012
+
+**Contexto.** `Pedido.entrega` já sabia as duas coisas que importam: se é `RETIRADA` ou
+`ENTREGA`, e quanto a taxa custou para a cliente. **O outro lado não estava em lugar nenhum.**
+A entrega é orçada nos apps (Uber/99), o valor é acertado com um terceirizado, e o combinado é
+pagar a ele uma vez por semana — dinheiro que saía do bolso e que o caixa nunca via.
+
+**Decisão.** `entrega.taxa` **é** o que se deve ao entregador, e não uma referência dele. O
+repasse é integral.
+
+**Consequência.** A alternativa era um segundo campo — o custo da entrega, ao lado da taxa
+cobrada — que abriria a diferença entre os dois na tela, no formulário e no domínio. Enquanto o
+repasse for integral, esse campo teria um único valor possível e seria mais um lugar para
+digitar errado. **No dia em que ela cobrar R$ 15,00 e pagar R$ 12,00, este é o `D` que precisa
+ser revisto**, e o campo nasce ali — não antes.
+
+O que fica de pé, e é o incômodo aceito: `Pedido.lucroEstimado` continua carregando a taxa
+dentro (`#d33`), e continua otimista pedido a pedido. Quem fecha a conta é o caixa, em regime de
+caixa, onde a receita da entrega já entrava e a saída passa a entrar. Corrigir `derivarPedido`
+mexeria em todo pedido já gravado e na função que o editor e a mutação compartilham (`#d19`),
+para resolver no lugar errado um problema que o caixa resolve.
+
+---
+
+## D83 · Só entra na conta a entrega que já foi feita
+
+**Status:** vigente · decidida em 2026-09-10 na spec 012
+
+**Contexto.** Alguém precisa dizer quando uma entrega vira dívida com o entregador. Havia dois
+sinais possíveis: a data de entrega ter passado, ou o pedido estar em `ENTREGUE`.
+
+**Decisão.** O status, e só ele. Uma entrega entra na lista de "a pagar" quando o pedido está em
+**`ENTREGUE`**. Não basta a data ter passado, e não basta o pedido estar confirmado.
+
+**Consequência.** O status é o único sinal no sistema que **afirma** que a entrega aconteceu; a
+data diz o que estava combinado. Pagar por data seria pagar por uma entrega que a cliente
+remarcou, e o dinheiro sai antes do serviço.
+
+O preço é conhecido e está na tela: **a entrega que ela esqueceu de marcar não aparece na conta
+da semana.** Ela aparece na semana seguinte, quando o pedido for movido, e o painel diz quantos
+pedidos de entrega estão parados com a data já vencida — uma frase, sem ação, para que a
+ausência seja explicada em vez de silenciosa.
+
+`entregasEsquecidas` deixa **orçamento e cancelado de fora**, e isso é uma escolha e não um
+descuido: a spec dizia "parados antes de `ENTREGUE`", que ao pé da letra inclui orçamento. Uma
+proposta que a cliente nunca aceitou não é uma entrega esquecida — é o mesmo recorte que
+`aReceber` faz pelo mesmo motivo (`#d36`), e contá-la inflaria justamente o número que existe
+para explicar uma ausência.
+
+**Marcar como entregue passa a ter consequência em dinheiro.** Até aqui, `ENTREGUE` era só
+posição na agenda. A partir desta spec, ele decide o que entra na conta da semana — e vale
+dizê-lo, porque muda o peso de um botão que hoje parece inofensivo.
+
+---
+
+## D84 · O repasse mora no pedido, e a lista se monta em memória
+
+**Status:** vigente · decidida em 2026-09-10 na spec 012
+
+**Contexto.** "Quais entregas ainda não foram pagas" é uma pergunta que pede, no desenho óbvio,
+uma coleção de repasses e uma consulta com índice.
+
+**Decisão.** São dois campos no próprio pedido — `entrega.repassadoEm` e
+`entrega.repasseTransacaoId` —, ausentes como estado normal. Não nasce coleção, não nasce
+consulta e não nasce índice.
+
+**Consequência.** `/pedidos` já assina **todos os pedidos não arquivados**, ordenados por data de
+entrega — a mesma consulta que alimenta a agenda, o total do dia e a faixa "A receber". A lista
+de entregas a pagar é uma soma em memória sobre o que a tela já tem, exatamente como `aReceber`
+(`#d36`): zero leitura nova, zero índice novo, e funciona offline porque nada precisa ir ao
+servidor para ser somado.
+
+É também o que torna **desfazer** barato: os pedidos de um acerto são os que carregam aquele
+`repasseTransacaoId`, e a tela já os tem na mão. `desfazerRepasse` reconstrói o lançamento a
+partir do grupo em vez de lê-lo — mesmo arranjo de `contribuicaoDoPedidoPago` (`#d37`), e é o
+que permite desfazer sem rede.
+
+Três consequências de execução ficam registradas porque surpreendem:
+
+- **`Timestamp` não atravessa para `domain/`.** `PedidoParaEntrega` fala em `repassadoEmISO`, e
+  quem converte é `pedidoParaEntrega`, em `mutations/pedidos.ts`, como `pedidoAgregavel` faz com
+  `pagoEm`. A regra é a mesma de `estoque.ts`: a precisão honesta é o dia.
+- **O caminho pontilhado é obrigatório em toda escrita do mapa `entrega`.** Gravar o mapa
+  inteiro apagaria endereço e taxa — e, do outro lado, apagaria os dois campos novos.
+  **`atualizarPedido` foi corrigida por causa disto:** ela gravava `entrega` inteiro, e a partir
+  desta spec isso faria uma entrega já acertada voltar para a faixa de "a pagar" ao ela editar o
+  pedido. Editar um pedido é o caminho mais comum do sistema; pagar o entregador duas vezes seria
+  a consequência.
+- **`esquemaPedido` não ganhou os dois campos**, contra a letra da spec. Aquele esquema é a
+  forma do **formulário** — `tipoEntrega`, `taxaEntrega`, `endereco` soltos —, e não a do
+  documento: nenhum dos dois campos passa por lá, e declará-los seria pedir ao validador que
+  confirasse o que ninguém digita.
+
+---
+
+## D85 · O repasse tem categoria própria no caixa
+
+**Status:** vigente · decidida em 2026-09-10 na spec 012
+
+**Contexto.** O acerto da semana precisa virar uma saída. Lançá-la em `OUTRO` custaria zero
+código.
+
+**Decisão.** `CategoriaTransacao` ganha `"ENTREGA"`, e a saída do acerto nasce nela.
+
+**Consequência.** "Saídas por categoria" é a tela que responde para onde o dinheiro foi, e
+entrega é uma das três maiores saídas de uma confeitaria que entrega: dissolvê-la em `OUTRO`
+esconderia a resposta. A mudança é aditiva — `porCategoriaSaida` é `Partial<Record<…>>`, e
+documento antigo continua válido sem a chave. Ela aparece como ausência em mês antigo, e não
+como zero, que é a regra que o agregado já segue (`#d23`).
+
+A saída nasce **sem `pedidoId`**: um acerto cobre vários pedidos, e o campo é de um só. O vínculo
+existe na direção que importa e que é consultável de graça — do pedido para o lançamento.
+
+Três detalhes da escrita, os três conferidos e não deduzidos:
+
+- **`contextoMeta` é `null`**, e isso foi lido em `metas.ts`: `espelhoAposDelta` move o espelho a
+  partir de `parcelas.entradas`, e o delta de uma saída tem `entradas` zerado. `null` diz isso em
+  vez de depender da coincidência — é o mesmo que a 6B fez.
+- **`custoTaxa: 0` explícito e `formas` vazio**, como em `#d53`: saída não passa por maquininha,
+  e isso dispensa o painel de assinar `configuracao/geral` para gravar um zero. Por isso
+  `pagarEntregas` não recebe as formas de pagamento, contra a letra da spec — o parâmetro só
+  existiria para atravessar a função sem ser lido.
+- **`arquivarTransacao` passou a pedir `TransacaoReversivel`**, e não `Transacao` inteira: quem
+  reverte um acerto não leu o documento, reconstruiu-o. Nenhum chamador mudou, porque `Transacao`
+  satisfaz o tipo menor.
+
+`ENTREGA` também passa a ser escolhível no lançamento manual de `/financeiro`, o que é desejado:
+a entrega avulsa, paga na hora, tem onde ser lançada. Ela ganhou `DICA_CATEGORIA` pelo mesmo
+motivo de `TAXA_PAGAMENTO` (`#d24`) — sem a frase, o acerto da semana seria lançado à mão **e**
+pelo painel, e o mês fecharia a menos duas vezes.

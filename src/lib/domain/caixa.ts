@@ -516,6 +516,7 @@ export const ROTULO_CATEGORIA_TRANSACAO: Record<CategoriaTransacao, string> = {
   VENDA: "Venda",
   COMPRA_INSUMO: "Compra de insumo",
   EMBALAGEM: "Embalagem",
+  ENTREGA: "Entrega",
   DESPESA_FIXA: "Despesa fixa",
   EQUIPAMENTO: "Equipamento",
   MARKETING: "Divulgação",
@@ -531,6 +532,7 @@ export const CATEGORIAS_ENTRADA: CategoriaTransacao[] = ["VENDA", "OUTRO"];
 export const CATEGORIAS_SAIDA: CategoriaTransacao[] = [
   "COMPRA_INSUMO",
   "EMBALAGEM",
+  "ENTREGA",
   "DESPESA_FIXA",
   "EQUIPAMENTO",
   "MARKETING",
@@ -554,5 +556,7 @@ export function categoriasDoTipo(tipo: TipoTransacao): CategoriaTransacao[] {
 export const DICA_CATEGORIA: Partial<Record<CategoriaTransacao, string>> = {
   TAXA_PAGAMENTO:
     "Só o que você paga à parte, como aluguel da maquininha ou mensalidade. A taxa de cada venda o sistema já desconta sozinho.",
+  ENTREGA:
+    "A entrega avulsa, paga na hora. O acerto da semana com o entregador sai do painel de entregas, na tela de pedidos.",
   PRO_LABORE: "O que você tira do negócio para você.",
 };

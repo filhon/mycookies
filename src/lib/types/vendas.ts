@@ -89,6 +89,16 @@ export interface Pedido extends DocumentoBase {
     tipo: "RETIRADA" | "ENTREGA";
     taxa: Centavos;
     endereco?: string;
+    /**
+     * Quando esta entrega foi acertada com o entregador. Ausente enquanto não
+     * foi paga, que é o estado normal (`DECISOES.md#d84`).
+     *
+     * O que ela cobrou é o que ela paga: `taxa` é o valor do repasse, e não uma
+     * referência dele (`#d82`).
+     */
+    repassadoEm?: Timestamp;
+    /** A saída do caixa que pagou esta entrega, junto de outras. */
+    repasseTransacaoId?: string;
   };
 
   subtotal: Centavos;

@@ -5,6 +5,7 @@ import type {
   StatusPedido,
 } from "@/lib/types";
 import { taxaCobrada } from "./custosOperacionais";
+import { rotuloDia } from "./datas";
 import { novoId } from "@/lib/utils/id";
 
 /**
@@ -243,6 +244,188 @@ export function aReceber(
     quantidade: abertos.length,
     entregues: abertos.filter((pedido) => pedido.status === "ENTREGUE").length,
   };
+}
+
+// ---------------------------------------------------------------------------
+// O outro lado da entrega: o que se deve ao entregador (spec 012)
+// ---------------------------------------------------------------------------
+
+/**
+ * O que o acerto das entregas precisa saber de um pedido. Nada além disso.
+ *
+ * `repassadoEmISO` é `DataISO` e não `Timestamp`: aqui é dia de calendário, e
+ * `Timestamp` não atravessa para o domínio. Quem converte é `pedidoParaEntrega`,
+ * em `mutations/pedidos.ts`, do mesmo jeito que `pedidoAgregavel` faz com
+ * `pagoEm`.
+ */
+export interface PedidoParaEntrega {
+  id: string;
+  codigo: string;
+  clienteNome: string;
+  dataEntregaISO: DataISO;
+  status: StatusPedido;
+  entrega: {
+    tipo: "RETIRADA" | "ENTREGA";
+    taxa: Centavos;
+    repassadoEmISO?: DataISO;
+    repasseTransacaoId?: string;
+  };
+}
+
+export interface EntregaAPagar {
+  pedidoId: string;
+  codigo: string;
+  clienteNome: string;
+  dataEntregaISO: DataISO;
+  /** `entrega.taxa`: o que ela cobrou é o que ela paga (`DECISOES.md#d82`). */
+  valor: Centavos;
+}
+
+/** Entrega de verdade, com valor, e que ainda não foi acertada. */
+function aPagar(pedido: PedidoParaEntrega): boolean {
+  return (
+    pedido.entrega.tipo === "ENTREGA" &&
+    pedido.entrega.taxa > 0 &&
+    pedido.status === "ENTREGUE" &&
+    !pedido.entrega.repasseTransacaoId
+  );
+}
+
+/**
+ * As entregas já feitas que ainda não foram acertadas, da mais antiga para a
+ * mais nova.
+ *
+ * Irmã de `aReceber`: mesma forma, mesma origem, soma em memória sobre os
+ * pedidos que a tela já carregou — nenhuma consulta nova, nenhum índice novo, e
+ * funciona offline porque nada precisa ir ao servidor para ser somado
+ * (`DECISOES.md#d84`).
+ *
+ * Quatro condições, e as quatro são exclusões que a tela precisa saber
+ * explicar: retirada não tem entregador, taxa zero foi ela quem levou, o que
+ * ainda não está `ENTREGUE` não aconteceu (`#d83`), e o que já tem
+ * `repasseTransacaoId` já foi pago.
+ */
+export function entregasAPagar(pedidos: PedidoParaEntrega[]): EntregaAPagar[] {
+  return pedidos
+    .filter(aPagar)
+    .map((pedido) => ({
+      pedidoId: pedido.id,
+      codigo: pedido.codigo,
+      clienteNome: pedido.clienteNome,
+      dataEntregaISO: pedido.dataEntregaISO,
+      valor: pedido.entrega.taxa,
+    }))
+    .sort((a, b) => a.dataEntregaISO.localeCompare(b.dataEntregaISO));
+}
+
+export interface ResumoDoRepasse {
+  total: Centavos;
+  quantidade: number;
+  /** O dia mais antigo do acerto. Ausente quando não há entrega escolhida. */
+  de?: DataISO;
+  ate?: DataISO;
+}
+
+/** O total, quantas são e o período que elas cobrem: o rodapé do painel. */
+export function resumoDoRepasse(entregas: EntregaAPagar[]): ResumoDoRepasse {
+  // Os extremos saem de uma ordenação própria, e não do primeiro e do último da
+  // lista: o painel entrega aqui só o que está marcado, e desmarcar uma linha
+  // no meio não pode mudar quem é a ponta.
+  const dias = entregas.map((entrega) => entrega.dataEntregaISO).sort();
+
+  return {
+    total: entregas.reduce((soma, entrega) => soma + entrega.valor, 0),
+    quantidade: entregas.length,
+    de: dias[0],
+    ate: dias[dias.length - 1],
+  };
+}
+
+/**
+ * "Entregas · 3 pedidos · 31 de ago. a 05 de set." — a linha que aparece no
+ * caixa, e o que ela vai ler daqui a três meses tentando lembrar o que foi
+ * aquela saída.
+ *
+ * Um acerto de um dia só diz o dia uma vez.
+ */
+export function descricaoDoRepasse(entregas: EntregaAPagar[]): string {
+  const { quantidade, de, ate } = resumoDoRepasse(entregas);
+  if (!de || !ate) return "Entregas";
+
+  const periodo =
+    de === ate ? rotuloDia(de) : `${rotuloDia(de)} a ${rotuloDia(ate)}`;
+  const pedidos = quantidade === 1 ? "pedido" : "pedidos";
+
+  return `Entregas · ${quantidade} ${pedidos} · ${periodo}`;
+}
+
+/**
+ * As entregas com a data já vencida que ainda não foram marcadas como
+ * entregues, e por isso **não** entram na conta da semana.
+ *
+ * É o preço conhecido de `#d83`, e ele precisa estar na tela: sem esta frase, a
+ * entrega que ela esqueceu de marcar sumiria da conta em silêncio.
+ *
+ * Orçamento fica de fora pelo mesmo motivo de `aReceber` (`#d36`): proposta que
+ * a cliente não aceitou não é entrega esquecida, é entrega que não foi
+ * combinada. Cancelado, pelo motivo oposto.
+ */
+export function entregasEsquecidas(
+  pedidos: PedidoParaEntrega[],
+  hojeISO: DataISO,
+): number {
+  return pedidos.filter(
+    (pedido) =>
+      pedido.entrega.tipo === "ENTREGA" &&
+      pedido.entrega.taxa > 0 &&
+      pedido.dataEntregaISO < hojeISO &&
+      pedido.status !== "ENTREGUE" &&
+      pedido.status !== "ORCAMENTO" &&
+      pedido.status !== "CANCELADO",
+  ).length;
+}
+
+export interface RepasseFeito {
+  transacaoId: string;
+  pedidoIds: string[];
+  quantidade: number;
+  total: Centavos;
+  repassadoEmISO: DataISO;
+}
+
+/**
+ * Os acertos já feitos, agrupados pelo lançamento que os pagou, do mais recente
+ * para o mais antigo.
+ *
+ * É o que torna desfazer barato: os pedidos de um acerto são os que carregam
+ * aquele `repasseTransacaoId`, e a tela já os tem na mão — nenhuma consulta
+ * para desfazer, e o valor a estornar é a soma das taxas daquele grupo, que é
+ * exatamente o que o lançamento gravou.
+ */
+export function repassesFeitos(pedidos: PedidoParaEntrega[]): RepasseFeito[] {
+  const grupos = new Map<string, RepasseFeito>();
+
+  for (const pedido of pedidos) {
+    const transacaoId = pedido.entrega.repasseTransacaoId;
+    if (!transacaoId) continue;
+
+    const grupo = grupos.get(transacaoId) ?? {
+      transacaoId,
+      pedidoIds: [],
+      quantidade: 0,
+      total: 0,
+      repassadoEmISO: pedido.entrega.repassadoEmISO ?? pedido.dataEntregaISO,
+    };
+
+    grupo.pedidoIds.push(pedido.id);
+    grupo.quantidade += 1;
+    grupo.total += pedido.entrega.taxa;
+    grupos.set(transacaoId, grupo);
+  }
+
+  return [...grupos.values()].sort((a, b) =>
+    b.repassadoEmISO.localeCompare(a.repassadoEmISO),
+  );
 }
 
 export const ROTULO_STATUS_PEDIDO: Record<StatusPedido, string> = {

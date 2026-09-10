@@ -13,6 +13,7 @@ import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { Selo } from "@/components/ui/Selo";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { AtalhoParaCompras } from "@/components/compras/AtalhoParaCompras";
+import { EntregasAPagar } from "./EntregasAPagar";
 import { LinhaPedido } from "./LinhaPedido";
 import { ID_PEDIDO_NOVO } from "./EditorPedido";
 import { dataISODe, rotuloAgenda } from "@/lib/domain/datas";
@@ -136,6 +137,9 @@ export function ListaPedidos() {
       {/* Somado sobre os pedidos que a consulta já trouxe, e sobre todos eles:
           o que está a receber é fato da agenda inteira, e não do filtro da vez. */}
       {!carregando && <AReceber pedidos={dados} />}
+
+      {/* O outro lado da entrega, pela mesma consulta e pelo mesmo motivo. */}
+      {!carregando && <EntregasAPagar pedidos={dados} hoje={hoje} />}
 
       {erro ? (
         <Caixa>

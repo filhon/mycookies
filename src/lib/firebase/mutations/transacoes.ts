@@ -15,6 +15,7 @@ import {
   deltaDaTransacao,
   somarParcelas,
   taxaDaEntrada,
+  type TransacaoAgregavel,
 } from "@/lib/domain/caixa";
 import { competenciaDeISO, dataDeISO } from "@/lib/domain/datas";
 import { type ContextoMeta } from "./metas";
@@ -263,13 +264,23 @@ export async function atualizarTransacao(
 }
 
 /**
+ * O que arquivar um lançamento precisa saber dele. Nada além disso.
+ *
+ * Não é `Transacao` inteira porque quem reverte nem sempre leu o documento: o
+ * acerto das entregas reconstrói o lançamento a partir dos pedidos que o
+ * carregam, e reverter sem ler é o que permite desfazer sem rede (`#d80`).
+ */
+export type TransacaoReversivel = Pick<Transacao, "id" | "competencia"> &
+  TransacaoAgregavel;
+
+/**
  * Arquiva em vez de apagar, como todo o resto do sistema: o lançamento pode
  * estar amarrado a um pedido, e o histórico do caixa precisa continuar
  * auditável. O agregado perde a contribuição; o documento fica.
  */
 export async function arquivarTransacao(
   contaId: string,
-  transacao: Transacao,
+  transacao: TransacaoReversivel,
   contextoMeta: ContextoMeta | null,
 ): Promise<void> {
   await arquivarDocumentoDaTransacao(contaId, transacao.id);
