@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-11 (spec 014, sessão 14A: o combo existe e é vendido).
+Atualizado em 2026-09-11 (spec 014, sessão 14B: o combo produz).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -92,15 +92,18 @@ na 13C e dois na 13D, todos opcionais. Uma rota nasceu, `/fichas/contagem`, que 
 tinha previsto porque a 13D estava reservada. Regra de segurança não mudou, e nenhuma
 dependência entrou. **Os roteiros de navegador das quatro não rodaram.**
 
-A spec `014-combo-a-escolha.md` está **entregue na primeira sessão**: a **14A** fez o combo
+A spec `014-combo-a-escolha.md` está **entregue nas duas sessões**: a **14A** fez o combo
 existir como produto — o kit ganhou `escolhas[]` por categoria e `custoEscolhas` pela opção
 mais cara, a linha do pedido ganhou a escolha inline com `escolhas[]` gravadas e o custo do
 combo montado em `custoUnitarioSnapshot`, o WhatsApp e `/pedidos` dizem a escolha entre
 parênteses, e `explodirDemanda` explode o que foi escolhido. Três campos aditivos, nenhuma
 rota, nenhum índice, nenhuma dependência, regra de segurança intacta; `derivarPedido`,
-`deltaDoPedido` e `agregarPedidos` não mudaram uma linha. A **14B fica a fazer**: o combo
-produz (a frase "dá?" por receita escolhida, o atalho de fornada, o dono nos prontos e a
-reserva pulando kit com escolhas). **O roteiro de navegador da 14A não rodou.**
+`deltaDoPedido` e `agregarPedidos` não mudaram uma linha. A **14B fez o combo produzir**:
+a linha do combo no pedido diz "dá?" uma vez por receita escolhida, "Registrar fornada"
+oferece as receitas escolhidas com `escolha × quantidade`, `reservadoNoPronto` dá dono no
+pote da receita escolhida, e `capacidadeDaFicha`, `reservaDeProducao` e `fichasAbaixoDoPiso`
+pulam o kit com escolhas — nenhum campo, nenhuma mutação, nenhuma rota. **Os roteiros de
+navegador da 14A e da 14B não rodaram.**
 
 Fora das specs, em 2026-09-11, o resumo do WhatsApp passou a dizer **como pagar**: `FormaPagamento.instrucoes` (texto livre em `/configuracao`, "Dados para pagar") entra na mensagem em parágrafo próprio enquanto o pedido não está pago (`#d98`). Nenhum dado bancário no código: **a conta real precisa preencher o campo na forma "Pix" uma vez.**
 
@@ -137,7 +140,7 @@ da hospedagem falharia. O guia é `docs/DEPLOY.md`. **Nada foi publicado ainda**
 > mudou de arquivo. Se algo em `insumos`, em `/compras` ou na leitura de nota aparecer torto na
 > 5B, estes são os primeiros suspeitos depois dos que a 6A abriu.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **486
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **490
 testes**, e build com 17 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
 `/insumos/contagem` na 7A, `/comecar` na 8A e `/fichas/contagem` na 13D — mais `/api/nota`,
 `/fichas/[id]` e `/pedidos/[id]` dinâmicas e service worker gerado.
@@ -188,7 +191,7 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 | —   | O caixa que não perde a conta               | pronto, sem o roteiro               | `specs/011-caixa-que-nao-perde-conta.md` |
 | —   | O acerto das entregas                       | pronto, sem o roteiro               | `specs/012-entregas-a-pagar.md`          |
 | 13  | A fornada                                   | pronto (13A a 13D), sem os roteiros | `specs/013-a-fornada.md`                 |
-| 14  | O combo à escolha                           | 14A pronto, **14B a fazer**         | `specs/014-combo-a-escolha.md`           |
+| 14  | O combo à escolha                           | pronto (14A e 14B), sem os roteiros | `specs/014-combo-a-escolha.md`           |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -1492,7 +1495,7 @@ navegador responde está na próxima ação.
 
 ## O que a sessão 14A deixou pronto
 
-O combo existe como produto e é vendido. **A produção do combo é a 14B e não entrou.**
+O combo existe como produto e é vendido. **A produção do combo é a 14B, abaixo.**
 
 - `src/lib/types/fichas.ts`: `EscolhaDoKit` e `FichaTecnica.escolhas?` / `custoEscolhas?`.
   `vendas.ts`: `EscolhaFeita` e `ItemPedido.escolhas?`, com o comentário de
@@ -1564,18 +1567,74 @@ de escolha na ficha, o bloco inline na linha do pedido, a repetição do combo e
 e a gravação de `escolhas` e `custoEscolhas` não têm teste. O roteiro de navegador da 14A
 (sete passos, ao fim da spec) é o que fecha isso, e está na próxima ação.
 
+## O que a sessão 14B deixou pronto
+
+O combo produz: o que a 013 responde por receita passa a responder também pela escolha.
+Nenhum campo, nenhuma mutação, nenhuma rota, nenhum índice — quatro arquivos.
+
+- `src/lib/domain/producao.ts`: `FichaParaProduzir.escolhas?` e `comboAEscolha(ficha)`, a
+  forma executável de "kit com escolhas" sem precisar de `tipo`. `capacidadeDaFicha`
+  devolve `null` para o combo (não há pergunta: "dá para quantos" depende de qual cookie);
+  `reservaDeProducao` o pula; `fichasAbaixoDoPiso` herda o `null` e o pula sem uma linha.
+  `reservadoNoPronto` conta cada escolha como `escolha.quantidade × item.quantidade` da
+  receita escolhida — o `ponytail:` da 13D, pago para as escolhas; o comentário ficou,
+  **estreitado** para o componente fixo de kit, que continua agregado pela ficha do kit.
+- `src/components/pedidos/FormularioPedido.tsx`: a linha do combo faz uma pergunta por
+  receita escolhida (`FraseCabeNoPedido` com `nome`, `unidades = escolha × linha`, `jaFeitas`
+  e `prontos` daquela receita); a linha simples continua fazendo uma. `opcoesDeFornada`
+  passou a somar **por ficha**: a linha do combo oferece as receitas escolhidas, e a mesma
+  receita solta e dentro de um combo vira uma opção só, com as unidades somadas — a folha
+  escolhe por `ficha.id`, e duas opções com o mesmo id colidiriam.
+- `src/components/producao/FraseDaCapacidade.tsx`: `Frase` ganhou `rotulo?` (o nome da
+  receita antes do separador), e `FraseCabeNoPedido` ganhou `nome?` para passá-lo. Sem isso
+  duas frases "Dá: …" embaixo da mesma linha não diriam de qual cookie são.
+- `/fichas`, `/compras` e o cartão da tela Hoje **não mudaram**: `LinhaFicha` já escondia
+  capacidade `null`, `FraseDoPronto` já sumia com `prontos: null` (kit não tem pote, `#d97`), e
+  `reservaDeProducao` é chamada com as fichas inteiras — o domínio pulando basta.
+- Testes: **4 novos** (486 → 490) em `producao.test.ts`, com o caso de aceite da 14B: o combo
+  sem capacidade (e o kit fixo com), piso e reserva pulando, os 3 do combo com dono no pote
+  do tradicional e 7 livres dos 10 contados, e a escolha por unidade do kit (massa para 5 num
+  pedido de 3 combos reserva 3).
+- `DECISOES.md#d103` passou a vigente nas duas metades, com o que a 14B decidiu de execução.
+
+Fora do escopo literal da spec, e por quê:
+
+- **`opcoesDeFornada` soma por ficha.** A spec diz "as receitas escolhidas, cada uma com
+  `escolha.quantidade × quantidade`"; com a mesma receita em duas linhas (solta e no combo,
+  ou dois combos), `PainelFornada` acha a opção por `ficha.id` e a segunda seria inalcançável.
+  Somar é o que a massa é: 3 do combo mais 5 soltos são massa para 8.
+- **`jaFeitas` e `prontos` continuam por ficha, e cada linha vê o total** — marcado com
+  `ponytail:` em `FormularioPedido`. Antes da 14A uma ficha aparecia numa linha só e isso não
+  existia; agora "tradicional solto" e "tradicional no combo" no mesmo pedido leem a mesma
+  massa feita. Se confundir, o abate passa a ser por linha, na ordem.
+- **O combo com componente fixo _e_ escolhas não oferece o componente na fornada.** A spec
+  diz "as receitas escolhidas", e é o que sai; o brownie fixo de uma "caixa presente" fica
+  sem atalho de fornada pelo pedido (a fornada pela ficha continua servindo). Cabe numa linha
+  quando aparecer.
+
+**O que a 14B não provou.** O de sempre: `npm test` cobre `src/lib/domain/`, então as duas
+frases na linha, o seletor da folha com as receitas somadas e `/fichas` sem número para o
+combo não têm teste. O roteiro está na próxima ação.
+
 ## Próxima ação
 
-**A sessão 14B da spec `014-combo-a-escolha.md`: o combo produz.** A frase "dá?" na linha do
-combo por receita escolhida, `capacidadeDaFicha` devolvendo `null` para kit com escolhas, o
-atalho "Registrar fornada" oferecendo as receitas escolhidas, o dono nos prontos contando
-as escolhas (o `ponytail:` de `reservadoNoPronto`), e `reservaDeProducao` /
-`fichasAbaixoDoPiso` pulando kit com escolhas.
+**Os roteiros de navegador da 14A e da 14B**, e os da 13A à 13D, e a 5B, que continua sendo
+a prova que falta. **A conta real precisa recriar o "combo dupla" como kit com a escolha
+"2 de Cookie"** — os pedidos antigos lançados como cookies soltos + desconto ficam como estão
+(`#d102`).
 
-Antes ou junto: **o roteiro de navegador da 14A** (os sete passos ao fim da spec), **os da
-13A à 13D**, e a 5B, que continua sendo a prova que falta. **A conta real precisa recriar o
-"combo dupla" como kit com a escolha "2 de Cookie"** — os pedidos antigos lançados como
-cookies soltos + desconto ficam como estão (`#d102`).
+Da 14B, o que só o navegador responde (os critérios de aceite da sessão):
+
+1. **Um pedido de 3 combos "tradicional + nutella"** mostra duas frases embaixo da linha do
+   combo, "Cookie tradicional · Dá: …" e "Cookie de nutella · Dá: …", cada uma para 3
+   unidades; a linha simples continua com uma frase, sem rótulo.
+2. **"Registrar fornada" nesse pedido** abre o seletor com as duas receitas, 3 unidades cada;
+   com um "Cookie tradicional × 5" solto no mesmo pedido, o tradicional aparece uma vez com 8.
+   A fornada grava `pedidoId`, e "Montar a lista" em `/compras` abate a farinha dela.
+3. **Com o pote de tradicional contado em 10 e massa para 3 registrada para o pedido**, `/fichas`
+   diz "7 unidades prontas além dos pedidos" na linha do tradicional.
+4. **`/fichas`** não mostra capacidade, pronto nem piso na linha do combo; o cartão da tela
+   Hoje não o lista abaixo do piso.
 
 Da 14A, o que só o navegador responde, na ordem do roteiro da spec:
 

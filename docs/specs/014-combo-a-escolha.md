@@ -346,14 +346,14 @@ O que a 013 responde por receita passa a responder também pela escolha.
 
 ## Critérios de aceite 14B
 
-- [ ] Um pedido de 3 combos "tradicional + nutella" mostra duas frases de capacidade, uma por
+- [x] Um pedido de 3 combos "tradicional + nutella" mostra duas frases de capacidade, uma por
       receita, cada uma para 3 unidades.
-- [ ] "Registrar fornada" nesse pedido oferece as duas receitas com 3 unidades cada; a fornada
+- [x] "Registrar fornada" nesse pedido oferece as duas receitas com 3 unidades cada; a fornada
       abate a lista de compras daquele pedido.
-- [ ] Com o pote de tradicional contado em 10 e massa feita para o pedido, os 3 do combo têm
+- [x] Com o pote de tradicional contado em 10 e massa feita para o pedido, os 3 do combo têm
       dono, e `/fichas` diz "7 unidades prontas além dos pedidos".
-- [ ] `/fichas` não mostra capacidade, pronto nem piso para o combo.
-- [ ] Portão de conclusão passando.
+- [x] `/fichas` não mostra capacidade, pronto nem piso para o combo.
+- [x] Portão de conclusão passando.
 
 ---
 

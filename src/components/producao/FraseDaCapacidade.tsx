@@ -168,11 +168,14 @@ function Separador() {
 function Frase({
   icone: Icone,
   tom = "neutro",
+  rotulo,
   className,
   children,
 }: {
   icone: typeof CookingPot;
   tom?: "neutro" | "atencao" | "positivo";
+  /** De quem é a frase, quando há mais de uma na mesma linha (o combo). */
+  rotulo?: string;
   className?: string;
   children: ReactNode;
 }) {
@@ -189,7 +192,15 @@ function Frase({
         className="mt-0.75 size-3.5 shrink-0"
         strokeWidth={tom === "neutro" ? 1.75 : 2}
       />
-      <span>{children}</span>
+      <span>
+        {rotulo && (
+          <>
+            <span className="font-medium">{rotulo}</span>
+            <Separador />
+          </>
+        )}
+        {children}
+      </span>
     </p>
   );
 }
@@ -211,12 +222,16 @@ const TOM = {
  * Com o que está pronto contado, a resposta completa é `prontos + despensa −
  * prometido` (13D): o que já virou massa para **este** pedido sai dos prontos
  * antes, porque é dele e não está livre.
+ *
+ * Na linha de um combo à escolha há uma frase por receita escolhida
+ * (`#d103`), e `nome` diz de qual é.
  */
 export function FraseCabeNoPedido({
   capacidade,
   unidades,
   jaFeitas = 0,
   prontos = null,
+  nome,
 }: {
   capacidade: CapacidadeDaFicha;
   /** O que a linha do pedido pede. */
@@ -225,6 +240,8 @@ export function FraseCabeNoPedido({
   jaFeitas?: number;
   /** Os prontos livres dos outros pedidos. `null` sem contagem que valha. */
   prontos?: number | null;
+  /** A receita, quando a linha tem mais de uma frase. */
+  nome?: string;
 }) {
   const unidade = capacidade.unidadeRendimento;
   const rotulo = ROTULO_UNIDADE_RENDIMENTO[unidade];
@@ -241,7 +258,7 @@ export function FraseCabeNoPedido({
 
   if (precisa <= 0) {
     return (
-      <Frase icone={CookingPot}>
+      <Frase icone={CookingPot} rotulo={nome}>
         A massa para este item já está feita: {texto(jaFeitas)} {rotulo}.
       </Frase>
     );
@@ -249,7 +266,7 @@ export function FraseCabeNoPedido({
 
   if (livres >= precisa && prontosFrase) {
     return (
-      <Frase icone={Check} tom="positivo">
+      <Frase icone={Check} tom="positivo" rotulo={nome}>
         Dá: {prontosFrase} hoje, sem fazer massa
       </Frase>
     );
@@ -257,7 +274,7 @@ export function FraseCabeNoPedido({
 
   if (capacidade.unidades === null) {
     return (
-      <Frase icone={CircleHelp}>
+      <Frase icone={CircleHelp} rotulo={nome}>
         {prontosFrase && (
           <>
             {prontosFrase}
@@ -290,7 +307,7 @@ export function FraseCabeNoPedido({
 
   if (disponivel >= precisa) {
     return (
-      <Frase icone={Check} tom="positivo">
+      <Frase icone={Check} tom="positivo" rotulo={nome}>
         Dá:{" "}
         {prontosFrase
           ? `${prontosFrase}, e a despensa faz mais ${texto(capacidade.unidades)} hoje`
@@ -316,7 +333,7 @@ export function FraseCabeNoPedido({
   );
 
   return (
-    <Frase icone={TriangleAlert} tom="atencao">
+    <Frase icone={TriangleAlert} tom="atencao" rotulo={nome}>
       Falta massa para {texto(precisa - disponivel)} {rotulo}
       {prontosFrase && ` (${prontosFrase})`}
       {outros}.{compras && ` Comprar ${compras} resolve.`}

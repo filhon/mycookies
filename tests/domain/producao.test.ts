@@ -1287,3 +1287,132 @@ describe("o kit não tem pote", () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// O combo produz (14B): a capacidade é de cada receita escolhida, e o combo
+// em si não tem número, piso nem reserva (`#d103`).
+// ---------------------------------------------------------------------------
+
+describe("o combo à escolha produz pelas receitas escolhidas", () => {
+  const NUTELLA: FichaParaProduzir = {
+    id: "nutella",
+    nome: "Cookie de nutella",
+    arquivado: false,
+    rendimento: 20,
+    unidadeRendimento: "un",
+    itens: [{ insumoId: "farinha", nomeSnapshot: "Farinha", quantidade: 400 }],
+    componentes: [],
+  };
+  const COMBO: FichaParaProduzir = {
+    id: "combo-dupla",
+    nome: "Combo dupla",
+    arquivado: false,
+    rendimento: 1,
+    unidadeRendimento: "un",
+    itens: [{ insumoId: "saquinho", nomeSnapshot: "Saquinho", quantidade: 1 }],
+    componentes: [],
+    escolhas: [{ quantidade: 2, categoria: "Cookie" }],
+    fornadasMinimas: 1,
+  };
+  const DESPENSA: InsumoParaCapacidade[] = [
+    {
+      id: "saquinho",
+      nome: "saquinho",
+      arquivado: false,
+      unidadeBase: "un",
+      perdaPercentual: 0,
+      estoqueAtual: 200,
+      estoqueContadoEmISO: HOJE,
+    },
+  ];
+  const SEM_CONSUMO = new Map<string, number>();
+
+  /** 3 combos "1 tradicional + 1 nutella". */
+  const PEDIDO_DE_3_COMBOS = {
+    id: "p1",
+    itens: [
+      {
+        fichaTecnicaId: "combo-dupla",
+        nomeSnapshot: "Combo dupla",
+        quantidade: 3,
+        escolhas: [
+          { fichaTecnicaId: "cookie", nomeSnapshot: "Cookie", quantidade: 1 },
+          { fichaTecnicaId: "nutella", nomeSnapshot: "Nutella", quantidade: 1 },
+        ],
+      },
+    ],
+  };
+
+  it("capacidadeDaFicha de um combo é null: 'dá para 200' sobre o saquinho seria mentira", () => {
+    expect(
+      capacidadeDaFicha(
+        COMBO,
+        [COOKIE, NUTELLA, COMBO],
+        DESPENSA,
+        SEM_CONSUMO,
+        HOJE,
+      ),
+    ).toBeNull();
+    // O kit de conteúdo fixo continua tendo capacidade.
+    expect(
+      capacidadeDaFicha(
+        { ...COMBO, escolhas: [] },
+        [COOKIE, NUTELLA, COMBO],
+        DESPENSA,
+        SEM_CONSUMO,
+        HOJE,
+      ),
+    ).not.toBeNull();
+  });
+
+  it("piso e reserva pulam o combo: reservar '1 combo' não diz de que sabor", () => {
+    expect(reservaDeProducao([COOKIE, NUTELLA, COMBO]).size).toBe(0);
+    expect(
+      fichasAbaixoDoPiso(
+        [COOKIE, NUTELLA, COMBO],
+        DESPENSA.map((atual) => ({ ...atual, estoqueAtual: 0 })),
+        SEM_CONSUMO,
+        HOJE,
+      ),
+    ).toEqual([]);
+  });
+
+  it("reservadoNoPronto: os 3 do combo têm dono no pote do tradicional, e sobram 7 dos 10 contados", () => {
+    const massaParaOPedido: FornadaDaFicha = {
+      arquivado: false,
+      dataISO: "2026-09-09",
+      fichaId: "cookie",
+      unidadesProduzidas: 3,
+      pedidoId: "p1",
+    };
+    const reservado = reservadoNoPronto(
+      [PEDIDO_DE_3_COMBOS],
+      [massaParaOPedido],
+    );
+    expect(reservado.get("cookie")).toBe(3);
+    expect(reservado.has("combo-dupla")).toBe(false);
+
+    const pote = projecaoDoPronto(
+      [massaParaOPedido],
+      { id: "cookie", estoqueProntoAtual: 10, estoqueProntoContadoEmISO: HOJE },
+      HOJE,
+    );
+    expect(prontosLivres(pote, reservado.get("cookie") ?? 0)).toBe(7);
+  });
+
+  it("reservadoNoPronto: a escolha é por unidade do kit — massa para 5 num pedido de 3 combos reserva 3", () => {
+    const reservado = reservadoNoPronto(
+      [PEDIDO_DE_3_COMBOS],
+      [
+        {
+          arquivado: false,
+          dataISO: "2026-09-09",
+          fichaId: "nutella",
+          unidadesProduzidas: 5,
+          pedidoId: "p1",
+        },
+      ],
+    );
+    expect(reservado.get("nutella")).toBe(3);
+  });
+});

@@ -3068,8 +3068,8 @@ não fazer.
 
 ## D103 · A demanda e a produção seguem o que foi escolhido
 
-**Status:** vigente na primeira metade (demanda, 14A); a segunda (produção) é a 14B ·
-decidida em 2026-09-11 na spec 014, sessão 14A
+**Status:** vigente nas duas metades · a demanda decidida em 2026-09-11 na spec 014,
+sessão 14A; a produção na 14B, no mesmo dia
 
 **Decisão.** `explodirDemanda` explode `escolhas[]` junto dos componentes fixos: cada escolha
 entra pelos `itens` da receita escolhida, em `quantidade × pedida ÷ rendimento`, um nível
@@ -3081,9 +3081,32 @@ escolha, como um componente fixo já vira.
 erro caro (`#d63`). É a única mudança de comportamento em dado já gravado, e o efeito é nulo
 enquanto nenhum item tiver `escolhas`: os testes da 3C, da 7B e da 013 passaram sem uma
 linha alterada. Tudo o que já lê `explodirDemanda` herda de graça — `montarLista`,
-`prometidoParaPedidos` e a capacidade da 13B. O que a 14B faz seguir a escolha: a frase
-"dá?" na linha do combo (por receita escolhida), o atalho de fornada do pedido, o dono nos
-prontos (`#d97`) e a reserva (`#d96`), que pulam kit com escolhas. Até lá, a linha do combo
-no editor de pedido **não mostra frase de capacidade** — a que sairia seria a do saquinho,
-e um "dá para 200" sobre a embalagem é mentira com cara de resposta —, e "Fornadas de
-reserva" já some do formulário do kit com escolhas.
+`prometidoParaPedidos` e a capacidade da 13B.
+
+**A produção (14B).** O combo não produz por si: `comboAEscolha(ficha)` é a forma
+executável, e `capacidadeDaFicha` devolve `null` para ele — "dá para quantos combos" depende
+de qual cookie, e um "dá para 200" sobre o saquinho seria mentira com cara de resposta.
+`reservaDeProducao` o pula (reservar "1 combo" não diz de que sabor; a reserva é das
+receitas, e "Fornadas de reserva" já sumia do formulário na 14A), e `fichasAbaixoDoPiso`
+herda o `null`. A resposta mora na linha de cada receita escolhida: no editor de pedido, a
+linha do combo faz uma pergunta por receita — `FraseCabeNoPedido` com o nome dela,
+`unidades = escolha.quantidade × quantidade da linha`, `jaFeitas` e `prontos` daquela
+receita —, "Registrar fornada" oferece as receitas escolhidas com essas unidades, e
+`reservadoNoPronto` conta cada escolha como unidades pedidas da receita escolhida, que é o
+`ponytail:` da 13D pago para as escolhas. Três escolhas de execução ficam registradas:
+
+- **As opções de fornada somam por ficha.** A mesma receita pode vir solta e dentro de um
+  combo, ou em dois combos; `PainelFornada` acha a opção por `ficha.id`, e duas com o mesmo
+  id deixariam a segunda inalcançável. Somar é o que a massa é: 3 do combo mais 5 soltos
+  são massa para 8.
+- **`jaFeitas` e `prontos` continuam por ficha, e cada linha vê o total.** Antes da 14A uma
+  ficha aparecia numa linha só; agora "tradicional solto" e "tradicional no combo" no mesmo
+  pedido leem a mesma massa feita. Marcado com `ponytail:` em `FormularioPedido`; se
+  confundir, o abate passa a ser por linha, na ordem.
+- **O componente fixo de um kit continua agregado pela ficha do kit** em `reservadoNoPronto`.
+  A 14B pagou as escolhas, que era o que a spec pediu; o `ponytail:` ficou, estreitado, para
+  a caixa de conteúdo fixo, e o conserto é o mesmo laço sobre `componentes`.
+
+`/fichas` não precisou de uma linha: `LinhaFicha` já escondia capacidade `null`, e o pronto
+do kit já era `null` (`#d97`). O combo aparece lá com custo, rendimento e o selo "Kit", e
+nada mais.

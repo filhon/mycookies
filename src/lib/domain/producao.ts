@@ -1,6 +1,7 @@
 import type {
   ConsumoDaFornada,
   DataISO,
+  EscolhaDoKit,
   Percentual,
   TipoFicha,
   UnidadeBase,
@@ -44,6 +45,17 @@ export interface FichaParaProduzir extends FichaParaExplodir {
   unidadeRendimento: UnidadeRendimento;
   /** O piso: quantas fornadas ela quer sempre poder fazer. Ausente vale 0. */
   fornadasMinimas?: number;
+  /** O que a cliente escolhe num combo (`#d99`). Ausente ou vazio: conteúdo fixo. */
+  escolhas?: EscolhaDoKit[];
+}
+
+/**
+ * O combo à escolha não produz por si (`#d103`): "dá para quantos combos"
+ * depende de qual cookie, e a resposta mora na linha de cada receita
+ * escolhida. Capacidade, piso e reserva pulam o kit com escolhas.
+ */
+export function comboAEscolha(ficha: { escolhas?: EscolhaDoKit[] }): boolean {
+  return (ficha.escolhas?.length ?? 0) > 0;
 }
 
 /** O que a projeção precisa saber de uma fornada. Nada além disso. */
@@ -356,8 +368,10 @@ const FOLGA = 1e-6;
  * - `DESCONHECIDA`: nenhum insumo contado. Não é zero, é ausência de
  *   informação, e o atalho é contar.
  *
- * Devolve `null` quando não há pergunta: ficha arquivada, sem rendimento ou
- * sem insumo nenhum. Essas não quebram e não aparecem.
+ * Devolve `null` quando não há pergunta: ficha arquivada, sem rendimento,
+ * sem insumo nenhum, ou combo à escolha — a capacidade dele é a de cada
+ * receita escolhida, e um número sobre o saquinho seria mentira com cara de
+ * resposta (`#d103`). Essas não quebram e não aparecem.
  */
 export function capacidadeDaFicha(
   ficha: FichaParaProduzir,
@@ -367,7 +381,9 @@ export function capacidadeDaFicha(
   hojeISO: DataISO,
   prometido: Map<string, number> = new Map(),
 ): CapacidadeDaFicha | null {
-  if (ficha.arquivado || !(ficha.rendimento > 0)) return null;
+  if (ficha.arquivado || !(ficha.rendimento > 0) || comboAEscolha(ficha)) {
+    return null;
+  }
 
   const porId = new Map(insumos.map((insumo) => [insumo.id, insumo]));
   const semContagem: string[] = [];
@@ -471,7 +487,8 @@ export interface ReservaDoInsumo extends LinhaDeDemanda {
  * Útil, e não físico como `consumoPorLote`, de propósito: o piso entra em
  * `necessária`, que é útil, e a perda divide uma vez só, do lado de lá. Ficha
  * arquivada ou com piso zero não pede nada, e o kit respeita o nível único
- * porque é `insumosPorLote` quem explode.
+ * porque é `insumosPorLote` quem explode. O combo à escolha fica de fora:
+ * reservar "1 combo" não diz de que sabor, e a reserva é das receitas.
  */
 export function reservaDeProducao(
   fichas: FichaParaProduzir[],
@@ -483,7 +500,7 @@ export function reservaDeProducao(
 
   for (const ficha of fichas) {
     const piso = pisoDaFicha(ficha);
-    if (ficha.arquivado || piso === 0) continue;
+    if (ficha.arquivado || piso === 0 || comboAEscolha(ficha)) continue;
 
     for (const linha of insumosPorLote(ficha, porId).values()) {
       if (!(linha.quantidade > 0)) continue;
@@ -647,10 +664,14 @@ export function projecaoDoPronto(
  * está nos prontos, e sem este abate a mesma massa seria vendida duas vezes.
  * Com ele, `prontos livres + capacidade` fecha em `prontos + despensa −
  * prometido`, que é a resposta da spec.
+ *
+ * As escolhas de um combo contam como unidades pedidas da receita escolhida
+ * (`#d103`): 3 combos com "1 tradicional" pedem 3 tradicionais, e a massa
+ * feita para eles tem dono no pote do tradicional.
  */
-// ponytail: agregado por ficha, como o prometido é por insumo. Massa de uma
-// ficha de dentro feita para um pedido de kit não é reconhecida como do
-// pedido; se isso aparecer na operação, o abate passa a explodir o kit.
+// ponytail: o componente fixo de um kit continua agregado pela ficha do kit;
+// se a massa de uma ficha de dentro feita para um pedido de caixa aparecer na
+// operação, o abate passa a explodir `componentes` como já explode `escolhas`.
 export function reservadoNoPronto(
   pedidos: PedidoParaExplodir[],
   fornadas: FornadaDaFicha[],
@@ -659,12 +680,15 @@ export function reservadoNoPronto(
   const pedido = new Map<string, number>();
   const feito = new Map<string, number>();
 
+  const pedir = (fichaId: string, quantidade: number) =>
+    pedido.set(fichaId, (pedido.get(fichaId) ?? 0) + quantidade);
+
   for (const atual of pedidos) {
     for (const item of atual.itens) {
-      pedido.set(
-        item.fichaTecnicaId,
-        (pedido.get(item.fichaTecnicaId) ?? 0) + item.quantidade,
-      );
+      pedir(item.fichaTecnicaId, item.quantidade);
+      for (const escolha of item.escolhas ?? []) {
+        pedir(escolha.fichaTecnicaId, escolha.quantidade * item.quantidade);
+      }
     }
   }
   for (const fornada of fornadas) {

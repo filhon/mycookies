@@ -332,16 +332,33 @@ export function FormularioPedido({
    * 12 cookies abrem com 12 — e ela sobe para a receita inteira se quiser
    * congelar o resto. Sai do pedido **gravado**, e não da tela: a fornada é o
    * que aconteceu, e o que aconteceu tem documento.
+   *
+   * A linha de um combo à escolha pede as receitas escolhidas (`#d103`): massa
+   * de "combo" não existe, massa de tradicional existe. Por ficha, somando as
+   * linhas — a mesma receita pode vir solta e dentro de um combo, e a folha
+   * escolhe por ficha.
    */
-  const opcoesDeFornada = useMemo<OpcaoDeFornada[]>(
-    () =>
-      (pedido?.itens ?? []).flatMap((item) => {
-        const ficha = mapaFichas.get(item.fichaTecnicaId);
-        if (!ficha || !(ficha.rendimento > 0)) return [];
-        return [{ ficha, unidades: item.quantidade }];
-      }),
-    [pedido, mapaFichas],
-  );
+  const opcoesDeFornada = useMemo<OpcaoDeFornada[]>(() => {
+    const porFicha = new Map<string, OpcaoDeFornada>();
+    const pedir = (fichaId: string, unidades: number) => {
+      const ficha = mapaFichas.get(fichaId);
+      if (!ficha || !(ficha.rendimento > 0)) return;
+      const atual = porFicha.get(fichaId);
+      if (atual) atual.unidades += unidades;
+      else porFicha.set(fichaId, { ficha, unidades });
+    };
+    for (const item of pedido?.itens ?? []) {
+      const ficha = mapaFichas.get(item.fichaTecnicaId);
+      if (ficha && temEscolhas(ficha)) {
+        for (const escolha of item.escolhas ?? []) {
+          pedir(escolha.fichaTecnicaId, escolha.quantidade * item.quantidade);
+        }
+      } else {
+        pedir(item.fichaTecnicaId, item.quantidade);
+      }
+    }
+    return [...porFicha.values()];
+  }, [pedido, mapaFichas]);
   const podeAssar =
     !!pedido && pedido.status !== "CANCELADO" && opcoesDeFornada.length > 0;
   const fornadasDoPedido = useMemo(
@@ -1105,22 +1122,43 @@ export function FormularioPedido({
                     precoDaFicha,
                   );
                   const combo = !!ficha && temEscolhas(ficha);
-                  // A capacidade é aritmética pura sobre o que a tela já tem,
-                  // refeita a cada tecla: é assim que a resposta acompanha a
-                  // quantidade enquanto ela digita. O combo à escolha não tem
-                  // frase própria: "dá?" depende de qual cookie, e a resposta
-                  // por receita escolhida é a sessão 14B.
-                  const capacidade =
-                    despensaPronta && ficha && !combo
-                      ? capacidadeDaFicha(
-                          ficha,
-                          fichas,
-                          insumos,
-                          contextoDaDespensa.consumo,
-                          hoje,
-                          contextoDaDespensa.prometido,
-                        )
-                      : null;
+                  // Quem responde "dá?": a própria ficha ou, num combo à
+                  // escolha, cada receita escolhida com a quantidade dela
+                  // vezes a da linha (`#d103`). A capacidade é aritmética
+                  // pura sobre o que a tela já tem, refeita a cada tecla: é
+                  // assim que a resposta acompanha a quantidade enquanto ela
+                  // digita.
+                  // ponytail: `jaFeitas` e `prontos` são por ficha, e a mesma
+                  // receita pode estar em duas linhas (solta e num combo);
+                  // cada linha vê o total. Se confundir, o abate passa a ser
+                  // por linha, na ordem.
+                  const quantidadeDaLinha = parseParaNumero(linha.quantidade);
+                  const perguntas =
+                    !despensaPronta || !ficha
+                      ? []
+                      : combo
+                        ? linha.escolhas.flatMap((escolha) => {
+                            const receita = mapaFichas.get(
+                              escolha.fichaTecnicaId,
+                            );
+                            return receita
+                              ? [
+                                  {
+                                    receita,
+                                    unidades:
+                                      escolha.quantidade * quantidadeDaLinha,
+                                    nome: receita.nome,
+                                  },
+                                ]
+                              : [];
+                          })
+                        : [
+                            {
+                              receita: ficha,
+                              unidades: quantidadeDaLinha,
+                              nome: undefined,
+                            },
+                          ];
 
                   return (
                     <LinhaItemPedido
@@ -1154,21 +1192,34 @@ export function FormularioPedido({
                           }
                         />
                       )}
-                      {capacidade && ficha && (
-                        <FraseCabeNoPedido
-                          capacidade={capacidade}
-                          unidades={parseParaNumero(linha.quantidade)}
-                          jaFeitas={
-                            jaFeitasPorFicha.get(capacidade.fichaId) ?? 0
-                          }
-                          // O que está pronto, sem o que já é dos outros
-                          // pedidos; o que é deste, a frase tira sozinha.
-                          prontos={prontosLivres(
-                            projecaoDoPronto(fornadas, ficha, hoje),
-                            contextoDaDespensa.reservado.get(ficha.id) ?? 0,
-                          )}
-                        />
-                      )}
+                      {perguntas.map(({ receita, unidades, nome }) => {
+                        const capacidade = capacidadeDaFicha(
+                          receita,
+                          fichas,
+                          insumos,
+                          contextoDaDespensa.consumo,
+                          hoje,
+                          contextoDaDespensa.prometido,
+                        );
+                        return (
+                          capacidade && (
+                            <FraseCabeNoPedido
+                              key={receita.id}
+                              nome={nome}
+                              capacidade={capacidade}
+                              unidades={unidades}
+                              jaFeitas={jaFeitasPorFicha.get(receita.id) ?? 0}
+                              // O que está pronto, sem o que já é dos outros
+                              // pedidos; o que é deste, a frase tira sozinha.
+                              prontos={prontosLivres(
+                                projecaoDoPronto(fornadas, receita, hoje),
+                                contextoDaDespensa.reservado.get(receita.id) ??
+                                  0,
+                              )}
+                            />
+                          )
+                        );
+                      })}
                     </LinhaItemPedido>
                   );
                 })}
