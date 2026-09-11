@@ -1,19 +1,31 @@
 import Link from "next/link";
 import { ChevronRight, RefreshCw, TriangleAlert } from "lucide-react";
+import { FraseDaCapacidade } from "@/components/producao/FraseDaCapacidade";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Selo } from "@/components/ui/Selo";
 import { ROTULO_UNIDADE_RENDIMENTO } from "@/lib/domain/custoFicha";
 import { formatarMoeda } from "@/lib/domain/money";
+import type { CapacidadeDaFicha } from "@/lib/domain/producao";
 import type { FichaTecnica } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
 /**
- * Uma ficha na lista: nome, o que ela custa e o que ela deixa.
+ * Uma ficha na lista: nome, o que ela custa, o que ela deixa e quantas
+ * fornadas a despensa aguenta hoje.
  *
  * O preço sozinho não informa, então ele nunca aparece sozinho: ao lado dele
  * vem o que sobra por unidade, que é a pergunta que trouxe a Maynara até aqui.
+ * A capacidade vem embaixo porque é a pergunta que a cliente faz no WhatsApp,
+ * e esta é a tela que ela abre para responder.
  */
-export function LinhaFicha({ ficha }: { ficha: FichaTecnica }) {
+export function LinhaFicha({
+  ficha,
+  capacidade,
+}: {
+  ficha: FichaTecnica;
+  /** `null` quando não há pergunta: ficha sem insumo ou sem rendimento. */
+  capacidade?: CapacidadeDaFicha | null;
+}) {
   const lucro = ficha.precificacao.lucroUnitario;
   const noPrejuizo = lucro < 0;
 
@@ -34,6 +46,10 @@ export function LinhaFicha({ ficha }: { ficha: FichaTecnica }) {
             rende {ficha.rendimento}{" "}
             {ROTULO_UNIDADE_RENDIMENTO[ficha.unidadeRendimento]}
           </p>
+
+          {capacidade && (
+            <FraseDaCapacidade capacidade={capacidade} className="mt-1" />
+          )}
 
           {(ficha.tipo === "KIT" || ficha.custoDesatualizado) && (
             <span className="mt-1.5 flex flex-wrap items-center gap-1.5">

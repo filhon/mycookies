@@ -2779,3 +2779,57 @@ freezer guarda massa para N cookies, e "posso vender" passa a ser `massa congela
 possíveis × rendimento − prometido`. A 13D deixa de ser "talvez não seja precisa" e passa a ser
 a resposta a uma pergunta que a operação faz; a decisão continua sendo tomada depois da 13B,
 como a spec manda, mas com este dado na mão.
+
+---
+
+## D94 · Capacidade sem contagem é "não sei", e o piso é o número dos contados
+
+**Status:** vigente · decidida em 2026-09-11 na spec 013, sessão 13B
+
+**Contexto.** A decisão 7 da spec 013 diz que a capacidade herda o "não sei" do `#d63` e não o
+zero, e desenha três leituras: `MEDIDA`, `PISO` ("há insumo sem contagem, mas o gargalo não é um
+deles") e `DESCONHECIDA` ("o gargalo é um insumo sem contagem"). Ela não diz como saber se um
+insumo sem contagem é o gargalo — e sem número não há como saber. A única informação que sobra
+de um insumo sem contagem que valha é o número vencido, que o `#d63` decidiu não usar.
+
+**Decisão.** `capacidadeDaFicha` define o gargalo **entre os insumos contados**. `MEDIDA` é
+todo insumo contado; `PISO` é o número que os contados dão, com os outros nomeados; `DESCONHECIDA`
+é nenhum contado, e devolve `null` em `fornadas` e `unidades`. O número vencido não entra em
+conta nenhuma, nem para classificar. Ficha arquivada, sem rendimento ou sem insumo devolve
+`null`: não há pergunta.
+
+**Consequência.** A tela nunca diz zero por falta de informação, que é o erro que a decisão 7
+existe para impedir, e nunca diz um número que saiu de contagem velha. O preço é que "pelo menos
+3" não é um piso matemático — a farinha sem contagem pode ter acabado — e a frase carrega o
+nome do que falta contar exatamente por isso: é o que ela conta que decide, e o que ela nunca
+contou é o que nunca faltou. Se a operação mostrar que a leitura `PISO` promete o que não dá,
+a troca é uma linha: `PISO` vira `DESCONHECIDA` sempre que houver insumo sem contagem, e o
+número dos contados passa a ser dito como teto.
+
+`unidades` sai dos lotes fracionários (`lotes × rendimento`, com `floor` só em `un`), e não de
+`fornadas × rendimento` como a spec escreveu: a spec é anterior ao `#d93`, e com a massa feita
+do tamanho que quiser 3,33 lotes de uma receita de 20 são 66 cookies vendáveis.
+
+---
+
+## D95 · A capacidade desconta o prometido, e as três telas perguntam pelo mesmo hook
+
+**Status:** vigente · decidida em 2026-09-11 na spec 013, sessão 13B
+
+**Contexto.** Os pedidos abertos do horizonte já consomem fornadas. Uma capacidade que os
+ignorasse mandaria ela prometer duas vezes a mesma farinha — em `/fichas` tanto quanto no editor
+de pedido, porque as duas telas respondem à mesma cliente.
+
+**Decisão.** `prometidoParaPedidos` traduz os pedidos do horizonte (`STATUS_NA_LISTA`, até
+`HORIZONTE_MAXIMO` dias) em insumo físico, abate o que já virou massa para eles e entrega o mapa
+que `capacidadeDaFicha` subtrai da projeção. O pedido que está sendo perguntado fica de fora do
+prometido, e o que já virou massa **para ele** sai do que a linha pede: um pedido não desconta a
+si mesmo. `useDespensaParaProduzir` é o hook que assina insumos, fornadas e pedidos do horizonte,
+e `/compras`, `/fichas` e o editor de pedido o usam; `HORIZONTE_MAXIMO` mudou de arquivo por isso.
+
+**Consequência.** `/fichas` passou a assinar pedidos e fornadas, e o editor de pedido passou a
+assinar a despensa também em pedido novo — três leituras a mais, todas do cache, e nenhuma trava
+a tela: a frase só aparece quando as três chegaram. Pedido atrasado (entrega antes de hoje e
+ainda aberto) fica fora do prometido, como fica fora da lista de compras; é o mesmo recorte,
+pelo mesmo motivo. O atalho "Contar a despensa" mora no cabeçalho de `/fichas`, e não em cada
+linha: a linha inteira é um link para a ficha, e link dentro de link não existe.

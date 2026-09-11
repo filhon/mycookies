@@ -4,19 +4,13 @@ import { useMemo, useState } from "react";
 import { orderBy, query, where } from "firebase/firestore";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
-import { HORIZONTE_MAXIMO, ListaDoMercado } from "./ListaDoMercado";
-import { dataISODe, diaVizinho } from "@/lib/domain/datas";
-import { colFichas, colInsumos, colPedidos } from "@/lib/firebase/colecoes";
-import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
+import { ListaDoMercado } from "./ListaDoMercado";
+import { dataISODe } from "@/lib/domain/datas";
+import { colFichas } from "@/lib/firebase/colecoes";
 import { consultaListaAtual } from "@/lib/firebase/mutations/listasCompra";
 import { useColecao } from "@/lib/hooks/useColecao";
-import type {
-  FichaTecnica,
-  Fornada,
-  Insumo,
-  ListaCompras,
-  Pedido,
-} from "@/lib/types";
+import { useDespensaParaProduzir } from "@/lib/hooks/useDespensaParaProduzir";
+import type { FichaTecnica, ListaCompras } from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
 
 /**
@@ -33,21 +27,8 @@ import { useContaId } from "@/providers/AuthProvider";
 export function TelaCompras() {
   const contaId = useContaId();
   const [hoje] = useState(() => dataISODe(new Date()));
-  const limite = useMemo(() => diaVizinho(hoje, HORIZONTE_MAXIMO), [hoje]);
 
   const consultaLista = useMemo(() => consultaListaAtual(contaId), [contaId]);
-
-  const consultaPedidos = useMemo(
-    () =>
-      query(
-        colPedidos(contaId),
-        where("arquivado", "==", false),
-        where("dataEntregaISO", ">=", hoje),
-        where("dataEntregaISO", "<=", limite),
-        orderBy("dataEntregaISO"),
-      ),
-    [contaId, hoje, limite],
-  );
 
   const consultaFichas = useMemo(
     () =>
@@ -59,27 +40,11 @@ export function TelaCompras() {
     [contaId],
   );
 
-  const consultaInsumos = useMemo(
-    () =>
-      query(
-        colInsumos(contaId),
-        where("arquivado", "==", false),
-        orderBy("nomeBusca"),
-      ),
-    [contaId],
-  );
-
-  // O que a massa já levou: a lista desconta da despensa e abate do pedido.
-  const consultaProducao = useMemo(
-    () => consultaFornadas(contaId, hoje),
-    [contaId, hoje],
-  );
-
   const listas = useColecao<ListaCompras>(consultaLista);
-  const pedidos = useColecao<Pedido>(consultaPedidos);
   const fichas = useColecao<FichaTecnica>(consultaFichas);
-  const insumos = useColecao<Insumo>(consultaInsumos);
-  const fornadas = useColecao<Fornada>(consultaProducao);
+  // Os pedidos do horizonte, a despensa e o que a massa já levou: a lista
+  // desconta da despensa e abate do pedido.
+  const { pedidos, insumos, fornadas } = useDespensaParaProduzir(contaId, hoje);
 
   const carregando =
     listas.carregando ||

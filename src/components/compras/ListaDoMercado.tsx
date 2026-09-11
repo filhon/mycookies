@@ -26,6 +26,7 @@ import {
   entraNaLista,
   explodirDemanda,
   EXPLICACAO_PENDENCIA,
+  HORIZONTE_MAXIMO,
   montarLista,
   orcamentosDeFora,
   precisaComprar,
@@ -63,10 +64,7 @@ import { cn } from "@/lib/utils/cn";
  * Uma semana por padrão: é o horizonte de uma ida ao mercado. Os outros dois
  * existem para a semana de festa junina e para o Natal, quando ela compra o mês.
  */
-const HORIZONTES = [7, 15, 30];
-
-/** O maior deles, que é o recorte da consulta. O resto é filtro em memória. */
-export const HORIZONTE_MAXIMO = 30;
+const HORIZONTES = [7, 15, HORIZONTE_MAXIMO];
 
 /**
  * A lista de compras, do pedido combinado até o carrinho.

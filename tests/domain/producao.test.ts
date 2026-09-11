@@ -7,15 +7,19 @@ import {
   type InsumoParaLista,
 } from "@/lib/domain/listaCompras";
 import {
+  capacidadeDaFicha,
   consumoDesdeAContagem,
   consumoPorLote,
   disponivelParaProducao,
+  faltaPara,
   fornadaGravavel,
   fornadasDesdeAContagem,
   produzidoParaPedidos,
   projecaoDoInsumo,
+  prometidoParaPedidos,
   type FichaParaProduzir,
   type FornadaRegistrada,
+  type InsumoParaCapacidade,
 } from "@/lib/domain/producao";
 
 // ---------------------------------------------------------------------------
@@ -498,5 +502,272 @@ describe("montarLista com o forno dentro", () => {
     const farinha = linha(lista, "farinha");
     expect(farinha?.quantidadeFisica).toBeCloseTo(526.315789, 5);
     expect(farinha?.quantidadeJaProduzida).toBeCloseTo(526.32, 6);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Quantas fornadas dá
+// ---------------------------------------------------------------------------
+
+describe("capacidadeDaFicha", () => {
+  function contado(
+    parcial: Partial<InsumoParaCapacidade> & { id: string },
+  ): InsumoParaCapacidade {
+    return {
+      nome: parcial.id,
+      arquivado: false,
+      unidadeBase: "g",
+      perdaPercentual: 0,
+      estoqueContadoEmISO: "2026-09-08",
+      ...parcial,
+    };
+  }
+
+  /** Tudo contado e fresco: farinha 2 kg, chocolate 1 kg, manteiga 1 kg, 100 saquinhos. */
+  const DESPENSA = [
+    contado({ id: "farinha", perdaPercentual: 5, estoqueAtual: 2000 }),
+    contado({ id: "chocolate", estoqueAtual: 1000 }),
+    contado({ id: "manteiga", estoqueAtual: 1000 }),
+    contado({ id: "saquinho", unidadeBase: "un", estoqueAtual: 100 }),
+    contado({ id: "caixa", unidadeBase: "un", estoqueAtual: 10 }),
+  ];
+  const SEM_CONSUMO = new Map<string, number>();
+
+  it("todo insumo contado: MEDIDA, o número e o gargalo nomeado", () => {
+    // Farinha: 2000 ÷ 526,32 = 3,8 · chocolate: 1000 ÷ 300 = 3,33 · manteiga 5 ·
+    // saquinho 5. Trava no chocolate, com 3 fornadas inteiras.
+    const capacidade = capacidadeDaFicha(
+      COOKIE,
+      FICHAS,
+      DESPENSA,
+      SEM_CONSUMO,
+      HOJE,
+    );
+
+    expect(capacidade?.leitura).toBe("MEDIDA");
+    expect(capacidade?.fornadas).toBe(3);
+    // 3,33 lotes × 20 = 66 cookies, e não 60: a massa se faz do tamanho que quiser.
+    expect(capacidade?.unidades).toBe(66);
+    expect(capacidade?.gargalo?.nome).toBe("chocolate");
+    expect(capacidade?.gargalo?.tem).toBe(1000);
+    expect(capacidade?.gargalo?.precisaPorLote).toBe(300);
+    expect(capacidade?.semContagem).toEqual([]);
+    expect(capacidade?.descontaPedidos).toBe(false);
+  });
+
+  it("o gargalo sem contagem: DESCONHECIDA e null, e não zero", () => {
+    const nadaContado = DESPENSA.map((insumo) => ({
+      ...insumo,
+      estoqueAtual: undefined,
+      estoqueContadoEmISO: undefined,
+    }));
+    const capacidade = capacidadeDaFicha(
+      COOKIE,
+      FICHAS,
+      nadaContado,
+      SEM_CONSUMO,
+      HOJE,
+    );
+
+    expect(capacidade?.leitura).toBe("DESCONHECIDA");
+    expect(capacidade?.fornadas).toBeNull();
+    expect(capacidade?.unidades).toBeNull();
+    expect(capacidade?.gargalo).toBeNull();
+    expect(capacidade?.semContagem).toEqual([
+      "Chocolate",
+      "Farinha",
+      "Manteiga",
+      "Saquinho",
+    ]);
+  });
+
+  it("contagem vencida vale sem contagem, e não o número velho", () => {
+    const vencida = DESPENSA.map((insumo) =>
+      insumo.id === "chocolate"
+        ? { ...insumo, estoqueContadoEmISO: "2026-07-01" }
+        : insumo,
+    );
+    const capacidade = capacidadeDaFicha(
+      COOKIE,
+      FICHAS,
+      vencida,
+      SEM_CONSUMO,
+      HOJE,
+    );
+
+    expect(capacidade?.leitura).toBe("PISO");
+    expect(capacidade?.semContagem).toEqual(["Chocolate"]);
+    // Sem o chocolate, o gargalo passa a ser a farinha: 3 fornadas ainda.
+    expect(capacidade?.gargalo?.nome).toBe("farinha");
+    expect(capacidade?.fornadas).toBe(3);
+  });
+
+  it("insumo sem contagem que não é o gargalo: PISO com o número dos contados", () => {
+    const semManteiga = DESPENSA.filter((insumo) => insumo.id !== "manteiga");
+    const capacidade = capacidadeDaFicha(
+      COOKIE,
+      FICHAS,
+      semManteiga,
+      SEM_CONSUMO,
+      HOJE,
+    );
+
+    expect(capacidade?.leitura).toBe("PISO");
+    expect(capacidade?.fornadas).toBe(3);
+    expect(capacidade?.gargalo?.nome).toBe("chocolate");
+    expect(capacidade?.semContagem).toEqual(["Manteiga"]);
+  });
+
+  it("registrar uma fornada derruba a capacidade na hora, sem contagem nova", () => {
+    // Uma massa de um lote no dia 9, depois da contagem do dia 8: o chocolate
+    // projetado cai para 700 g, e a capacidade de 3 para 2.
+    const fornadas = [fornada({ dataISO: "2026-09-09" })];
+    const capacidade = capacidadeDaFicha(
+      COOKIE,
+      FICHAS,
+      DESPENSA,
+      consumoDesdeAContagem(fornadas, DESPENSA),
+      HOJE,
+    );
+
+    expect(capacidade?.fornadas).toBe(2);
+    expect(capacidade?.gargalo?.tem).toBe(700);
+  });
+
+  it("o kit respeita o nível único e conta a embalagem própria", () => {
+    // Uma caixa leva 6/20 de lote de cookie mais uma caixa: 10 caixas travam
+    // na embalagem antes do chocolate (1000 ÷ 90 = 11).
+    const capacidade = capacidadeDaFicha(
+      CAIXA_COM_6,
+      FICHAS,
+      DESPENSA,
+      SEM_CONSUMO,
+      HOJE,
+    );
+
+    expect(capacidade?.leitura).toBe("MEDIDA");
+    expect(capacidade?.fornadas).toBe(10);
+    expect(capacidade?.gargalo?.nome).toBe("caixa");
+  });
+
+  it("a capacidade desconta o que já está prometido a outros pedidos", () => {
+    // Um pedido de 40 cookies já fechado leva 600 g de chocolate: sobram 400 g,
+    // que dão 1 fornada e 26 cookies, e a ficha diz que descontou pedidos.
+    const prometido = prometidoParaPedidos(
+      [
+        {
+          id: "p1",
+          itens: [
+            {
+              fichaTecnicaId: "cookie",
+              nomeSnapshot: "Cookie",
+              quantidade: 40,
+            },
+          ],
+        },
+      ],
+      FICHAS,
+      DESPENSA,
+      [],
+    );
+    expect(prometido.get("chocolate")).toBe(600);
+    expect(prometido.get("farinha")).toBeCloseTo(1052.63, 2);
+
+    const capacidade = capacidadeDaFicha(
+      COOKIE,
+      FICHAS,
+      DESPENSA,
+      SEM_CONSUMO,
+      HOJE,
+      prometido,
+    );
+    expect(capacidade?.fornadas).toBe(1);
+    expect(capacidade?.unidades).toBe(26);
+    expect(capacidade?.descontaPedidos).toBe(true);
+  });
+
+  it("o prometido abate o que já virou massa para o pedido", () => {
+    // Do pedido de 40, metade já virou massa: o prometido é só a outra metade.
+    const prometido = prometidoParaPedidos(
+      [
+        {
+          id: "p1",
+          itens: [
+            {
+              fichaTecnicaId: "cookie",
+              nomeSnapshot: "Cookie",
+              quantidade: 40,
+            },
+          ],
+        },
+      ],
+      FICHAS,
+      DESPENSA,
+      [fornada({ dataISO: "2026-09-09", pedidoId: "p1" })],
+    );
+    expect(prometido.get("chocolate")).toBe(300);
+  });
+
+  it("o que falta para um pedido, insumo por insumo", () => {
+    const capacidade = capacidadeDaFicha(
+      COOKIE,
+      FICHAS,
+      DESPENSA,
+      SEM_CONSUMO,
+      HOJE,
+    );
+    if (!capacidade) throw new Error("sem capacidade");
+
+    expect(faltaPara(capacidade, 60)).toEqual([]);
+
+    // 100 cookies são 5 lotes: 1500 g de chocolate contra 1000, e 2631,58 g de
+    // farinha contra 2000. Manteiga e saquinho dão exatamente.
+    const falta = faltaPara(capacidade, 100);
+    expect(falta.map((linha) => linha.nome)).toEqual(["chocolate", "farinha"]);
+    expect(falta[0]?.falta).toBe(500);
+    expect(falta[1]?.falta).toBeCloseTo(631.58, 2);
+  });
+
+  it("ficha sem itens, rendimento zero e ficha arquivada não têm capacidade", () => {
+    const vazia = { ...COOKIE, itens: [] };
+    expect(
+      capacidadeDaFicha(vazia, FICHAS, DESPENSA, SEM_CONSUMO, HOJE),
+    ).toBeNull();
+    expect(
+      capacidadeDaFicha(
+        { ...COOKIE, rendimento: 0 },
+        FICHAS,
+        DESPENSA,
+        SEM_CONSUMO,
+        HOJE,
+      ),
+    ).toBeNull();
+    expect(
+      capacidadeDaFicha(
+        { ...COOKIE, arquivado: true },
+        FICHAS,
+        DESPENSA,
+        SEM_CONSUMO,
+        HOJE,
+      ),
+    ).toBeNull();
+  });
+
+  it("despensa zerada num insumo contado é zero, e não desconhecida", () => {
+    const semChocolate = DESPENSA.map((insumo) =>
+      insumo.id === "chocolate" ? { ...insumo, estoqueAtual: 0 } : insumo,
+    );
+    const capacidade = capacidadeDaFicha(
+      COOKIE,
+      FICHAS,
+      semChocolate,
+      SEM_CONSUMO,
+      HOJE,
+    );
+
+    expect(capacidade?.leitura).toBe("MEDIDA");
+    expect(capacidade?.fornadas).toBe(0);
+    expect(capacidade?.unidades).toBe(0);
+    expect(capacidade?.gargalo?.nome).toBe("chocolate");
   });
 });

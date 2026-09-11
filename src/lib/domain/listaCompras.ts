@@ -589,6 +589,12 @@ export const STATUS_NA_LISTA: StatusPedido[] = [
 ];
 
 /**
+ * Por quantos dias adiante, no máximo, a lista olha. É o recorte da consulta de
+ * pedidos, em `/compras` e onde a capacidade desconta o que já está prometido.
+ */
+export const HORIZONTE_MAXIMO = 30;
+
+/**
  * A data que manda é a da **entrega**, e não a do pagamento: a lista fala de
  * produção, e produção acontece antes de entregar (`DECISOES.md#d36`).
  */

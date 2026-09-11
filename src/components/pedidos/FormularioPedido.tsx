@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { FornadasRecentes } from "@/components/producao/FornadasRecentes";
+import { FraseCabeNoPedido } from "@/components/producao/FraseDaCapacidade";
 import {
   PainelFornada,
   type OpcaoDeFornada,
@@ -61,8 +62,10 @@ import {
 } from "@/lib/firebase/mutations/pedidos";
 import { parcelasDoResumo } from "@/lib/domain/caixa";
 import { competenciaDeISO } from "@/lib/domain/datas";
+import { capacidadeDaFicha } from "@/lib/domain/producao";
 import { docMeta, docResumoMensal } from "@/lib/firebase/colecoes";
 import { useDocumento } from "@/lib/hooks/useColecao";
+import { contextoDaCapacidade } from "@/lib/hooks/useDespensaParaProduzir";
 import { BlocoPagamento } from "./BlocoPagamento";
 import { BlocoWhatsApp } from "./BlocoWhatsApp";
 import type { ResumoParaCliente } from "@/lib/domain/whatsapp";
@@ -207,6 +210,8 @@ export function FormularioPedido({
   clientes,
   insumos,
   fornadas,
+  pedidosAbertos,
+  despensaPronta,
   hoje,
   configuracao,
   pendente,
@@ -215,9 +220,13 @@ export function FormularioPedido({
   pedido?: Pedido;
   fichas: FichaTecnica[];
   clientes: Cliente[];
-  /** Insumos e fornadas recentes: só a folha de registrar fornada os usa. */
+  /** A despensa, as fornadas recentes e os pedidos do horizonte: respondem
+   * se dá para fazer cada item, e alimentam a folha de registrar fornada. */
   insumos: Insumo[];
   fornadas: Fornada[];
+  pedidosAbertos: Pedido[];
+  /** Enquanto os três não chegaram, a linha não diz nada. */
+  despensaPronta: boolean;
   /** O dia congela na abertura, no editor que monta esta tela. */
   hoje: DataISO;
   configuracao: ConfiguracaoGeral | null;
@@ -284,6 +293,37 @@ export function FormularioPedido({
     () => fornadas.filter((atual) => atual.pedidoId === pedido?.id),
     [fornadas, pedido],
   );
+
+  /**
+   * Dá para fazer? A despensa projetada, menos o que os **outros** pedidos
+   * fechados já prometeram: este fica de fora, senão descontaria a si mesmo.
+   * É sobre hoje, e não sobre o que a lista de compras vai trazer até lá.
+   */
+  const contextoDaDespensa = useMemo(
+    () =>
+      contextoDaCapacidade(
+        pedidosAbertos,
+        fichas,
+        insumos,
+        fornadas,
+        hoje,
+        pedido?.id,
+      ),
+    [pedidosAbertos, fichas, insumos, fornadas, hoje, pedido],
+  );
+
+  /** O que já virou massa para este pedido, por ficha: não se pergunta de novo. */
+  const jaFeitasPorFicha = useMemo(() => {
+    const total = new Map<string, number>();
+    for (const fornada of fornadasDoPedido) {
+      if (fornada.arquivado) continue;
+      total.set(
+        fornada.fichaId,
+        (total.get(fornada.fichaId) ?? 0) + fornada.unidadesProduzidas,
+      );
+    }
+    return total;
+  }, [fornadasDoPedido]);
 
   const formas = configuracao?.formasPagamento ?? [];
   const formasVisiveis = formas.filter(
@@ -917,6 +957,20 @@ export function FormularioPedido({
                     linha.precoUnitario,
                     precoDaFicha,
                   );
+                  // A capacidade é aritmética pura sobre o que a tela já tem,
+                  // refeita a cada tecla: é assim que a resposta acompanha a
+                  // quantidade enquanto ela digita.
+                  const capacidade =
+                    despensaPronta && ficha
+                      ? capacidadeDaFicha(
+                          ficha,
+                          fichas,
+                          insumos,
+                          contextoDaDespensa.consumo,
+                          hoje,
+                          contextoDaDespensa.prometido,
+                        )
+                      : null;
 
                   return (
                     <LinhaItemPedido
@@ -932,7 +986,17 @@ export function FormularioPedido({
                       aoUsarPrecoDeHoje={() => usarPrecoDeHoje(linha.chave)}
                       aoRemover={() => removerLinha(linha.chave)}
                       erro={errosItens[indice]}
-                    />
+                    >
+                      {capacidade && (
+                        <FraseCabeNoPedido
+                          capacidade={capacidade}
+                          unidades={parseParaNumero(linha.quantidade)}
+                          jaFeitas={
+                            jaFeitasPorFicha.get(capacidade.fichaId) ?? 0
+                          }
+                        />
+                      )}
+                    </LinhaItemPedido>
                   );
                 })}
               </ul>

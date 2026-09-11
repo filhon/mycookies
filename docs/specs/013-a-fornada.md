@@ -535,16 +535,16 @@ frase diz isso quando há algum.
 
 ## Critérios de aceite 13B
 
-- [ ] Ficha com todos os insumos contados e frescos mostra número, leitura `MEDIDA` e o
+- [x] Ficha com todos os insumos contados e frescos mostra número, leitura `MEDIDA` e o
       gargalo nomeado.
-- [ ] Ficha cujo gargalo é um insumo sem contagem mostra **"não dá para saber"**, e não zero,
+- [x] Ficha cujo gargalo é um insumo sem contagem mostra **"não dá para saber"**, e não zero,
       com atalho para contar.
-- [ ] Ficha com insumo sem contagem que **não** é o gargalo mostra "pelo menos N".
-- [ ] Registrar uma fornada derruba a capacidade na hora, sem contagem nova.
-- [ ] Capacidade de um kit respeita o nível único do `#d11` e conta a embalagem própria.
-- [ ] O editor de pedido diz se dá, e quando não dá diz **qual insumo** e **quanto** resolve.
-- [ ] Ficha sem itens, rendimento zero e ficha arquivada não quebram nem aparecem.
-- [ ] Portão de conclusão passando.
+- [x] Ficha com insumo sem contagem que **não** é o gargalo mostra "pelo menos N".
+- [x] Registrar uma fornada derruba a capacidade na hora, sem contagem nova.
+- [x] Capacidade de um kit respeita o nível único do `#d11` e conta a embalagem própria.
+- [x] O editor de pedido diz se dá, e quando não dá diz **qual insumo** e **quanto** resolve.
+- [x] Ficha sem itens, rendimento zero e ficha arquivada não quebram nem aparecem.
+- [x] Portão de conclusão passando.
 
 ---
 

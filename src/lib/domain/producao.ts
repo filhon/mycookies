@@ -2,13 +2,20 @@ import type {
   ConsumoDaFornada,
   DataISO,
   Percentual,
+  UnidadeBase,
   UnidadeRendimento,
 } from "@/lib/types";
-import { estoqueParaLista, type InsumoContado } from "./estoque";
 import {
+  contagemDoInsumo,
+  estoqueParaLista,
+  type InsumoContado,
+} from "./estoque";
+import {
+  explodirDemanda,
   insumosPorLote,
   quantidadeFisica,
   type FichaParaExplodir,
+  type PedidoParaExplodir,
 } from "./listaCompras";
 
 /**
@@ -242,4 +249,221 @@ export function produzidoParaPedidos(
   }
 
   return produzido;
+}
+
+// ---------------------------------------------------------------------------
+// Quantas fornadas dá
+// ---------------------------------------------------------------------------
+
+/**
+ * O que os pedidos abertos ainda vão levar da despensa, por insumo e físico.
+ *
+ * É a demanda dos pedidos passada pela perda, menos o que já virou massa para
+ * eles: a capacidade que ignorasse isso mandaria ela prometer duas vezes a
+ * mesma farinha. Quem escolhe os pedidos é quem chama — os do horizonte, nos
+ * status da lista, sem o pedido que está sendo perguntado.
+ */
+export function prometidoParaPedidos(
+  pedidos: PedidoParaExplodir[],
+  fichas: FichaParaExplodir[],
+  insumos: { id: string; perdaPercentual: Percentual }[],
+  fornadas: FornadaRegistrada[],
+): Map<string, number> {
+  const demanda = explodirDemanda(pedidos, fichas);
+  const produzido = produzidoParaPedidos(fornadas, demanda.pedidoIds);
+  const perdaDe = new Map(
+    insumos.map((insumo) => [insumo.id, insumo.perdaPercentual]),
+  );
+  const prometido = new Map<string, number>();
+
+  for (const linha of demanda.linhas) {
+    const resta =
+      quantidadeFisica(linha.quantidade, perdaDe.get(linha.insumoId) ?? 0) -
+      (produzido.get(linha.insumoId) ?? 0);
+    if (resta > 0) prometido.set(linha.insumoId, resta);
+  }
+
+  return prometido;
+}
+
+/** O que a capacidade precisa saber de um insumo. `Insumo` serve inteiro. */
+export interface InsumoParaCapacidade extends InsumoContado {
+  id: string;
+  nome: string;
+  arquivado: boolean;
+  unidadeBase: UnidadeBase;
+  perdaPercentual: Percentual;
+}
+
+/**
+ * As três leituras da decisão 7 da spec 013: contagem vencida vale "não sei",
+ * e a capacidade herda o "não sei" — nunca o zero.
+ */
+export type LeituraDaCapacidade = "MEDIDA" | "PISO" | "DESCONHECIDA";
+
+export interface InsumoDaCapacidade {
+  insumoId: string;
+  nome: string;
+  unidadeBase: UnidadeBase;
+  /** Físico, com a perda, por lote. */
+  precisaPorLote: number;
+  /** A projeção menos o prometido a outros pedidos. `null` sem contagem que valha. */
+  tem: number | null;
+}
+
+export interface CapacidadeDaFicha {
+  fichaId: string;
+  nome: string;
+  rendimento: number;
+  unidadeRendimento: UnidadeRendimento;
+  leitura: LeituraDaCapacidade;
+  /** Fornadas inteiras. `null` em `DESCONHECIDA`. */
+  fornadas: number | null;
+  /**
+   * O que dá para fazer na unidade de rendimento. A massa se faz do tamanho
+   * que quiser (`#d93`), então é `lotes × rendimento` **antes** do `floor`
+   * das fornadas: 2,4 lotes de uma receita de 25 são 60 cookies, e não 50.
+   */
+  unidades: number | null;
+  /** O insumo que trava primeiro, entre os contados. É o que ela precisa comprar. */
+  gargalo: InsumoDaCapacidade | null;
+  /** Os insumos da ficha sem contagem que valha, por nome. */
+  semContagem: string[];
+  /** Algum insumo desta ficha já está prometido a outro pedido. */
+  descontaPedidos: boolean;
+  insumos: InsumoDaCapacidade[];
+}
+
+/** 3 × 300 ÷ 300 não volta exatamente a 3 em ponto flutuante. */
+const FOLGA = 1e-6;
+
+/**
+ * Quantas fornadas cabem no que a despensa tem hoje.
+ *
+ * `lotes = min sobre os insumos contados de tem ÷ precisaPorLote`; `fornadas`
+ * é o `floor` disso, para baixo sempre — arredondar para cima seria prometer o
+ * que não dá. A leitura diz o quanto o número vale:
+ *
+ * - `MEDIDA`: todo insumo tem contagem que vale. O número é o número.
+ * - `PISO`: há insumo sem contagem, e o número sai só dos contados. A tela diz
+ *   "pelo menos N" e nomeia o que falta contar: é o que ela conta que decide,
+ *   e o que ela nunca contou é o que nunca faltou.
+ * - `DESCONHECIDA`: nenhum insumo contado. Não é zero, é ausência de
+ *   informação, e o atalho é contar.
+ *
+ * Devolve `null` quando não há pergunta: ficha arquivada, sem rendimento ou
+ * sem insumo nenhum. Essas não quebram e não aparecem.
+ */
+export function capacidadeDaFicha(
+  ficha: FichaParaProduzir,
+  fichas: FichaParaExplodir[],
+  insumos: InsumoParaCapacidade[],
+  consumo: Map<string, number>,
+  hojeISO: DataISO,
+  prometido: Map<string, number> = new Map(),
+): CapacidadeDaFicha | null {
+  if (ficha.arquivado || !(ficha.rendimento > 0)) return null;
+
+  const porId = new Map(insumos.map((insumo) => [insumo.id, insumo]));
+  const semContagem: string[] = [];
+  const linhas: InsumoDaCapacidade[] = [];
+  let descontaPedidos = false;
+
+  for (const lote of consumoPorLote(ficha, fichas, insumos)) {
+    if (!(lote.quantidade > 0)) continue;
+    const insumo = porId.get(lote.insumoId);
+    const contado =
+      insumo && !insumo.arquivado
+        ? contagemDoInsumo(insumo, hojeISO).quantidade !== null
+        : false;
+
+    if (!contado) semContagem.push(lote.nomeSnapshot);
+    if (prometido.has(lote.insumoId)) descontaPedidos = true;
+
+    linhas.push({
+      insumoId: lote.insumoId,
+      nome: insumo?.nome ?? lote.nomeSnapshot,
+      unidadeBase: insumo?.unidadeBase ?? "un",
+      precisaPorLote: lote.quantidade,
+      tem:
+        contado && insumo
+          ? Math.max(
+              0,
+              disponivelParaProducao(
+                insumo,
+                consumo.get(insumo.id) ?? 0,
+                hojeISO,
+              ) - (prometido.get(insumo.id) ?? 0),
+            )
+          : null,
+    });
+  }
+
+  if (linhas.length === 0) return null;
+
+  let gargalo: InsumoDaCapacidade | null = null;
+  let lotes = Infinity;
+  for (const linha of linhas) {
+    if (linha.tem === null) continue;
+    const cabe = linha.tem / linha.precisaPorLote;
+    if (cabe < lotes) {
+      lotes = cabe;
+      gargalo = linha;
+    }
+  }
+
+  const leitura: LeituraDaCapacidade =
+    gargalo === null
+      ? "DESCONHECIDA"
+      : semContagem.length === 0
+        ? "MEDIDA"
+        : "PISO";
+
+  const unidades =
+    gargalo === null
+      ? null
+      : ficha.unidadeRendimento === "un"
+        ? Math.floor(lotes * ficha.rendimento + FOLGA)
+        : lotes * ficha.rendimento;
+
+  return {
+    fichaId: ficha.id,
+    nome: ficha.nome,
+    rendimento: ficha.rendimento,
+    unidadeRendimento: ficha.unidadeRendimento,
+    leitura,
+    fornadas: gargalo === null ? null : Math.floor(lotes + FOLGA),
+    unidades,
+    gargalo,
+    semContagem,
+    descontaPedidos,
+    insumos: linhas,
+  };
+}
+
+/** O que falta comprar, por insumo contado, para fazer massa para `unidades`. */
+export function faltaPara(
+  capacidade: CapacidadeDaFicha,
+  unidades: number,
+): {
+  insumoId: string;
+  nome: string;
+  unidadeBase: UnidadeBase;
+  falta: number;
+}[] {
+  const lotes = unidades / capacidade.rendimento;
+
+  return capacidade.insumos.flatMap((linha) => {
+    if (linha.tem === null) return [];
+    const falta = lotes * linha.precisaPorLote - linha.tem;
+    if (falta <= FOLGA) return [];
+    return [
+      {
+        insumoId: linha.insumoId,
+        nome: linha.nome,
+        unidadeBase: linha.unidadeBase,
+        falta,
+      },
+    ];
+  });
 }

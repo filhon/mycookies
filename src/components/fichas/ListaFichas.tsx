@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import { orderBy, query, where } from "firebase/firestore";
 import { useMemo, useState } from "react";
+import { EntradaContagem } from "@/components/estoque/EntradaContagem";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
@@ -13,8 +14,14 @@ import { Botao } from "@/components/ui/Botao";
 import { LinhaFicha } from "./LinhaFicha";
 import { ID_FICHA_NOVA } from "./EditorFicha";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
+import { dataISODe } from "@/lib/domain/datas";
+import { capacidadeDaFicha } from "@/lib/domain/producao";
 import { colFichas } from "@/lib/firebase/colecoes";
 import { useColecao } from "@/lib/hooks/useColecao";
+import {
+  contextoDaCapacidade,
+  useDespensaParaProduzir,
+} from "@/lib/hooks/useDespensaParaProduzir";
 import type { FichaTecnica, TipoFicha } from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
 import { cn } from "@/lib/utils/cn";
@@ -45,6 +52,30 @@ export function ListaFichas() {
   const { dados, carregando, erro, pendente } =
     useColecao<FichaTecnica>(consulta);
 
+  // Quantas fornadas dá, por ficha: a despensa projetada, menos o que os
+  // pedidos abertos já prometeram. É a tela que ela abre quando alguém
+  // pergunta se tem cookie, e a resposta é sobre hoje.
+  const [hoje] = useState(() => dataISODe(new Date()));
+  const despensa = useDespensaParaProduzir(contaId, hoje);
+  const pedidos = despensa.pedidos.dados;
+  const insumos = despensa.insumos.dados;
+  const fornadas = despensa.fornadas.dados;
+  const capacidades = useMemo(() => {
+    const { consumo, prometido } = contextoDaCapacidade(
+      pedidos,
+      dados,
+      insumos,
+      fornadas,
+      hoje,
+    );
+    return new Map(
+      dados.map((ficha) => [
+        ficha.id,
+        capacidadeDaFicha(ficha, dados, insumos, consumo, hoje, prometido),
+      ]),
+    );
+  }, [pedidos, dados, insumos, fornadas, hoje]);
+
   const visiveis = useMemo(() => {
     const termo = chaveDeBusca(busca);
     return dados.filter((ficha) => {
@@ -53,6 +84,13 @@ export function ListaFichas() {
       return combinaTipo && combinaBusca;
     });
   }, [dados, busca, filtro]);
+
+  const despensaPronta = !despensa.carregando;
+  const semContagem =
+    despensaPronta &&
+    visiveis.some(
+      (ficha) => (capacidades.get(ficha.id)?.semContagem.length ?? 0) > 0,
+    );
 
   return (
     <>
@@ -123,6 +161,18 @@ export function ListaFichas() {
         <SeloSincronizacao pendente={pendente} />
       </div>
 
+      {/* O atalho para contar mora aqui, e não em cada linha: a linha inteira
+          já é um link para a ficha, e link dentro de link não existe. */}
+      {semContagem && (
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <p className="max-w-[48ch] text-label text-ink-muted">
+            Quantas fornadas dá sai da contagem, e há insumo sem contagem que
+            valha.
+          </p>
+          <EntradaContagem tamanho="sm" />
+        </div>
+      )}
+
       <div className="mt-2 overflow-hidden rounded-lg border border-line bg-surface">
         {erro ? (
           <EstadoVazio
@@ -168,7 +218,15 @@ export function ListaFichas() {
         ) : (
           <ul className="divide-y divide-line">
             {visiveis.map((ficha) => (
-              <LinhaFicha key={ficha.id} ficha={ficha} />
+              <LinhaFicha
+                key={ficha.id}
+                ficha={ficha}
+                // Enquanto a despensa não chegou, a linha não diz nada: dizer
+                // "não dá para saber" por um instante seria mentir por pressa.
+                capacidade={
+                  despensaPronta ? capacidades.get(ficha.id) : undefined
+                }
+              />
             ))}
           </ul>
         )}

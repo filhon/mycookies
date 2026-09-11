@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-11 (spec 013, sessão 13A: a fornada existe e come a despensa).
+Atualizado em 2026-09-11 (spec 013, sessão 13B: quantas fornadas dá).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -74,16 +74,18 @@ passava por lugar nenhum, e o resultado do mês ficava alto por causa disso. Ago
 a faixa "Entregas a pagar", o acerto vira uma saída em `ENTREGA` no caixa, e desfazer devolve
 tudo. **O roteiro de navegador de cinco passos dela não rodou.**
 
-A spec `013-a-fornada.md` está **na primeira de quatro sessões**: a **13A está entregue** — a
+A spec `013-a-fornada.md` está **na segunda de quatro sessões**: a **13A está entregue** — a
 fornada existe como fato do sistema, desconta a despensa na leitura sem tocar na contagem, e a
-lista de compras deixa de comprar o que já foi assado para o pedido. Faltam a `13B` (quantas
-fornadas dá), a `13C` (o piso e a previsão em destaque) e a `13D` (o que está pronto, que pode
-não ser precisa), mais a `13E` reservada. É a primeira vez que o sistema enxerga a produção, e
-é a resposta à pergunta que a 007 deixou em aberto: entre uma contagem e a seguinte ela assa, e
-o sistema não sabe. Das quatro aprovações da spec, a 13A usou três — a coleção `fornadas`, o
-índice (publicado) e a mudança de comportamento de `montarLista`; os campos novos em
+lista de compras deixa de comprar o que já foi assado para o pedido — e a **13B está entregue**:
+o sistema responde quantas fornadas dá, em `/fichas` e na linha de cada item do pedido, sobre a
+despensa de hoje e já descontando o que os outros pedidos fechados prometeram. Nenhuma escrita
+nova: é leitura sobre o que a 13A gravou. Faltam a `13C` (o piso e a previsão em destaque) e a
+`13D` (o que está pronto — que o `#d93` tornou mais provável de ser precisa, e cuja decisão a
+spec manda tomar depois de duas ou três semanas de 13B em uso), mais a `13E` reservada. Das
+quatro aprovações da spec, a 13A usou três — a coleção `fornadas`, o índice (publicado) e a
+mudança de comportamento de `montarLista`; a 13B não usou nenhuma. Os campos novos em
 `FichaTecnica` são da 13C e da 13D. Regra de segurança não mudou, e nenhuma dependência entrou.
-**O roteiro de navegador dela não rodou.**
+**Os roteiros de navegador das duas não rodaram.**
 
 Fora das specs, o projeto foi **preparado para publicar no Vercel** em 2026-09-03: a
 credencial do Admin SDK deixou de exigir um arquivo em disco, a falta dela parou de ser
@@ -118,7 +120,7 @@ da hospedagem falharia. O guia é `docs/DEPLOY.md`. **Nada foi publicado ainda**
 > mudou de arquivo. Se algo em `insumos`, em `/compras` ou na leitura de nota aparecer torto na
 > 5B, estes são os primeiros suspeitos depois dos que a 6A abriu.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **421
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **432
 testes**, e build com 16 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
 `/insumos/contagem` na 7A e `/comecar` na 8A — mais `/api/nota`, `/fichas/[id]` e
 `/pedidos/[id]` dinâmicas e service worker gerado.
@@ -152,23 +154,23 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 
 ## Módulos
 
-| #   | Módulo                                      | Estado                      | Spec                                     |
-| --- | ------------------------------------------- | --------------------------- | ---------------------------------------- |
-| 0   | Fundação: design system, shell, acesso, PWA | pronto                      | —                                        |
-| 1   | Insumos e embalagens                        | pronto                      | —                                        |
-| —   | Contas e tenancy                            | pronto                      | `specs/000-contas.md`                    |
-| 2   | Custos operacionais e precificação          | pronto (2A e 2B)            | `specs/002-precificacao.md`              |
-| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)        | `specs/003-pedidos.md`                   |
-| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)            | `specs/004-caixa.md`                     |
-| 5   | Prontidão: conserto e verificação           | 5A pronto, **5B a fazer**   | `specs/005-prontidao.md`                 |
-| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)            | `specs/006-nota-fiscal.md`               |
-| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)            | `specs/007-estoque.md`                   |
-| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)            | `specs/008-onboarding.md`                |
-| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros     | `specs/009-teclado-e-barra.md`           |
-| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro       | `specs/010-resumo-no-whatsapp.md`        |
-| —   | O caixa que não perde a conta               | pronto, sem o roteiro       | `specs/011-caixa-que-nao-perde-conta.md` |
-| —   | O acerto das entregas                       | pronto, sem o roteiro       | `specs/012-entregas-a-pagar.md`          |
-| 13  | A fornada                                   | 13A pronto, **13B a fazer** | `specs/013-a-fornada.md`                 |
+| #   | Módulo                                      | Estado                             | Spec                                     |
+| --- | ------------------------------------------- | ---------------------------------- | ---------------------------------------- |
+| 0   | Fundação: design system, shell, acesso, PWA | pronto                             | —                                        |
+| 1   | Insumos e embalagens                        | pronto                             | —                                        |
+| —   | Contas e tenancy                            | pronto                             | `specs/000-contas.md`                    |
+| 2   | Custos operacionais e precificação          | pronto (2A e 2B)                   | `specs/002-precificacao.md`              |
+| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)               | `specs/003-pedidos.md`                   |
+| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                   | `specs/004-caixa.md`                     |
+| 5   | Prontidão: conserto e verificação           | 5A pronto, **5B a fazer**          | `specs/005-prontidao.md`                 |
+| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)                   | `specs/006-nota-fiscal.md`               |
+| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)                   | `specs/007-estoque.md`                   |
+| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)                   | `specs/008-onboarding.md`                |
+| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros            | `specs/009-teclado-e-barra.md`           |
+| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro              | `specs/010-resumo-no-whatsapp.md`        |
+| —   | O caixa que não perde a conta               | pronto, sem o roteiro              | `specs/011-caixa-que-nao-perde-conta.md` |
+| —   | O acerto das entregas                       | pronto, sem o roteiro              | `specs/012-entregas-a-pagar.md`          |
+| 13  | A fornada                                   | 13A e 13B prontos, **13C a fazer** | `specs/013-a-fornada.md`                 |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -1297,10 +1299,88 @@ Fora do escopo literal da spec, e por quê:
 duas entradas, a consulta, as frases de `/compras`, `/insumos` e `/insumos/contagem` e o recorte
 da nota não têm teste. O que só o navegador responde está na próxima ação.
 
+## O que a sessão 13B deixou pronto
+
+A pergunta 2 do problema da spec: quantas fornadas dá. **Nenhuma escrita nova, nenhuma coleção,
+nenhum índice, nenhuma rota** — é leitura sobre o que a 13A gravou, e a resposta é sobre hoje.
+
+- `src/lib/domain/producao.ts` ganhou o bloco da capacidade: `capacidadeDaFicha` (as três
+  leituras `MEDIDA` / `PISO` / `DESCONHECIDA`, o gargalo, `fornadas` inteiras e `unidades` pelos
+  lotes fracionários do `#d93`), `prometidoParaPedidos` (o que os pedidos abertos ainda vão levar
+  da despensa, físico, menos o que já virou massa para eles) e `faltaPara` (o que comprar,
+  insumo por insumo, para uma quantidade). `HORIZONTE_MAXIMO` saiu de `ListaDoMercado.tsx` para
+  `listaCompras.ts`, porque agora três telas recortam os pedidos pelo mesmo horizonte.
+- `tests/domain/producao.test.ts`: **11 testes novos** (421 → 432) — tudo contado com o gargalo
+  nomeado, nada contado devolvendo `null` e não zero, contagem vencida valendo sem contagem,
+  `PISO` com o número dos contados, a fornada derrubando a capacidade sem contagem nova, o kit
+  travando na embalagem própria, o prometido descontando e abatendo o que já virou massa, o que
+  falta para 100 cookies, e as três fichas sem pergunta (sem itens, rendimento zero, arquivada).
+- `src/lib/hooks/useDespensaParaProduzir.ts`: **um hook para as três telas** que perguntam à
+  despensa — insumos vivos, fornadas recentes e pedidos do horizonte — e `contextoDaCapacidade`,
+  que monta o `consumo` e o `prometido` deixando de fora o pedido que está sendo perguntado.
+  `TelaCompras` passou a usá-lo no lugar das três consultas que tinha; nada mudou em `/compras`.
+- `src/components/producao/FraseDaCapacidade.tsx`: `FraseDaCapacidade` (a linha de `/fichas`:
+  "dá para 3 fornadas · 66 unidades · Chocolate acaba primeiro", "pelo menos 3 fornadas · Manteiga
+  sem contagem", "não dá nem uma fornada · falta Chocolate" com ícone, "não dá para saber quantas
+  fornadas · Chocolate, Farinha e mais 2 sem contagem") e `FraseCabeNoPedido` (a linha do pedido:
+  "Dá: a despensa tem para 66 unidades hoje, já tirando os outros pedidos", "Falta massa para 34
+  unidades. Comprar 500 g de Chocolate e 631,58 g de Farinha resolve.", e "A massa para este item
+  já está feita" quando a fornada do pedido já cobre a quantidade).
+- `/fichas`: a linha ganhou a frase embaixo de "custa · rende", e o cabeçalho da lista ganhou
+  "Contar a despensa" (`EntradaContagem`) quando alguma ficha visível tem insumo sem contagem. A
+  frase só aparece depois que a despensa chegou — dizer "não dá para saber" por um instante seria
+  mentir por pressa.
+- `/pedidos/[id]` e `/pedidos/novo`: `EditorPedido` assina a despensa **sempre**, e não só em
+  pedido salvo — o pedido novo é onde a pergunta mais importa. `LinhaItemPedido` ganhou um slot
+  `children`, e o formulário refaz a capacidade a cada tecla, tirando do que a linha pede o que
+  já virou massa para este pedido e esta ficha.
+- Decisões novas em `DECISOES.md#d94` (a decisão 7 da spec, como ficou) e `#d95` (o prometido,
+  o hook e onde mora o atalho de contar).
+
+Fora do escopo literal da spec, e por quê:
+
+- **`capacidadeDaFicha` devolve `null`**, e não uma `CapacidadeDaFicha`, para ficha arquivada,
+  sem rendimento ou sem insumo. É o "não quebram nem aparecem" do critério de aceite dito no
+  tipo: a tela não tem como mostrar o que não existe.
+- **`unidades` sai dos lotes fracionários, e não de `fornadas × rendimento`.** A spec foi
+  escrita antes do `#d93`; com a massa feita do tamanho que quiser, 3,33 lotes de uma receita de
+  20 são 66 cookies vendáveis, e dizer 60 recusaria seis que dão.
+- **`PISO` é o número dos insumos contados, dito como "pelo menos".** A spec fala em "o gargalo
+  não é um deles" sem dizer como saber; o único jeito honesto sem usar número vencido é definir o
+  gargalo entre os contados e nomear o resto. Motivo e limite em `#d94`.
+- **O atalho de contar mora no cabeçalho de `/fichas`, e não na linha.** A linha inteira é um
+  link para a ficha, e link dentro de link não existe em HTML.
+
+**O que a 13B não provou.** O de sempre: `npm test` cobre `src/lib/domain/`, então as duas frases,
+o hook, a linha de `/fichas` e a linha do pedido não têm teste. O que só o navegador responde
+está na próxima ação.
+
 ## Próxima ação
 
-**A 13B de `specs/013-a-fornada.md`**, quantas fornadas dá: leitura sobre o que a 13A gravou,
-sem escrita nova. Antes dela, ou junto, o roteiro da 13A em navegador:
+**A decisão sobre a 13D**, que a spec manda tomar depois de duas ou três semanas de 13B em uso,
+e **a 13C de `specs/013-a-fornada.md`** (o piso por ficha e a previsão em destaque), que não
+depende dessa decisão. Antes delas, ou junto, os roteiros da 13A e da 13B em navegador.
+
+Da 13B, o que só o navegador responde:
+
+1. **`/fichas` com tudo contado e fresco**: a linha diz "dá para N fornadas · M unidades · X
+   acaba primeiro", e N é o `floor` do insumo que trava.
+2. **Zerar o chocolate na contagem**: a linha diz "não dá nem uma fornada · falta Chocolate",
+   com o ícone, e não some.
+3. **Deixar a farinha sem contagem** (ou com contagem de mais de 30 dias): a linha diz "pelo
+   menos N fornadas · Farinha sem contagem", e o cabeçalho ganha "Contar a despensa".
+4. **Nada contado**: "não dá para saber quantas fornadas", e nunca zero.
+5. **Registrar uma fornada de `/fichas/[id]`** e voltar para `/fichas`: N cai na hora, sem
+   contagem nova.
+6. **Um pedido novo com 40 cookies numa despensa que dá 66**: a linha diz "Dá: a despensa tem
+   para 66 unidades hoje". Subir para 100: "Falta massa para 34 unidades. Comprar 500 g de
+   Chocolate … resolve." A frase acompanha a tecla.
+7. **Confirmar esse pedido e abrir outro**: o segundo diz "já tirando os outros pedidos" e o
+   número caiu pelo que o primeiro prometeu. Reabrir o primeiro: ele não desconta a si mesmo.
+8. **Registrar a fornada para o pedido** e reabri-lo: a linha diz "A massa para este item já
+   está feita".
+
+Da 13A, o roteiro em navegador:
 
 1. **Contar a farinha hoje e registrar uma fornada datada hoje**, de `/fichas/[id]`: a linha em
    `/insumos` **não** muda, porque o dia da contagem é opaco (`#d89`). Registrar outra datada

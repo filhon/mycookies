@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { RefreshCw, Trash2 } from "lucide-react";
 import { BASE_CONTROLE } from "@/components/ui/Campo";
 import { Dinheiro } from "@/components/ui/Dinheiro";
@@ -31,6 +32,7 @@ export function LinhaItemPedido({
   aoUsarPrecoDeHoje,
   aoRemover,
   erro,
+  children,
 }: {
   nome: string;
   quantidade: string;
@@ -42,6 +44,8 @@ export function LinhaItemPedido({
   aoUsarPrecoDeHoje: () => void;
   aoRemover: () => void;
   erro?: string;
+  /** O que a despensa diz sobre esta quantidade, embaixo da linha. */
+  children?: ReactNode;
 }) {
   return (
     <li className="px-4 py-3 lg:px-5">
@@ -91,6 +95,8 @@ export function LinhaItemPedido({
               {erro}
             </p>
           )}
+
+          {children && <div className="mt-2">{children}</div>}
         </div>
 
         <button
