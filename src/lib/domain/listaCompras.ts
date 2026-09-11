@@ -105,17 +105,17 @@ export interface Demanda {
 
 /** Os insumos de uma ficha, multiplicados pelos lotes que ela vai render. */
 function somarInsumos(
-  ficha: FichaParaExplodir,
+  itens: Iterable<LinhaDeDemanda>,
   lotes: number,
   destino: Map<string, LinhaDeDemanda>,
 ): void {
-  for (const item of ficha.itens) {
+  for (const item of itens) {
     const linha = destino.get(item.insumoId);
     if (linha) linha.quantidade += item.quantidade * lotes;
     else
       destino.set(item.insumoId, {
         insumoId: item.insumoId,
-        nome: item.nomeSnapshot,
+        nome: item.nome,
         quantidade: item.quantidade * lotes,
       });
   }
@@ -124,6 +124,68 @@ function somarInsumos(
 /** Quantidade negativa é dedo errado, e não devolução: vale zero. */
 function quantidadeUtil(quantidade: number): number {
   return Number.isFinite(quantidade) && quantidade > 0 ? quantidade : 0;
+}
+
+/**
+ * Os insumos de **um** lote da ficha, em unidade base e sem perda.
+ *
+ * É aqui que mora a regra do kit de um nível (`DECISOES.md#d11`): os `itens` da
+ * própria ficha entram inteiros, e cada componente entra pelos itens dele,
+ * multiplicados por `quantidade / rendimento` do componente. O componente de um
+ * componente não existe — são dois laços, e não uma chamada recursiva.
+ *
+ * `explodirDemanda` e `consumoPorLote` (a fornada, em `producao.ts`) chamam a
+ * mesma função: se a regra do kit ficasse duplicada, a primeira mudança nela
+ * sairia errada em um dos dois.
+ *
+ * `aoPular` é chamado para o componente que não dá para seguir — arquivado,
+ * sumido ou sem rendimento —, com o nome congelado e o motivo. A lista anota a
+ * pendência; a fornada segue sem ele.
+ */
+export function insumosPorLote(
+  ficha: FichaParaExplodir,
+  porId: Map<string, FichaParaExplodir>,
+  aoPular?: (nome: string, motivo: MotivoPendencia) => void,
+): Map<string, LinhaDeDemanda> {
+  const destino = new Map<string, LinhaDeDemanda>();
+
+  somarInsumos(
+    ficha.itens.map((item) => ({
+      insumoId: item.insumoId,
+      nome: item.nomeSnapshot,
+      quantidade: item.quantidade,
+    })),
+    1,
+    destino,
+  );
+
+  // Um nível, e só um: o componente de um componente não existe.
+  for (const componente of ficha.componentes) {
+    const dentro = porId.get(componente.fichaId);
+    // Sumida ou arquivada, o nome é o congelado no kit; sem rendimento, a
+    // ficha existe e tem nome próprio.
+    if (!dentro || dentro.arquivado) {
+      aoPular?.(componente.nomeSnapshot, "SEM_FICHA");
+      continue;
+    }
+    if (!(dentro.rendimento > 0)) {
+      aoPular?.(dentro.nome, "SEM_RENDIMENTO");
+      continue;
+    }
+
+    const unidades = quantidadeUtil(componente.quantidade);
+    somarInsumos(
+      dentro.itens.map((item) => ({
+        insumoId: item.insumoId,
+        nome: item.nomeSnapshot,
+        quantidade: item.quantidade,
+      })),
+      unidades / dentro.rendimento,
+      destino,
+    );
+  }
+
+  return destino;
 }
 
 /**
@@ -147,9 +209,9 @@ function quantidadeUtil(quantidade: number): number {
  * (`custoFicha.ts` soma os componentes em `custoTotalLote` e só então divide
  * pelo rendimento): assim demanda e custo do mesmo pedido não podem divergir.
  *
- * A recursão para no primeiro nível por construção — são dois laços, e não uma
- * chamada recursiva. É o que `DECISOES.md#d11` garante, e é por isso que esta
- * função vive sem detecção de ciclo.
+ * A recursão para no primeiro nível por construção, em `insumosPorLote`. É o
+ * que `DECISOES.md#d11` garante, e é por isso que esta função vive sem detecção
+ * de ciclo.
  */
 export function explodirDemanda(
   pedidos: PedidoParaExplodir[],
@@ -160,21 +222,8 @@ export function explodirDemanda(
   const pendencias: Pendencia[] = [];
   const pedidoIds: string[] = [];
 
-  /** A ficha existe, está viva e rende alguma coisa? Senão, diz o porquê. */
-  function utilizavel(
-    ficha: FichaParaExplodir | undefined,
-    nomeDeReserva: string,
-  ): ficha is FichaParaExplodir {
-    if (!ficha || ficha.arquivado) {
-      anotarPendencia(pendencias, nomeDeReserva, "SEM_FICHA");
-      return false;
-    }
-    if (!(ficha.rendimento > 0)) {
-      anotarPendencia(pendencias, ficha.nome, "SEM_RENDIMENTO");
-      return false;
-    }
-    return true;
-  }
+  const anotar = (nome: string, motivo: MotivoPendencia) =>
+    anotarPendencia(pendencias, nome, motivo);
 
   for (const pedido of pedidos) {
     pedidoIds.push(pedido.id);
@@ -184,19 +233,21 @@ export function explodirDemanda(
       if (pedida === 0) continue;
 
       const ficha = porId.get(item.fichaTecnicaId);
-      if (!utilizavel(ficha, item.nomeSnapshot)) continue;
+      if (!ficha || ficha.arquivado) {
+        anotar(item.nomeSnapshot, "SEM_FICHA");
+        continue;
+      }
+      if (!(ficha.rendimento > 0)) {
+        anotar(ficha.nome, "SEM_RENDIMENTO");
+        continue;
+      }
 
       const lotes = pedida / ficha.rendimento;
-      somarInsumos(ficha, lotes, destino);
-
-      // Um nível, e só um: o componente de um componente não existe.
-      for (const componente of ficha.componentes) {
-        const dentro = porId.get(componente.fichaId);
-        if (!utilizavel(dentro, componente.nomeSnapshot)) continue;
-
-        const unidades = quantidadeUtil(componente.quantidade) * lotes;
-        somarInsumos(dentro, unidades / dentro.rendimento, destino);
-      }
+      somarInsumos(
+        insumosPorLote(ficha, porId, anotar).values(),
+        lotes,
+        destino,
+      );
     }
   }
 
@@ -246,15 +297,22 @@ export interface LinhaDaLista {
   /** O que precisa sair do mercado para sobrar o necessário depois da perda. */
   quantidadeFisica: number;
   /**
-   * O que foi de fato descontado, e não o que está gravado no insumo.
+   * O que a contagem disse, quando ela ainda vale — e não o que está gravado
+   * no insumo.
    *
    * Zero quando a contagem venceu ou nunca existiu: a linha guarda o número que
    * entrou na conta, e o **motivo** fica no insumo vivo, que a tela tem na mão.
    * Gravar o frescor aqui seria congelar uma idade que envelhece sozinha dentro
    * de um documento que ninguém reescreve.
+   *
+   * O que foi de fato descontado é `max(0, estoqueAtual − consumoDeFornadas)`.
    */
   estoqueAtual: number;
-  /** max(0, física − estoque). É o que falta de fato. */
+  /** O que saiu para o forno desde a contagem deste insumo (`#d87`). */
+  consumoDeFornadas: number;
+  /** O que já foi assado para os pedidos desta lista, físico (`#d91`). */
+  quantidadeJaProduzida: number;
+  /** max(0, física − produzida − disponível). É o que falta de fato. */
   quantidadeComprar: number;
   quantidadeCompra: number;
   unidadeCompra: UnidadeCompra;
@@ -308,20 +366,44 @@ function pacotesPara(comprar: number, quantidadeBase: number): number {
 }
 
 /**
+ * O que o forno já fez, por `insumoId`, para a lista descontar.
+ *
+ * Os dois mapas saem de `producao.ts` — `consumoDesdeAContagem` e
+ * `produzidoParaPedidos` — e chegam aqui prontos: a montagem não lê fornada
+ * nenhuma, só subtrai.
+ */
+export interface ContextoDaProducao {
+  /** Por insumoId, o que saiu para o forno desde a contagem de cada um. */
+  consumo: Map<string, number>;
+  /** Por insumoId, o que já foi assado para os pedidos desta lista. */
+  produzido: Map<string, number>;
+}
+
+/** Sem fornada registrada a lista é exatamente a de antes da spec 013. */
+export const SEM_PRODUCAO: ContextoDaProducao = {
+  consumo: new Map(),
+  produzido: new Map(),
+};
+
+/**
  * Demanda → o que comprar, em pacote e em reais.
  *
  * A ordem das operações é onde esta conta costuma ser feita errado:
  *
  * ```
- * física  = útil / (1 − perda/100)
- * comprar = max(0, física − estoque)
- * pacotes = ceil(comprar / quantidadeBase)
- * custo   = pacotes × precoCompra
+ * física     = útil / (1 − perda/100)
+ * física    −= produzido[insumo]                  ← o que já foi assado (#d91)
+ * disponível = max(0, estoque − consumo[insumo])  ← a projeção (#d87)
+ * comprar    = max(0, física − disponível)
+ * pacotes    = ceil(comprar / quantidadeBase)
+ * custo      = pacotes × precoCompra
  * ```
  *
  * **O estoque é descontado depois da perda**, porque estoque é físico: os 500 g
  * de farinha no armário também vão perder 5% quando forem usados. Descontar
- * antes misturaria uma grandeza com a outra.
+ * antes misturaria uma grandeza com a outra. **E o abate da fornada acontece do
+ * lado físico pelo mesmo motivo**: `Fornada.consumo` já está em quantidade
+ * física, e subtrair físico de útil somaria duas grandezas diferentes.
  *
  * **E o estoque só entra na conta se a contagem ainda valer.** Quem responde
  * isso é `estoqueParaLista`, contra `hojeISO`: contagem vencida e contagem
@@ -329,6 +411,10 @@ function pacotesPara(comprar: number, quantidadeBase: number): number {
  * escolha é entre dois erros e eles não custam o mesmo — descontar número velho
  * erra para baixo e produz a compra faltando, e é este mesmo arquivo que
  * registra qual dos dois é o inaceitável, no comentário de `MotivoPendencia`.
+ *
+ * `producao` é opcional **de propósito**: sem ele a função é exatamente a de
+ * antes, e os testes da 7B continuam passando sem uma linha alterada. É a prova
+ * de que a spec 013 é aditiva.
  *
  * `custoEstimado` conta pacotes inteiros, e não a fração necessária: é o número
  * que ela vai gastar de fato, que é a única versão desse número que serve para
@@ -341,6 +427,7 @@ export function montarLista(
   demanda: Demanda,
   insumos: InsumoParaLista[],
   hojeISO: DataISO,
+  producao: ContextoDaProducao = SEM_PRODUCAO,
 ): ListaMontada {
   const porId = new Map(insumos.map((insumo) => [insumo.id, insumo]));
   const pendencias: Pendencia[] = [...demanda.pendencias];
@@ -355,9 +442,12 @@ export function montarLista(
 
     const necessaria = pedido.quantidade;
     const fisica = quantidadeFisica(necessaria, insumo.perdaPercentual);
+    const produzida = producao.produzido.get(insumo.id) ?? 0;
     const estoque = estoqueParaLista(insumo, hojeISO);
+    const consumo = producao.consumo.get(insumo.id) ?? 0;
+    const disponivel = Math.max(0, estoque - consumo);
 
-    const falta = fisica - estoque;
+    const falta = Math.max(0, fisica - produzida) - disponivel;
     const comprar = falta > FOLGA ? falta : 0;
     const pacotes = pacotesPara(comprar, insumo.quantidadeBase);
 
@@ -371,6 +461,8 @@ export function montarLista(
       quantidadeNecessaria: necessaria,
       quantidadeFisica: fisica,
       estoqueAtual: estoque,
+      consumoDeFornadas: consumo,
+      quantidadeJaProduzida: produzida,
       quantidadeComprar: comprar,
       quantidadeCompra: insumo.quantidadeCompra,
       unidadeCompra: insumo.unidadeCompra,
@@ -484,6 +576,11 @@ export function preservarComprados<T extends { insumoId: string }>(
  * `ORCAMENTO` fica de fora porque comprar insumo para uma proposta que talvez
  * não feche é dinheiro parado na despensa. `ENTREGUE` e `CANCELADO` também,
  * pelo motivo oposto — um já foi produzido, o outro não vai ser.
+ *
+ * `PRONTO` **fica**, mesmo que pronto queira dizer assado: "pronto" é o que ela
+ * clicou, e a fornada é o que ela registrou. Quem abate o que já foi assado é
+ * `Fornada.pedidoId`, na montagem — o que de fato aconteceu, e não o status
+ * (`DECISOES.md#d91`).
  */
 export const STATUS_NA_LISTA: StatusPedido[] = [
   "CONFIRMADO",

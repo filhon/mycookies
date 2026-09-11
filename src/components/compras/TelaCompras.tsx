@@ -7,9 +7,16 @@ import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { HORIZONTE_MAXIMO, ListaDoMercado } from "./ListaDoMercado";
 import { dataISODe, diaVizinho } from "@/lib/domain/datas";
 import { colFichas, colInsumos, colPedidos } from "@/lib/firebase/colecoes";
+import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
 import { consultaListaAtual } from "@/lib/firebase/mutations/listasCompra";
 import { useColecao } from "@/lib/hooks/useColecao";
-import type { FichaTecnica, Insumo, ListaCompras, Pedido } from "@/lib/types";
+import type {
+  FichaTecnica,
+  Fornada,
+  Insumo,
+  ListaCompras,
+  Pedido,
+} from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
 
 /**
@@ -62,16 +69,24 @@ export function TelaCompras() {
     [contaId],
   );
 
+  // O que a massa já levou: a lista desconta da despensa e abate do pedido.
+  const consultaProducao = useMemo(
+    () => consultaFornadas(contaId, hoje),
+    [contaId, hoje],
+  );
+
   const listas = useColecao<ListaCompras>(consultaLista);
   const pedidos = useColecao<Pedido>(consultaPedidos);
   const fichas = useColecao<FichaTecnica>(consultaFichas);
   const insumos = useColecao<Insumo>(consultaInsumos);
+  const fornadas = useColecao<Fornada>(consultaProducao);
 
   const carregando =
     listas.carregando ||
     pedidos.carregando ||
     fichas.carregando ||
-    insumos.carregando;
+    insumos.carregando ||
+    fornadas.carregando;
 
   if (carregando) {
     return (
@@ -102,6 +117,7 @@ export function TelaCompras() {
       pedidos={pedidos.dados}
       fichas={fichas.dados}
       insumos={insumos.dados}
+      fornadas={fornadas.dados}
       hoje={hoje}
       pendente={listas.pendente || insumos.pendente}
     />

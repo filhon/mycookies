@@ -5,6 +5,7 @@ export * from "./insumos";
 export * from "./fichas";
 export * from "./vendas";
 export * from "./financeiro";
+export * from "./producao";
 
 /**
  * Mapa único de caminhos do Firestore. É o único lugar que conhece o formato.
@@ -24,6 +25,7 @@ export const caminhos = {
   clientes: (contaId: string) => `contas/${contaId}/clientes`,
   pedidos: (contaId: string) => `contas/${contaId}/pedidos`,
   listasCompra: (contaId: string) => `contas/${contaId}/listasCompra`,
+  fornadas: (contaId: string) => `contas/${contaId}/fornadas`,
   transacoes: (contaId: string) => `contas/${contaId}/transacoes`,
   metas: (contaId: string) => `contas/${contaId}/metas`,
   agregados: (contaId: string) => `contas/${contaId}/agregados`,

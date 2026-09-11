@@ -33,6 +33,10 @@ import {
   type Pendencia,
 } from "@/lib/domain/listaCompras";
 import { resumoDosItens } from "@/lib/domain/pedido";
+import {
+  consumoDesdeAContagem,
+  produzidoParaPedidos,
+} from "@/lib/domain/producao";
 import { guardarSemente } from "@/lib/estado/sementeDaContagem";
 import {
   arquivarListaCompras,
@@ -45,6 +49,7 @@ import type {
   Centavos,
   DataISO,
   FichaTecnica,
+  Fornada,
   Insumo,
   ItemListaCompras,
   ListaCompras,
@@ -77,6 +82,7 @@ export function ListaDoMercado({
   pedidos,
   fichas,
   insumos,
+  fornadas,
   hoje,
   pendente,
 }: {
@@ -87,6 +93,8 @@ export function ListaDoMercado({
   pedidos: Pedido[];
   fichas: FichaTecnica[];
   insumos: Insumo[];
+  /** As fornadas recentes: o que saiu da despensa e o que já virou massa. */
+  fornadas: Fornada[];
   hoje: DataISO;
   pendente: boolean;
 }) {
@@ -110,11 +118,20 @@ export function ListaDoMercado({
     [pedidos, hoje, periodoFim],
   );
 
-  /** A lista como ela ficaria se fosse montada agora. É o que "Refazer" grava. */
-  const montada = useMemo(
-    () => montarLista(explodirDemanda(noPeriodo, fichas), insumos, hoje),
-    [noPeriodo, fichas, insumos, hoje],
-  );
+  /**
+   * A lista como ela ficaria se fosse montada agora. É o que "Refazer" grava.
+   *
+   * Com a massa dentro: o que saiu desde a contagem de cada insumo desce da
+   * despensa, e o que já virou massa **para estes pedidos** sai da demanda. Sem
+   * fornada registrada, os dois mapas são vazios e a lista é a de sempre.
+   */
+  const montada = useMemo(() => {
+    const demanda = explodirDemanda(noPeriodo, fichas);
+    return montarLista(demanda, insumos, hoje, {
+      consumo: consumoDesdeAContagem(fornadas, insumos),
+      produzido: produzidoParaPedidos(fornadas, demanda.pedidoIds),
+    });
+  }, [noPeriodo, fichas, insumos, fornadas, hoje]);
 
   const porInsumo = useMemo(
     () => new Map(insumos.map((insumo) => [insumo.id, insumo])),
@@ -403,8 +420,9 @@ export function ListaDoMercado({
                     Não precisa comprar
                   </h2>
                   <p className="mt-1 max-w-[56ch] text-label text-ink-muted">
-                    A contagem que você fez já cobre estes. Eles ficam à vista
-                    para você conferir, em vez de sumirem da lista.
+                    A contagem que você fez, ou a fornada que você registrou, já
+                    cobre estes. Eles ficam à vista para você conferir, em vez
+                    de sumirem da lista.
                   </p>
                 </div>
                 <ul className="divide-y divide-line">

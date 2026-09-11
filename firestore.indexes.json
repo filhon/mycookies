@@ -50,6 +50,14 @@
       ]
     },
     {
+      "collectionGroup": "fornadas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "arquivado", "order": "ASCENDING" },
+        { "fieldPath": "dataISO", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "transacoes",
       "queryScope": "COLLECTION",
       "fields": [

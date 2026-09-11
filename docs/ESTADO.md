@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-10 (spec 012, o acerto das entregas).
+Atualizado em 2026-09-11 (spec 013, sessão 13A: a fornada existe e come a despensa).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -74,6 +74,17 @@ passava por lugar nenhum, e o resultado do mês ficava alto por causa disso. Ago
 a faixa "Entregas a pagar", o acerto vira uma saída em `ENTREGA` no caixa, e desfazer devolve
 tudo. **O roteiro de navegador de cinco passos dela não rodou.**
 
+A spec `013-a-fornada.md` está **na primeira de quatro sessões**: a **13A está entregue** — a
+fornada existe como fato do sistema, desconta a despensa na leitura sem tocar na contagem, e a
+lista de compras deixa de comprar o que já foi assado para o pedido. Faltam a `13B` (quantas
+fornadas dá), a `13C` (o piso e a previsão em destaque) e a `13D` (o que está pronto, que pode
+não ser precisa), mais a `13E` reservada. É a primeira vez que o sistema enxerga a produção, e
+é a resposta à pergunta que a 007 deixou em aberto: entre uma contagem e a seguinte ela assa, e
+o sistema não sabe. Das quatro aprovações da spec, a 13A usou três — a coleção `fornadas`, o
+índice (publicado) e a mudança de comportamento de `montarLista`; os campos novos em
+`FichaTecnica` são da 13C e da 13D. Regra de segurança não mudou, e nenhuma dependência entrou.
+**O roteiro de navegador dela não rodou.**
+
 Fora das specs, o projeto foi **preparado para publicar no Vercel** em 2026-09-03: a
 credencial do Admin SDK deixou de exigir um arquivo em disco, a falta dela parou de ser
 confundida com login inválido, e `functions/` saiu do `tsconfig` da raiz — sem isso o build
@@ -107,7 +118,7 @@ da hospedagem falharia. O guia é `docs/DEPLOY.md`. **Nada foi publicado ainda**
 > mudou de arquivo. Se algo em `insumos`, em `/compras` ou na leitura de nota aparecer torto na
 > 5B, estes são os primeiros suspeitos depois dos que a 6A abriu.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **394
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **421
 testes**, e build com 16 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
 `/insumos/contagem` na 7A e `/comecar` na 8A — mais `/api/nota`, `/fichas/[id]` e
 `/pedidos/[id]` dinâmicas e service worker gerado.
@@ -118,7 +129,8 @@ chave de conta de serviço no disco (fora do git, coberta por `*firebase-adminsd
 e levou junto o de `fichas`, pendente desde a 2B; a 3A rodou de novo com os dois novos, a 3B
 com o do pedido pago e a 3C com o da lista de compras. Confirmado com
 `firebase firestore:indexes`: `insumos`, `fichas`, `transacoes`, `clientes` (`arquivado` +
-`nomeBusca`), `listasCompra` (`arquivado` + `criadoEm` desc) e `pedidos` em dois — `arquivado`
+`nomeBusca`), `listasCompra` (`arquivado` + `criadoEm` desc), `fornadas` (`arquivado` +
+`dataISO` desc, publicado na 13A) e `pedidos` em dois — `arquivado`
 
 - `dataEntregaISO` para a agenda, e `arquivado` + `competenciaPagamento` + `pagoEm` desc para
   "Recalcular o mês".
@@ -140,22 +152,23 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 
 ## Módulos
 
-| #   | Módulo                                      | Estado                    | Spec                                     |
-| --- | ------------------------------------------- | ------------------------- | ---------------------------------------- |
-| 0   | Fundação: design system, shell, acesso, PWA | pronto                    | —                                        |
-| 1   | Insumos e embalagens                        | pronto                    | —                                        |
-| —   | Contas e tenancy                            | pronto                    | `specs/000-contas.md`                    |
-| 2   | Custos operacionais e precificação          | pronto (2A e 2B)          | `specs/002-precificacao.md`              |
-| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)      | `specs/003-pedidos.md`                   |
-| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)          | `specs/004-caixa.md`                     |
-| 5   | Prontidão: conserto e verificação           | 5A pronto, **5B a fazer** | `specs/005-prontidao.md`                 |
-| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)          | `specs/006-nota-fiscal.md`               |
-| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)          | `specs/007-estoque.md`                   |
-| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)          | `specs/008-onboarding.md`                |
-| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros   | `specs/009-teclado-e-barra.md`           |
-| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro     | `specs/010-resumo-no-whatsapp.md`        |
-| —   | O caixa que não perde a conta               | pronto, sem o roteiro     | `specs/011-caixa-que-nao-perde-conta.md` |
-| —   | O acerto das entregas                       | pronto, sem o roteiro     | `specs/012-entregas-a-pagar.md`          |
+| #   | Módulo                                      | Estado                      | Spec                                     |
+| --- | ------------------------------------------- | --------------------------- | ---------------------------------------- |
+| 0   | Fundação: design system, shell, acesso, PWA | pronto                      | —                                        |
+| 1   | Insumos e embalagens                        | pronto                      | —                                        |
+| —   | Contas e tenancy                            | pronto                      | `specs/000-contas.md`                    |
+| 2   | Custos operacionais e precificação          | pronto (2A e 2B)            | `specs/002-precificacao.md`              |
+| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)        | `specs/003-pedidos.md`                   |
+| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)            | `specs/004-caixa.md`                     |
+| 5   | Prontidão: conserto e verificação           | 5A pronto, **5B a fazer**   | `specs/005-prontidao.md`                 |
+| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)            | `specs/006-nota-fiscal.md`               |
+| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)            | `specs/007-estoque.md`                   |
+| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)            | `specs/008-onboarding.md`                |
+| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros     | `specs/009-teclado-e-barra.md`           |
+| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro       | `specs/010-resumo-no-whatsapp.md`        |
+| —   | O caixa que não perde a conta               | pronto, sem o roteiro       | `specs/011-caixa-que-nao-perde-conta.md` |
+| —   | O acerto das entregas                       | pronto, sem o roteiro       | `specs/012-entregas-a-pagar.md`          |
+| 13  | A fornada                                   | 13A pronto, **13B a fazer** | `specs/013-a-fornada.md`                 |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -1207,7 +1220,106 @@ funções novas têm teste e o lançamento, o lote e o painel não têm. O rotei
 spec é o único lugar onde o acerto pode ser visto acontecer — e o passo 4, com a rede em
 Offline, é o que separa esta spec de uma que só funciona na bancada com sinal.
 
+## O que a sessão 13A deixou pronto
+
+O ciclo do fato: registrar o que assou, ver a despensa descer por causa disso, e a lista de
+compras parar de comprar o que já foi assado. **Nenhuma pergunta nova é respondida** — capacidade
+é a 13B. Uma coleção nova, um módulo de domínio novo, um índice publicado, nenhuma rota, nenhuma
+dependência, regra de segurança intacta.
+
+- `src/lib/types/producao.ts`: `Fornada` e `ConsumoDaFornada`, com `caminhos.fornadas`,
+  `colFornadas` e `docFornada` acompanhando.
+- `src/lib/domain/producao.ts`, módulo novo e puro: `consumoPorLote` (a receita passada pela
+  perda), `fornadaGravavel` (unidades → lotes fracionários → consumo, com o `floor` em `un`),
+  `fornadasDesdeAContagem` e `consumoDesdeAContagem` (a janela `dataISO > contadoEmISO`, por
+  insumo), `disponivelParaProducao` (a projeção, nunca negativa), `projecaoDoInsumo` (o que a
+  linha da despensa diz) e `produzidoParaPedidos` (o abate).
+- `listaCompras.ts`: **`insumosPorLote` extraída de `explodirDemanda`** — a regra do kit de um
+  nível mora numa função só, e os 41 testes da 3C/7B passaram sem uma linha alterada, que era o
+  critério. `montarLista` ganhou o quarto parâmetro opcional `ContextoDaProducao`, e
+  `LinhaDaLista` os campos `consumoDeFornadas` e `quantidadeJaProduzida`; `ItemListaCompras` os
+  ganhou opcionais e `itemDaLinha` os grava.
+- `tests/domain/producao.test.ts`: **27 testes** (394 → 421) — a fornada no dia da contagem e no
+  dia seguinte, o insumo sem data, o kit de um nível conferido contra `explodirDemanda`, a
+  produção parcial de um pedido, a fornada de ficha arquivada (a projeção não lê a ficha), a
+  fornada sem pedido descendo a despensa **e** a lista continuando a comprar, e a fornada com
+  pedido deixando de comprar para ele, com o abate do lado físico.
+- `mutations/fornadas.ts`: `consultaFornadas` (vivas, últimos 30 dias, `arquivado` + `dataISO`
+  desc), `registrarFornada` (id no aparelho, `setDoc` despachado, não espera o servidor) e
+  `arquivarFornada`. **Nenhuma fornada é apagada**, e a mutação não importa caixa nem meta.
+- `src/components/producao/PainelFornada.tsx`: a folha — a ficha (fixa, ou `Seletor` quando o
+  pedido tem mais de uma), **massa para quantas unidades**, o dia, a frase "a receita rende 25
+  unidades por lote · 15 são 0,75 lote", e embaixo **o que sai da despensa, linha por linha,
+  antes de salvar**: "você tem 1,2 kg → fica 674 g · contada há 5 dias", "sem contagem
+  recente", e o aviso com ícone quando a projeção não dá para a massa.
+- Duas entradas: a faixa **"Fiz a massa"** no topo de `/fichas/[id]` (ficha salva, com
+  rendimento e itens, abrindo com o rendimento de um lote), e **"Registrar fornada"** no bloco
+  de status de `/pedidos/[id]`, com as fichas do pedido, a quantidade pedida e `pedidoId`
+  amarrado.
+- `src/components/producao/FornadasRecentes.tsx`: as massas registradas desta ficha (ou deste
+  pedido), com **"Desfazer"** em dois toques, que chama `arquivarFornada`. É o único caminho
+  para o critério "arquivar uma fornada a tira da projeção" existir na tela — sem ele a mutação
+  existia e ela não tinha como chegar nela. Não é histórico: são as dos últimos 30 dias.
+- `/compras` monta a lista com a massa dentro: `consumoDesdeAContagem` e `produzidoParaPedidos`
+  entram no `montarLista`, e `LinhaCompra` e `LinhaJaTem` dizem "X já viraram massa para o
+  pedido" e "Y foram para a massa desde a contagem" com ícone. "Você tem" no bloco de já-tem é
+  a projeção.
+- `/insumos` e `/insumos/contagem` mostram a projeção ao lado da contagem gravada, que **não
+  muda**: "1,2 kg na despensa · contada há 5 dias" e, embaixo, "2 fornadas desde então ·
+  projetamos 674 g". O campo da contagem continua nascendo vazio (`#d59`).
+- **Carona 1:** vinda da nota ou da compra, a contagem abre recortada em "Só o que a nota
+  trouxe (5)", com "A despensa inteira (34)" ao lado, em pílulas como as de período em
+  `/compras`. O rodapé conta o que está na tela; salvar grava tudo o que foi tocado.
+- **Carona 2 já estava feita:** "Guardar na despensa" era a ação primária da etapa "pronto" da
+  nota desde a 7B, com "Ler outra nota" secundária. Nada mudou ali.
+- Índice `fornadas` publicado com `firebase deploy --only firestore:indexes`.
+- Decisões novas em `DECISOES.md#d86` a `#d92` — as sete da abertura da spec que a 13A executa
+  (1, 2, 3, 4, 5, 6 e 9); a 7 e a 8 são da 13B e da 13C. E **`#d93`, por esclarecimento da
+  dona do negócio no fim da sessão**: fornada é a massa feita e congelada, assada sob demanda;
+  o campo virou unidades (lotes derivados, fracionários), a cópia deixou de falar em forno, e
+  a 13D ganhou motivo para existir. A spec 013 não foi reescrita — o `#d93` é o registro.
+
+Fora do escopo literal da spec, e por quê:
+
+- **`insumosPorLote` devolve `Map<string, LinhaDeDemanda>`**, e não `Map<string, number>`. A
+  fornada grava `nomeSnapshot` por insumo, e num kit o nome só existe nas fichas de dentro.
+  `consumoPorLote` devolve `ConsumoDaFornada[]` pelo mesmo motivo. Está em `#d86`.
+- **A folha não tem busca solta de ficha nem o campo "para qual pedido".** Não há entrada solta:
+  as duas entradas já sabem a ficha, e só a do pedido sabe o pedido. Amarrar de dentro da ficha
+  exigiria consultar os pedidos abertos daquela ficha, com índice que a spec não pediu (`#d91`).
+- **`consultaFornadas` recorta em 30 dias.** Contagem mais velha já vale "não sei"; o preço
+  conhecido está em `#d87` e num comentário `ponytail:` na consulta.
+- **O recorte da nota cai para a despensa inteira quando fica vazio.** O insumo que a nota
+  acabou de cadastrar pode ainda não ter chegado do cache, e uma tela vazia com "Cadastrar
+  insumo" seria mentira.
+
+**O que a 13A não provou.** O de sempre: `npm test` cobre `src/lib/domain/`, então a folha, as
+duas entradas, a consulta, as frases de `/compras`, `/insumos` e `/insumos/contagem` e o recorte
+da nota não têm teste. O que só o navegador responde está na próxima ação.
+
 ## Próxima ação
+
+**A 13B de `specs/013-a-fornada.md`**, quantas fornadas dá: leitura sobre o que a 13A gravou,
+sem escrita nova. Antes dela, ou junto, o roteiro da 13A em navegador:
+
+1. **Contar a farinha hoje e registrar uma fornada datada hoje**, de `/fichas/[id]`: a linha em
+   `/insumos` **não** muda, porque o dia da contagem é opaco (`#d89`). Registrar outra datada
+   amanhã: a linha diz "1 fornada desde então · projetamos …", e `estoqueAtual` continua sendo o
+   número contado.
+2. **Um documento em `contas/mycookies/fornadas`** por fornada, com `consumo` em quantidade
+   física (a farinha com 5% de perda grava 526,32 g por lote de 500 g úteis) e
+   `unidadesProduzidas` inteiro.
+3. **Pedido confirmado, fornada registrada para ele por `/pedidos/[id]`, "Refazer" em
+   `/compras`**: a linha diz "já assados para o pedido" e o pacote some do carrinho.
+4. **Fornada sem pedido**: a lista continua comprando para os pedidos, e "você tem" no bloco
+   de já-tem desce. Os dois efeitos ao mesmo tempo.
+5. **Contar de novo**: a projeção volta ao número contado, e nada além da contagem foi escrito.
+6. **Vindo da nota**: a contagem abre recortada nas linhas da nota, e a pílula "A despensa
+   inteira" devolve tudo.
+7. **Massa para 15 numa receita de 20**: a folha diz "0,75 lote", e o consumo gravado é 3/4 do
+   lote — é a decisão do `#d93` acontecendo sobre dado real.
+8. **A folha no celular e no desktop**, com a rede em Offline: fecha no toque, o selo acusa
+   pendência, e a projeção já desce.
 
 **Recalcular os meses tortos**, com o código no ar e com rede: abrir `/financeiro` e, para cada
 mês que o aviso do `#d81` acusar, apertar "Recalcular o mês". Setembro de 2026 é o mês da
@@ -1563,3 +1675,7 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | `lucroEstimado` do pedido continua com a taxa de entrega dentro               | `domain/pedido.ts`                                           | Quem fecha a conta é o caixa; corrigir mexeria em todo pedido gravado (`#d82`)         |
 | A entrega que ela esqueceu de marcar só é paga na semana seguinte             | `domain/pedido.ts`                                           | Não tem conserto em código: a frase do painel é a defesa (`#d83`)                      |
 | A faixa, o painel, o lote do repasse e a saída em `ENTREGA` sem teste         | `components/pedidos/`                                        | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador              |
+| A fornada existe e depende de ela registrar: sem registrar, nada muda         | `components/producao/`                                       | Não tem conserto em código: a spec é aditiva de propósito (`#d91`)                     |
+| Fornada com `pedidoId` mais velha que 30 dias sai do abate do pedido          | `mutations/fornadas.ts`                                      | Se houver encomenda assada com mais de um mês: a janela vira a maior data de entrega   |
+| A fornada aberta pela ficha nasce sem pedido, mesmo quando era para um        | `FormularioFicha.tsx`                                        | Se ela registrar pela ficha e a lista comprar de novo: índice `fichaIds` + `arquivado` |
+| A folha, as duas entradas, a consulta e as frases do forno sem teste          | `components/producao/`, `compras/`, `estoque/`               | `npm test` cobre só `domain/`; o que fecha isso é o roteiro da 13A em navegador        |

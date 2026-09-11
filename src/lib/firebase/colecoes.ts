@@ -14,6 +14,7 @@ import type {
   ConfiguracaoGeral,
   Conta,
   FichaTecnica,
+  Fornada,
   Insumo,
   ListaCompras,
   Meta,
@@ -67,6 +68,8 @@ export const colListasCompra = (contaId: string) =>
 export const colTransacoes = (contaId: string) =>
   col<Transacao>(caminhos.transacoes(contaId));
 export const colMetas = (contaId: string) => col<Meta>(caminhos.metas(contaId));
+export const colFornadas = (contaId: string) =>
+  col<Fornada>(caminhos.fornadas(contaId));
 
 export const docInsumo = (
   contaId: string,
@@ -80,6 +83,8 @@ export const docCliente = (contaId: string, id: string) =>
   doc(colClientes(contaId), id);
 export const docListaCompras = (contaId: string, id: string) =>
   doc(colListasCompra(contaId), id);
+export const docFornada = (contaId: string, id: string) =>
+  doc(colFornadas(contaId), id);
 
 /**
  * A meta de um mês, com a competência como id.

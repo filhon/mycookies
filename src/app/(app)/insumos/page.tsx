@@ -17,8 +17,9 @@ import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { dataISODe } from "@/lib/domain/datas";
 import { colInsumos } from "@/lib/firebase/colecoes";
+import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
 import { useColecao } from "@/lib/hooks/useColecao";
-import type { CategoriaInsumo, Insumo } from "@/lib/types";
+import type { CategoriaInsumo, Fornada, Insumo } from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
 import { cn } from "@/lib/utils/cn";
 
@@ -58,6 +59,13 @@ export default function PaginaInsumos() {
   );
 
   const { dados, carregando, erro, pendente } = useColecao<Insumo>(consulta);
+
+  // O que o forno levou desde a contagem de cada um: a linha diz a projeção.
+  const consultaProducao = useMemo(
+    () => consultaFornadas(contaId, hoje),
+    [contaId, hoje],
+  );
+  const { dados: fornadas } = useColecao<Fornada>(consultaProducao);
 
   const visiveis = useMemo(() => {
     const termo = chaveDeBusca(busca);
@@ -212,6 +220,7 @@ export default function PaginaInsumos() {
               <LinhaInsumo
                 key={insumo.id}
                 insumo={insumo}
+                fornadas={fornadas}
                 hoje={hoje}
                 aoAbrir={abrirEdicao}
               />

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Pencil, TriangleAlert } from "lucide-react";
+import { Check, CookingPot, Pencil, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { Botao } from "@/components/ui/Botao";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
@@ -57,6 +57,7 @@ export function LinhaCompra({
   // A idade sai do insumo **vivo**, e não da linha gravada: uma idade congelada
   // dentro de um documento que ninguém reescreve envelhece errado.
   const contagem = fraseDaContagem(insumo, item.unidadeBase, hoje);
+  const forno = fraseDoForno(item);
 
   return (
     <li className={cn(comprado && "bg-sunken")}>
@@ -115,6 +116,19 @@ export function LinhaCompra({
                   />
                 )}
                 <span className="truncate">{contagem.frase}</span>
+              </span>
+            )}
+
+            {/* O que a massa já fez com esta linha: é o que explica um número
+                menor do que o pedido pede, ou maior do que a contagem sugere. */}
+            {forno && (
+              <span className="num mt-1 flex items-center gap-1.5 text-micro text-ink-subtle">
+                <CookingPot
+                  aria-hidden
+                  className="size-3 shrink-0"
+                  strokeWidth={2}
+                />
+                <span className="truncate">{forno}</span>
               </span>
             )}
           </span>
@@ -212,6 +226,31 @@ function fraseDaContagem(
 }
 
 /**
+ * O que a lista descontou por causa da massa, quando descontou alguma coisa.
+ *
+ * Duas parcelas, as duas gravadas na linha (`#d87`, `#d91`): o que já virou
+ * massa para os pedidos desta lista, que saiu da demanda; e o que foi para a
+ * massa desde a contagem, que saiu do que ela tem. A segunda só vale a frase
+ * quando havia contagem de que descontar — contagem vencida já diz "não
+ * descontamos", e um consumo em cima de nada seria ruído.
+ */
+function fraseDoForno(item: ItemListaCompras): string | null {
+  const produzida = item.quantidadeJaProduzida ?? 0;
+  const consumo = item.consumoDeFornadas ?? 0;
+  const quanto = (valor: number) => formatarQuantidade(valor, item.unidadeBase);
+
+  const partes: string[] = [];
+  if (produzida > 0) {
+    partes.push(`${quanto(produzida)} já viraram massa para o pedido`);
+  }
+  if (consumo > 0 && item.estoqueAtual > 0) {
+    partes.push(`${quanto(consumo)} foram para a massa desde a contagem`);
+  }
+
+  return partes.length > 0 ? partes.join(" · ") : null;
+}
+
+/**
  * O preço corrigido na frente da gôndola.
  *
  * Abre dentro da própria linha, e não em painel: ela está com uma mão no
@@ -290,22 +329,39 @@ export function LinhaJaTem({
   hoje: DataISO;
 }) {
   const idade = insumo ? rotuloDeIdade(contagemDoInsumo(insumo, hoje)) : null;
+  const forno = fraseDoForno(item);
+  // O que ela tem é a projeção: a contagem menos o que o forno levou depois.
+  const tem = Math.max(0, item.estoqueAtual - (item.consumoDeFornadas ?? 0));
+  const produzida = item.quantidadeJaProduzida ?? 0;
 
   return (
     <li className="flex min-h-14 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 lg:px-5">
       <p className="min-w-0 truncate text-body text-ink">{item.nome}</p>
       <p className="num shrink-0 text-label text-ink-muted">
-        precisa de{" "}
-        {formatarQuantidade(item.quantidadeNecessaria, item.unidadeBase)}
-        <span className="mx-1.5 text-ink-subtle">·</span>
-        você tem {formatarQuantidade(item.estoqueAtual, item.unidadeBase)}
-        {idade && (
+        {/* Coberto só pela fornada: "você tem 0 g" seria verdade e ruído. */}
+        {produzida > 0 && tem === 0 ? (
+          "já virou massa para o pedido"
+        ) : (
           <>
+            precisa de{" "}
+            {formatarQuantidade(item.quantidadeNecessaria, item.unidadeBase)}
             <span className="mx-1.5 text-ink-subtle">·</span>
-            {idade}
+            você tem {formatarQuantidade(tem, item.unidadeBase)}
+            {idade && (
+              <>
+                <span className="mx-1.5 text-ink-subtle">·</span>
+                {idade}
+              </>
+            )}
           </>
         )}
       </p>
+      {forno && (
+        <p className="num flex basis-full items-center gap-1.5 text-micro text-ink-subtle">
+          <CookingPot aria-hidden className="size-3 shrink-0" strokeWidth={2} />
+          <span className="truncate">{forno}</span>
+        </p>
+      )}
     </li>
   );
 }

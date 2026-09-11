@@ -19,15 +19,18 @@ import {
   resumoDaContagem,
   textoContado,
 } from "@/lib/domain/estoque";
+import { projecaoDoInsumo } from "@/lib/domain/producao";
 import { lerSemente, limparSemente } from "@/lib/estado/sementeDaContagem";
 import { colInsumos } from "@/lib/firebase/colecoes";
 import {
   salvarContagem,
   type ContagemGravavel,
 } from "@/lib/firebase/mutations/estoque";
+import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
 import { useColecao } from "@/lib/hooks/useColecao";
-import type { Insumo } from "@/lib/types";
+import type { Fornada, Insumo } from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
+import { cn } from "@/lib/utils/cn";
 
 /**
  * Sem compra atrás dela, a tela nasce com todos os campos vazios. O mapa vazio
@@ -64,6 +67,11 @@ export function TelaContagem() {
   const [semente] = useState(lerSemente);
   const semeados = useRef(false);
 
+  // Vinda da nota, a tela abre recortada no que a nota trouxe: uma nota de
+  // cinco linhas abria trinta e quatro campos, e ela caçava os cinco. É um
+  // filtro sobre as linhas, e desligá-lo devolve a despensa inteira.
+  const [soDaCompra, setSoDaCompra] = useState(() => lerSemente() !== null);
+
   const consulta = useMemo(
     () =>
       query(
@@ -73,6 +81,10 @@ export function TelaContagem() {
       ),
     [contaId],
   );
+  const consultaProducao = useMemo(
+    () => consultaFornadas(contaId, hoje),
+    [contaId, hoje],
+  );
 
   const {
     dados: insumos,
@@ -80,10 +92,32 @@ export function TelaContagem() {
     erro,
     pendente,
   } = useColecao<Insumo>(consulta);
+  const { dados: fornadas } = useColecao<Fornada>(consultaProducao);
 
-  const linhas = useMemo(
+  const todas = useMemo(
     () => linhasParaContar(insumos, semente?.entradas ?? SEM_ENTRADAS, hoje),
     [insumos, semente, hoje],
+  );
+  const linhas = useMemo(() => {
+    if (!soDaCompra || !semente) return todas;
+    const recorte = todas.filter((linha) =>
+      semente.entradas.has(linha.insumoId),
+    );
+    // Recorte vazio é a despensa inteira, e não a tela vazia: acontece quando
+    // o insumo que a nota acabou de cadastrar ainda não chegou do cache.
+    return recorte.length > 0 ? recorte : todas;
+  }, [todas, soDaCompra, semente]);
+
+  /** O que o forno levou de cada insumo desde a contagem dele (`#d87`). */
+  const projecoes = useMemo(
+    () =>
+      new Map(
+        insumos.map((insumo) => [
+          insumo.id,
+          projecaoDoInsumo(fornadas, insumo, hoje),
+        ]),
+      ),
+    [fornadas, insumos, hoje],
   );
 
   /**
@@ -95,27 +129,29 @@ export function TelaContagem() {
    * sendo dela, e o que muda é só quanto ela precisa digitar.
    */
   useEffect(() => {
-    if (semeados.current || !semente || linhas.length === 0) return;
+    if (semeados.current || !semente || todas.length === 0) return;
     semeados.current = true;
 
     setDigitados(
       Object.fromEntries(
-        linhas
+        todas
           .filter((linha) => linha.sugestao !== null)
           .map((linha) => [linha.insumoId, textoContado(linha.sugestao ?? 0)]),
       ),
     );
     limparSemente();
-  }, [linhas, semente]);
+  }, [todas, semente]);
 
   const valores = useMemo(() => {
     const mapa: Record<string, number | null> = {};
-    for (const linha of linhas) {
+    for (const linha of todas) {
       mapa[linha.insumoId] = numeroContado(digitados[linha.insumoId] ?? "");
     }
     return mapa;
-  }, [linhas, digitados]);
+  }, [todas, digitados]);
 
+  // O rodapé conta o que está na tela; salvar grava tudo o que foi tocado,
+  // inclusive o que o recorte esconde.
   const resumo = resumoDaContagem(linhas, valores);
   const corredores = agruparPorCorredor(linhas);
 
@@ -132,7 +168,7 @@ export function TelaContagem() {
   function salvar() {
     const porId = new Map(insumos.map((insumo) => [insumo.id, insumo]));
 
-    const contagens = linhas.reduce<ContagemGravavel[]>((lista, linha) => {
+    const contagens = todas.reduce<ContagemGravavel[]>((lista, linha) => {
       const quantidade = valores[linha.insumoId];
       const insumo = porId.get(linha.insumoId);
       if (quantidade === null || quantidade === undefined || !insumo) {
@@ -198,6 +234,46 @@ export function TelaContagem() {
         </p>
       )}
 
+      {/* O recorte: só as linhas que a compra trouxe, ou a despensa inteira.
+          Pílulas como as de período em `/compras`, porque é a mesma escolha. */}
+      {semente && (
+        <div className="mt-4 flex gap-2" role="group" aria-label="O que contar">
+          {(
+            [
+              {
+                valor: true,
+                rotulo: `Só o que ${semente.origem === "NOTA" ? "a nota" : "a compra"} trouxe`,
+                quantos: semente.entradas.size,
+              },
+              {
+                valor: false,
+                rotulo: "A despensa inteira",
+                quantos: todas.length,
+              },
+            ] as const
+          ).map((opcao) => {
+            const ativo = soDaCompra === opcao.valor;
+            return (
+              <button
+                key={String(opcao.valor)}
+                type="button"
+                onClick={() => setSoDaCompra(opcao.valor)}
+                aria-pressed={ativo}
+                className={cn(
+                  "num h-11 shrink-0 rounded-full px-4 text-label font-medium",
+                  "transition-colors duration-150 ease-quart",
+                  ativo
+                    ? "bg-wine-700 text-on-wine"
+                    : "border border-line-strong text-ink-muted hover:bg-sunken",
+                )}
+              >
+                {opcao.rotulo} ({opcao.quantos})
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <div className="mt-4 space-y-4 pb-52 lg:pb-44">
         {carregando ? (
           <div role="status" aria-label="Carregando" className="space-y-4">
@@ -249,6 +325,7 @@ export function TelaContagem() {
                   <LinhaContagem
                     key={linha.insumoId}
                     linha={linha}
+                    projecao={projecoes.get(linha.insumoId)}
                     origem={semente?.origem}
                     texto={digitados[linha.insumoId] ?? ""}
                     aoMudar={(texto) =>

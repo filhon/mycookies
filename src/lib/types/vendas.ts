@@ -138,6 +138,13 @@ export interface ItemListaCompras {
   quantidadeNecessaria: number;
   unidadeBase: UnidadeBase;
   estoqueAtual: number;
+  /**
+   * O que já foi assado para os pedidos desta lista, em quantidade física.
+   * Ausente em lista gravada antes da spec 013 (`DECISOES.md#d91`).
+   */
+  quantidadeJaProduzida?: number;
+  /** O que saiu para o forno desde a contagem deste insumo (`#d87`). */
+  consumoDeFornadas?: number;
   /** max(0, necessária − estoque), já com a perda percentual aplicada. */
   quantidadeComprar: number;
   /** Traduzido de volta para o mundo real: "comprar 3 pacotes de 1 kg". */

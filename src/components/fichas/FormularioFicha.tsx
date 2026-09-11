@@ -16,6 +16,7 @@ import {
   Check,
   ChefHat,
   Clock,
+  CookingPot,
   Package,
   Percent,
   Receipt,
@@ -29,6 +30,8 @@ import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
 import { Campo, Seletor } from "@/components/ui/Campo";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
+import { FornadasRecentes } from "@/components/producao/FornadasRecentes";
+import { PainelFornada } from "@/components/producao/PainelFornada";
 import { LinhaComponenteFicha, LinhaItemFicha } from "./LinhaItemFicha";
 import { PainelPreco } from "./PainelPreco";
 import {
@@ -61,7 +64,9 @@ import {
 } from "@/lib/firebase/mutations/fichas";
 import type {
   ConfiguracaoGeral,
+  DataISO,
   FichaTecnica,
+  Fornada,
   Insumo,
   MetodoPrecificacao,
   TipoFicha,
@@ -69,6 +74,7 @@ import type {
   UnidadeRendimento,
 } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
+import { novoId } from "@/lib/utils/id";
 
 interface LinhaItemForm {
   insumoId: string;
@@ -193,6 +199,8 @@ export function FormularioFicha({
   ficha,
   insumos,
   fichas,
+  fornadas,
+  hoje,
   configuracao,
   pendente,
 }: {
@@ -200,6 +208,9 @@ export function FormularioFicha({
   ficha?: FichaTecnica;
   insumos: Insumo[];
   fichas: FichaTecnica[];
+  /** As fornadas recentes, para a folha de registrar projetar a despensa. */
+  fornadas: Fornada[];
+  hoje: DataISO;
   configuracao: ConfiguracaoGeral | null;
   pendente: boolean;
 }) {
@@ -218,6 +229,22 @@ export function FormularioFicha({
   const [falha, setFalha] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [confirmandoArquivo, setConfirmandoArquivo] = useState(false);
+  const [fornada, setFornada] = useState<{ aberto: boolean; chave: string }>({
+    aberto: false,
+    chave: "fechado",
+  });
+
+  // A fornada é da ficha **gravada**, e não do que está sendo digitado: o que
+  // sai da despensa é o que a receita salva diz, e uma receita pela metade não
+  // vira massa. Sem rendimento não há lote a contar.
+  const podeAssar =
+    !!ficha &&
+    ficha.rendimento > 0 &&
+    ficha.itens.length + ficha.componentes.length > 0;
+  const fornadasDaFicha = useMemo(
+    () => fornadas.filter((atual) => atual.fichaId === ficha?.id),
+    [fornadas, ficha],
+  );
 
   /**
    * `useWatch`, e não `form.watch()`: o compilador do React não consegue
@@ -589,6 +616,46 @@ export function FormularioFicha({
               Recalcular e salvar
             </Botao>
           </Faixa>
+        )}
+
+        {/* É a tela do produto, e é onde ela está quando acabou de fazer a
+            massa daquele produto. Vem antes da receita porque a receita ela já
+            sabe. */}
+        {podeAssar && (
+          <div className="rounded-lg border border-line bg-surface px-4 py-3 lg:px-5">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+              <p className="flex min-w-0 items-start gap-2.5 text-label text-ink-muted">
+                <CookingPot
+                  aria-hidden
+                  className="mt-0.5 size-4 shrink-0 text-ink-muted"
+                  strokeWidth={1.75}
+                />
+                <span className="max-w-[48ch]">
+                  Fez a massa? Registrar a fornada desconta a despensa até a
+                  próxima contagem.
+                </span>
+              </p>
+              <Botao
+                tamanho="sm"
+                onClick={() =>
+                  setFornada({ aberto: true, chave: `fornada-${novoId()}` })
+                }
+              >
+                Fiz a massa
+              </Botao>
+            </div>
+
+            {/* As desta ficha, com o desfazer: a massa registrada por engano
+                precisa sair da projeção, e arquivar é o único caminho. */}
+            {fornadasDaFicha.length > 0 && (
+              <div className="mt-4">
+                <FornadasRecentes
+                  contaId={contaId}
+                  fornadas={fornadasDaFicha}
+                />
+              </div>
+            )}
+          </div>
         )}
 
         <Bloco
@@ -995,6 +1062,20 @@ export function FormularioFicha({
         }}
         aoUsarSugerido={() => form.setValue("precoManual", false)}
       />
+
+      {ficha && podeAssar && (
+        <PainelFornada
+          aberto={fornada.aberto}
+          chave={fornada.chave}
+          aoFechar={() => setFornada({ aberto: false, chave: fornada.chave })}
+          contaId={contaId}
+          opcoes={[{ ficha, unidades: ficha.rendimento }]}
+          fichas={fichas}
+          insumos={insumos}
+          fornadas={fornadas}
+          hoje={hoje}
+        />
+      )}
     </>
   );
 }

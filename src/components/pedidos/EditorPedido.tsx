@@ -1,23 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { orderBy, query, where } from "firebase/firestore";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { FormularioPedido } from "./FormularioPedido";
+import { dataISODe } from "@/lib/domain/datas";
 import {
   colClientes,
   colFichas,
+  colInsumos,
   docConfiguracao,
   docPedido,
 } from "@/lib/firebase/colecoes";
+import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
 import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
 import type {
   Cliente,
   ConfiguracaoGeral,
   FichaTecnica,
+  Fornada,
+  Insumo,
   Pedido,
 } from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
@@ -38,6 +43,7 @@ export const ID_PEDIDO_NOVO = "novo";
 export function EditorPedido({ id }: { id: string }) {
   const contaId = useContaId();
   const ehNovo = id === ID_PEDIDO_NOVO;
+  const [hoje] = useState(() => dataISODe(new Date()));
 
   const consultaFichas = useMemo(
     () =>
@@ -69,8 +75,28 @@ export function EditorPedido({ id }: { id: string }) {
     [contaId, id, ehNovo],
   );
 
+  // Insumos e fornadas só servem à folha de registrar fornada, que só existe
+  // em pedido salvo: o pedido novo não assina nenhuma das duas.
+  const consultaInsumos = useMemo(
+    () =>
+      ehNovo
+        ? null
+        : query(
+            colInsumos(contaId),
+            where("arquivado", "==", false),
+            orderBy("nomeBusca"),
+          ),
+    [contaId, ehNovo],
+  );
+  const consultaProducao = useMemo(
+    () => (ehNovo ? null : consultaFornadas(contaId, hoje)),
+    [contaId, hoje, ehNovo],
+  );
+
   const fichas = useColecao<FichaTecnica>(consultaFichas);
   const clientes = useColecao<Cliente>(consultaClientes);
+  const insumos = useColecao<Insumo>(consultaInsumos);
+  const fornadas = useColecao<Fornada>(consultaProducao);
   const configuracao = useDocumento<ConfiguracaoGeral>(referenciaConfiguracao);
   const pedido = useDocumento<Pedido>(referenciaPedido);
 
@@ -116,8 +142,11 @@ export function EditorPedido({ id }: { id: string }) {
       pedido={pedido.dado ?? undefined}
       fichas={fichas.dados}
       clientes={clientes.dados}
+      insumos={insumos.dados}
+      fornadas={fornadas.dados}
+      hoje={hoje}
       configuracao={configuracao.dado}
-      pendente={pedido.pendente || fichas.pendente}
+      pendente={pedido.pendente || fichas.pendente || fornadas.pendente}
     />
   );
 }

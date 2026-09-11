@@ -1,18 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { orderBy, query, where } from "firebase/firestore";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
+import { dataISODe } from "@/lib/domain/datas";
 import {
   colFichas,
   colInsumos,
   docConfiguracao,
 } from "@/lib/firebase/colecoes";
+import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
 import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
-import type { ConfiguracaoGeral, FichaTecnica, Insumo } from "@/lib/types";
+import type {
+  ConfiguracaoGeral,
+  FichaTecnica,
+  Fornada,
+  Insumo,
+} from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
 import { FormularioFicha } from "./FormularioFicha";
 
@@ -30,6 +37,7 @@ export const ID_FICHA_NOVA = "nova";
 export function EditorFicha({ id }: { id: string }) {
   const contaId = useContaId();
   const ehNova = id === ID_FICHA_NOVA;
+  const [hoje] = useState(() => dataISODe(new Date()));
 
   const consultaInsumos = useMemo(
     () =>
@@ -58,8 +66,15 @@ export function EditorFicha({ id }: { id: string }) {
     [contaId],
   );
 
+  // As fornadas só servem à folha de registrar, que só existe em ficha salva.
+  const consultaProducao = useMemo(
+    () => (ehNova ? null : consultaFornadas(contaId, hoje)),
+    [contaId, hoje, ehNova],
+  );
+
   const insumos = useColecao<Insumo>(consultaInsumos);
   const fichas = useColecao<FichaTecnica>(consultaFichas);
+  const fornadas = useColecao<Fornada>(consultaProducao);
   const configuracao = useDocumento<ConfiguracaoGeral>(referenciaConfiguracao);
 
   const carregando =
@@ -104,8 +119,10 @@ export function EditorFicha({ id }: { id: string }) {
       ficha={ficha}
       insumos={insumos.dados}
       fichas={fichas.dados}
+      fornadas={fornadas.dados}
+      hoje={hoje}
       configuracao={configuracao.dado}
-      pendente={fichas.pendente}
+      pendente={fichas.pendente || fornadas.pendente}
     />
   );
 }

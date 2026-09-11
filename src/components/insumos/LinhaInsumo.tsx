@@ -4,8 +4,9 @@ import { ChevronRight, TriangleAlert } from "lucide-react";
 import { Selo } from "@/components/ui/Selo";
 import { contagemDoInsumo, rotuloDeIdade } from "@/lib/domain/estoque";
 import { formatarCustoUnitario, formatarMoeda } from "@/lib/domain/money";
+import { projecaoDoInsumo } from "@/lib/domain/producao";
 import { formatarQuantidade } from "@/lib/domain/unidades";
-import type { DataISO, Insumo } from "@/lib/types";
+import type { DataISO, Fornada, Insumo } from "@/lib/types";
 
 /**
  * A linha do insumo, com o que a despensa tem e desde quando.
@@ -18,10 +19,13 @@ import type { DataISO, Insumo } from "@/lib/types";
  */
 export function LinhaInsumo({
   insumo,
+  fornadas,
   hoje,
   aoAbrir,
 }: {
   insumo: Insumo;
+  /** As fornadas recentes, para a linha dizer o que o forno já levou. */
+  fornadas: Fornada[];
   hoje: DataISO;
   aoAbrir: (insumo: Insumo) => void;
 }) {
@@ -29,6 +33,11 @@ export function LinhaInsumo({
   // data sem número não é contagem, e que `null` no documento é ausência.
   const contagem = contagemDoInsumo(insumo, hoje);
   const contagemVencida = contagem.frescor === "VENCIDA";
+
+  // A projeção só vale a frase quando o forno mexeu num número que ainda vale:
+  // a contagem gravada não muda, e a linha diz os dois (`#d87`).
+  const projecao = projecaoDoInsumo(fornadas, insumo, hoje);
+  const comForno = projecao.fornadas > 0 && contagem.quantidade !== null;
 
   return (
     <li>
@@ -62,6 +71,17 @@ export function LinhaInsumo({
               ? "nunca contada"
               : `${formatarQuantidade(contagem.anotado, insumo.unidadeBase)} na despensa · ${rotuloDeIdade(contagem)}`}
           </p>
+
+          {comForno && (
+            <p className="num mt-0.5 text-label text-ink-subtle">
+              {projecao.fornadas === 1
+                ? "1 fornada desde então"
+                : `${projecao.fornadas} fornadas desde então`}
+              <span className="mx-1.5">·</span>
+              projetamos{" "}
+              {formatarQuantidade(projecao.disponivel, insumo.unidadeBase)}
+            </p>
+          )}
 
           {contagemVencida && (
             <Selo

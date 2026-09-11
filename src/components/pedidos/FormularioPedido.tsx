@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Check,
   ClipboardList,
+  CookingPot,
   NotebookPen,
   Receipt,
   Store,
@@ -19,6 +20,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
+import { FornadasRecentes } from "@/components/producao/FornadasRecentes";
+import {
+  PainelFornada,
+  type OpcaoDeFornada,
+} from "@/components/producao/PainelFornada";
 import { Bloco } from "@/components/ui/Bloco";
 import { Botao } from "@/components/ui/Botao";
 import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
@@ -30,7 +36,6 @@ import { PainelCliente } from "./PainelCliente";
 import { PainelPedido } from "./PainelPedido";
 import { SeloStatus } from "./SeloStatus";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
-import { dataISODe } from "@/lib/domain/datas";
 import { formatarMoeda, parseParaNumero } from "@/lib/domain/money";
 import {
   ACAO_STATUS_PEDIDO,
@@ -67,6 +72,8 @@ import type {
   ConfiguracaoGeral,
   DataISO,
   FichaTecnica,
+  Fornada,
+  Insumo,
   Meta,
   Pedido,
   ResumoMensal,
@@ -198,6 +205,9 @@ export function FormularioPedido({
   pedido,
   fichas,
   clientes,
+  insumos,
+  fornadas,
+  hoje,
   configuracao,
   pendente,
 }: {
@@ -205,13 +215,17 @@ export function FormularioPedido({
   pedido?: Pedido;
   fichas: FichaTecnica[];
   clientes: Cliente[];
+  /** Insumos e fornadas recentes: só a folha de registrar fornada os usa. */
+  insumos: Insumo[];
+  fornadas: Fornada[];
+  /** O dia congela na abertura, no editor que monta esta tela. */
+  hoje: DataISO;
   configuracao: ConfiguracaoGeral | null;
   pendente: boolean;
 }) {
   const router = useRouter();
   const idObservacoes = useId();
 
-  const [hoje] = useState(() => dataISODe(new Date()));
   const [valores, setValores] = useState<ValoresPedido>(() =>
     valoresIniciais(pedido, configuracao, hoje),
   );
@@ -233,6 +247,10 @@ export function FormularioPedido({
     aberto: false,
     chave: "fechado",
   });
+  const [fornada, setFornada] = useState<{ aberto: boolean; chave: string }>({
+    aberto: false,
+    chave: "fechado",
+  });
 
   const definir = <C extends keyof ValoresPedido>(
     campo: C,
@@ -242,6 +260,29 @@ export function FormularioPedido({
   const mapaFichas = useMemo(
     () => new Map(fichas.map((ficha) => [ficha.id, ficha])),
     [fichas],
+  );
+
+  /**
+   * O que este pedido pede, em massa: a ficha de cada item, com a quantidade
+   * pedida. A massa se faz sob demanda e do tamanho que quiser (`#d93`), então
+   * 12 cookies abrem com 12 — e ela sobe para a receita inteira se quiser
+   * congelar o resto. Sai do pedido **gravado**, e não da tela: a fornada é o
+   * que aconteceu, e o que aconteceu tem documento.
+   */
+  const opcoesDeFornada = useMemo<OpcaoDeFornada[]>(
+    () =>
+      (pedido?.itens ?? []).flatMap((item) => {
+        const ficha = mapaFichas.get(item.fichaTecnicaId);
+        if (!ficha || !(ficha.rendimento > 0)) return [];
+        return [{ ficha, unidades: item.quantidade }];
+      }),
+    [pedido, mapaFichas],
+  );
+  const podeAssar =
+    !!pedido && pedido.status !== "CANCELADO" && opcoesDeFornada.length > 0;
+  const fornadasDoPedido = useMemo(
+    () => fornadas.filter((atual) => atual.pedidoId === pedido?.id),
+    [fornadas, pedido],
   );
 
   const formas = configuracao?.formasPagamento ?? [];
@@ -678,6 +719,42 @@ export function FormularioPedido({
                 </Botao>
               ))}
             </div>
+
+            {/* A fornada não é o status (`DECISOES.md#d92`): registrar não
+                move o pedido, e mover não registra. O atalho abre a folha já
+                preenchida pelo que o pedido pede, e um atalho não é um
+                acoplamento. */}
+            {podeAssar && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-4">
+                <Botao
+                  tamanho="sm"
+                  variante="terciaria"
+                  onClick={() =>
+                    setFornada({ aberto: true, chave: `fornada-${novoId()}` })
+                  }
+                  iconeInicial={
+                    <CookingPot
+                      aria-hidden
+                      className="size-4"
+                      strokeWidth={1.75}
+                    />
+                  }
+                >
+                  Registrar fornada
+                </Botao>
+                <p className="max-w-[48ch] text-label text-ink-muted">
+                  A massa que você fez para este pedido sai da despensa e da
+                  lista de compras.
+                </p>
+              </div>
+            )}
+
+            {/* As deste pedido, com o desfazer. Aparecem mesmo quando o pedido
+                não pode mais receber massa: o registro errado precisa poder
+                sair de qualquer jeito. */}
+            {fornadasDoPedido.length > 0 && (
+              <FornadasRecentes contaId={contaId} fornadas={fornadasDoPedido} />
+            )}
           </Bloco>
         ) : (
           <Bloco
@@ -1079,6 +1156,21 @@ export function FormularioPedido({
         aoSalvar={vincularCliente}
         aoFechar={() => setCadastro({ aberto: false, chave: cadastro.chave })}
       />
+
+      {pedido && podeAssar && (
+        <PainelFornada
+          aberto={fornada.aberto}
+          chave={fornada.chave}
+          aoFechar={() => setFornada({ aberto: false, chave: fornada.chave })}
+          contaId={contaId}
+          opcoes={opcoesDeFornada}
+          fichas={fichas}
+          insumos={insumos}
+          fornadas={fornadas}
+          hoje={hoje}
+          pedido={{ id: pedido.id, clienteNome: pedido.clienteNome }}
+        />
+      )}
     </>
   );
 }

@@ -2608,3 +2608,174 @@ Três detalhes da escrita, os três conferidos e não deduzidos:
 a entrega avulsa, paga na hora, tem onde ser lançada. Ela ganhou `DICA_CATEGORIA` pelo mesmo
 motivo de `TAXA_PAGAMENTO` (`#d24`) — sem a frase, o acerto da semana seria lançado à mão **e**
 pelo painel, e o mês fecharia a menos duas vezes.
+
+---
+
+## D86 · A fornada é a unidade de tudo, e o campo é lotes
+
+**Status:** vigente na primeira metade; a segunda ("o campo é lotes") **substituída por D93** ·
+decidida em 2026-09-11 na spec 013, sessão 13A
+
+**Contexto.** O sistema sabia o que entra na despensa e o que foi vendido, e não sabia o que
+acontece entre os dois. Quanto saiu da despensa, quantos doces dá para vender, se um pedido
+cabe e se precisa comprar eram quatro perguntas separadas, e nenhuma tinha resposta.
+
+**Decisão.** Uma fornada é um lote da ficha, assado num dia — `contas/{contaId}/fornadas`, o
+tipo `Fornada` e o módulo `domain/producao.ts`. É a unidade das quatro perguntas, e por isso um
+módulo só. O campo que ela digita é **lotes**, e não unidades: o forno assa fornada, e pedir
+unidades seria pedir que ela dividisse de cabeça o número que a receita já sabe.
+
+**Consequência.** `Fornada.unidadesProduzidas` é `lotes × rendimento`, congelado, e em `un`
+arredondado para baixo: o forno não assa 0,4 cookie, e arredondar para cima prometeria o que não
+saiu da grade. A regra do kit de um nível saiu de dentro de `explodirDemanda` para
+`insumosPorLote`, exportada, e a lista de compras e a fornada chamam a mesma função — se a regra
+ficasse duplicada, a primeira mudança nela sairia errada em um dos dois. `insumosPorLote` devolve
+`Map<string, LinhaDeDemanda>`, e não `Map<string, number>` como a spec escreveu: a fornada grava
+`nomeSnapshot` por insumo, e um kit consome insumos que só as fichas de dentro conhecem pelo nome.
+
+---
+
+## D87 · A fornada é um fato datado, e não um saldo
+
+**Status:** vigente · decidida em 2026-09-11 na spec 013, sessão 13A
+
+**Contexto.** `#d56` decidiu que estoque é medição, porque o sistema não vê os movimentos da
+despensa. Registrar a fornada não muda isso: ele continua não vendo o pacote aberto para provar
+nem a fornada que ela esqueceu de registrar.
+
+**Decisão.** A fornada **não escreve `Insumo.estoqueAtual`**. É um documento próprio, com data,
+e o que a tela mostra é uma projeção: `disponível = medido − fornadas registradas depois daquela
+contagem`, por insumo, em `consumoDesdeAContagem` e `disponivelParaProducao`.
+
+**Consequência.** A medição fica intacta — nenhuma tela reescreve o número que ela contou.
+Contar conserta tudo sozinho, porque a janela é "depois da contagem" e uma contagem nova exclui
+as fornadas velhas sem que nada precise ser zerado: não existe contador para divergir do
+registro. E é uma escrita por fornada, e não uma por insumo — dez `increment()` numa fornada de
+dez ingredientes é a fila de escrita que o `#d80` ensinou a temer. A projeção é a **leitura**; a
+contagem continua sendo a **verdade**. Nas telas ela é referência, e nunca semente (`#d59`).
+
+A consulta traz só as fornadas dos últimos `IDADE_VENCE_DIAS`: contagem mais velha já vale "não
+sei", e nenhuma fornada anterior a ela desconta nada. O preço é uma fornada com `pedidoId` mais
+velha que trinta dias sair do abate do pedido, o que exigiria encomenda assada com mais de um mês
+de antecedência.
+
+---
+
+## D88 · O que a fornada consumiu fica congelado dentro dela
+
+**Status:** vigente · decidida em 2026-09-11 na spec 013, sessão 13A
+
+**Decisão.** `Fornada.consumo` é `{ insumoId, nomeSnapshot, quantidade }[]`, gravado no ato, em
+quantidade **física** — `quantidadeFisica(útil, perda)`, a mesma conta de `montarLista`.
+
+**Consequência.** A ficha muda, e o que saiu da despensa em setembro não muda junto. É o mesmo
+argumento de `ItemPedido.custoUnitarioSnapshot` (`#d08`); sem ele a projeção se reescreveria ao
+editar uma receita. De carona, somar o consumo das fornadas não lê ficha nenhuma, e a fornada de
+uma ficha arquivada continua descontando o que descontou. Física porque o que sai do armário é o
+que sai do armário, e a perda faz parte dele — e porque a lista abate do lado físico, e subtrair
+físico de útil somaria duas grandezas diferentes.
+
+---
+
+## D89 · O dia da contagem é opaco: `>`, e não `>=`
+
+**Status:** vigente · decidida em 2026-09-11 na spec 013, sessão 13A
+
+**Decisão.** Uma fornada do **mesmo dia** da contagem não é descontada. A janela é
+`dataISO > estoqueContadoEmISO`, estritamente maior.
+
+**Consequência.** É a regra que o `#d64` já toma do outro lado — "contagem de hoje não recebe
+soma" —, agora valendo para os dois sentidos. O contra-exemplo prova por que não pode ser `>=`:
+ela assa de manhã, conta à tarde e digita 800 g; com `>=` a tela mostraria 400 g logo depois, o
+sistema contradizendo um número que ela acabou de digitar, que é o que o `#d17`, o `#d59` e o
+`#d64` existem para impedir. O erro do `>` é oposto e barato: conta de manhã, assa à tarde, e por
+um dia a despensa parece mais cheia do que está. Vence na contagem seguinte, e a linha diz quantas
+fornadas entraram na conta para ela desconfiar sozinha.
+
+---
+
+## D90 · A fornada não é dinheiro
+
+**Status:** vigente · decidida em 2026-09-11 na spec 013, sessão 13A
+
+**Decisão.** Registrar produção não cria transação no caixa nem move a meta.
+
+**Consequência.** O dinheiro saiu quando ela comprou o insumo, e a 6B já leva a nota para o
+caixa. Lançar de novo na hora de assar contaria a mesma farinha duas vezes — e o `#d81` acabou de
+mostrar o preço de um agregado que não fecha. `mutations/fornadas.ts` escreve um documento e
+não importa nada de `agregado.ts`, `transacoes.ts` nem `metas.ts`.
+
+---
+
+## D91 · A fornada abate a demanda do pedido que ela assou, e `STATUS_NA_LISTA` não muda
+
+**Status:** vigente · decidida em 2026-09-11 na spec 013, sessão 13A
+
+**Contexto.** A lista comprava insumo para pedido já `PRONTO`. Passava despercebido porque nada
+dizia que o insumo tinha saído; no dia em que a fornada é registrada, comprar de novo o que ela
+acabou de gastar viraria dinheiro parado toda semana. A tentação era tirar `PRONTO` da lista.
+
+**Decisão.** `Fornada.pedidoId`, opcional. `montarLista` ganha o quarto parâmetro
+`ContextoDaProducao = { consumo, produzido }`, com default `SEM_PRODUCAO`, e a conta passa a ser
+`física −= produzido[insumo]; disponível = max(0, medido − consumo[insumo]); comprar =
+max(0, física − disponível)`. `STATUS_NA_LISTA` fica como está.
+
+**Consequência.** Sem o abate o sistema erraria duas vezes na mesma direção: a fornada tira o
+insumo da despensa **e** o pedido continua pedindo o mesmo insumo. Tirar `PRONTO` da lista
+deixaria de comprar para quem marcou o status e não registrou nada, e deixar de comprar é o erro
+caro (`#d63`); abater por fornada abate o que de fato aconteceu, aceita produção parcial de
+graça, e **não muda nada para quem nunca registrar uma fornada** — o parâmetro opcional é a
+prova, e os testes da 7B passam sem uma linha alterada. `LinhaDaLista` e `ItemListaCompras`
+ganharam `quantidadeJaProduzida` e `consumoDeFornadas`, gravados pela mesma razão de
+`estoqueAtual` já ser: a lista precisa saber o que entrou na conta dela. Em `ItemListaCompras`
+são opcionais, porque lista gravada antes desta spec não os tem.
+
+A fornada aberta de `/fichas/[id]` nasce **sem pedido**: amarrar exigiria carregar os pedidos
+abertos daquela ficha, com índice novo que a spec não pediu. Quem amarra é o atalho de
+`/pedidos/[id]`, que já sabe o pedido.
+
+---
+
+## D92 · A fornada não é o status do pedido
+
+**Status:** vigente · decidida em 2026-09-11 na spec 013, sessão 13A
+
+**Decisão.** `EM_PRODUCAO` e `PRONTO` continuam sendo onde o **pedido** está. A fornada é o que
+saiu do **forno**, e existe sem pedido nenhum atrás. Registrar não muda status, e mudar status
+não registra fornada.
+
+**Consequência.** Ela assa para a feira de sábado e para a vitrine, não só para encomenda. O que
+a tela do pedido ganha é um atalho que abre a folha já preenchida — a ficha de cada item, com a
+quantidade que o pedido pede (`#d93`) — e um atalho não é um acoplamento.
+
+---
+
+## D93 · Fornada é a massa feita, e o campo é unidades
+
+**Status:** vigente · substitui a segunda metade de D86 · decidida em 2026-09-11 na spec 013,
+sessão 13A, por esclarecimento da dona do negócio
+
+**Contexto.** A spec 013 foi escrita imaginando a fornada como o que sai do forno, e por isso
+decidiu que o campo é lotes: "o forno não assa 0,6 de fornada". A operação real é outra: ela
+mistura os ingredientes, **congela a massa**, e assa sob demanda. O insumo sai da despensa na
+tigela, não no forno — e a massa se faz do tamanho que a despensa deixar.
+
+**Decisão.** Fornada é a massa feita, datada no dia da massa. A folha pede **para quantas
+unidades** ela fez massa, e a receita converte: `lotes = unidades / rendimento`, fracionário.
+`Fornada.lotes` continua gravado, agora derivado; `unidadesProduzidas` é o que ela digitou (em
+`un`, arredondado para baixo antes da conta). O atalho do pedido abre com a quantidade pedida
+(12 cookies abrem com 12), e o da ficha com o rendimento de um lote. `lotesParaProduzir` saiu.
+
+**Consequência.** A aritmética não muda: o que desconta a despensa continua sendo
+`consumoPorLote × lotes`, a janela continua sendo o dia da contagem, e o abate do pedido
+continua igual. O que muda é a pergunta que a folha faz — ela pode fazer menos do que a receita
+rende porque o chocolate não dá para 25, e é exatamente essa decisão que o campo de unidades
+deixa tomar sem dividir de cabeça. A cópia deixou de falar em forno: "Fiz a massa", "já virou
+massa para o pedido", "foram para a massa desde a contagem". O nome `Fornada` fica, porque é a
+palavra dela para a massa de um lote.
+
+**O que isto muda para a 13D.** A massa congelada é um estoque intermediário de verdade — o
+freezer guarda massa para N cookies, e "posso vender" passa a ser `massa congelada + fornadas
+possíveis × rendimento − prometido`. A 13D deixa de ser "talvez não seja precisa" e passa a ser
+a resposta a uma pergunta que a operação faz; a decisão continua sendo tomada depois da 13B,
+como a spec manda, mas com este dado na mão.
