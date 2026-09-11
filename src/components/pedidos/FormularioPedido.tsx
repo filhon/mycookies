@@ -32,16 +32,21 @@ import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
 import { Campo, EnvelopeCampo, Seletor } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Selo } from "@/components/ui/Selo";
+import { EscolhaDoCombo } from "./EscolhaDoCombo";
 import { LinhaItemPedido } from "./LinhaItemPedido";
 import { PainelCliente } from "./PainelCliente";
 import { PainelPedido } from "./PainelPedido";
 import { SeloStatus } from "./SeloStatus";
+import { podeSerComponente, temEscolhas } from "@/lib/domain/custoFicha";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { formatarMoeda, parseParaNumero } from "@/lib/domain/money";
 import {
   ACAO_STATUS_PEDIDO,
+  custoDoComboMontado,
   derivarPedido,
+  escolhasCompletas,
   ofereceOPrecoDeHoje,
+  resumoDasEscolhas,
   transicoesPermitidas,
 } from "@/lib/domain/pedido";
 import {
@@ -78,6 +83,7 @@ import type {
   Cliente,
   ConfiguracaoGeral,
   DataISO,
+  EscolhaFeita,
   FichaTecnica,
   Fornada,
   Insumo,
@@ -101,6 +107,22 @@ interface LinhaItemForm {
   /** Congelados quando o item entrou. Mudar a quantidade não os refaz. */
   precoUnitario: Centavos;
   custoUnitarioSnapshot: Centavos;
+  /**
+   * O par que dá a base do combo, `custoUnitario − custoEscolhas`
+   * (`DECISOES.md#d100`). Da ficha quando o item entra; da própria linha
+   * gravada quando o pedido reabre, para a base continuar congelada.
+   */
+  custoDoKit: { custoUnitario: Centavos; custoEscolhas: Centavos };
+  escolhas: EscolhaFeita[];
+}
+
+/** O que as escolhas gravadas somam no custo da linha. */
+function custoDasEscolhasFeitas(escolhas: EscolhaFeita[]): Centavos {
+  return escolhas.reduce(
+    (soma, escolha) =>
+      soma + Math.round(escolha.custoUnitarioSnapshot * escolha.quantidade),
+    0,
+  );
 }
 
 interface ValoresPedido {
@@ -158,6 +180,19 @@ function texto(numero: number): string {
   return String(numero).replace(".", ",");
 }
 
+/** "Faltam 2 de Cookie neste combo." — o que a linha diz quando não fecha. */
+function fraseDoQueFalta(
+  faltam: { categoria: string; quantidade: number }[],
+): string {
+  return faltam
+    .map(({ categoria, quantidade }) =>
+      quantidade > 0
+        ? `${quantidade === 1 ? "Falta" : "Faltam"} ${quantidade} de ${categoria} neste combo.`
+        : `${-quantidade} de ${categoria} a mais neste combo.`,
+    )
+    .join(" ");
+}
+
 function valoresIniciais(
   pedido: Pedido | undefined,
   configuracao: ConfiguracaoGeral | null,
@@ -200,6 +235,11 @@ function valoresIniciais(
       // O que está gravado é o que vale: reabrir um pedido não repreça nada.
       precoUnitario: item.precoUnitario,
       custoUnitarioSnapshot: item.custoUnitarioSnapshot,
+      custoDoKit: {
+        custoUnitario: item.custoUnitarioSnapshot,
+        custoEscolhas: custoDasEscolhasFeitas(item.escolhas ?? []),
+      },
+      escolhas: item.escolhas ?? [],
     })),
     desconto: pedido.desconto,
     formaPagamentoId: pedido.formaPagamentoId ?? "",
@@ -274,6 +314,17 @@ export function FormularioPedido({
     () => new Map(fichas.map((ficha) => [ficha.id, ficha])),
     [fichas],
   );
+
+  /**
+   * A categoria de uma receita escolhida, pela ficha **de hoje**, e só se ela
+   * ainda serve: arquivada ou virada kit não conta, e a linha diz que falta.
+   */
+  const categoriaDaReceita = (fichaId: string) => {
+    const receita = mapaFichas.get(fichaId);
+    return receita && podeSerComponente(receita)
+      ? receita.categoria
+      : undefined;
+  };
 
   /**
    * O que este pedido pede, em massa: a ficha de cada item, com a quantidade
@@ -389,6 +440,7 @@ export function FormularioPedido({
     quantidade: parseParaNumero(linha.quantidade),
     precoUnitario: linha.precoUnitario,
     custoUnitarioSnapshot: linha.custoUnitarioSnapshot,
+    ...(linha.escolhas.length > 0 ? { escolhas: linha.escolhas } : {}),
   }));
 
   // Retirada não tem taxa: o campo some, e o número some com ele.
@@ -402,10 +454,14 @@ export function FormularioPedido({
     forma,
   });
 
+  // A mesma ficha não entra duas vezes — exceto o combo à escolha, em que
+  // duas linhas são duas escolhas diferentes: três "tradicional + nutella" e
+  // um "dois nutella".
   const opcoesFicha: OpcaoBusca[] = fichas
     .filter((ficha) => ficha.ativo)
     .filter(
       (ficha) =>
+        temEscolhas(ficha) ||
         !valores.itens.some((linha) => linha.fichaTecnicaId === ficha.id),
     )
     .map((ficha) => ({
@@ -438,9 +494,60 @@ export function FormularioPedido({
           nomeSnapshot: ficha.nome,
           quantidade: "1",
           precoUnitario: ficha.precificacao.precoVenda,
-          custoUnitarioSnapshot: ficha.custoUnitario,
+          // Num combo à escolha, a linha nasce só com a base: as escolhas
+          // somam à medida que ela toca (`#d100`).
+          custoUnitarioSnapshot: temEscolhas(ficha)
+            ? custoDoComboMontado(ficha, [])
+            : ficha.custoUnitario,
+          custoDoKit: {
+            custoUnitario: ficha.custoUnitario,
+            custoEscolhas: ficha.custoEscolhas ?? 0,
+          },
+          escolhas: [],
         },
       ],
+    }));
+  }
+
+  /**
+   * Mais ou menos uma receita na escolha do combo. O custo da linha é refeito
+   * a cada toque: base do kit mais o que está escolhido, com o custo de cada
+   * receita congelado no momento em que entrou.
+   */
+  function mudarEscolha(
+    chave: string,
+    receita: { id: string; nome: string; custoUnitario: Centavos },
+    delta: number,
+  ) {
+    setValores((anterior) => ({
+      ...anterior,
+      itens: anterior.itens.map((linha) => {
+        if (linha.chave !== chave) return linha;
+        const atual = linha.escolhas.find(
+          (escolha) => escolha.fichaTecnicaId === receita.id,
+        );
+        const quantidade = (atual?.quantidade ?? 0) + delta;
+        const escolhas = linha.escolhas.filter(
+          (escolha) => escolha.fichaTecnicaId !== receita.id,
+        );
+        if (quantidade > 0) {
+          escolhas.push({
+            fichaTecnicaId: receita.id,
+            nomeSnapshot: receita.nome,
+            quantidade,
+            custoUnitarioSnapshot:
+              atual?.custoUnitarioSnapshot ?? receita.custoUnitario,
+          });
+        }
+        return {
+          ...linha,
+          escolhas,
+          custoUnitarioSnapshot: custoDoComboMontado(
+            linha.custoDoKit,
+            escolhas,
+          ),
+        };
+      }),
     }));
   }
 
@@ -468,10 +575,24 @@ export function FormularioPedido({
         if (linha.chave !== chave) return linha;
         const ficha = mapaFichas.get(linha.fichaTecnicaId);
         if (!ficha) return linha;
+        // Num combo, o custo de hoje é a base de hoje mais as receitas
+        // escolhidas pelo custo de hoje: preço e custo andam juntos (`#d32`).
+        const escolhas = linha.escolhas.map((escolha) => ({
+          ...escolha,
+          custoUnitarioSnapshot:
+            mapaFichas.get(escolha.fichaTecnicaId)?.custoUnitario ??
+            escolha.custoUnitarioSnapshot,
+        }));
+        const custoDoKit = {
+          custoUnitario: ficha.custoUnitario,
+          custoEscolhas: ficha.custoEscolhas ?? 0,
+        };
         return {
           ...linha,
           precoUnitario: ficha.precificacao.precoVenda,
-          custoUnitarioSnapshot: ficha.custoUnitario,
+          custoUnitarioSnapshot: custoDoComboMontado(custoDoKit, escolhas),
+          custoDoKit,
+          escolhas,
         };
       }),
     }));
@@ -569,13 +690,34 @@ export function FormularioPedido({
       itens: itensResolvidos.map((item) => ({
         fichaTecnicaId: item.fichaTecnicaId,
         quantidade: item.quantidade,
+        escolhas: item.escolhas?.map((escolha) => ({
+          fichaTecnicaId: escolha.fichaTecnicaId,
+          quantidade: escolha.quantidade,
+        })),
       })),
       observacoes: valores.observacoes || undefined,
     });
 
-    if (!resultado.success) {
-      setErros(errosPorCampo(resultado.error));
-      setErrosItens(errosDeLinha(resultado.error, "itens"));
+    // Escolha incompleta cai na linha, como qualquer falha de linha. O esquema
+    // não sabe o que o kit pede; a ficha sabe.
+    const errosEscolha: Record<number, string> = {};
+    valores.itens.forEach((linha, indice) => {
+      const ficha = mapaFichas.get(linha.fichaTecnicaId);
+      if (!ficha || !temEscolhas(ficha)) return;
+      const { completas, faltam } = escolhasCompletas(
+        ficha,
+        linha.escolhas,
+        categoriaDaReceita,
+      );
+      if (!completas) errosEscolha[indice] = fraseDoQueFalta(faltam);
+    });
+
+    if (!resultado.success || Object.keys(errosEscolha).length > 0) {
+      setErros(resultado.success ? {} : errosPorCampo(resultado.error));
+      setErrosItens({
+        ...(resultado.success ? {} : errosDeLinha(resultado.error, "itens")),
+        ...errosEscolha,
+      });
       return;
     }
 
@@ -962,11 +1104,14 @@ export function FormularioPedido({
                     linha.precoUnitario,
                     precoDaFicha,
                   );
+                  const combo = !!ficha && temEscolhas(ficha);
                   // A capacidade é aritmética pura sobre o que a tela já tem,
                   // refeita a cada tecla: é assim que a resposta acompanha a
-                  // quantidade enquanto ela digita.
+                  // quantidade enquanto ela digita. O combo à escolha não tem
+                  // frase própria: "dá?" depende de qual cookie, e a resposta
+                  // por receita escolhida é a sessão 14B.
                   const capacidade =
-                    despensaPronta && ficha
+                    despensaPronta && ficha && !combo
                       ? capacidadeDaFicha(
                           ficha,
                           fichas,
@@ -981,6 +1126,11 @@ export function FormularioPedido({
                     <LinhaItemPedido
                       key={linha.chave}
                       nome={linha.nomeSnapshot}
+                      detalhe={
+                        linha.escolhas.length > 0
+                          ? resumoDasEscolhas(linha.escolhas)
+                          : undefined
+                      }
                       quantidade={linha.quantidade}
                       precoUnitario={linha.precoUnitario}
                       subtotal={derivado.linhas[indice]?.subtotal ?? 0}
@@ -992,6 +1142,18 @@ export function FormularioPedido({
                       aoRemover={() => removerLinha(linha.chave)}
                       erro={errosItens[indice]}
                     >
+                      {/* A escolha abre embaixo da linha, sem painel e sem
+                          modal: em 360px é uma lista curta com −/+. */}
+                      {combo && ficha && (
+                        <EscolhaDoCombo
+                          kit={ficha}
+                          escolhas={linha.escolhas}
+                          fichas={fichas}
+                          aoMudar={(receita, delta) =>
+                            mudarEscolha(linha.chave, receita, delta)
+                          }
+                        />
+                      )}
                       {capacidade && ficha && (
                         <FraseCabeNoPedido
                           capacidade={capacidade}

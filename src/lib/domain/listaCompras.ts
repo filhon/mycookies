@@ -85,6 +85,12 @@ export interface PedidoParaExplodir {
     /** Congelado no pedido — é o nome do que não explodiu, quando não explodir. */
     nomeSnapshot: string;
     quantidade: number;
+    /** O que foi escolhido num combo, por unidade do kit (`DECISOES.md#d103`). */
+    escolhas?: {
+      fichaTecnicaId: string;
+      nomeSnapshot: string;
+      quantidade: number;
+    }[];
   }[];
 }
 
@@ -126,6 +132,15 @@ function quantidadeUtil(quantidade: number): number {
   return Number.isFinite(quantidade) && quantidade > 0 ? quantidade : 0;
 }
 
+/** Os itens de uma ficha, na forma que `somarInsumos` lê. */
+function linhasDosItens(ficha: FichaParaExplodir): LinhaDeDemanda[] {
+  return ficha.itens.map((item) => ({
+    insumoId: item.insumoId,
+    nome: item.nomeSnapshot,
+    quantidade: item.quantidade,
+  }));
+}
+
 /**
  * Os insumos de **um** lote da ficha, em unidade base e sem perda.
  *
@@ -149,15 +164,7 @@ export function insumosPorLote(
 ): Map<string, LinhaDeDemanda> {
   const destino = new Map<string, LinhaDeDemanda>();
 
-  somarInsumos(
-    ficha.itens.map((item) => ({
-      insumoId: item.insumoId,
-      nome: item.nomeSnapshot,
-      quantidade: item.quantidade,
-    })),
-    1,
-    destino,
-  );
+  somarInsumos(linhasDosItens(ficha), 1, destino);
 
   // Um nível, e só um: o componente de um componente não existe.
   for (const componente of ficha.componentes) {
@@ -174,15 +181,7 @@ export function insumosPorLote(
     }
 
     const unidades = quantidadeUtil(componente.quantidade);
-    somarInsumos(
-      dentro.itens.map((item) => ({
-        insumoId: item.insumoId,
-        nome: item.nomeSnapshot,
-        quantidade: item.quantidade,
-      })),
-      unidades / dentro.rendimento,
-      destino,
-    );
+    somarInsumos(linhasDosItens(dentro), unidades / dentro.rendimento, destino);
   }
 
   return destino;
@@ -212,6 +211,12 @@ export function insumosPorLote(
  * A recursão para no primeiro nível por construção, em `insumosPorLote`. É o
  * que `DECISOES.md#d11` garante, e é por isso que esta função vive sem detecção
  * de ciclo.
+ *
+ * **Um combo explode o que foi escolhido** (`#d103`): cada escolha entra pelos
+ * itens da receita escolhida, em `quantidade × pedida ÷ rendimento`, e a
+ * receita escolhida é `SIMPLES` por construção, então são os `itens` dela e
+ * nada abaixo. Sem isto a lista compraria só o saquinho do combo, e deixar de
+ * comprar é o erro caro (`#d63`). Pedido sem `escolhas` explode como sempre.
  */
 export function explodirDemanda(
   pedidos: PedidoParaExplodir[],
@@ -248,6 +253,24 @@ export function explodirDemanda(
         lotes,
         destino,
       );
+
+      for (const escolha of item.escolhas ?? []) {
+        const receita = porId.get(escolha.fichaTecnicaId);
+        if (!receita || receita.arquivado) {
+          anotar(escolha.nomeSnapshot, "SEM_FICHA");
+          continue;
+        }
+        if (!(receita.rendimento > 0)) {
+          anotar(receita.nome, "SEM_RENDIMENTO");
+          continue;
+        }
+        const unidades = quantidadeUtil(escolha.quantidade) * pedida;
+        somarInsumos(
+          linhasDosItens(receita),
+          unidades / receita.rendimento,
+          destino,
+        );
+      }
     }
   }
 

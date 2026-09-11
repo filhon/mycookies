@@ -611,6 +611,63 @@ describe("delta do pedido e reconstrução concordam", () => {
   });
 });
 
+describe("o combo à escolha no agregado (spec 014, #d102)", () => {
+  /**
+   * 3 × Combo dupla a R$ 12,00, custo montado R$ 5,80 (`custoDoComboMontado`).
+   * As escolhas viajam na linha e o agregado não as lê: um combo é um item
+   * com preço e custo, como sempre foi.
+   */
+  // A linha como o pedido a grava, com `escolhas` dentro. `ItemAgregavel` não
+  // conhece o campo, e é essa a prova: o agregado não mudou uma linha.
+  const LINHA_DO_COMBO = {
+    fichaTecnicaId: "combo-dupla",
+    nomeSnapshot: "Combo dupla",
+    quantidade: 3,
+    subtotal: 3600,
+    custo: 1740,
+    escolhas: [
+      {
+        fichaTecnicaId: "trad",
+        nomeSnapshot: "Cookie tradicional",
+        quantidade: 1,
+        custoUnitarioSnapshot: 220,
+      },
+      {
+        fichaTecnicaId: "nutella",
+        nomeSnapshot: "Cookie de nutella",
+        quantidade: 1,
+        custoUnitarioSnapshot: 310,
+      },
+    ],
+  };
+  const COMBO: PedidoAgregavel = {
+    pagoEmISO: "2026-09-22",
+    total: 3600,
+    custoTotalEstimado: 1740,
+    itens: [LINHA_DO_COMBO],
+  };
+
+  it("o combo é o produto vendido, e os sabores não ganham linha", () => {
+    const mes = agregarPedidos([COMBO]);
+
+    expect(mes.produtos).toEqual({
+      "combo-dupla": {
+        nome: "Combo dupla",
+        quantidade: 3,
+        receita: 3600,
+        lucro: 1860,
+      },
+    });
+    expect(mes.qtdItensVendidos).toBe(3);
+    expect(mes.receitaPedidos).toBe(3600);
+    expect(mes.custoDoVendido).toBe(1740);
+  });
+
+  it("delta e reconstrução concordam com o combo dentro", () => {
+    expect(deltaDoPedido(COMBO, 1)).toEqual(agregarPedidos([COMBO]));
+  });
+});
+
 describe("desfazer o pagamento devolve cada número", () => {
   const antes = agregarTransacoes(SETEMBRO);
   const pago = pagar(antes, PEDIDO_DA_ANA, VENDA_DO_PEDIDO);

@@ -1,6 +1,8 @@
 import type {
   Centavos,
   DataISO,
+  EscolhaDoKit,
+  EscolhaFeita,
   FormaPagamento,
   StatusPedido,
 } from "@/lib/types";
@@ -133,6 +135,94 @@ export function derivarPedido(entrada: EntradaPedido): DerivadosPedido {
       0,
     ),
   };
+}
+
+// ---------------------------------------------------------------------------
+// O combo à escolha (spec 014)
+// ---------------------------------------------------------------------------
+
+/**
+ * O custo de um combo montado: a base do kit mais o que foi escolhido
+ * (`DECISOES.md#d100`).
+ *
+ * A base é `custoUnitario − custoEscolhas`, os dois gravados na ficha: sem o
+ * segundo, o editor de pedido teria que refazer a conta da ficha inteira. Numa
+ * linha já gravada, o par é `custoUnitarioSnapshot` e a soma das escolhas
+ * gravadas — mesma aritmética, e é o que mantém a base congelada quando ela
+ * troca um sabor num pedido antigo.
+ */
+// ponytail: assume kit com rendimento 1, que é o que o tipo promete ("ou 1,
+// para um kit"). Com rendimento maior a base sairia menor do que é; a guarda
+// só impede o negativo.
+export function custoDoComboMontado(
+  kit: { custoUnitario: Centavos; custoEscolhas?: Centavos },
+  escolhas: EscolhaFeita[],
+): Centavos {
+  const base = Math.max(0, kit.custoUnitario - (kit.custoEscolhas ?? 0));
+  return (
+    base +
+    escolhas.reduce(
+      (soma, escolha) =>
+        soma +
+        Math.round(escolha.custoUnitarioSnapshot * quantidadeUtil(escolha)),
+      0,
+    )
+  );
+}
+
+/**
+ * As escolhas fecham o que o kit pede? Por categoria, nem a mais nem a menos.
+ *
+ * `categoriaDe` responde pela ficha **de hoje**: uma receita arquivada ou
+ * renomeada de categoria deixa de contar, e a linha diz que falta. É o risco
+ * conhecido da escolha por categoria, e ele precisa ser visível, não silencioso.
+ * `quantidade` negativa em `faltam` é sobra: a tela bloqueia o "+" quando a
+ * categoria está cheia, então sobra só nasce de dado gravado por outra versão.
+ */
+export function escolhasCompletas(
+  kit: { escolhas?: EscolhaDoKit[] },
+  escolhas: EscolhaFeita[],
+  categoriaDe: (fichaId: string) => string | undefined,
+): { completas: boolean; faltam: { categoria: string; quantidade: number }[] } {
+  const faltam: { categoria: string; quantidade: number }[] = [];
+
+  for (const pedida of kit.escolhas ?? []) {
+    const feitas = escolhas
+      .filter(
+        (escolha) => categoriaDe(escolha.fichaTecnicaId) === pedida.categoria,
+      )
+      .reduce((soma, escolha) => soma + quantidadeUtil(escolha), 0);
+    if (feitas !== pedida.quantidade) {
+      faltam.push({
+        categoria: pedida.categoria,
+        quantidade: pedida.quantidade - feitas,
+      });
+    }
+  }
+
+  return { completas: faltam.length === 0, faltam };
+}
+
+/** "1 Cookie tradicional + 1 Cookie de nutella" — o que foi escolhido, em uma frase. */
+export function resumoDasEscolhas(
+  escolhas: { quantidade: number; nomeSnapshot: string }[],
+): string {
+  return escolhas
+    .map(
+      (escolha) =>
+        `${quantidadeEmTexto(escolha.quantidade)} ${escolha.nomeSnapshot}`,
+    )
+    .join(" + ");
+}
+
+/** "Combo dupla (1 Cookie tradicional + 1 Cookie de nutella)": o nome que a cliente confere. */
+export function nomeComEscolhas(item: {
+  nomeSnapshot: string;
+  escolhas?: { quantidade: number; nomeSnapshot: string }[];
+}): string {
+  return item.escolhas?.length
+    ? `${item.nomeSnapshot} (${resumoDasEscolhas(item.escolhas)})`
+    : item.nomeSnapshot;
 }
 
 /** Quantos caracteres do id entram no código. Três bastam para ela ler em voz alta. */
@@ -507,7 +597,11 @@ export function quantidadeEmTexto(quantidade: number): string {
  * linha, e não um resumo do pedido inteiro.
  */
 export function resumoDosItens(
-  itens: { quantidade: number; nomeSnapshot: string }[],
+  itens: {
+    quantidade: number;
+    nomeSnapshot: string;
+    escolhas?: { quantidade: number; nomeSnapshot: string }[];
+  }[],
   maximo = 2,
 ): string {
   if (itens.length === 0) return "Sem itens";
@@ -515,7 +609,8 @@ export function resumoDosItens(
   const visiveis = itens
     .slice(0, maximo)
     .map(
-      (item) => `${quantidadeEmTexto(item.quantidade)} × ${item.nomeSnapshot}`,
+      (item) =>
+        `${quantidadeEmTexto(item.quantidade)} × ${nomeComEscolhas(item)}`,
     )
     .join(" · ");
 

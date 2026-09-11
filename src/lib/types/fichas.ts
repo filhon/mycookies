@@ -31,6 +31,18 @@ export interface ComponenteKit {
   custoLinha: Centavos;
 }
 
+/**
+ * O que a cliente escolhe num kit: "2 de Cookie", e ela diz quais. A escolha é
+ * por categoria, e não por lista de fichas: um sabor novo entra no combo no dia
+ * em que nasce, sem reabrir o combo (`DECISOES.md#d99`).
+ */
+export interface EscolhaDoKit {
+  /** Quantas unidades desta escolha entram em UM kit. */
+  quantidade: number;
+  /** As receitas que servem: as vivas, do tipo SIMPLES, com esta categoria. */
+  categoria: string;
+}
+
 export interface ItemFichaTecnica {
   insumoId: string;
   /** Snapshot do nome: a linha continua legível mesmo se o insumo for arquivado. */
@@ -111,6 +123,11 @@ export interface FichaTecnica extends DocumentoBase {
   itens: ItemFichaTecnica[];
   /** Fichas que compõem o kit. Sempre vazio em ficha SIMPLES. */
   componentes: ComponenteKit[];
+  /**
+   * O que a cliente escolhe num kit (`DECISOES.md#d99`). Ausente ou vazio:
+   * conteúdo fixo, que é toda ficha gravada antes da spec 014.
+   */
+  escolhas?: EscolhaDoKit[];
 
   /**
    * Espelho de itens[].insumoId. Existe para responder com UMA query
@@ -128,6 +145,13 @@ export interface FichaTecnica extends DocumentoBase {
   custoEmbalagem: Centavos;
   /** Soma dos componentes, em kit. Zero em ficha simples. */
   custoComponentes: Centavos;
+  /**
+   * A parcela das escolhas no custo, pela opção mais cara de cada uma
+   * (`DECISOES.md#d101`). Zero sem escolhas; ausente em ficha antiga, que vale
+   * o mesmo. É o que permite ao pedido saber a base do kit:
+   * `custoUnitario − custoEscolhas`.
+   */
+  custoEscolhas?: Centavos;
   custoTotalLote: Centavos;
   /** custoTotalLote / rendimento. Base de toda precificação. */
   custoUnitario: Centavos;

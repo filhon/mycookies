@@ -162,6 +162,27 @@ describe("mensagemDoPedido", () => {
     );
   });
 
+  it("diz a escolha do combo entre parênteses, e o subtotal é o do combo", () => {
+    const texto = mensagemDoPedido({
+      ...PEDIDO,
+      itens: [
+        {
+          quantidade: 3,
+          nomeSnapshot: "Combo dupla",
+          precoUnitario: 1200,
+          escolhas: [
+            { quantidade: 1, nomeSnapshot: "Cookie tradicional" },
+            { quantidade: 1, nomeSnapshot: "Cookie de nutella" },
+          ],
+        },
+      ],
+    });
+
+    expect(texto).toContain(
+      `• 3 × Combo dupla (1 Cookie tradicional + 1 Cookie de nutella) — ${dinheiro(3600)}`,
+    );
+  });
+
   it("escreve quantidade fracionada com vírgula", () => {
     const texto = mensagemDoPedido({
       ...PEDIDO,

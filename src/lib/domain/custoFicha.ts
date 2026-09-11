@@ -3,6 +3,7 @@ import type {
   Centavos,
   CentavosFracionados,
   CustosOperacionais,
+  EscolhaDoKit,
   Percentual,
   TipoFicha,
   UnidadeRendimento,
@@ -49,6 +50,82 @@ export function podeSerComponente(
     !candidata.arquivado &&
     candidata.id !== fichaAtualId
   );
+}
+
+/** O kit em que a cliente escolhe o que vai dentro (`DECISOES.md#d99`). */
+export function temEscolhas(ficha: {
+  tipo: TipoFicha;
+  escolhas?: EscolhaDoKit[];
+}): boolean {
+  return ficha.tipo === "KIT" && (ficha.escolhas?.length ?? 0) > 0;
+}
+
+/** O que uma escolha precisa saber de uma ficha candidata. `FichaTecnica` serve. */
+export interface FichaParaEscolha {
+  id: string;
+  nome: string;
+  tipo: TipoFicha;
+  categoria: string;
+  arquivado: boolean;
+  custoUnitario: Centavos;
+}
+
+/**
+ * As receitas que servem a uma escolha: vivas, SIMPLES, da categoria, e nunca
+ * o próprio kit. É `podeSerComponente` com a categoria por cima — a escolha é
+ * um componente que a cliente aponta.
+ */
+export function opcoesDaEscolha<F extends FichaParaEscolha>(
+  escolha: Pick<EscolhaDoKit, "categoria">,
+  fichas: F[],
+  kitId?: string,
+): F[] {
+  return fichas.filter(
+    (ficha) =>
+      podeSerComponente(ficha, kitId) && ficha.categoria === escolha.categoria,
+  );
+}
+
+export interface CustoDasEscolhas {
+  /** O que entra no custo do kit: a mais cara de cada escolha (`#d101`). */
+  referencia: Centavos;
+  minimo: Centavos;
+  maximo: Centavos;
+  /** As categorias sem receita viva: a parcela sai zerada, e a tela avisa. */
+  semOpcao: string[];
+}
+
+/**
+ * A parcela das escolhas no custo de UM kit, e a faixa em que ela pode cair.
+ *
+ * A referência é a opção mais cara de cada escolha: o preço do combo é fixo,
+ * e um preço que fecha a margem na combinação mais cara fecha em todas. Uma
+ * média prometeria uma margem que metade dos combos não entrega. Categoria sem
+ * receita viva entra como zero com aviso, e não como `Infinity`.
+ */
+export function custoDasEscolhas(
+  escolhas: EscolhaDoKit[],
+  fichas: FichaParaEscolha[],
+  kitId?: string,
+): CustoDasEscolhas {
+  let minimo = 0;
+  let maximo = 0;
+  const semOpcao: string[] = [];
+
+  for (const escolha of escolhas) {
+    const custos = opcoesDaEscolha(escolha, fichas, kitId).map(
+      (opcao) => opcao.custoUnitario,
+    );
+    if (custos.length === 0) {
+      semOpcao.push(escolha.categoria);
+      continue;
+    }
+    const quantidade = escolha.quantidade > 0 ? escolha.quantidade : 0;
+    minimo += Math.round(Math.min(...custos) * quantidade);
+    maximo += Math.round(Math.max(...custos) * quantidade);
+  }
+
+  return { referencia: maximo, minimo, maximo, semOpcao };
 }
 
 /** Como a ficha conta o que sai de um lote. */
@@ -116,6 +193,11 @@ export interface EntradaCustoFicha {
   itens: ItemParaCusto[];
   /** Sempre vazio em ficha simples. */
   componentes: ComponenteParaCusto[];
+  /**
+   * A parcela das escolhas, já calculada por `custoDasEscolhas` (`#d101`).
+   * Ausente vale zero, que é toda ficha sem escolha.
+   */
+  custoEscolhas?: Centavos;
   tempoProducaoMinutos: number;
   /** Quantas unidades saem de um lote. */
   rendimento: number;
@@ -126,6 +208,7 @@ export interface CustoFichaCalculado {
   custoInsumos: Centavos;
   custoEmbalagem: Centavos;
   custoComponentes: Centavos;
+  custoEscolhas: Centavos;
   custoMaoDeObra: Centavos;
   custoEnergiaGas: Centavos;
   custoIndireto: Centavos;
@@ -169,6 +252,7 @@ export function calcularCustoFicha(
     (soma, componente) => soma + custoLinhaComponente(componente),
     0,
   );
+  const custoEscolhas = Math.max(0, Math.round(entrada.custoEscolhas ?? 0));
 
   const minutos = entrada.tempoProducaoMinutos;
   const custoMaoDeObra = custoDeMinutos(operacional.valorHoraTrabalho, minutos);
@@ -185,6 +269,7 @@ export function calcularCustoFicha(
     custoInsumos +
     custoEmbalagem +
     custoComponentes +
+    custoEscolhas +
     custoMaoDeObra +
     custoEnergiaGas +
     custoIndireto;
@@ -193,6 +278,7 @@ export function calcularCustoFicha(
     custoInsumos,
     custoEmbalagem,
     custoComponentes,
+    custoEscolhas,
     custoMaoDeObra,
     custoEnergiaGas,
     custoIndireto,

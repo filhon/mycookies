@@ -20,6 +20,7 @@ import type {
   Centavos,
   CentavosFracionados,
   ComponenteKit,
+  EscolhaDoKit,
   FichaTecnica,
   ItemFichaTecnica,
   TipoFicha,
@@ -56,6 +57,10 @@ export interface DadosFicha {
   tempoProducaoMinutos: number;
   itens: ItemDaFicha[];
   componentes: ComponenteDaFicha[];
+  /** O que a cliente escolhe. Vazio em ficha simples e em kit fixo (`#d99`). */
+  escolhas: EscolhaDoKit[];
+  /** A referência de `custoDasEscolhas`, calculada pelo editor (`#d101`). */
+  custoEscolhas: Centavos;
   /** Vem de `configuracao/geral`, ou zerado se ela ainda não configurou. */
   operacional: RateioOperacional;
   precificacao: ParametrosPreco;
@@ -83,6 +88,7 @@ function corpoDaFicha(dados: DadosFicha) {
   const derivado = derivarFicha({
     itens: dados.itens,
     componentes: dados.componentes,
+    custoEscolhas: dados.custoEscolhas,
     tempoProducaoMinutos: dados.tempoProducaoMinutos,
     rendimento: dados.rendimento,
     operacional: dados.operacional,
@@ -119,6 +125,10 @@ function corpoDaFicha(dados: DadosFicha) {
 
     itens,
     componentes,
+    escolhas: dados.escolhas.map((escolha) => ({
+      quantidade: escolha.quantidade,
+      categoria: escolha.categoria.trim(),
+    })),
     // Espelho consultável por `array-contains`: é o que acha as fichas
     // afetadas quando um insumo muda de preço (`DECISOES.md#d05`).
     insumoIds: idsUnicos(itens.map((item) => item.insumoId)),
@@ -136,6 +146,7 @@ function corpoDaFicha(dados: DadosFicha) {
     custoInsumos: derivado.custo.custoInsumos,
     custoEmbalagem: derivado.custo.custoEmbalagem,
     custoComponentes: derivado.custo.custoComponentes,
+    custoEscolhas: derivado.custo.custoEscolhas,
     custoTotalLote: derivado.custo.custoTotalLote,
     custoUnitario: derivado.custo.custoUnitario,
 

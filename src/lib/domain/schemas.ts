@@ -131,6 +131,15 @@ export const esquemaFicha = z
         quantidade: z.number().positive("Diga quantas unidades entram."),
       }),
     ),
+    escolhas: z.array(
+      z.object({
+        quantidade: z
+          .number()
+          .int("A cliente escolhe unidades inteiras: 1, 2, 3.")
+          .min(1, "Diga quantas unidades a cliente escolhe."),
+        categoria: z.string().trim().min(1, "Escolha a categoria."),
+      }),
+    ),
     metodo: z.enum(["MARKUP", "MARGEM"]),
     markup: z
       .number()
@@ -156,10 +165,32 @@ export const esquemaFicha = z
     path: ["itens"],
     message: "Uma receita precisa de pelo menos um insumo.",
   })
-  .refine((ficha) => ficha.tipo !== "KIT" || ficha.componentes.length > 0, {
-    path: ["componentes"],
-    message: "Um kit precisa de pelo menos uma ficha dentro dele.",
-  });
+  // Um kit é conteúdo fixo, escolha da cliente, ou os dois (`#d99`): vazio
+  // dos dois lados é uma caixa sem nada dentro.
+  .refine(
+    (ficha) =>
+      ficha.tipo !== "KIT" ||
+      ficha.componentes.length + ficha.escolhas.length > 0,
+    {
+      path: ["componentes"],
+      message:
+        "Um kit precisa de pelo menos uma ficha dentro dele, ou de uma escolha para a cliente.",
+    },
+  )
+  .refine((ficha) => ficha.tipo !== "SIMPLES" || ficha.escolhas.length === 0, {
+    path: ["escolhas"],
+    message: "Só um kit tem escolha da cliente.",
+  })
+  .refine(
+    (ficha) =>
+      new Set(ficha.escolhas.map((escolha) => escolha.categoria)).size ===
+      ficha.escolhas.length,
+    {
+      path: ["escolhas"],
+      message:
+        "Cada categoria entra uma vez só. Some as quantidades numa linha.",
+    },
+  );
 
 export type EntradaFicha = z.infer<typeof esquemaFicha>;
 
@@ -269,6 +300,16 @@ export const esquemaPedido = z.object({
       z.object({
         fichaTecnicaId: z.string().min(1),
         quantidade: z.number().positive("Diga quantas unidades vão."),
+        // Só a forma: se a escolha fecha o que o kit pede é pergunta para a
+        // ficha, e quem a faz é `escolhasCompletas`, no salvamento.
+        escolhas: z
+          .array(
+            z.object({
+              fichaTecnicaId: z.string().min(1),
+              quantidade: z.number().int().positive(),
+            }),
+          )
+          .optional(),
       }),
     )
     .min(1, "Um pedido precisa de pelo menos um produto."),

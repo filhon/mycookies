@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-11 (fora de spec: dados para pagar no resumo do WhatsApp).
+Atualizado em 2026-09-11 (spec 014, sessão 14A: o combo existe e é vendido).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -92,6 +92,16 @@ na 13C e dois na 13D, todos opcionais. Uma rota nasceu, `/fichas/contagem`, que 
 tinha previsto porque a 13D estava reservada. Regra de segurança não mudou, e nenhuma
 dependência entrou. **Os roteiros de navegador das quatro não rodaram.**
 
+A spec `014-combo-a-escolha.md` está **entregue na primeira sessão**: a **14A** fez o combo
+existir como produto — o kit ganhou `escolhas[]` por categoria e `custoEscolhas` pela opção
+mais cara, a linha do pedido ganhou a escolha inline com `escolhas[]` gravadas e o custo do
+combo montado em `custoUnitarioSnapshot`, o WhatsApp e `/pedidos` dizem a escolha entre
+parênteses, e `explodirDemanda` explode o que foi escolhido. Três campos aditivos, nenhuma
+rota, nenhum índice, nenhuma dependência, regra de segurança intacta; `derivarPedido`,
+`deltaDoPedido` e `agregarPedidos` não mudaram uma linha. A **14B fica a fazer**: o combo
+produz (a frase "dá?" por receita escolhida, o atalho de fornada, o dono nos prontos e a
+reserva pulando kit com escolhas). **O roteiro de navegador da 14A não rodou.**
+
 Fora das specs, em 2026-09-11, o resumo do WhatsApp passou a dizer **como pagar**: `FormaPagamento.instrucoes` (texto livre em `/configuracao`, "Dados para pagar") entra na mensagem em parágrafo próprio enquanto o pedido não está pago (`#d98`). Nenhum dado bancário no código: **a conta real precisa preencher o campo na forma "Pix" uma vez.**
 
 Fora das specs, o projeto foi **preparado para publicar no Vercel** em 2026-09-03: a
@@ -127,7 +137,7 @@ da hospedagem falharia. O guia é `docs/DEPLOY.md`. **Nada foi publicado ainda**
 > mudou de arquivo. Se algo em `insumos`, em `/compras` ou na leitura de nota aparecer torto na
 > 5B, estes são os primeiros suspeitos depois dos que a 6A abriu.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **453
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **486
 testes**, e build com 17 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
 `/insumos/contagem` na 7A, `/comecar` na 8A e `/fichas/contagem` na 13D — mais `/api/nota`,
 `/fichas/[id]` e `/pedidos/[id]` dinâmicas e service worker gerado.
@@ -178,7 +188,7 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 | —   | O caixa que não perde a conta               | pronto, sem o roteiro               | `specs/011-caixa-que-nao-perde-conta.md` |
 | —   | O acerto das entregas                       | pronto, sem o roteiro               | `specs/012-entregas-a-pagar.md`          |
 | 13  | A fornada                                   | pronto (13A a 13D), sem os roteiros | `specs/013-a-fornada.md`                 |
-| 14  | O combo à escolha                           | **spec escrita, a executar**        | `specs/014-combo-a-escolha.md`           |
+| 14  | O combo à escolha                           | 14A pronto, **14B a fazer**         | `specs/014-combo-a-escolha.md`           |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -1480,14 +1490,109 @@ rendimento − prometido` sem dizer que a 13B já abate do prometido o que virou
 folha em "registrada", a semente, as frases e a entrada em `/fichas` não têm teste. O que só o
 navegador responde está na próxima ação.
 
+## O que a sessão 14A deixou pronto
+
+O combo existe como produto e é vendido. **A produção do combo é a 14B e não entrou.**
+
+- `src/lib/types/fichas.ts`: `EscolhaDoKit` e `FichaTecnica.escolhas?` / `custoEscolhas?`.
+  `vendas.ts`: `EscolhaFeita` e `ItemPedido.escolhas?`, com o comentário de
+  `custoUnitarioSnapshot` dizendo que numa linha de combo ele é o custo montado. Os três
+  campos aditivos que a spec pediu, todos opcionais: ficha e pedido gravados antes leem
+  como "conteúdo fixo, parcela zero".
+- `src/lib/domain/custoFicha.ts`: `temEscolhas`, `FichaParaEscolha`, `opcoesDaEscolha` (é
+  `podeSerComponente` com a categoria por cima) e `custoDasEscolhas` (referência pela mais
+  cara, faixa, `semOpcao`). `EntradaCustoFicha.custoEscolhas?` entra em `custoTotalLote`
+  como `custoComponentes`; `CustoFichaCalculado.custoEscolhas` sai sempre.
+- `src/lib/domain/pedido.ts`: `custoDoComboMontado`, `escolhasCompletas`,
+  `resumoDasEscolhas` e `nomeComEscolhas`, que `resumoDosItens` e `mensagemDoPedido`
+  (WhatsApp) usam: "3 × Combo dupla (1 Cookie tradicional + 1 Cookie de nutella)".
+- `src/lib/domain/listaCompras.ts`: `PedidoParaExplodir.itens[].escolhas?` e a explosão da
+  escolha em `explodirDemanda`, um nível, pelos itens da receita escolhida. `linhasDosItens`
+  nasceu porque era a terceira cópia do mesmo `map`.
+- `schemas.ts`: `esquemaFicha.escolhas` (inteiro ≥ 1, categoria não vazia, sem repetição,
+  vazio em `SIMPLES`; kit precisa de componente **ou** escolha) e `esquemaPedido.itens[].escolhas`
+  (só a forma).
+- `mutations/fichas.ts`: `DadosFicha.escolhas` e `custoEscolhas`; `corpoDaFicha` grava os
+  dois. `mutations/pedidos.ts`: `ItemDoPedido.escolhas?`, gravado por spread condicional, e
+  `fichaIds` espelhando também as fichas escolhidas.
+- `src/components/fichas/FormularioFicha.tsx`: o bloco "O que a cliente escolhe", só em kit,
+  entre "O que vai no kit" e "Embalagem do kit" — `useFieldArray`, uma linha por escolha
+  (`LinhaEscolhaFicha`: quantas, `un de`, categoria, e embaixo "3 receitas servem: … · a mais
+  cara custa R$ 3,10" ou o aviso com ícone). "O custo do lote" ganhou a parcela "O que a
+  cliente escolhe (pela opção mais cara)", a frase da faixa e o aviso das categorias sem
+  receita. "Fornadas de reserva" some em kit com escolhas. `Linha` de `LinhaItemFicha` ganhou
+  `nome?` e `detalhe?` para servir à terceira lista.
+- `src/components/pedidos/EscolhaDoCombo.tsx`, novo: a escolha inline embaixo da linha do
+  combo — por categoria, "Cookie · escolha 2" e "1 de 2" (com ✓ quando fecha), a lista das
+  receitas que servem com o preço avulso em `micro` e um par de −/+ de 44px; a escolha que
+  deixou de servir aparece com ícone e um botão para sair. `FormularioPedido`: a linha
+  guarda `custoDoKit` e `escolhas`, `mudarEscolha` refaz `custoUnitarioSnapshot` por
+  `custoDoComboMontado` a cada toque, `opcoesFicha` deixa o kit com escolhas repetir em duas
+  linhas, salvar com escolha incompleta cai em `errosItens` ("Faltam 2 de Cookie neste
+  combo."), e "usar o preço de hoje" refaz base e escolhas pelo custo de hoje.
+  `LinhaItemPedido` ganhou `detalhe` (o resumo das escolhas embaixo do nome).
+- Testes: **33 novos** (453 → 486). `caixa.test.ts` (o combo no ranking com os números do
+  caso de aceite, e nenhuma linha para os sabores — a linha leva `escolhas` e
+  `ItemAgregavel` não conhece o campo, que é a prova de que o agregado não mudou),
+  `custoFicha.test.ts` (opções, referência 620 e faixa
+  440–620, categoria sem receita, kit sem escolha idêntico ao de hoje, `temEscolhas`),
+  `pedido.test.ts` (580 do combo montado, a linha de 3 combos com sobra 1.860 e o contorno
+  de hoje fechando no mesmo total, `escolhasCompletas` nos cinco casos, o resumo),
+  `listaCompras.test.ts` (135 g de farinha e 3 saquinhos, o mesmo combo em duas linhas,
+  pedido sem escolhas igual ao de antes, escolha arquivada e sem rendimento como pendência),
+  `whatsapp.test.ts` (a linha entre parênteses) e `schemas.test.ts`, **arquivo novo**, com
+  as regras do kit.
+- Decisões novas em `DECISOES.md#d99` a `#d103` — as cinco da abertura da spec. **A spec as
+  numerou `#d98` a `#d102`, e o `#d98` já existia** (dados para pagar); a numeração aqui é
+  a do arquivo.
+
+Fora do escopo literal da spec, e por quê:
+
+- **A linha do combo no editor de pedido não mostra frase de capacidade.** A 14B é que faz
+  `capacidadeDaFicha` devolver `null` para kit com escolhas; até lá, a frase que sairia seria
+  a do saquinho ("dá para 200"), mentira com cara de resposta. Um `!combo` na tela, e o
+  domínio fica intacto para a 14B.
+- **`opcoesDaEscolha` é genérica** (`<F extends FichaParaEscolha>`): o bloco de escolha
+  precisa do preço avulso da mesma lista, e devolver o tipo de entrada evita um cast.
+- **`schemas.test.ts` nasceu.** "Ficha `SIMPLES` recusa `escolhas`" é critério de aceite e
+  regra de esquema, e não havia onde testá-la.
+- **A escolha que deixou de servir tem botão para sair.** Sem ele, uma receita arquivada
+  depois do pedido travaria a linha em "falta 1" sem jeito de consertar.
+
+**O que a 14A não provou.** O de sempre: `npm test` cobre `src/lib/domain/`, então o bloco
+de escolha na ficha, o bloco inline na linha do pedido, a repetição do combo em duas linhas
+e a gravação de `escolhas` e `custoEscolhas` não têm teste. O roteiro de navegador da 14A
+(sete passos, ao fim da spec) é o que fecha isso, e está na próxima ação.
+
 ## Próxima ação
 
-**A spec `014-combo-a-escolha.md` está escrita e não executada.** Nasceu do relato da 13D: o
-"combo dupla" tem preço fixo e a cliente escolhe os sabores, e o kit de hoje só sabe conteúdo
-fixo. Duas sessões, três campos aditivos, nenhuma rota. As aprovações estão listadas ao fim dela.
+**A sessão 14B da spec `014-combo-a-escolha.md`: o combo produz.** A frase "dá?" na linha do
+combo por receita escolhida, `capacidadeDaFicha` devolvendo `null` para kit com escolhas, o
+atalho "Registrar fornada" oferecendo as receitas escolhidas, o dono nos prontos contando
+as escolhas (o `ponytail:` de `reservadoNoPronto`), e `reservaDeProducao` /
+`fichasAbaixoDoPiso` pulando kit com escolhas.
 
-Antes ou junto: **os roteiros de navegador da 13A à 13D**, e a 5B, que continua sendo a prova
-que falta.
+Antes ou junto: **o roteiro de navegador da 14A** (os sete passos ao fim da spec), **os da
+13A à 13D**, e a 5B, que continua sendo a prova que falta. **A conta real precisa recriar o
+"combo dupla" como kit com a escolha "2 de Cookie"** — os pedidos antigos lançados como
+cookies soltos + desconto ficam como estão (`#d102`).
+
+Da 14A, o que só o navegador responde, na ordem do roteiro da spec:
+
+1. **Criar "Combo dupla"** como kit com saquinho kraft e a escolha "2 de Cookie": o bloco
+   lista as receitas que servem, o custo diz a faixa, e o documento gravado tem `escolhas` e
+   `custoEscolhas`.
+2. **Num pedido novo, adicionar o combo**: a escolha abre embaixo da linha; salvar com 1 de 2
+   falha na linha ("Falta 1 de Cookie neste combo."); 1 + 1 fecha o custo em R$ 5,80 e o
+   rodapé acompanha.
+3. **Subir para 3 combos**: a escolha continua 1 + 1 e o subtotal vai a R$ 36,00.
+4. **O mesmo combo numa segunda linha** com "2 de nutella": as duas linhas convivem, e o
+   combo continua na busca depois de entrar.
+5. **O resumo do WhatsApp e `/pedidos`** dizem a escolha entre parênteses.
+6. **Confirmar e "Montar a lista"** em `/compras`: farinha dos dois sabores e o saquinho kraft
+   nas quantidades do caso de aceite (135 g e 3).
+7. **Pagar**: `/financeiro` mostra "Combo dupla" no ranking, e nenhum cookie solto.
+8. **Em 360px**, os −/+ têm 44px e a lista de escolha não estoura a largura da linha.
 
 Da 13D, o que só o navegador responde:
 

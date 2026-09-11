@@ -1,7 +1,7 @@
 import type { Centavos, DataISO } from "@/lib/types";
 import { rotuloDiaPorExtenso } from "./datas";
 import { formatarMoeda } from "./money";
-import { quantidadeEmTexto, subtotalDoItem } from "./pedido";
+import { nomeComEscolhas, quantidadeEmTexto, subtotalDoItem } from "./pedido";
 
 /**
  * O caminho do pedido até a conversa em que ele nasceu.
@@ -59,6 +59,8 @@ export interface ResumoParaCliente {
     quantidade: number;
     nomeSnapshot: string;
     precoUnitario: Centavos;
+    /** O que foi escolhido num combo: entra entre parênteses, é o que ela confere. */
+    escolhas?: { quantidade: number; nomeSnapshot: string }[];
   }[];
   subtotal: Centavos;
   desconto: Centavos;
@@ -94,7 +96,7 @@ export function mensagemDoPedido(resumo: ResumoParaCliente): string {
 
   const itens = resumo.itens.map(
     (item) =>
-      `• ${quantidadeEmTexto(item.quantidade)} × ${item.nomeSnapshot} — ${formatarMoeda(
+      `• ${quantidadeEmTexto(item.quantidade)} × ${nomeComEscolhas(item)} — ${formatarMoeda(
         subtotalDoItem(item),
       )}`,
   );

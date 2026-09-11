@@ -47,6 +47,7 @@ import type {
   Centavos,
   CompetenciaMensal,
   DataISO,
+  EscolhaFeita,
   FormaPagamento,
   ItemPedido,
   Pedido,
@@ -63,8 +64,10 @@ export interface ItemDoPedido {
    * quantidade multiplica este número; nunca busca o preço de hoje.
    */
   precoUnitario: Centavos;
+  /** Numa linha de combo, já é o custo montado (`DECISOES.md#d100`). */
   custoUnitarioSnapshot: Centavos;
   observacao?: string;
+  escolhas?: EscolhaFeita[];
 }
 
 export interface DadosPedido {
@@ -136,6 +139,7 @@ function corpoDoPedido(dados: DadosPedido) {
     custoUnitarioSnapshot: item.custoUnitarioSnapshot,
     subtotal: derivado.linhas[indice]?.subtotal ?? 0,
     ...(texto(item.observacao) ? { observacao: item.observacao?.trim() } : {}),
+    ...(item.escolhas?.length ? { escolhas: item.escolhas } : {}),
   }));
 
   return {
@@ -147,8 +151,14 @@ function corpoDoPedido(dados: DadosPedido) {
 
     itens,
     // Espelho consultável por `array-contains`: "quais pedidos levam esta
-    // ficha?" é a pergunta da lista de compras, na sessão 3C.
-    fichaIds: idsUnicos(itens.map((item) => item.fichaTecnicaId)),
+    // ficha?" é a pergunta da lista de compras, na sessão 3C. As fichas
+    // escolhidas entram também: um pedido de combo com nutella contém nutella.
+    fichaIds: idsUnicos(
+      itens.flatMap((item) => [
+        item.fichaTecnicaId,
+        ...(item.escolhas ?? []).map((escolha) => escolha.fichaTecnicaId),
+      ]),
+    ),
 
     status: dados.status,
     dataEntrega: Timestamp.fromDate(dataDeISO(dados.dataEntregaISO)),

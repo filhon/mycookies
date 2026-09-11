@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   calcularCustoFicha,
+  custoDasEscolhas,
   custoLinhaItem,
   ehEmbalagem,
+  opcoesDaEscolha,
   podeSerComponente,
   SEM_RATEIO,
+  temEscolhas,
   type EntradaCustoFicha,
+  type FichaParaEscolha,
 } from "@/lib/domain/custoFicha";
 
 const OPERACIONAL = {
@@ -177,6 +181,136 @@ describe("calcularCustoFicha", () => {
 
     expect(custo.custoTotalLote).toBe(8825);
     expect(custo.custoUnitario).toBe(441);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spec 014 · o combo à escolha: o custo de referência é o da opção mais cara.
+// ---------------------------------------------------------------------------
+
+const TRADICIONAL: FichaParaEscolha = {
+  id: "trad",
+  nome: "Cookie tradicional",
+  tipo: "SIMPLES",
+  categoria: "Cookie",
+  arquivado: false,
+  custoUnitario: 220,
+};
+const NUTELLA: FichaParaEscolha = {
+  ...TRADICIONAL,
+  id: "nutella",
+  nome: "Cookie de nutella",
+  custoUnitario: 310,
+};
+const BROWNIE: FichaParaEscolha = {
+  ...TRADICIONAL,
+  id: "brownie",
+  nome: "Brownie",
+  categoria: "Brownie",
+  custoUnitario: 400,
+};
+const COMBO: FichaParaEscolha = {
+  ...TRADICIONAL,
+  id: "combo",
+  nome: "Combo dupla",
+  tipo: "KIT",
+  custoUnitario: 670,
+};
+const FICHAS_DO_COMBO = [TRADICIONAL, NUTELLA, BROWNIE, COMBO];
+const DOIS_COOKIES = [{ quantidade: 2, categoria: "Cookie" }];
+
+describe("opcoesDaEscolha", () => {
+  it("serve receita viva, simples e da categoria; o brownie não entra", () => {
+    expect(
+      opcoesDaEscolha({ categoria: "Cookie" }, FICHAS_DO_COMBO, "combo").map(
+        (opcao) => opcao.id,
+      ),
+    ).toEqual(["trad", "nutella"]);
+  });
+
+  it("nunca o próprio kit, nem outro kit, nem arquivada", () => {
+    const outroKit = { ...COMBO, id: "outro", categoria: "Cookie" };
+    const arquivada = { ...NUTELLA, arquivado: true };
+    expect(
+      opcoesDaEscolha(
+        { categoria: "Cookie" },
+        [TRADICIONAL, arquivada, outroKit, { ...COMBO, categoria: "Cookie" }],
+        "combo",
+      ).map((opcao) => opcao.id),
+    ).toEqual(["trad"]);
+  });
+});
+
+describe("custoDasEscolhas", () => {
+  it("fecha o caso de aceite: referência 620, faixa de 440 a 620", () => {
+    expect(custoDasEscolhas(DOIS_COOKIES, FICHAS_DO_COMBO, "combo")).toEqual({
+      referencia: 620,
+      minimo: 440,
+      maximo: 620,
+      semOpcao: [],
+    });
+  });
+
+  it("categoria sem receita viva zera a parcela e avisa, e nunca Infinity", () => {
+    const custo = custoDasEscolhas(
+      [...DOIS_COOKIES, { quantidade: 1, categoria: "Torta" }],
+      FICHAS_DO_COMBO,
+      "combo",
+    );
+    expect(custo.referencia).toBe(620);
+    expect(custo.semOpcao).toEqual(["Torta"]);
+    expect(Number.isFinite(custo.minimo)).toBe(true);
+  });
+
+  it("sem escolha nenhuma é zero, que é toda ficha de hoje", () => {
+    expect(custoDasEscolhas([], FICHAS_DO_COMBO)).toEqual({
+      referencia: 0,
+      minimo: 0,
+      maximo: 0,
+      semOpcao: [],
+    });
+  });
+});
+
+describe("calcularCustoFicha com escolhas", () => {
+  it("soma a referência ao lote: saquinho 50 + escolhas 620 = 670", () => {
+    const custo = calcularCustoFicha(
+      ficha({
+        itens: [
+          {
+            categoria: "EMBALAGEM",
+            custoUnidadeBaseCorrigido: 50,
+            quantidade: 1,
+          },
+        ],
+        custoEscolhas: 620,
+        operacional: SEM_RATEIO,
+      }),
+    );
+    expect(custo.custoEscolhas).toBe(620);
+    expect(custo.custoTotalLote).toBe(670);
+    expect(custo.custoUnitario).toBe(670);
+  });
+
+  it("kit sem escolha grava custoEscolhas zero e o resto igual ao de hoje", () => {
+    const entrada = ficha({
+      componentes: [{ custoUnitarioSnapshot: 441, quantidade: 6 }],
+    });
+    const semCampo = calcularCustoFicha(entrada);
+    const comZero = calcularCustoFicha({ ...entrada, custoEscolhas: 0 });
+    expect(semCampo.custoEscolhas).toBe(0);
+    expect(comZero).toEqual(semCampo);
+  });
+});
+
+describe("temEscolhas", () => {
+  it("só o kit com pelo menos uma escolha", () => {
+    expect(temEscolhas({ tipo: "KIT", escolhas: DOIS_COOKIES })).toBe(true);
+    expect(temEscolhas({ tipo: "KIT", escolhas: [] })).toBe(false);
+    expect(temEscolhas({ tipo: "KIT" })).toBe(false);
+    expect(temEscolhas({ tipo: "SIMPLES", escolhas: DOIS_COOKIES })).toBe(
+      false,
+    );
   });
 });
 

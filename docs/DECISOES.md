@@ -2967,3 +2967,123 @@ transferência, se quiser) e deixa vazio no dinheiro e no cartão, e é isso que
 aparecer ou não. Dado bancário pessoal fica fora do repositório, o que importa quando o
 projeto virar SaaS (`#d01`). Campo opcional, compatível com documento antigo. A conta real
 precisa abrir a forma "Pix" em `/configuracao` e preencher uma vez.
+
+---
+
+## D99 · O combo é o kit com escolhas, e não um tipo novo
+
+**Status:** vigente · decidida em 2026-09-11 na spec 014, sessão 14A
+
+**Contexto.** O "combo dupla" tem preço fixo e a cliente escolhe os dois sabores. O kit
+(`#d11`) só sabia conteúdo fixo, e o contorno era lançar os cookies soltos com um desconto
+que não era desconto: o combo nunca existia como produto, `Pedido.desconto` carregava dois
+significados, e a ficha do combo não tinha como ser precificada.
+
+**Decisão.** `FichaTecnica.escolhas?: EscolhaDoKit[]` — `{ quantidade, categoria }` — ao
+lado de `componentes[]`, só em `KIT`. Um kit pode ter as duas coisas. **A escolha é por
+categoria**, e não por lista de fichas: `FichaTecnica.categoria` já agrupa a lista e o
+relatório, "qualquer cookie" é a frase dela, e um sabor novo entra no combo no dia em que
+nasce. `opcoesDaEscolha` é `podeSerComponente` com a categoria por cima: viva, `SIMPLES`,
+da categoria, nunca o próprio kit. `temEscolhas(ficha)` é a forma executável.
+
+**Consequência.** Um terceiro `tipo` duplicaria tudo o que o kit já tem para trocar um campo.
+O preço é que categoria é texto livre: renomear "Cookie" para "Cookies" numa receita a tira
+de todo combo em silêncio — a ficha do combo diz quantas receitas servem e quais, e a linha
+do pedido diz "nenhuma receita serve" com ícone e bloqueia. Visível, não silencioso. Se a
+operação mostrar que ela renomeia categoria e perde combo, a troca é `fichaIds[]` explícito
+por escolha e o seletor. A spec numerou estas decisões `#d98` a `#d102`; o `#d98` já
+existia (dados para pagar), então elas são `#d99` a `#d103`.
+
+---
+
+## D100 · O preço do combo é fixo, e o custo é congelado na escolha
+
+**Status:** vigente · decidida em 2026-09-11 na spec 014, sessão 14A
+
+**Decisão.** `ItemPedido.escolhas?: EscolhaFeita[]` — `{ fichaTecnicaId, nomeSnapshot,
+quantidade, custoUnitarioSnapshot }`, por unidade do kit. A linha do pedido continua sendo
+**uma** linha com o `fichaTecnicaId` e o `precoUnitario` do combo; o que muda é o que
+`custoUnitarioSnapshot` significa nela: o **custo do combo montado**, `custoDoComboMontado`
+= base do kit (`custoUnitario − custoEscolhas`) mais a soma das escolhas, congelado quando
+ela fecha a escolha. `escolhasCompletas` bloqueia o salvamento com escolha incompleta, na
+linha. O mesmo kit com escolhas pode entrar em duas linhas (escolhas diferentes); para
+toda ficha sem escolha a regra de uma linha por ficha continua.
+
+**Consequência.** É a decisão que mantém a spec pequena: `derivarPedido`, `subtotalDoItem`,
+`custoDoItem`, `deltaDoPedido`, `agregarPedidos`, `marcarPedidoPago` e `recalcularMes` não
+mudaram uma linha — para eles um combo é um item com preço e custo, como sempre foi. Três
+escolhas de execução ficam registradas:
+
+- **A base congela junto.** Ao reabrir um pedido, o par que dá a base é
+  `custoUnitarioSnapshot` e a soma das escolhas gravadas, e não a ficha de hoje: trocar um
+  sabor num pedido antigo mexe só na parcela trocada. "Usar o preço de hoje" (`#d32`)
+  refaz base e escolhas pelo custo de hoje, porque preço e custo andam juntos.
+- **`Pedido.fichaIds` espelha também as fichas escolhidas.** O espelho existe para
+  `array-contains`, e um pedido de combo com nutella contém nutella.
+- **`esquemaPedido` valida só a forma das escolhas.** Se elas fecham o que o kit pede é
+  pergunta para a ficha, que o esquema não tem; quem responde é `escolhasCompletas`, no
+  salvamento, e a mensagem cai em `errosItens` como qualquer falha de linha.
+
+---
+
+## D101 · O custo de referência do combo é o da opção mais cara
+
+**Status:** vigente · decidida em 2026-09-11 na spec 014, sessão 14A
+
+**Decisão.** `FichaTecnica.custoEscolhas?: Centavos` grava a parcela das escolhas, pela
+opção mais cara de cada uma (`custoDasEscolhas().referencia`), e `calcularCustoFicha` a
+soma em `custoTotalLote` como soma `custoComponentes`. O bloco "O custo do lote" diz a
+faixa — "custa de R$ 4,90 a R$ 6,70 conforme a escolha" — e avisa, com ícone, a categoria
+sem receita viva, cuja parcela sai zerada e não `Infinity`.
+
+**Consequência.** O preço é fixo: um preço que fecha a margem na combinação mais cara fecha
+em todas, e uma média prometeria uma margem que metade dos combos não entrega. É também
+por este campo que o `#d100` sabe a base do kit sem refazer a conta da ficha dentro do
+editor de pedido. `custoDoComboMontado` assume kit com rendimento 1, que é o que o tipo
+promete; com rendimento maior a base sairia menor do que é, e uma guarda só impede o
+negativo — está marcado com `ponytail:`. O kit com escolhas e custo desatualizado continua
+sendo a dívida que já existia: nada marca um kit quando o custo de uma receita de dentro
+muda, e com escolha por categoria o vínculo nem é por id. Salvar o combo refaz o custo com
+o de hoje.
+
+---
+
+## D102 · O combo é o produto vendido; os sabores de dentro não entram no ranking
+
+**Status:** vigente · decidida em 2026-09-11 na spec 014, sessão 14A
+
+**Decisão.** `ResumoMensal.produtos` ganha a linha do combo e **não** ganha os cookies de
+dentro; `qtdItensVendidos` conta o combo como um item. Nada mudou em `caixa.ts` para isso
+acontecer: é o efeito do `#d100`.
+
+**Consequência.** O ranking é de faturamento, e o sabor dentro de um combo não fatura nada
+sozinho — uma linha "Cookie de nutella · 3 un · R$ 0,00" seria a resposta certa para uma
+pergunta que ninguém fez. O que se perde é "qual sabor sai mais dentro dos combos", que é
+pergunta de produção e nasce com o histórico de produção como relatório, que a 013 deixou
+fora de propósito. Pedidos antigos lançados como cookies soltos + desconto **não** são
+convertidos: o caixa deles está certo, e reescrever pedido pago é o que `#d24` ensina a
+não fazer.
+
+---
+
+## D103 · A demanda e a produção seguem o que foi escolhido
+
+**Status:** vigente na primeira metade (demanda, 14A); a segunda (produção) é a 14B ·
+decidida em 2026-09-11 na spec 014, sessão 14A
+
+**Decisão.** `explodirDemanda` explode `escolhas[]` junto dos componentes fixos: cada escolha
+entra pelos `itens` da receita escolhida, em `quantidade × pedida ÷ rendimento`, um nível
+só — a receita escolhida é `SIMPLES` por construção, então são os itens dela e nada abaixo.
+Receita escolhida arquivada ou sem rendimento vira pendência com o `nomeSnapshot` da
+escolha, como um componente fixo já vira.
+
+**Consequência.** Sem isto a lista compraria só o saquinho do combo, e deixar de comprar é o
+erro caro (`#d63`). É a única mudança de comportamento em dado já gravado, e o efeito é nulo
+enquanto nenhum item tiver `escolhas`: os testes da 3C, da 7B e da 013 passaram sem uma
+linha alterada. Tudo o que já lê `explodirDemanda` herda de graça — `montarLista`,
+`prometidoParaPedidos` e a capacidade da 13B. O que a 14B faz seguir a escolha: a frase
+"dá?" na linha do combo (por receita escolhida), o atalho de fornada do pedido, o dono nos
+prontos (`#d97`) e a reserva (`#d96`), que pulam kit com escolhas. Até lá, a linha do combo
+no editor de pedido **não mostra frase de capacidade** — a que sairia seria a do saquinho,
+e um "dá para 200" sobre a embalagem é mentira com cara de resposta —, e "Fornadas de
+reserva" já some do formulário do kit com escolhas.

@@ -33,6 +33,16 @@ export type StatusPedido =
   | "ENTREGUE"
   | "CANCELADO";
 
+/** O que foi escolhido para um item de combo (`DECISOES.md#d100`). */
+export interface EscolhaFeita {
+  fichaTecnicaId: string;
+  nomeSnapshot: string;
+  /** Por unidade do kit: num pedido de 3 combos, "1" aqui são 3 cookies. */
+  quantidade: number;
+  /** O `custoUnitario` da receita escolhida, congelado na hora (`#d08`). */
+  custoUnitarioSnapshot: Centavos;
+}
+
 export interface ItemPedido {
   fichaTecnicaId: string;
   nomeSnapshot: string;
@@ -42,10 +52,16 @@ export interface ItemPedido {
   /**
    * Custo congelado no momento do pedido. Sem este snapshot, reajustar o preço
    * do chocolate reescreveria o lucro de todos os pedidos já entregues.
+   *
+   * Numa linha de combo (`escolhas` presente) é o custo do **combo montado**:
+   * a base do kit mais as escolhas, congelado quando ela fechou a escolha
+   * (`DECISOES.md#d100`). Para o resto do sistema é o mesmo campo.
    */
   custoUnitarioSnapshot: Centavos;
   subtotal: Centavos;
   observacao?: string;
+  /** O que foi escolhido para ESTE item, por unidade do kit (`#d100`). */
+  escolhas?: EscolhaFeita[];
 }
 
 export interface Pedido extends DocumentoBase {

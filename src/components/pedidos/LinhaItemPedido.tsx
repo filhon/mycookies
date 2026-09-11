@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { Children, type ReactNode } from "react";
 import { RefreshCw, Trash2 } from "lucide-react";
 import { BASE_CONTROLE } from "@/components/ui/Campo";
 import { Dinheiro } from "@/components/ui/Dinheiro";
@@ -24,6 +24,7 @@ const CLASSES_QUANTIDADE = cn(
  */
 export function LinhaItemPedido({
   nome,
+  detalhe,
   quantidade,
   precoUnitario,
   subtotal,
@@ -35,6 +36,8 @@ export function LinhaItemPedido({
   children,
 }: {
   nome: string;
+  /** O que foi escolhido num combo, embaixo do nome. */
+  detalhe?: string;
   quantidade: string;
   precoUnitario: Centavos;
   subtotal: Centavos;
@@ -52,6 +55,9 @@ export function LinhaItemPedido({
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <p className="truncate text-body font-medium text-ink">{nome}</p>
+          {detalhe && (
+            <p className="mt-0.5 text-label text-ink-muted">{detalhe}</p>
+          )}
 
           <div className="mt-2 flex items-center gap-2">
             <input
@@ -96,7 +102,11 @@ export function LinhaItemPedido({
             </p>
           )}
 
-          {children && <div className="mt-2">{children}</div>}
+          {/* `toArray` descarta `false`: dois filhos condicionais e nenhum
+              presente não podem abrir um espaço vazio. */}
+          {Children.toArray(children).length > 0 && (
+            <div className="mt-2 space-y-2">{children}</div>
+          )}
         </div>
 
         <button

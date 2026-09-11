@@ -308,21 +308,21 @@ lucro 1860 }`, `qtdItensVendidos += 3`, e **nenhuma** linha para os cookies. `re
 
 ## Critérios de aceite 14A
 
-- [ ] Kit com `escolhas` grava `escolhas` e `custoEscolhas`; kit sem escolha grava
+- [x] Kit com `escolhas` grava `escolhas` e `custoEscolhas`; kit sem escolha grava
       `custoEscolhas: 0` e o resto igual ao de hoje. Ficha `SIMPLES` recusa `escolhas`.
-- [ ] O custo de referência é o da opção mais cara de cada escolha, e a faixa aparece no bloco
+- [x] O custo de referência é o da opção mais cara de cada escolha, e a faixa aparece no bloco
       do custo. Categoria sem receita viva zera a parcela e avisa, com ícone.
-- [ ] Na linha do pedido, escolha incompleta bloqueia o salvamento com a mensagem na linha;
+- [x] Na linha do pedido, escolha incompleta bloqueia o salvamento com a mensagem na linha;
       completa, grava `escolhas[]` com os snapshots e `custoUnitarioSnapshot` do combo montado.
-- [ ] `derivarPedido`, `deltaDoPedido` e `agregarPedidos` **não mudaram**: os testes da 3A, 3B e
+- [x] `derivarPedido`, `deltaDoPedido` e `agregarPedidos` **não mudaram**: os testes da 3A, 3B e
       4A passam sem alteração. O combo aparece no ranking; os sabores, não.
-- [ ] `explodirDemanda` de um pedido de combo pede os insumos das receitas escolhidas mais a
+- [x] `explodirDemanda` de um pedido de combo pede os insumos das receitas escolhidas mais a
       embalagem do combo; pedido sem `escolhas` explode exatamente como antes.
-- [ ] Um pedido com o mesmo combo em duas linhas, escolhas diferentes, salva e explode as duas.
-- [ ] `resumoDosItens` e a mensagem do WhatsApp dizem a escolha entre parênteses.
-- [ ] O bloco de escolha na linha do pedido tem alvos de 44px e funciona em 360px; é inline, sem
+- [x] Um pedido com o mesmo combo em duas linhas, escolhas diferentes, salva e explode as duas.
+- [x] `resumoDosItens` e a mensagem do WhatsApp dizem a escolha entre parênteses.
+- [x] O bloco de escolha na linha do pedido tem alvos de 44px e funciona em 360px; é inline, sem
       painel e sem modal.
-- [ ] Portão de conclusão passando.
+- [x] Portão de conclusão passando.
 
 ---
 

@@ -3,15 +3,18 @@ import {
   agruparPorEntrega,
   aReceber,
   codigoDoPedido,
+  custoDoComboMontado,
   custoDoItem,
   derivarPedido,
   descricaoDoRepasse,
   ehConcluido,
   entregasAPagar,
   entregasEsquecidas,
+  escolhasCompletas,
   ofereceOPrecoDeHoje,
   podeIrPara,
   repassesFeitos,
+  resumoDasEscolhas,
   resumoDoRepasse,
   resumoDosItens,
   subtotalDoItem,
@@ -19,7 +22,7 @@ import {
   type ItemParaPedido,
   type PedidoParaEntrega,
 } from "@/lib/domain/pedido";
-import type { FormaPagamento, StatusPedido } from "@/lib/types";
+import type { EscolhaFeita, FormaPagamento, StatusPedido } from "@/lib/types";
 
 const CREDITO: FormaPagamento = {
   id: "credito",
@@ -295,6 +298,148 @@ describe("resumoDosItens", () => {
 
   it("pedido vazio não vira linha em branco", () => {
     expect(resumoDosItens([])).toBe("Sem itens");
+  });
+
+  it("diz a escolha do combo entre parênteses", () => {
+    expect(
+      resumoDosItens([
+        { quantidade: 3, nomeSnapshot: "Combo dupla", escolhas: ESCOLHA_DUPLA },
+      ]),
+    ).toBe("3 × Combo dupla (1 Cookie tradicional + 1 Cookie de nutella)");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spec 014 · o combo à escolha: preço fixo, custo congelado na escolha.
+// ---------------------------------------------------------------------------
+
+/** A ficha do combo do caso de aceite: saquinho 50 + escolhas 620. */
+const COMBO_DUPLA = {
+  custoUnitario: 670,
+  custoEscolhas: 620,
+  escolhas: [{ quantidade: 2, categoria: "Cookie" }],
+};
+
+const TRADICIONAL: EscolhaFeita = {
+  fichaTecnicaId: "trad",
+  nomeSnapshot: "Cookie tradicional",
+  quantidade: 1,
+  custoUnitarioSnapshot: 220,
+};
+const NUTELLA: EscolhaFeita = {
+  fichaTecnicaId: "nutella",
+  nomeSnapshot: "Cookie de nutella",
+  quantidade: 1,
+  custoUnitarioSnapshot: 310,
+};
+const ESCOLHA_DUPLA = [TRADICIONAL, NUTELLA];
+
+const CATEGORIAS: Record<string, string> = {
+  trad: "Cookie",
+  nutella: "Cookie",
+  brownie: "Brownie",
+};
+const categoriaDe = (fichaId: string) => CATEGORIAS[fichaId];
+
+describe("custoDoComboMontado", () => {
+  it("fecha o caso de aceite: 670 − 620 + 220 + 310 = 580", () => {
+    expect(custoDoComboMontado(COMBO_DUPLA, ESCOLHA_DUPLA)).toBe(580);
+  });
+
+  it("dois do mesmo sabor multiplicam o congelado", () => {
+    expect(
+      custoDoComboMontado(COMBO_DUPLA, [{ ...NUTELLA, quantidade: 2 }]),
+    ).toBe(50 + 620);
+  });
+
+  it("sem escolha ainda, é só a base do kit", () => {
+    expect(custoDoComboMontado(COMBO_DUPLA, [])).toBe(50);
+  });
+
+  it("ficha antiga sem custoEscolhas é kit fixo: o custo é o dela", () => {
+    expect(custoDoComboMontado({ custoUnitario: 3200 }, [])).toBe(3200);
+  });
+
+  it("a linha do pedido: 3 combos a R$ 12,00 rendem R$ 18,60 sem desconto", () => {
+    const derivado = derivarPedido({
+      itens: [
+        {
+          quantidade: 3,
+          precoUnitario: 1200,
+          custoUnitarioSnapshot: custoDoComboMontado(
+            COMBO_DUPLA,
+            ESCOLHA_DUPLA,
+          ),
+        },
+      ],
+      desconto: 0,
+      taxaEntrega: 0,
+    });
+    expect(derivado.linhas).toEqual([{ subtotal: 3600, custo: 1740 }]);
+    expect(derivado.lucroEstimado).toBe(1860);
+    // O combo é um item, e não dois cookies (`#d102`).
+    expect(derivado.quantidadeItens).toBe(3);
+    // O contorno de hoje chega ao mesmo total com um desconto que não é desconto.
+    expect(
+      derivarPedido({
+        itens: [
+          { quantidade: 3, precoUnitario: 700, custoUnitarioSnapshot: 220 },
+          { quantidade: 3, precoUnitario: 800, custoUnitarioSnapshot: 310 },
+        ],
+        desconto: 900,
+        taxaEntrega: 0,
+      }).total,
+    ).toBe(3600);
+  });
+});
+
+describe("escolhasCompletas", () => {
+  it("1 tradicional + 1 nutella fecha o combo de 2 cookies", () => {
+    expect(escolhasCompletas(COMBO_DUPLA, ESCOLHA_DUPLA, categoriaDe)).toEqual({
+      completas: true,
+      faltam: [],
+    });
+  });
+
+  it("só 1 tradicional deixa faltar 1 de Cookie", () => {
+    expect(escolhasCompletas(COMBO_DUPLA, [TRADICIONAL], categoriaDe)).toEqual({
+      completas: false,
+      faltam: [{ categoria: "Cookie", quantidade: 1 }],
+    });
+  });
+
+  it("nem a mais: três cookies num combo de dois é sobra, e não fecha", () => {
+    const resultado = escolhasCompletas(
+      COMBO_DUPLA,
+      [TRADICIONAL, { ...NUTELLA, quantidade: 2 }],
+      categoriaDe,
+    );
+    expect(resultado.completas).toBe(false);
+    expect(resultado.faltam).toEqual([{ categoria: "Cookie", quantidade: -1 }]);
+  });
+
+  it("um brownie não conta como cookie, e uma ficha sumida não conta como nada", () => {
+    const brownie = { ...TRADICIONAL, fichaTecnicaId: "brownie" };
+    const sumida = { ...NUTELLA, fichaTecnicaId: "nao-existe" };
+    expect(
+      escolhasCompletas(COMBO_DUPLA, [brownie, sumida], categoriaDe).faltam,
+    ).toEqual([{ categoria: "Cookie", quantidade: 2 }]);
+  });
+
+  it("kit sem escolha está sempre completo", () => {
+    expect(escolhasCompletas({}, [], categoriaDe).completas).toBe(true);
+  });
+});
+
+describe("resumoDasEscolhas", () => {
+  it("escreve a escolha em uma frase", () => {
+    expect(resumoDasEscolhas(ESCOLHA_DUPLA)).toBe(
+      "1 Cookie tradicional + 1 Cookie de nutella",
+    );
+    expect(resumoDasEscolhas([{ ...NUTELLA, quantidade: 2 }])).toBe(
+      "2 Cookie de nutella",
+    );
+    expect(resumoDasEscolhas([])).toBe("");
   });
 });
 

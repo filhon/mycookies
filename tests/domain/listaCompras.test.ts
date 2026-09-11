@@ -245,6 +245,135 @@ describe("explodirDemanda", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Spec 014 · o combo à escolha: a demanda segue o que foi escolhido (#d103).
+// ---------------------------------------------------------------------------
+
+const NUTELLA: FichaParaExplodir = {
+  id: "nutella",
+  nome: "Cookie de nutella",
+  arquivado: false,
+  rendimento: 20,
+  itens: [{ insumoId: "farinha", nomeSnapshot: "Farinha", quantidade: 400 }],
+  componentes: [],
+};
+
+/** Combo dupla: só o saquinho é fixo; os dois cookies a cliente escolhe. */
+const COMBO_DUPLA: FichaParaExplodir = {
+  id: "combo",
+  nome: "Combo dupla",
+  arquivado: false,
+  rendimento: 1,
+  itens: [{ insumoId: "kraft", nomeSnapshot: "Saquinho kraft", quantidade: 1 }],
+  componentes: [],
+};
+
+const FICHAS_DO_COMBO = [COOKIE, NUTELLA, COMBO_DUPLA];
+
+function pedidoDeCombo(
+  escolhas: {
+    fichaTecnicaId: string;
+    nomeSnapshot: string;
+    quantidade: number;
+  }[],
+  quantidade = 3,
+  id = "c1",
+): PedidoParaExplodir {
+  return {
+    id,
+    itens: [
+      {
+        fichaTecnicaId: "combo",
+        nomeSnapshot: "Combo dupla",
+        quantidade,
+        escolhas,
+      },
+    ],
+  };
+}
+
+const TRAD_E_NUTELLA = [
+  {
+    fichaTecnicaId: "cookie",
+    nomeSnapshot: "Cookie tradicional",
+    quantidade: 1,
+  },
+  {
+    fichaTecnicaId: "nutella",
+    nomeSnapshot: "Cookie de nutella",
+    quantidade: 1,
+  },
+];
+
+function porInsumo(pedidos: PedidoParaExplodir[], fichas = FICHAS_DO_COMBO) {
+  return new Map(
+    explodirDemanda(pedidos, fichas).linhas.map((linha) => [
+      linha.insumoId,
+      linha.quantidade,
+    ]),
+  );
+}
+
+describe("explodirDemanda de um combo à escolha", () => {
+  it("fecha o caso de aceite: 135 g de farinha e 3 saquinhos kraft", () => {
+    // 3 combos × 1 tradicional = 3 cookies = 0,15 lote → 75 g;
+    // 3 combos × 1 nutella = 3 cookies = 0,15 lote → 60 g.
+    const demanda = porInsumo([pedidoDeCombo(TRAD_E_NUTELLA)]);
+    expect(demanda.get("farinha")).toBeCloseTo(135, 6);
+    expect(demanda.get("kraft")).toBeCloseTo(3, 6);
+    // E o resto do tradicional segue junto: 3 cookies de 20 por lote.
+    expect(demanda.get("chocolate")).toBeCloseTo(45, 6);
+    expect(demanda.get("saquinho")).toBeCloseTo(3, 6);
+  });
+
+  it("o mesmo combo em duas linhas, escolhas diferentes, explode as duas", () => {
+    const pedido: PedidoParaExplodir = {
+      id: "c2",
+      itens: [
+        ...pedidoDeCombo(TRAD_E_NUTELLA).itens,
+        ...pedidoDeCombo([{ ...TRAD_E_NUTELLA[1]!, quantidade: 2 }], 1).itens,
+      ],
+    };
+    // 135 g das três duplas + 2 nutella (0,1 lote → 40 g).
+    expect(porInsumo([pedido]).get("farinha")).toBeCloseTo(175, 6);
+    expect(porInsumo([pedido]).get("kraft")).toBeCloseTo(4, 6);
+  });
+
+  it("pedido sem escolhas explode exatamente como antes: só a embalagem", () => {
+    const demanda = porInsumo([pedidoDeCombo([])]);
+    expect(demanda.get("kraft")).toBeCloseTo(3, 6);
+    expect(demanda.has("farinha")).toBe(false);
+  });
+
+  it("receita escolhida arquivada vira pendência com o nome congelado", () => {
+    const demanda = explodirDemanda(
+      [pedidoDeCombo(TRAD_E_NUTELLA)],
+      [COOKIE, { ...NUTELLA, arquivado: true }, COMBO_DUPLA],
+    );
+    expect(demanda.pendencias).toEqual([
+      { nome: "Cookie de nutella", motivo: "SEM_FICHA" },
+    ]);
+    // O tradicional e o saquinho continuam: uma escolha sumida não leva a
+    // lista junto.
+    expect(
+      demanda.linhas.find((linha) => linha.insumoId === "farinha")?.quantidade,
+    ).toBeCloseTo(75, 6);
+  });
+
+  it("receita escolhida sem rendimento vira pendência, e nunca NaN", () => {
+    const demanda = explodirDemanda(
+      [pedidoDeCombo(TRAD_E_NUTELLA)],
+      [COOKIE, { ...NUTELLA, rendimento: 0 }, COMBO_DUPLA],
+    );
+    expect(demanda.pendencias).toEqual([
+      { nome: "Cookie de nutella", motivo: "SEM_RENDIMENTO" },
+    ]);
+    for (const linha of demanda.linhas) {
+      expect(Number.isFinite(linha.quantidade)).toBe(true);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // As guardas: nada aqui pode devolver NaN.
 // ---------------------------------------------------------------------------
 

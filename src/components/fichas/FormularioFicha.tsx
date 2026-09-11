@@ -17,8 +17,10 @@ import {
   ChefHat,
   Clock,
   CookingPot,
+  Hand,
   Package,
   Percent,
+  Plus,
   Receipt,
   Settings,
   Tag,
@@ -34,13 +36,19 @@ import { EntradaContagemPronto } from "@/components/producao/EntradaContagemPron
 import { FornadasRecentes } from "@/components/producao/FornadasRecentes";
 import { FraseDoPronto } from "@/components/producao/FraseDaCapacidade";
 import { PainelFornada } from "@/components/producao/PainelFornada";
-import { LinhaComponenteFicha, LinhaItemFicha } from "./LinhaItemFicha";
+import {
+  LinhaComponenteFicha,
+  LinhaEscolhaFicha,
+  LinhaItemFicha,
+} from "./LinhaItemFicha";
 import { PainelPreco } from "./PainelPreco";
 import {
+  custoDasEscolhas,
   custoLinhaComponente,
   custoLinhaItem,
   derivarFicha,
   ehEmbalagem,
+  opcoesDaEscolha,
   podeSerComponente,
   ROTULO_UNIDADE_RENDIMENTO,
   SEM_RATEIO,
@@ -68,6 +76,7 @@ import {
 import type {
   ConfiguracaoGeral,
   DataISO,
+  EscolhaDoKit,
   FichaTecnica,
   Fornada,
   Insumo,
@@ -91,6 +100,11 @@ interface LinhaComponenteForm {
   quantidade: string;
 }
 
+interface LinhaEscolhaForm {
+  quantidade: string;
+  categoria: string;
+}
+
 interface ValoresFicha {
   nome: string;
   categoria: string;
@@ -101,6 +115,7 @@ interface ValoresFicha {
   tempoProducaoMinutos: string;
   itens: LinhaItemForm[];
   componentes: LinhaComponenteForm[];
+  escolhas: LinhaEscolhaForm[];
   metodo: MetodoPrecificacao;
   markup: string;
   margemDesejada: string;
@@ -157,6 +172,7 @@ function valoresIniciais(
       tempoProducaoMinutos: "",
       itens: [],
       componentes: [],
+      escolhas: [],
       metodo: padrao.metodoPadrao,
       markup: texto(padrao.markupPadrao),
       margemDesejada: texto(padrao.margemPadrao),
@@ -187,6 +203,10 @@ function valoresIniciais(
     componentes: ficha.componentes.map((componente) => ({
       fichaId: componente.fichaId,
       quantidade: texto(componente.quantidade),
+    })),
+    escolhas: (ficha.escolhas ?? []).map((escolha) => ({
+      quantidade: texto(escolha.quantidade),
+      categoria: escolha.categoria,
     })),
     metodo: ficha.precificacao.metodo,
     markup: texto(ficha.precificacao.markup ?? padrao.markupPadrao),
@@ -231,6 +251,10 @@ export function FormularioFicha({
   const listaComponentes = useFieldArray({
     control: form.control,
     name: "componentes",
+  });
+  const listaEscolhas = useFieldArray({
+    control: form.control,
+    name: "escolhas",
   });
 
   const [salvando, setSalvando] = useState(false);
@@ -303,6 +327,20 @@ export function FormularioFicha({
 
   const ehKit = valores.tipo === "KIT";
 
+  /** As categorias que uma escolha pode apontar: as das receitas que servem. */
+  const categoriasDeEscolha = useMemo(
+    () =>
+      [
+        ...new Set(
+          fichas
+            .filter((candidata) => podeSerComponente(candidata, ficha?.id))
+            .map((candidata) => candidata.categoria)
+            .filter(Boolean),
+        ),
+      ].sort(),
+    [fichas, ficha],
+  );
+
   /** A linha do formulário resolvida contra o insumo de agora. */
   function resolverItem(linha: LinhaItemForm): ItemDaFicha & {
     arquivado: boolean;
@@ -345,6 +383,16 @@ export function FormularioFicha({
   const componentesResolvidos = ehKit
     ? valores.componentes.map(resolverComponente)
     : [];
+  const escolhasResolvidas: EscolhaDoKit[] = ehKit
+    ? valores.escolhas.map((linha) => ({
+        quantidade: parseParaNumero(linha.quantidade),
+        categoria: linha.categoria,
+      }))
+    : [];
+  // Pela opção mais cara (`#d101`): o preço fixo do combo fecha na pior
+  // combinação, ou não fecha em todas.
+  const custoEscolhas = custoDasEscolhas(escolhasResolvidas, fichas, ficha?.id);
+  const kitComEscolhas = ehKit && escolhasResolvidas.length > 0;
 
   const operacional: RateioOperacional =
     configuracao?.operacional ?? SEM_RATEIO;
@@ -371,6 +419,7 @@ export function FormularioFicha({
   const derivado = derivarFicha({
     itens: itensResolvidos,
     componentes: componentesResolvidos,
+    custoEscolhas: custoEscolhas.referencia,
     tempoProducaoMinutos: parseParaNumero(valores.tempoProducaoMinutos),
     rendimento,
     operacional,
@@ -384,15 +433,25 @@ export function FormularioFicha({
     { quantidade?: { message?: string } }[] | { message?: string } | undefined;
   const errosComponentes = form.formState.errors.componentes as
     { quantidade?: { message?: string } }[] | { message?: string } | undefined;
+  const errosEscolhas = form.formState.errors.escolhas as
+    | {
+        quantidade?: { message?: string };
+        categoria?: { message?: string };
+      }[]
+    | { message?: string }
+    | undefined;
 
   const erroDaLista = (erros: typeof errosItens): string | undefined =>
     Array.isArray(erros) ? undefined : erros?.message;
 
   const erroDaLinha = (
-    erros: typeof errosItens,
+    erros: typeof errosEscolhas,
     indice: number,
   ): string | undefined =>
-    Array.isArray(erros) ? erros[indice]?.quantidade?.message : undefined;
+    Array.isArray(erros)
+      ? (erros[indice]?.quantidade?.message ??
+        erros[indice]?.categoria?.message)
+      : undefined;
 
   const opcoesInsumo: OpcaoBusca[] = insumos
     .filter((insumo) => !valores.itens.some((l) => l.insumoId === insumo.id))
@@ -433,6 +492,16 @@ export function FormularioFicha({
     listaComponentes.append({ fichaId, quantidade: "1" });
   }
 
+  /** A primeira categoria que ainda não tem escolha, para não nascer repetida. */
+  function adicionarEscolha() {
+    const usadas = new Set(valores.escolhas.map((linha) => linha.categoria));
+    const categoria =
+      categoriasDeEscolha.find((candidata) => !usadas.has(candidata)) ??
+      categoriasDeEscolha[0] ??
+      "";
+    listaEscolhas.append({ quantidade: "1", categoria });
+  }
+
   /**
    * Trocar o tipo muda o que a ficha pode conter, e a tela diz o que saiu em
    * vez de descartar em silêncio. Nada disso toca o banco até ela salvar.
@@ -458,11 +527,15 @@ export function FormularioFicha({
     }
 
     const tinhaComponentes = valores.componentes.length;
+    const tinhaEscolhas = valores.escolhas.length;
     form.setValue("componentes", []);
+    form.setValue("escolhas", []);
     setAviso(
       tinhaComponentes > 0
         ? `Uma receita não leva outras fichas dentro: ${tinhaComponentes === 1 ? "a ficha que estava" : `as ${tinhaComponentes} fichas que estavam`} no kit ${tinhaComponentes === 1 ? "saiu" : "saíram"} da lista.`
-        : null,
+        : tinhaEscolhas > 0
+          ? "Uma receita não tem escolha da cliente: a escolha saiu do kit."
+          : null,
     );
   }
 
@@ -498,6 +571,7 @@ export function FormularioFicha({
         fichaId: componente.fichaId,
         quantidade: componente.quantidade,
       })),
+      escolhas: escolhasResolvidas,
       ...precificacao,
       precoVenda: derivado.precoVenda,
     });
@@ -538,6 +612,8 @@ export function FormularioFicha({
       tempoProducaoMinutos: parseParaNumero(valores.tempoProducaoMinutos),
       itens: itensResolvidos,
       componentes: componentesResolvidos,
+      escolhas: escolhasResolvidas,
+      custoEscolhas: custoEscolhas.referencia,
       operacional,
       precificacao,
       precoVenda: derivado.precoVenda,
@@ -814,21 +890,25 @@ export function FormularioFicha({
 
           {/* O piso é por ficha, e mora na tela onde ela já pensa neste
               produto (`#d96`). Nasce em zero: ligado, é a única coisa que faz a
-              lista de compras crescer sem pedido nenhum atrás. */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Campo
-              rotulo="Fornadas de reserva"
-              inputMode="numeric"
-              sufixo={
-                parseParaNumero(valores.fornadasMinimas) === 1
-                  ? "fornada"
-                  : "fornadas"
-              }
-              erro={form.formState.errors.fornadasMinimas?.message}
-              dica="Sempre poder fazer esta quantidade. Quando a despensa não der mais isso, o que falta entra na lista de compras. Zero desliga."
-              {...form.register("fornadasMinimas")}
-            />
-          </div>
+              lista de compras crescer sem pedido nenhum atrás. Some no kit com
+              escolhas: reservar "1 combo" não diz de que sabor, e a reserva é
+              das receitas. */}
+          {!kitComEscolhas && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Campo
+                rotulo="Fornadas de reserva"
+                inputMode="numeric"
+                sufixo={
+                  parseParaNumero(valores.fornadasMinimas) === 1
+                    ? "fornada"
+                    : "fornadas"
+                }
+                erro={form.formState.errors.fornadasMinimas?.message}
+                dica="Sempre poder fazer esta quantidade. Quando a despensa não der mais isso, o que falta entra na lista de compras. Zero desliga."
+                {...form.register("fornadasMinimas")}
+              />
+            </div>
+          )}
         </Bloco>
 
         {ehKit && (
@@ -871,6 +951,67 @@ export function FormularioFicha({
                         ? "Esta ficha foi arquivada e não tem mais custo. Tire-a do kit ou reative o cadastro."
                         : erroDaLinha(errosComponentes, indice)
                     }
+                  />
+                );
+              })}
+            </ListaDeLinhas>
+          </Bloco>
+        )}
+
+        {ehKit && (
+          <Bloco
+            icone={Hand}
+            titulo="O que a cliente escolhe"
+            descricao="O preço é fixo e ela escolhe os sabores. Por categoria: um sabor novo entra no combo no dia em que nasce."
+            recuado={false}
+          >
+            <div className="lg:ml-8">
+              <Botao
+                tamanho="sm"
+                onClick={adicionarEscolha}
+                disabled={categoriasDeEscolha.length === 0}
+                iconeInicial={
+                  <Plus aria-hidden className="size-4" strokeWidth={1.75} />
+                }
+              >
+                Adicionar uma escolha
+              </Botao>
+              {categoriasDeEscolha.length === 0 && (
+                <p className="mt-2 text-label text-ink-muted">
+                  Cadastre pelo menos uma receita com categoria para a cliente
+                  ter o que escolher.
+                </p>
+              )}
+            </div>
+
+            <ListaDeLinhas
+              vazio="Sem escolha, o kit é uma caixa de conteúdo fixo: o que vai nele está na lista de cima."
+              erro={erroDaLista(errosEscolhas)}
+              quantidade={listaEscolhas.fields.length}
+            >
+              {listaEscolhas.fields.map((campo, indice) => {
+                const escolha = escolhasResolvidas[indice];
+                if (!escolha) return null;
+                const opcoes = opcoesDaEscolha(escolha, fichas, ficha?.id);
+                const maisCara = Math.max(
+                  0,
+                  ...opcoes.map((opcao) => opcao.custoUnitario),
+                );
+                return (
+                  <LinhaEscolhaFicha
+                    key={campo.id}
+                    categorias={categoriasDeEscolha}
+                    opcoes={opcoes.map((opcao) => opcao.nome)}
+                    maisCara={maisCara}
+                    custoLinha={Math.round(maisCara * escolha.quantidade)}
+                    campoQuantidade={form.register(
+                      `escolhas.${indice}.quantidade`,
+                    )}
+                    campoCategoria={form.register(
+                      `escolhas.${indice}.categoria`,
+                    )}
+                    aoRemover={() => listaEscolhas.remove(indice)}
+                    erro={erroDaLinha(errosEscolhas, indice)}
                   />
                 );
               })}
@@ -951,6 +1092,12 @@ export function FormularioFicha({
                 valor={derivado.custo.custoComponentes}
               />
             )}
+            {kitComEscolhas && (
+              <Parcela
+                rotulo="O que a cliente escolhe (pela opção mais cara)"
+                valor={derivado.custo.custoEscolhas}
+              />
+            )}
             <Parcela
               rotulo="Seu trabalho"
               valor={derivado.custo.custoMaoDeObra}
@@ -980,6 +1127,39 @@ export function FormularioFicha({
               </dd>
             </div>
           </dl>
+
+          {/* O custo de referência sem a faixa é um número que ela não tem
+              como conferir: a mais barata e a mais cara, por unidade. */}
+          {kitComEscolhas &&
+            rendimento > 0 &&
+            custoEscolhas.minimo !== custoEscolhas.maximo && (
+              <p className="num text-label text-ink-muted">
+                Custa de{" "}
+                {formatarMoeda(
+                  Math.round(
+                    (derivado.custo.custoTotalLote -
+                      custoEscolhas.maximo +
+                      custoEscolhas.minimo) /
+                      rendimento,
+                  ),
+                )}{" "}
+                a {formatarMoeda(derivado.custo.custoUnitario)} conforme a
+                escolha. O preço fecha na mais cara, e por isso fecha em todas.
+              </p>
+            )}
+          {custoEscolhas.semOpcao.length > 0 && (
+            <p className="flex items-start gap-2 text-label text-attention">
+              <TriangleAlert
+                aria-hidden
+                className="mt-0.5 size-4 shrink-0"
+                strokeWidth={1.75}
+              />
+              <span>
+                Nenhuma receita serve em {custoEscolhas.semOpcao.join(", ")}:
+                essa parte do custo está zerada até haver uma.
+              </span>
+            </p>
+          )}
         </Bloco>
 
         <Bloco
