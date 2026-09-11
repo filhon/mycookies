@@ -530,6 +530,7 @@ export function FormularioPedido({
         endereco: valores.endereco || undefined,
       },
       formaNome: forma?.nome,
+      formaInstrucoes: forma?.instrucoes,
       pago: salvo.pago,
     };
   }

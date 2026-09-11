@@ -1,9 +1,9 @@
 "use client";
 
 import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Botao } from "@/components/ui/Botao";
-import { Campo, Seletor } from "@/components/ui/Campo";
+import { Campo, EnvelopeCampo, Seletor } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Painel } from "@/components/ui/Painel";
 import {
@@ -39,6 +39,7 @@ interface EstadoForma {
   taxaPercentual: string;
   taxaFixa: number;
   prazoRecebimentoDias: string;
+  instrucoes: string;
   ativo: boolean;
 }
 
@@ -50,6 +51,7 @@ function nova(tipo: TipoPagamento = "PIX"): EstadoForma {
     taxaPercentual: String(sugestao.taxaPercentual).replace(".", ","),
     taxaFixa: 0,
     prazoRecebimentoDias: String(sugestao.prazoRecebimentoDias),
+    instrucoes: "",
     ativo: true,
   };
 }
@@ -61,6 +63,7 @@ function daForma(forma: FormaPagamento): EstadoForma {
     taxaPercentual: String(forma.taxaPercentual).replace(".", ","),
     taxaFixa: forma.taxaFixa,
     prazoRecebimentoDias: String(forma.prazoRecebimentoDias),
+    instrucoes: forma.instrucoes ?? "",
     ativo: forma.ativo,
   };
 }
@@ -81,6 +84,7 @@ export function FormularioFormaPagamento({
     forma ? daForma(forma) : nova(),
   );
   const [erros, setErros] = useState<Record<string, string>>({});
+  const idInstrucoes = useId();
 
   // Reinicia quando o painel abre em outra forma.
   const chaveAtual = forma?.id ?? "nova";
@@ -131,6 +135,7 @@ export function FormularioFormaPagamento({
       taxaPercentual: taxas.taxaPercentual,
       taxaFixa: estado.taxaFixa,
       prazoRecebimentoDias: prazo,
+      instrucoes: estado.instrucoes,
     });
 
     if (!resultado.success) {
@@ -139,9 +144,12 @@ export function FormularioFormaPagamento({
     }
 
     setErros({});
+    const { instrucoes, ...dados } = resultado.data;
     aoConfirmar({
       id: forma?.id ?? novoId(),
-      ...resultado.data,
+      ...dados,
+      // Vazio é ausência: o campo não vai para o documento em branco.
+      ...(instrucoes ? { instrucoes } : {}),
       ativo: estado.ativo,
     });
     aoFechar();
@@ -218,6 +226,23 @@ export function FormularioFormaPagamento({
           erro={erros.taxaFixa}
           dica="Algumas maquininhas cobram um valor por transação, além do percentual."
         />
+
+        <EnvelopeCampo
+          id={idInstrucoes}
+          rotulo="Dados para pagar"
+          dica="Vai no resumo do WhatsApp enquanto o pedido não está pago. Deixe em branco quando não há o que dizer, como no dinheiro e no cartão."
+        >
+          <textarea
+            id={idInstrucoes}
+            rows={3}
+            value={estado.instrucoes}
+            placeholder={
+              "Beneficiário: Maria da Silva\nBanco Tal\nChave Pix: (11) 90000-0000"
+            }
+            onChange={(evento) => definir("instrucoes", evento.target.value)}
+            className="w-full rounded-md border border-line-strong bg-surface px-3 py-2.5 text-body text-ink transition-colors duration-150 ease-quart placeholder:text-ink-subtle"
+          />
+        </EnvelopeCampo>
 
         <div className="rounded-lg bg-sunken px-4 py-4">
           <p className="text-label font-medium text-ink-muted">

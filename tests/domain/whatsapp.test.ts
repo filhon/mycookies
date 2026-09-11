@@ -129,6 +129,39 @@ describe("mensagemDoPedido", () => {
     );
   });
 
+  const PIX =
+    "Beneficiário: Maria da Silva\nBanco Tal\nChave Pix: (11) 90000-0000";
+
+  it("põe os dados para pagar em bloco próprio, entre o combinado e a despedida", () => {
+    const texto = mensagemDoPedido({
+      ...PEDIDO,
+      formaNome: "Pix",
+      formaInstrucoes: PIX,
+    });
+
+    expect(texto).toContain(
+      `Pagamento: Pix\n\n${PIX}\n\nQualquer ajuste é só me chamar.`,
+    );
+  });
+
+  it("esconde os dados para pagar quando já está pago", () => {
+    const texto = mensagemDoPedido({
+      ...PEDIDO,
+      formaNome: "Pix",
+      formaInstrucoes: PIX,
+      pago: true,
+    });
+
+    expect(texto).not.toContain("Chave Pix");
+    expect(texto).toContain("Já está pago. Obrigada!");
+  });
+
+  it("sem dados para pagar, a mensagem é a mesma de sempre", () => {
+    expect(mensagemDoPedido({ ...PEDIDO, formaInstrucoes: "  " })).toBe(
+      mensagemDoPedido(PEDIDO),
+    );
+  });
+
   it("escreve quantidade fracionada com vírgula", () => {
     const texto = mensagemDoPedido({
       ...PEDIDO,

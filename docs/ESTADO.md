@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-11 (spec 013, sessão 13D: o que está pronto).
+Atualizado em 2026-09-11 (fora de spec: dados para pagar no resumo do WhatsApp).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -92,6 +92,8 @@ na 13C e dois na 13D, todos opcionais. Uma rota nasceu, `/fichas/contagem`, que 
 tinha previsto porque a 13D estava reservada. Regra de segurança não mudou, e nenhuma
 dependência entrou. **Os roteiros de navegador das quatro não rodaram.**
 
+Fora das specs, em 2026-09-11, o resumo do WhatsApp passou a dizer **como pagar**: `FormaPagamento.instrucoes` (texto livre em `/configuracao`, "Dados para pagar") entra na mensagem em parágrafo próprio enquanto o pedido não está pago (`#d98`). Nenhum dado bancário no código: **a conta real precisa preencher o campo na forma "Pix" uma vez.**
+
 Fora das specs, o projeto foi **preparado para publicar no Vercel** em 2026-09-03: a
 credencial do Admin SDK deixou de exigir um arquivo em disco, a falta dela parou de ser
 confundida com login inválido, e `functions/` saiu do `tsconfig` da raiz — sem isso o build
@@ -125,7 +127,7 @@ da hospedagem falharia. O guia é `docs/DEPLOY.md`. **Nada foi publicado ainda**
 > mudou de arquivo. Se algo em `insumos`, em `/compras` ou na leitura de nota aparecer torto na
 > 5B, estes são os primeiros suspeitos depois dos que a 6A abriu.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **450
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **453
 testes**, e build com 17 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
 `/insumos/contagem` na 7A, `/comecar` na 8A e `/fichas/contagem` na 13D — mais `/api/nota`,
 `/fichas/[id]` e `/pedidos/[id]` dinâmicas e service worker gerado.
@@ -176,6 +178,7 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 | —   | O caixa que não perde a conta               | pronto, sem o roteiro               | `specs/011-caixa-que-nao-perde-conta.md` |
 | —   | O acerto das entregas                       | pronto, sem o roteiro               | `specs/012-entregas-a-pagar.md`          |
 | 13  | A fornada                                   | pronto (13A a 13D), sem os roteiros | `specs/013-a-fornada.md`                 |
+| 14  | O combo à escolha                           | **spec escrita, a executar**        | `specs/014-combo-a-escolha.md`           |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -1479,7 +1482,12 @@ navegador responde está na próxima ação.
 
 ## Próxima ação
 
-**Os roteiros de navegador da 13A à 13D**, e a 5B, que continua sendo a prova que falta.
+**A spec `014-combo-a-escolha.md` está escrita e não executada.** Nasceu do relato da 13D: o
+"combo dupla" tem preço fixo e a cliente escolhe os sabores, e o kit de hoje só sabe conteúdo
+fixo. Duas sessões, três campos aditivos, nenhuma rota. As aprovações estão listadas ao fim dela.
+
+Antes ou junto: **os roteiros de navegador da 13A à 13D**, e a 5B, que continua sendo a prova
+que falta.
 
 Da 13D, o que só o navegador responde:
 

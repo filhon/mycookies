@@ -71,6 +71,8 @@ export interface ResumoParaCliente {
   };
   /** O nome da forma escolhida, quando houver. Nunca a taxa dela. */
   formaNome?: string;
+  /** Os dados para pagar por essa forma (`FormaPagamento.instrucoes`). */
+  formaInstrucoes?: string;
   pago: boolean;
 }
 
@@ -124,6 +126,11 @@ export function mensagemDoPedido(resumo: ResumoParaCliente): string {
     ...(resumo.pago ? ["Já está pago. Obrigada!"] : []),
   ];
 
+  // Os dados para pagar são bloco próprio, e só enquanto há o que pagar: chave
+  // Pix embaixo de "Já está pago" é um convite a pagar de novo.
+  const instrucoes = resumo.formaInstrucoes?.trim();
+  const paraPagar = instrucoes && !resumo.pago ? [instrucoes] : [];
+
   return [
     // Conta que nunca salvou a configuração não tem nome de negócio, e um
     // '** · pedido' é pior do que a linha sem a marca.
@@ -134,6 +141,7 @@ export function mensagemDoPedido(resumo: ResumoParaCliente): string {
     itens.join("\n"),
     totais.join("\n"),
     combinado.join("\n"),
+    ...paraPagar,
     "Qualquer ajuste é só me chamar.",
   ].join("\n\n");
 }

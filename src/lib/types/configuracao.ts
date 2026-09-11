@@ -26,6 +26,12 @@ export interface FormaPagamento {
   taxaFixa: Centavos;
   prazoRecebimentoDias: number;
   ativo: boolean;
+  /**
+   * O que a cliente precisa para pagar por esta forma (chave Pix, banco,
+   * beneficiário). Vai no resumo do WhatsApp enquanto o pedido não está pago.
+   * Ausente quando não há o que dizer — dinheiro, cartão na entrega.
+   */
+  instrucoes?: string;
 }
 
 /**

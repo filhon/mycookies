@@ -51,6 +51,7 @@ export const esquemaFormaPagamento = z.object({
     .int("O prazo é em dias inteiros.")
     .min(0, "O prazo não pode ser negativo.")
     .max(365, "Um prazo maior que um ano não é forma de pagamento."),
+  instrucoes: z.string().trim().optional(),
 });
 
 export type EntradaFormaPagamento = z.infer<typeof esquemaFormaPagamento>;

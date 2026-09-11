@@ -2948,3 +2948,22 @@ inteira (uma linha por ficha) pelo mesmo argumento do `#d50`, e a entrada dela m
 `/fichas` e na tela da ficha, porque o pronto é atributo do produto como a capacidade. A
 reserva de produção (`#d96`) **não** olha o pote: "sempre poder fazer uma fornada" é sobre a
 despensa, e cookie pronto não é farinha.
+
+## D98 · Os dados para pagar moram na forma de pagamento, e não no código
+
+**Status:** vigente · decidida em 2026-09-11, fora de spec (pedido direto de quem conduz o projeto)
+
+**Contexto.** O resumo do WhatsApp (`#d77` a `#d79`) diz "Pagamento: Pix" e para aí: a
+cliente pergunta a chave na mensagem seguinte, e a Maynara digita o beneficiário, o banco e
+o celular de novo, toda vez. O pedido veio com os dados dela para gravar no texto.
+
+**Decisão.** `FormaPagamento.instrucoes?: string`, texto livre digitado em `/configuracao`
+("Dados para pagar"), e não uma constante no código nem um bloco `dadosPix` separado. O
+resumo o inclui em parágrafo próprio, entre o combinado e a despedida, **só enquanto o pedido
+não está pago**. Vazio é ausência: a chave não vai ao documento em branco.
+
+**Consequência.** Não existe `tipo === "PIX"` em lugar nenhum: ela preenche no Pix (e na
+transferência, se quiser) e deixa vazio no dinheiro e no cartão, e é isso que faz o bloco
+aparecer ou não. Dado bancário pessoal fica fora do repositório, o que importa quando o
+projeto virar SaaS (`#d01`). Campo opcional, compatível com documento antigo. A conta real
+precisa abrir a forma "Pix" em `/configuracao` e preencher uma vez.
