@@ -292,8 +292,13 @@ export interface LinhaDaLista {
   nome: string;
   categoria: CategoriaInsumo;
   unidadeBase: UnidadeBase;
-  /** O que a receita pede, sem perda. */
+  /** O que a receita pede, sem perda: os pedidos mais a reserva. */
   quantidadeNecessaria: number;
+  /**
+   * A parte de `quantidadeNecessaria` que é piso, e não pedido (`#d96`). É o
+   * que permite à linha dizer de onde veio um número sem pedido atrás.
+   */
+  quantidadeDeReserva: number;
   /** O que precisa sair do mercado para sobrar o necessário depois da perda. */
   quantidadeFisica: number;
   /**
@@ -377,6 +382,13 @@ export interface ContextoDaProducao {
   consumo: Map<string, number>;
   /** Por insumoId, o que já foi assado para os pedidos desta lista. */
   produzido: Map<string, number>;
+  /**
+   * Por insumoId, o que as fichas com piso querem sempre poder fazer, em
+   * unidade base e **sem perda** — sai de `reservaDeProducao` (`#d96`). Entra
+   * como demanda ao lado dos pedidos; insumo que só a reserva pede ganha
+   * linha própria. Opcional porque a 13A não o conhecia.
+   */
+  piso?: Map<string, LinhaDeDemanda>;
 }
 
 /** Sem fornada registrada a lista é exatamente a de antes da spec 013. */
@@ -391,9 +403,10 @@ export const SEM_PRODUCAO: ContextoDaProducao = {
  * A ordem das operações é onde esta conta costuma ser feita errado:
  *
  * ```
+ * útil       = pedidos + piso[insumo]               ← a reserva é demanda (#d96)
  * física     = útil / (1 − perda/100)
- * física    −= produzido[insumo]                  ← o que já foi assado (#d91)
- * disponível = max(0, estoque − consumo[insumo])  ← a projeção (#d87)
+ * física    −= produzido[insumo]                    ← o que já foi assado (#d91)
+ * disponível = max(0, estoque − consumo[insumo])    ← a projeção (#d87)
  * comprar    = max(0, física − disponível)
  * pacotes    = ceil(comprar / quantidadeBase)
  * custo      = pacotes × precoCompra
@@ -403,7 +416,9 @@ export const SEM_PRODUCAO: ContextoDaProducao = {
  * de farinha no armário também vão perder 5% quando forem usados. Descontar
  * antes misturaria uma grandeza com a outra. **E o abate da fornada acontece do
  * lado físico pelo mesmo motivo**: `Fornada.consumo` já está em quantidade
- * física, e subtrair físico de útil somaria duas grandezas diferentes.
+ * física, e subtrair físico de útil somaria duas grandezas diferentes. O abate
+ * é só da parte dos pedidos — a massa feita para um pedido não é reserva, e a
+ * reserva não encolhe porque ela fez massa a mais para alguém.
  *
  * **E o estoque só entra na conta se a contagem ainda valer.** Quem responde
  * isso é `estoqueParaLista`, contra `hojeISO`: contagem vencida e contagem
@@ -433,21 +448,42 @@ export function montarLista(
   const pendencias: Pendencia[] = [...demanda.pendencias];
   const linhas: LinhaDaLista[] = [];
 
-  for (const pedido of demanda.linhas) {
-    const insumo = porId.get(pedido.insumoId);
+  // Os pedidos primeiro, e depois o que só a reserva pede: a ordem final é a
+  // do mercado, então aqui ela não importa.
+  const pedidas = new Map(
+    demanda.linhas.map((linha) => [linha.insumoId, linha]),
+  );
+  const piso = producao.piso ?? new Map<string, LinhaDeDemanda>();
+  const insumoIds = new Set([...pedidas.keys(), ...piso.keys()]);
+
+  for (const insumoId of insumoIds) {
+    const pedido = pedidas.get(insumoId);
+    const reserva = piso.get(insumoId);
+    const insumo = porId.get(insumoId);
     if (!insumo || insumo.arquivado) {
-      anotarPendencia(pendencias, pedido.nome, "SEM_INSUMO");
+      anotarPendencia(
+        pendencias,
+        (pedido ?? reserva)?.nome ?? insumoId,
+        "SEM_INSUMO",
+      );
       continue;
     }
 
-    const necessaria = pedido.quantidade;
-    const fisica = quantidadeFisica(necessaria, insumo.perdaPercentual);
+    const deReserva = reserva?.quantidade ?? 0;
+    const necessaria = (pedido?.quantidade ?? 0) + deReserva;
+    const fisicaPedida = quantidadeFisica(
+      pedido?.quantidade ?? 0,
+      insumo.perdaPercentual,
+    );
+    const fisicaDaReserva = quantidadeFisica(deReserva, insumo.perdaPercentual);
+    const fisica = fisicaPedida + fisicaDaReserva;
     const produzida = producao.produzido.get(insumo.id) ?? 0;
     const estoque = estoqueParaLista(insumo, hojeISO);
     const consumo = producao.consumo.get(insumo.id) ?? 0;
     const disponivel = Math.max(0, estoque - consumo);
 
-    const falta = Math.max(0, fisica - produzida) - disponivel;
+    const falta =
+      Math.max(0, fisicaPedida - produzida) + fisicaDaReserva - disponivel;
     const comprar = falta > FOLGA ? falta : 0;
     const pacotes = pacotesPara(comprar, insumo.quantidadeBase);
 
@@ -459,6 +495,7 @@ export function montarLista(
       categoria: insumo.categoria,
       unidadeBase: insumo.unidadeBase,
       quantidadeNecessaria: necessaria,
+      quantidadeDeReserva: deReserva,
       quantidadeFisica: fisica,
       estoqueAtual: estoque,
       consumoDeFornadas: consumo,

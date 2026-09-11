@@ -51,6 +51,8 @@ export interface DadosFicha {
   tipo: TipoFicha;
   rendimento: number;
   unidadeRendimento: FichaTecnica["unidadeRendimento"];
+  /** Inteiro, zero desliga (`DECISOES.md#d96`). */
+  fornadasMinimas: number;
   tempoProducaoMinutos: number;
   itens: ItemDaFicha[];
   componentes: ComponenteDaFicha[];
@@ -113,6 +115,7 @@ function corpoDaFicha(dados: DadosFicha) {
     tipo: dados.tipo,
     rendimento: dados.rendimento,
     unidadeRendimento: dados.unidadeRendimento,
+    fornadasMinimas: dados.fornadasMinimas,
 
     itens,
     componentes,

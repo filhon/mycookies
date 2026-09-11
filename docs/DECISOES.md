@@ -2833,3 +2833,55 @@ a tela: a frase só aparece quando as três chegaram. Pedido atrasado (entrega a
 ainda aberto) fica fora do prometido, como fica fora da lista de compras; é o mesmo recorte,
 pelo mesmo motivo. O atalho "Contar a despensa" mora no cabeçalho de `/fichas`, e não em cada
 linha: a linha inteira é um link para a ficha, e link dentro de link não existe.
+
+---
+
+## D96 · O piso é por ficha, entra na lista como demanda, e o cartão da tela Hoje vira a previsão
+
+**Status:** vigente · decidida em 2026-09-11 na spec 013, sessão 13C
+
+**Contexto.** A lista de compras só existia quando havia pedido confirmado, e o cartão da tela
+Hoje só quando havia pedido nos próximos sete dias. A pergunta 4 da spec — "preciso comprar?" —
+ficava sem resposta para o cookie que ela quer sempre poder fazer, pedido ou não. O pedido
+original falava em "a quantidade mínima", no singular, e um número global seria errado para toda
+ficha que não fosse a carro-chefe.
+
+**Decisão.** `FichaTecnica.fornadasMinimas`, inteiro, padrão **0**, editado no bloco de rendimento
+da ficha ("Fornadas de reserva"). `reservaDeProducao(fichas)` traduz o piso em demanda por insumo
+— `Σ fornadasMinimas × insumosPorLote`, em unidade base e **sem perda** — e `ContextoDaProducao`
+ganha o terceiro mapa, `piso`, opcional. `montarLista` soma a reserva à demanda dos pedidos
+**antes** da perda, dá linha própria ao insumo que só a reserva pede, e grava a parte que é piso
+em `LinhaDaLista.quantidadeDeReserva` (e em `ItemListaCompras`, opcional). O cartão da tela Hoje
+passa a existir em qualquer das três: lista aberta com item por comprar, ficha abaixo do próprio
+piso, ou pedido no horizonte sem lista montada — e diz "Faltam 4 itens · R$ 62,00" em vez de
+"ver o que comprar".
+
+**Consequência.** Piso zero não muda nada, e é por isso que o padrão é zero: piso ligado é a única
+coisa nesta spec que faz a lista crescer sem pedido atrás, e crescer sozinha é o que faz parar de
+confiar na lista. Quatro escolhas de execução ficam registradas:
+
+- **A reserva entra útil, e não física como `consumoPorLote`.** Ela se soma a `necessária`, que é
+  útil, e a perda divide uma vez só, do lado de lá. `quantidadeFisica` é linear, então
+  `física(pedidos + piso)` é `física(pedidos) + física(piso)` — e é assim que a conta é feita,
+  para que o abate da massa já feita (`#d91`) toque **só a parte dos pedidos**: massa a mais
+  feita para um pedido não encolhe a reserva, e a reserva não é abatida por produção nenhuma.
+  Ela desce pela projeção, quando a fornada de vitrine desconta a despensa — e é isso que faz o
+  item voltar para a lista depois que ela faz a fornada de reserva.
+- **O piso é um `Map<string, LinhaDeDemanda>`**, e não `Map<string, number>` como os dois mapas
+  irmãos: o insumo que só a reserva pede e que sumiu do cadastro precisa virar pendência com
+  nome, e o nome só existe na ficha. `ReservaDoInsumo` estende a linha com as fichas que pedem —
+  "1 fornada de Cookie" — para a linha da lista dizer de onde veio; os nomes vêm das fichas
+  vivas, pelo mesmo motivo de o tamanho do pacote vir do insumo vivo (3C).
+- **"Abaixo do piso" é `fornadas < fornadasMinimas` sobre `capacidadeDaFicha`, e `DESCONHECIDA`
+  fica de fora.** Não saber quantas dá não é estar abaixo, e alarmar por falta de informação é o
+  erro que a decisão 7 (`#d94`) proíbe. A lista, por outro lado, compra o cheio para o insumo
+  sem contagem (`#d63`) — então uma ficha com piso e um insumo nunca contado gera compra sem
+  gerar alarme. É o mesmo par de erros de sempre, cada um do lado que custa menos.
+- **O cartão calcula a lista que seria montada quando não há lista.** Sem isso "Faltam N itens"
+  só existiria depois de ela abrir `/compras` e montar, e a previsão não seria previsão. O
+  cartão passou a assinar fichas, insumos, fornadas e a lista aberta, todas do cache; o horizonte
+  continua sendo os sete dias da agenda. "Montar a lista" em `/compras` deixou de exigir pedido:
+  basta a montagem ter linha.
+
+`/compras` continua fora da navegação inferior. Se a operação disser que o cartão não basta, a
+troca é uma linha em `navegacao.ts`, e o que sai é `/insumos`.

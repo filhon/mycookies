@@ -110,6 +110,10 @@ export const esquemaFicha = z
     tipo: z.enum(["SIMPLES", "KIT"]),
     rendimento: z.number().positive("Diga quantas unidades saem de um lote."),
     unidadeRendimento: z.enum(["un", "porcao", "g", "ml"]),
+    fornadasMinimas: z
+      .number()
+      .int("Fornada de reserva é inteira: 1, 2, 3.")
+      .min(0, "A reserva não pode ser negativa. Zero desliga."),
     tempoProducaoMinutos: z
       .number()
       .min(0, "O tempo não pode ser negativo.")

@@ -88,6 +88,7 @@ function itemDaLinha(linha: LinhaDaLista): Omit<ItemListaCompras, "comprado"> {
     nome: linha.nome,
     categoria: linha.categoria,
     quantidadeNecessaria: linha.quantidadeNecessaria,
+    quantidadeDeReserva: linha.quantidadeDeReserva,
     unidadeBase: linha.unidadeBase,
     estoqueAtual: linha.estoqueAtual,
     // Os dois que explicam por que o número mudou: a lista precisa saber o que

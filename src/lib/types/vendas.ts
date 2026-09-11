@@ -136,6 +136,11 @@ export interface ItemListaCompras {
   categoria: CategoriaInsumo;
   /** Soma da demanda de todos os pedidos do período, em unidade base. */
   quantidadeNecessaria: number;
+  /**
+   * A parte de `quantidadeNecessaria` que é reserva de fornadas, e não pedido
+   * (`DECISOES.md#d96`). Ausente em lista gravada antes da sessão 13C.
+   */
+  quantidadeDeReserva?: number;
   unidadeBase: UnidadeBase;
   estoqueAtual: number;
   /**

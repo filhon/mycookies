@@ -1,7 +1,8 @@
 "use client";
 
-import { Check, CookingPot, Pencil, TriangleAlert } from "lucide-react";
+import { Check, CookingPot, Pencil, Shield, TriangleAlert } from "lucide-react";
 import { useState } from "react";
+import { listarNomes } from "@/components/producao/FraseDaCapacidade";
 import { Botao } from "@/components/ui/Botao";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { contagemDoInsumo, rotuloDeIdade } from "@/lib/domain/estoque";
@@ -29,9 +30,13 @@ import { cn } from "@/lib/utils/cn";
  * verdade da gôndola, e é o que ela põe no carrinho; `342,11 g em falta` é a
  * verdade da receita, e é o que explica por que o pacote está na lista.
  */
+/** Quem pede a reserva deste insumo, das fichas vivas. */
+type ReservaPara = { nome: string; fornadas: number }[];
+
 export function LinhaCompra({
   item,
   insumo,
+  reservaPara,
   hoje,
   aoMarcar,
   aoCorrigirPreco,
@@ -39,6 +44,7 @@ export function LinhaCompra({
   item: ItemListaCompras;
   /** O cadastro de hoje: é dele que saem o tamanho do pacote e o preço. */
   insumo?: Insumo;
+  reservaPara?: ReservaPara;
   hoje: DataISO;
   aoMarcar: (comprado: boolean) => void;
   aoCorrigirPreco: (insumo: Insumo, precoCompra: Centavos) => void;
@@ -58,6 +64,7 @@ export function LinhaCompra({
   // dentro de um documento que ninguém reescreve envelhece errado.
   const contagem = fraseDaContagem(insumo, item.unidadeBase, hoje);
   const forno = fraseDoForno(item);
+  const reserva = fraseDaReserva(item, reservaPara);
 
   return (
     <li className={cn(comprado && "bg-sunken")}>
@@ -129,6 +136,19 @@ export function LinhaCompra({
                   strokeWidth={2}
                 />
                 <span className="truncate">{forno}</span>
+              </span>
+            )}
+
+            {/* De onde veio: uma linha sem pedido atrás é uma linha em que ela
+                para de confiar, e esta diz que é a reserva (`#d96`). */}
+            {reserva && (
+              <span className="num mt-1 flex items-center gap-1.5 text-micro text-ink-subtle">
+                <Shield
+                  aria-hidden
+                  className="size-3 shrink-0"
+                  strokeWidth={2}
+                />
+                <span className="truncate">{reserva}</span>
               </span>
             )}
           </span>
@@ -251,6 +271,39 @@ function fraseDoForno(item: ItemListaCompras): string | null {
 }
 
 /**
+ * De onde veio a quantidade, quando parte dela é reserva e não pedido.
+ *
+ * "300 g para os pedidos · 500 g para manter 1 fornada de Cookie de reserva".
+ * A quantidade é a gravada na linha (`#d96`); os nomes vêm das fichas vivas,
+ * pelo mesmo motivo de o tamanho do pacote vir do insumo vivo. Sem reserva,
+ * nada a dizer: a linha inteira é pedido, como sempre foi.
+ */
+function fraseDaReserva(
+  item: ItemListaCompras,
+  reservaPara: ReservaPara | undefined,
+): string | null {
+  const daReserva = item.quantidadeDeReserva ?? 0;
+  if (!(daReserva > 0)) return null;
+
+  const quanto = (valor: number) => formatarQuantidade(valor, item.unidadeBase);
+  const dosPedidos = item.quantidadeNecessaria - daReserva;
+  const quem =
+    reservaPara && reservaPara.length > 0
+      ? listarNomes(
+          reservaPara.map(
+            (ficha) =>
+              `${ficha.fornadas} ${ficha.fornadas === 1 ? "fornada" : "fornadas"} de ${ficha.nome}`,
+          ),
+        )
+      : "a fornada";
+
+  const partes: string[] = [];
+  if (dosPedidos > 1e-6) partes.push(`${quanto(dosPedidos)} para os pedidos`);
+  partes.push(`${quanto(daReserva)} para manter ${quem} de reserva`);
+  return partes.join(" · ");
+}
+
+/**
  * O preço corrigido na frente da gôndola.
  *
  * Abre dentro da própria linha, e não em painel: ela está com uma mão no
@@ -322,14 +375,17 @@ function EditorDePreco({
 export function LinhaJaTem({
   item,
   insumo,
+  reservaPara,
   hoje,
 }: {
   item: ItemListaCompras;
   insumo?: Insumo;
+  reservaPara?: ReservaPara;
   hoje: DataISO;
 }) {
   const idade = insumo ? rotuloDeIdade(contagemDoInsumo(insumo, hoje)) : null;
   const forno = fraseDoForno(item);
+  const reserva = fraseDaReserva(item, reservaPara);
   // O que ela tem é a projeção: a contagem menos o que o forno levou depois.
   const tem = Math.max(0, item.estoqueAtual - (item.consumoDeFornadas ?? 0));
   const produzida = item.quantidadeJaProduzida ?? 0;
@@ -360,6 +416,12 @@ export function LinhaJaTem({
         <p className="num flex basis-full items-center gap-1.5 text-micro text-ink-subtle">
           <CookingPot aria-hidden className="size-3 shrink-0" strokeWidth={2} />
           <span className="truncate">{forno}</span>
+        </p>
+      )}
+      {reserva && (
+        <p className="num flex basis-full items-center gap-1.5 text-micro text-ink-subtle">
+          <Shield aria-hidden className="size-3 shrink-0" strokeWidth={2} />
+          <span className="truncate">{reserva}</span>
         </p>
       )}
     </li>

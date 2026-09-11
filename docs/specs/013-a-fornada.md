@@ -602,14 +602,14 @@ cartão não basta, a troca é uma linha, e está listada como decisão fácil d
 
 ## Critérios de aceite 13C
 
-- [ ] Piso 0 (o padrão) não muda a lista em nada.
-- [ ] Piso 1 numa ficha, sem pedido nenhum aberto, monta lista com o que falta para uma
+- [x] Piso 0 (o padrão) não muda a lista em nada.
+- [x] Piso 1 numa ficha, sem pedido nenhum aberto, monta lista com o que falta para uma
       fornada — e a linha diz que é reserva.
-- [ ] Piso e pedido no mesmo insumo somam, e não se substituem.
-- [ ] Assar a fornada de reserva faz o item voltar para a lista na próxima montagem.
-- [ ] O cartão da tela Hoje aparece sem pedido nenhum, quando uma ficha cai abaixo do piso.
-- [ ] O cartão não aparece quando não há nada a comprar e nenhuma ficha abaixo do piso.
-- [ ] Portão de conclusão passando.
+- [x] Piso e pedido no mesmo insumo somam, e não se substituem.
+- [x] Assar a fornada de reserva faz o item voltar para a lista na próxima montagem.
+- [x] O cartão da tela Hoje aparece sem pedido nenhum, quando uma ficha cai abaixo do piso.
+- [x] O cartão não aparece quando não há nada a comprar e nenhuma ficha abaixo do piso.
+- [x] Portão de conclusão passando.
 
 ---
 

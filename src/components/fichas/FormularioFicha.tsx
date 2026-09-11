@@ -94,6 +94,7 @@ interface ValoresFicha {
   tipo: TipoFicha;
   rendimento: string;
   unidadeRendimento: UnidadeRendimento;
+  fornadasMinimas: string;
   tempoProducaoMinutos: string;
   itens: LinhaItemForm[];
   componentes: LinhaComponenteForm[];
@@ -147,6 +148,9 @@ function valoresIniciais(
       // um palpite aqui vira preço errado com cara de certo.
       rendimento: "",
       unidadeRendimento: "un",
+      // Zero de propósito: piso ligado é a única coisa que faz a lista de
+      // compras crescer sem pedido atrás, e nada deve mudar até ela pedir.
+      fornadasMinimas: "0",
       tempoProducaoMinutos: "",
       itens: [],
       componentes: [],
@@ -168,6 +172,7 @@ function valoresIniciais(
     tipo: ficha.tipo,
     rendimento: texto(ficha.rendimento),
     unidadeRendimento: ficha.unidadeRendimento,
+    fornadasMinimas: texto(ficha.fornadasMinimas ?? 0),
     tempoProducaoMinutos: texto(ficha.invisiveis.tempoProducaoMinutos),
     itens: ficha.itens.map((item) => ({
       insumoId: item.insumoId,
@@ -469,6 +474,7 @@ export function FormularioFicha({
       tipo: valores.tipo,
       rendimento,
       unidadeRendimento: valores.unidadeRendimento,
+      fornadasMinimas: parseParaNumero(valores.fornadasMinimas),
       tempoProducaoMinutos: parseParaNumero(valores.tempoProducaoMinutos),
       // Validado na mesma ordem das linhas do formulário, para que a mensagem
       // caia na linha certa.
@@ -516,6 +522,7 @@ export function FormularioFicha({
       tipo: valores.tipo,
       rendimento,
       unidadeRendimento: valores.unidadeRendimento,
+      fornadasMinimas: parseParaNumero(valores.fornadasMinimas),
       tempoProducaoMinutos: parseParaNumero(valores.tempoProducaoMinutos),
       itens: itensResolvidos,
       componentes: componentesResolvidos,
@@ -769,6 +776,24 @@ export function FormularioFicha({
               erro={form.formState.errors.tempoProducaoMinutos?.message}
               dica="É o que paga a sua hora, o gás e a luz."
               {...form.register("tempoProducaoMinutos")}
+            />
+          </div>
+
+          {/* O piso é por ficha, e mora na tela onde ela já pensa neste
+              produto (`#d96`). Nasce em zero: ligado, é a única coisa que faz a
+              lista de compras crescer sem pedido nenhum atrás. */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Campo
+              rotulo="Fornadas de reserva"
+              inputMode="numeric"
+              sufixo={
+                parseParaNumero(valores.fornadasMinimas) === 1
+                  ? "fornada"
+                  : "fornadas"
+              }
+              erro={form.formState.errors.fornadasMinimas?.message}
+              dica="Sempre poder fazer esta quantidade. Quando a despensa não der mais isso, o que falta entra na lista de compras. Zero desliga."
+              {...form.register("fornadasMinimas")}
             />
           </div>
         </Bloco>

@@ -15,6 +15,7 @@ import {
   insumosPorLote,
   quantidadeFisica,
   type FichaParaExplodir,
+  type LinhaDeDemanda,
   type PedidoParaExplodir,
 } from "./listaCompras";
 
@@ -39,6 +40,8 @@ import {
 /** O que a fornada precisa saber de uma ficha: a explosão, mais a unidade. */
 export interface FichaParaProduzir extends FichaParaExplodir {
   unidadeRendimento: UnidadeRendimento;
+  /** O piso: quantas fornadas ela quer sempre poder fazer. Ausente vale 0. */
+  fornadasMinimas?: number;
 }
 
 /** O que a projeção precisa saber de uma fornada. Nada além disso. */
@@ -439,6 +442,104 @@ export function capacidadeDaFicha(
     descontaPedidos,
     insumos: linhas,
   };
+}
+
+// ---------------------------------------------------------------------------
+// O piso: o que ela quer sempre poder fazer
+// ---------------------------------------------------------------------------
+
+/** O piso inteiro de uma ficha; fração é dedo errado e vale para baixo. */
+function pisoDaFicha(ficha: FichaParaProduzir): number {
+  const piso = Math.floor(ficha.fornadasMinimas ?? 0);
+  return Number.isFinite(piso) && piso > 0 ? piso : 0;
+}
+
+/** O que a reserva de fornadas pede de UM insumo, e quem pede. */
+export interface ReservaDoInsumo extends LinhaDeDemanda {
+  /** As fichas com piso que levam este insumo: "1 fornada de Cookie". */
+  fichas: { fichaId: string; nome: string; fornadas: number }[];
+}
+
+/**
+ * O piso como demanda: `Σ fornadasMinimas × insumosPorLote`, por insumo, em
+ * unidade base e **sem perda** — é o terceiro mapa de `ContextoDaProducao`, e
+ * `montarLista` aplica a perda a ele junto com a demanda dos pedidos, na mesma
+ * conta (`DECISOES.md#d96`).
+ *
+ * Útil, e não físico como `consumoPorLote`, de propósito: o piso entra em
+ * `necessária`, que é útil, e a perda divide uma vez só, do lado de lá. Ficha
+ * arquivada ou com piso zero não pede nada, e o kit respeita o nível único
+ * porque é `insumosPorLote` quem explode.
+ */
+export function reservaDeProducao(
+  fichas: FichaParaProduzir[],
+): Map<string, ReservaDoInsumo> {
+  const porId = new Map<string, FichaParaExplodir>(
+    fichas.map((ficha) => [ficha.id, ficha]),
+  );
+  const reserva = new Map<string, ReservaDoInsumo>();
+
+  for (const ficha of fichas) {
+    const piso = pisoDaFicha(ficha);
+    if (ficha.arquivado || piso === 0) continue;
+
+    for (const linha of insumosPorLote(ficha, porId).values()) {
+      if (!(linha.quantidade > 0)) continue;
+      const atual = reserva.get(linha.insumoId) ?? {
+        insumoId: linha.insumoId,
+        nome: linha.nome,
+        quantidade: 0,
+        fichas: [],
+      };
+      atual.quantidade += linha.quantidade * piso;
+      atual.fichas.push({
+        fichaId: ficha.id,
+        nome: ficha.nome,
+        fornadas: piso,
+      });
+      reserva.set(linha.insumoId, atual);
+    }
+  }
+
+  return reserva;
+}
+
+/**
+ * As fichas com piso que a despensa de hoje não sustenta: o número de
+ * fornadas que dá ficou abaixo do que ela quer sempre poder fazer.
+ *
+ * `DESCONHECIDA` fica de fora: não saber quantas dá não é estar abaixo, e
+ * alarmar por falta de informação é o erro que a decisão 7 da spec proíbe. O
+ * atalho para esse caso é contar, e ele já mora em `/fichas`.
+ */
+export function fichasAbaixoDoPiso(
+  fichas: FichaParaProduzir[],
+  insumos: InsumoParaCapacidade[],
+  consumo: Map<string, number>,
+  hojeISO: DataISO,
+  prometido: Map<string, number> = new Map(),
+): { capacidade: CapacidadeDaFicha; fornadasMinimas: number }[] {
+  const abaixo: { capacidade: CapacidadeDaFicha; fornadasMinimas: number }[] =
+    [];
+
+  for (const ficha of fichas) {
+    const piso = pisoDaFicha(ficha);
+    if (piso === 0) continue;
+
+    const capacidade = capacidadeDaFicha(
+      ficha,
+      fichas,
+      insumos,
+      consumo,
+      hojeISO,
+      prometido,
+    );
+    if (capacidade?.fornadas != null && capacidade.fornadas < piso) {
+      abaixo.push({ capacidade, fornadasMinimas: piso });
+    }
+  }
+
+  return abaixo;
 }
 
 /** O que falta comprar, por insumo contado, para fazer massa para `unidades`. */

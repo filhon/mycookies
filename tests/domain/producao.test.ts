@@ -12,11 +12,13 @@ import {
   consumoPorLote,
   disponivelParaProducao,
   faltaPara,
+  fichasAbaixoDoPiso,
   fornadaGravavel,
   fornadasDesdeAContagem,
   produzidoParaPedidos,
   projecaoDoInsumo,
   prometidoParaPedidos,
+  reservaDeProducao,
   type FichaParaProduzir,
   type FornadaRegistrada,
   type InsumoParaCapacidade,
@@ -769,5 +771,302 @@ describe("capacidadeDaFicha", () => {
     expect(capacidade?.fornadas).toBe(0);
     expect(capacidade?.unidades).toBe(0);
     expect(capacidade?.gargalo?.nome).toBe("chocolate");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// O piso: o que ela quer sempre poder fazer
+// ---------------------------------------------------------------------------
+
+describe("o piso de produção", () => {
+  function insumo(
+    parcial: Partial<InsumoParaLista> & { id: string },
+  ): InsumoParaLista {
+    return {
+      nome: parcial.id,
+      categoria: "INGREDIENTE",
+      arquivado: false,
+      unidadeBase: "g",
+      quantidadeBase: 1000,
+      quantidadeCompra: 1,
+      unidadeCompra: "kg",
+      precoCompra: 1000,
+      perdaPercentual: 0,
+      estoqueContadoEmISO: "2026-09-08",
+      ...parcial,
+    };
+  }
+
+  /** Tudo contado e fresco: farinha 2 kg, chocolate 400 g, manteiga 1 kg, 100 saquinhos. */
+  const DESPENSA = [
+    insumo({ id: "farinha", perdaPercentual: 5, estoqueAtual: 2000 }),
+    insumo({ id: "chocolate", estoqueAtual: 400 }),
+    insumo({ id: "manteiga", estoqueAtual: 1000 }),
+    insumo({
+      id: "saquinho",
+      unidadeBase: "un",
+      quantidadeBase: 100,
+      estoqueAtual: 100,
+    }),
+    insumo({
+      id: "caixa",
+      unidadeBase: "un",
+      quantidadeBase: 10,
+      estoqueAtual: 10,
+    }),
+  ];
+
+  const COM_PISO: FichaParaProduzir = { ...COOKIE, fornadasMinimas: 1 };
+  const SEM_PEDIDO = explodirDemanda([], FICHAS);
+  const PEDIDO_DE_20 = explodirDemanda(
+    [
+      {
+        id: "p1",
+        itens: [
+          { fichaTecnicaId: "cookie", nomeSnapshot: "Cookie", quantidade: 20 },
+        ],
+      },
+    ],
+    FICHAS,
+  );
+
+  const linha = (lista: ReturnType<typeof montarLista>, id: string) =>
+    lista.linhas.find((atual) => atual.insumoId === id);
+
+  const contexto = (
+    fichas: FichaParaProduzir[],
+    fornadas: FornadaRegistrada[],
+    demanda: ReturnType<typeof explodirDemanda>,
+  ) => ({
+    consumo: consumoDesdeAContagem(fornadas, DESPENSA),
+    produzido: produzidoParaPedidos(fornadas, demanda.pedidoIds),
+    piso: reservaDeProducao(fichas),
+  });
+
+  it("reservaDeProducao: fornadasMinimas × insumosPorLote, útil, e quem pede", () => {
+    const reserva = reservaDeProducao([
+      { ...COOKIE, fornadasMinimas: 2 },
+      CAIXA_COM_6,
+    ]);
+
+    // 2 lotes de cookie: 1000 g úteis de farinha, sem a perda — ela entra em
+    // `montarLista`, uma vez só.
+    expect(reserva.get("farinha")?.quantidade).toBe(1000);
+    expect(reserva.get("chocolate")?.quantidade).toBe(600);
+    expect(reserva.get("farinha")?.fichas).toEqual([
+      { fichaId: "cookie", nome: "Cookie tradicional", fornadas: 2 },
+    ]);
+    // A caixa não tem piso: não pede nada.
+    expect(reserva.has("caixa")).toBe(false);
+  });
+
+  it("reservaDeProducao: o kit com piso explode um nível e soma com a receita", () => {
+    const reserva = reservaDeProducao([
+      COM_PISO,
+      { ...CAIXA_COM_6, fornadasMinimas: 5 },
+    ]);
+
+    // 1 lote de cookie (300 g) + 5 caixas × 6/20 de lote (450 g).
+    expect(reserva.get("chocolate")?.quantidade).toBeCloseTo(750, 6);
+    expect(reserva.get("caixa")?.quantidade).toBe(5);
+    expect(reserva.get("chocolate")?.fichas.map((f) => f.nome)).toEqual([
+      "Cookie tradicional",
+      "Caixa com 6",
+    ]);
+  });
+
+  it("reservaDeProducao: ficha arquivada, piso zero, ausente ou fração não pedem nada", () => {
+    expect(
+      reservaDeProducao([
+        { ...COM_PISO, arquivado: true },
+        { ...COOKIE, fornadasMinimas: 0 },
+        COOKIE,
+        { ...COOKIE, fornadasMinimas: 0.9 },
+      ]).size,
+    ).toBe(0);
+  });
+
+  it("piso 0 (o padrão) não muda a lista em nada", () => {
+    const sem = montarLista(PEDIDO_DE_20, DESPENSA, HOJE);
+    const com = montarLista(
+      PEDIDO_DE_20,
+      DESPENSA,
+      HOJE,
+      contexto(FICHAS, [], PEDIDO_DE_20),
+    );
+
+    expect(com).toEqual(sem);
+    expect(linha(com, "chocolate")?.quantidadeDeReserva).toBe(0);
+  });
+
+  it("piso 1, sem pedido nenhum: a lista compra o que falta para uma fornada, e diz que é reserva", () => {
+    const lista = montarLista(
+      SEM_PEDIDO,
+      DESPENSA,
+      HOJE,
+      contexto([COM_PISO, CAIXA_COM_6], [], SEM_PEDIDO),
+    );
+
+    // Uma fornada leva 300 g de chocolate e ela tem 400: não compra. Mas a
+    // linha existe, e diz de onde veio.
+    const chocolate = linha(lista, "chocolate");
+    expect(chocolate?.quantidadeNecessaria).toBe(300);
+    expect(chocolate?.quantidadeDeReserva).toBe(300);
+    expect(chocolate?.quantidadeComprar).toBe(0);
+
+    // Farinha: 500 g úteis viram 526,32 g físicos, contra 2 kg: sobra.
+    expect(linha(lista, "farinha")?.quantidadeFisica).toBeCloseTo(526.32, 2);
+    expect(linha(lista, "farinha")?.quantidadePacotes).toBe(0);
+
+    // Com 200 g de chocolate, falta 100 g: um pacote.
+    const apertada = montarLista(
+      SEM_PEDIDO,
+      DESPENSA.map((atual) =>
+        atual.id === "chocolate" ? { ...atual, estoqueAtual: 200 } : atual,
+      ),
+      HOJE,
+      contexto([COM_PISO, CAIXA_COM_6], [], SEM_PEDIDO),
+    );
+    expect(linha(apertada, "chocolate")?.quantidadeComprar).toBeCloseTo(100, 6);
+    expect(linha(apertada, "chocolate")?.quantidadePacotes).toBe(1);
+    expect(lista.pendencias).toEqual([]);
+  });
+
+  it("piso e pedido no mesmo insumo somam, e não se substituem", () => {
+    const lista = montarLista(
+      PEDIDO_DE_20,
+      DESPENSA,
+      HOJE,
+      contexto([COM_PISO, CAIXA_COM_6], [], PEDIDO_DE_20),
+    );
+
+    // 300 g do pedido + 300 g de reserva = 600 g contra 400 g: compra 200 g.
+    const chocolate = linha(lista, "chocolate");
+    expect(chocolate?.quantidadeNecessaria).toBe(600);
+    expect(chocolate?.quantidadeDeReserva).toBe(300);
+    expect(chocolate?.quantidadeComprar).toBeCloseTo(200, 6);
+  });
+
+  it("a massa feita para o pedido abate o pedido, e não a reserva", () => {
+    // Ela fez massa para os 20 do pedido: os 300 g dele saem da demanda, mas
+    // a despensa também desceu 300 g. Sobram 100 g contra 300 g de reserva.
+    const fornadas = [fornada({ dataISO: "2026-09-09", pedidoId: "p1" })];
+    const lista = montarLista(
+      PEDIDO_DE_20,
+      DESPENSA,
+      HOJE,
+      contexto([COM_PISO, CAIXA_COM_6], fornadas, PEDIDO_DE_20),
+    );
+
+    const chocolate = linha(lista, "chocolate");
+    expect(chocolate?.quantidadeJaProduzida).toBe(300);
+    expect(chocolate?.consumoDeFornadas).toBe(300);
+    expect(chocolate?.quantidadeComprar).toBeCloseTo(200, 6);
+
+    // Massa a mais para o pedido (dois lotes para um pedido de um) não encolhe
+    // a reserva: a parte do pedido zera, e a reserva continua pedindo 300 g
+    // contra os 400 − 600 = 0 que sobraram.
+    const dobrada = [
+      fornada({ dataISO: "2026-09-09", pedidoId: "p1" }),
+      fornada({ dataISO: "2026-09-09", pedidoId: "p1" }),
+    ];
+    const generosa = montarLista(
+      PEDIDO_DE_20,
+      DESPENSA,
+      HOJE,
+      contexto([COM_PISO, CAIXA_COM_6], dobrada, PEDIDO_DE_20),
+    );
+    expect(linha(generosa, "chocolate")?.quantidadeComprar).toBeCloseTo(300, 6);
+  });
+
+  it("fazer a fornada de reserva faz o item voltar para a lista", () => {
+    // Antes: 400 g cobrem a reserva de 300. Depois de uma massa de vitrine no
+    // dia 9, sobram 100, e a lista volta a pedir 200 g.
+    const antes = montarLista(
+      SEM_PEDIDO,
+      DESPENSA,
+      HOJE,
+      contexto([COM_PISO, CAIXA_COM_6], [], SEM_PEDIDO),
+    );
+    expect(linha(antes, "chocolate")?.quantidadePacotes).toBe(0);
+
+    const depois = montarLista(
+      SEM_PEDIDO,
+      DESPENSA,
+      HOJE,
+      contexto(
+        [COM_PISO, CAIXA_COM_6],
+        [fornada({ dataISO: "2026-09-09" })],
+        SEM_PEDIDO,
+      ),
+    );
+    expect(linha(depois, "chocolate")?.quantidadeComprar).toBeCloseTo(200, 6);
+    expect(linha(depois, "chocolate")?.quantidadePacotes).toBe(1);
+  });
+
+  it("insumo que só a reserva pede e que sumiu do cadastro vira pendência com nome", () => {
+    const lista = montarLista(
+      SEM_PEDIDO,
+      DESPENSA.filter((atual) => atual.id !== "manteiga"),
+      HOJE,
+      contexto([COM_PISO, CAIXA_COM_6], [], SEM_PEDIDO),
+    );
+
+    expect(lista.pendencias).toEqual([
+      { nome: "Manteiga", motivo: "SEM_INSUMO" },
+    ]);
+  });
+
+  it("fichasAbaixoDoPiso: abaixo quando dá menos do que o piso, nunca por não saber", () => {
+    const SEM_CONSUMO = new Map<string, number>();
+    // 400 g de chocolate dão 1 fornada: piso 1 está de pé, piso 2 não.
+    expect(
+      fichasAbaixoDoPiso([COM_PISO, CAIXA_COM_6], DESPENSA, SEM_CONSUMO, HOJE),
+    ).toEqual([]);
+
+    const abaixo = fichasAbaixoDoPiso(
+      [{ ...COOKIE, fornadasMinimas: 2 }, CAIXA_COM_6],
+      DESPENSA,
+      SEM_CONSUMO,
+      HOJE,
+    );
+    expect(abaixo).toHaveLength(1);
+    expect(abaixo[0]?.fornadasMinimas).toBe(2);
+    expect(abaixo[0]?.capacidade.fornadas).toBe(1);
+    expect(abaixo[0]?.capacidade.gargalo?.nome).toBe("chocolate");
+
+    // Uma massa de vitrine derruba o piso 1 na hora: 100 g não dão fornada.
+    const caiu = fichasAbaixoDoPiso(
+      [COM_PISO, CAIXA_COM_6],
+      DESPENSA,
+      consumoDesdeAContagem([fornada({ dataISO: "2026-09-09" })], DESPENSA),
+      HOJE,
+    );
+    expect(caiu[0]?.capacidade.fornadas).toBe(0);
+
+    // Nada contado é DESCONHECIDA, e desconhecida não é abaixo do piso.
+    const nadaContado = DESPENSA.map((atual) => ({
+      ...atual,
+      estoqueAtual: undefined,
+      estoqueContadoEmISO: undefined,
+    }));
+    expect(
+      fichasAbaixoDoPiso(
+        [COM_PISO, CAIXA_COM_6],
+        nadaContado,
+        SEM_CONSUMO,
+        HOJE,
+      ),
+    ).toEqual([]);
+
+    // Ficha sem piso nunca aparece, por mais vazia que a despensa esteja.
+    expect(
+      fichasAbaixoDoPiso(
+        FICHAS,
+        DESPENSA.map((atual) => ({ ...atual, estoqueAtual: 0 })),
+        SEM_CONSUMO,
+        HOJE,
+      ),
+    ).toEqual([]);
   });
 });

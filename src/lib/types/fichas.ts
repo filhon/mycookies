@@ -86,6 +86,13 @@ export interface FichaTecnica extends DocumentoBase {
   /** Quantas unidades saem de UM lote desta receita (ou 1, para um kit). */
   rendimento: number;
   unidadeRendimento: UnidadeRendimento;
+  /**
+   * O piso de produção: quantas fornadas ela quer sempre poder fazer. Quando a
+   * despensa não dá mais isso, o que falta entra na lista de compras como
+   * demanda, ao lado dos pedidos. Ausente em ficha gravada antes da spec 013
+   * (sessão 13C): vale 0, e zero não muda a lista em nada (`DECISOES.md#d96`).
+   */
+  fornadasMinimas?: number;
 
   /**
    * Insumos consumidos. Em uma ficha SIMPLES, ingredientes e embalagem.

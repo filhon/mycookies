@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-11 (spec 013, sessão 13B: quantas fornadas dá).
+Atualizado em 2026-09-11 (spec 013, sessão 13C: o piso e a previsão em destaque).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -74,18 +74,21 @@ passava por lugar nenhum, e o resultado do mês ficava alto por causa disso. Ago
 a faixa "Entregas a pagar", o acerto vira uma saída em `ENTREGA` no caixa, e desfazer devolve
 tudo. **O roteiro de navegador de cinco passos dela não rodou.**
 
-A spec `013-a-fornada.md` está **na segunda de quatro sessões**: a **13A está entregue** — a
+A spec `013-a-fornada.md` está **na terceira de quatro sessões**: a **13A está entregue** — a
 fornada existe como fato do sistema, desconta a despensa na leitura sem tocar na contagem, e a
-lista de compras deixa de comprar o que já foi assado para o pedido — e a **13B está entregue**:
+lista de compras deixa de comprar o que já foi assado para o pedido —, a **13B está entregue**:
 o sistema responde quantas fornadas dá, em `/fichas` e na linha de cada item do pedido, sobre a
-despensa de hoje e já descontando o que os outros pedidos fechados prometeram. Nenhuma escrita
-nova: é leitura sobre o que a 13A gravou. Faltam a `13C` (o piso e a previsão em destaque) e a
-`13D` (o que está pronto — que o `#d93` tornou mais provável de ser precisa, e cuja decisão a
-spec manda tomar depois de duas ou três semanas de 13B em uso), mais a `13E` reservada. Das
-quatro aprovações da spec, a 13A usou três — a coleção `fornadas`, o índice (publicado) e a
-mudança de comportamento de `montarLista`; a 13B não usou nenhuma. Os campos novos em
-`FichaTecnica` são da 13C e da 13D. Regra de segurança não mudou, e nenhuma dependência entrou.
-**Os roteiros de navegador das duas não rodaram.**
+despensa de hoje e já descontando o que os outros pedidos fechados prometeram, e a **13C está
+entregue**: a previsão de compras deixou de depender de haver pedido. `FichaTecnica.fornadasMinimas`
+é o piso por ficha, a lista o soma como demanda ao lado dos pedidos e a linha diz que é reserva, e
+o cartão da tela Hoje diz "Faltam 4 itens · R$ 62,00" — e aparece quando uma ficha cai abaixo do
+próprio piso, com ou sem pedido. Falta a `13D` (o que está pronto — que o `#d93` tornou mais
+provável de ser precisa, e cuja decisão a spec manda tomar depois de duas ou três semanas de 13B
+em uso), mais a `13E` reservada. Das quatro aprovações da spec, a 13A usou três — a coleção
+`fornadas`, o índice (publicado) e a mudança de comportamento de `montarLista`; a 13B não usou
+nenhuma; a 13C usou o primeiro dos campos novos em `FichaTecnica` (`fornadasMinimas`, opcional,
+padrão zero). Os outros dois são da 13D. Regra de segurança não mudou, e nenhuma dependência
+entrou. **Os roteiros de navegador das três não rodaram.**
 
 Fora das specs, o projeto foi **preparado para publicar no Vercel** em 2026-09-03: a
 credencial do Admin SDK deixou de exigir um arquivo em disco, a falta dela parou de ser
@@ -120,7 +123,7 @@ da hospedagem falharia. O guia é `docs/DEPLOY.md`. **Nada foi publicado ainda**
 > mudou de arquivo. Se algo em `insumos`, em `/compras` ou na leitura de nota aparecer torto na
 > 5B, estes são os primeiros suspeitos depois dos que a 6A abriu.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **432
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **442
 testes**, e build com 16 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
 `/insumos/contagem` na 7A e `/comecar` na 8A — mais `/api/nota`, `/fichas/[id]` e
 `/pedidos/[id]` dinâmicas e service worker gerado.
@@ -154,23 +157,23 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 
 ## Módulos
 
-| #   | Módulo                                      | Estado                             | Spec                                     |
-| --- | ------------------------------------------- | ---------------------------------- | ---------------------------------------- |
-| 0   | Fundação: design system, shell, acesso, PWA | pronto                             | —                                        |
-| 1   | Insumos e embalagens                        | pronto                             | —                                        |
-| —   | Contas e tenancy                            | pronto                             | `specs/000-contas.md`                    |
-| 2   | Custos operacionais e precificação          | pronto (2A e 2B)                   | `specs/002-precificacao.md`              |
-| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)               | `specs/003-pedidos.md`                   |
-| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                   | `specs/004-caixa.md`                     |
-| 5   | Prontidão: conserto e verificação           | 5A pronto, **5B a fazer**          | `specs/005-prontidao.md`                 |
-| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)                   | `specs/006-nota-fiscal.md`               |
-| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)                   | `specs/007-estoque.md`                   |
-| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)                   | `specs/008-onboarding.md`                |
-| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros            | `specs/009-teclado-e-barra.md`           |
-| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro              | `specs/010-resumo-no-whatsapp.md`        |
-| —   | O caixa que não perde a conta               | pronto, sem o roteiro              | `specs/011-caixa-que-nao-perde-conta.md` |
-| —   | O acerto das entregas                       | pronto, sem o roteiro              | `specs/012-entregas-a-pagar.md`          |
-| 13  | A fornada                                   | 13A e 13B prontos, **13C a fazer** | `specs/013-a-fornada.md`                 |
+| #   | Módulo                                      | Estado                                    | Spec                                     |
+| --- | ------------------------------------------- | ----------------------------------------- | ---------------------------------------- |
+| 0   | Fundação: design system, shell, acesso, PWA | pronto                                    | —                                        |
+| 1   | Insumos e embalagens                        | pronto                                    | —                                        |
+| —   | Contas e tenancy                            | pronto                                    | `specs/000-contas.md`                    |
+| 2   | Custos operacionais e precificação          | pronto (2A e 2B)                          | `specs/002-precificacao.md`              |
+| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)                      | `specs/003-pedidos.md`                   |
+| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                          | `specs/004-caixa.md`                     |
+| 5   | Prontidão: conserto e verificação           | 5A pronto, **5B a fazer**                 | `specs/005-prontidao.md`                 |
+| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)                          | `specs/006-nota-fiscal.md`               |
+| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)                          | `specs/007-estoque.md`                   |
+| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)                          | `specs/008-onboarding.md`                |
+| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros                   | `specs/009-teclado-e-barra.md`           |
+| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro                     | `specs/010-resumo-no-whatsapp.md`        |
+| —   | O caixa que não perde a conta               | pronto, sem o roteiro                     | `specs/011-caixa-que-nao-perde-conta.md` |
+| —   | O acerto das entregas                       | pronto, sem o roteiro                     | `specs/012-entregas-a-pagar.md`          |
+| 13  | A fornada                                   | 13A, 13B e 13C prontos, **13D a decidir** | `specs/013-a-fornada.md`                 |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -1355,11 +1358,86 @@ Fora do escopo literal da spec, e por quê:
 o hook, a linha de `/fichas` e a linha do pedido não têm teste. O que só o navegador responde
 está na próxima ação.
 
+## O que a sessão 13C deixou pronto
+
+A pergunta 4 da spec e o item 3 do pedido original: a previsão de compras deixa de depender de
+haver pedido. **Um campo novo em `FichaTecnica`, nenhuma coleção, nenhum índice, nenhuma rota,
+nenhuma dependência**, e a lista de compras muda pela terceira vez depois da 7B e da 13A —
+com efeito nulo enquanto nenhuma ficha tiver piso.
+
+- `FichaTecnica.fornadasMinimas?: number`, inteiro, ausente vale zero. Entrou em `esquemaFicha`
+  (inteiro, não negativo), em `DadosFicha` e no corpo único de escrita de `mutations/fichas.ts`.
+  No formulário mora no bloco "Rendimento e tempo", como "Fornadas de reserva", com a frase
+  "Sempre poder fazer esta quantidade. Quando a despensa não der mais isso, o que falta entra na
+  lista de compras. Zero desliga." Ficha nova nasce em zero.
+- `src/lib/domain/producao.ts` ganhou o bloco do piso: `reservaDeProducao` (o piso como demanda,
+  útil, por insumo, com as fichas que pedem — `ReservaDoInsumo`) e `fichasAbaixoDoPiso` (as fichas
+  com piso cuja capacidade de hoje ficou abaixo dele, sem contar `DESCONHECIDA`).
+  `FichaParaProduzir.fornadasMinimas?` acompanha.
+- `listaCompras.ts`: `ContextoDaProducao.piso?: Map<string, LinhaDeDemanda>`, o terceiro mapa,
+  opcional. `montarLista` itera a união dos insumos pedidos e dos reservados, soma a reserva à
+  demanda antes da perda, abate a massa já feita **só da parte dos pedidos**, e grava
+  `LinhaDaLista.quantidadeDeReserva`. `ItemListaCompras.quantidadeDeReserva?` nasceu opcional e
+  `itemDaLinha` o grava. Sem piso a conta é idêntica à de antes: os testes da 7B e da 13A
+  passaram sem uma linha alterada.
+- `tests/domain/producao.test.ts`: **10 testes novos** (432 → 442) — a reserva útil e quem pede,
+  o kit com piso explodindo um nível, os quatro jeitos de não pedir nada, piso zero devolvendo a
+  lista idêntica, piso 1 sem pedido montando lista com a linha dizendo que é reserva, piso e
+  pedido somando, a massa feita para o pedido abatendo o pedido e não a reserva (inclusive massa
+  a mais), a fornada de vitrine fazendo o item voltar, o insumo só da reserva que sumiu virando
+  pendência com nome, e `fichasAbaixoDoPiso` nos quatro casos (de pé, abaixo, derrubada pela
+  fornada, e nunca por não saber).
+- `/compras`: a montagem passa `piso: reservaDeProducao(fichas)`; "Montar a lista" deixou de
+  exigir pedido e passou a exigir linha; o estado vazio e o cabeçalho falam da reserva;
+  `LinhaCompra` e `LinhaJaTem` ganharam a frase "300 g para os pedidos · 500 g para manter 1
+  fornada de Cookie de reserva", com ícone, e os nomes vêm das fichas vivas.
+- `CartaoComprasHoje` foi reescrito: assina a lista aberta, as fichas e a despensa
+  (`useDespensaParaProduzir` + `contextoDaCapacidade`, os mesmos de `/fichas`), existe em
+  qualquer das três condições da spec, e diz "Faltam N itens · R$ X" — da lista aberta quando há
+  uma, ou da lista que seria montada agora quando não há. A segunda linha nomeia a ficha abaixo
+  do piso e o gargalo ("Cookie não dá nem uma fornada — trava em Chocolate"), com ícone; sem
+  ficha abaixo, diz quantos pedidos há nos próximos dias.
+- Decisão nova em `DECISOES.md#d96`.
+
+Fora do escopo literal da spec, e por quê:
+
+- **A reserva entra útil, e não física.** A spec escreve `Σ (fornadasMinimas × consumoPorLote)`,
+  que é físico; somar físico a `necessária`, que é útil, seria o erro que o comentário de
+  `montarLista` já previne para o estoque. Útil antes da perda dá o mesmo número e uma perda só.
+  Motivo em `#d96`.
+- **`piso` é `Map<string, LinhaDeDemanda>`**, e não `Map<string, number>` como os irmãos: o insumo
+  que só a reserva pede e que sumiu do cadastro precisa de nome para virar pendência.
+- **O campo se chama "Fornadas de reserva"** com a frase da spec na dica, e não a frase como
+  rótulo com o número no meio: um sufixo de três palavras não cabe no campo em 360px, e forçar
+  caberia à custa de um seletor CSS que ninguém decodifica às três da manhã.
+- **O cartão calcula a lista que seria montada.** Sem lista aberta, "Faltam N itens" não existiria
+  antes de ela montar — e a previsão não seria previsão.
+
+**O que a 13C não provou.** O de sempre: `npm test` cobre `src/lib/domain/`, então o campo do
+formulário, a frase da linha, o botão de montar sem pedido e o cartão não têm teste. O que só o
+navegador responde está na próxima ação.
+
 ## Próxima ação
 
-**A decisão sobre a 13D**, que a spec manda tomar depois de duas ou três semanas de 13B em uso,
-e **a 13C de `specs/013-a-fornada.md`** (o piso por ficha e a previsão em destaque), que não
-depende dessa decisão. Antes delas, ou junto, os roteiros da 13A e da 13B em navegador.
+**A decisão sobre a 13D**, que a spec manda tomar depois de duas ou três semanas de 13B em uso.
+Antes dela, ou junto, os roteiros da 13A, da 13B e da 13C em navegador.
+
+Da 13C, o que só o navegador responde:
+
+1. **Abrir uma ficha salva e pôr 1 em "Fornadas de reserva"**: salvar grava `fornadasMinimas: 1`
+   no documento, e as outras fichas continuam sem o campo.
+2. **`/compras` sem pedido confirmado nenhum**: "Montar a lista" fica vivo, o estado vazio fala da
+   reserva, e a lista montada tem os insumos daquela ficha com a frase "… para manter 1 fornada de
+   Cookie de reserva". Os que a despensa cobre ficam em "Não precisa comprar" com a mesma frase.
+3. **Confirmar um pedido da mesma ficha e "Refazer"**: a linha diz "300 g para os pedidos · 300 g
+   para manter …" e a quantidade somou.
+4. **Registrar a fornada de vitrine de `/fichas/[id]`** e voltar a `/compras`: a faixa "A conta
+   mudou" aparece, e "Refazer" põe o chocolate de volta no carrinho.
+5. **A tela Hoje sem pedido nenhum**, com essa ficha abaixo do piso: o cartão aparece com "Faltam N
+   itens · R$ X" e "Cookie não dá nem uma fornada — trava em Chocolate", com o ícone. Zerar o piso
+   e contar a despensa cheia: o cartão some.
+6. **A tela Hoje com lista aberta e tudo marcado como comprado**, nenhuma ficha abaixo do piso: o
+   cartão não aparece.
 
 Da 13B, o que só o navegador responde:
 

@@ -37,6 +37,7 @@ import { resumoDosItens } from "@/lib/domain/pedido";
 import {
   consumoDesdeAContagem,
   produzidoParaPedidos,
+  reservaDeProducao,
 } from "@/lib/domain/producao";
 import { guardarSemente } from "@/lib/estado/sementeDaContagem";
 import {
@@ -117,19 +118,29 @@ export function ListaDoMercado({
   );
 
   /**
+   * O que as fichas com piso querem sempre poder fazer (`#d96`). Serve à
+   * montagem, e serve à linha para dizer de quem é a reserva — os nomes vêm
+   * das fichas vivas, como o tamanho do pacote vem do insumo vivo.
+   */
+  const reserva = useMemo(() => reservaDeProducao(fichas), [fichas]);
+
+  /**
    * A lista como ela ficaria se fosse montada agora. É o que "Refazer" grava.
    *
    * Com a massa dentro: o que saiu desde a contagem de cada insumo desce da
-   * despensa, e o que já virou massa **para estes pedidos** sai da demanda. Sem
-   * fornada registrada, os dois mapas são vazios e a lista é a de sempre.
+   * despensa, e o que já virou massa **para estes pedidos** sai da demanda. E
+   * com o piso dentro: a reserva entra como demanda ao lado dos pedidos. Sem
+   * fornada registrada e sem piso, os três mapas são vazios e a lista é a de
+   * sempre.
    */
   const montada = useMemo(() => {
     const demanda = explodirDemanda(noPeriodo, fichas);
     return montarLista(demanda, insumos, hoje, {
       consumo: consumoDesdeAContagem(fornadas, insumos),
       produzido: produzidoParaPedidos(fornadas, demanda.pedidoIds),
+      piso: reserva,
     });
-  }, [noPeriodo, fichas, insumos, fornadas, hoje]);
+  }, [noPeriodo, fichas, insumos, fornadas, hoje, reserva]);
 
   const porInsumo = useMemo(
     () => new Map(insumos.map((insumo) => [insumo.id, insumo])),
@@ -265,7 +276,7 @@ export function ListaDoMercado({
     <>
       <CabecalhoPagina
         titulo="Lista de compras"
-        descricao="O que os pedidos já fechados vão exigir do mercado, em pacote e em reais."
+        descricao="O que os pedidos já fechados e a reserva de fornadas vão exigir do mercado, em pacote e em reais."
         acao={
           // Em coluna no celular: as duas ações lado a lado espremeriam o
           // título em 360px. Contar aparece **também quando não há lista** —
@@ -344,15 +355,17 @@ export function ListaDoMercado({
             <EstadoVazio
               titulo="Da encomenda para o carrinho"
               descricao={
-                noPeriodo.length === 0
-                  ? "Assim que houver um pedido confirmado para os próximos dias, o sistema soma o que cada receita consome e diz quantos pacotes comprar."
-                  : `São ${noPeriodo.length} ${noPeriodo.length === 1 ? "pedido confirmado" : "pedidos confirmados"} neste período. O sistema soma o que as receitas consomem, desconta o que você já tem e diz quantos pacotes faltam.`
+                noPeriodo.length > 0
+                  ? `São ${noPeriodo.length} ${noPeriodo.length === 1 ? "pedido confirmado" : "pedidos confirmados"} neste período. O sistema soma o que as receitas consomem, desconta o que você já tem e diz quantos pacotes faltam.`
+                  : reserva.size > 0
+                    ? "Nenhum pedido confirmado neste período, mas há ficha com fornada de reserva. O sistema soma o que a reserva consome, desconta o que você já tem e diz quantos pacotes faltam."
+                    : "Assim que houver um pedido confirmado para os próximos dias, ou uma ficha com fornada de reserva, o sistema soma o que cada receita consome e diz quantos pacotes comprar."
               }
               acao={
                 <Botao
                   variante="primaria"
                   tamanho="lg"
-                  disabled={noPeriodo.length === 0}
+                  disabled={montada.linhas.length === 0}
                   onClick={montar}
                   iconeInicial={
                     <ShoppingCart
@@ -371,7 +384,7 @@ export function ListaDoMercado({
           <div className="overflow-hidden rounded-lg border border-line bg-surface">
             <EstadoVazio
               titulo="Nada a comprar por enquanto"
-              descricao="Nenhum pedido confirmado neste período consome insumo. Confirme um orçamento ou aumente o período, e refaça a lista."
+              descricao="Nenhum pedido confirmado neste período consome insumo, e nenhuma ficha pede reserva. Confirme um orçamento ou aumente o período, e refaça a lista."
             />
           </div>
         ) : (
@@ -394,6 +407,7 @@ export function ListaDoMercado({
                       key={item.insumoId}
                       item={item}
                       insumo={porInsumo.get(item.insumoId)}
+                      reservaPara={reserva.get(item.insumoId)?.fichas}
                       hoje={hoje}
                       aoMarcar={(comprado) => marcar(item.insumoId, comprado)}
                       aoCorrigirPreco={(insumo, preco) =>
@@ -429,6 +443,7 @@ export function ListaDoMercado({
                       key={item.insumoId}
                       item={item}
                       insumo={porInsumo.get(item.insumoId)}
+                      reservaPara={reserva.get(item.insumoId)?.fichas}
                       hoje={hoje}
                     />
                   ))}
