@@ -128,7 +128,7 @@ export function TelaComecar() {
       <SecaoGuia
         id="mais"
         titulo="O que mais tem aqui"
-        descricao="Três telas que não estão no menu, e que são justamente as que mais poupam trabalho seu."
+        descricao="Quatro telas que não estão no menu, e que são justamente as que mais poupam trabalho seu."
       >
         <OQueMaisTem />
       </SecaoGuia>

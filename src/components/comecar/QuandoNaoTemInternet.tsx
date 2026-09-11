@@ -14,10 +14,10 @@ export function QuandoNaoTemInternet() {
   return (
     <div className="space-y-5">
       <Fala icone={Check} titulo="Quase tudo continua funcionando">
-        Cadastrar insumo, montar ficha, anotar encomenda, marcar como paga,
-        lançar no caixa e marcar item no mercado funcionam sem sinal nenhum.
-        Nada fica preso em &ldquo;salvando&rdquo;: o número aparece no toque, e
-        sobe sozinho quando a internet voltar.
+        Cadastrar insumo, montar ficha, anotar encomenda, registrar a fornada,
+        marcar como paga, lançar no caixa e marcar item no mercado funcionam sem
+        sinal nenhum. Nada fica preso em &ldquo;salvando&rdquo;: o número
+        aparece no toque, e sobe sozinho quando a internet voltar.
       </Fala>
 
       <Fala icone={CloudOff} titulo="O selo é aviso, e não erro">

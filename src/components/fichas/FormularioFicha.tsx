@@ -142,7 +142,8 @@ const TIPOS: { valor: TipoFicha; titulo: string; explicacao: string }[] = [
   {
     valor: "KIT",
     titulo: "Kit",
-    explicacao: "Uma caixa que junta fichas prontas, mais a embalagem dela.",
+    explicacao:
+      "Uma caixa que junta fichas prontas, ou um combo em que a cliente escolhe os sabores. Mais a embalagem dela.",
   },
 ];
 

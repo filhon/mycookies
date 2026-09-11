@@ -105,6 +105,15 @@ pote da receita escolhida, e `capacidadeDaFicha`, `reservaDeProducao` e `fichasA
 pulam o kit com escolhas — nenhum campo, nenhuma mutação, nenhuma rota. **Os roteiros de
 navegador da 14A e da 14B não rodaram.**
 
+Fora das specs, em 2026-09-11, `/comecar` foi relida contra as specs 009 a 014. Pelo `#d70` o
+guia só ensina o que mora em tela que ela ainda não abriu, e o que faltava era uma só:
+`/fichas/contagem` entrou em "O que mais tem aqui" como a quarta tela fora do menu ("O que está
+pronto", com o momento da semana), e "Quando não tem internet" passou a listar registrar a
+fornada. O WhatsApp, o acerto das entregas, o aviso do agregado e o combo moram em telas que ela
+já abre, e ficam onde estão; a única cópia tocada fora de `/comecar` foi a explicação do tipo
+"Kit" no editor de ficha, que agora diz que o kit também pode ser o combo em que a cliente
+escolhe os sabores. Nenhum número de exemplo entrou.
+
 Fora das specs, em 2026-09-11, o resumo do WhatsApp passou a dizer **como pagar**: `FormaPagamento.instrucoes` (texto livre em `/configuracao`, "Dados para pagar") entra na mensagem em parágrafo próprio enquanto o pedido não está pago (`#d98`). Nenhum dado bancário no código: **a conta real precisa preencher o campo na forma "Pix" uma vez.**
 
 Fora das specs, o projeto foi **preparado para publicar no Vercel** em 2026-09-03: a

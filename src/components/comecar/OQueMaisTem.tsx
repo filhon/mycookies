@@ -6,6 +6,7 @@ import {
   ChevronRight,
   ClipboardList,
   Clock,
+  Cookie,
   ShoppingCart,
 } from "lucide-react";
 
@@ -20,9 +21,10 @@ interface Funcionalidade {
 }
 
 /**
- * As três que não estão na navegação inferior, e que por isso dependem de
+ * As quatro que não estão na navegação inferior, e que por isso dependem de
  * descoberta acidental — que é o problema que esta página resolve. São
- * exatamente as três que mais economizam trabalho dela.
+ * exatamente as que mais economizam trabalho dela. A quarta nasceu na 13D
+ * (`DECISOES.md#d97`): o pote é a irmã da despensa, um nível acima.
  */
 const FUNCIONALIDADES: readonly Funcionalidade[] = [
   {
@@ -48,6 +50,15 @@ const FUNCIONALIDADES: readonly Funcionalidade[] = [
       "Você abre o armário e diz o que tem, insumo por insumo, em uma tela só. Sem contar, o sistema prefere te mandar comprar farinha de novo a te deixar sem farinha no meio da fornada.",
     momento: "Domingo à noite, antes de montar a lista.",
     href: "/insumos/contagem",
+  },
+  {
+    icone: Cookie,
+    nome: "O que está pronto",
+    frase:
+      "O que já assou e a massa que está no congelador, receita por receita. Com isso, a ficha e a encomenda dizem se dá para atender com o que já está feito, antes de contar a despensa. A fornada que você registra já deixa esse número proposto.",
+    momento:
+      "No fim do dia de fornada, ou antes de dizer sim a uma encomenda grande.",
+    href: "/fichas/contagem",
   },
 ];
 
