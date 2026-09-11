@@ -1,6 +1,6 @@
 import { Timestamp, writeBatch } from "firebase/firestore";
 import { obterDb } from "../client";
-import { docInsumo } from "../colecoes";
+import { docFicha, docInsumo } from "../colecoes";
 import { VERSAO_SCHEMA } from "@/lib/types";
 import type { DataISO, Insumo } from "@/lib/types";
 
@@ -58,6 +58,37 @@ export async function salvarContagem(
         v: VERSAO_SCHEMA,
         estoqueAtual: contagem.quantidade,
         estoqueContadoEmISO: hojeISO,
+        atualizadoEm: momento,
+      });
+    }
+
+    await lote.commit();
+  }
+
+  return contagens.length;
+}
+
+/**
+ * A mesma contagem, um nível acima: o que está pronto, por ficha (13D). Dois
+ * campos em `FichaTecnica`, tocados só por aqui: `corpoDaFicha` não os conhece,
+ * então salvar a receita não apaga a contagem, e contar não recalcula custo.
+ */
+export async function salvarContagemDoPronto(
+  contaId: string,
+  contagens: { fichaId: string; quantidade: number }[],
+  hojeISO: DataISO,
+): Promise<number> {
+  if (contagens.length === 0) return 0;
+
+  for (let i = 0; i < contagens.length; i += POR_LOTE) {
+    const momento = Timestamp.now();
+    const lote = writeBatch(obterDb());
+
+    for (const contagem of contagens.slice(i, i + POR_LOTE)) {
+      lote.update(docFicha(contaId, contagem.fichaId), {
+        v: VERSAO_SCHEMA,
+        estoqueProntoAtual: contagem.quantidade,
+        estoqueProntoContadoEmISO: hojeISO,
         atualizadoEm: momento,
       });
     }

@@ -2,12 +2,14 @@ import type {
   ConsumoDaFornada,
   DataISO,
   Percentual,
+  TipoFicha,
   UnidadeBase,
   UnidadeRendimento,
 } from "@/lib/types";
 import {
   contagemDoInsumo,
   estoqueParaLista,
+  type ContagemDoInsumo,
   type InsumoContado,
 } from "./estoque";
 import {
@@ -540,6 +542,156 @@ export function fichasAbaixoDoPiso(
   }
 
   return abaixo;
+}
+
+// ---------------------------------------------------------------------------
+// O que está pronto: a 007 aplicada um nível acima
+// ---------------------------------------------------------------------------
+
+/** O que a projeção do pronto precisa saber de uma fornada. `Fornada` serve. */
+export interface FornadaDaFicha {
+  arquivado: boolean;
+  dataISO: DataISO;
+  fichaId: string;
+  unidadesProduzidas: number;
+  pedidoId?: string;
+}
+
+/** O que a contagem do pronto precisa saber de uma ficha. `FichaTecnica` serve. */
+export interface FichaComPronto {
+  id: string;
+  /** Kit não se conta: é preço, e não pote (`#d97`). Ausente vale receita. */
+  tipo?: TipoFicha;
+  estoqueProntoAtual?: number | null;
+  estoqueProntoContadoEmISO?: DataISO | null;
+}
+
+/** Só a receita tem pote: o kit é o agregado das receitas de dentro, e contar
+ * a caixa montada contaria os mesmos cookies duas vezes. */
+export function temPronto(ficha: { tipo?: TipoFicha }): boolean {
+  return ficha.tipo !== "KIT";
+}
+
+/**
+ * A contagem do que está pronto, lida como a do insumo: `contagemDoInsumo` é
+ * estrutural sobre `{ estoqueAtual, estoqueContadoEmISO }`, e vencida vale
+ * "não sei" aqui também (`#d63`). Kit entra como `NUNCA`.
+ */
+export function contagemDoPronto(
+  ficha: FichaComPronto,
+  hojeISO: DataISO,
+): ContagemDoInsumo {
+  return contagemDoInsumo(
+    temPronto(ficha)
+      ? {
+          estoqueAtual: ficha.estoqueProntoAtual,
+          estoqueContadoEmISO: ficha.estoqueProntoContadoEmISO,
+        }
+      : {},
+    hojeISO,
+  );
+}
+
+export interface ProjecaoDoPronto {
+  contagem: ContagemDoInsumo;
+  /** Quantas fornadas desta ficha entraram na conta desde a contagem. */
+  fornadas: number;
+  /** Para quantas unidades elas fizeram massa. */
+  feitas: number;
+  /** O que a contagem disse, mais a massa feita depois dela. `null` sem contagem que valha. */
+  prontos: number | null;
+}
+
+/**
+ * A projeção do pronto: o que a contagem disse, **mais** a massa feita depois
+ * dela. É o `#d87` de cabeça para baixo, a mesma janela do `#d89`: o dia da
+ * contagem é opaco, e a fornada do mesmo dia já está dentro do número que ela
+ * contou. O que saiu do pote (vendido, entregue) o sistema não vê, e é a
+ * contagem seguinte quem conserta, como na despensa.
+ */
+export function projecaoDoPronto(
+  fornadas: FornadaDaFicha[],
+  ficha: FichaComPronto,
+  hojeISO: DataISO,
+): ProjecaoDoPronto {
+  const contagem = contagemDoPronto(ficha, hojeISO);
+  const contadoEm = ficha.estoqueProntoContadoEmISO;
+  const desde =
+    contagem.quantidade === null || !contadoEm
+      ? []
+      : fornadas.filter(
+          (fornada) =>
+            !fornada.arquivado &&
+            fornada.fichaId === ficha.id &&
+            fornada.dataISO > contadoEm,
+        );
+  const feitas = desde.reduce(
+    (soma, fornada) => soma + fornada.unidadesProduzidas,
+    0,
+  );
+
+  return {
+    contagem,
+    fornadas: desde.length,
+    feitas,
+    prontos: contagem.quantidade === null ? null : contagem.quantidade + feitas,
+  };
+}
+
+/**
+ * O que está no pote mas tem dono, por ficha: a massa já feita para os pedidos
+ * abertos, até o que eles pedem.
+ *
+ * É `min(pedido, feito)` porque a capacidade (`prometidoParaPedidos`) já tira
+ * da despensa só o que **falta** fazer para esses pedidos: o que já foi feito
+ * está nos prontos, e sem este abate a mesma massa seria vendida duas vezes.
+ * Com ele, `prontos livres + capacidade` fecha em `prontos + despensa −
+ * prometido`, que é a resposta da spec.
+ */
+// ponytail: agregado por ficha, como o prometido é por insumo. Massa de uma
+// ficha de dentro feita para um pedido de kit não é reconhecida como do
+// pedido; se isso aparecer na operação, o abate passa a explodir o kit.
+export function reservadoNoPronto(
+  pedidos: PedidoParaExplodir[],
+  fornadas: FornadaDaFicha[],
+): Map<string, number> {
+  const naLista = new Set(pedidos.map((pedido) => pedido.id));
+  const pedido = new Map<string, number>();
+  const feito = new Map<string, number>();
+
+  for (const atual of pedidos) {
+    for (const item of atual.itens) {
+      pedido.set(
+        item.fichaTecnicaId,
+        (pedido.get(item.fichaTecnicaId) ?? 0) + item.quantidade,
+      );
+    }
+  }
+  for (const fornada of fornadas) {
+    if (fornada.arquivado || !fornada.pedidoId) continue;
+    if (!naLista.has(fornada.pedidoId)) continue;
+    feito.set(
+      fornada.fichaId,
+      (feito.get(fornada.fichaId) ?? 0) + fornada.unidadesProduzidas,
+    );
+  }
+
+  const reservado = new Map<string, number>();
+  for (const [fichaId, quantidade] of feito) {
+    const dono = Math.min(quantidade, pedido.get(fichaId) ?? 0);
+    if (dono > 0) reservado.set(fichaId, dono);
+  }
+  return reservado;
+}
+
+/** Os prontos sem dono: a projeção menos o reservado. Nunca negativo, `null` sem contagem. */
+export function prontosLivres(
+  projecao: ProjecaoDoPronto,
+  reservado: number,
+): number | null {
+  return projecao.prontos === null
+    ? null
+    : Math.max(0, projecao.prontos - reservado);
 }
 
 /** O que falta comprar, por insumo contado, para fazer massa para `unidades`. */

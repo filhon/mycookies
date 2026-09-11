@@ -2885,3 +2885,66 @@ confiar na lista. Quatro escolhas de execução ficam registradas:
 
 `/compras` continua fora da navegação inferior. Se a operação disser que o cartão não basta, a
 troca é uma linha em `navegacao.ts`, e o que sai é `/insumos`.
+
+---
+
+## D97 · O que está pronto é contagem, a fornada propõe, e o pedido tem dono nos prontos
+
+**Status:** vigente · decidida em 2026-09-11 na spec 013, sessão 13D
+
+**Contexto.** A 13B responde quantas fornadas dá; faltava "quantas já estão feitas". A spec
+deixou a 13D reservada para depois de duas ou três semanas de 13B em uso, e o `#d93` mudou o
+peso da pergunta: a massa congelada é um estoque intermediário de verdade, e "posso vender"
+passa por ela. A sessão rodou por decisão de quem conduz o projeto, antes do prazo da spec.
+
+**Decisão.** `FichaTecnica.estoqueProntoAtual` e `estoqueProntoContadoEmISO`, os dois campos
+que a spec reservou: uma medição com data, na unidade de rendimento, e não um saldo. É a 007
+um nível acima e reusa o que ela tem: `contagemDoPronto` é `contagemDoInsumo` sobre os dois
+campos, `projecaoDoPronto` é o `#d87` de cabeça para baixo (`contado + massa feita depois da
+contagem`, com a janela `>` do `#d89`), a tela `/fichas/contagem` é a irmã de
+`/insumos/contagem` e grava pelo mesmo `writeBatch`, e o rodapé é o mesmo componente. **A
+fornada não escreve o pote**: depois de registrar, a folha fica aberta e oferece "Contar o que
+está pronto", que abre a irmã com o campo daquela ficha semeado por `sugestaoDaContagem`
+(`#d64` de novo, com a massa no lugar da nota). A resposta completa é a da spec —
+`prontos + despensa − prometido` — e ela é dita em `/fichas` ("13 unidades prontas · contada
+há 2 dias", acima de "dá para 3 fornadas") e na linha do pedido ("Dá: 13 unidades prontas, e a
+despensa faz mais 41 hoje").
+
+**Consequência.** Quatro escolhas ficam registradas porque um leitor futuro vai questioná-las:
+
+- **A massa feita para um pedido aberto tem dono nos prontos.** A capacidade da 13B já tira da
+  despensa só o que **falta** fazer para cada pedido (`prometidoParaPedidos` abate o produzido).
+  Se os prontos entrassem inteiros, a mesma massa seria vendida duas vezes: uma no pote, outra
+  na despensa que o pedido deixou de pedir. `reservadoNoPronto` devolve `min(pedido, feito)`
+  por ficha, e `prontosLivres` é a projeção menos isso — e com esse abate `livres + capacidade`
+  fecha exatamente em `prontos + despensa − prometido`, com ou sem massa feita, e degrada para
+  a 13B quando o pote nunca foi contado (o teste "a resposta completa fecha" é a prova). Na
+  linha do pedido, o que é **deste** pedido a frase tira sozinha (`min(unidades, jaFeitas)`),
+  porque o contexto exclui o pedido perguntado do reservado como já excluía do prometido.
+- **A projeção do pronto soma fornadas, e não desconta vendas.** O sistema não vê o cookie sair
+  do pote — a entrega não baixa unidade nenhuma —, então o pote projetado erra para cima até a
+  contagem seguinte, exatamente como a despensa erra para cima quando ela não registra a
+  fornada. A contagem continua sendo a verdade, e a linha diz "contada há N dias" para ela
+  desconfiar. Sem contagem que valha, `prontos` é `null` e a frase some: "não sei" não é zero.
+- **A fornada semeia, e a projeção não.** A massa registrada é um fato exato que ela acabou de
+  digitar ("fiz massa para 25"), como a nota é um pacote na mão; a projeção é número herdado
+  com conta em cima (`#d59`). A semente é a fornada recém-registrada, viaja por
+  `sementeDoPronto.ts` (estado de módulo, morre no recarregamento) e vale só para aquela
+  ficha, com o recorte "Só esta receita" ao lado de "Todas".
+- **O reservado é agregado por ficha, como o prometido é por insumo.** Massa de uma ficha de
+  dentro feita para um pedido de kit não é reconhecida como do pedido; está marcado com
+  `ponytail:` em `reservadoNoPronto`, e o conserto é explodir o kit no abate se a operação
+  pedir.
+
+**Kit não tem pote.** `temPronto` deixa o kit fora da contagem, da frase e da irmã: um combo é
+o agregado das receitas de dentro, e contar a caixa montada contaria os mesmos cookies duas
+vezes. A capacidade da 13B continua respondendo por ele. Isto também é o primeiro sinal de que o
+kit, como está — componentes fixos —, não é o combo que a operação vende (a cliente escolhe os
+sabores, o preço é fixo); esse é assunto de spec própria, e não desta.
+
+A rota `/fichas/contagem` é a única rota nova da spec 013: a spec dizia "nenhuma rota nasce"
+para as quatro sessões planejadas, e a 13D estava reservada. A irmã da contagem é uma tela
+inteira (uma linha por ficha) pelo mesmo argumento do `#d50`, e a entrada dela mora em
+`/fichas` e na tela da ficha, porque o pronto é atributo do produto como a capacidade. A
+reserva de produção (`#d96`) **não** olha o pote: "sempre poder fazer uma fornada" é sobre a
+despensa, e cookie pronto não é farinha.

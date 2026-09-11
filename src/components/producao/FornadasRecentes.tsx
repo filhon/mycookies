@@ -3,16 +3,10 @@
 import { useState } from "react";
 import { CookingPot } from "lucide-react";
 import { Botao } from "@/components/ui/Botao";
+import { SUFIXO_UNIDADE_RENDIMENTO } from "@/lib/domain/custoFicha";
 import { rotuloDia } from "@/lib/domain/datas";
 import { arquivarFornada } from "@/lib/firebase/mutations/fornadas";
-import type { Fornada, UnidadeRendimento } from "@/lib/types";
-
-const SUFIXO: Record<UnidadeRendimento, string> = {
-  un: "un",
-  porcao: "porções",
-  g: "g",
-  ml: "ml",
-};
+import type { Fornada } from "@/lib/types";
 
 function texto(numero: number): string {
   return String(Number(numero.toFixed(2))).replace(".", ",");
@@ -70,7 +64,7 @@ export function FornadasRecentes({
                   <span className="mx-1.5 text-ink-subtle">·</span>
                   {fornada.nomeSnapshot}: massa para{" "}
                   {texto(fornada.unidadesProduzidas)}{" "}
-                  {SUFIXO[fornada.unidadeRendimento]}
+                  {SUFIXO_UNIDADE_RENDIMENTO[fornada.unidadeRendimento]}
                   <span className="mx-1.5 text-ink-subtle">·</span>
                   <span className="text-ink-muted">
                     {texto(fornada.lotes)}{" "}

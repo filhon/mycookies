@@ -13,9 +13,10 @@ import { classesBotao } from "@/components/ui/estilosBotao";
 import { Botao } from "@/components/ui/Botao";
 import { LinhaFicha } from "./LinhaFicha";
 import { ID_FICHA_NOVA } from "./EditorFicha";
+import { EntradaContagemPronto } from "@/components/producao/EntradaContagemPronto";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { dataISODe } from "@/lib/domain/datas";
-import { capacidadeDaFicha } from "@/lib/domain/producao";
+import { capacidadeDaFicha, projecaoDoPronto } from "@/lib/domain/producao";
 import { colFichas } from "@/lib/firebase/colecoes";
 import { useColecao } from "@/lib/hooks/useColecao";
 import {
@@ -61,7 +62,7 @@ export function ListaFichas() {
   const insumos = despensa.insumos.dados;
   const fornadas = despensa.fornadas.dados;
   const capacidades = useMemo(() => {
-    const { consumo, prometido } = contextoDaCapacidade(
+    const { consumo, prometido, reservado } = contextoDaCapacidade(
       pedidos,
       dados,
       insumos,
@@ -71,7 +72,19 @@ export function ListaFichas() {
     return new Map(
       dados.map((ficha) => [
         ficha.id,
-        capacidadeDaFicha(ficha, dados, insumos, consumo, hoje, prometido),
+        {
+          capacidade: capacidadeDaFicha(
+            ficha,
+            dados,
+            insumos,
+            consumo,
+            hoje,
+            prometido,
+          ),
+          // O que está pronto, sem o que já é de pedido aberto (13D).
+          pronto: projecaoDoPronto(fornadas, ficha, hoje),
+          reservado: reservado.get(ficha.id) ?? 0,
+        },
       ]),
     );
   }, [pedidos, dados, insumos, fornadas, hoje]);
@@ -89,7 +102,8 @@ export function ListaFichas() {
   const semContagem =
     despensaPronta &&
     visiveis.some(
-      (ficha) => (capacidades.get(ficha.id)?.semContagem.length ?? 0) > 0,
+      (ficha) =>
+        (capacidades.get(ficha.id)?.capacidade?.semContagem.length ?? 0) > 0,
     );
 
   return (
@@ -98,16 +112,22 @@ export function ListaFichas() {
         titulo="Fichas técnicas"
         descricao="A receita, o custo real dela e o preço que fecha a sua margem."
         acao={
-          <Link
-            href={`/fichas/${ID_FICHA_NOVA}`}
-            className={classesBotao({
-              variante: "primaria",
-              className: "hidden lg:inline-flex",
-            })}
-          >
-            <Plus aria-hidden className="size-5" strokeWidth={2} />
-            Nova ficha
-          </Link>
+          <div className="flex items-center gap-2">
+            {/* No mesmo lugar em que `/pedidos` leva a "o que comprar": o que
+                está pronto é consequência do que foi feito, e é daqui que se
+                responde "tem cookie?". */}
+            <EntradaContagemPronto />
+            <Link
+              href={`/fichas/${ID_FICHA_NOVA}`}
+              className={classesBotao({
+                variante: "primaria",
+                className: "hidden lg:inline-flex",
+              })}
+            >
+              <Plus aria-hidden className="size-5" strokeWidth={2} />
+              Nova ficha
+            </Link>
+          </div>
         }
       >
         <div className="space-y-3">
@@ -224,8 +244,11 @@ export function ListaFichas() {
                 // Enquanto a despensa não chegou, a linha não diz nada: dizer
                 // "não dá para saber" por um instante seria mentir por pressa.
                 capacidade={
-                  despensaPronta ? capacidades.get(ficha.id) : undefined
+                  despensaPronta
+                    ? capacidades.get(ficha.id)?.capacidade
+                    : undefined
                 }
+                pronto={despensaPronta ? capacidades.get(ficha.id) : undefined}
               />
             ))}
           </ul>

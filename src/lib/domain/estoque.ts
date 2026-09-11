@@ -403,16 +403,19 @@ export interface ResumoDaContagem {
   total: number;
 }
 
-/** O rodapé: "4 de 5 contados · 1 zerado". */
+/**
+ * O rodapé: "4 de 5 contados · 1 zerado". Recebe as chaves das linhas na tela,
+ * e não as linhas: serve à despensa (por insumo) e ao que está pronto (por ficha).
+ */
 export function resumoDaContagem(
-  linhas: LinhaDeContagem[],
+  chaves: string[],
   digitados: Record<string, number | null>,
 ): ResumoDaContagem {
   let contadas = 0;
   let zeradas = 0;
 
-  for (const linha of linhas) {
-    const digitado = digitados[linha.insumoId];
+  for (const chave of chaves) {
+    const digitado = digitados[chave];
     if (digitado === null || digitado === undefined) continue;
     contadas += 1;
     if (digitado === 0) zeradas += 1;
@@ -421,7 +424,7 @@ export function resumoDaContagem(
   return {
     contadas,
     zeradas,
-    intocadas: linhas.length - contadas,
-    total: linhas.length,
+    intocadas: chaves.length - contadas,
+    total: chaves.length,
   };
 }

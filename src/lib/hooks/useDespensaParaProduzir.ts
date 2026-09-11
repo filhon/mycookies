@@ -7,6 +7,7 @@ import { entraNaLista, HORIZONTE_MAXIMO } from "@/lib/domain/listaCompras";
 import {
   consumoDesdeAContagem,
   prometidoParaPedidos,
+  reservadoNoPronto,
 } from "@/lib/domain/producao";
 import { colInsumos, colPedidos } from "@/lib/firebase/colecoes";
 import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
@@ -69,9 +70,9 @@ export function useDespensaParaProduzir(contaId: string, hoje: DataISO) {
 
 /**
  * O que `capacidadeDaFicha` precisa além da ficha: o que a massa já levou da
- * despensa e o que os pedidos abertos ainda vão levar. O pedido que está
- * sendo perguntado fica de fora do prometido, senão ele descontaria a si
- * mesmo.
+ * despensa, o que os pedidos abertos ainda vão levar, e o que dos prontos já
+ * é deles (13D). O pedido que está sendo perguntado fica de fora dos dois
+ * últimos, senão ele descontaria a si mesmo.
  */
 export function contextoDaCapacidade(
   pedidos: Pedido[],
@@ -90,5 +91,6 @@ export function contextoDaCapacidade(
   return {
     consumo: consumoDesdeAContagem(fornadas, insumos),
     prometido: prometidoParaPedidos(abertos, fichas, insumos, fornadas),
+    reservado: reservadoNoPronto(abertos, fornadas),
   };
 }

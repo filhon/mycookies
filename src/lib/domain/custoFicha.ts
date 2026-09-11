@@ -59,6 +59,14 @@ export const ROTULO_UNIDADE_RENDIMENTO: Record<UnidadeRendimento, string> = {
   ml: "mililitros",
 };
 
+/** O sufixo curto de um campo: "un", e não "unidades", ao lado de um número. */
+export const SUFIXO_UNIDADE_RENDIMENTO: Record<UnidadeRendimento, string> = {
+  un: "un",
+  porcao: "porções",
+  g: "g",
+  ml: "ml",
+};
+
 export const ROTULO_TIPO_FICHA: Record<TipoFicha, string> = {
   SIMPLES: "Receita",
   KIT: "Kit",

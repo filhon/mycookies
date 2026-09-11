@@ -16,9 +16,14 @@ import type { ResumoDaContagem } from "@/lib/domain/estoque";
 export function RodapeContagem({
   resumo,
   aoSalvar,
+  rotulo = "A despensa de hoje",
+  dica = "Digite o que você está vendo na despensa. Não precisa contar tudo: o que ficar em branco não é gravado.",
 }: {
   resumo: ResumoDaContagem;
   aoSalvar: () => void;
+  /** O que se está contando: a despensa, ou o que está pronto (13D). */
+  rotulo?: string;
+  dica?: string;
 }) {
   const { contadas, zeradas, intocadas, total } = resumo;
 
@@ -27,7 +32,7 @@ export function RodapeContagem({
       <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 px-4 py-3 lg:px-5">
         <div className="min-w-0">
           <p className="text-micro font-medium uppercase tracking-wide text-ink-subtle">
-            A despensa de hoje
+            {rotulo}
           </p>
           <p className="num mt-0.5 text-heading font-semibold text-ink">
             {contadas} de {total} {contadas === 1 ? "contado" : "contados"}
@@ -70,10 +75,7 @@ export function RodapeContagem({
         )}
         <span className="max-w-[64ch]" aria-live="polite">
           {contadas === 0 ? (
-            <>
-              Digite o que você está vendo na despensa. Não precisa contar tudo:
-              o que ficar em branco não é gravado.
-            </>
+            dica
           ) : intocadas > 0 ? (
             <>
               Salvar grava{" "}
@@ -86,7 +88,7 @@ export function RodapeContagem({
             </>
           ) : (
             <>
-              A despensa inteira contada hoje. Salvar grava as{" "}
+              Tudo contado hoje. Salvar grava as{" "}
               <strong className="num font-semibold text-ink">{total}</strong>{" "}
               linhas com a data de hoje.
             </>

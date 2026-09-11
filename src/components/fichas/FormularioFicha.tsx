@@ -30,7 +30,9 @@ import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
 import { Campo, Seletor } from "@/components/ui/Campo";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
+import { EntradaContagemPronto } from "@/components/producao/EntradaContagemPronto";
 import { FornadasRecentes } from "@/components/producao/FornadasRecentes";
+import { FraseDoPronto } from "@/components/producao/FraseDaCapacidade";
 import { PainelFornada } from "@/components/producao/PainelFornada";
 import { LinhaComponenteFicha, LinhaItemFicha } from "./LinhaItemFicha";
 import { PainelPreco } from "./PainelPreco";
@@ -51,6 +53,7 @@ import {
   parseParaNumero,
 } from "@/lib/domain/money";
 import type { ParametrosPreco } from "@/lib/domain/precificacao";
+import { projecaoDoPronto, temPronto } from "@/lib/domain/producao";
 import { esquemaFicha } from "@/lib/domain/schemas";
 import { paraBase, unidadesCompativeis } from "@/lib/domain/unidades";
 import { CONFIGURACAO_SUGERIDA } from "@/lib/firebase/mutations/configuracao";
@@ -249,6 +252,15 @@ export function FormularioFicha({
   const fornadasDaFicha = useMemo(
     () => fornadas.filter((atual) => atual.fichaId === ficha?.id),
     [fornadas, ficha],
+  );
+  // O que está pronto desta ficha, sem tirar pedido: a tela do produto diz o
+  // que há no pote; quem desconta pedido é `/fichas` e o editor de pedido.
+  const pronto = useMemo(
+    () =>
+      ficha && temPronto(ficha)
+        ? projecaoDoPronto(fornadas, ficha, hoje)
+        : null,
+    [fornadas, ficha, hoje],
   );
 
   /**
@@ -651,6 +663,27 @@ export function FormularioFicha({
                 Fiz a massa
               </Botao>
             </div>
+
+            {/* O que está pronto: a contagem do pote, um nível acima da
+                despensa (13D). Sem contagem que valha a frase some, e o
+                atalho fica. */}
+            {ficha && pronto && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line pt-3">
+                {pronto.prontos === null ? (
+                  <p className="max-w-[48ch] text-label text-ink-muted">
+                    {pronto.contagem.frescor === "VENCIDA"
+                      ? "A contagem do que está pronto venceu."
+                      : "Você ainda não contou o que está pronto desta receita."}
+                  </p>
+                ) : (
+                  <FraseDoPronto
+                    projecao={pronto}
+                    unidade={ficha.unidadeRendimento}
+                  />
+                )}
+                <EntradaContagemPronto />
+              </div>
+            )}
 
             {/* As desta ficha, com o desfazer: a massa registrada por engano
                 precisa sair da projeção, e arquivar é o único caminho. */}

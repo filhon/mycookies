@@ -10,6 +10,7 @@ import {
   capacidadeDaFicha,
   consumoDesdeAContagem,
   consumoPorLote,
+  contagemDoPronto,
   disponivelParaProducao,
   faltaPara,
   fichasAbaixoDoPiso,
@@ -19,7 +20,11 @@ import {
   projecaoDoInsumo,
   prometidoParaPedidos,
   reservaDeProducao,
+  projecaoDoPronto,
+  prontosLivres,
+  reservadoNoPronto,
   type FichaParaProduzir,
+  type FornadaDaFicha,
   type FornadaRegistrada,
   type InsumoParaCapacidade,
 } from "@/lib/domain/producao";
@@ -1068,5 +1073,217 @@ describe("o piso de produção", () => {
         HOJE,
       ),
     ).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// O que está pronto: a 007 um nível acima (13D)
+// ---------------------------------------------------------------------------
+
+describe("o que está pronto", () => {
+  function massa(
+    parcial: Partial<FornadaDaFicha> & { dataISO: string },
+  ): FornadaDaFicha {
+    return {
+      arquivado: false,
+      fichaId: "cookie",
+      unidadesProduzidas: 25,
+      ...parcial,
+    };
+  }
+
+  const CONTADO_DIA_8 = {
+    id: "cookie",
+    estoqueProntoAtual: 13,
+    estoqueProntoContadoEmISO: "2026-09-08",
+  };
+
+  it("projecaoDoPronto: a massa do dia da contagem não soma; a do dia seguinte soma", () => {
+    const noDia = projecaoDoPronto(
+      [massa({ dataISO: "2026-09-08" })],
+      CONTADO_DIA_8,
+      HOJE,
+    );
+    expect(noDia.fornadas).toBe(0);
+    expect(noDia.prontos).toBe(13);
+
+    const depois = projecaoDoPronto(
+      [massa({ dataISO: "2026-09-09" }), massa({ dataISO: "2026-09-10" })],
+      CONTADO_DIA_8,
+      HOJE,
+    );
+    expect(depois.fornadas).toBe(2);
+    expect(depois.feitas).toBe(50);
+    expect(depois.prontos).toBe(63);
+  });
+
+  it("projecaoDoPronto: outra ficha e massa arquivada não entram", () => {
+    const projecao = projecaoDoPronto(
+      [
+        massa({ dataISO: "2026-09-09", fichaId: "caixa6" }),
+        massa({ dataISO: "2026-09-09", arquivado: true }),
+      ],
+      CONTADO_DIA_8,
+      HOJE,
+    );
+    expect(projecao.fornadas).toBe(0);
+    expect(projecao.prontos).toBe(13);
+  });
+
+  it("projecaoDoPronto: sem contagem, ou vencida, é null e não zero, mesmo com massa feita", () => {
+    const nunca = projecaoDoPronto(
+      [massa({ dataISO: "2026-09-09" })],
+      { id: "cookie" },
+      HOJE,
+    );
+    expect(nunca.prontos).toBeNull();
+    expect(nunca.contagem.frescor).toBe("NUNCA");
+
+    const vencida = projecaoDoPronto(
+      [massa({ dataISO: "2026-09-09" })],
+      {
+        id: "cookie",
+        estoqueProntoAtual: 13,
+        estoqueProntoContadoEmISO: "2026-08-01",
+      },
+      HOJE,
+    );
+    expect(vencida.prontos).toBeNull();
+    expect(vencida.fornadas).toBe(0);
+    expect(vencida.contagem.frescor).toBe("VENCIDA");
+  });
+
+  const PEDIDO_DE_12 = {
+    id: "p1",
+    itens: [
+      { fichaTecnicaId: "cookie", nomeSnapshot: "Cookie", quantidade: 12 },
+    ],
+  };
+
+  it("reservadoNoPronto: a massa feita para o pedido é dele, até o que ele pede", () => {
+    // Massa para 25 num pedido de 12: 12 têm dono, 13 estão livres.
+    expect(
+      reservadoNoPronto(
+        [PEDIDO_DE_12],
+        [massa({ dataISO: "2026-09-09", pedidoId: "p1" })],
+      ).get("cookie"),
+    ).toBe(12);
+
+    // Massa para 5: os 5 têm dono, e o pedido ainda vai levar 7 da despensa.
+    expect(
+      reservadoNoPronto(
+        [PEDIDO_DE_12],
+        [
+          massa({
+            dataISO: "2026-09-09",
+            pedidoId: "p1",
+            unidadesProduzidas: 5,
+          }),
+        ],
+      ).get("cookie"),
+    ).toBe(5);
+  });
+
+  it("reservadoNoPronto: massa de vitrine, de pedido fora da lista ou arquivada não tem dono", () => {
+    const reservado = reservadoNoPronto(
+      [PEDIDO_DE_12],
+      [
+        massa({ dataISO: "2026-09-09" }),
+        massa({ dataISO: "2026-09-09", pedidoId: "entregue" }),
+        massa({ dataISO: "2026-09-09", pedidoId: "p1", arquivado: true }),
+      ],
+    );
+    expect(reservado.size).toBe(0);
+  });
+
+  it("prontosLivres: a projeção menos o reservado, nunca negativo, null continua null", () => {
+    const projecao = projecaoDoPronto([], CONTADO_DIA_8, HOJE);
+    expect(prontosLivres(projecao, 0)).toBe(13);
+    expect(prontosLivres(projecao, 5)).toBe(8);
+    expect(prontosLivres(projecao, 20)).toBe(0);
+    expect(
+      prontosLivres(projecaoDoPronto([], { id: "cookie" }, HOJE), 5),
+    ).toBeNull();
+  });
+
+  it("a resposta completa fecha: prontos livres + capacidade = prontos + despensa − prometido", () => {
+    // Chocolate para 3,33 lotes (66 cookies). Pedido de 12 com massa para 25
+    // feita ontem, contagem do pote de 0 na véspera: o pote projeta 25, 12
+    // são do pedido, 13 estão livres; a despensa desceu 300 g pela massa e o
+    // pedido não pede mais nada dela. 13 + 46 = 59 = 25 + 46 − 12.
+    const despensa: InsumoParaCapacidade[] = [
+      {
+        id: "chocolate",
+        nome: "chocolate",
+        arquivado: false,
+        unidadeBase: "g",
+        perdaPercentual: 0,
+        estoqueAtual: 1000,
+        estoqueContadoEmISO: "2026-09-08",
+      },
+    ];
+    const soChocolate: FichaParaProduzir = {
+      ...COOKIE,
+      itens: [
+        { insumoId: "chocolate", nomeSnapshot: "Chocolate", quantidade: 300 },
+      ],
+    };
+    const massaDoPedido = {
+      ...massa({ dataISO: "2026-09-09", pedidoId: "p1" }),
+      consumo: [
+        { insumoId: "chocolate", nomeSnapshot: "Chocolate", quantidade: 375 },
+      ],
+    };
+
+    const consumo = consumoDesdeAContagem([massaDoPedido], despensa);
+    const prometido = prometidoParaPedidos(
+      [PEDIDO_DE_12],
+      [soChocolate],
+      despensa,
+      [massaDoPedido],
+    );
+    const capacidade = capacidadeDaFicha(
+      soChocolate,
+      [soChocolate],
+      despensa,
+      consumo,
+      HOJE,
+      prometido,
+    );
+    // 625 g sobram: 2,08 lotes, 41 cookies.
+    expect(capacidade?.unidades).toBe(41);
+    expect(prometido.size).toBe(0);
+
+    const pronto = projecaoDoPronto(
+      [massaDoPedido],
+      {
+        id: "cookie",
+        estoqueProntoAtual: 0,
+        estoqueProntoContadoEmISO: "2026-09-08",
+      },
+      HOJE,
+    );
+    const reservado = reservadoNoPronto([PEDIDO_DE_12], [massaDoPedido]);
+    const livres = prontosLivres(pronto, reservado.get("cookie") ?? 0);
+
+    expect(livres).toBe(13);
+    // prontos + despensa − prometido: 25 + 41 − 12 = 54, e 13 + 41 = 54.
+    expect((livres ?? 0) + (capacidade?.unidades ?? 0)).toBe(54);
+  });
+});
+
+describe("o kit não tem pote", () => {
+  it("contagemDoPronto de um kit é NUNCA, mesmo com os campos gravados", () => {
+    const kit = {
+      id: "caixa6",
+      tipo: "KIT" as const,
+      estoqueProntoAtual: 4,
+      estoqueProntoContadoEmISO: "2026-09-10",
+    };
+    expect(contagemDoPronto(kit, HOJE).frescor).toBe("NUNCA");
+    expect(projecaoDoPronto([], kit, HOJE).prontos).toBeNull();
+    expect(contagemDoPronto({ ...kit, tipo: "SIMPLES" }, HOJE).quantidade).toBe(
+      4,
+    );
   });
 });

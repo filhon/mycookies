@@ -1,10 +1,71 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Check, CircleHelp, CookingPot, TriangleAlert } from "lucide-react";
+import {
+  Check,
+  CircleHelp,
+  Cookie,
+  CookingPot,
+  TriangleAlert,
+} from "lucide-react";
 import { ROTULO_UNIDADE_RENDIMENTO } from "@/lib/domain/custoFicha";
-import { faltaPara, type CapacidadeDaFicha } from "@/lib/domain/producao";
+import { rotuloDeIdade } from "@/lib/domain/estoque";
+import {
+  faltaPara,
+  prontosLivres,
+  type CapacidadeDaFicha,
+  type ProjecaoDoPronto,
+} from "@/lib/domain/producao";
 import { formatarQuantidade } from "@/lib/domain/unidades";
+import type { UnidadeRendimento } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
+
+/** "13 unidades prontas", "300 gramas prontos": o adjetivo segue a unidade. */
+const PRONTO: Record<UnidadeRendimento, string> = {
+  un: "prontas",
+  porcao: "prontas",
+  g: "prontos",
+  ml: "prontos",
+};
+
+function prontas(quantidade: number, unidade: UnidadeRendimento): string {
+  return `${texto(quantidade)} ${ROTULO_UNIDADE_RENDIMENTO[unidade]} ${PRONTO[unidade]}`;
+}
+
+/**
+ * O que está pronto, numa linha: a contagem projetada, sem o que já tem dono.
+ * Some sem contagem que valha: não há o que dizer, e a capacidade continua
+ * falando pela despensa.
+ */
+export function FraseDoPronto({
+  projecao,
+  unidade,
+  reservado = 0,
+  className,
+}: {
+  projecao: ProjecaoDoPronto;
+  unidade: UnidadeRendimento;
+  /** O que dos prontos já é de pedido aberto. */
+  reservado?: number;
+  className?: string;
+}) {
+  const livres = prontosLivres(projecao, reservado);
+  if (livres === null) return null;
+
+  return (
+    <Frase icone={Cookie} className={className}>
+      {livres === 0 ? "nada pronto" : prontas(livres, unidade)}
+      {reservado > 0 && " além dos pedidos"}
+      <Separador />
+      {rotuloDeIdade(projecao.contagem)}
+      {projecao.fornadas > 0 && (
+        <>
+          <Separador />
+          massa para {texto(projecao.feitas)} desde então
+        </>
+      )}
+    </Frase>
+  );
+}
 
 /** "Chocolate", "Chocolate e Farinha", "Chocolate, Farinha e mais 2". */
 export function listarNomes(nomes: string[], maximo = 2): string {
@@ -146,20 +207,31 @@ const TOM = {
  * É onde a pergunta é feita de verdade, com o WhatsApp aberto e a cliente
  * esperando. A capacidade é sobre **hoje** e já desconta os outros pedidos
  * fechados; quando não dá, a frase diz qual insumo e quanto comprar resolve.
+ *
+ * Com o que está pronto contado, a resposta completa é `prontos + despensa −
+ * prometido` (13D): o que já virou massa para **este** pedido sai dos prontos
+ * antes, porque é dele e não está livre.
  */
 export function FraseCabeNoPedido({
   capacidade,
   unidades,
   jaFeitas = 0,
+  prontos = null,
 }: {
   capacidade: CapacidadeDaFicha;
   /** O que a linha do pedido pede. */
   unidades: number;
   /** O que já virou massa para este pedido e esta ficha. */
   jaFeitas?: number;
+  /** Os prontos livres dos outros pedidos. `null` sem contagem que valha. */
+  prontos?: number | null;
 }) {
-  const rotulo = ROTULO_UNIDADE_RENDIMENTO[capacidade.unidadeRendimento];
+  const unidade = capacidade.unidadeRendimento;
+  const rotulo = ROTULO_UNIDADE_RENDIMENTO[unidade];
   const precisa = unidades - jaFeitas;
+  const livres =
+    prontos === null ? 0 : Math.max(0, prontos - Math.min(unidades, jaFeitas));
+  const prontosFrase = livres > 0 ? prontas(livres, unidade) : null;
   const semContagemFrase =
     capacidade.semContagem.length > 0
       ? `${listarNomes(capacidade.semContagem)} sem contagem`
@@ -175,10 +247,25 @@ export function FraseCabeNoPedido({
     );
   }
 
+  if (livres >= precisa && prontosFrase) {
+    return (
+      <Frase icone={Check} tom="positivo">
+        Dá: {prontosFrase} hoje, sem fazer massa
+      </Frase>
+    );
+  }
+
   if (capacidade.unidades === null) {
     return (
       <Frase icone={CircleHelp}>
+        {prontosFrase && (
+          <>
+            {prontosFrase}
+            <Separador />
+          </>
+        )}
         Não dá para saber se a despensa dá
+        {prontosFrase && " o resto"}
         {semContagemFrase && (
           <>
             <Separador />
@@ -199,11 +286,15 @@ export function FraseCabeNoPedido({
   const outros = capacidade.descontaPedidos
     ? ", já tirando os outros pedidos"
     : "";
+  const disponivel = livres + capacidade.unidades;
 
-  if (capacidade.unidades >= precisa) {
+  if (disponivel >= precisa) {
     return (
       <Frase icone={Check} tom="positivo">
-        Dá: a despensa tem para {texto(capacidade.unidades)} {rotulo} hoje
+        Dá:{" "}
+        {prontosFrase
+          ? `${prontosFrase}, e a despensa faz mais ${texto(capacidade.unidades)} hoje`
+          : `a despensa tem para ${texto(capacidade.unidades)} ${rotulo} hoje`}
         {outros}
         {semContagemFrase && (
           <>
@@ -215,7 +306,7 @@ export function FraseCabeNoPedido({
     );
   }
 
-  const falta = faltaPara(capacidade, precisa);
+  const falta = faltaPara(capacidade, precisa - livres);
   const compras = listarNomes(
     falta.map(
       (linha) =>
@@ -226,7 +317,8 @@ export function FraseCabeNoPedido({
 
   return (
     <Frase icone={TriangleAlert} tom="atencao">
-      Falta massa para {texto(precisa - capacidade.unidades)} {rotulo}
+      Falta massa para {texto(precisa - disponivel)} {rotulo}
+      {prontosFrase && ` (${prontosFrase})`}
       {outros}.{compras && ` Comprar ${compras} resolve.`}
       {semContagemFrase && (
         <>

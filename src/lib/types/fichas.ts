@@ -1,6 +1,7 @@
 import type { Timestamp } from "firebase/firestore";
 import type {
   Centavos,
+  DataISO,
   DocumentoBase,
   Percentual,
   UnidadeBase,
@@ -93,6 +94,15 @@ export interface FichaTecnica extends DocumentoBase {
    * (sessão 13C): vale 0, e zero não muda a lista em nada (`DECISOES.md#d96`).
    */
   fornadasMinimas?: number;
+
+  /**
+   * O que está pronto: a massa congelada e o que já assou, contados no pote, na
+   * unidade de rendimento. É a 007 aplicada um nível acima (spec 013, 13D): uma
+   * medição com data, e não um saldo. A fornada **não** escreve aqui, ela propõe
+   * a contagem (`DECISOES.md#d97`). Ausente em ficha que nunca contou.
+   */
+  estoqueProntoAtual?: number | null;
+  estoqueProntoContadoEmISO?: DataISO | null;
 
   /**
    * Insumos consumidos. Em uma ficha SIMPLES, ingredientes e embalagem.

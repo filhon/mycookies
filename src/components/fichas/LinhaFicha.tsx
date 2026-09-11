@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { ChevronRight, RefreshCw, TriangleAlert } from "lucide-react";
-import { FraseDaCapacidade } from "@/components/producao/FraseDaCapacidade";
+import {
+  FraseDaCapacidade,
+  FraseDoPronto,
+} from "@/components/producao/FraseDaCapacidade";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Selo } from "@/components/ui/Selo";
 import { ROTULO_UNIDADE_RENDIMENTO } from "@/lib/domain/custoFicha";
 import { formatarMoeda } from "@/lib/domain/money";
-import type { CapacidadeDaFicha } from "@/lib/domain/producao";
+import type {
+  CapacidadeDaFicha,
+  ProjecaoDoPronto,
+} from "@/lib/domain/producao";
 import type { FichaTecnica } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -21,10 +27,13 @@ import { cn } from "@/lib/utils/cn";
 export function LinhaFicha({
   ficha,
   capacidade,
+  pronto,
 }: {
   ficha: FichaTecnica;
   /** `null` quando não há pergunta: ficha sem insumo ou sem rendimento. */
   capacidade?: CapacidadeDaFicha | null;
+  /** O que está pronto, e quanto disso já é de pedido aberto (13D). */
+  pronto?: { pronto: ProjecaoDoPronto; reservado: number };
 }) {
   const lucro = ficha.precificacao.lucroUnitario;
   const noPrejuizo = lucro < 0;
@@ -46,6 +55,15 @@ export function LinhaFicha({
             rende {ficha.rendimento}{" "}
             {ROTULO_UNIDADE_RENDIMENTO[ficha.unidadeRendimento]}
           </p>
+
+          {pronto && (
+            <FraseDoPronto
+              projecao={pronto.pronto}
+              unidade={ficha.unidadeRendimento}
+              reservado={pronto.reservado}
+              className="mt-1"
+            />
+          )}
 
           {capacidade && (
             <FraseDaCapacidade capacidade={capacidade} className="mt-1" />

@@ -152,7 +152,10 @@ export function TelaContagem() {
 
   // O rodapé conta o que está na tela; salvar grava tudo o que foi tocado,
   // inclusive o que o recorte esconde.
-  const resumo = resumoDaContagem(linhas, valores);
+  const resumo = resumoDaContagem(
+    linhas.map((linha) => linha.insumoId),
+    valores,
+  );
   const corredores = agruparPorCorredor(linhas);
 
   /**

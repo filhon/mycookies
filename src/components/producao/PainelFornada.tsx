@@ -1,28 +1,28 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { TriangleAlert } from "lucide-react";
+import { Check, TriangleAlert } from "lucide-react";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, Seletor } from "@/components/ui/Campo";
 import { Painel } from "@/components/ui/Painel";
-import { ROTULO_UNIDADE_RENDIMENTO } from "@/lib/domain/custoFicha";
+import {
+  ROTULO_UNIDADE_RENDIMENTO,
+  SUFIXO_UNIDADE_RENDIMENTO,
+} from "@/lib/domain/custoFicha";
 import { contagemDoInsumo, rotuloDeIdade } from "@/lib/domain/estoque";
 import { parseParaNumero } from "@/lib/domain/money";
 import {
   consumoDesdeAContagem,
   consumoPorLote,
+  contagemDoPronto,
   disponivelParaProducao,
   fornadaGravavel,
 } from "@/lib/domain/producao";
 import { formatarQuantidade } from "@/lib/domain/unidades";
+import { guardarSementeDoPronto } from "@/lib/estado/sementeDoPronto";
 import { registrarFornada } from "@/lib/firebase/mutations/fornadas";
-import type {
-  DataISO,
-  FichaTecnica,
-  Fornada,
-  Insumo,
-  UnidadeRendimento,
-} from "@/lib/types";
+import type { DataISO, FichaTecnica, Fornada, Insumo } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
 /** Uma ficha que a folha pode fazer, com quantas unidades ela propõe. */
@@ -32,14 +32,6 @@ export interface OpcaoDeFornada {
 }
 
 const FORMA_DE_DIA = /^\d{4}-\d{2}-\d{2}$/;
-
-/** O sufixo do campo, curto: "un", e não "unidades", ao lado de um número. */
-const SUFIXO_RENDIMENTO: Record<UnidadeRendimento, string> = {
-  un: "un",
-  porcao: "porções",
-  g: "g",
-  ml: "ml",
-};
 
 function texto(numero: number): string {
   return String(Number(numero.toFixed(2))).replace(".", ",");
@@ -94,6 +86,7 @@ export function PainelFornada({
   /** Quando a fornada é para um pedido específico (`#d91`). */
   pedido?: { id: string; clienteNome: string };
 }) {
+  const router = useRouter();
   const inicial = () => ({
     fichaId: opcoes[0]?.ficha.id ?? "",
     unidades: texto(opcoes[0]?.unidades ?? 0),
@@ -102,12 +95,20 @@ export function PainelFornada({
 
   const [estado, setEstado] = useState(inicial);
   const [erro, setErro] = useState<string | null>(null);
+  // Depois de registrar, a folha fica aberta para propor a contagem do que
+  // está pronto (`#d97`): a massa é um fato exato, e o campo de lá nasce com
+  // ele somado. Ela escolhe; nada do pote é gravado por aqui.
+  const [registrada, setRegistrada] = useState<{
+    ficha: FichaTecnica;
+    unidades: number;
+  } | null>(null);
 
   const [chave, setChave] = useState(chaveAtual);
   if (chave !== chaveAtual) {
     setChave(chaveAtual);
     setEstado(inicial());
     setErro(null);
+    setRegistrada(null);
   }
 
   const opcao = opcoes.find((atual) => atual.ficha.id === estado.fichaId);
@@ -193,7 +194,68 @@ export function PainelFornada({
       consumo: gravavel.consumo,
       pedidoId: pedido?.id,
     });
+    setRegistrada({ ficha, unidades: gravavel.unidadesProduzidas });
+  }
+
+  function contarOPronto() {
+    if (!registrada) return;
+    guardarSementeDoPronto({
+      fichaId: registrada.ficha.id,
+      unidades: registrada.unidades,
+    });
     aoFechar();
+    router.push("/fichas/contagem");
+  }
+
+  if (registrada) {
+    const contagem = contagemDoPronto(registrada.ficha, hoje);
+    const rotulo =
+      ROTULO_UNIDADE_RENDIMENTO[registrada.ficha.unidadeRendimento];
+    return (
+      <Painel
+        aberto={aberto}
+        aoFechar={aoFechar}
+        titulo="Fornada registrada"
+        descricao="A despensa já desceu na projeção. O que está pronto, só a contagem sabe."
+        rodape={
+          <div className="flex gap-3">
+            <Botao onClick={aoFechar} className="flex-1">
+              Agora não
+            </Botao>
+            <Botao
+              variante="primaria"
+              tamanho="lg"
+              onClick={contarOPronto}
+              className="flex-[1.6]"
+            >
+              Contar o que está pronto
+            </Botao>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <p className="num flex items-start gap-2.5 text-body text-ink">
+            <Check
+              aria-hidden
+              className="mt-1 size-4 shrink-0 text-positive"
+              strokeWidth={2.5}
+            />
+            <span>
+              {registrada.ficha.nome}: massa para{" "}
+              <span className="font-semibold">
+                {texto(registrada.unidades)} {rotulo}
+              </span>
+              .
+            </span>
+          </p>
+          <p className="max-w-[56ch] text-label text-ink-muted">
+            {contagem.quantidade === null
+              ? "Você ainda não contou o que está pronto desta receita. Contar agora abre o campo já com esta massa."
+              : `Pela última contagem, ${texto(contagem.quantidade)} ${rotulo} (${rotuloDeIdade(contagem)}). Contar agora abre o campo já com esta massa somada, para você conferir no pote.`}
+          </p>
+        </div>
+      </Painel>
+    );
   }
 
   return (
@@ -249,7 +311,9 @@ export function PainelFornada({
             required
             inputMode="decimal"
             autoComplete="off"
-            sufixo={ficha ? SUFIXO_RENDIMENTO[ficha.unidadeRendimento] : ""}
+            sufixo={
+              ficha ? SUFIXO_UNIDADE_RENDIMENTO[ficha.unidadeRendimento] : ""
+            }
             value={estado.unidades}
             onChange={(evento) =>
               setEstado((anterior) => ({

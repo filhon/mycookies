@@ -62,7 +62,11 @@ import {
 } from "@/lib/firebase/mutations/pedidos";
 import { parcelasDoResumo } from "@/lib/domain/caixa";
 import { competenciaDeISO } from "@/lib/domain/datas";
-import { capacidadeDaFicha } from "@/lib/domain/producao";
+import {
+  capacidadeDaFicha,
+  projecaoDoPronto,
+  prontosLivres,
+} from "@/lib/domain/producao";
 import { docMeta, docResumoMensal } from "@/lib/firebase/colecoes";
 import { useDocumento } from "@/lib/hooks/useColecao";
 import { contextoDaCapacidade } from "@/lib/hooks/useDespensaParaProduzir";
@@ -987,13 +991,19 @@ export function FormularioPedido({
                       aoRemover={() => removerLinha(linha.chave)}
                       erro={errosItens[indice]}
                     >
-                      {capacidade && (
+                      {capacidade && ficha && (
                         <FraseCabeNoPedido
                           capacidade={capacidade}
                           unidades={parseParaNumero(linha.quantidade)}
                           jaFeitas={
                             jaFeitasPorFicha.get(capacidade.fichaId) ?? 0
                           }
+                          // O que está pronto, sem o que já é dos outros
+                          // pedidos; o que é deste, a frase tira sozinha.
+                          prontos={prontosLivres(
+                            projecaoDoPronto(fornadas, ficha, hoje),
+                            contextoDaDespensa.reservado.get(ficha.id) ?? 0,
+                          )}
                         />
                       )}
                     </LinhaItemPedido>

@@ -506,7 +506,9 @@ describe("resumoDaContagem", () => {
   it("conta o caso de aceite: 4 de 5 contados · 1 zerado", () => {
     // Ela digita farinha 620, chocolate 0, manteiga 480, saquinho 50. Não toca
     // na caixa.
-    const linhas = linhasParaContar(INSUMOS, SEM_ENTRADAS, HOJE);
+    const linhas = linhasParaContar(INSUMOS, SEM_ENTRADAS, HOJE).map(
+      (linha) => linha.insumoId,
+    );
     const resumo = resumoDaContagem(linhas, {
       farinha: 620,
       chocolate: 0,
@@ -522,7 +524,9 @@ describe("resumoDaContagem", () => {
   });
 
   it("linha em branco não conta, e linha ausente do mapa também não", () => {
-    const linhas = linhasParaContar(INSUMOS, SEM_ENTRADAS, HOJE);
+    const linhas = linhasParaContar(INSUMOS, SEM_ENTRADAS, HOJE).map(
+      (linha) => linha.insumoId,
+    );
 
     expect(resumoDaContagem(linhas, {}).contadas).toBe(0);
     expect(resumoDaContagem(linhas, {}).intocadas).toBe(5);
