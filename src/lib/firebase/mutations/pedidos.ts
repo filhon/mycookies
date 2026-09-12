@@ -1,9 +1,13 @@
 import {
   deleteField,
   doc,
+  limit,
+  orderBy,
+  query,
   setDoc,
   Timestamp,
   updateDoc,
+  where,
   writeBatch,
 } from "firebase/firestore";
 import { obterDb } from "../client";
@@ -38,6 +42,7 @@ import {
   descricaoDoRepasse,
   podeIrPara,
   ROTULO_STATUS_PEDIDO,
+  STATUS_NA_AGENDA,
   type EntregaAPagar,
   type PedidoParaEntrega,
   type RepasseFeito,
@@ -96,6 +101,65 @@ export interface DadosPedido {
 
 function agora() {
   return Timestamp.now();
+}
+
+// ---------------------------------------------------------------------------
+// As consultas de `/pedidos` (spec 016). Como `consultaFornadas` e
+// `consultaTransacoesDoMes`: quem conhece a forma da consulta conhece o índice
+// que ela pede (`DECISOES.md#d105`).
+// ---------------------------------------------------------------------------
+
+/**
+ * A agenda inteira: o que ainda não saiu do forno, de qualquer data.
+ *
+ * Recorte por status, sem teto: a agenda é finita por natureza, porque ela
+ * fecha os pedidos. Um orçamento esquecido continua aqui com "Passou da data",
+ * e não some. Índice `arquivado + status + dataEntregaISO`.
+ */
+export function consultaAgenda(contaId: string) {
+  return query(
+    colPedidos(contaId),
+    where("arquivado", "==", false),
+    where("status", "in", STATUS_NA_AGENDA),
+    orderBy("dataEntregaISO"),
+  );
+}
+
+/**
+ * Entregues que ainda não entraram no caixa: o que "A receber" soma além da
+ * agenda, para a faixa continuar exata com o histórico em páginas.
+ *
+ * Só igualdades e sem `orderBy`, de propósito: o Firestore junta os índices de
+ * campo único sozinho, e nenhum composto é preciso. É sempre pequena — ela
+ * recebe —, e a ordem se faz em memória.
+ */
+export function consultaEntreguesEmAberto(contaId: string) {
+  return query(
+    colPedidos(contaId),
+    where("arquivado", "==", false),
+    where("status", "==", "ENTREGUE"),
+    where("pago", "==", false),
+  );
+}
+
+/**
+ * O histórico: o que já saiu da agenda, dos mais recentes para trás, em
+ * páginas. A página é `limit(n)` com `n` crescendo — uma assinatura só, refeita
+ * com um limite maior; o cache já tem as primeiras `n` e o servidor manda o
+ * resto. Mesmo índice da agenda, percorrido ao contrário para o `desc`.
+ */
+export function consultaHistorico(
+  contaId: string,
+  status: StatusPedido[],
+  limite: number,
+) {
+  return query(
+    colPedidos(contaId),
+    where("arquivado", "==", false),
+    where("status", "in", status),
+    orderBy("dataEntregaISO", "desc"),
+    limit(limite),
+  );
 }
 
 /** A mesma ficha pode aparecer em duas linhas do pedido. */

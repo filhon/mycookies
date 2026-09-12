@@ -299,6 +299,18 @@ export function ehConcluido(status: StatusPedido): boolean {
   return status === "ENTREGUE" || status === "CANCELADO";
 }
 
+/**
+ * Os dois lados da agenda, nomeados para as consultas de `/pedidos`
+ * (`DECISOES.md#d105`). O teste exige que juntos sejam exatamente os seis
+ * status: um status novo que caísse fora dos dois sumiria da tela sem aviso.
+ */
+/** O que ainda está na agenda: tudo o que `ehConcluido` não é. */
+export const STATUS_NA_AGENDA: StatusPedido[] = FLUXO_PEDIDO.filter(
+  (status) => !ehConcluido(status),
+);
+/** O que já saiu dela. */
+export const STATUS_CONCLUIDOS: StatusPedido[] = ["ENTREGUE", "CANCELADO"];
+
 export interface AReceber {
   total: Centavos;
   quantidade: number;

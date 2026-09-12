@@ -3177,3 +3177,123 @@ continua sendo o `SeloSincronizacao`. E duas escritas despachadas em sequência 
 atômicas — nunca foram, nem com `await`: `salvarMeta` grava a meta e o espelho como duas
 operações, e se a segunda for recusada a primeira fica. É o estado de antes com rede; offline,
 antes, a segunda simplesmente não existia.
+
+---
+
+## D105 · Toda consulta tem um recorte; lista que cresce com o tempo tem janela, lista que cresce com o negócio tem arquivo
+
+**Status:** vigente · decidida em 2026-09-12, na spec 016
+
+**Contexto.** Toda lista do sistema é um `onSnapshot` sobre uma consulta, e o cache do
+Firestore guarda o resultado inteiro no aparelho — é o que faz o app abrir sem rede, e não
+muda. O que precisava de resposta era outra pergunta: **o que limita o tamanho de cada
+consulta?** A varredura da 016 respondeu para todas, e só uma assinava "tudo": `/pedidos`
+carregava todo pedido não arquivado, e a agenda de 2026 ia carregar o Natal de 2027 junto com o
+de 2026. Não quebrava amanhã — mil pedidos são um ou dois megabytes num cache de 40 MB —, mas
+era a única consulta cujo tamanho era "tudo o que já aconteceu", baixado inteiro a cada
+aparelho novo.
+
+| Quem lê                                                            | Coleção                 | Recorte                        | Cresce com                    |
+| ------------------------------------------------------------------ | ----------------------- | ------------------------------ | ----------------------------- |
+| `/pedidos` (`ListaPedidos`)                                        | `pedidos`               | **status mais `limit`** (esta) | o tempo, um por venda         |
+| Tela Hoje (`AgendaHoje`)                                           | `pedidos`               | `>= hoje`, `limit(12)`         | —                             |
+| `useDespensaParaProduzir` (`/compras`, `/fichas`, editor)          | `pedidos`               | `hoje` … `hoje + 30 dias`      | —                             |
+| `/financeiro` (`TelaFinanceiro`)                                   | `transacoes`            | `competencia == mês`           | o tempo, mas o mês é a página |
+| "Recalcular o mês" (`recalcularMes`)                               | `transacoes`, `pedidos` | do mês, `getDocs`              | —                             |
+| `consultaFornadas` (insumos, fichas, contagens, compras)           | `fornadas`              | últimos 30 dias                | —                             |
+| `consultaListaAtual` (`/compras`, tela Hoje)                       | `listasCompra`          | `limit(1)`                     | —                             |
+| `useComeco` (tela Hoje, `/comecar`)                                | quatro coleções         | `limit(1)` em cada             | —                             |
+| `/insumos`, `/insumos/contagem`, `/compras`, editor de ficha, nota | `insumos`               | `arquivado == false`           | **o catálogo**, não o tempo   |
+| `/fichas`, `/fichas/contagem`, editor de pedido, meta, compras     | `fichas`                | `arquivado == false`           | o catálogo                    |
+| Editor de pedido (`BuscaItem` de cliente)                          | `clientes`              | `arquivado == false`           | o tempo, devagar              |
+| Agregados, metas, configuração, conta                              | documentos              | lidos pelo id                  | —                             |
+
+**Decisão.** Nenhuma consulta do sistema assina "tudo". Cada uma se limita por **um** destes,
+e o comentário dela diz qual:
+
+- **pelo id** — agregados, metas, configuração, conta;
+- **por `limit`** — a tela Hoje, a lista de compras atual, os cinco passos do começo;
+- **por janela de tempo** — as fornadas (30 dias), os pedidos do horizonte de compras (30 dias);
+- **por competência** — o caixa, um mês por tela;
+- **pelo arquivo** — os catálogos, `insumos`, `fichas` e `clientes`, cujo tamanho é o do
+  negócio e não o do calendário.
+
+`/pedidos` passa a se limitar por **status mais `limit`**, em três consultas que moram em
+`mutations/pedidos.ts` ao lado das mutações, como `consultaFornadas` e
+`consultaTransacoesDoMes`: quem conhece a forma da consulta conhece o índice que ela pede.
+
+- **`consultaAgenda`** — `arquivado == false`, `status in STATUS_NA_AGENDA`, por
+  `dataEntregaISO`. A agenda inteira, de qualquer data, **sem teto**: ela é finita por
+  natureza, porque ela fecha os pedidos. Cem orçamentos abertos que ela nunca cancelou
+  continuam carregando, de propósito: um orçamento aberto é uma pergunta em aberto, e a
+  resposta do sistema é "Passou da data", não "sumiu".
+- **`consultaHistorico`** — `arquivado == false`, `status in status`, por `dataEntregaISO`
+  **desc**, `limit(n)`. O que já saiu, dos mais recentes para trás, em páginas de trinta. O
+  mecanismo de página é **`limit(n)` com `n` crescendo** — não cursor, não `startAfter`, não
+  lista de assinaturas. Uma assinatura só, refeita com um limite maior a cada "Mostrar mais
+  antigos"; o cache já tem as primeiras `n` e o servidor manda o resto. É o mecanismo mais
+  burro que existe, e é o que cabe numa tela que ela abre para ver o que assa hoje, não para
+  auditar 2024. O filtro de status vai para a consulta, e não só para a memória: "Entregues"
+  na pílula são páginas de trinta entregues, e não trinta concluídos com os entregues
+  pescados de dentro.
+- **`consultaEntreguesEmAberto`** — `arquivado == false`, `status == "ENTREGUE"`,
+  `pago == false`, **sem `orderBy`**: só igualdades, e o Firestore junta os índices de campo
+  único sozinho. É o que faz a faixa "A receber" continuar exata com o histórico em páginas:
+  ela soma `agenda ∪ entreguesEmAberto`, dois conjuntos que não se cruzam e são completos.
+  Paginar a consulta única como estava faria as duas faixas somarem só a primeira página, e o
+  `#d36` existe justamente para o painel não mentir por omissão.
+
+O índice novo é **um**, `arquivado + status + dataEntregaISO`, e serve as duas primeiras: o
+`in` sobre `status` usa o índice de igualdade, e o Firestore percorre o composto ao contrário
+para o `desc`. Os dois índices de `pedidos` que existiam ficam.
+
+**O fim da lista só se sabe com o servidor.** O botão "Mostrar mais antigos" some quando
+`dados.length < limite` **e** o snapshot não veio do cache. Do cache, ele fica: sem rede a lista
+pode estar mais curta que o servidor, e esconder o botão seria dizer "acabou" sem saber. O
+`SeloSincronizacao` já diz que está sem conexão; nenhuma frase nova.
+
+**Insumos e fichas não paginam, e é decisão e não omissão.** São catálogo: o que os limita não
+é uma janela, é `arquivado` — a farinha que ela parou de usar sai da lista e fica no histórico
+das fichas antigas (`#d05`). Uma confeitaria artesanal vive com dezenas de insumos e dezenas de
+fichas; com quinhentos vivos ela seria outro negócio. E toda tela que os lê precisa do
+**conjunto inteiro**: a contagem é da despensa toda, `montarLista` explode todo pedido sobre
+todo insumo, o editor de ficha busca por toque em memória. Página de insumo é um conceito que
+não existe na cozinha. **A paginação deles é o arquivo, e ela já existe.** `clientes` é o caso
+do meio — cresce com o tempo, mas cada documento é pequeno e a busca é por trecho do nome em
+memória. Quando doer (mil clientes, ou o editor de pedido demorando para abrir num aparelho
+novo), o conserto é busca por prefixo em `nomeBusca` com `limit(10)` sobre o índice que já
+está publicado — mas isso troca "trecho do nome" por "começo do nome", e é decisão de tela.
+
+**Consequência.** Três assinaturas em `/pedidos` onde havia uma; o Firestore multiplexa tudo
+num canal só, e a tela de fichas já assina três. A agenda e os entregues em aberto são pequenos
+por natureza; o histórico é o único que pesa, e é o que ganhou o `limit`. Quatro escolhas
+ficam registradas porque são fáceis de rejeitar:
+
+- **Uma entrega paga pela cliente, nunca acertada com o entregador, e mais antiga que as
+  páginas carregadas some da faixa "Entregas a pagar".** `consultaEntreguesEmAberto` cobre o
+  entregue **não pago**, porque `pago` é campo gravado; "acerto ausente" é a ausência de
+  `entrega.repasseTransacaoId`, e o Firestore não consulta ausência. Antes esse pedido ficava
+  na faixa para sempre; agora fica até cair da última página aberta. O acerto é semanal
+  (`#d83`), então a janela para esquecer é de meses. Se for inaceitável, o conserto é um
+  booleano derivado, `entrega.repassePendente`, gravado por `mudarStatusPedido`, `pagarEntregas`,
+  `desfazerRepasse` e `atualizarPedido`, com backfill — aprovação de schema e uma sessão a
+  mais. Está na tabela de dívidas.
+- **A faixa "Entregas a pagar" soma os três conjuntos**, `agenda ∪ entreguesEmAberto ∪
+historico` por id, e não só os dois últimos que a spec nomeou: `entregasEsquecidas` (`#d83`)
+  lê os pedidos abertos com a data vencida, e eles moram na agenda. Sem ela, a frase "entregas
+  que você esqueceu de marcar" zeraria em silêncio.
+- **`in` sobre `status`, e não um campo `concluido` gravado.** O campo seria o desenho do
+  `#d04`, mas custaria escrever em seis mutações e reescrever cada pedido existente. `in` usa
+  o mesmo índice que `==`, aceita até trinta valores, e nós usamos quatro e dois. Se um dia
+  houver um sétimo status, o teste da partição em `pedido.test.ts` avisa: `STATUS_NA_AGENDA`
+  mais `STATUS_CONCLUIDOS` têm que ser exatamente as chaves de `ROTULO_STATUS_PEDIDO`.
+- **O histórico ordena por data de entrega, e não por data de conclusão.** Não existe
+  `concluidoEm`; `atualizadoEm` muda quando ela corrige uma observação. A data de entrega é a
+  que ela lembra ("o Natal", "a festa da Júlia"), e é o índice que já existe.
+
+O que ficou de fora, e por quê: contagem total do histórico (`getCountFromServer` exige rede e
+o número não decide nada), rolagem infinita (um botão é acessível e não dispara sem querer),
+cursor e várias assinaturas (é o que se faz quando `limit` crescente custa caro, e aqui cada
+"mais antigos" relê trinta documentos do cache), arquivar em lote (a paginação é o que tira a
+pressão de arquivar) e diminuir o cache (40 MB é o padrão, e este registro é o que impede de
+chegar lá).

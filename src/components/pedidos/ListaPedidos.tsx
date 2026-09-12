@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Plus, TriangleAlert, Wallet } from "lucide-react";
-import { orderBy, query, where } from "firebase/firestore";
 import { useMemo, useState } from "react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
@@ -18,8 +17,18 @@ import { LinhaPedido } from "./LinhaPedido";
 import { ID_PEDIDO_NOVO } from "./EditorPedido";
 import { dataISODe, rotuloAgenda } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
-import { agruparPorEntrega, aReceber, ehConcluido } from "@/lib/domain/pedido";
-import { colPedidos } from "@/lib/firebase/colecoes";
+import {
+  agruparPorEntrega,
+  aReceber,
+  ehConcluido,
+  ROTULO_STATUS_PEDIDO,
+  STATUS_CONCLUIDOS,
+} from "@/lib/domain/pedido";
+import {
+  consultaAgenda,
+  consultaEntreguesEmAberto,
+  consultaHistorico,
+} from "@/lib/firebase/mutations/pedidos";
 import { useColecao } from "@/lib/hooks/useColecao";
 import type { DataISO, Pedido, StatusPedido } from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
@@ -35,47 +44,103 @@ const FILTROS: { valor: StatusPedido | "TODOS"; rotulo: string }[] = [
   { valor: "CANCELADO", rotulo: "Cancelados" },
 ];
 
+/** Quantos concluídos cada "Mostrar mais antigos" traz. */
+const PAGINA_DO_HISTORICO = 30;
+
 /**
  * A agenda de encomendas, por data de entrega.
  *
- * Uma consulta ordenada pela data, e o status filtrado em memória: são dezenas
- * de pedidos por mês, e um índice por combinação de status seria manutenção sem
- * retorno. Os pedidos que já saíram — entregues e cancelados — vão para o fim,
- * porque o que ela precisa ver ao abrir a tela é o que ainda vai para o forno.
+ * Três assinaturas, e não uma (`DECISOES.md#d105`): a **agenda** inteira — o
+ * que ainda não saiu do forno, de qualquer data, finita porque ela fecha os
+ * pedidos —, o **histórico** em páginas de trinta, dos mais recentes para
+ * trás, e os **entregues em aberto**, completa e pequena, para a faixa "A
+ * receber" não somar só a primeira página. O índice `arquivado + status +
+ * dataEntregaISO` nasceu para isso. O filtro de status vai para a consulta do
+ * histórico, e na agenda é filtrado em memória.
  */
 export function ListaPedidos() {
   const contaId = useContaId();
   const [filtro, setFiltro] = useState<StatusPedido | "TODOS">("TODOS");
   const [hoje] = useState(() => dataISODe(new Date()));
+  const [limite, setLimite] = useState(PAGINA_DO_HISTORICO);
 
-  const consulta = useMemo(
-    () =>
-      query(
-        colPedidos(contaId),
-        where("arquivado", "==", false),
-        orderBy("dataEntregaISO"),
-      ),
+  function escolherFiltro(valor: StatusPedido | "TODOS") {
+    setFiltro(valor);
+    setLimite(PAGINA_DO_HISTORICO);
+  }
+
+  const consultaDaAgenda = useMemo(() => consultaAgenda(contaId), [contaId]);
+  const consultaDosEntregues = useMemo(
+    () => consultaEntreguesEmAberto(contaId),
     [contaId],
   );
+  // Com um status da agenda na pílula não há histórico a assinar: `null`
+  // desliga a assinatura, e só a agenda aparece.
+  const consultaDoHistorico = useMemo(() => {
+    const status =
+      filtro === "TODOS"
+        ? STATUS_CONCLUIDOS
+        : ehConcluido(filtro)
+          ? [filtro]
+          : null;
+    return status ? consultaHistorico(contaId, status, limite) : null;
+  }, [contaId, filtro, limite]);
 
-  const { dados, carregando, erro, pendente } = useColecao<Pedido>(consulta);
+  const agenda = useColecao<Pedido>(consultaDaAgenda);
+  const entreguesEmAberto = useColecao<Pedido>(consultaDosEntregues);
+  const historico = useColecao<Pedido>(consultaDoHistorico);
 
-  const visiveis = useMemo(
+  const carregando =
+    agenda.carregando || entreguesEmAberto.carregando || historico.carregando;
+  const erro = agenda.erro ?? entreguesEmAberto.erro ?? historico.erro;
+  const pendente =
+    agenda.pendente || entreguesEmAberto.pendente || historico.pendente;
+
+  // A agenda não tem status concluído, então com "Entregues" na pílula ela
+  // esvazia sozinha; o histórico já vem filtrado pela consulta.
+  const abertosVisiveis = useMemo(
     () =>
       filtro === "TODOS"
-        ? dados
-        : dados.filter((pedido) => pedido.status === filtro),
-    [dados, filtro],
+        ? agenda.dados
+        : agenda.dados.filter((pedido) => pedido.status === filtro),
+    [agenda.dados, filtro],
   );
 
-  const gruposAbertos = agruparPorEntrega(
-    visiveis.filter((pedido) => !ehConcluido(pedido.status)),
+  // A agenda e os entregues em aberto não se cruzam (status diferentes) e os
+  // dois são completos: "A receber" continua exata em qualquer página.
+  const paraReceber = useMemo(
+    () => [...agenda.dados, ...entreguesEmAberto.dados],
+    [agenda.dados, entreguesEmAberto.dados],
   );
+
+  // Para as entregas, os três conjuntos sem repetir id: o histórico repete os
+  // entregues em aberto, e a agenda é de onde saem as entregas esquecidas.
+  const paraEntregas = useMemo(() => {
+    const porId = new Map<string, Pedido>();
+    for (const pedido of [
+      ...agenda.dados,
+      ...entreguesEmAberto.dados,
+      ...historico.dados,
+    ]) {
+      porId.set(pedido.id, pedido);
+    }
+    return [...porId.values()];
+  }, [agenda.dados, entreguesEmAberto.dados, historico.dados]);
+
+  const gruposAbertos = agruparPorEntrega(abertosVisiveis);
   // Os concluídos correm ao contrário: o que interessa de um pedido entregue é
   // que ele é o mais recente, e não que ele é o mais próximo.
-  const gruposConcluidos = agruparPorEntrega(
-    visiveis.filter((pedido) => ehConcluido(pedido.status)),
-  ).reverse();
+  const gruposConcluidos = agruparPorEntrega(historico.dados).reverse();
+
+  // O fim da lista só se sabe com o servidor: do cache, a lista pode estar
+  // mais curta que ele, e esconder o botão seria dizer "acabou" sem saber.
+  const historicoAcabou = historico.dados.length < limite && !historico.doCache;
+
+  const visiveis = abertosVisiveis.length + historico.dados.length;
+  const nadaGravado =
+    agenda.dados.length === 0 &&
+    entreguesEmAberto.dados.length === 0 &&
+    historico.dados.length === 0;
 
   return (
     <>
@@ -108,7 +173,7 @@ export function ListaPedidos() {
               <button
                 key={opcao.valor}
                 type="button"
-                onClick={() => setFiltro(opcao.valor)}
+                onClick={() => escolherFiltro(opcao.valor)}
                 aria-pressed={ativo}
                 className={cn(
                   "h-11 shrink-0 rounded-full px-4 text-label font-medium",
@@ -129,17 +194,21 @@ export function ListaPedidos() {
         <p className="text-label text-ink-muted" aria-live="polite">
           {carregando
             ? "Carregando"
-            : `${visiveis.length} ${visiveis.length === 1 ? "pedido" : "pedidos"}`}
+            : linhaDeContagem(
+                filtro,
+                abertosVisiveis.length,
+                historico.dados.length,
+              )}
         </p>
         <SeloSincronizacao pendente={pendente} />
       </div>
 
-      {/* Somado sobre os pedidos que a consulta já trouxe, e sobre todos eles:
-          o que está a receber é fato da agenda inteira, e não do filtro da vez. */}
-      {!carregando && <AReceber pedidos={dados} />}
+      {/* Somado sobre a agenda inteira mais os entregues em aberto, e não sobre
+          o filtro da vez nem sobre a página: o que está a receber é fato. */}
+      {!carregando && <AReceber pedidos={paraReceber} />}
 
-      {/* O outro lado da entrega, pela mesma consulta e pelo mesmo motivo. */}
-      {!carregando && <EntregasAPagar pedidos={dados} hoje={hoje} />}
+      {/* O outro lado da entrega, sobre tudo o que a tela tem na mão. */}
+      {!carregando && <EntregasAPagar pedidos={paraEntregas} hoje={hoje} />}
 
       {erro ? (
         <Caixa>
@@ -152,9 +221,9 @@ export function ListaPedidos() {
         <Caixa>
           <EsqueletoLista />
         </Caixa>
-      ) : visiveis.length === 0 ? (
+      ) : visiveis === 0 ? (
         <Caixa>
-          {dados.length === 0 ? (
+          {nadaGravado ? (
             <EstadoVazio
               titulo="A encomenda sai do WhatsApp e entra na agenda"
               descricao="Monte o pedido com as fichas que você já precificou: o sistema soma o total, desconta a maquininha e diz quanto sobra antes de você fechar o combinado."
@@ -175,7 +244,9 @@ export function ListaPedidos() {
             <EstadoVazio
               titulo="Nada com esse filtro"
               descricao="Nenhum pedido está nesse pé agora. Volte para todos e veja a agenda inteira."
-              acao={<Botao onClick={() => setFiltro("TODOS")}>Ver todos</Botao>}
+              acao={
+                <Botao onClick={() => escolherFiltro("TODOS")}>Ver todos</Botao>
+              }
             />
           )}
         </Caixa>
@@ -207,6 +278,20 @@ export function ListaPedidos() {
                   hoje={hoje}
                 />
               ))}
+
+              {/* Um botão, e não rolagem infinita: é acessível e não dispara
+                  sem querer. A lista não pisca ao crescer — `useColecao`
+                  guarda a página anterior até o snapshot novo chegar do
+                  cache, no mesmo tique. */}
+              {!historicoAcabou && (
+                <Botao
+                  tamanho="lg"
+                  larguraTotal
+                  onClick={() => setLimite(limite + PAGINA_DO_HISTORICO)}
+                >
+                  Mostrar mais antigos
+                </Botao>
+              )}
             </div>
           )}
         </div>
@@ -266,6 +351,25 @@ function AReceber({ pedidos }: { pedidos: Pedido[] }) {
       </p>
     </section>
   );
+}
+
+/**
+ * "12 na agenda" ou "os 30 entregues mais recentes": conta só o que é exato.
+ * O total do histórico não existe sem `getCountFromServer`, que exige rede.
+ */
+function linhaDeContagem(
+  filtro: StatusPedido | "TODOS",
+  naAgenda: number,
+  noHistorico: number,
+): string {
+  if (filtro === "TODOS" || !ehConcluido(filtro)) {
+    return `${naAgenda} na agenda`;
+  }
+  const singular = ROTULO_STATUS_PEDIDO[filtro].toLowerCase();
+  const plural = `${singular}s`;
+  if (noHistorico === 0) return `nenhum ${singular}`;
+  if (noHistorico === 1) return `o ${singular} mais recente`;
+  return `os ${noHistorico} ${plural} mais recentes`;
 }
 
 function Caixa({ children }: { children: React.ReactNode }) {

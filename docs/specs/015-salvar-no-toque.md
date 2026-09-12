@@ -193,14 +193,14 @@ que precisa acontecer depois.
 
 ## Critérios de aceite
 
-- [ ] `grep -n "await " src/lib/firebase/mutations/` só encontra leituras (`getDoc`, `getDocs`)
+- [x] `grep -n "await " src/lib/firebase/mutations/` só encontra leituras (`getDoc`, `getDocs`)
       e as duas exceções nomeadas, cada uma com comentário dizendo por que espera.
-- [ ] `criarInsumo`, `criarFicha` e `criarListaCompras` produzem o id sem ida ao servidor, e o
+- [x] `criarInsumo`, `criarFicha` e `criarListaCompras` produzem o id sem ida ao servidor, e o
       corpo gravado é campo a campo o de hoje.
-- [ ] O roteiro de sete passos passa inteiro, incluindo o passo 6.
-- [ ] Nenhum arquivo em `src/components/` mudou.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d104` escrito em `docs/DECISOES.md`; `docs/ESTADO.md` atualizado, com a linha "Cinco
+- [x] O roteiro de sete passos passa inteiro, incluindo o passo 6.
+- [x] Nenhum arquivo em `src/components/` mudou.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d104` escrito em `docs/DECISOES.md`; `docs/ESTADO.md` atualizado, com a linha "Cinco
       mutações ainda esperam escrita em fila fora do caixa" saindo da tabela de dívidas.
 
 ---

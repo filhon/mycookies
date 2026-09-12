@@ -17,6 +17,9 @@ import {
   resumoDasEscolhas,
   resumoDoRepasse,
   resumoDosItens,
+  ROTULO_STATUS_PEDIDO,
+  STATUS_CONCLUIDOS,
+  STATUS_NA_AGENDA,
   subtotalDoItem,
   transicoesPermitidas,
   type ItemParaPedido,
@@ -237,6 +240,22 @@ describe("transicoesPermitidas", () => {
     expect(ehConcluido("ENTREGUE")).toBe(true);
     expect(ehConcluido("CANCELADO")).toBe(true);
     expect(ehConcluido("PRONTO")).toBe(false);
+  });
+
+  it("agenda e concluídos repartem os seis status, sem repetição", () => {
+    const juntos = [...STATUS_NA_AGENDA, ...STATUS_CONCLUIDOS];
+    // `ROTULO_STATUS_PEDIDO` é `Record<StatusPedido, …>`: um sétimo status
+    // entra nele pelo compilador, e cai aqui se ficar fora das duas listas.
+    const todos = Object.keys(ROTULO_STATUS_PEDIDO);
+
+    expect(new Set(juntos).size).toBe(juntos.length);
+    expect([...juntos].sort()).toEqual([...todos].sort());
+    for (const status of STATUS_NA_AGENDA) {
+      expect(ehConcluido(status)).toBe(false);
+    }
+    for (const status of STATUS_CONCLUIDOS) {
+      expect(ehConcluido(status)).toBe(true);
+    }
   });
 });
 
