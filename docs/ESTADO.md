@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-11 (spec 014, sessão 14B: o combo produz).
+Atualizado em 2026-09-12 (5B fechada e deploy feito; spec 015 executada, roteiro por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -16,10 +16,17 @@ entregou a coleção `listasCompra` e a tela `/compras`, que fecha o ciclo do pr
 pedido combinado até o carrinho no mercado.
 
 **Todas as specs de módulo estão executadas.** Fora delas, a spec `005-prontidao.md` tem duas
-sessões — `5A` conserta o que impede o primeiro uso, `5B` faz a verificação em navegador, que
-é a dívida mais antiga do projeto. **A 5A está entregue**: a configuração pode ser salva na
-primeira vez, o iPhone tem ícone de verdade e a dependência morta saiu do pacote. A **5B
-continua a fazer**.
+sessões — `5A` conserta o que impede o primeiro uso, `5B` faz a verificação em navegador. **As
+duas estão entregues.** A 5A fez a configuração poder ser salva na primeira vez, deu ícone de
+verdade ao iPhone e tirou a dependência morta do pacote. **A 5B foi dada como fechada em
+2026-09-12** por quem conduz o projeto: a passagem em navegador rodou, e com ela caiu a dívida
+mais antiga do projeto. Os roteiros de navegador que as specs 3A a 14B foram acumulando eram o
+que a 5B carregava; ficam fora deste arquivo a partir daqui — o que sobrar deles reaparece como
+relato de uso, e não como pendência de spec.
+
+**O app está publicado.** O deploy no Vercel (`docs/DEPLOY.md`) foi feito, e o build da
+hospedagem rodou de verdade; `FIREBASE_SERVICE_ACCOUNT` e a leitura de credencial que a
+preparação deixou pronta saíram de hipótese conferida localmente.
 
 A spec `006-nota-fiscal.md` está **entregue nas duas sessões**: a 6A fez a nota fotografada
 virar uma lista conferível que cadastra os insumos de uma vez — a primeira vez que o projeto
@@ -42,21 +49,18 @@ dinheiro, as três telas que não cabem no menu de baixo, o que acontece sem int
 para instalar na tela de início. A **8C fica reservada** para o que a usuária 0 perguntar
 operando.
 
-**Falta a prova, e não mais o conserto.** Nenhum número deste sistema jamais saiu de um
-teclado, passou pelo Firestore e voltou. É o que a 5B responde.
-
 A spec `009-teclado-e-barra.md` está **entregue**, e ela é a primeira coisa que a operação real
 devolveu — conserto de cromo, sem módulo de domínio, sem rota e sem campo novo. Com o teclado
 aberto no celular, as faixas fixas somem ou encolhem (a variante `apertado`), os seis rodapés
 fixos passaram a compartilhar `RodapeFixo`, e a barra do sistema do app instalado ficou vinho
-nos dois temas. **Os dois roteiros de aceite dela dependem de aparelho e de deploy**, e nenhum
-dos dois rodou: o A precisa de um Android na mão, e o B de publicar e reinstalar o app.
+nos dois temas. **Os dois roteiros de aceite dela dependem de aparelho**: o A precisa de um
+Android na mão, e o B, agora que o deploy existe, de desinstalar e reinstalar o app.
 
 A spec `010-resumo-no-whatsapp.md` está **entregue**, e é a segunda coisa que a operação real
 devolveu: o pedido para de ser digitado duas vezes. Um módulo puro (`domain/whatsapp.ts`), um
 bloco no editor de pedido e um link `wa.me` — nenhum campo novo, nenhuma rota, nenhuma escrita,
-nenhuma linha em `src/lib/firebase/`. **O roteiro de aparelho dela não rodou**: seis passos que
-só o celular e o WhatsApp instalado respondem.
+nenhuma linha em `src/lib/firebase/`. O roteiro de aparelho dela — seis passos que só o celular
+e o WhatsApp instalado respondem — fica por conta do uso real.
 
 A spec `011-caixa-que-nao-perde-conta.md` está **entregue**, e é a terceira coisa que a operação
 real devolveu — e a primeira que era perda de dado. As mutações do caixa esperavam cada escrita
@@ -72,7 +76,7 @@ devolveu — desta vez não é conserto, é dado que nunca foi pedido. A taxa de
 no caixa quando o pedido era pago; o que **saía** para o entregador, uma vez por semana, não
 passava por lugar nenhum, e o resultado do mês ficava alto por causa disso. Agora `/pedidos` tem
 a faixa "Entregas a pagar", o acerto vira uma saída em `ENTREGA` no caixa, e desfazer devolve
-tudo. **O roteiro de navegador de cinco passos dela não rodou.**
+tudo.
 
 A spec `013-a-fornada.md` está **entregue nas quatro sessões**: a **13A** fez a fornada existir
 como fato do sistema, descontando a despensa na leitura sem tocar na contagem, e a lista de
@@ -90,7 +94,7 @@ quatro aprovações da spec, todas foram usadas: a coleção `fornadas`, o índi
 mudança de comportamento de `montarLista` na 13A; os três campos novos em `FichaTecnica`, um
 na 13C e dois na 13D, todos opcionais. Uma rota nasceu, `/fichas/contagem`, que a spec não
 tinha previsto porque a 13D estava reservada. Regra de segurança não mudou, e nenhuma
-dependência entrou. **Os roteiros de navegador das quatro não rodaram.**
+dependência entrou.
 
 A spec `014-combo-a-escolha.md` está **entregue nas duas sessões**: a **14A** fez o combo
 existir como produto — o kit ganhou `escolhas[]` por categoria e `custoEscolhas` pela opção
@@ -102,8 +106,18 @@ rota, nenhum índice, nenhuma dependência, regra de segurança intacta; `deriva
 a linha do combo no pedido diz "dá?" uma vez por receita escolhida, "Registrar fornada"
 oferece as receitas escolhidas com `escolha × quantidade`, `reservadoNoPronto` dá dono no
 pote da receita escolhida, e `capacidadeDaFicha`, `reservaDeProducao` e `fichasAbaixoDoPiso`
-pulam o kit com escolhas — nenhum campo, nenhuma mutação, nenhuma rota. **Os roteiros de
-navegador da 14A e da 14B não rodaram.**
+pulam o kit com escolhas — nenhum campo, nenhuma mutação, nenhuma rota.
+
+A spec `015-salvar-no-toque.md` está **entregue**, e fecha a dívida que a 011 deixou com prazo:
+a regra do `#d80` passou a valer para `src/lib/firebase/mutations/` inteiro (`#d104`). As cinco
+mutações que ainda esperavam a escrita do Firestore — `insumos`, `fichas`, `listasCompra`,
+`metas` e `configuracao` — despacham, `estoque` foi de carona, e `criarInsumo`, `criarFicha` e
+`criarListaCompras` geram o id no aparelho. As duas exceções, `recalcularMes` e `importarNota`,
+estão nomeadas em `despachar.ts` e comentadas no lugar. Nenhuma tela mudou, nenhum campo, nenhuma
+rota, nenhum índice, nenhuma regra. **O roteiro de sete passos da spec, com a rede em Offline,
+não rodou nesta sessão** — e é o único lugar onde a correção de `atualizarInsumo` (o selo de
+custo desatualizado gravado sem sinal) e a de `salvarMeta` (o espelho da meta na tela Hoje) podem
+ser vistas.
 
 Fora das specs, em 2026-09-11, `/comecar` foi relida contra as specs 009 a 014. Pelo `#d70` o
 guia só ensina o que mora em tela que ela ainda não abriu, e o que faltava era uma só:
@@ -119,35 +133,14 @@ Fora das specs, em 2026-09-11, o resumo do WhatsApp passou a dizer **como pagar*
 Fora das specs, o projeto foi **preparado para publicar no Vercel** em 2026-09-03: a
 credencial do Admin SDK deixou de exigir um arquivo em disco, a falta dela parou de ser
 confundida com login inválido, e `functions/` saiu do `tsconfig` da raiz — sem isso o build
-da hospedagem falharia. O guia é `docs/DEPLOY.md`. **Nada foi publicado ainda**: preparar não
-é ter subido, e a 5B continua sendo a prova que falta, agora também do lado do servidor.
+da hospedagem falharia. O guia é `docs/DEPLOY.md`, e **o deploy está feito**.
 
-> **A 6A rodou antes da 5B, e a spec pedia o contrário.** `006-nota-fiscal.md` diz, na
-> abertura, que depende de a 5B ter rodado — abrir um caminho novo sobre um caminho velho que
-> nunca foi visto rodando é descobrir dois defeitos ao mesmo tempo e não saber de quem é qual.
-> A ordem foi invertida por decisão de quem conduz o projeto. O risco continua de pé e não foi
-> mitigado por nada: quando a 5B rodar e algo em `insumos` ou em `fichas` aparecer torto, a
-> primeira pergunta é se o defeito é do caminho velho ou do que a 6A abriu por cima dele.
-
-> **A 8A rodou antes da 5B, e a spec 008 pedia explicitamente o contrário.** A abertura dela
-> diz que a dependência da 5B é diferente das outras duas: a 008 **não abre caminho novo** —
-> ela aponta o dedo para os caminhos existentes, na ordem, com autoridade. A ordem foi
-> invertida por decisão de quem conduz o projeto. O risco continua de pé e não foi mitigado
-> por nada: **um passo torto no navegador virou um passo torto com o sistema mandando ela ir
-> lá**, e a cópia do `porque` e do `oQueEsperar` dos cinco passos foi escrita a partir do que
-> o código faz, e não do que a 5B viu acontecer. **A 8B não pôde fechar isso**: a releitura dos
-> cinco textos de `src/lib/domain/onboarding.ts` só faz sentido contra o que a 5B viu
-> acontecer, e a 5B continua sem rodar. A dívida ficou na tabela com o gatilho corrigido — ela
-> vence depois da 5B, e não numa sessão da 008.
-
-> **A 7A e a 7B rodaram antes da 5B pelo mesmo motivo, e com o mesmo risco.** `007-estoque.md`
-> diz, na abertura, que não deveria rodar antes dela. A ordem foi invertida de novo por decisão
-> de quem conduz o projeto. O que a 7A mexeu no caminho velho é pequeno e nomeável:
-> `corpoDeInsumoNovo` e `corpoDeAtualizacao` ganharam um campo e perderam outro, e
-> `dadosDoInsumo` carrega um campo a mais. **A 7B mexeu em mais**: `montarLista` mudou de
-> assinatura e de comportamento, `importarNota` devolve um campo novo, e a ordem do corredor
-> mudou de arquivo. Se algo em `insumos`, em `/compras` ou na leitura de nota aparecer torto na
-> 5B, estes são os primeiros suspeitos depois dos que a 6A abriu.
+As specs 006, 007 e 008 rodaram antes da 5B, contra a dependência que cada uma declarava na
+abertura, por decisão de quem conduz o projeto. O risco que isso carregava — um defeito em
+`insumos` ou em `fichas` com duas origens possíveis, e um guia mandando a usuária a um passo
+nunca visto rodando — **fechou com a 5B**. O que ficou dele é uma linha na tabela de dívidas: a
+releitura dos cinco textos de `src/lib/domain/onboarding.ts` contra o que a 5B viu, que a 8B
+não pôde fazer na época.
 
 Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **490
 testes**, e build com 17 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
@@ -178,8 +171,9 @@ claim de fcbfilipesantos@gmail.com  { contas: { mycookies: "DONA" } }
 Para trocar, `npm run conceder-acesso -- <email> mycookies "MyCookie's" <NomeNovo>` — o
 script atualiza os campos quando a conta já existe.
 
-A verificação visual começou: as telas de desktop no tema escuro foram conferidas contra as
-specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
+A verificação visual está feita: a primeira rodada (desktop, tema escuro) corrigiu três coisas
+— ver "O que a verificação visual já corrigiu" — e a 5B fechou o resto: tema claro, celular e
+os números digitados de ponta a ponta.
 
 ## Módulos
 
@@ -191,7 +185,7 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 | 2   | Custos operacionais e precificação          | pronto (2A e 2B)                    | `specs/002-precificacao.md`              |
 | 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)                | `specs/003-pedidos.md`                   |
 | 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                    | `specs/004-caixa.md`                     |
-| 5   | Prontidão: conserto e verificação           | 5A pronto, **5B a fazer**           | `specs/005-prontidao.md`                 |
+| 5   | Prontidão: conserto e verificação           | pronto (5A e 5B)                    | `specs/005-prontidao.md`                 |
 | 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)                    | `specs/006-nota-fiscal.md`               |
 | 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)                    | `specs/007-estoque.md`                   |
 | 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)                    | `specs/008-onboarding.md`                |
@@ -200,7 +194,8 @@ specs. Falta o tema claro, o celular e os números digitados de ponta a ponta.
 | —   | O caixa que não perde a conta               | pronto, sem o roteiro               | `specs/011-caixa-que-nao-perde-conta.md` |
 | —   | O acerto das entregas                       | pronto, sem o roteiro               | `specs/012-entregas-a-pagar.md`          |
 | 13  | A fornada                                   | pronto (13A a 13D), sem os roteiros | `specs/013-a-fornada.md`                 |
-| 14  | O combo à escolha                           | pronto (14A e 14B), sem os roteiros | `specs/014-combo-a-escolha.md`           |
+| 14  | O combo à escolha                           | pronto (14A e 14B)                  | `specs/014-combo-a-escolha.md`           |
+| 15  | Salvar no toque, no sistema inteiro         | pronto, sem o roteiro               | `specs/015-salvar-no-toque.md`           |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -1625,387 +1620,66 @@ Fora do escopo literal da spec, e por quê:
 frases na linha, o seletor da folha com as receitas somadas e `/fichas` sem número para o
 combo não têm teste. O roteiro está na próxima ação.
 
+## O que a sessão 015 deixou pronto
+
+Nenhuma funcionalidade nova: é a varredura que a `#d80` prometeu, e o diff é apagar `await`.
+
+- `mutations/insumos.ts`: `criarInsumo` com `doc()` + `setDoc`; `atualizarInsumo` despacha o
+  `updateDoc` e chama `podarHistorico` e `marcarFichasDesatualizadas` **no mesmo tique** — era
+  aqui que o selo de custo desatualizado se perdia sem rede; `arquivarInsumo` e
+  `restaurarInsumo` despacham. `podarHistorico` e `marcarFichasDesatualizadas` continuam lendo
+  antes de escrever, com a escrita despachada.
+- `mutations/fichas.ts`: `criarFicha` com o mesmo conserto de id; `atualizarFicha` e
+  `arquivarFicha` despacham.
+- `mutations/listasCompra.ts`: `criarListaCompras` com o mesmo conserto; as outras quatro
+  despacham. O `Promise.all` de `corrigirPrecoNaLista` saiu: com nada esperado, não há o que
+  juntar.
+- `mutations/metas.ts`: `salvarMeta` despacha a meta e depois o espelho — era aqui que o cartão
+  da tela Hoje ficava sem meta quando ela era definida sem sinal.
+- `mutations/configuracao.ts`: `salvarConfiguracao` despacha.
+- `mutations/estoque.ts`: os dois `lote.commit()` despachados, de carona, sem mudar comportamento.
+- `mutations/despachar.ts` diz que a regra vale para o diretório inteiro e nomeia as duas
+  exceções; `notas.ts` ganhou o comentário que diz por que `importarNota` espera.
+- `DECISOES.md#d104`.
+
+O critério do `grep -n "await "` no diretório: sobram as leituras (`getDoc`, `getDocs`), as
+duas exceções, e os `await` de `transacoes.ts` e `pedidos.ts` sobre `aplicarNoAgregado`,
+`gravarTransacao` e primas — que **não são escrita**: já despacham por dentro e resolvem no mesmo
+tique, como a 011 deixou. Nenhum arquivo em `src/components/` mudou. Os 490 testes são os mesmos,
+porque nada disto mora em `domain/`.
+
 ## Próxima ação
 
-**Os roteiros de navegador da 14A e da 14B**, e os da 13A à 13D, e a 5B, que continua sendo
-a prova que falta. **A conta real precisa recriar o "combo dupla" como kit com a escolha
-"2 de Cookie"** — os pedidos antigos lançados como cookies soltos + desconto ficam como estão
-(`#d102`).
+**Rodar o roteiro de sete passos da spec 015**, com DevTools em Offline do passo 1 ao 5. É o
+único lugar onde a correção pode ser vista: `npm test` não toca no Firestore. O passo 1 é o que
+decide se a leitura da spec estava certa — se o selo de "custo desatualizado" aparecer em
+`/fichas` **antes** de religar a rede, está; e o passo 6 (fechar a aba, reabrir, religar) é o
+que separa esta spec de um conserto de sensação.
 
-Da 14B, o que só o navegador responde (os critérios de aceite da sessão):
+**Depois da 015, por ordem de valor**, e nenhuma delas com spec escrita ainda:
 
-1. **Um pedido de 3 combos "tradicional + nutella"** mostra duas frases embaixo da linha do
-   combo, "Cookie tradicional · Dá: …" e "Cookie de nutella · Dá: …", cada uma para 3
-   unidades; a linha simples continua com uma frase, sem rótulo.
-2. **"Registrar fornada" nesse pedido** abre o seletor com as duas receitas, 3 unidades cada;
-   com um "Cookie tradicional × 5" solto no mesmo pedido, o tradicional aparece uma vez com 8.
-   A fornada grava `pedidoId`, e "Montar a lista" em `/compras` abate a farinha dela.
-3. **Com o pote de tradicional contado em 10 e massa para 3 registrada para o pedido**, `/fichas`
-   diz "7 unidades prontas além dos pedidos" na linha do tradicional.
-4. **`/fichas`** não mostra capacidade, pronto nem piso na linha do combo; o cartão da tela
-   Hoje não o lista abaixo do piso.
+1. **Guarda de "sair sem salvar"** nos quatro editores que descartam em silêncio (ficha, pedido,
+   configuração, contagem). Quatro telas, um hook.
+2. **Tela de clientes**: `totalPedidos`, `totalGasto` e `ticketMedio` já são escritos e ninguém
+   os lê (`#d35`). Traz junto arquivar cliente.
+3. **O aviso de divergência cobrindo `produtos` e `porDia[].pedidos`**: exige a `/financeiro`
+   assinar os pedidos pagos do mês (`#d81`).
+4. **Spec de limpeza**: `pedidosAbertos`, `proximaEntrega`, `ultimoNumeroPedido` e
+   `agregados/global` — escritos por três mutações, lidos por ninguém (`#d31`, `#d67`).
 
-Da 14A, o que só o navegador responde, na ordem do roteiro da spec:
+**8C e 13E continuam reservadas** para o que a Maynara devolver operando. Com o app publicado,
+é de lá que a spec 016 deveria vir, e não da tabela de dívidas.
 
-1. **Criar "Combo dupla"** como kit com saquinho kraft e a escolha "2 de Cookie": o bloco
-   lista as receitas que servem, o custo diz a faixa, e o documento gravado tem `escolhas` e
-   `custoEscolhas`.
-2. **Num pedido novo, adicionar o combo**: a escolha abre embaixo da linha; salvar com 1 de 2
-   falha na linha ("Falta 1 de Cookie neste combo."); 1 + 1 fecha o custo em R$ 5,80 e o
-   rodapé acompanha.
-3. **Subir para 3 combos**: a escolha continua 1 + 1 e o subtotal vai a R$ 36,00.
-4. **O mesmo combo numa segunda linha** com "2 de nutella": as duas linhas convivem, e o
-   combo continua na busca depois de entrar.
-5. **O resumo do WhatsApp e `/pedidos`** dizem a escolha entre parênteses.
-6. **Confirmar e "Montar a lista"** em `/compras`: farinha dos dois sabores e o saquinho kraft
-   nas quantidades do caso de aceite (135 g e 3).
-7. **Pagar**: `/financeiro` mostra "Combo dupla" no ranking, e nenhum cookie solto.
-8. **Em 360px**, os −/+ têm 44px e a lista de escolha não estoura a largura da linha.
+**Operacional, com rede, ainda sem confirmação neste arquivo**: `GEMINI_API_KEY` preenchida no
+servidor (sem ela `POST /api/nota` responde `sem-configuracao`); "Recalcular o mês" em cada mês
+que o aviso do `#d81` acusar, setembro de 2026 na frente; o "combo dupla" recriado como kit com a
+escolha "2 de Cookie" (`#d102`); e `FormaPagamento.instrucoes` preenchida na forma "Pix"
+(`#d98`). Nenhum dos quatro é código: são quatro toques na conta real.
 
-Da 13D, o que só o navegador responde:
-
-1. **Registrar uma fornada de `/fichas/[id]`**: a folha vira "Fornada registrada" com a frase da
-   última contagem do pote (ou "ainda não contou"), e "Contar o que está pronto" abre
-   `/fichas/contagem` recortada em "Só esta receita (1)" com o campo já em `contagem + massa`,
-   e a frase dizendo as duas parcelas. "Agora não" fecha e nada do pote muda.
-2. **Corrigir o número e salvar**: grava `estoqueProntoAtual` e `estoqueProntoContadoEmISO` só
-   naquela ficha; as outras continuam sem os campos; a receita salva depois não apaga os dois.
-3. **`/fichas`**: a linha diz "13 unidades prontas · contada hoje" acima de "dá para N fornadas".
-   Registrar outra fornada amanhã: "· massa para 25 desde então" aparece e o número sobe.
-4. **Um pedido aberto de 12 com massa registrada para ele e o pote contado em 25**: `/fichas` diz
-   "13 unidades prontas além dos pedidos", e um pedido novo de 10 diz "Dá: 13 unidades prontas
-   hoje, sem fazer massa". Subir para 60: "Dá: 13 unidades prontas, e a despensa faz mais N".
-5. **Deixar a contagem do pote passar de 30 dias** (ou nunca contar): a frase some de `/fichas`,
-   a tela da ficha diz que venceu (ou que nunca contou), e a linha do pedido volta a ser a da 13B.
-6. **Abrir `/fichas/contagem` por `/fichas`, sem fornada**: sem faixa, sem recorte, campos vazios.
-
-Da 13C, o que só o navegador responde:
-
-1. **Abrir uma ficha salva e pôr 1 em "Fornadas de reserva"**: salvar grava `fornadasMinimas: 1`
-   no documento, e as outras fichas continuam sem o campo.
-2. **`/compras` sem pedido confirmado nenhum**: "Montar a lista" fica vivo, o estado vazio fala da
-   reserva, e a lista montada tem os insumos daquela ficha com a frase "… para manter 1 fornada de
-   Cookie de reserva". Os que a despensa cobre ficam em "Não precisa comprar" com a mesma frase.
-3. **Confirmar um pedido da mesma ficha e "Refazer"**: a linha diz "300 g para os pedidos · 300 g
-   para manter …" e a quantidade somou.
-4. **Registrar a fornada de vitrine de `/fichas/[id]`** e voltar a `/compras`: a faixa "A conta
-   mudou" aparece, e "Refazer" põe o chocolate de volta no carrinho.
-5. **A tela Hoje sem pedido nenhum**, com essa ficha abaixo do piso: o cartão aparece com "Faltam N
-   itens · R$ X" e "Cookie não dá nem uma fornada — trava em Chocolate", com o ícone. Zerar o piso
-   e contar a despensa cheia: o cartão some.
-6. **A tela Hoje com lista aberta e tudo marcado como comprado**, nenhuma ficha abaixo do piso: o
-   cartão não aparece.
-
-Da 13B, o que só o navegador responde:
-
-1. **`/fichas` com tudo contado e fresco**: a linha diz "dá para N fornadas · M unidades · X
-   acaba primeiro", e N é o `floor` do insumo que trava.
-2. **Zerar o chocolate na contagem**: a linha diz "não dá nem uma fornada · falta Chocolate",
-   com o ícone, e não some.
-3. **Deixar a farinha sem contagem** (ou com contagem de mais de 30 dias): a linha diz "pelo
-   menos N fornadas · Farinha sem contagem", e o cabeçalho ganha "Contar a despensa".
-4. **Nada contado**: "não dá para saber quantas fornadas", e nunca zero.
-5. **Registrar uma fornada de `/fichas/[id]`** e voltar para `/fichas`: N cai na hora, sem
-   contagem nova.
-6. **Um pedido novo com 40 cookies numa despensa que dá 66**: a linha diz "Dá: a despensa tem
-   para 66 unidades hoje". Subir para 100: "Falta massa para 34 unidades. Comprar 500 g de
-   Chocolate … resolve." A frase acompanha a tecla.
-7. **Confirmar esse pedido e abrir outro**: o segundo diz "já tirando os outros pedidos" e o
-   número caiu pelo que o primeiro prometeu. Reabrir o primeiro: ele não desconta a si mesmo.
-8. **Registrar a fornada para o pedido** e reabri-lo: a linha diz "A massa para este item já
-   está feita".
-
-Da 13A, o roteiro em navegador:
-
-1. **Contar a farinha hoje e registrar uma fornada datada hoje**, de `/fichas/[id]`: a linha em
-   `/insumos` **não** muda, porque o dia da contagem é opaco (`#d89`). Registrar outra datada
-   amanhã: a linha diz "1 fornada desde então · projetamos …", e `estoqueAtual` continua sendo o
-   número contado.
-2. **Um documento em `contas/mycookies/fornadas`** por fornada, com `consumo` em quantidade
-   física (a farinha com 5% de perda grava 526,32 g por lote de 500 g úteis) e
-   `unidadesProduzidas` inteiro.
-3. **Pedido confirmado, fornada registrada para ele por `/pedidos/[id]`, "Refazer" em
-   `/compras`**: a linha diz "já assados para o pedido" e o pacote some do carrinho.
-4. **Fornada sem pedido**: a lista continua comprando para os pedidos, e "você tem" no bloco
-   de já-tem desce. Os dois efeitos ao mesmo tempo.
-5. **Contar de novo**: a projeção volta ao número contado, e nada além da contagem foi escrito.
-6. **Vindo da nota**: a contagem abre recortada nas linhas da nota, e a pílula "A despensa
-   inteira" devolve tudo.
-7. **Massa para 15 numa receita de 20**: a folha diz "0,75 lote", e o consumo gravado é 3/4 do
-   lote — é a decisão do `#d93` acontecendo sobre dado real.
-8. **A folha no celular e no desktop**, com a rede em Offline: fecha no toque, o selo acusa
-   pendência, e a projeção já desce.
-
-**Recalcular os meses tortos**, com o código no ar e com rede: abrir `/financeiro` e, para cada
-mês que o aviso do `#d81` acusar, apertar "Recalcular o mês". Setembro de 2026 é o mês da
-captura e certamente está na lista. O código corrigido não desfaz o estrago: o `increment` que
-nunca foi despachado não vai aparecer sozinho, e é "Recalcular o mês" que reconstrói as duas
-metades a partir dos documentos.
-
-**A sessão 5B de `specs/005-prontidao.md`**, a verificação em navegador. É a dívida mais antiga
-do projeto e agora tem mais o que conferir do que quando foi escrita. O roteiro está na spec, em
-ordem, porque cada passo constrói o estado que o seguinte consome — e os roteiros da 006, da 007,
-da 008 e o roteiro A da 009 entram depois dele. O roteiro B da 009 depende do primeiro deploy.
-
-**A 5B ganhou um motivo a mais para vir agora.** Desde a 8A, o sistema **manda** a usuária ir a
-cada uma das cinco telas, na ordem, com autoridade. Enquanto a 5B não roda, o cartão da tela
-Hoje é uma afirmação sobre telas que nunca gravaram um número de verdade — e um guia que aponta
-para um passo quebrado é pior do que não apontar, porque transfere a culpa para quem seguiu a
-instrução.
-
-**Do roteiro da 007, o passo 1 vale antes de tudo:** abrir `/compras` com o estoque de antes da
-spec e ver o carrinho crescer, com a frase da contagem ausente aparecendo. É a `#d63`
-acontecendo sobre dado real, é o momento mais estranho da spec vista de fora, e é a primeira
-abertura de `/compras` depois do deploy que muda o carrinho de uma usuária que não pediu nada.
-
-**Antes dela: preencher `GEMINI_API_KEY` em `.env.local`.** A variável está documentada em
-`.env.local.example`, a chave se emite em <https://aistudio.google.com/apikey>, e sem ela
-`POST /api/nota` responde 500 com `sem-configuracao` — a tela diz "a leitura de nota ainda não
-está configurada neste servidor". Nada mais do sistema depende dela: sem a chave, todo o
-restante do roteiro da 5B roda igual.
-
-O portão de conclusão foi rodado de verdade em 2026-09-03, no fim da 8B, e passa nos quatro:
-lint, typecheck, 350 testes e build com as mesmas 19 rotas da 8A — a 8B não criou rota nenhuma.
-Portão passando não é o mesmo que sistema pronto — nenhum dos quatro toca no Firestore, nenhum
-dos quatro chama o Gemini, e nenhum dos quatro abre um navegador, que é justamente o que os dois
-critérios em aberto da 8B pedem.
-
-Da 012, o que só o navegador responde:
-
-1. **Três pedidos de entrega marcados como `ENTREGUE`, um deles ainda em `PRONTO`.** A faixa
-   aparece em `/pedidos` com o total dos três, e a frase da entrega vencida aparece no painel.
-2. **Desmarcar uma linha**: o total do rodapé e o texto do botão precisam mudar juntos.
-3. **Remarcar, escolher o dia, pagar.** O painel fecha no toque, a faixa some, e `/financeiro`
-   mostra a saída em "Entrega" no dia escolhido — com a barra do dia no gráfico.
-4. **Com a rede em Offline**, repetir com outro conjunto: o painel fecha do mesmo jeito, o selo
-   de sincronização acusa pendência, e o gráfico do mês já mostra a barra vermelha. Religar a
-   rede e recarregar: os mesmos números, agora do servidor. É o passo que separa esta spec de
-   uma que só funciona com sinal.
-5. **Desfazer o acerto**: os pedidos voltam para a faixa e o lançamento aparece arquivado.
-6. **Editar um pedido já acertado** (mudar a quantidade, ou o endereço) e conferir que ele
-   **não** volta para a faixa. É a correção de caminho pontilhado em `atualizarPedido`
-   (`#d84`), e é a linha mais fácil de errar da sessão.
-7. **O painel no celular e no desktop**: folha inferior lá, lateral aqui, com a linha inteira
-   como alvo de toque e o botão de pagar em 52px.
-
-Da 8A, o que só o navegador responde — e o primeiro item vale **junto** do passo 1 da 5B, porque
-os dois pedem a mesma conta zerada:
-
-1. **Entrar numa conta sem `configuracao/geral` e sem coleção nenhuma.** O cartão precisa
-   aparecer acima do cartão de meta, dizendo "0 de 5", com a ação apontando para
-   `/configuracao`.
-2. **As cinco escritas, na ordem do caso de aceite**, cada uma movendo o cartão para o passo
-   seguinte **sem recarregar a página** — são assinaturas, não leituras avulsas.
-3. **Cadastrar um insumo antes de salvar a configuração**, que é o caso fora de ordem: o passo 2
-   fica feito, o 1 continua sendo o de agora, e o progresso diz "1 de 5".
-4. **Tocar em "Concluir" e conferir na aba de rede que nenhuma das cinco assinaturas é aberta na
-   abertura seguinte.** É o critério da `#d67` que só o navegador responde, e é o que separa
-   "escrevi o gancho certo" de "achei que tinha escrito".
-5. **Depois de concluído, arquivar o último insumo.** O cartão não pode voltar — é a `#d68`
-   acontecendo sobre dado real.
-6. **`/comecar` nos dois tamanhos:** no celular, um passo aberto por vez, com a ação primária de
-   52px e a navegação inferior não cobrindo o último bloco em 360px; no desktop, os cinco
-   abertos ao mesmo tempo e `Tab` percorrendo os blocos na ordem visual.
-7. **O tema claro**, que é o padrão (`#d13`) e é onde o cartão e a página nunca foram vistos.
-8. **"Esqueci minha senha" com um e-mail cadastrado e com um que não existe.** A frase precisa
-   ser a mesma nos dois, o e-mail precisa chegar no primeiro caso, e nenhum código do Firebase
-   pode aparecer na tela.
-
-Da 8B, o que só o navegador responde — e os dois primeiros são critério de aceite em aberto:
-
-1. **A página inteira em 360px, no tema claro, com a captura arquivada.** É o mesmo protocolo da
-   5B aplicado à tela que ela não viu. O que se procura: rolagem horizontal em qualquer das
-   quatro seções, a linha de "quem faz" e o nome da tela brigando na mesma linha no fio da
-   cadeia, e a navegação inferior cobrindo o bloco de instalar, que agora é o último da página.
-2. **O bloco de instalar sumindo com o app instalado, nos dois sistemas.** No iPhone, pela
-   folha de compartilhar do Safari; no Android, pela oferta do próprio navegador. A seção
-   inteira precisa desaparecer, e não só o miolo — é o que `#d71` exige, e é a única das quatro
-   que decide se existe. Vale conferir também no computador, com o app instalado pelo Chrome.
-3. **`Tab` no desktop**, de cima a baixo: os cinco passos, os seis elos da cadeia, as três
-   telas de fora da navegação, o link do Caixa no parágrafo da meta. Ordem visual e anel de
-   foco visível em todos.
-4. **A página com o caminho já encerrado.** Os cinco passos viram referência sem selo, e as
-   quatro seções continuam inteiras — é o que "o guia que fica" quer dizer, e é o estado em que
-   a página vai passar a maior parte da vida dela.
-5. **O tema escuro depois do claro**, com atenção ao fio da cadeia e ao disco de "o sistema
-   calcula", que usam `bg-wine-100` com a tinta invertida.
-
-Da 6B, o que só o navegador responde:
-
-- **A mesma nota lida duas vezes, fotografada de ângulos diferentes.** É a chave por CNPJ que
-  precisa fechar, e não a foto: se o modelo ler o CNPJ de dois jeitos, a guarda não vale nada.
-  Na segunda leitura, o bloco do caixa precisa nascer **desligado**, com a frase dizendo o dia
-  e o valor do lançamento que já existe.
-- **Cadastrar com o bloco desligado** não pode mover um centavo do agregado — e cadastrar com
-  ele ligado precisa fazer os R$ 146,40 aparecerem em "compra de insumo" na quebra por
-  categoria, com o dia da nota no gráfico de barras.
-- **"Recalcular o mês" logo depois** precisa devolver exatamente os mesmos números. É o
-  critério de `#d23` e `#d37` com um terceiro caminho escrevendo no agregado.
-- **Arquivar a saída em `/financeiro`** reverte tudo, como qualquer lançamento — não há caminho
-  especial de reversão para lançamento nascido de nota. Depois disso, reler a nota precisa
-  poder lançar de novo: a guarda ignora arquivado.
-- **Uma nota só de embalagem** precisa cair em `EMBALAGEM`, e não em compra de insumo.
-- **Uma nota sem CNPJ legível** lança normalmente e sem chave, e nada disso vira erro em tela.
-
-Da 6A, o que só o navegador responde:
-
-- **Uma foto de nota real, no celular.** É o único jeito de saber quanto tempo a leitura leva
-  com o sinal de casa dela, e se a compressão a 1600px deixa a nota legível.
-- **Um PDF no computador**, que é o caminho do e-mail do mercado.
-- **Uma nota tirada torta, ou com dobra.** O que interessa não é acertar — é o que a tela diz
-  quando o modelo erra metade das linhas. Corrigir seis linhas na mão precisa ser menos
-  trabalho do que cadastrar seis insumos do zero; se não for, a funcionalidade não se paga.
-- **Uma nota com um item já cadastrado**, para ver o selo "era R$ 11,90" e a ficha ganhar o
-  selo de custo desatualizado. Depois, conferir em `/insumos` que a perda, o estoque e a
-  categoria daquele insumo continuam como estavam.
-- **O rodapé fixo com o teclado aberto**, no celular, editando o preço da terceira linha. É a
-  mesma pergunta dos outros três rodapés fixos, numa tela com mais campos.
-- **Uma nota com o cabeçalho cortado ou ilegível.** Sem CNPJ não há consulta, e o que se
-  verifica é que isso não vira erro em tela: a leitura das linhas termina igual.
-- **Com a consulta de CNPJ derrubada de propósito** (bloqueando `publica.cnpj.ws`), a leitura
-  precisa terminar igual, com o nome que o modelo leu e sem cidade.
-- **Sem rede**, a entrada em `/insumos` desabilitada com a frase — e nenhuma outra tela do
-  sistema mudando de comportamento.
-- **O `POST /api/nota` não passando pelo service worker.** `defaultCache` só registra rotas de
-  GET, então não há o que configurar; há o que conferir uma vez na aba de rede.
-
-**O que a 5A consertou não foi visto rodando.** O conserto é lógica de estado local e não
-tem teste — `npm test` cobre só `src/lib/domain/`. O caso só se exercita numa conta **sem**
-`configuracao/geral`: se a conta `mycookies` já tiver o documento, apagá-lo é o que recria o
-cenário. É o passo 1 do roteiro da 5B, e é lá que `firestore.rules` deixa de ser regra
-publicada e nunca exercida.
-
-**Ver o resto em navegador.** Os índices já estão publicados, então `npm run dev` basta.
-
-Das capturas de desktop, o que continua sem resposta: o tema **claro**, que é o padrão do
-`DESIGN.md` e não foi fotografado; o **celular** inteiro; e os **rodapés fixos** do editor de
-ficha e do editor de pedido, que não aparecem em captura de página inteira — precisam de
-captura de viewport, com dados dentro.
-
-A verificação visual continua sendo a dívida mais antiga do projeto, e agora tem mais o que
-conferir: saudação vindo do banco, insumo gravando em `contas/mycookies/insumos`,
-configuração salvando em `configuracao/geral`, uma ficha do começo ao fim (o caso de aceite
-da spec dá para digitar como está e conferir os R$ 4,41 de custo e os R$ 6,90 de preço), um
-kit consumindo essa ficha, e o selo de custo desatualizado aparecendo ao mudar o preço de um
-insumo já usado.
-
-Da 4A e da 4B, o que só o navegador responde:
-
-- **Digitar o caso de aceite da spec 004 em `/financeiro`** — as cinco linhas de 2026-09 — e
-  conferir os R$ 118,11 de sobra e os R$ 6,89 de maquininha. Depois editar a venda 1 para
-  R$ 150,00, arquivar a internet, e ver o painel acompanhar. É o teste de ponta a ponta que
-  o vitest não faz: ele cobre a aritmética, não o caminho até o Firestore.
-- **"Recalcular o mês" depois disso** precisa devolver exatamente os mesmos números. Se
-  devolver outros, o delta está errado em algum ponto entre a tela e a escrita.
-- **O gráfico de 31 barras no celular.** São ~9px por dia em tela de 360px: é onde ele
-  quebra, se quebrar.
-- **`/fichas/[id]` é rota dinâmica**, a primeira do projeto. O `defaultCache` do Serwist
-  guarda navegação já visitada, mas uma ficha nunca aberta, sem rede, cai em `/offline`.
-- **O painel de preço é fixo no pé da tela e tem campo dentro dele.** No celular, é preciso
-  ver se o teclado não o cobre na hora de digitar o preço.
-- **Definir a meta de 2026-09 com alvo R$ 3.000,00** e conferir os 435 doces no mês e os 102
-  por semana. Com as cinco linhas da 4A lançadas, o realizado precisa ser R$ 245,00, e cada
-  edição e arquivamento precisa mover o progresso na hora.
-- **O cartão da tela Hoje** precisa mostrar o mesmo número de doces por semana que o painel,
-  e sem consultar mais nada: ele lê só o agregado do mês.
-- **Editar um lançamento para outro mês** deixa o espelho do mês de destino atrasado até a
-  próxima escrita naquele mês (`DECISOES.md#d29`). Vale ver o efeito uma vez, e confirmar que
-  "Recalcular o mês" no mês de destino conserta.
-
-Da 3A, o que só o navegador responde:
-
-- **Digitar o pedido do caso de aceite** — 20 cookies e 2 caixas com 6, R$ 7,80 de desconto,
-  R$ 10,00 de entrega, no crédito — e conferir os R$ 240,00 de total e os R$ 75,82 de sobra
-  no rodapé, com os R$ 10,00 da entrega ditos na frase. Depois subir para 24 cookies e ver os
-  R$ 267,60 e os R$ 84,41.
-- **Mudar o preço da ficha do cookie depois de montar o orçamento.** O selo "hoje esta ficha
-  sai por" precisa aparecer na linha, e "usar o preço de hoje" precisa mexer no total. Ao
-  confirmar o pedido, o selo tem que sumir.
-- **O rodapé de totais é fixo no pé da tela**, como o painel de preço da ficha. No celular,
-  ver se ele não cobre o último bloco nem briga com o teclado no campo de desconto.
-- **A agenda da tela Hoje** com um pedido para hoje e outro para daqui a três dias: o de hoje
-  aparece sozinho, e o título vira "Os próximos dias" quando não há nada hoje.
-- **Cancelar e reabrir um pedido.** O documento continua lá, o status muda, e a lista o joga
-  para "Já saíram da agenda".
-- **Nenhum número de pedido aparece em `/financeiro` até o pedido ser pago.** Criar, confirmar
-  e entregar não movem um centavo: quem move é o botão de marcar como pago, da 3B.
-
-Da 3B, o que só o navegador responde — e é aqui que o risco desta sessão de fato se resolve:
-
-- **Marcar o pedido do caso de aceite como pago em 15/09** e conferir, em `/financeiro`: os
-  R$ 485,00 de entradas, os R$ 18,87 de maquininha, os R$ 346,13 de sobra, 1 pedido, ticket
-  médio de R$ 240,00, R$ 152,20 de "custo do que você vendeu", e o ranking com o cookie
-  (R$ 138,00 / sobram R$ 49,80) na frente da caixa (R$ 99,80 / sobram R$ 35,80).
-- **"Recalcular o mês" logo em seguida precisa devolver exatamente os mesmos números.** Se
-  devolver outros, um delta está errado entre a tela e a escrita — e agora são dois escritores.
-- **Desfazer o pagamento** e ver cada número voltar, com o lançamento arquivado e não apagado.
-  Depois recalcular de novo: é o que limpa o produto que ficou zerado no documento (`#d37`).
-- **Editar um pedido já pago** (24 cookies em vez de 20) e ver o lançamento do caixa mudar
-  para R$ 267,60 junto, sem criar um segundo.
-- **Pagar em outubro um pedido entregue em setembro.** O dinheiro precisa cair em outubro nos
-  dois lados, e o pedido continuar na agenda de setembro.
-- **A faixa de "a receber" em `/pedidos`**, com um pedido entregue e não pago: ele não pode
-  aparecer no resultado do mês, e precisa aparecer ali.
-- **Cancelar um pedido pago.** A tela desfaz o pagamento antes de cancelar; se a ordem
-  inverter, a mutação recusa com uma frase.
-
-Da 3C, o que só o navegador responde:
-
-- **Montar a lista com o pedido do caso de aceite confirmado** e conferir a tabela inteira:
-  farinha 1 pacote / R$ 12,50 (com estoque de 500 g e 5% de perda), chocolate 1 / R$ 40,00,
-  manteiga 1 / R$ 17,50, caixa 1 / R$ 50,00, e o saquinho no bloco "não precisa comprar". O
-  rodapé precisa dizer R$ 120,00.
-- **Marcar itens com o app offline.** É o cenário que a `#d40` existe para resolver: a linha
-  precisa marcar no toque, sem botão preso em "salvando", e o selo de sincronização precisa
-  aparecer. Voltar a rede e ver tudo subir.
-- **Corrigir o preço da farinha pela lista.** O custo estimado da linha e o rodapé se refazem
-  na hora, o insumo muda em `/insumos`, e a ficha do cookie ganha o selo de custo desatualizado.
-- **Confirmar um orçamento do período e tocar em Refazer.** O item novo entra e o que já estava
-  marcado continua marcado — é o critério de aceite mais fácil de quebrar.
-- **Arquivar a ficha do cookie e reabrir `/compras`.** O bloco "Isto ficou fora da conta"
-  precisa aparecer com o nome dela, e o resto da lista continuar somando.
-- **Trocar o período de 7 para 30 dias** sem refazer: a frase de divergência precisa aparecer
-  em vez de as pílulas descreverem uma lista que não é a da tela.
-- **Fechar a lista e montar outra.** A nova precisa nascer sem nenhum item marcado.
-
-Da 7A, o que só o navegador responde — e é aqui que o risco desta sessão de fato se resolve:
-
-- **Contar a despensa inteira no celular**, com o teclado aberto e o rodapé fixo. É o quinto
-  rodapé fixo do sistema e a tela com mais campos numéricos dele. A pergunta é se o campo da
-  linha que ela está digitando fica visível.
-- **Contar uma linha com o mesmo número de antes.** A data precisa virar hoje — é a `#d58`, e é
-  a que mais fácil se implementa errado.
-- **Contar uma linha com `0`, e deixar outra em branco.** A de `0` grava `estoqueAtual: 0` e a
-  data; a em branco não aparece no documento e continua com a data que tinha. Conferido no
-  banco, e não só na tela.
-- **Contar com o app sem rede**, que é o cenário da `#d62`. A tela não pode ficar presa em
-  "salvando", ela volta para `/compras` no toque, e o selo de sincronização precisa contar a
-  verdade. Voltar a rede e ver subir.
-- **Corrigir o preço da farinha pela lista**, e conferir em `/insumos` que a data da contagem
-  **não** se mexeu. Depois editar o mesmo insumo pelo formulário, salvar, e conferir de novo.
-- **Um insumo com contagem de mais de 30 dias** precisa mostrar o selo "Contagem vencida" em
-  `/insumos`, com ícone e texto, e a linha precisa dizer quanto tem e desde quando.
-
-Da 7B, o que só o navegador responde — e o passo 1 vale **antes** de a sessão ser considerada
-fechada, e não depois:
-
-1. **Abrir `/compras` com o estoque de antes desta spec.** A frase da contagem ausente precisa
-   aparecer, com os nomes dos insumos e o atalho, e o carrinho precisa estar **maior** do que
-   estava. É a `#d63` acontecendo sobre dado real, e é onde o risco da spec se mede primeiro.
-2. **Contar a despensa inteira e voltar para `/compras`.** Antes de refazer, a frase da lista
-   desatualizada precisa aparecer; depois de "Refazer", o carrinho precisa **encolher** e o
-   bloco "Não precisa comprar" precisa reaparecer com o que a contagem cobriu, dizendo a idade.
-   O passo 3 é o único argumento que vai fazê-la contar na semana seguinte.
-3. **Uma contagem de 14 dias.** Os números precisam ser os mesmos de uma contagem de hoje, e só
-   as palavras mudam: a linha diz "500 g · contada há 14 dias" e nada some.
-4. **Ler uma nota e tocar em "Guardar na despensa".** Os campos semeados, as frases de
-   procedência, e a soma certa na linha do insumo já contado — inclusive no insumo que **nasceu
-   naquela nota**, que é o que `insumoIds` existe para endereçar.
-5. **Fechar a lista da mesma compra, logo depois.** A segunda oferta não pode dobrar número
-   nenhum: as contagens são de hoje e aparecem como estão, dizendo "contada hoje".
-6. **Fechar a lista sem nada marcado.** O botão de guardar não aparece, e o bloco é o de antes.
-7. **Recarregar `/insumos/contagem` com a semente na mão.** Os campos precisam nascer vazios: a
-   semente morre no F5 de propósito (`#d64`).
+O portão de conclusão foi rodado de verdade em 2026-09-12, no fim da 015, e passa nos quatro:
+lint, typecheck, 490 testes e build com 17 rotas estáticas mais as dinâmicas. Portão passando não
+é o mesmo que sistema pronto — nenhum dos quatro toca no Firestore nem abre um navegador —, e é
+por isso que o roteiro da 015 é a próxima ação, e não um item já fechado.
 
 ## O que a verificação visual já corrigiu
 
@@ -2028,69 +1702,65 @@ A primeira rodada de capturas em navegador (desktop, tema escuro) achou três co
 
 Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobertas.
 
-| Dívida                                                                        | Onde                                                         | Quando resolver                                                                        |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| Verificação visual só no desktop e só no tema escuro                          | —                                                            | **Spec 005, sessão 5B**: falta o tema claro (que é o padrão) e o celular               |
-| Regras publicadas, mas nunca exercitadas por um cliente real                  | `firestore.rules`                                            | **Spec 005, sessão 5B**, passo 1: é lá que a regra é de fato testada                   |
-| Acesso concedido por script, sem cadastro self-serve                          | `scripts/conceder-acesso.mjs`                                | Segundo cliente pagante, junto de D10 (`DECISOES.md#d16`)                              |
-| `sair()` não limpa o cache do IndexedDB                                       | `src/providers/AuthProvider.tsx`                             | Só ao virar SaaS: hoje é vantagem, em aparelho compartilhado vira vazamento            |
-| Agregados incrementados no cliente                                            | `src/lib/firebase/mutations/`                                | Segundo cliente pagante (`DECISOES.md#d10`)                                            |
-| Configuração aberta sem rede e sem cache diz "valores sugeridos"              | `TelaConfiguracao.tsx`                                       | Não tem conserto: cache vazio não distingue "não existe" de "não sei" (`#d43`)         |
-| Agregado do mês pode ficar torto se um delta se perder no caminho             | `mutations/agregado.ts`                                      | Tem escape: "Recalcular o mês" na tela. A troca real é a mesma de D10                  |
-| Mudar um lançamento de mês não move o espelho da meta do mês destino          | `mutations/transacoes.ts`                                    | Mesmo escape e mesma troca: `DECISOES.md#d29`                                          |
-| Produto revertido sobra zerado no agregado até recalcular                     | `mutations/agregado.ts`                                      | `produtosOrdenados` o esconde na leitura; recalcular limpa (`#d37`)                    |
-| `ultimoPedidoEm` do cliente não volta atrás ao desfazer um pagamento          | `mutations/clientes.ts`                                      | Só com histórico de pagamentos, que não existe (`#d37`)                                |
-| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê           | `mutations/clientes.ts`                                      | Quando "quem mais compra de mim" virar pergunta real (`#d35`)                          |
-| Meta não guarda histórico: reescrever o alvo apaga o anterior                 | `mutations/metas.ts`                                         | Se "que meta eu tinha antes" virar pergunta real (`DECISOES.md#d27`)                   |
-| `FichaTecnica.ativo` é sempre `true`, sem tela que o desligue                 | `src/lib/types/fichas.ts`                                    | Se "produto fora de linha" virar diferente de "arquivado"                              |
-| Quantidade volta em unidade base: 0,5 kg reabre como 500 g                    | `FormularioFicha.tsx`                                        | Se ela reclamar; exigiria gravar a unidade digitada, e não só o valor                  |
-| `Bloco` e `BlocoConfiguracao` continuam primos                                | `src/components/`                                            | Se a configuração precisar do mesmo bloco; hoje ela tem rodapé próprio                 |
-| `/pedidos` carrega todo pedido não arquivado, sem recorte de data             | `ListaPedidos.tsx`                                           | Quando o primeiro ano de pedidos pesar: vira range sobre `dataEntregaISO`              |
-| Não dá para arquivar uma cliente: só cadastrar e editar, de dentro do pedido  | `mutations/clientes.ts`                                      | Junto da tela de clientes, quando ela existir (`DECISOES.md#d35`)                      |
-| Editar um pedido e sair sem salvar descarta em silêncio                       | `FormularioPedido.tsx`                                       | Mesma dívida do editor de ficha e da configuração; se acontecer de verdade             |
-| `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`              | `src/lib/types/configuracao.ts`                              | **Ganhou leitor na 010**: o resumo da cliente. Espelho velho agora sai na mensagem     |
-| Sair da configuração com alteração pendente descarta em silêncio              | `TelaConfiguracao.tsx`                                       | Se acontecer de verdade; a barra fixa de "não salvas" é a defesa atual                 |
-| Dois toques no mesmo quadro na lista de compras podem perder uma marca        | `ListaDoMercado.tsx`                                         | Se acontecer: `comprado` sai do array e vira mapa por `insumoId` (`#d40`)              |
-| A contagem existe e depende de ela contar: sem contar, a lista compra o cheio | `/insumos/contagem`                                          | Não tem conserto em código: as defesas são o erro barato e a semeadura pela compra     |
-| A tela de contagem, o lote, as frases de `/compras` e a semente sem teste     | `components/estoque/`, `compras/`                            | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador              |
-| A frase da lista desatualizada não sabe **o que** mudou, só que mudou         | `ListaDoMercado.tsx`                                         | Exigiria guardar quando a lista foi montada e comparar com cada contagem (`#d63`)      |
-| Sair da contagem sem salvar descarta em silêncio                              | `TelaContagem.tsx`                                           | Mesma dívida do editor de ficha, do de pedido e da configuração                        |
-| A rota, a tela da nota, a gravação em lote e a guarda do caixa sem teste      | `api/nota/`, `components/notas/`                             | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador              |
-| Cadastrar a nota espera o servidor: sem rede o botão fica preso em carregando | `TelaNota.tsx`                                               | Não incomoda hoje — a tela já exigiu rede para ler (`#d50`); se incomodar, `#d40`      |
-| O cache de CNPJ vive na memória do processo e morre no reinício               | `api/nota/route.ts`                                          | Só se a cota de 3/min por IP apertar, que é o dia do segundo cliente (`#d52`)          |
-| Reler uma nota exige fotografar de novo: a imagem não é guardada              | `api/nota/route.ts`                                          | Se "ver a nota do mês passado" virar pergunta real, nasce com Storage (`#d49`)         |
-| A 6A rodou antes da 5B, contra a dependência declarada na spec 006            | —                                                            | Some quando a 5B rodar; até lá, defeito em `insumos` tem duas origens possíveis        |
-| A guarda de duplicidade depende de o modelo ler o mesmo CNPJ nas duas fotos   | `domain/notaFiscal.ts`                                       | Passo 7 do roteiro da 006 é quem responde; falhando, entra o QR Code da NFC-e          |
-| Nota sem CNPJ legível lança sem guarda: a mesma nota pode entrar duas vezes   | `TelaNota.tsx`                                               | Não tem conserto barato: chave por nome sai diferente de duas fotos (`#d54`)           |
-| Duas notas da mesma loja, no mesmo dia, com o total ilegível nas duas colidem | `domain/notaFiscal.ts`                                       | Falso positivo visível, desfeito em um toque; se acontecer, a chave ganha a hora       |
-| `agregados/global` é escrito por três mutações e lido por ninguém             | `types/financeiro.ts`                                        | Se algum leitor aparecer; a 008 decidiu não ser ele (`#d67`)                           |
-| `pedidosAbertos`, `proximaEntrega` e `ultimoNumeroPedido` nunca são escritos  | `types/financeiro.ts`                                        | Spec de limpeza, como a remoção de `estoqueMinimo` na 7A. Ninguém os lê hoje           |
-| O cartão, a página, o gancho e a escrita na conta, sem teste                  | `components/comecar/`                                        | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador              |
-| Os cinco textos do começo saíram do código, e não do que a 5B viu             | `domain/onboarding.ts`                                       | **Depois da 5B**: a 8B não pôde reler o que ninguém viu acontecer                      |
-| Um passo fecha com o documento existindo, e não com ele estando bom           | `domain/onboarding.ts`                                       | Não tem conserto: o caminho diz onde ela está, e não se ela fez bem                    |
-| `/comecar` nunca foi vista em 360px nem no tema claro, e não há captura       | `components/comecar/`                                        | Critério da 8B em aberto: depende de navegador, de login e de conta de verdade         |
-| O bloco de instalar nunca foi visto sumindo com o app instalado               | `InstalarNaTela.tsx`                                         | Critério da 8B em aberto: exige instalar de fato, no iPhone e no Android               |
-| Não há diretório de capturas no repositório, e o protocolo da 5B pede um      | `docs/`                                                      | Nasce na 5B, que é quem arquiva a primeira. Até lá não há onde guardar                 |
-| `LIMITE_ARQUIVO_BYTES` é 8 MB e o Vercel corta o corpo em 4,5 MB (~3,3 MB)    | `domain/notaFiscal.ts`                                       | Se PDF de nota grande virar rotina: baixar para 3 MB e recusar antes do upload         |
-| A chave de conta de serviço fica legível no painel e não gira sozinha         | `FIREBASE_SERVICE_ACCOUNT`                                   | No dia do SaaS: gerenciador de segredos com rotação (`#d72`)                           |
-| `credencialDisponivel()` e a leitura de `FIREBASE_SERVICE_ACCOUNT` sem teste  | `lib/server/firebaseAdmin.ts`                                | `npm test` cobre só `domain/`; o que fecha isso é o primeiro deploy de verdade         |
-| Nada foi publicado: o build da hospedagem nunca rodou                         | `docs/DEPLOY.md`                                             | Some no primeiro deploy; até lá a preparação é hipótese conferida só localmente        |
-| O roteiro A da 009 nunca rodou: nenhuma tela foi vista com o teclado aberto   | `ui/RodapeFixo.tsx`, `globals.css`                           | Exige Android na mão. Seis telas que funcionavam foram editadas sem teste por trás     |
-| A barra vinho nunca foi vista no aparelho: o WebAPK assa a cor na instalação  | `app/manifest.ts`                                            | Roteiro B: depende de deploy **e** de desinstalar e reinstalar o app                   |
-| 560px é limiar chutado: aparelho pequeno com fonte aumentada pode entrar nele | `globals.css`                                                | Degradação feia, não quebra. O conserto é `visualViewport` (`#d74`)                    |
-| O `wa.me` nunca foi aberto: ninguém viu a mensagem chegar escrita na conversa | `pedidos/BlocoWhatsApp.tsx`                                  | Roteiro de aparelho da 010: exige celular com WhatsApp instalado, e depois desktop     |
-| O resumo pode ser mandado sem o pedido estar salvo                            | `FormularioPedido.tsx`                                       | Aceito em `#d78`; se morder, o botão salva antes de abrir o link                       |
-| A mensagem não diz as observações, nem quando são recado da cliente           | `domain/whatsapp.ts`                                         | Só com um segundo campo de dono declarado — não relaxando este (`#d79`)                |
-| Não se sabe se ela apertou enviar: o link não devolve nada                    | `pedidos/BlocoWhatsApp.tsx`                                  | Não tem conserto neste canal; gravar "enviado" sem saber seria pior (`#d77`)           |
-| Os meses já tortos continuam tortos até alguém apertar "Recalcular o mês"     | `agregados/{'YYYY-MM'}`                                      | Próxima ação, com rede: um mês por vez, guiada pelo aviso do `#d81`                    |
-| Cinco mutações ainda esperam escrita em fila fora do caixa                    | `insumos`, `fichas`, `listasCompra`, `metas`, `configuracao` | Spec de varredura depois da 5B: lá o preço é botão preso, não parcela perdida (`#d80`) |
-| Escrita recusada pelas regras no caixa falha calada, só no console            | `mutations/despachar.ts`                                     | Volta à mesa se existir papel com permissão parcial (`#d80`)                           |
-| O aviso de divergência não cobre `produtos` nem `porDia[].pedidos`            | `domain/caixa.ts`                                            | Exigiria a `/financeiro` assinar a consulta de pedidos pagos do mês (`#d81`)           |
-| Arquivar o acerto direto em `/financeiro` deixa os pedidos marcados           | `components/financeiro/`                                     | Se acontecer de verdade: vira guarda na tela, como a da nota (`#d52`)                  |
-| `lucroEstimado` do pedido continua com a taxa de entrega dentro               | `domain/pedido.ts`                                           | Quem fecha a conta é o caixa; corrigir mexeria em todo pedido gravado (`#d82`)         |
-| A entrega que ela esqueceu de marcar só é paga na semana seguinte             | `domain/pedido.ts`                                           | Não tem conserto em código: a frase do painel é a defesa (`#d83`)                      |
-| A faixa, o painel, o lote do repasse e a saída em `ENTREGA` sem teste         | `components/pedidos/`                                        | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador              |
-| A fornada existe e depende de ela registrar: sem registrar, nada muda         | `components/producao/`                                       | Não tem conserto em código: a spec é aditiva de propósito (`#d91`)                     |
-| Fornada com `pedidoId` mais velha que 30 dias sai do abate do pedido          | `mutations/fornadas.ts`                                      | Se houver encomenda assada com mais de um mês: a janela vira a maior data de entrega   |
-| A fornada aberta pela ficha nasce sem pedido, mesmo quando era para um        | `FormularioFicha.tsx`                                        | Se ela registrar pela ficha e a lista comprar de novo: índice `fichaIds` + `arquivado` |
-| A folha, as duas entradas, a consulta e as frases do forno sem teste          | `components/producao/`, `compras/`, `estoque/`               | `npm test` cobre só `domain/`; o que fecha isso é o roteiro da 13A em navegador        |
+| Dívida                                                                                    | Onde                                           | Quando resolver                                                                        |
+| ----------------------------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Acesso concedido por script, sem cadastro self-serve                                      | `scripts/conceder-acesso.mjs`                  | Segundo cliente pagante, junto de D10 (`DECISOES.md#d16`)                              |
+| `sair()` não limpa o cache do IndexedDB                                                   | `src/providers/AuthProvider.tsx`               | Só ao virar SaaS: hoje é vantagem, em aparelho compartilhado vira vazamento            |
+| Agregados incrementados no cliente                                                        | `src/lib/firebase/mutations/`                  | Segundo cliente pagante (`DECISOES.md#d10`)                                            |
+| Configuração aberta sem rede e sem cache diz "valores sugeridos"                          | `TelaConfiguracao.tsx`                         | Não tem conserto: cache vazio não distingue "não existe" de "não sei" (`#d43`)         |
+| Agregado do mês pode ficar torto se um delta se perder no caminho                         | `mutations/agregado.ts`                        | Tem escape: "Recalcular o mês" na tela. A troca real é a mesma de D10                  |
+| Mudar um lançamento de mês não move o espelho da meta do mês destino                      | `mutations/transacoes.ts`                      | Mesmo escape e mesma troca: `DECISOES.md#d29`                                          |
+| Produto revertido sobra zerado no agregado até recalcular                                 | `mutations/agregado.ts`                        | `produtosOrdenados` o esconde na leitura; recalcular limpa (`#d37`)                    |
+| `ultimoPedidoEm` do cliente não volta atrás ao desfazer um pagamento                      | `mutations/clientes.ts`                        | Só com histórico de pagamentos, que não existe (`#d37`)                                |
+| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê                       | `mutations/clientes.ts`                        | Quando "quem mais compra de mim" virar pergunta real (`#d35`)                          |
+| Meta não guarda histórico: reescrever o alvo apaga o anterior                             | `mutations/metas.ts`                           | Se "que meta eu tinha antes" virar pergunta real (`DECISOES.md#d27`)                   |
+| `FichaTecnica.ativo` é sempre `true`, sem tela que o desligue                             | `src/lib/types/fichas.ts`                      | Se "produto fora de linha" virar diferente de "arquivado"                              |
+| Quantidade volta em unidade base: 0,5 kg reabre como 500 g                                | `FormularioFicha.tsx`                          | Se ela reclamar; exigiria gravar a unidade digitada, e não só o valor                  |
+| `Bloco` e `BlocoConfiguracao` continuam primos                                            | `src/components/`                              | Se a configuração precisar do mesmo bloco; hoje ela tem rodapé próprio                 |
+| `/pedidos` carrega todo pedido não arquivado, sem recorte de data                         | `ListaPedidos.tsx`                             | Quando o primeiro ano de pedidos pesar: vira range sobre `dataEntregaISO`              |
+| Não dá para arquivar uma cliente: só cadastrar e editar, de dentro do pedido              | `mutations/clientes.ts`                        | Junto da tela de clientes, quando ela existir (`DECISOES.md#d35`)                      |
+| Editar um pedido e sair sem salvar descarta em silêncio                                   | `FormularioPedido.tsx`                         | Mesma dívida do editor de ficha e da configuração; se acontecer de verdade             |
+| `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`                          | `src/lib/types/configuracao.ts`                | **Ganhou leitor na 010**: o resumo da cliente. Espelho velho agora sai na mensagem     |
+| Sair da configuração com alteração pendente descarta em silêncio                          | `TelaConfiguracao.tsx`                         | Se acontecer de verdade; a barra fixa de "não salvas" é a defesa atual                 |
+| Dois toques no mesmo quadro na lista de compras podem perder uma marca                    | `ListaDoMercado.tsx`                           | Se acontecer: `comprado` sai do array e vira mapa por `insumoId` (`#d40`)              |
+| A contagem existe e depende de ela contar: sem contar, a lista compra o cheio             | `/insumos/contagem`                            | Não tem conserto em código: as defesas são o erro barato e a semeadura pela compra     |
+| A tela de contagem, o lote, as frases de `/compras` e a semente sem teste                 | `components/estoque/`, `compras/`              | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador              |
+| A frase da lista desatualizada não sabe **o que** mudou, só que mudou                     | `ListaDoMercado.tsx`                           | Exigiria guardar quando a lista foi montada e comparar com cada contagem (`#d63`)      |
+| Sair da contagem sem salvar descarta em silêncio                                          | `TelaContagem.tsx`                             | Mesma dívida do editor de ficha, do de pedido e da configuração                        |
+| A rota, a tela da nota, a gravação em lote e a guarda do caixa sem teste                  | `api/nota/`, `components/notas/`               | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador              |
+| Cadastrar a nota espera o servidor: sem rede o botão fica preso em carregando             | `TelaNota.tsx`                                 | Não incomoda hoje — a tela já exigiu rede para ler (`#d50`); se incomodar, `#d40`      |
+| O cache de CNPJ vive na memória do processo e morre no reinício                           | `api/nota/route.ts`                            | Só se a cota de 3/min por IP apertar, que é o dia do segundo cliente (`#d52`)          |
+| Reler uma nota exige fotografar de novo: a imagem não é guardada                          | `api/nota/route.ts`                            | Se "ver a nota do mês passado" virar pergunta real, nasce com Storage (`#d49`)         |
+| A guarda de duplicidade depende de o modelo ler o mesmo CNPJ nas duas fotos               | `domain/notaFiscal.ts`                         | Passo 7 do roteiro da 006 é quem responde; falhando, entra o QR Code da NFC-e          |
+| Nota sem CNPJ legível lança sem guarda: a mesma nota pode entrar duas vezes               | `TelaNota.tsx`                                 | Não tem conserto barato: chave por nome sai diferente de duas fotos (`#d54`)           |
+| Duas notas da mesma loja, no mesmo dia, com o total ilegível nas duas colidem             | `domain/notaFiscal.ts`                         | Falso positivo visível, desfeito em um toque; se acontecer, a chave ganha a hora       |
+| `agregados/global` é escrito por três mutações e lido por ninguém                         | `types/financeiro.ts`                          | Se algum leitor aparecer; a 008 decidiu não ser ele (`#d67`)                           |
+| `pedidosAbertos`, `proximaEntrega` e `ultimoNumeroPedido` nunca são escritos              | `types/financeiro.ts`                          | Spec de limpeza, como a remoção de `estoqueMinimo` na 7A. Ninguém os lê hoje           |
+| O cartão, a página, o gancho e a escrita na conta, sem teste                              | `components/comecar/`                          | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador              |
+| Os cinco textos do começo saíram do código, e não do que a 5B viu                         | `domain/onboarding.ts`                         | **Vencida**: a 5B rodou. Releitura curta, sem código — cabe de carona em qualquer spec |
+| Um passo fecha com o documento existindo, e não com ele estando bom                       | `domain/onboarding.ts`                         | Não tem conserto: o caminho diz onde ela está, e não se ela fez bem                    |
+| `/comecar` nunca foi vista em 360px nem no tema claro, e não há captura                   | `components/comecar/`                          | Critério da 8B em aberto: depende de navegador, de login e de conta de verdade         |
+| O bloco de instalar nunca foi visto sumindo com o app instalado                           | `InstalarNaTela.tsx`                           | Critério da 8B em aberto: exige instalar de fato, no iPhone e no Android               |
+| Não há diretório de capturas no repositório, e o protocolo da 5B pedia um                 | `docs/`                                        | A 5B rodou sem arquivar captura. Fica se um dia houver o que comparar com o de antes   |
+| `LIMITE_ARQUIVO_BYTES` é 8 MB e o Vercel corta o corpo em 4,5 MB (~3,3 MB)                | `domain/notaFiscal.ts`                         | Se PDF de nota grande virar rotina: baixar para 3 MB e recusar antes do upload         |
+| A chave de conta de serviço fica legível no painel e não gira sozinha                     | `FIREBASE_SERVICE_ACCOUNT`                     | No dia do SaaS: gerenciador de segredos com rotação (`#d72`)                           |
+| O roteiro A da 009 nunca rodou: nenhuma tela foi vista com o teclado aberto               | `ui/RodapeFixo.tsx`, `globals.css`             | Exige Android na mão. Seis telas que funcionavam foram editadas sem teste por trás     |
+| A barra vinho nunca foi vista no aparelho: o WebAPK assa a cor na instalação              | `app/manifest.ts`                              | Roteiro B: o deploy já existe; falta desinstalar e reinstalar o app no Android         |
+| 560px é limiar chutado: aparelho pequeno com fonte aumentada pode entrar nele             | `globals.css`                                  | Degradação feia, não quebra. O conserto é `visualViewport` (`#d74`)                    |
+| O `wa.me` nunca foi aberto: ninguém viu a mensagem chegar escrita na conversa             | `pedidos/BlocoWhatsApp.tsx`                    | Roteiro de aparelho da 010: exige celular com WhatsApp instalado, e depois desktop     |
+| O resumo pode ser mandado sem o pedido estar salvo                                        | `FormularioPedido.tsx`                         | Aceito em `#d78`; se morder, o botão salva antes de abrir o link                       |
+| A mensagem não diz as observações, nem quando são recado da cliente                       | `domain/whatsapp.ts`                           | Só com um segundo campo de dono declarado — não relaxando este (`#d79`)                |
+| Não se sabe se ela apertou enviar: o link não devolve nada                                | `pedidos/BlocoWhatsApp.tsx`                    | Não tem conserto neste canal; gravar "enviado" sem saber seria pior (`#d77`)           |
+| Os meses já tortos continuam tortos até alguém apertar "Recalcular o mês"                 | `agregados/{'YYYY-MM'}`                        | Próxima ação, com rede: um mês por vez, guiada pelo aviso do `#d81`                    |
+| Escrita recusada pelas regras falha calada, só no console — agora em `mutations/` inteiro | `mutations/despachar.ts`                       | Volta à mesa se existir papel com permissão parcial (`#d80`, `#d104`)                  |
+| Ficha nunca aberta neste aparelho não ganha selo quando o preço muda offline              | `marcarFichasDesatualizadas`                   | Se doer: a tela passa os `fichaIds` que já tem, e não uma segunda consulta (`#d104`)   |
+| O roteiro de sete passos da 015 nunca rodou: o selo e o espelho offline sem prova         | `mutations/insumos.ts`, `metas.ts`             | Próxima ação, com DevTools em Offline; `npm test` não toca no Firestore                |
+| O aviso de divergência não cobre `produtos` nem `porDia[].pedidos`                        | `domain/caixa.ts`                              | Exigiria a `/financeiro` assinar a consulta de pedidos pagos do mês (`#d81`)           |
+| Arquivar o acerto direto em `/financeiro` deixa os pedidos marcados                       | `components/financeiro/`                       | Se acontecer de verdade: vira guarda na tela, como a da nota (`#d52`)                  |
+| `lucroEstimado` do pedido continua com a taxa de entrega dentro                           | `domain/pedido.ts`                             | Quem fecha a conta é o caixa; corrigir mexeria em todo pedido gravado (`#d82`)         |
+| A entrega que ela esqueceu de marcar só é paga na semana seguinte                         | `domain/pedido.ts`                             | Não tem conserto em código: a frase do painel é a defesa (`#d83`)                      |
+| A faixa, o painel, o lote do repasse e a saída em `ENTREGA` sem teste                     | `components/pedidos/`                          | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador              |
+| A fornada existe e depende de ela registrar: sem registrar, nada muda                     | `components/producao/`                         | Não tem conserto em código: a spec é aditiva de propósito (`#d91`)                     |
+| Fornada com `pedidoId` mais velha que 30 dias sai do abate do pedido                      | `mutations/fornadas.ts`                        | Se houver encomenda assada com mais de um mês: a janela vira a maior data de entrega   |
+| A fornada aberta pela ficha nasce sem pedido, mesmo quando era para um                    | `FormularioFicha.tsx`                          | Se ela registrar pela ficha e a lista comprar de novo: índice `fichaIds` + `arquivado` |
+| A folha, as duas entradas, a consulta e as frases do forno sem teste                      | `components/producao/`, `compras/`, `estoque/` | `npm test` cobre só `domain/`; o que fecha isso é o roteiro da 13A em navegador        |

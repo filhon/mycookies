@@ -3110,3 +3110,70 @@ receita —, "Registrar fornada" oferece as receitas escolhidas com essas unidad
 `/fichas` não precisou de uma linha: `LinhaFicha` já escondia capacidade `null`, e o pronto
 do kit já era `null` (`#d97`). O combo aparece lá com custo, rendimento e o selo "Kit", e
 nada mais.
+
+---
+
+## D104 · Toda mutação despacha; quem espera está nomeado
+
+**Status:** vigente · decidida em 2026-09-12, na spec 015
+
+**Contexto.** A `#d80` tirou o `await` das mutações do caixa e deixou cinco de fora —
+`insumos.ts`, `fichas.ts`, `listasCompra.ts`, `metas.ts` e `configuracao.ts` — com o argumento
+de que nelas o preço de uma promessa pendente era um botão preso, e não um número perdido. A
+varredura da 015 mostrou que o argumento valia para três e **não valia para duas**:
+
+- **`atualizarInsumo`** esperava o `updateDoc` do preço e só depois chamava
+  `marcarFichasDesatualizadas`. Sem rede, a execução parava na primeira linha, e o selo de
+  "custo desatualizado" das fichas que usam o insumo **nunca era gravado** — nem quando a rede
+  voltava, porque a fila do IndexedDB sobe escrita despachada, e não continuação de `async`.
+  É exatamente o que `#d05` existe para impedir, e o caminho é o da gôndola (`#d40`), que é
+  onde o preço muda sem sinal.
+- **`salvarMeta`** esperava a meta e só depois escrevia o espelho em `agregados/{mês}.meta`,
+  que é o que o cartão da tela Hoje lê (`#d09`, `#d29`). Sem rede, a meta ficava gravada e o
+  espelho não existia até a próxima venda do mês reescrevê-lo.
+
+**Decisão.** A regra da `#d80` deixa de ser "as mutações que mantêm o agregado" e passa a ser
+**`src/lib/firebase/mutations/` inteiro**: nenhuma escrita do Firestore é esperada dentro de
+uma mutação. Todas são despachadas por `despachar()`, na ordem, e a função retorna. A promessa
+que a tela recebe resolve no toque. As exceções são duas, as duas com o motivo escrito no
+lugar, e as duas listadas no comentário de `despachar.ts`, que é o único lugar que precisa
+conhecê-las:
+
+- **`recalcularMes`** (`agregado.ts`) — a rede de segurança, que faz duas consultas antes de
+  escrever, exige rede e diz isso na tela (`#d80`).
+- **`importarNota`** (`notas.ts`) — a tela já exigiu rede para ler a nota (`#d50`), e a etapa
+  "pronto" precisa do lote concluído para contar quantos nasceram e quantas fichas envelheceram.
+
+Uma terceira exceção sem comentário dizendo por que espera é regressão.
+
+**O que mudou de forma.** `addDoc` virou `doc(col)` + `setDoc` em `criarInsumo`, `criarFicha` e
+`criarListaCompras`, com o id gerado no aparelho — o mesmo conserto da `#d80`, e o mesmo
+mecanismo que `addDoc` usa por dentro. O corpo gravado é campo a campo o de antes.
+`podarHistorico` e `marcarFichasDesatualizadas` continuam `async` e continuam lendo antes de
+escrever (`getDoc`, `getDocs`), só que a escrita delas é despachada, e `atualizarInsumo` as
+chama **no mesmo tique** do `updateDoc`, sem `await` entre eles. Sem rede a leitura serve do
+cache: acha as fichas que este aparelho já abriu, o que é estritamente melhor do que antes
+(nenhuma) e basta para um aparelho que abre `/fichas` toda semana. Se um dia doer, o conserto
+é a tela passar os `fichaIds` que já tem na mão, e não uma segunda consulta.
+
+**`estoque.ts` entrou de carona**, sem mudar comportamento: os dois laços de lote esperavam
+cada `commit()`, a tela já não esperava a função (`#d62`), e uma despensa não passa de 400
+linhas. Trocar por `despachar(lote.commit())` tirou a última exceção não comentada do
+diretório — e o critério de aceite da spec é um `grep`.
+
+**O `await` que sobrou em `transacoes.ts` e `pedidos.ts` não é escrita.** São chamadas a
+`aplicarNoAgregado`, `gravarTransacao` e primas, que já despacham por dentro e resolvem no
+mesmo tique. A regra é sobre escrita esperada, e ali nenhuma é; ficaram como a `#d80` deixou.
+
+**Nenhuma tela mudou.** `FormularioInsumo`, `FormularioFicha`, `FormularioMeta` e
+`TelaConfiguracao` seguem com `await` e `setSalvando`: o `catch` ainda cobre a rejeição de
+verdade — validação, documento sumido —, e o `setSalvando` ainda cobre o instante entre o toque
+e o cache aplicar. Tirá-lo tornaria esta spec uma spec de tela.
+
+**Consequência, a mesma pela quarta vez** (`#d40`, `#d62`, `#d80`). Uma escrita recusada pelas
+regras falha calada, no console, numa tela que ela já deixou. As regras são as de sempre —
+`contas/{contaId}/{documento=**}` para quem tem a claim — e a 5B as viu funcionar. A defesa
+continua sendo o `SeloSincronizacao`. E duas escritas despachadas em sequência não são
+atômicas — nunca foram, nem com `await`: `salvarMeta` grava a meta e o espelho como duas
+operações, e se a segunda for recusada a primeira fica. É o estado de antes com rede; offline,
+antes, a segunda simplesmente não existia.

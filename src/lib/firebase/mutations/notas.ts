@@ -32,6 +32,11 @@ import { Timestamp } from "firebase/firestore";
  *
  * O corpo dos documentos sai de `mutations/insumos.ts`: este arquivo decide
  * quantas escritas acontecem, e nunca o que é um insumo.
+ *
+ * **É uma das duas exceções ao `despachar()`** (`DECISOES.md#d104`): as
+ * escritas daqui são esperadas porque a tela já exigiu rede para ler a nota
+ * (`#d50`), e a etapa "pronto" precisa do lote concluído para contar quantos
+ * nasceram e quantas fichas envelheceram.
  */
 
 export interface LinhaImportada {

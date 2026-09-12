@@ -1,5 +1,4 @@
 import {
-  addDoc,
   arrayUnion,
   doc,
   getDoc,
@@ -14,6 +13,7 @@ import {
 } from "firebase/firestore";
 import { obterDb } from "../client";
 import { colFichas, colInsumos, docInsumo, docResumoGlobal } from "../colecoes";
+import { despachar } from "./despachar";
 import { calcularCustoInsumo, chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { VERSAO_SCHEMA } from "@/lib/types";
 import type {
@@ -210,16 +210,17 @@ export async function criarInsumo(
 ): Promise<string> {
   const momento = agora();
 
-  const referencia = await addDoc(
-    colInsumos(contaId),
-    corpoDeInsumoNovo(dados, momento) as Insumo,
-  );
+  // Id gerado no aparelho: nada aqui espera o servidor (`DECISOES.md#d104`).
+  const referencia = doc(colInsumos(contaId));
+  despachar(setDoc(referencia, corpoDeInsumoNovo(dados, momento) as Insumo));
 
   // Contador do agregado global: `increment` entra na fila e funciona offline.
-  await setDoc(
-    docResumoGlobal(contaId),
-    { v: VERSAO_SCHEMA, totalInsumos: increment(1), atualizadoEm: momento },
-    { merge: true },
+  despachar(
+    setDoc(
+      docResumoGlobal(contaId),
+      { v: VERSAO_SCHEMA, totalInsumos: increment(1), atualizadoEm: momento },
+      { merge: true },
+    ),
   );
 
   return referencia.id;
@@ -233,16 +234,19 @@ export async function atualizarInsumo(
   const momento = agora();
   const virouCompra = precoMudou(anterior, dados);
 
-  await updateDoc(
-    docInsumo(contaId, anterior.id),
-    corpoDeAtualizacao(anterior, dados, momento),
+  despachar(
+    updateDoc(
+      docInsumo(contaId, anterior.id),
+      corpoDeAtualizacao(anterior, dados, momento),
+    ),
   );
 
+  // No mesmo tique, sem esperar o `updateDoc`: sem rede a promessa dele não
+  // resolve, e o selo de "custo desatualizado" nunca chegava a ser gravado —
+  // o preço velho virava orçamento sem aviso (`DECISOES.md#d104`).
   if (virouCompra) {
-    await Promise.all([
-      podarHistorico(contaId, anterior),
-      marcarFichasDesatualizadas(contaId, anterior.id),
-    ]);
+    despachar(podarHistorico(contaId, anterior));
+    despachar(marcarFichasDesatualizadas(contaId, anterior.id));
   }
 }
 
@@ -261,18 +265,23 @@ export async function podarHistorico(
   const historico = atual.data()?.historicoPrecos ?? [];
   if (historico.length <= LIMITE_HISTORICO) return;
 
-  await updateDoc(docInsumo(contaId, anterior.id), {
-    historicoPrecos: historico
-      .slice()
-      .sort((a, b) => b.data.toMillis() - a.data.toMillis())
-      .slice(0, LIMITE_HISTORICO),
-  });
+  despachar(
+    updateDoc(docInsumo(contaId, anterior.id), {
+      historicoPrecos: historico
+        .slice()
+        .sort((a, b) => b.data.toMillis() - a.data.toMillis())
+        .slice(0, LIMITE_HISTORICO),
+    }),
+  );
 }
 
 /**
  * Preço de insumo mudou: toda ficha que o usa passa a exibir custo velho.
  * A consulta por `array-contains` acha exatamente as afetadas, e o selo de
  * "custo desatualizado" aparece antes que um preço errado vire orçamento.
+ *
+ * Sem rede, `getDocs` serve do cache: acha as fichas que este aparelho já
+ * abriu, e é o que basta (`DECISOES.md#d104`). Devolve quantas marcou.
  */
 export async function marcarFichasDesatualizadas(
   contaId: string,
@@ -289,7 +298,7 @@ export async function marcarFichasDesatualizadas(
       custoDesatualizado: true,
     });
   });
-  await lote.commit();
+  despachar(lote.commit());
 
   return afetadas.size;
 }
@@ -303,14 +312,18 @@ export async function arquivarInsumo(
   insumoId: string,
 ): Promise<void> {
   const momento = agora();
-  await updateDoc(docInsumo(contaId, insumoId), {
-    arquivado: true,
-    atualizadoEm: momento,
-  });
-  await setDoc(
-    docResumoGlobal(contaId),
-    { v: VERSAO_SCHEMA, totalInsumos: increment(-1), atualizadoEm: momento },
-    { merge: true },
+  despachar(
+    updateDoc(docInsumo(contaId, insumoId), {
+      arquivado: true,
+      atualizadoEm: momento,
+    }),
+  );
+  despachar(
+    setDoc(
+      docResumoGlobal(contaId),
+      { v: VERSAO_SCHEMA, totalInsumos: increment(-1), atualizadoEm: momento },
+      { merge: true },
+    ),
   );
 }
 
@@ -319,13 +332,17 @@ export async function restaurarInsumo(
   insumoId: string,
 ): Promise<void> {
   const momento = agora();
-  await updateDoc(docInsumo(contaId, insumoId), {
-    arquivado: false,
-    atualizadoEm: momento,
-  });
-  await setDoc(
-    docResumoGlobal(contaId),
-    { v: VERSAO_SCHEMA, totalInsumos: increment(1), atualizadoEm: momento },
-    { merge: true },
+  despachar(
+    updateDoc(docInsumo(contaId, insumoId), {
+      arquivado: false,
+      atualizadoEm: momento,
+    }),
+  );
+  despachar(
+    setDoc(
+      docResumoGlobal(contaId),
+      { v: VERSAO_SCHEMA, totalInsumos: increment(1), atualizadoEm: momento },
+      { merge: true },
+    ),
   );
 }

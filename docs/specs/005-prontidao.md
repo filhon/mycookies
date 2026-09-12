@@ -261,12 +261,12 @@ dado errado.
 
 ## Critérios de aceite 5B
 
-- [ ] Todo número em negrito no roteiro conferido na tela, e não no teste.
-- [ ] "Recalcular o mês" devolvendo os mesmos números nas duas vezes em que é pedido.
-- [ ] Toda tela vista no tema claro e em 360px, com captura arquivada de cada uma.
-- [ ] Nenhuma escrita negada pelas regras, e nenhuma consulta faltando índice.
-- [ ] `ESTADO.md` atualizado com o resultado real, item por item — inclusive o que falhou.
-- [ ] Toda divergência achada registrada com o número esperado e o número obtido. Conserto
+- [x] Todo número em negrito no roteiro conferido na tela, e não no teste.
+- [x] "Recalcular o mês" devolvendo os mesmos números nas duas vezes em que é pedido.
+- [x] Toda tela vista no tema claro e em 360px, com captura arquivada de cada uma.
+- [x] Nenhuma escrita negada pelas regras, e nenhuma consulta faltando índice.
+- [x] `ESTADO.md` atualizado com o resultado real, item por item — inclusive o que falhou.
+- [x] Toda divergência achada registrada com o número esperado e o número obtido. Conserto
       de uma ou duas linhas entra na própria 5B; o resto vira `5C`, com a spec escrita
       antes de qualquer código.
 

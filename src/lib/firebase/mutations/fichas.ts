@@ -1,11 +1,12 @@
 import {
-  addDoc,
+  doc,
   increment,
   setDoc,
   Timestamp,
   updateDoc,
 } from "firebase/firestore";
 import { colFichas, docFicha, docResumoGlobal } from "../colecoes";
+import { despachar } from "./despachar";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import {
   custoLinhaComponente,
@@ -185,13 +186,17 @@ export async function criarFicha(
     arquivado: false,
   };
 
-  const referencia = await addDoc(colFichas(contaId), nova as FichaTecnica);
+  // Id gerado no aparelho: nada aqui espera o servidor (`DECISOES.md#d104`).
+  const referencia = doc(colFichas(contaId));
+  despachar(setDoc(referencia, nova as FichaTecnica));
 
   // `increment` entra na fila offline, como no cadastro de insumo.
-  await setDoc(
-    docResumoGlobal(contaId),
-    { v: VERSAO_SCHEMA, totalFichas: increment(1), atualizadoEm: momento },
-    { merge: true },
+  despachar(
+    setDoc(
+      docResumoGlobal(contaId),
+      { v: VERSAO_SCHEMA, totalFichas: increment(1), atualizadoEm: momento },
+      { merge: true },
+    ),
   );
 
   return referencia.id;
@@ -210,10 +215,12 @@ export async function atualizarFicha(
   fichaId: string,
   dados: DadosFicha,
 ): Promise<void> {
-  await updateDoc(docFicha(contaId, fichaId), {
-    ...corpoDaFicha(dados),
-    atualizadoEm: agora(),
-  });
+  despachar(
+    updateDoc(docFicha(contaId, fichaId), {
+      ...corpoDaFicha(dados),
+      atualizadoEm: agora(),
+    }),
+  );
 }
 
 /**
@@ -226,15 +233,19 @@ export async function arquivarFicha(
 ): Promise<void> {
   const momento = agora();
 
-  await updateDoc(docFicha(contaId, fichaId), {
-    arquivado: true,
-    ativo: false,
-    atualizadoEm: momento,
-  });
+  despachar(
+    updateDoc(docFicha(contaId, fichaId), {
+      arquivado: true,
+      ativo: false,
+      atualizadoEm: momento,
+    }),
+  );
 
-  await setDoc(
-    docResumoGlobal(contaId),
-    { v: VERSAO_SCHEMA, totalFichas: increment(-1), atualizadoEm: momento },
-    { merge: true },
+  despachar(
+    setDoc(
+      docResumoGlobal(contaId),
+      { v: VERSAO_SCHEMA, totalFichas: increment(-1), atualizadoEm: momento },
+      { merge: true },
+    ),
   );
 }

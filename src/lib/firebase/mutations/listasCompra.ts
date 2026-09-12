@@ -1,13 +1,15 @@
 import {
-  addDoc,
+  doc,
   limit,
   orderBy,
   query,
+  setDoc,
   Timestamp,
   updateDoc,
   where,
 } from "firebase/firestore";
 import { colListasCompra, docListaCompras } from "../colecoes";
+import { despachar } from "./despachar";
 import { atualizarInsumo, dadosDoInsumo } from "./insumos";
 import { rotuloDia } from "@/lib/domain/datas";
 import {
@@ -140,10 +142,9 @@ export async function criarListaCompras(
     arquivado: false,
   };
 
-  const referencia = await addDoc(
-    colListasCompra(contaId),
-    nova as unknown as ListaCompras,
-  );
+  // Id gerado no aparelho: nada aqui espera o servidor (`DECISOES.md#d104`).
+  const referencia = doc(colListasCompra(contaId));
+  despachar(setDoc(referencia, nova as unknown as ListaCompras));
   return referencia.id;
 }
 
@@ -159,10 +160,12 @@ export async function regerarListaCompras(
   listaId: string,
   dados: DadosListaCompras,
 ): Promise<void> {
-  await updateDoc(docListaCompras(contaId, listaId), {
-    ...corpoDaLista(dados),
-    atualizadoEm: agora(),
-  });
+  despachar(
+    updateDoc(docListaCompras(contaId, listaId), {
+      ...corpoDaLista(dados),
+      atualizadoEm: agora(),
+    }),
+  );
 }
 
 /**
@@ -183,12 +186,14 @@ export async function marcarItemComprado(
     item.insumoId === insumoId ? { ...item, comprado } : item,
   );
 
-  await updateDoc(docListaCompras(contaId, lista.id), {
-    v: VERSAO_SCHEMA,
-    itens,
-    status: statusDaLista(itens),
-    atualizadoEm: agora(),
-  });
+  despachar(
+    updateDoc(docListaCompras(contaId, lista.id), {
+      v: VERSAO_SCHEMA,
+      itens,
+      status: statusDaLista(itens),
+      atualizadoEm: agora(),
+    }),
+  );
 }
 
 /**
@@ -209,15 +214,14 @@ export async function corrigirPrecoNaLista(
   precoCompra: Centavos,
   lista: Pick<ListaCompras, "id" | "itens"> | null,
 ): Promise<void> {
-  const gravarInsumo = atualizarInsumo(contaId, insumo, {
-    ...dadosDoInsumo(insumo),
-    precoCompra,
-  });
+  despachar(
+    atualizarInsumo(contaId, insumo, {
+      ...dadosDoInsumo(insumo),
+      precoCompra,
+    }),
+  );
 
-  if (!lista) {
-    await gravarInsumo;
-    return;
-  }
+  if (!lista) return;
 
   const itens = lista.itens.map((item) =>
     item.insumoId === insumo.id
@@ -225,19 +229,14 @@ export async function corrigirPrecoNaLista(
       : item,
   );
 
-  // As duas escritas saem juntas, e não uma depois da outra. Sem rede, a
-  // promessa de uma escrita do Firestore fica pendente até a reconexão:
-  // encadear faria o custo da lista só se refazer quando o sinal voltasse,
-  // justamente no mercado, que é onde este caminho existe para funcionar.
-  await Promise.all([
-    gravarInsumo,
+  despachar(
     updateDoc(docListaCompras(contaId, lista.id), {
       v: VERSAO_SCHEMA,
       itens,
       custoEstimado: somarCusto(itens),
       atualizadoEm: agora(),
     }),
-  ]);
+  );
 }
 
 /**
@@ -248,8 +247,10 @@ export async function arquivarListaCompras(
   contaId: string,
   listaId: string,
 ): Promise<void> {
-  await updateDoc(docListaCompras(contaId, listaId), {
-    arquivado: true,
-    atualizadoEm: agora(),
-  });
+  despachar(
+    updateDoc(docListaCompras(contaId, listaId), {
+      arquivado: true,
+      atualizadoEm: agora(),
+    }),
+  );
 }

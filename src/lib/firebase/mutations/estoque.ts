@@ -1,6 +1,7 @@
 import { Timestamp, writeBatch } from "firebase/firestore";
 import { obterDb } from "../client";
 import { docFicha, docInsumo } from "../colecoes";
+import { despachar } from "./despachar";
 import { VERSAO_SCHEMA } from "@/lib/types";
 import type { DataISO, Insumo } from "@/lib/types";
 
@@ -62,7 +63,7 @@ export async function salvarContagem(
       });
     }
 
-    await lote.commit();
+    despachar(lote.commit());
   }
 
   return contagens.length;
@@ -93,7 +94,7 @@ export async function salvarContagemDoPronto(
       });
     }
 
-    await lote.commit();
+    despachar(lote.commit());
   }
 
   return contagens.length;

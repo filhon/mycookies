@@ -1,5 +1,6 @@
 import { setDoc, Timestamp } from "firebase/firestore";
 import { docConfiguracao } from "../colecoes";
+import { despachar } from "./despachar";
 import { custoIndiretoPorHora } from "@/lib/domain/custosOperacionais";
 import { VERSAO_SCHEMA } from "@/lib/types";
 import type {
@@ -101,23 +102,25 @@ export async function salvarConfiguracao(
 ): Promise<void> {
   const { operacional } = dados;
 
-  await setDoc(
-    docConfiguracao(contaId),
-    {
-      v: VERSAO_SCHEMA,
-      ...(dados.nomeNegocio ? { nomeNegocio: dados.nomeNegocio } : {}),
-      operacional: {
-        ...operacional,
-        custoIndiretoPorHora: custoIndiretoPorHora(
-          operacional.despesasFixasMensais,
-          operacional.horasProdutivasMes,
-        ),
+  despachar(
+    setDoc(
+      docConfiguracao(contaId),
+      {
+        v: VERSAO_SCHEMA,
+        ...(dados.nomeNegocio ? { nomeNegocio: dados.nomeNegocio } : {}),
+        operacional: {
+          ...operacional,
+          custoIndiretoPorHora: custoIndiretoPorHora(
+            operacional.despesasFixasMensais,
+            operacional.horasProdutivasMes,
+          ),
+        },
+        precificacao: dados.precificacao,
+        formasPagamento: dados.formasPagamento,
+        categoriasProduto: dados.categoriasProduto,
+        atualizadoEm: Timestamp.now(),
       },
-      precificacao: dados.precificacao,
-      formasPagamento: dados.formasPagamento,
-      categoriasProduto: dados.categoriasProduto,
-      atualizadoEm: Timestamp.now(),
-    },
-    { merge: true },
+      { merge: true },
+    ),
   );
 }

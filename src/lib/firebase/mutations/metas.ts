@@ -1,5 +1,6 @@
 import { setDoc, Timestamp } from "firebase/firestore";
 import { docMeta, docResumoMensal } from "../colecoes";
+import { despachar } from "./despachar";
 import {
   espelhoDaMeta,
   medirMeta,
@@ -97,40 +98,46 @@ export async function salvarMeta(
   const momento = Timestamp.now();
   const plano = planejarMeta({ competencia, ...dados });
 
-  await setDoc(
-    docMeta(contaId, competencia),
-    {
-      v: VERSAO_SCHEMA,
-      competencia,
-      faturamentoAlvo: dados.faturamentoAlvo,
-      ticketMedioReferencia: dados.precoMedioUnitario,
+  despachar(
+    setDoc(
+      docMeta(contaId, competencia),
+      {
+        v: VERSAO_SCHEMA,
+        competencia,
+        faturamentoAlvo: dados.faturamentoAlvo,
+        ticketMedioReferencia: dados.precoMedioUnitario,
 
-      pedidosNecessarios: pedidosNecessariosDe(
-        dados.faturamentoAlvo,
-        ticketMedio,
-      ),
-      unidadesNecessarias: plano.unidadesNecessarias,
-      semanasNoMes: plano.semanasNoMes,
-      unidadesPorSemana: plano.unidadesPorSemana,
+        pedidosNecessarios: pedidosNecessariosDe(
+          dados.faturamentoAlvo,
+          ticketMedio,
+        ),
+        unidadesNecessarias: plano.unidadesNecessarias,
+        semanasNoMes: plano.semanasNoMes,
+        unidadesPorSemana: plano.unidadesPorSemana,
 
-      ativo: true,
-      criadoEm: existente?.criadoEm ?? momento,
-      atualizadoEm: momento,
-      arquivado: false,
-    },
-    { merge: true },
+        ativo: true,
+        criadoEm: existente?.criadoEm ?? momento,
+        atualizadoEm: momento,
+        arquivado: false,
+      },
+      { merge: true },
+    ),
   );
 
   // O espelho nasce junto: sem ele, o cartão da tela Hoje só veria a meta no
-  // dia em que a Maynara lançasse a próxima venda.
-  await setDoc(
-    docResumoMensal(contaId, competencia),
-    {
-      v: VERSAO_SCHEMA,
-      competencia,
-      meta: espelhoDaMeta(medirMeta({ competencia, ...dados }, realizado)),
-      atualizadoEm: momento,
-    },
-    { merge: true },
+  // dia em que a Maynara lançasse a próxima venda. Despachado no mesmo tique
+  // que a meta: esperando a primeira escrita sem rede, esta nunca acontecia
+  // (`DECISOES.md#d104`).
+  despachar(
+    setDoc(
+      docResumoMensal(contaId, competencia),
+      {
+        v: VERSAO_SCHEMA,
+        competencia,
+        meta: espelhoDaMeta(medirMeta({ competencia, ...dados }, realizado)),
+        atualizadoEm: momento,
+      },
+      { merge: true },
+    ),
   );
 }
