@@ -165,10 +165,10 @@ e levou junto o de `fichas`, pendente desde a 2B; a 3A rodou de novo com os dois
 com o do pedido pago e a 3C com o da lista de compras. Confirmado com
 `firebase firestore:indexes`: `insumos`, `fichas`, `transacoes`, `clientes` (`arquivado` +
 `nomeBusca`), `listasCompra` (`arquivado` + `criadoEm` desc), `fornadas` (`arquivado` +
-`dataISO` desc, publicado na 13A) e `pedidos` em três — `arquivado` + `dataEntregaISO` para a
+`dataISO` desc, publicado na 13A) e `pedidos` em quatro — `arquivado` + `dataEntregaISO` para a
 tela Hoje e o horizonte de compras, `arquivado` + `competenciaPagamento` + `pagoEm` desc para
-"Recalcular o mês", e `arquivado` + `status` + `dataEntregaISO` para a agenda e o histórico de
-`/pedidos` (publicado na 016).
+"Recalcular o mês", e `arquivado` + `status` + `dataEntregaISO` em `ASC` (agenda) e `DESC`
+(histórico) para `/pedidos` (publicados na 016).
 
 A conta existe e o acesso foi concedido de ponta a ponta, com o script rodando contra o
 projeto de verdade:
@@ -1672,9 +1672,12 @@ sem recorte — a agenda de `/pedidos` — ganhou o dela.
 - `mutations/pedidos.ts`: `consultaAgenda` (status in agenda, por data), `consultaHistorico`
   (status in, por data desc, `limit(n)`) e `consultaEntreguesEmAberto` (só igualdades, sem
   índice composto). Cada uma com o comentário dizendo o recorte e o índice.
-- `firestore.indexes.json`: `pedidos` por `arquivado + status + dataEntregaISO`. **Publicado**
-  (`firebase deploy --only firestore:indexes`) e **confirmado** (`firebase firestore:indexes`
-  lista os três de `pedidos`).
+- `firestore.indexes.json`: `pedidos` por `arquivado + status + dataEntregaISO`, em duas
+  entradas, `ASC` e `DESC`. A spec apostou numa só; a tela abriu com "Não deu para carregar
+  seus pedidos", e as três consultas rodadas com o Admin SDK apontaram o histórico pedindo a
+  `DESC`. **Publicadas** e **confirmadas**: depois de o índice terminar de construir, a
+  consulta do histórico devolve 30 documentos — a conta real tem mais de 30 concluídos, então
+  o botão "Mostrar mais antigos" aparece sem baixar `PAGINA_DO_HISTORICO`.
 - `ListaPedidos.tsx`: três assinaturas, `limite` como estado (30, voltando a 30 quando o filtro
   muda), o filtro de status concluído indo para a consulta do histórico, "Mostrar mais
   antigos" (secundário, largura cheia, 52px) abaixo do último grupo, o fim da lista só com
@@ -1698,13 +1701,13 @@ decide se a leitura da spec estava certa — se o selo de "custo desatualizado" 
 `/fichas` **antes** de religar a rede, está; e o passo 6 (fechar a aba, reabrir, religar) é o
 que separa esta spec de um conserto de sensação.
 
-**Rodar também o roteiro de sete passos da spec 016**, com `PAGINA_DO_HISTORICO` baixado para
-3 durante o roteiro e devolvido para 30 antes do commit. O passo 1 é o que confirma que o
-índice publicado é o que as duas consultas pedem (o console **não** pode dizer "query requires
-an index"; se pedir uma segunda entrada com `DESCENDING`, é uma linha a mais em
-`firestore.indexes.json`); o passo 3 — "A receber" com o mesmo número antes e depois de
-"Mostrar mais antigos" — é o que prova que a leitura sobre `aReceber` está certa. Se der números
-diferentes, pare: a faixa precisa de mais um conjunto além dos dois.
+**Rodar também o roteiro de sete passos da spec 016.** O passo 1 já foi visto pela metade: a
+tela abriu pedindo o índice `DESC`, ele foi publicado, e a consulta do histórico responde com o
+Admin SDK — falta ver a tela carregar. Como a conta real tem mais de 30 concluídos, o botão
+aparece com `PAGINA_DO_HISTORICO` em 30, sem precisar baixar para 3. O passo 3 — "A receber"
+com o mesmo número antes e depois de "Mostrar mais antigos" — é o que prova que a leitura sobre
+`aReceber` está certa. Se der números diferentes, pare: a faixa precisa de mais um conjunto
+além dos dois.
 
 **Depois da 016, por ordem de valor**, e nenhuma delas com spec escrita ainda:
 
@@ -1752,66 +1755,66 @@ A primeira rodada de capturas em navegador (desktop, tema escuro) achou três co
 
 Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobertas.
 
-| Dívida                                                                                    | Onde                                           | Quando resolver                                                                                |
-| ----------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Acesso concedido por script, sem cadastro self-serve                                      | `scripts/conceder-acesso.mjs`                  | Segundo cliente pagante, junto de D10 (`DECISOES.md#d16`)                                      |
-| `sair()` não limpa o cache do IndexedDB                                                   | `src/providers/AuthProvider.tsx`               | Só ao virar SaaS: hoje é vantagem, em aparelho compartilhado vira vazamento                    |
-| Agregados incrementados no cliente                                                        | `src/lib/firebase/mutations/`                  | Segundo cliente pagante (`DECISOES.md#d10`)                                                    |
-| Configuração aberta sem rede e sem cache diz "valores sugeridos"                          | `TelaConfiguracao.tsx`                         | Não tem conserto: cache vazio não distingue "não existe" de "não sei" (`#d43`)                 |
-| Agregado do mês pode ficar torto se um delta se perder no caminho                         | `mutations/agregado.ts`                        | Tem escape: "Recalcular o mês" na tela. A troca real é a mesma de D10                          |
-| Mudar um lançamento de mês não move o espelho da meta do mês destino                      | `mutations/transacoes.ts`                      | Mesmo escape e mesma troca: `DECISOES.md#d29`                                                  |
-| Produto revertido sobra zerado no agregado até recalcular                                 | `mutations/agregado.ts`                        | `produtosOrdenados` o esconde na leitura; recalcular limpa (`#d37`)                            |
-| `ultimoPedidoEm` do cliente não volta atrás ao desfazer um pagamento                      | `mutations/clientes.ts`                        | Só com histórico de pagamentos, que não existe (`#d37`)                                        |
-| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê                       | `mutations/clientes.ts`                        | Quando "quem mais compra de mim" virar pergunta real (`#d35`)                                  |
-| Meta não guarda histórico: reescrever o alvo apaga o anterior                             | `mutations/metas.ts`                           | Se "que meta eu tinha antes" virar pergunta real (`DECISOES.md#d27`)                           |
-| `FichaTecnica.ativo` é sempre `true`, sem tela que o desligue                             | `src/lib/types/fichas.ts`                      | Se "produto fora de linha" virar diferente de "arquivado"                                      |
-| Quantidade volta em unidade base: 0,5 kg reabre como 500 g                                | `FormularioFicha.tsx`                          | Se ela reclamar; exigiria gravar a unidade digitada, e não só o valor                          |
-| `Bloco` e `BlocoConfiguracao` continuam primos                                            | `src/components/`                              | Se a configuração precisar do mesmo bloco; hoje ela tem rodapé próprio                         |
-| Não dá para arquivar uma cliente: só cadastrar e editar, de dentro do pedido              | `mutations/clientes.ts`                        | Junto da tela de clientes, quando ela existir (`DECISOES.md#d35`)                              |
-| Editar um pedido e sair sem salvar descarta em silêncio                                   | `FormularioPedido.tsx`                         | Mesma dívida do editor de ficha e da configuração; se acontecer de verdade                     |
-| `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`                          | `src/lib/types/configuracao.ts`                | **Ganhou leitor na 010**: o resumo da cliente. Espelho velho agora sai na mensagem             |
-| Sair da configuração com alteração pendente descarta em silêncio                          | `TelaConfiguracao.tsx`                         | Se acontecer de verdade; a barra fixa de "não salvas" é a defesa atual                         |
-| Dois toques no mesmo quadro na lista de compras podem perder uma marca                    | `ListaDoMercado.tsx`                           | Se acontecer: `comprado` sai do array e vira mapa por `insumoId` (`#d40`)                      |
-| A contagem existe e depende de ela contar: sem contar, a lista compra o cheio             | `/insumos/contagem`                            | Não tem conserto em código: as defesas são o erro barato e a semeadura pela compra             |
-| A tela de contagem, o lote, as frases de `/compras` e a semente sem teste                 | `components/estoque/`, `compras/`              | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
-| A frase da lista desatualizada não sabe **o que** mudou, só que mudou                     | `ListaDoMercado.tsx`                           | Exigiria guardar quando a lista foi montada e comparar com cada contagem (`#d63`)              |
-| Sair da contagem sem salvar descarta em silêncio                                          | `TelaContagem.tsx`                             | Mesma dívida do editor de ficha, do de pedido e da configuração                                |
-| A rota, a tela da nota, a gravação em lote e a guarda do caixa sem teste                  | `api/nota/`, `components/notas/`               | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
-| Cadastrar a nota espera o servidor: sem rede o botão fica preso em carregando             | `TelaNota.tsx`                                 | Não incomoda hoje — a tela já exigiu rede para ler (`#d50`); se incomodar, `#d40`              |
-| O cache de CNPJ vive na memória do processo e morre no reinício                           | `api/nota/route.ts`                            | Só se a cota de 3/min por IP apertar, que é o dia do segundo cliente (`#d52`)                  |
-| Reler uma nota exige fotografar de novo: a imagem não é guardada                          | `api/nota/route.ts`                            | Se "ver a nota do mês passado" virar pergunta real, nasce com Storage (`#d49`)                 |
-| A guarda de duplicidade depende de o modelo ler o mesmo CNPJ nas duas fotos               | `domain/notaFiscal.ts`                         | Passo 7 do roteiro da 006 é quem responde; falhando, entra o QR Code da NFC-e                  |
-| Nota sem CNPJ legível lança sem guarda: a mesma nota pode entrar duas vezes               | `TelaNota.tsx`                                 | Não tem conserto barato: chave por nome sai diferente de duas fotos (`#d54`)                   |
-| Duas notas da mesma loja, no mesmo dia, com o total ilegível nas duas colidem             | `domain/notaFiscal.ts`                         | Falso positivo visível, desfeito em um toque; se acontecer, a chave ganha a hora               |
-| `agregados/global` é escrito por três mutações e lido por ninguém                         | `types/financeiro.ts`                          | Se algum leitor aparecer; a 008 decidiu não ser ele (`#d67`)                                   |
-| `pedidosAbertos`, `proximaEntrega` e `ultimoNumeroPedido` nunca são escritos              | `types/financeiro.ts`                          | Spec de limpeza, como a remoção de `estoqueMinimo` na 7A. Ninguém os lê hoje                   |
-| O cartão, a página, o gancho e a escrita na conta, sem teste                              | `components/comecar/`                          | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
-| Os cinco textos do começo saíram do código, e não do que a 5B viu                         | `domain/onboarding.ts`                         | **Vencida**: a 5B rodou. Releitura curta, sem código — cabe de carona em qualquer spec         |
-| Um passo fecha com o documento existindo, e não com ele estando bom                       | `domain/onboarding.ts`                         | Não tem conserto: o caminho diz onde ela está, e não se ela fez bem                            |
-| `/comecar` nunca foi vista em 360px nem no tema claro, e não há captura                   | `components/comecar/`                          | Critério da 8B em aberto: depende de navegador, de login e de conta de verdade                 |
-| O bloco de instalar nunca foi visto sumindo com o app instalado                           | `InstalarNaTela.tsx`                           | Critério da 8B em aberto: exige instalar de fato, no iPhone e no Android                       |
-| Não há diretório de capturas no repositório, e o protocolo da 5B pedia um                 | `docs/`                                        | A 5B rodou sem arquivar captura. Fica se um dia houver o que comparar com o de antes           |
-| `LIMITE_ARQUIVO_BYTES` é 8 MB e o Vercel corta o corpo em 4,5 MB (~3,3 MB)                | `domain/notaFiscal.ts`                         | Se PDF de nota grande virar rotina: baixar para 3 MB e recusar antes do upload                 |
-| A chave de conta de serviço fica legível no painel e não gira sozinha                     | `FIREBASE_SERVICE_ACCOUNT`                     | No dia do SaaS: gerenciador de segredos com rotação (`#d72`)                                   |
-| O roteiro A da 009 nunca rodou: nenhuma tela foi vista com o teclado aberto               | `ui/RodapeFixo.tsx`, `globals.css`             | Exige Android na mão. Seis telas que funcionavam foram editadas sem teste por trás             |
-| A barra vinho nunca foi vista no aparelho: o WebAPK assa a cor na instalação              | `app/manifest.ts`                              | Roteiro B: o deploy já existe; falta desinstalar e reinstalar o app no Android                 |
-| 560px é limiar chutado: aparelho pequeno com fonte aumentada pode entrar nele             | `globals.css`                                  | Degradação feia, não quebra. O conserto é `visualViewport` (`#d74`)                            |
-| O `wa.me` nunca foi aberto: ninguém viu a mensagem chegar escrita na conversa             | `pedidos/BlocoWhatsApp.tsx`                    | Roteiro de aparelho da 010: exige celular com WhatsApp instalado, e depois desktop             |
-| O resumo pode ser mandado sem o pedido estar salvo                                        | `FormularioPedido.tsx`                         | Aceito em `#d78`; se morder, o botão salva antes de abrir o link                               |
-| A mensagem não diz as observações, nem quando são recado da cliente                       | `domain/whatsapp.ts`                           | Só com um segundo campo de dono declarado — não relaxando este (`#d79`)                        |
-| Não se sabe se ela apertou enviar: o link não devolve nada                                | `pedidos/BlocoWhatsApp.tsx`                    | Não tem conserto neste canal; gravar "enviado" sem saber seria pior (`#d77`)                   |
-| Os meses já tortos continuam tortos até alguém apertar "Recalcular o mês"                 | `agregados/{'YYYY-MM'}`                        | Próxima ação, com rede: um mês por vez, guiada pelo aviso do `#d81`                            |
-| Escrita recusada pelas regras falha calada, só no console — agora em `mutations/` inteiro | `mutations/despachar.ts`                       | Volta à mesa se existir papel com permissão parcial (`#d80`, `#d104`)                          |
-| Ficha nunca aberta neste aparelho não ganha selo quando o preço muda offline              | `marcarFichasDesatualizadas`                   | Se doer: a tela passa os `fichaIds` que já tem, e não uma segunda consulta (`#d104`)           |
-| O roteiro de sete passos da 015 nunca rodou: o selo e o espelho offline sem prova         | `mutations/insumos.ts`, `metas.ts`             | Próxima ação, com DevTools em Offline; `npm test` não toca no Firestore                        |
-| O aviso de divergência não cobre `produtos` nem `porDia[].pedidos`                        | `domain/caixa.ts`                              | Exigiria a `/financeiro` assinar a consulta de pedidos pagos do mês (`#d81`)                   |
-| Arquivar o acerto direto em `/financeiro` deixa os pedidos marcados                       | `components/financeiro/`                       | Se acontecer de verdade: vira guarda na tela, como a da nota (`#d52`)                          |
-| `lucroEstimado` do pedido continua com a taxa de entrega dentro                           | `domain/pedido.ts`                             | Quem fecha a conta é o caixa; corrigir mexeria em todo pedido gravado (`#d82`)                 |
-| A entrega que ela esqueceu de marcar só é paga na semana seguinte                         | `domain/pedido.ts`                             | Não tem conserto em código: a frase do painel é a defesa (`#d83`)                              |
-| A faixa, o painel, o lote do repasse e a saída em `ENTREGA` sem teste                     | `components/pedidos/`                          | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
-| A fornada existe e depende de ela registrar: sem registrar, nada muda                     | `components/producao/`                         | Não tem conserto em código: a spec é aditiva de propósito (`#d91`)                             |
-| Fornada com `pedidoId` mais velha que 30 dias sai do abate do pedido                      | `mutations/fornadas.ts`                        | Se houver encomenda assada com mais de um mês: a janela vira a maior data de entrega           |
-| A fornada aberta pela ficha nasce sem pedido, mesmo quando era para um                    | `FormularioFicha.tsx`                          | Se ela registrar pela ficha e a lista comprar de novo: índice `fichaIds` + `arquivado`         |
-| A folha, as duas entradas, a consulta e as frases do forno sem teste                      | `components/producao/`, `compras/`, `estoque/` | `npm test` cobre só `domain/`; o que fecha isso é o roteiro da 13A em navegador                |
-| Entrega paga pela cliente e nunca acertada some de "Entregas a pagar" ao cair da página   | `ListaPedidos.tsx`                             | Se for inaceitável: `entrega.repassePendente` gravado por quatro mutações + backfill (`#d105`) |
-| O roteiro de sete passos da 016 nunca rodou: índice e "A receber" por página sem prova    | `ListaPedidos.tsx`, `mutations/pedidos.ts`     | Próxima ação, com `PAGINA_DO_HISTORICO` em 3; `npm test` não toca no Firestore                 |
+| Dívida                                                                                          | Onde                                           | Quando resolver                                                                                |
+| ----------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Acesso concedido por script, sem cadastro self-serve                                            | `scripts/conceder-acesso.mjs`                  | Segundo cliente pagante, junto de D10 (`DECISOES.md#d16`)                                      |
+| `sair()` não limpa o cache do IndexedDB                                                         | `src/providers/AuthProvider.tsx`               | Só ao virar SaaS: hoje é vantagem, em aparelho compartilhado vira vazamento                    |
+| Agregados incrementados no cliente                                                              | `src/lib/firebase/mutations/`                  | Segundo cliente pagante (`DECISOES.md#d10`)                                                    |
+| Configuração aberta sem rede e sem cache diz "valores sugeridos"                                | `TelaConfiguracao.tsx`                         | Não tem conserto: cache vazio não distingue "não existe" de "não sei" (`#d43`)                 |
+| Agregado do mês pode ficar torto se um delta se perder no caminho                               | `mutations/agregado.ts`                        | Tem escape: "Recalcular o mês" na tela. A troca real é a mesma de D10                          |
+| Mudar um lançamento de mês não move o espelho da meta do mês destino                            | `mutations/transacoes.ts`                      | Mesmo escape e mesma troca: `DECISOES.md#d29`                                                  |
+| Produto revertido sobra zerado no agregado até recalcular                                       | `mutations/agregado.ts`                        | `produtosOrdenados` o esconde na leitura; recalcular limpa (`#d37`)                            |
+| `ultimoPedidoEm` do cliente não volta atrás ao desfazer um pagamento                            | `mutations/clientes.ts`                        | Só com histórico de pagamentos, que não existe (`#d37`)                                        |
+| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê                             | `mutations/clientes.ts`                        | Quando "quem mais compra de mim" virar pergunta real (`#d35`)                                  |
+| Meta não guarda histórico: reescrever o alvo apaga o anterior                                   | `mutations/metas.ts`                           | Se "que meta eu tinha antes" virar pergunta real (`DECISOES.md#d27`)                           |
+| `FichaTecnica.ativo` é sempre `true`, sem tela que o desligue                                   | `src/lib/types/fichas.ts`                      | Se "produto fora de linha" virar diferente de "arquivado"                                      |
+| Quantidade volta em unidade base: 0,5 kg reabre como 500 g                                      | `FormularioFicha.tsx`                          | Se ela reclamar; exigiria gravar a unidade digitada, e não só o valor                          |
+| `Bloco` e `BlocoConfiguracao` continuam primos                                                  | `src/components/`                              | Se a configuração precisar do mesmo bloco; hoje ela tem rodapé próprio                         |
+| Não dá para arquivar uma cliente: só cadastrar e editar, de dentro do pedido                    | `mutations/clientes.ts`                        | Junto da tela de clientes, quando ela existir (`DECISOES.md#d35`)                              |
+| Editar um pedido e sair sem salvar descarta em silêncio                                         | `FormularioPedido.tsx`                         | Mesma dívida do editor de ficha e da configuração; se acontecer de verdade                     |
+| `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`                                | `src/lib/types/configuracao.ts`                | **Ganhou leitor na 010**: o resumo da cliente. Espelho velho agora sai na mensagem             |
+| Sair da configuração com alteração pendente descarta em silêncio                                | `TelaConfiguracao.tsx`                         | Se acontecer de verdade; a barra fixa de "não salvas" é a defesa atual                         |
+| Dois toques no mesmo quadro na lista de compras podem perder uma marca                          | `ListaDoMercado.tsx`                           | Se acontecer: `comprado` sai do array e vira mapa por `insumoId` (`#d40`)                      |
+| A contagem existe e depende de ela contar: sem contar, a lista compra o cheio                   | `/insumos/contagem`                            | Não tem conserto em código: as defesas são o erro barato e a semeadura pela compra             |
+| A tela de contagem, o lote, as frases de `/compras` e a semente sem teste                       | `components/estoque/`, `compras/`              | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
+| A frase da lista desatualizada não sabe **o que** mudou, só que mudou                           | `ListaDoMercado.tsx`                           | Exigiria guardar quando a lista foi montada e comparar com cada contagem (`#d63`)              |
+| Sair da contagem sem salvar descarta em silêncio                                                | `TelaContagem.tsx`                             | Mesma dívida do editor de ficha, do de pedido e da configuração                                |
+| A rota, a tela da nota, a gravação em lote e a guarda do caixa sem teste                        | `api/nota/`, `components/notas/`               | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
+| Cadastrar a nota espera o servidor: sem rede o botão fica preso em carregando                   | `TelaNota.tsx`                                 | Não incomoda hoje — a tela já exigiu rede para ler (`#d50`); se incomodar, `#d40`              |
+| O cache de CNPJ vive na memória do processo e morre no reinício                                 | `api/nota/route.ts`                            | Só se a cota de 3/min por IP apertar, que é o dia do segundo cliente (`#d52`)                  |
+| Reler uma nota exige fotografar de novo: a imagem não é guardada                                | `api/nota/route.ts`                            | Se "ver a nota do mês passado" virar pergunta real, nasce com Storage (`#d49`)                 |
+| A guarda de duplicidade depende de o modelo ler o mesmo CNPJ nas duas fotos                     | `domain/notaFiscal.ts`                         | Passo 7 do roteiro da 006 é quem responde; falhando, entra o QR Code da NFC-e                  |
+| Nota sem CNPJ legível lança sem guarda: a mesma nota pode entrar duas vezes                     | `TelaNota.tsx`                                 | Não tem conserto barato: chave por nome sai diferente de duas fotos (`#d54`)                   |
+| Duas notas da mesma loja, no mesmo dia, com o total ilegível nas duas colidem                   | `domain/notaFiscal.ts`                         | Falso positivo visível, desfeito em um toque; se acontecer, a chave ganha a hora               |
+| `agregados/global` é escrito por três mutações e lido por ninguém                               | `types/financeiro.ts`                          | Se algum leitor aparecer; a 008 decidiu não ser ele (`#d67`)                                   |
+| `pedidosAbertos`, `proximaEntrega` e `ultimoNumeroPedido` nunca são escritos                    | `types/financeiro.ts`                          | Spec de limpeza, como a remoção de `estoqueMinimo` na 7A. Ninguém os lê hoje                   |
+| O cartão, a página, o gancho e a escrita na conta, sem teste                                    | `components/comecar/`                          | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
+| Os cinco textos do começo saíram do código, e não do que a 5B viu                               | `domain/onboarding.ts`                         | **Vencida**: a 5B rodou. Releitura curta, sem código — cabe de carona em qualquer spec         |
+| Um passo fecha com o documento existindo, e não com ele estando bom                             | `domain/onboarding.ts`                         | Não tem conserto: o caminho diz onde ela está, e não se ela fez bem                            |
+| `/comecar` nunca foi vista em 360px nem no tema claro, e não há captura                         | `components/comecar/`                          | Critério da 8B em aberto: depende de navegador, de login e de conta de verdade                 |
+| O bloco de instalar nunca foi visto sumindo com o app instalado                                 | `InstalarNaTela.tsx`                           | Critério da 8B em aberto: exige instalar de fato, no iPhone e no Android                       |
+| Não há diretório de capturas no repositório, e o protocolo da 5B pedia um                       | `docs/`                                        | A 5B rodou sem arquivar captura. Fica se um dia houver o que comparar com o de antes           |
+| `LIMITE_ARQUIVO_BYTES` é 8 MB e o Vercel corta o corpo em 4,5 MB (~3,3 MB)                      | `domain/notaFiscal.ts`                         | Se PDF de nota grande virar rotina: baixar para 3 MB e recusar antes do upload                 |
+| A chave de conta de serviço fica legível no painel e não gira sozinha                           | `FIREBASE_SERVICE_ACCOUNT`                     | No dia do SaaS: gerenciador de segredos com rotação (`#d72`)                                   |
+| O roteiro A da 009 nunca rodou: nenhuma tela foi vista com o teclado aberto                     | `ui/RodapeFixo.tsx`, `globals.css`             | Exige Android na mão. Seis telas que funcionavam foram editadas sem teste por trás             |
+| A barra vinho nunca foi vista no aparelho: o WebAPK assa a cor na instalação                    | `app/manifest.ts`                              | Roteiro B: o deploy já existe; falta desinstalar e reinstalar o app no Android                 |
+| 560px é limiar chutado: aparelho pequeno com fonte aumentada pode entrar nele                   | `globals.css`                                  | Degradação feia, não quebra. O conserto é `visualViewport` (`#d74`)                            |
+| O `wa.me` nunca foi aberto: ninguém viu a mensagem chegar escrita na conversa                   | `pedidos/BlocoWhatsApp.tsx`                    | Roteiro de aparelho da 010: exige celular com WhatsApp instalado, e depois desktop             |
+| O resumo pode ser mandado sem o pedido estar salvo                                              | `FormularioPedido.tsx`                         | Aceito em `#d78`; se morder, o botão salva antes de abrir o link                               |
+| A mensagem não diz as observações, nem quando são recado da cliente                             | `domain/whatsapp.ts`                           | Só com um segundo campo de dono declarado — não relaxando este (`#d79`)                        |
+| Não se sabe se ela apertou enviar: o link não devolve nada                                      | `pedidos/BlocoWhatsApp.tsx`                    | Não tem conserto neste canal; gravar "enviado" sem saber seria pior (`#d77`)                   |
+| Os meses já tortos continuam tortos até alguém apertar "Recalcular o mês"                       | `agregados/{'YYYY-MM'}`                        | Próxima ação, com rede: um mês por vez, guiada pelo aviso do `#d81`                            |
+| Escrita recusada pelas regras falha calada, só no console — agora em `mutations/` inteiro       | `mutations/despachar.ts`                       | Volta à mesa se existir papel com permissão parcial (`#d80`, `#d104`)                          |
+| Ficha nunca aberta neste aparelho não ganha selo quando o preço muda offline                    | `marcarFichasDesatualizadas`                   | Se doer: a tela passa os `fichaIds` que já tem, e não uma segunda consulta (`#d104`)           |
+| O roteiro de sete passos da 015 nunca rodou: o selo e o espelho offline sem prova               | `mutations/insumos.ts`, `metas.ts`             | Próxima ação, com DevTools em Offline; `npm test` não toca no Firestore                        |
+| O aviso de divergência não cobre `produtos` nem `porDia[].pedidos`                              | `domain/caixa.ts`                              | Exigiria a `/financeiro` assinar a consulta de pedidos pagos do mês (`#d81`)                   |
+| Arquivar o acerto direto em `/financeiro` deixa os pedidos marcados                             | `components/financeiro/`                       | Se acontecer de verdade: vira guarda na tela, como a da nota (`#d52`)                          |
+| `lucroEstimado` do pedido continua com a taxa de entrega dentro                                 | `domain/pedido.ts`                             | Quem fecha a conta é o caixa; corrigir mexeria em todo pedido gravado (`#d82`)                 |
+| A entrega que ela esqueceu de marcar só é paga na semana seguinte                               | `domain/pedido.ts`                             | Não tem conserto em código: a frase do painel é a defesa (`#d83`)                              |
+| A faixa, o painel, o lote do repasse e a saída em `ENTREGA` sem teste                           | `components/pedidos/`                          | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
+| A fornada existe e depende de ela registrar: sem registrar, nada muda                           | `components/producao/`                         | Não tem conserto em código: a spec é aditiva de propósito (`#d91`)                             |
+| Fornada com `pedidoId` mais velha que 30 dias sai do abate do pedido                            | `mutations/fornadas.ts`                        | Se houver encomenda assada com mais de um mês: a janela vira a maior data de entrega           |
+| A fornada aberta pela ficha nasce sem pedido, mesmo quando era para um                          | `FormularioFicha.tsx`                          | Se ela registrar pela ficha e a lista comprar de novo: índice `fichaIds` + `arquivado`         |
+| A folha, as duas entradas, a consulta e as frases do forno sem teste                            | `components/producao/`, `compras/`, `estoque/` | `npm test` cobre só `domain/`; o que fecha isso é o roteiro da 13A em navegador                |
+| Entrega paga pela cliente e nunca acertada some de "Entregas a pagar" ao cair da página         | `ListaPedidos.tsx`                             | Se for inaceitável: `entrega.repassePendente` gravado por quatro mutações + backfill (`#d105`) |
+| O roteiro de sete passos da 016 nunca rodou: "A receber" por página e o botão offline sem prova | `ListaPedidos.tsx`                             | Próxima ação; o índice já respondeu via Admin SDK, e `npm test` não toca no Firestore          |

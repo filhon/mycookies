@@ -3243,9 +3243,12 @@ e o comentário dela diz qual:
   Paginar a consulta única como estava faria as duas faixas somarem só a primeira página, e o
   `#d36` existe justamente para o painel não mentir por omissão.
 
-O índice novo é **um**, `arquivado + status + dataEntregaISO`, e serve as duas primeiras: o
-`in` sobre `status` usa o índice de igualdade, e o Firestore percorre o composto ao contrário
-para o `desc`. Os dois índices de `pedidos` que existiam ficam.
+O índice novo é `arquivado + status + dataEntregaISO`, em **duas entradas**, `ASC` para a
+agenda e `DESC` para o histórico. A spec apostou numa só, com o Firestore percorrendo o
+composto ao contrário para o `desc`; com `in` sobre `status` ele não faz isso, e o histórico
+pediu a segunda entrada — vista na tela como "Não deu para carregar seus pedidos" com as duas
+faixas preenchidas, e confirmada rodando as três consultas com o Admin SDK. Os dois índices
+de `pedidos` que existiam ficam.
 
 **O fim da lista só se sabe com o servidor.** O botão "Mostrar mais antigos" some quando
 `dados.length < limite` **e** o snapshot não veio do cache. Do cache, ele fica: sem rede a lista

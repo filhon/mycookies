@@ -146,7 +146,8 @@ export function consultaEntreguesEmAberto(contaId: string) {
  * O histórico: o que já saiu da agenda, dos mais recentes para trás, em
  * páginas. A página é `limit(n)` com `n` crescendo — uma assinatura só, refeita
  * com um limite maior; o cache já tem as primeiras `n` e o servidor manda o
- * resto. Mesmo índice da agenda, percorrido ao contrário para o `desc`.
+ * resto. Índice `arquivado + status + dataEntregaISO DESC`: com `in` o
+ * Firestore não percorre o índice ascendente ao contrário, e pediu a entrada.
  */
 export function consultaHistorico(
   contaId: string,
