@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-12 (5B fechada e deploy feito; specs 015 e 016 executadas, roteiros por rodar).
+Atualizado em 2026-09-15 (roadmap do SaaS escrito; specs 015 e 016 executadas, roteiros por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -1695,6 +1695,14 @@ mais `limit`.
 
 ## Próxima ação
 
+**O projeto tem um roadmap de SaaS**: `docs/saas/ROADMAP.md`, escrito em 2026-09-15 a partir
+das três respostas em `docs/saas/` e das decisões `#d106` e `#d107` (marca MyCookie's, beta
+fechado antes de cadastro e cobrança, preço por plano, Stripe). Quatro fases, doze specs a
+partir da 017; a spec de uma fase só se escreve quando a anterior fechou. **A próxima spec a
+escrever é a `017-a-segunda-conta.md`** — cromo do login e da tela sem conta, `sair()`
+limpando o cache, `scripts/metricas.mjs`. Em paralelo e fora do código: 5 a 8 entrevistas e 3
+a 5 contas de beta liberadas por `conceder-acesso`.
+
 **Rodar o roteiro de sete passos da spec 015**, com DevTools em Offline do passo 1 ao 5. É o
 único lugar onde a correção pode ser vista: `npm test` não toca no Firestore. O passo 1 é o que
 decide se a leitura da spec estava certa — se o selo de "custo desatualizado" aparecer em
@@ -1757,15 +1765,15 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 
 | Dívida                                                                                          | Onde                                           | Quando resolver                                                                                |
 | ----------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Acesso concedido por script, sem cadastro self-serve                                            | `scripts/conceder-acesso.mjs`                  | Segundo cliente pagante, junto de D10 (`DECISOES.md#d16`)                                      |
-| `sair()` não limpa o cache do IndexedDB                                                         | `src/providers/AuthProvider.tsx`               | Só ao virar SaaS: hoje é vantagem, em aparelho compartilhado vira vazamento                    |
-| Agregados incrementados no cliente                                                              | `src/lib/firebase/mutations/`                  | Segundo cliente pagante (`DECISOES.md#d10`)                                                    |
+| Acesso concedido por script, sem cadastro self-serve                                            | `scripts/conceder-acesso.mjs`                  | Spec 023, fase 2 do roadmap — depois do beta (`#d16`, `#d106`)                                 |
+| `sair()` não limpa o cache do IndexedDB                                                         | `src/providers/AuthProvider.tsx`               | Spec 017, a próxima: em aparelho compartilhado vira vazamento                                  |
+| Agregados incrementados no cliente                                                              | `src/lib/firebase/mutations/`                  | Deixou de ter prazo: nenhum número do agregado decide cobrança (`#d107`)                       |
 | Configuração aberta sem rede e sem cache diz "valores sugeridos"                                | `TelaConfiguracao.tsx`                         | Não tem conserto: cache vazio não distingue "não existe" de "não sei" (`#d43`)                 |
 | Agregado do mês pode ficar torto se um delta se perder no caminho                               | `mutations/agregado.ts`                        | Tem escape: "Recalcular o mês" na tela. A troca real é a mesma de D10                          |
 | Mudar um lançamento de mês não move o espelho da meta do mês destino                            | `mutations/transacoes.ts`                      | Mesmo escape e mesma troca: `DECISOES.md#d29`                                                  |
 | Produto revertido sobra zerado no agregado até recalcular                                       | `mutations/agregado.ts`                        | `produtosOrdenados` o esconde na leitura; recalcular limpa (`#d37`)                            |
 | `ultimoPedidoEm` do cliente não volta atrás ao desfazer um pagamento                            | `mutations/clientes.ts`                        | Só com histórico de pagamentos, que não existe (`#d37`)                                        |
-| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê                             | `mutations/clientes.ts`                        | Quando "quem mais compra de mim" virar pergunta real (`#d35`)                                  |
+| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê                             | `mutations/clientes.ts`                        | Spec 020, fase 1 do roadmap (`#d35`)                                                           |
 | Meta não guarda histórico: reescrever o alvo apaga o anterior                                   | `mutations/metas.ts`                           | Se "que meta eu tinha antes" virar pergunta real (`DECISOES.md#d27`)                           |
 | `FichaTecnica.ativo` é sempre `true`, sem tela que o desligue                                   | `src/lib/types/fichas.ts`                      | Se "produto fora de linha" virar diferente de "arquivado"                                      |
 | Quantidade volta em unidade base: 0,5 kg reabre como 500 g                                      | `FormularioFicha.tsx`                          | Se ela reclamar; exigiria gravar a unidade digitada, e não só o valor                          |

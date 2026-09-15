@@ -154,7 +154,7 @@ Ver D10 para o limite dessa escolha.
 
 ## D10 · Agregados incrementados pelo cliente
 
-**Status:** provisória
+**Status:** vigente enquanto nenhum número do agregado decidir cobrança — era provisória, e o prazo caiu com `#d107`
 
 **Contexto.** Consequência operacional de D09.
 
@@ -3300,3 +3300,65 @@ cursor e várias assinaturas (é o que se faz quando `limit` crescente custa car
 "mais antigos" relê trinta documentos do cache), arquivar em lote (a paginação é o que tira a
 pressão de arquivar) e diminuir o cache (40 MB é o padrão, e este registro é o que impede de
 chegar lá).
+
+---
+
+## D106 · O SaaS nasce como beta fechado sobre o que existe, com a marca MyCookie's e uma lista do que nunca vai fazer
+
+**Status:** vigente · decidida em 2026-09-15, no `docs/saas/ROADMAP.md`
+
+**Contexto.** Três respostas (`docs/saas/gpt.md`, `claude.md`, `gemini.md`) à pergunta "o que
+torna este sistema vendável e escalável" foram lidas contra o repositório. A maior parte do que
+elas pedem já existe — custo honesto, simulador de preço, pedido → produção → estoque → caixa,
+lista de compras contra a despensa, fechamento do mês, onboarding, nota fiscal, WhatsApp,
+multi-tenant, agregado para leitura barata. O que sobra é pouco, e o risco que as três nomeiam
+não é técnico: é virar ERP.
+
+**Decisão.** Três coisas, tomadas por quem conduz o projeto:
+
+- **MyCookie's continua sendo a marca do produto.** Não há rebrand. A identidade vinho/creme
+  fica; o que muda é só a cópia que presume uma única dona ("Acesso restrito à administradora
+  da MyCookie's").
+- **Beta fechado antes de cadastro e cobrança.** As primeiras 3 a 5 contas entram por
+  `scripts/conceder-acesso.mjs`, que já faz tudo o que um endpoint de cadastro faria (`#d16`).
+  Cadastro self-serve e cobrança são a fase 2, e só nascem quando o beta e 5 a 8 entrevistas
+  ("me mostra como você calcula o preço hoje") disserem o que generalizar.
+- **O produto nunca vai fazer**: emissão fiscal, lotes com rastreabilidade e recall, contas a
+  pagar/receber genéricas, CRM, integração com a API do WhatsApp, tabela nutricional, IA
+  consultora, free tier, migração para outro banco. A tabela com o motivo de cada um está na
+  seção 3 do roadmap. Cada item volta à mesa só com cliente pagante pedindo.
+
+**Consequência.** O roadmap tem quatro fases e doze specs, numeradas a partir da 017, e **a
+spec de uma fase só é escrita quando a fase anterior fechou**: cada uma muda `ESTADO.md` e o
+que a próxima precisa saber. A fase 0 (017 e 018) não cria infraestrutura nova — é cromo,
+um script de métricas e uma biblioteca de partida opt-in, que respeita o `#d65` porque é um
+botão que ela aperta e não uma semeadura do guia. O preço é que o segundo usuário real
+continua dependendo de alguém rodar `node` por mais algumas semanas, que é exatamente o que
+`#d16` previu.
+
+---
+
+## D107 · Preço por plano, nunca por uso medido no aparelho — e `#d10` deixa de ter prazo
+
+**Status:** vigente · decidida em 2026-09-15, no `docs/saas/ROADMAP.md`
+
+**Contexto.** Uma das respostas sugere cobrar por pedidos/mês, "porque acompanha o
+crescimento do cliente". O único lugar onde o sistema conta pedidos é o agregado mensal, e ele
+é incrementado pelo aparelho (`#d09`, `#d10`). `#d10` tinha prazo de validade — "o segundo
+cliente pagante" — porque um cliente malicioso pode escrever o número que quiser no próprio
+agregado.
+
+**Decisão.** O preço é por plano, flat, e **um plano só no lançamento** (mensal e anual, no
+Stripe). Nenhum número gravado pelo aparelho decide cobrança. O segundo plano nasce na fase 3,
+junto da ajudante e do cardápio público, que são os upsells naturais — e é lá, e não antes,
+que gating de funcionalidade entra no código.
+
+**Consequência.** O agregado escrito no aparelho deixa de ser problema de confiança: ele mora
+em `contas/{contaId}/agregados`, só a própria conta o lê, e um número inventado ali só engana
+quem o inventou. `#d10` passa de provisória a **vigente enquanto nenhum número do agregado
+decidir cobrança** — se um dia decidir, a troca continua contida em `src/lib/firebase/mutations/`,
+que é a única costura. O que a fase 2 ainda precisa de servidor é o que `#d16` já dizia: emitir
+claim (cadastro), e agora também o webhook do Stripe reemitindo a claim com `ativas` para as
+regras bloquearem escrita de conta vencida sem custar uma leitura (`#d07`). Um plano só
+também é zero código de permissão por tela; o preço disso é não ter o que vender a mais até a
+fase 3, que é quando haverá o que vender.
