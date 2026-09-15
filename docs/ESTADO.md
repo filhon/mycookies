@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-12 (5B fechada e deploy feito; specs 015 e 016 executadas, roteiros por rodar).
+Atualizado em 2026-09-15 (17A entregue; roteiros das 015, 016 e 17A por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -130,6 +130,15 @@ completos. Nenhum campo, nenhuma rota, nenhuma regra, nenhuma dependência. Insu
 paginam de propósito: são catálogo, e o recorte deles é o arquivo. **O roteiro de sete passos
 não rodou nesta sessão** — e é o único lugar onde uma consulta pode ser vista pedindo índice.
 
+A spec `017-orcamento-em-papel.md` está **entregue na 17A**: o orçamento para empresa é uma
+folha A4 que o navegador imprime (`#d106`), lida do documento gravado (`#d107`), com a validade
+como campo do pedido e a emissão como o dia da impressão (`#d110`). Um módulo puro
+(`domain/orcamento.ts`), uma rota (`/pedidos/[id]/orcamento`), um bloco no editor e um campo
+opcional (`Pedido.validoAteISO`). A **17B** (foto e descrição do produto, telefone e Instagram
+no rodapé, assinatura desenhada) está por fazer; `montarOrcamento` já lê os campos dela, e as
+decisões `#d108` e `#d109` já estão escritas. **O roteiro de aparelho de sete passos não rodou
+nesta sessão**: o PDF de verdade, nos três sistemas, é o que decide se o `#d106` estava certo.
+
 Fora das specs, em 2026-09-11, `/comecar` foi relida contra as specs 009 a 014. Pelo `#d70` o
 guia só ensina o que mora em tela que ela ainda não abriu, e o que faltava era uma só:
 `/fichas/contagem` entrou em "O que mais tem aqui" como a quarta tela fora do menu ("O que está
@@ -153,10 +162,11 @@ nunca visto rodando — **fechou com a 5B**. O que ficou dele é uma linha na ta
 releitura dos cinco textos de `src/lib/domain/onboarding.ts` contra o que a 5B viu, que a 8B
 não pôde fazer na época.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **491
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **509
 testes**, e build com 17 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
 `/insumos/contagem` na 7A, `/comecar` na 8A e `/fichas/contagem` na 13D — mais `/api/nota`,
-`/fichas/[id]` e `/pedidos/[id]` dinâmicas e service worker gerado.
+`/fichas/[id]`, `/pedidos/[id]` e `/pedidos/[id]/orcamento` (17A) dinâmicas e service worker
+gerado.
 
 **O app está de pé.** Projeto `mycookies-mrc`, `.env.local` preenchido, regras publicadas,
 chave de conta de serviço no disco (fora do git, coberta por `*firebase-adminsdk*.json`).
@@ -188,26 +198,27 @@ os números digitados de ponta a ponta.
 
 ## Módulos
 
-| #   | Módulo                                      | Estado                              | Spec                                     |
-| --- | ------------------------------------------- | ----------------------------------- | ---------------------------------------- |
-| 0   | Fundação: design system, shell, acesso, PWA | pronto                              | —                                        |
-| 1   | Insumos e embalagens                        | pronto                              | —                                        |
-| —   | Contas e tenancy                            | pronto                              | `specs/000-contas.md`                    |
-| 2   | Custos operacionais e precificação          | pronto (2A e 2B)                    | `specs/002-precificacao.md`              |
-| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)                | `specs/003-pedidos.md`                   |
-| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                    | `specs/004-caixa.md`                     |
-| 5   | Prontidão: conserto e verificação           | pronto (5A e 5B)                    | `specs/005-prontidao.md`                 |
-| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)                    | `specs/006-nota-fiscal.md`               |
-| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)                    | `specs/007-estoque.md`                   |
-| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)                    | `specs/008-onboarding.md`                |
-| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros             | `specs/009-teclado-e-barra.md`           |
-| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro               | `specs/010-resumo-no-whatsapp.md`        |
-| —   | O caixa que não perde a conta               | pronto, sem o roteiro               | `specs/011-caixa-que-nao-perde-conta.md` |
-| —   | O acerto das entregas                       | pronto, sem o roteiro               | `specs/012-entregas-a-pagar.md`          |
-| 13  | A fornada                                   | pronto (13A a 13D), sem os roteiros | `specs/013-a-fornada.md`                 |
-| 14  | O combo à escolha                           | pronto (14A e 14B)                  | `specs/014-combo-a-escolha.md`           |
-| 15  | Salvar no toque, no sistema inteiro         | pronto, sem o roteiro               | `specs/015-salvar-no-toque.md`           |
-| 16  | As listas que crescem                       | pronto, sem o roteiro               | `specs/016-listas-que-crescem.md`        |
+| #   | Módulo                                      | Estado                                   | Spec                                     |
+| --- | ------------------------------------------- | ---------------------------------------- | ---------------------------------------- |
+| 0   | Fundação: design system, shell, acesso, PWA | pronto                                   | —                                        |
+| 1   | Insumos e embalagens                        | pronto                                   | —                                        |
+| —   | Contas e tenancy                            | pronto                                   | `specs/000-contas.md`                    |
+| 2   | Custos operacionais e precificação          | pronto (2A e 2B)                         | `specs/002-precificacao.md`              |
+| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)                     | `specs/003-pedidos.md`                   |
+| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                         | `specs/004-caixa.md`                     |
+| 5   | Prontidão: conserto e verificação           | pronto (5A e 5B)                         | `specs/005-prontidao.md`                 |
+| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)                         | `specs/006-nota-fiscal.md`               |
+| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)                         | `specs/007-estoque.md`                   |
+| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)                         | `specs/008-onboarding.md`                |
+| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros                  | `specs/009-teclado-e-barra.md`           |
+| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro                    | `specs/010-resumo-no-whatsapp.md`        |
+| —   | O caixa que não perde a conta               | pronto, sem o roteiro                    | `specs/011-caixa-que-nao-perde-conta.md` |
+| —   | O acerto das entregas                       | pronto, sem o roteiro                    | `specs/012-entregas-a-pagar.md`          |
+| 13  | A fornada                                   | pronto (13A a 13D), sem os roteiros      | `specs/013-a-fornada.md`                 |
+| 14  | O combo à escolha                           | pronto (14A e 14B)                       | `specs/014-combo-a-escolha.md`           |
+| 15  | Salvar no toque, no sistema inteiro         | pronto, sem o roteiro                    | `specs/015-salvar-no-toque.md`           |
+| 16  | As listas que crescem                       | pronto, sem o roteiro                    | `specs/016-listas-que-crescem.md`        |
+| 17  | O orçamento em papel                        | 17A pronta, sem o roteiro; 17B por fazer | `specs/017-orcamento-em-papel.md`        |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -1693,7 +1704,84 @@ numa linha da tabela do `#d105` — 7 por `limit`, 7 por janela de tempo, 1 por 
 pelo arquivo (5 de `insumos`, 7 de `fichas`, 1 de `clientes`) e as 3 de `/pedidos` por status
 mais `limit`.
 
+## O que a sessão 17A deixou pronto
+
+A folha inteira, com o que o sistema já sabe. A 17B dá a ela a foto, a descrição, o contato e
+a assinatura.
+
+- `src/lib/types/vendas.ts`: `Pedido.validoAteISO?`, o único campo novo, opcional e
+  compatível. `esquemaPedido` confere só a forma; `DadosPedido.validoAteISO` é gravado por
+  spread condicional em `corpoDoPedido`, que serve a `criarPedido` e `atualizarPedido`.
+- `src/lib/domain/datas.ts`: `rotuloDataCompleta` ('15 de setembro de 2026'), com teste.
+- `src/lib/domain/orcamento.ts`, **módulo novo e puro**: `DIAS_DE_VALIDADE`, `validadeSugerida`,
+  `situacaoDaValidade`, `montarOrcamento` e `frasesDoCombinado`. As entradas são `Pick`s
+  (`PedidoParaOrcar`, `FichaParaOrcar`, `ConfiguracaoParaOrcar`), pelo motivo de
+  `PedidoParaEntrega`: `Timestamp` não atravessa para o domínio, e o teste monta só o que a
+  folha lê. `FichaParaOrcar.descricao`, `ConfiguracaoParaOrcar.contato` e `assinaturaDataUrl`
+  já estão tipados aqui para a 17B não reabrir o domínio; ninguém os grava ainda.
+- `tests/domain/orcamento.test.ts`: **17 testes** (491 → 509 com o de `datas`), com o pedido
+  da Tal Eventos número por número e o "Combinado" comparado inteiro, na ordem. Mais o sábado
+  no masculino ("Entrega no sábado"), o ponto que não dobra quando as instruções já terminam
+  com um, e os campos da 17B lidos de uma ficha e de uma configuração que já os tenham.
+- `src/components/pedidos/BlocoOrcamento.tsx`: "Orçamento para empresa", logo acima do
+  WhatsApp, com o campo "Válido até" (`Campo` nativo de data, `min` em hoje), a situação em uma
+  linha (com o triângulo em vencido e vence-hoje) e o `Link` para a folha. `FormularioPedido`
+  ganhou `valores.validoAteISO`: no pedido que existe e ainda é orçamento, nasce com a
+  sugestão; no pedido novo nasce vazio, porque o bloco não aparece lá e sugestão que ela não
+  viu não vira dado (`#d17`).
+- `src/components/pedidos/FolhaOrcamento.tsx`: a folha da seção "A folha" da spec, só
+  apresentação, em pontos e milímetros, sem nenhuma classe `dark:`. `Valor` é o `Dinheiro` em
+  `em`, para seguir a escala da folha e não a da tela.
+- `src/components/pedidos/TelaOrcamento.tsx` e a rota `/pedidos/[id]/orcamento`: carrega o
+  pedido pelo id, as fichas vivas sem `orderBy`, a configuração e a conta, e só então monta.
+  Barra com "Voltar ao pedido" e "Salvar em PDF" (`window.print()`), o aviso de vencido, e a
+  prévia encolhendo por `zoom` medido com `ResizeObserver` em ref de função.
+- `src/app/globals.css`: `@utility folha` (tokens claros, `color-scheme: light`,
+  `print-color-adjust`, A4 com a margem como `padding`, `zoom: var(--folha-zoom, 1)`) e o
+  `@media print` (`@page` A4 sem margem, fundo branco, textura desligada, folha sem sombra e
+  sem zoom).
+- `AppShell`, `BarraLateral` e `NavegacaoInferior`: quatro classes `print:`, nada muda em
+  tela. `Marca.tsx`: `DESCRITOR` e `SLOGAN` exportados, `Logotipo` com `orientacao`
+  ("horizontal" no cabeçalho da folha, "vertical" como padrão, intacto).
+- `EditorPedido.tsx`: o estado vazio de "Este pedido não está aqui" virou `PedidoNaoEncontrado`,
+  usado pelo editor e pela folha.
+- Decisões novas em `DECISOES.md#d106` a `#d110` — as cinco da abertura da spec, escritas nesta
+  sessão; a `#d108` e a `#d109` são executadas na 17B.
+
+Fora da letra da spec, e por quê:
+
+- **A unidade de uma ficha que rende em peso é `'g'`, e não `'kg'`.** A spec pedia `'kg'` para
+  quantidade `1,5`; o preço do pedido é por unidade de rendimento (por grama), e "1,5 kg" ao
+  lado de um preço por grama mentiria. Registrado em `#d108`. Se a Maynara vender por quilo um
+  dia, a conversão nasce junto do campo de unidade da linha, e não como rótulo.
+- **O combo sai como "Combo dupla (1 Tradicional + 1 Red Velvet)"**, com o `+` que o WhatsApp
+  já usa: a spec escreveu vírgula, mas é a mesma `nomeComEscolhas`, e duas seriam duas ordens.
+- **"Venceu em 22 de setembro de 2026"**, com ano, no bloco e na barra: `rotuloDataCompleta` é
+  a única função nova de data, e um orçamento vencido do ano passado sem o ano seria ambíguo.
+- **O lockup horizontal usa o `lg` que existe** (biscoito de 64 px, nome a 2,5 rem ≈ 30 pt), e
+  não os 14 mm / 26 pt da spec: uma segunda tabela de escala só para a folha seria um tamanho
+  com nome de uso. Se ficar grande no papel, é o passo 1 do roteiro que diz.
+- **`PedidoNaoEncontrado` extraído do editor**, para a folha cair no mesmo estado vazio sem
+  duplicar o texto.
+
+**O que a 17A não provou.** O de sempre, e mais um: `npm test` cobre `src/lib/domain/`, então
+o bloco, a barra, o `zoom` e o CSS de impressão não têm teste, e **nenhum PDF foi gerado nesta
+sessão**. Os passos 1 a 7 do roteiro de aparelho (o `#d106` em Chrome, tema escuro, Android,
+iPhone, validade vencida, doze itens e 360 px) são a próxima ação.
+
 ## Próxima ação
+
+**Rodar o roteiro de aparelho da 17A** (sete passos, no fim da spec 017). O passo 1 é o que
+decide se a decisão 1 estava certa: Ctrl+P no Chrome, **uma página**, sem barra lateral, sem
+navegação, sem a barra de botões, e o bloco do total em vinho cheio mesmo com "Gráficos de
+fundo" desmarcado. O passo 3 (Android, app instalado) é o risco nomeado: se `window.print()`
+não abrir nada no modo `standalone`, a barra ganha "Abrir no navegador" e a spec registra. O
+passo 7 (360 px) é onde se decide se `zoom` fica ou vira `transform: scale`.
+
+**Depois, a 17B**: `FichaTecnica.descricao` e `fotoUrl` escritos pelo editor de ficha,
+`ConfiguracaoGeral.contato` e `assinaturaDataUrl` pela configuração, `reduzirImagem` em
+`imagem.ts`, e a folha aprendendo a mostrá-los. O domínio já os lê; `FolhaOrcamento` ganha a
+coluna da miniatura, a descrição, o rodapé completo e a assinatura sobre a linha.
 
 **Rodar o roteiro de sete passos da spec 015**, com DevTools em Offline do passo 1 ao 5. É o
 único lugar onde a correção pode ser vista: `npm test` não toca no Firestore. O passo 1 é o que
@@ -1709,7 +1797,7 @@ com o mesmo número antes e depois de "Mostrar mais antigos" — é o que prova 
 `aReceber` está certa. Se der números diferentes, pare: a faixa precisa de mais um conjunto
 além dos dois.
 
-**Depois da 016, por ordem de valor**, e nenhuma delas com spec escrita ainda:
+**Depois da 017, por ordem de valor**, e nenhuma delas com spec escrita ainda:
 
 1. **Guarda de "sair sem salvar"** nos quatro editores que descartam em silêncio (ficha, pedido,
    configuração, contagem). Quatro telas, um hook.
@@ -1729,8 +1817,9 @@ que o aviso do `#d81` acusar, setembro de 2026 na frente; o "combo dupla" recria
 escolha "2 de Cookie" (`#d102`); e `FormaPagamento.instrucoes` preenchida na forma "Pix"
 (`#d98`). Nenhum dos quatro é código: são quatro toques na conta real.
 
-O portão de conclusão foi rodado de verdade em 2026-09-12, no fim da 016, e passa nos quatro:
-lint, typecheck, 491 testes e build com 17 rotas estáticas mais as dinâmicas. Portão passando não
+O portão de conclusão foi rodado de verdade em 2026-09-15, no fim da 17A, e passa nos quatro:
+lint, typecheck, 509 testes e build com 17 rotas estáticas mais as dinâmicas, a
+`/pedidos/[id]/orcamento` entre elas. Portão passando não
 é o mesmo que sistema pronto — nenhum dos quatro toca no Firestore nem abre um navegador —, e é
 por isso que os roteiros da 015 e da 016 são a próxima ação, e não itens já fechados.
 
@@ -1755,66 +1844,69 @@ A primeira rodada de capturas em navegador (desktop, tema escuro) achou três co
 
 Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobertas.
 
-| Dívida                                                                                          | Onde                                           | Quando resolver                                                                                |
-| ----------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Acesso concedido por script, sem cadastro self-serve                                            | `scripts/conceder-acesso.mjs`                  | Segundo cliente pagante, junto de D10 (`DECISOES.md#d16`)                                      |
-| `sair()` não limpa o cache do IndexedDB                                                         | `src/providers/AuthProvider.tsx`               | Só ao virar SaaS: hoje é vantagem, em aparelho compartilhado vira vazamento                    |
-| Agregados incrementados no cliente                                                              | `src/lib/firebase/mutations/`                  | Segundo cliente pagante (`DECISOES.md#d10`)                                                    |
-| Configuração aberta sem rede e sem cache diz "valores sugeridos"                                | `TelaConfiguracao.tsx`                         | Não tem conserto: cache vazio não distingue "não existe" de "não sei" (`#d43`)                 |
-| Agregado do mês pode ficar torto se um delta se perder no caminho                               | `mutations/agregado.ts`                        | Tem escape: "Recalcular o mês" na tela. A troca real é a mesma de D10                          |
-| Mudar um lançamento de mês não move o espelho da meta do mês destino                            | `mutations/transacoes.ts`                      | Mesmo escape e mesma troca: `DECISOES.md#d29`                                                  |
-| Produto revertido sobra zerado no agregado até recalcular                                       | `mutations/agregado.ts`                        | `produtosOrdenados` o esconde na leitura; recalcular limpa (`#d37`)                            |
-| `ultimoPedidoEm` do cliente não volta atrás ao desfazer um pagamento                            | `mutations/clientes.ts`                        | Só com histórico de pagamentos, que não existe (`#d37`)                                        |
-| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê                             | `mutations/clientes.ts`                        | Quando "quem mais compra de mim" virar pergunta real (`#d35`)                                  |
-| Meta não guarda histórico: reescrever o alvo apaga o anterior                                   | `mutations/metas.ts`                           | Se "que meta eu tinha antes" virar pergunta real (`DECISOES.md#d27`)                           |
-| `FichaTecnica.ativo` é sempre `true`, sem tela que o desligue                                   | `src/lib/types/fichas.ts`                      | Se "produto fora de linha" virar diferente de "arquivado"                                      |
-| Quantidade volta em unidade base: 0,5 kg reabre como 500 g                                      | `FormularioFicha.tsx`                          | Se ela reclamar; exigiria gravar a unidade digitada, e não só o valor                          |
-| `Bloco` e `BlocoConfiguracao` continuam primos                                                  | `src/components/`                              | Se a configuração precisar do mesmo bloco; hoje ela tem rodapé próprio                         |
-| Não dá para arquivar uma cliente: só cadastrar e editar, de dentro do pedido                    | `mutations/clientes.ts`                        | Junto da tela de clientes, quando ela existir (`DECISOES.md#d35`)                              |
-| Editar um pedido e sair sem salvar descarta em silêncio                                         | `FormularioPedido.tsx`                         | Mesma dívida do editor de ficha e da configuração; se acontecer de verdade                     |
-| `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`                                | `src/lib/types/configuracao.ts`                | **Ganhou leitor na 010**: o resumo da cliente. Espelho velho agora sai na mensagem             |
-| Sair da configuração com alteração pendente descarta em silêncio                                | `TelaConfiguracao.tsx`                         | Se acontecer de verdade; a barra fixa de "não salvas" é a defesa atual                         |
-| Dois toques no mesmo quadro na lista de compras podem perder uma marca                          | `ListaDoMercado.tsx`                           | Se acontecer: `comprado` sai do array e vira mapa por `insumoId` (`#d40`)                      |
-| A contagem existe e depende de ela contar: sem contar, a lista compra o cheio                   | `/insumos/contagem`                            | Não tem conserto em código: as defesas são o erro barato e a semeadura pela compra             |
-| A tela de contagem, o lote, as frases de `/compras` e a semente sem teste                       | `components/estoque/`, `compras/`              | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
-| A frase da lista desatualizada não sabe **o que** mudou, só que mudou                           | `ListaDoMercado.tsx`                           | Exigiria guardar quando a lista foi montada e comparar com cada contagem (`#d63`)              |
-| Sair da contagem sem salvar descarta em silêncio                                                | `TelaContagem.tsx`                             | Mesma dívida do editor de ficha, do de pedido e da configuração                                |
-| A rota, a tela da nota, a gravação em lote e a guarda do caixa sem teste                        | `api/nota/`, `components/notas/`               | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
-| Cadastrar a nota espera o servidor: sem rede o botão fica preso em carregando                   | `TelaNota.tsx`                                 | Não incomoda hoje — a tela já exigiu rede para ler (`#d50`); se incomodar, `#d40`              |
-| O cache de CNPJ vive na memória do processo e morre no reinício                                 | `api/nota/route.ts`                            | Só se a cota de 3/min por IP apertar, que é o dia do segundo cliente (`#d52`)                  |
-| Reler uma nota exige fotografar de novo: a imagem não é guardada                                | `api/nota/route.ts`                            | Se "ver a nota do mês passado" virar pergunta real, nasce com Storage (`#d49`)                 |
-| A guarda de duplicidade depende de o modelo ler o mesmo CNPJ nas duas fotos                     | `domain/notaFiscal.ts`                         | Passo 7 do roteiro da 006 é quem responde; falhando, entra o QR Code da NFC-e                  |
-| Nota sem CNPJ legível lança sem guarda: a mesma nota pode entrar duas vezes                     | `TelaNota.tsx`                                 | Não tem conserto barato: chave por nome sai diferente de duas fotos (`#d54`)                   |
-| Duas notas da mesma loja, no mesmo dia, com o total ilegível nas duas colidem                   | `domain/notaFiscal.ts`                         | Falso positivo visível, desfeito em um toque; se acontecer, a chave ganha a hora               |
-| `agregados/global` é escrito por três mutações e lido por ninguém                               | `types/financeiro.ts`                          | Se algum leitor aparecer; a 008 decidiu não ser ele (`#d67`)                                   |
-| `pedidosAbertos`, `proximaEntrega` e `ultimoNumeroPedido` nunca são escritos                    | `types/financeiro.ts`                          | Spec de limpeza, como a remoção de `estoqueMinimo` na 7A. Ninguém os lê hoje                   |
-| O cartão, a página, o gancho e a escrita na conta, sem teste                                    | `components/comecar/`                          | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
-| Os cinco textos do começo saíram do código, e não do que a 5B viu                               | `domain/onboarding.ts`                         | **Vencida**: a 5B rodou. Releitura curta, sem código — cabe de carona em qualquer spec         |
-| Um passo fecha com o documento existindo, e não com ele estando bom                             | `domain/onboarding.ts`                         | Não tem conserto: o caminho diz onde ela está, e não se ela fez bem                            |
-| `/comecar` nunca foi vista em 360px nem no tema claro, e não há captura                         | `components/comecar/`                          | Critério da 8B em aberto: depende de navegador, de login e de conta de verdade                 |
-| O bloco de instalar nunca foi visto sumindo com o app instalado                                 | `InstalarNaTela.tsx`                           | Critério da 8B em aberto: exige instalar de fato, no iPhone e no Android                       |
-| Não há diretório de capturas no repositório, e o protocolo da 5B pedia um                       | `docs/`                                        | A 5B rodou sem arquivar captura. Fica se um dia houver o que comparar com o de antes           |
-| `LIMITE_ARQUIVO_BYTES` é 8 MB e o Vercel corta o corpo em 4,5 MB (~3,3 MB)                      | `domain/notaFiscal.ts`                         | Se PDF de nota grande virar rotina: baixar para 3 MB e recusar antes do upload                 |
-| A chave de conta de serviço fica legível no painel e não gira sozinha                           | `FIREBASE_SERVICE_ACCOUNT`                     | No dia do SaaS: gerenciador de segredos com rotação (`#d72`)                                   |
-| O roteiro A da 009 nunca rodou: nenhuma tela foi vista com o teclado aberto                     | `ui/RodapeFixo.tsx`, `globals.css`             | Exige Android na mão. Seis telas que funcionavam foram editadas sem teste por trás             |
-| A barra vinho nunca foi vista no aparelho: o WebAPK assa a cor na instalação                    | `app/manifest.ts`                              | Roteiro B: o deploy já existe; falta desinstalar e reinstalar o app no Android                 |
-| 560px é limiar chutado: aparelho pequeno com fonte aumentada pode entrar nele                   | `globals.css`                                  | Degradação feia, não quebra. O conserto é `visualViewport` (`#d74`)                            |
-| O `wa.me` nunca foi aberto: ninguém viu a mensagem chegar escrita na conversa                   | `pedidos/BlocoWhatsApp.tsx`                    | Roteiro de aparelho da 010: exige celular com WhatsApp instalado, e depois desktop             |
-| O resumo pode ser mandado sem o pedido estar salvo                                              | `FormularioPedido.tsx`                         | Aceito em `#d78`; se morder, o botão salva antes de abrir o link                               |
-| A mensagem não diz as observações, nem quando são recado da cliente                             | `domain/whatsapp.ts`                           | Só com um segundo campo de dono declarado — não relaxando este (`#d79`)                        |
-| Não se sabe se ela apertou enviar: o link não devolve nada                                      | `pedidos/BlocoWhatsApp.tsx`                    | Não tem conserto neste canal; gravar "enviado" sem saber seria pior (`#d77`)                   |
-| Os meses já tortos continuam tortos até alguém apertar "Recalcular o mês"                       | `agregados/{'YYYY-MM'}`                        | Próxima ação, com rede: um mês por vez, guiada pelo aviso do `#d81`                            |
-| Escrita recusada pelas regras falha calada, só no console — agora em `mutations/` inteiro       | `mutations/despachar.ts`                       | Volta à mesa se existir papel com permissão parcial (`#d80`, `#d104`)                          |
-| Ficha nunca aberta neste aparelho não ganha selo quando o preço muda offline                    | `marcarFichasDesatualizadas`                   | Se doer: a tela passa os `fichaIds` que já tem, e não uma segunda consulta (`#d104`)           |
-| O roteiro de sete passos da 015 nunca rodou: o selo e o espelho offline sem prova               | `mutations/insumos.ts`, `metas.ts`             | Próxima ação, com DevTools em Offline; `npm test` não toca no Firestore                        |
-| O aviso de divergência não cobre `produtos` nem `porDia[].pedidos`                              | `domain/caixa.ts`                              | Exigiria a `/financeiro` assinar a consulta de pedidos pagos do mês (`#d81`)                   |
-| Arquivar o acerto direto em `/financeiro` deixa os pedidos marcados                             | `components/financeiro/`                       | Se acontecer de verdade: vira guarda na tela, como a da nota (`#d52`)                          |
-| `lucroEstimado` do pedido continua com a taxa de entrega dentro                                 | `domain/pedido.ts`                             | Quem fecha a conta é o caixa; corrigir mexeria em todo pedido gravado (`#d82`)                 |
-| A entrega que ela esqueceu de marcar só é paga na semana seguinte                               | `domain/pedido.ts`                             | Não tem conserto em código: a frase do painel é a defesa (`#d83`)                              |
-| A faixa, o painel, o lote do repasse e a saída em `ENTREGA` sem teste                           | `components/pedidos/`                          | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
-| A fornada existe e depende de ela registrar: sem registrar, nada muda                           | `components/producao/`                         | Não tem conserto em código: a spec é aditiva de propósito (`#d91`)                             |
-| Fornada com `pedidoId` mais velha que 30 dias sai do abate do pedido                            | `mutations/fornadas.ts`                        | Se houver encomenda assada com mais de um mês: a janela vira a maior data de entrega           |
-| A fornada aberta pela ficha nasce sem pedido, mesmo quando era para um                          | `FormularioFicha.tsx`                          | Se ela registrar pela ficha e a lista comprar de novo: índice `fichaIds` + `arquivado`         |
-| A folha, as duas entradas, a consulta e as frases do forno sem teste                            | `components/producao/`, `compras/`, `estoque/` | `npm test` cobre só `domain/`; o que fecha isso é o roteiro da 13A em navegador                |
-| Entrega paga pela cliente e nunca acertada some de "Entregas a pagar" ao cair da página         | `ListaPedidos.tsx`                             | Se for inaceitável: `entrega.repassePendente` gravado por quatro mutações + backfill (`#d105`) |
-| O roteiro de sete passos da 016 nunca rodou: "A receber" por página e o botão offline sem prova | `ListaPedidos.tsx`                             | Próxima ação; o índice já respondeu via Admin SDK, e `npm test` não toca no Firestore          |
+| Dívida                                                                                             | Onde                                           | Quando resolver                                                                                |
+| -------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Acesso concedido por script, sem cadastro self-serve                                               | `scripts/conceder-acesso.mjs`                  | Segundo cliente pagante, junto de D10 (`DECISOES.md#d16`)                                      |
+| `sair()` não limpa o cache do IndexedDB                                                            | `src/providers/AuthProvider.tsx`               | Só ao virar SaaS: hoje é vantagem, em aparelho compartilhado vira vazamento                    |
+| Agregados incrementados no cliente                                                                 | `src/lib/firebase/mutations/`                  | Segundo cliente pagante (`DECISOES.md#d10`)                                                    |
+| Configuração aberta sem rede e sem cache diz "valores sugeridos"                                   | `TelaConfiguracao.tsx`                         | Não tem conserto: cache vazio não distingue "não existe" de "não sei" (`#d43`)                 |
+| Agregado do mês pode ficar torto se um delta se perder no caminho                                  | `mutations/agregado.ts`                        | Tem escape: "Recalcular o mês" na tela. A troca real é a mesma de D10                          |
+| Mudar um lançamento de mês não move o espelho da meta do mês destino                               | `mutations/transacoes.ts`                      | Mesmo escape e mesma troca: `DECISOES.md#d29`                                                  |
+| Produto revertido sobra zerado no agregado até recalcular                                          | `mutations/agregado.ts`                        | `produtosOrdenados` o esconde na leitura; recalcular limpa (`#d37`)                            |
+| `ultimoPedidoEm` do cliente não volta atrás ao desfazer um pagamento                               | `mutations/clientes.ts`                        | Só com histórico de pagamentos, que não existe (`#d37`)                                        |
+| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê                                | `mutations/clientes.ts`                        | Quando "quem mais compra de mim" virar pergunta real (`#d35`)                                  |
+| Meta não guarda histórico: reescrever o alvo apaga o anterior                                      | `mutations/metas.ts`                           | Se "que meta eu tinha antes" virar pergunta real (`DECISOES.md#d27`)                           |
+| `FichaTecnica.ativo` é sempre `true`, sem tela que o desligue                                      | `src/lib/types/fichas.ts`                      | Se "produto fora de linha" virar diferente de "arquivado"                                      |
+| Quantidade volta em unidade base: 0,5 kg reabre como 500 g                                         | `FormularioFicha.tsx`                          | Se ela reclamar; exigiria gravar a unidade digitada, e não só o valor                          |
+| `Bloco` e `BlocoConfiguracao` continuam primos                                                     | `src/components/`                              | Se a configuração precisar do mesmo bloco; hoje ela tem rodapé próprio                         |
+| Não dá para arquivar uma cliente: só cadastrar e editar, de dentro do pedido                       | `mutations/clientes.ts`                        | Junto da tela de clientes, quando ela existir (`DECISOES.md#d35`)                              |
+| Editar um pedido e sair sem salvar descarta em silêncio                                            | `FormularioPedido.tsx`                         | Mesma dívida do editor de ficha e da configuração; se acontecer de verdade                     |
+| `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`                                   | `src/lib/types/configuracao.ts`                | **Ganhou leitor na 010**: o resumo da cliente. Espelho velho agora sai na mensagem             |
+| Sair da configuração com alteração pendente descarta em silêncio                                   | `TelaConfiguracao.tsx`                         | Se acontecer de verdade; a barra fixa de "não salvas" é a defesa atual                         |
+| Dois toques no mesmo quadro na lista de compras podem perder uma marca                             | `ListaDoMercado.tsx`                           | Se acontecer: `comprado` sai do array e vira mapa por `insumoId` (`#d40`)                      |
+| A contagem existe e depende de ela contar: sem contar, a lista compra o cheio                      | `/insumos/contagem`                            | Não tem conserto em código: as defesas são o erro barato e a semeadura pela compra             |
+| A tela de contagem, o lote, as frases de `/compras` e a semente sem teste                          | `components/estoque/`, `compras/`              | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
+| A frase da lista desatualizada não sabe **o que** mudou, só que mudou                              | `ListaDoMercado.tsx`                           | Exigiria guardar quando a lista foi montada e comparar com cada contagem (`#d63`)              |
+| Sair da contagem sem salvar descarta em silêncio                                                   | `TelaContagem.tsx`                             | Mesma dívida do editor de ficha, do de pedido e da configuração                                |
+| A rota, a tela da nota, a gravação em lote e a guarda do caixa sem teste                           | `api/nota/`, `components/notas/`               | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
+| Cadastrar a nota espera o servidor: sem rede o botão fica preso em carregando                      | `TelaNota.tsx`                                 | Não incomoda hoje — a tela já exigiu rede para ler (`#d50`); se incomodar, `#d40`              |
+| O cache de CNPJ vive na memória do processo e morre no reinício                                    | `api/nota/route.ts`                            | Só se a cota de 3/min por IP apertar, que é o dia do segundo cliente (`#d52`)                  |
+| Reler uma nota exige fotografar de novo: a imagem não é guardada                                   | `api/nota/route.ts`                            | Se "ver a nota do mês passado" virar pergunta real, nasce com Storage (`#d49`)                 |
+| A guarda de duplicidade depende de o modelo ler o mesmo CNPJ nas duas fotos                        | `domain/notaFiscal.ts`                         | Passo 7 do roteiro da 006 é quem responde; falhando, entra o QR Code da NFC-e                  |
+| Nota sem CNPJ legível lança sem guarda: a mesma nota pode entrar duas vezes                        | `TelaNota.tsx`                                 | Não tem conserto barato: chave por nome sai diferente de duas fotos (`#d54`)                   |
+| Duas notas da mesma loja, no mesmo dia, com o total ilegível nas duas colidem                      | `domain/notaFiscal.ts`                         | Falso positivo visível, desfeito em um toque; se acontecer, a chave ganha a hora               |
+| `agregados/global` é escrito por três mutações e lido por ninguém                                  | `types/financeiro.ts`                          | Se algum leitor aparecer; a 008 decidiu não ser ele (`#d67`)                                   |
+| `pedidosAbertos`, `proximaEntrega` e `ultimoNumeroPedido` nunca são escritos                       | `types/financeiro.ts`                          | Spec de limpeza, como a remoção de `estoqueMinimo` na 7A. Ninguém os lê hoje                   |
+| O cartão, a página, o gancho e a escrita na conta, sem teste                                       | `components/comecar/`                          | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
+| Os cinco textos do começo saíram do código, e não do que a 5B viu                                  | `domain/onboarding.ts`                         | **Vencida**: a 5B rodou. Releitura curta, sem código — cabe de carona em qualquer spec         |
+| Um passo fecha com o documento existindo, e não com ele estando bom                                | `domain/onboarding.ts`                         | Não tem conserto: o caminho diz onde ela está, e não se ela fez bem                            |
+| `/comecar` nunca foi vista em 360px nem no tema claro, e não há captura                            | `components/comecar/`                          | Critério da 8B em aberto: depende de navegador, de login e de conta de verdade                 |
+| O bloco de instalar nunca foi visto sumindo com o app instalado                                    | `InstalarNaTela.tsx`                           | Critério da 8B em aberto: exige instalar de fato, no iPhone e no Android                       |
+| Não há diretório de capturas no repositório, e o protocolo da 5B pedia um                          | `docs/`                                        | A 5B rodou sem arquivar captura. Fica se um dia houver o que comparar com o de antes           |
+| `LIMITE_ARQUIVO_BYTES` é 8 MB e o Vercel corta o corpo em 4,5 MB (~3,3 MB)                         | `domain/notaFiscal.ts`                         | Se PDF de nota grande virar rotina: baixar para 3 MB e recusar antes do upload                 |
+| A chave de conta de serviço fica legível no painel e não gira sozinha                              | `FIREBASE_SERVICE_ACCOUNT`                     | No dia do SaaS: gerenciador de segredos com rotação (`#d72`)                                   |
+| O roteiro A da 009 nunca rodou: nenhuma tela foi vista com o teclado aberto                        | `ui/RodapeFixo.tsx`, `globals.css`             | Exige Android na mão. Seis telas que funcionavam foram editadas sem teste por trás             |
+| A barra vinho nunca foi vista no aparelho: o WebAPK assa a cor na instalação                       | `app/manifest.ts`                              | Roteiro B: o deploy já existe; falta desinstalar e reinstalar o app no Android                 |
+| 560px é limiar chutado: aparelho pequeno com fonte aumentada pode entrar nele                      | `globals.css`                                  | Degradação feia, não quebra. O conserto é `visualViewport` (`#d74`)                            |
+| O `wa.me` nunca foi aberto: ninguém viu a mensagem chegar escrita na conversa                      | `pedidos/BlocoWhatsApp.tsx`                    | Roteiro de aparelho da 010: exige celular com WhatsApp instalado, e depois desktop             |
+| O resumo pode ser mandado sem o pedido estar salvo                                                 | `FormularioPedido.tsx`                         | Aceito em `#d78`; se morder, o botão salva antes de abrir o link                               |
+| A mensagem não diz as observações, nem quando são recado da cliente                                | `domain/whatsapp.ts`                           | Só com um segundo campo de dono declarado — não relaxando este (`#d79`)                        |
+| Não se sabe se ela apertou enviar: o link não devolve nada                                         | `pedidos/BlocoWhatsApp.tsx`                    | Não tem conserto neste canal; gravar "enviado" sem saber seria pior (`#d77`)                   |
+| Os meses já tortos continuam tortos até alguém apertar "Recalcular o mês"                          | `agregados/{'YYYY-MM'}`                        | Próxima ação, com rede: um mês por vez, guiada pelo aviso do `#d81`                            |
+| Escrita recusada pelas regras falha calada, só no console — agora em `mutations/` inteiro          | `mutations/despachar.ts`                       | Volta à mesa se existir papel com permissão parcial (`#d80`, `#d104`)                          |
+| Ficha nunca aberta neste aparelho não ganha selo quando o preço muda offline                       | `marcarFichasDesatualizadas`                   | Se doer: a tela passa os `fichaIds` que já tem, e não uma segunda consulta (`#d104`)           |
+| O roteiro de sete passos da 015 nunca rodou: o selo e o espelho offline sem prova                  | `mutations/insumos.ts`, `metas.ts`             | Próxima ação, com DevTools em Offline; `npm test` não toca no Firestore                        |
+| O aviso de divergência não cobre `produtos` nem `porDia[].pedidos`                                 | `domain/caixa.ts`                              | Exigiria a `/financeiro` assinar a consulta de pedidos pagos do mês (`#d81`)                   |
+| Arquivar o acerto direto em `/financeiro` deixa os pedidos marcados                                | `components/financeiro/`                       | Se acontecer de verdade: vira guarda na tela, como a da nota (`#d52`)                          |
+| `lucroEstimado` do pedido continua com a taxa de entrega dentro                                    | `domain/pedido.ts`                             | Quem fecha a conta é o caixa; corrigir mexeria em todo pedido gravado (`#d82`)                 |
+| A entrega que ela esqueceu de marcar só é paga na semana seguinte                                  | `domain/pedido.ts`                             | Não tem conserto em código: a frase do painel é a defesa (`#d83`)                              |
+| A faixa, o painel, o lote do repasse e a saída em `ENTREGA` sem teste                              | `components/pedidos/`                          | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
+| A fornada existe e depende de ela registrar: sem registrar, nada muda                              | `components/producao/`                         | Não tem conserto em código: a spec é aditiva de propósito (`#d91`)                             |
+| Fornada com `pedidoId` mais velha que 30 dias sai do abate do pedido                               | `mutations/fornadas.ts`                        | Se houver encomenda assada com mais de um mês: a janela vira a maior data de entrega           |
+| A fornada aberta pela ficha nasce sem pedido, mesmo quando era para um                             | `FormularioFicha.tsx`                          | Se ela registrar pela ficha e a lista comprar de novo: índice `fichaIds` + `arquivado`         |
+| A folha, as duas entradas, a consulta e as frases do forno sem teste                               | `components/producao/`, `compras/`, `estoque/` | `npm test` cobre só `domain/`; o que fecha isso é o roteiro da 13A em navegador                |
+| Entrega paga pela cliente e nunca acertada some de "Entregas a pagar" ao cair da página            | `ListaPedidos.tsx`                             | Se for inaceitável: `entrega.repassePendente` gravado por quatro mutações + backfill (`#d105`) |
+| O roteiro de sete passos da 016 nunca rodou: "A receber" por página e o botão offline sem prova    | `ListaPedidos.tsx`                             | Próxima ação; o índice já respondeu via Admin SDK, e `npm test` não toca no Firestore          |
+| Limpar "Válido até" no editor não apaga a validade gravada: ela volta ao reabrir                   | `mutations/pedidos.ts`                         | `deleteField()` quando o campo chega vazio, se "sem prazo" virar escolha de verdade (`#d110`)  |
+| Nenhum PDF foi gerado: o `#d106` nos três sistemas, o `zoom` a 360 px e o fundo do total sem prova | `TelaOrcamento.tsx`, `globals.css`             | Roteiro de aparelho da 17A, sete passos; `npm test` não abre navegador                         |
+| A folha lê o gravado e o WhatsApp lê a tela: um pedido editado e não salvo diverge entre os dois   | `BlocoOrcamento.tsx`                           | Aceito em `#d107`; se morder, o link salva antes de abrir (`#d78`)                             |

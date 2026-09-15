@@ -18,7 +18,7 @@ export function BarraLateral() {
   const { usuario, sair } = useAuth();
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-wine-900 text-on-wine lg:flex">
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-wine-900 text-on-wine lg:flex print:hidden">
       <div className="filete-dourado flex items-center gap-2.5 px-5 pb-5 pt-6">
         <Cookie className="size-8 shrink-0" />
         <div className="flex min-w-0 flex-col">

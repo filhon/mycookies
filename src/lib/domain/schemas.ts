@@ -279,6 +279,12 @@ export const esquemaPedido = z.object({
   dataEntregaISO: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Escolha a data da entrega."),
+  // Só a forma: validade no passado é aviso na tela, não erro. Orçamento
+  // vencido é um fato que ela precisa poder salvar.
+  validoAteISO: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   status: z.enum([
     "ORCAMENTO",
     "CONFIRMADO",

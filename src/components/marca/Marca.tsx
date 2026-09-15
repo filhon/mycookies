@@ -73,15 +73,27 @@ export function PadraoCookie({ className }: { className?: string }) {
   );
 }
 
-/** Logotipo completo. Serifa para o nome, caixa alta espaçada para o descritor. */
+/**
+ * As duas frases da embalagem. São marca, e não configuração: o dia em que
+ * houver segunda conta, as duas saem juntas para `configuracao/geral`.
+ */
+export const DESCRITOR = "Biscoitos artesanais";
+export const SLOGAN = "Feito com amor em cada mordida.";
+
+/**
+ * Logotipo completo. Serifa para o nome, caixa alta espaçada para o descritor.
+ * De pé na tela de acesso; deitado no cabeçalho da folha do orçamento.
+ */
 export function Logotipo({
   className,
   tamanho = "md",
   descritor = true,
+  orientacao = "vertical",
 }: {
   className?: string;
   tamanho?: "sm" | "md" | "lg";
   descritor?: boolean;
+  orientacao?: "vertical" | "horizontal";
 }) {
   const escala = {
     sm: { cookie: "h-6 w-6", nome: "text-subheading", desc: "text-[0.5rem]" },
@@ -93,10 +105,23 @@ export function Logotipo({
     },
   }[tamanho];
 
+  const deitado = orientacao === "horizontal";
+
   return (
-    <div className={cn("flex flex-col items-center gap-2", className)}>
-      <Cookie className={escala.cookie} />
-      <div className="flex flex-col items-center">
+    <div
+      className={cn(
+        "flex items-center",
+        deitado ? "flex-row gap-3" : "flex-col gap-2",
+        className,
+      )}
+    >
+      <Cookie className={cn("shrink-0", escala.cookie)} />
+      <div
+        className={cn(
+          "flex flex-col",
+          deitado ? "items-start" : "items-center",
+        )}
+      >
         <span
           className={cn(
             "font-display font-semibold tracking-tight",
@@ -112,7 +137,7 @@ export function Logotipo({
               escala.desc,
             )}
           >
-            Biscoitos artesanais
+            {DESCRITOR}
           </span>
         )}
       </div>

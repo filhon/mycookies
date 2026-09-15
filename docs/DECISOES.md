@@ -3300,3 +3300,143 @@ cursor e várias assinaturas (é o que se faz quando `limit` crescente custa car
 "mais antigos" relê trinta documentos do cache), arquivar em lote (a paginação é o que tira a
 pressão de arquivar) e diminuir o cache (40 MB é o padrão, e este registro é o que impede de
 chegar lá).
+
+---
+
+## D106 · O PDF é o navegador imprimindo uma rota, e não uma biblioteca
+
+**Status:** vigente · decidida em 2026-09-15, na spec 017, sessão 17A
+
+**Contexto.** Uma empresa pediu orçamento, e "R$ 10,00 o Tradicional, 50 unidades" no WhatsApp
+não passa pelo setor de compras de ninguém: a pessoa do outro lado precisa de um documento com
+o nome da empresa, o que está incluído, quanto custa, até quando vale e quem assina. É a
+primeira coisa que o projeto produz para alguém ler **sem** a Maynara junto.
+
+**Decisão.** `/pedidos/[id]/orcamento` é uma página com `@page { size: A4; margin: 0 }` e
+CSS de impressão, e "Salvar em PDF" é `window.print()`. No desktop, Ctrl+P e "Salvar como
+PDF"; no Android, Compartilhar → Imprimir; no iPhone, Compartilhar → Opções → PDF. O PDF é
+vetorial, com a Fraunces e a Figtree embutidas, no mesmo motor que desenha o app. A folha é
+HTML, e HTML é o que este projeto sabe fazer bonito.
+
+**Consequência.** Nenhuma dependência de produção (`@react-pdf/renderer` e `jspdf` seriam
+uma segunda linguagem de layout, sem `oklch`, com a marca reconstruída à mão) e nenhum
+servidor (Chromium headless seria a única rota do sistema a exigir rede para o que o aparelho
+já sabe fazer). **A folha funciona sem rede**: pedido, fichas e configuração estão no cache, e
+salvar o arquivo é ação do aparelho. O custo aceito é que o caminho até o PDF depende do
+sistema operacional, e no iPhone ele é longo; o roteiro de aparelho da spec confere os três.
+Se doer de verdade, o conserto é uma rota de servidor que devolve o PDF pronto, e a folha
+continua sendo a mesma página.
+
+O shell some na impressão com `print:hidden` na barra lateral e na navegação inferior, e o
+`main` perde largura máxima e respiro. A classe `.folha` redeclara os tokens claros e fixa
+`color-scheme: light`: papel não tem modo noturno, e a prévia precisa ser o que vai sair.
+`ponytail:` a folha é a página inteira em modo impressão. Se um dia houver uma segunda coisa
+para imprimir (a ficha, o recibo), o que nasce é um layout de impressão, e não uma segunda
+solução.
+
+---
+
+## D107 · A folha lê o documento gravado, e não o formulário
+
+**Status:** vigente · decidida em 2026-09-15, na spec 017, sessão 17A
+
+**Contexto.** É o contrário do `#d78`, e por um motivo que o `#d78` já previa. O resumo do
+WhatsApp mora dentro do editor e monta o texto do que está na tela, porque a alternativa
+mandaria para a cliente um número que ninguém está vendo. A folha é **outra rota**, sem tela
+de edição ao lado: o que ela pode ler é o que está no Firestore.
+
+**Decisão.** `montarOrcamento` recebe o `Pedido` gravado, as fichas vivas, a conta e a
+configuração, e a folha desenha isso. O bloco do editor diz em uma linha: "A folha mostra o
+que está salvo. Salve o pedido antes de abrir." É aviso, e não trava: o formulário não sabe
+se está sujo, e ensinar isso a ele é a dívida de "sair sem salvar" que já está na tabela.
+
+**Consequência.** O resumo confirma uma conversa; a folha é o que a empresa assina. Um
+documento assinado dizendo um total diferente do que o sistema gravou é o defeito que a 010
+consertou, de volta com carimbo. Dois blocos vizinhos com duas regras é o custo, e ele está
+dito no comentário de cada um. Se incomodar, o conserto é o do `#d78`: o link salva antes de
+abrir.
+
+---
+
+## D108 · A foto e a descrição vêm da ficha viva; o preço, do pedido
+
+**Status:** vigente · decidida em 2026-09-15, na spec 017, sessão 17A (os campos nascem na 17B)
+
+**Contexto.** `ItemPedido` congela `nomeSnapshot`, `precoUnitario` e `custoUnitarioSnapshot`
+(`#d08`): o que se congela é dinheiro, porque dinheiro reescrito muda o lucro de pedido
+entregue. A folha quer mostrar a foto e duas frases de cada produto, e alguém precisa decidir
+de onde elas vêm.
+
+**Decisão.** Da ficha viva, na hora de montar a folha. `LinhaDoOrcamento.descricao` e
+`fotoUrl` saem de `FichaTecnica`, achada pelo `fichaTecnicaId` do item; `nome`, `precoUnitario`
+e `subtotal` saem do item gravado. Ficha arquivada (fora da lista de fichas vivas) continua no
+pedido com o nome congelado, e a linha sai sem foto e sem descrição, com unidade `'un'`.
+
+**Consequência.** Congelar uma foto de 20 KB em cada linha de cada pedido triplicaria a
+coleção que mais cresce (`#d105`) para proteger uma coisa que ela **quer** que mude: trocou a
+foto do Red Velvet, todo orçamento novo sai com a foto nova. O custo aceito: reimprimir um
+orçamento antigo depois de trocar a descrição mostra a descrição nova. O preço, o nome e o
+total continuam os de quando foi feito. Se um dia a descrição virar promessa contratual ("sem
+glúten"), ela vira snapshot no item, com a mesma justificativa do preço.
+
+A unidade da linha também vem da ficha viva, e é a unidade do rendimento: `'un'`, `'porções'`,
+`'g'` ou `'ml'`, o mesmo sufixo do painel de fornada. A spec chegou a escrever `'kg'` para uma
+ficha que rende em gramas com quantidade `1,5`, mas o preço do pedido é por unidade de
+rendimento (por grama, nesse caso): `1,5 kg` ao lado de um preço por grama mentiria três
+ordens de grandeza. A 17A ficou com a unidade do rendimento, e o teste diz `'g'`.
+
+---
+
+## D109 · Imagem mora no documento, como `data:` URL, e não no Storage
+
+**Status:** vigente · decidida em 2026-09-15, na spec 017, sessão 17A (executada na 17B)
+
+**Contexto.** A miniatura do produto e a assinatura são as duas únicas imagens que o sistema
+grava, e as duas são pequenas por natureza: uma foto de 320 px de lado em JPEG cabe em 20 KB,
+uma assinatura de 720 px em PNG cabe em 60 KB.
+
+**Decisão.** Um `data:` URL dentro do próprio documento. `FichaTecnica.fotoUrl` já é `string`,
+e `data:image/jpeg;base64,…` **é** uma URL: nenhum campo muda de tipo. Os tetos são a guarda,
+80 KB para a foto e 200 KB para a assinatura, e a redução acontece no aparelho antes de
+gravar, com o `canvas` que `src/lib/utils/imagem.ts` já usa para a nota fiscal.
+
+**Consequência.** O Firebase Storage exigiria um segundo serviço ligado, regras de segurança
+próprias, URL que só resolve com rede (a folha ficaria sem foto offline) e um segundo lugar
+onde `contas/{contaId}/…` precisa ser respeitado. O `data:` URL viaja no mesmo cache, sob a
+mesma regra, e aparece na folha sem rede. Quem já viu um documento de 900 KB travar uma
+consulta tem razão de desconfiar: a foto de 20 KB em cinquenta fichas é 1 MB de cache, o mesmo
+que um mês de pedidos. `ponytail:` a assinatura mora em `configuracao/geral`, que o app
+inteiro lê ao subir. Com 60 KB típicos isso não pesa; se um dia pesar, ela vai para um
+documento irmão (`configuracao/assinatura`) que só a folha e a tela de configuração leem.
+
+---
+
+## D110 · A validade é campo gravado; a emissão é o dia da impressão
+
+**Status:** vigente · decidida em 2026-09-15, na spec 017, sessão 17A
+
+**Contexto.** Sem prazo, o preço de setembro é cobrado em dezembro com o chocolate mais caro,
+ou o gestor aprova em novembro e a Maynara descobre que o custo mudou. A folha precisa de
+"válido até" e de "emitido em", e os dois podiam ser gravados, deduzidos ou nenhum.
+
+**Decisão.** `Pedido.validoAteISO` é gravado, porque é combinado, como a data de entrega: o
+sistema sugere hoje mais sete dias (`DIAS_DE_VALIDADE`), ela edita, salvar grava. Sugestão não
+é dado (`#d17`): a sugestão só nasce no campo de pedido que já existe e ainda é orçamento,
+pedido confirmado sem validade fica sem, e pedido feito antes da spec sai sem a linha de
+validade em vez de inventar uma. A data de emissão **não** é gravada: é o dia em que a folha
+foi impressa.
+
+**Consequência.** `criadoEm` mentiria para um pedido montado na terça e enviado na sexta; um
+campo `emitidoEm` escrito pela impressão seria uma escrita disparada por um botão que não é
+"salvar", e o Firestore não sabe se ela cancelou o diálogo (`#d77`). Reimprimir uma semana
+depois muda a data de emissão e mantém a validade: é o que um orçamento reimpresso deveria
+dizer. Quem quiser a data original tem `criadoEm`.
+
+Validade no passado é aviso na tela, e não erro de validação: orçamento vencido é um fato
+que ela precisa poder salvar. O aviso aparece no bloco do editor e na barra da prévia, com o
+triângulo; a folha não muda, porque o aviso é para ela, e não para a empresa.
+
+O campo é gravado por spread condicional, como `notaChave` (`#d54`): ausente não apaga o que
+está lá. A consequência conhecida é que **limpar o campo no editor não apaga uma validade já
+gravada**; ela volta ao reabrir. Está na tabela de dívidas, e o conserto é `deleteField()`
+quando o campo chega vazio, se um dia "sem prazo" virar escolha de verdade.
