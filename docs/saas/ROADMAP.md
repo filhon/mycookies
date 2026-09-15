@@ -155,7 +155,7 @@ dela, ninguém ao lado. Roda depois de cada spec abaixo, não só no fim.
 - Os cinco passos viram: (1) **ver quanto custa um cookie** — abre a ficha-modelo, ou o botão
   da 017 se ela ainda não apertou; (2) **corrigir o preço do que você compra** — `/insumos`
   com a biblioteca já lá, editar e não criar; (3) **ajustar o que é seu** — a configuração,
-  apresentada pela consequência: "sua primeira ficha usou R$ 20 a hora e o gás sugerido; ajuste
+  apresentada pela consequência: "sua primeira ficha usou R$ 25 a hora e o gás sugerido; ajuste
   e veja o preço mudar"; (4) encomenda; (5) paga. A dependência técnica continua a mesma; só a
   ordem em que ela é apresentada muda, porque a ficha já calcula sem configuração salva.
 - Os cinco textos de `CATALOGO_DO_COMECO` reescritos com as palavras que a Maynara usou na

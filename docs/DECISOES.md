@@ -1873,6 +1873,11 @@ Sobre o dado de exemplo: `#d17` já decidiu que sugestão não é dado. Um cooki
 dentro de `/fichas` de uma confeitaria de verdade é pior do que uma lista vazia, e o dia em
 que ela apagar o exemplo é o dia em que ela aprende que o sistema inventa coisas.
 
+**Revisto pela spec 017 (2026-09-15).** A biblioteca de partida não é exceção a "não semeia
+dado": é um botão que ela aperta, marcado pelo id (`biblioteca-<slug>`) e pelo preço médio até
+ela corrigir, e que some da tela no instante em que a conta tem qualquer insumo ou ficha. O
+guia continua não semeando nada sozinho; quem semeia é ela, no toque (`#d109`).
+
 ---
 
 ## D66 · São cinco passos, terminando no caixa, e a meta fica de fora
@@ -3402,3 +3407,38 @@ claim (cadastro), e agora também o webhook do Stripe reemitindo a claim com `at
 regras bloquearem escrita de conta vencida sem custar uma leitura (`#d07`). Um plano só
 também é zero código de permissão por tela; o preço disso é não ter o que vender a mais até a
 fase 3, que é quando haverá o que vender.
+
+---
+
+## D109 · Sem configuração salva, a ficha calcula com a sugerida inteira — e diz isso. Zero também é um número inventado
+
+**Status:** vigente · decidida em 2026-09-15, na spec `017-o-preco-no-primeiro-minuto`
+
+**Contexto.** `#d17` decidiu duas coisas: que sugestão não vira dado (`configuracao/geral` só
+nasce no "Salvar") e que, enquanto isso, a ficha "sabe que não há configuração e avisa, em vez
+de calcular com número que o sistema inventou" — na prática, `SEM_RATEIO`, hora e gás a zero. A
+premissa do `#d108` — "a ficha já calcula com `CONFIGURACAO_SUGERIDA` quando nada foi salvo" —
+só valia para a precificação (margem, markup, arredondamento); o rateio caía no zero. Uma
+ficha-modelo da biblioteca de partida (spec 017), gravada com a hora sugerida e reaberta num
+editor que calcula com R$ 0 a hora, mostraria um preço na lista e outro no rodapé — e a 018
+inteira ("sua primeira ficha usou a hora e o gás sugeridos; ajuste e veja o preço mudar")
+depende de os dois serem o mesmo número.
+
+**Decisão.** A segunda metade do `#d17` cai: **zero também é um número que o sistema
+inventou, e é o pior deles**, porque é exatamente o erro da planilha dela — não se pagar. Um
+preço com a hora a R$ 25 e o gás sugerido está mais perto da verdade do que um preço com a
+hora a R$ 0. `rateioDaConta(configuracao)` e `precificacaoPadraoDaConta(configuracao)`
+(`src/lib/firebase/mutations/configuracao.ts`) moram ao lado de `CONFIGURACAO_SUGERIDA` e são
+o único lugar que conhece a regra "salvo, senão sugerido" — rateio, método, margem, markup,
+arredondamento e a maior taxa ativa das formas sugeridas. O editor de ficha e a biblioteca de
+partida chamam as duas; `SEM_RATEIO` saiu de `custoFicha.ts`, sem chamador restante. A faixa
+continua dizendo de onde o número veio e para onde ir para mudá-lo — muda o texto, não o
+princípio: `temConfiguracao` continua sendo "o documento existe", e o passo da configuração no
+caminho do começo continua pendente até ela salvar.
+
+**Consequência.** Uma ficha nova e a ficha-modelo da biblioteca partem do mesmo número, e uma
+conta que salva a configuração com os mesmos valores sugeridos vê o preço da ficha-modelo ficar
+exatamente igual antes e depois de salvar — é o que o passo 6 do roteiro da 017 confere. A
+faixa "o rateio está zerado" continua existindo, mas só quando `configuracao !== null`: é o
+caso em que ela **salvou** zero de propósito, decisão dela, e o texto de hoje continua certo
+para isso.

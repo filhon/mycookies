@@ -2,6 +2,7 @@
 
 import { ChevronRight, TriangleAlert } from "lucide-react";
 import { Selo } from "@/components/ui/Selo";
+import { temPrecoMedio } from "@/lib/domain/biblioteca";
 import { contagemDoInsumo, rotuloDeIdade } from "@/lib/domain/estoque";
 import { formatarCustoUnitario, formatarMoeda } from "@/lib/domain/money";
 import { projecaoDoInsumo } from "@/lib/domain/producao";
@@ -83,14 +84,18 @@ export function LinhaInsumo({
             </p>
           )}
 
-          {contagemVencida && (
-            <Selo
-              tom="atencao"
-              className="mt-1.5"
-              icone={<TriangleAlert aria-hidden className="size-3.5" />}
-            >
-              Contagem vencida
-            </Selo>
+          {(contagemVencida || temPrecoMedio(insumo)) && (
+            <p className="mt-1.5 flex flex-wrap gap-1.5">
+              {contagemVencida && (
+                <Selo
+                  tom="atencao"
+                  icone={<TriangleAlert aria-hidden className="size-3.5" />}
+                >
+                  Contagem vencida
+                </Selo>
+              )}
+              {temPrecoMedio(insumo) && <Selo tom="neutro">Preço médio</Selo>}
+            </p>
           )}
         </div>
 

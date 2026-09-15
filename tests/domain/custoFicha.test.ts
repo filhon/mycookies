@@ -6,11 +6,18 @@ import {
   ehEmbalagem,
   opcoesDaEscolha,
   podeSerComponente,
-  SEM_RATEIO,
   temEscolhas,
   type EntradaCustoFicha,
   type FichaParaEscolha,
+  type RateioOperacional,
 } from "@/lib/domain/custoFicha";
+
+const RATEIO_ZERO: RateioOperacional = {
+  valorHoraTrabalho: 0,
+  custoEnergiaHora: 0,
+  custoGasHora: 0,
+  custoIndiretoPorHora: 0,
+};
 
 const OPERACIONAL = {
   valorHoraTrabalho: 2500,
@@ -127,7 +134,7 @@ describe("calcularCustoFicha", () => {
     expect(custo.custoIndireto).toBe(1500);
   });
 
-  it("sem configuração salva, o rateio é zero e só o insumo pesa", () => {
+  it("com rateio zero, só o insumo pesa", () => {
     const custo = calcularCustoFicha(
       ficha({
         itens: [
@@ -138,7 +145,7 @@ describe("calcularCustoFicha", () => {
           },
         ],
         tempoProducaoMinutos: 90,
-        operacional: SEM_RATEIO,
+        operacional: RATEIO_ZERO,
       }),
     );
 
@@ -284,7 +291,7 @@ describe("calcularCustoFicha com escolhas", () => {
           },
         ],
         custoEscolhas: 620,
-        operacional: SEM_RATEIO,
+        operacional: RATEIO_ZERO,
       }),
     );
     expect(custo.custoEscolhas).toBe(620);

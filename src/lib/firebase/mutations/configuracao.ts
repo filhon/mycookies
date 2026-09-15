@@ -1,9 +1,15 @@
 import { setDoc, Timestamp } from "firebase/firestore";
 import { docConfiguracao } from "../colecoes";
 import { despachar } from "./despachar";
-import { custoIndiretoPorHora } from "@/lib/domain/custosOperacionais";
+import type { RateioOperacional } from "@/lib/domain/custoFicha";
+import {
+  custoIndiretoPorHora,
+  maiorTaxaAtiva,
+} from "@/lib/domain/custosOperacionais";
+import type { ParametrosPreco } from "@/lib/domain/precificacao";
 import { VERSAO_SCHEMA } from "@/lib/types";
 import type {
+  ConfiguracaoGeral,
   CustosOperacionais,
   FormaPagamento,
   PrecificacaoPadrao,
@@ -88,6 +94,47 @@ export const CONFIGURACAO_SUGERIDA: DadosConfiguracao = {
   ],
   categoriasProduto: [],
 };
+
+/**
+ * O rateio que uma ficha usa: o salvo, senão o sugerido (`DECISOES.md#d109`).
+ *
+ * Zero era o que `custoFicha.ts` usava enquanto a conta não salvava nada — e
+ * zero também é um número que o sistema inventou, o mesmo erro da planilha
+ * dela. A sugestão inteira está mais perto da verdade, e a faixa na tela
+ * continua dizendo de onde o número veio.
+ */
+export function rateioDaConta(
+  configuracao: ConfiguracaoGeral | null,
+): RateioOperacional {
+  if (configuracao) return configuracao.operacional;
+  const { operacional } = CONFIGURACAO_SUGERIDA;
+  return {
+    ...operacional,
+    custoIndiretoPorHora: custoIndiretoPorHora(
+      operacional.despesasFixasMensais,
+      operacional.horasProdutivasMes,
+    ),
+  };
+}
+
+/** Método, margem, markup, arredondamento e a maior taxa ativa — salvos, senão sugeridos. */
+export function precificacaoPadraoDaConta(
+  configuracao: ConfiguracaoGeral | null,
+): ParametrosPreco {
+  const precificacao =
+    configuracao?.precificacao ?? CONFIGURACAO_SUGERIDA.precificacao;
+  const formasPagamento =
+    configuracao?.formasPagamento ?? CONFIGURACAO_SUGERIDA.formasPagamento;
+
+  return {
+    metodo: precificacao.metodoPadrao,
+    markup: precificacao.markupPadrao,
+    margemDesejada: precificacao.margemPadrao,
+    taxaCartaoConsiderada: maiorTaxaAtiva(formasPagamento),
+    outrasTaxas: precificacao.outrasTaxasPadrao,
+    arredondamento: precificacao.arredondamento,
+  };
+}
 
 /**
  * Uma escrita só, no documento único `configuracao/geral`.

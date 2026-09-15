@@ -85,7 +85,7 @@ function idsUnicos(ids: string[]): string[] {
  * desenhar o painel de preço: o número que ela viu antes de tocar em salvar é
  * o número que vai para o banco.
  */
-function corpoDaFicha(dados: DadosFicha) {
+export function corpoDaFicha(dados: DadosFicha) {
   const derivado = derivarFicha({
     itens: dados.itens,
     componentes: dados.componentes,

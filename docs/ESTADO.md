@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-15 (roadmap do SaaS escrito e revisto pelo `#d108`; specs 015 e 016 executadas, roteiros por rodar).
+Atualizado em 2026-09-15 (spec 017 executada — a biblioteca de partida; roteiro de sete passos por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -153,7 +153,7 @@ nunca visto rodando — **fechou com a 5B**. O que ficou dele é uma linha na ta
 releitura dos cinco textos de `src/lib/domain/onboarding.ts` contra o que a 5B viu, que a 8B
 não pôde fazer na época.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **491
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **502
 testes**, e build com 17 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
 `/insumos/contagem` na 7A, `/comecar` na 8A e `/fichas/contagem` na 13D — mais `/api/nota`,
 `/fichas/[id]` e `/pedidos/[id]` dinâmicas e service worker gerado.
@@ -188,26 +188,27 @@ os números digitados de ponta a ponta.
 
 ## Módulos
 
-| #   | Módulo                                      | Estado                              | Spec                                     |
-| --- | ------------------------------------------- | ----------------------------------- | ---------------------------------------- |
-| 0   | Fundação: design system, shell, acesso, PWA | pronto                              | —                                        |
-| 1   | Insumos e embalagens                        | pronto                              | —                                        |
-| —   | Contas e tenancy                            | pronto                              | `specs/000-contas.md`                    |
-| 2   | Custos operacionais e precificação          | pronto (2A e 2B)                    | `specs/002-precificacao.md`              |
-| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)                | `specs/003-pedidos.md`                   |
-| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                    | `specs/004-caixa.md`                     |
-| 5   | Prontidão: conserto e verificação           | pronto (5A e 5B)                    | `specs/005-prontidao.md`                 |
-| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)                    | `specs/006-nota-fiscal.md`               |
-| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)                    | `specs/007-estoque.md`                   |
-| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)                    | `specs/008-onboarding.md`                |
-| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros             | `specs/009-teclado-e-barra.md`           |
-| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro               | `specs/010-resumo-no-whatsapp.md`        |
-| —   | O caixa que não perde a conta               | pronto, sem o roteiro               | `specs/011-caixa-que-nao-perde-conta.md` |
-| —   | O acerto das entregas                       | pronto, sem o roteiro               | `specs/012-entregas-a-pagar.md`          |
-| 13  | A fornada                                   | pronto (13A a 13D), sem os roteiros | `specs/013-a-fornada.md`                 |
-| 14  | O combo à escolha                           | pronto (14A e 14B)                  | `specs/014-combo-a-escolha.md`           |
-| 15  | Salvar no toque, no sistema inteiro         | pronto, sem o roteiro               | `specs/015-salvar-no-toque.md`           |
-| 16  | As listas que crescem                       | pronto, sem o roteiro               | `specs/016-listas-que-crescem.md`        |
+| #   | Módulo                                      | Estado                              | Spec                                      |
+| --- | ------------------------------------------- | ----------------------------------- | ----------------------------------------- |
+| 0   | Fundação: design system, shell, acesso, PWA | pronto                              | —                                         |
+| 1   | Insumos e embalagens                        | pronto                              | —                                         |
+| —   | Contas e tenancy                            | pronto                              | `specs/000-contas.md`                     |
+| 2   | Custos operacionais e precificação          | pronto (2A e 2B)                    | `specs/002-precificacao.md`               |
+| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)                | `specs/003-pedidos.md`                    |
+| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                    | `specs/004-caixa.md`                      |
+| 5   | Prontidão: conserto e verificação           | pronto (5A e 5B)                    | `specs/005-prontidao.md`                  |
+| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)                    | `specs/006-nota-fiscal.md`                |
+| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)                    | `specs/007-estoque.md`                    |
+| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)                    | `specs/008-onboarding.md`                 |
+| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros             | `specs/009-teclado-e-barra.md`            |
+| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro               | `specs/010-resumo-no-whatsapp.md`         |
+| —   | O caixa que não perde a conta               | pronto, sem o roteiro               | `specs/011-caixa-que-nao-perde-conta.md`  |
+| —   | O acerto das entregas                       | pronto, sem o roteiro               | `specs/012-entregas-a-pagar.md`           |
+| 13  | A fornada                                   | pronto (13A a 13D), sem os roteiros | `specs/013-a-fornada.md`                  |
+| 14  | O combo à escolha                           | pronto (14A e 14B)                  | `specs/014-combo-a-escolha.md`            |
+| 15  | Salvar no toque, no sistema inteiro         | pronto, sem o roteiro               | `specs/015-salvar-no-toque.md`            |
+| 16  | As listas que crescem                       | pronto, sem o roteiro               | `specs/016-listas-que-crescem.md`         |
+| 17  | O preço no primeiro minuto                  | pronto, sem o roteiro               | `specs/017-o-preco-no-primeiro-minuto.md` |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -1693,20 +1694,71 @@ numa linha da tabela do `#d105` — 7 por `limit`, 7 por janela de tempo, 1 por 
 pelo arquivo (5 de `insumos`, 7 de `fichas`, 1 de `clientes`) e as 3 de `/pedidos` por status
 mais `limit`.
 
+## O que a sessão 017 deixou pronto
+
+A primeira spec da fase 0 do roadmap: um botão que instala 25 insumos com preço médio e duas
+fichas-modelo já precificadas, e cai direto na ficha-modelo aberta com o preço no rodapé.
+
+- `src/lib/domain/biblioteca.ts`: `PREFIXO_BIBLIOTECA`, `ehDaBiblioteca`, `temPrecoMedio`,
+  `insumosComPrecoMedio`, `INSUMOS_DA_BIBLIOTECA` (25), `FICHAS_DA_BIBLIOTECA` (2) e
+  `montarBiblioteca`, que resolve cada item da ficha contra o insumo da própria biblioteca com
+  `calcularCustoInsumo`. Puro, sem Firebase.
+- `tests/domain/biblioteca.test.ts`: forma dos 25 e das 2 (id sem repetição, preço inteiro
+  positivo, perda em 0–99, categoria válida), referência de todo item a um id da própria
+  biblioteca, prefixo em todo documento que `montarBiblioteca` devolve, e o caso de aceite dos
+  dois cookies número por número — R$ 3,30 e R$ 5,90 no clássico, R$ 7,19 e R$ 12,90 no
+  recheado, com `CONFIGURACAO_SUGERIDA`. 491 → 502 testes.
+- `DECISOES.md#d109`: revisa a metade do `#d17` que mandava calcular com rateio zero sem
+  configuração salva. Zero também é um número inventado, e é o pior deles. `rateioDaConta` e
+  `precificacaoPadraoDaConta` (`mutations/configuracao.ts`) são o único lugar que decide
+  "salvo, senão sugerido" — o editor de ficha e a biblioteca chamam as duas.
+  `SEM_RATEIO` saiu de `custoFicha.ts`, sem chamador restante.
+- `mutations/fichas.ts`: `corpoDaFicha` virou exportada — uma função, dois chamadores
+  (`#d19`), como `corpoDeInsumoNovo` já era para a nota.
+- `mutations/biblioteca.ts`: `instalarBiblioteca`, um `writeBatch` despachado (28 operações: 25
+  insumos, 2 fichas, 1 incremento no agregado global), que reusa `corpoDeInsumoNovo` e
+  `corpoDaFicha` — a ficha-modelo não é uma segunda forma de documento.
+- `src/components/biblioteca/BotaoBiblioteca.tsx`: sabe sozinho quando existir (duas consultas
+  `limit(1)`, como `useComeco`), e o toque grava e navega no mesmo tique, sem `await`.
+- `ListaFichas.tsx` e `/insumos`: o botão na frente do estado vazio, com "Criar primeira ficha"
+  e "Cadastrar insumo" como ações secundárias. Em `/fichas`, quando já há insumo mas nenhuma
+  ficha, o estado vazio continua sendo o de hoje, sem uma letra mudada.
+- `FormularioFicha.tsx`: as duas faixas do rateio (sem configuração vs. rateio salvo em zero) e
+  a faixa "preços médios" — some insumo por insumo conforme ela corrige. Os valores iniciais de
+  uma ficha nova, incluindo `taxaCartaoConsiderada`, saem de `precificacaoPadraoDaConta`.
+- `LinhaInsumo.tsx`: selo neutro "Preço médio" ao lado de "Contagem vencida".
+- `DECISOES.md#d65` ganhou a linha de revisão: a biblioteca é botão dela, marcada pelo id, e o
+  guia continua não semeando nada sozinho.
+
+Nenhum campo novo em `src/lib/types/`, nenhuma rota, nenhum índice, nenhuma regra de segurança,
+nenhuma dependência — como a spec pedia. `grep -n "await " mutations/biblioteca.ts` e
+`grep -rn "SEM_RATEIO" src/ tests/` não acham nada.
+
+Fora do escopo literal da spec, e por quê:
+
+- **`fraseDosPrecoMedio` em `FormularioFicha.tsx`.** A spec dá um exemplo de frase ("Farinha de
+  trigo, manteiga sem sal e mais 8..."); montá-la a partir da lista que
+  `insumosComPrecoMedio` devolve é o que faz a faixa dizer nomes de verdade, e não um texto
+  fixo que nunca bateria com a ficha aberta.
+
+**O roteiro de sete passos não rodou nesta sessão** — precisa de uma conta vazia de verdade
+(`npm run conceder-acesso`) e de alguém no navegador. É o único lugar onde dá para ver o botão
+sumir depois do primeiro toque e o preço da ficha-modelo bater igual antes e depois de salvar a
+configuração (passo 6). **Também não rodou a gravação da Maynara** que o portão da fase 0 pede
+— isso é anterior à próxima spec, não a este código.
+
 ## Próxima ação
 
-**O projeto tem um roadmap de SaaS**: `docs/saas/ROADMAP.md`, escrito em 2026-09-15 a partir
-das três respostas em `docs/saas/` e das decisões `#d106` e `#d107` (marca MyCookie's, beta
-fechado antes de cadastro e cobrança, preço por plano, Stripe), e **revisto no mesmo dia pelo
-`#d108`**: a Maynara não conseguiu operar o sistema sozinha, e a fase 0 passou a ser "a usuária
-0 sozinha" — nenhuma conta de beta antes de ela chegar a um preço sem ajuda em dez minutos. A
-seção 2 do roadmap diz o que o repositório mostra sobre o porquê. **A próxima spec a escrever é
-a `017-o-preco-no-primeiro-minuto.md`** — a biblioteca de partida (~25 insumos, duas
-fichas-modelo) por um botão dela, caindo na ficha-modelo aberta com o preço no rodapé. Depois,
-na ordem: 018 o caminho reordenado para começar pelo preço, 019 os dois formulários com o resto
-atrás de "Mais detalhes", 020 o vocabulário perguntado a ela, e só então 021 a segunda conta.
-**Antes de cada spec da fase 0, fora do código:** gravar a tela da Maynara abrindo uma conta
-nova, sem ninguém explicar, e contar as perguntas. É a régua da fase.
+**Rodar o roteiro de sete passos da spec 017**, com DevTools em Offline do passo 1 ao 4, numa
+conta vazia (`npm run conceder-acesso -- <email> teste-017 "Teste 017" Teste`). O passo 6 —
+salvar a configuração sem mudar nada e ver o preço da ficha-modelo continuar o mesmo — é o que
+prova que `rateioDaConta` não tem um segundo lugar decidindo "salvo, senão sugerido". **E, fora
+do código, a régua da fase 0**: gravar a Maynara abrindo essa conta sem ninguém explicar,
+contando as perguntas. **A 018 só é escrita depois disso.**
+
+Depois, na ordem do roadmap revisto pelo `#d108`: 018 o caminho reordenado para começar pelo
+preço, 019 os dois formulários com o resto atrás de "Mais detalhes", 020 o vocabulário
+perguntado a ela, e só então 021 a segunda conta.
 
 **Rodar o roteiro de sete passos da spec 015**, com DevTools em Offline do passo 1 ao 5. É o
 único lugar onde a correção pode ser vista: `npm test` não toca no Firestore. O passo 1 é o que
@@ -1742,10 +1794,10 @@ que o aviso do `#d81` acusar, setembro de 2026 na frente; o "combo dupla" recria
 escolha "2 de Cookie" (`#d102`); e `FormaPagamento.instrucoes` preenchida na forma "Pix"
 (`#d98`). Nenhum dos quatro é código: são quatro toques na conta real.
 
-O portão de conclusão foi rodado de verdade em 2026-09-12, no fim da 016, e passa nos quatro:
-lint, typecheck, 491 testes e build com 17 rotas estáticas mais as dinâmicas. Portão passando não
+O portão de conclusão foi rodado de verdade em 2026-09-15, no fim da 017, e passa nos quatro:
+lint, typecheck, 502 testes e build com 17 rotas estáticas mais as dinâmicas. Portão passando não
 é o mesmo que sistema pronto — nenhum dos quatro toca no Firestore nem abre um navegador —, e é
-por isso que os roteiros da 015 e da 016 são a próxima ação, e não itens já fechados.
+por isso que os roteiros da 015, da 016 e da 017 são a próxima ação, e não itens já fechados.
 
 ## O que a verificação visual já corrigiu
 
@@ -1831,3 +1883,4 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | A folha, as duas entradas, a consulta e as frases do forno sem teste                            | `components/producao/`, `compras/`, `estoque/` | `npm test` cobre só `domain/`; o que fecha isso é o roteiro da 13A em navegador                |
 | Entrega paga pela cliente e nunca acertada some de "Entregas a pagar" ao cair da página         | `ListaPedidos.tsx`                             | Se for inaceitável: `entrega.repassePendente` gravado por quatro mutações + backfill (`#d105`) |
 | O roteiro de sete passos da 016 nunca rodou: "A receber" por página e o botão offline sem prova | `ListaPedidos.tsx`                             | Próxima ação; o índice já respondeu via Admin SDK, e `npm test` não toca no Firestore          |
+| O roteiro de sete passos da 017 nunca rodou: o botão, a ficha-modelo e as duas faixas sem prova | `BotaoBiblioteca.tsx`, `FormularioFicha.tsx`   | Próxima ação, numa conta vazia de verdade; `npm test` não toca no Firestore                    |

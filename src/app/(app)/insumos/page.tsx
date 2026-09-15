@@ -3,6 +3,7 @@
 import { Plus, Search } from "lucide-react";
 import { orderBy, query, where } from "firebase/firestore";
 import { useMemo, useState } from "react";
+import { BotaoBiblioteca } from "@/components/biblioteca/BotaoBiblioteca";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { FormularioInsumo } from "@/components/insumos/FormularioInsumo";
@@ -177,23 +178,17 @@ export default function PaginaInsumos() {
         ) : visiveis.length === 0 ? (
           dados.length === 0 ? (
             <EstadoVazio
-              titulo="Comece pela farinha"
-              descricao="Cadastre um insumo com o preço que você paga e a quantidade da embalagem. O sistema converte para custo por grama e usa isso em toda ficha técnica."
+              titulo="Comece com o que toda cozinha tem"
+              descricao="25 insumos com preço médio e duas receitas de cookie já precificadas. Você corrige o que for diferente na sua cozinha."
               acao={
                 <div className="flex flex-col items-center gap-4">
-                  <Botao
-                    variante="primaria"
-                    tamanho="lg"
-                    onClick={abrirNovo}
-                    iconeInicial={
-                      <Plus aria-hidden className="size-5" strokeWidth={2} />
-                    }
-                  >
-                    Cadastrar insumo
-                  </Botao>
-                  {/* A segunda ação: a nota da última compra tem tudo isso
-                      impresso, e a primeira carga é onde digitar mais custa. */}
-                  <EntradaLeitura tamanho="lg" />
+                  <BotaoBiblioteca />
+                  <div className="flex items-center gap-3">
+                    <Botao variante="terciaria" onClick={abrirNovo}>
+                      Cadastrar insumo
+                    </Botao>
+                    <EntradaLeitura tamanho="sm" />
+                  </div>
                   <AvisoLeituraSemRede centralizado />
                 </div>
               }

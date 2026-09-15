@@ -42,6 +42,7 @@ import {
   LinhaItemFicha,
 } from "./LinhaItemFicha";
 import { PainelPreco } from "./PainelPreco";
+import { insumosComPrecoMedio } from "@/lib/domain/biblioteca";
 import {
   custoDasEscolhas,
   custoLinhaComponente,
@@ -51,10 +52,8 @@ import {
   opcoesDaEscolha,
   podeSerComponente,
   ROTULO_UNIDADE_RENDIMENTO,
-  SEM_RATEIO,
   type RateioOperacional,
 } from "@/lib/domain/custoFicha";
-import { maiorTaxaAtiva } from "@/lib/domain/custosOperacionais";
 import {
   formatarCustoUnitario,
   formatarMoeda,
@@ -64,7 +63,11 @@ import type { ParametrosPreco } from "@/lib/domain/precificacao";
 import { projecaoDoPronto, temPronto } from "@/lib/domain/producao";
 import { esquemaFicha } from "@/lib/domain/schemas";
 import { paraBase, unidadesCompativeis } from "@/lib/domain/unidades";
-import { CONFIGURACAO_SUGERIDA } from "@/lib/firebase/mutations/configuracao";
+import {
+  CONFIGURACAO_SUGERIDA,
+  precificacaoPadraoDaConta,
+  rateioDaConta,
+} from "@/lib/firebase/mutations/configuracao";
 import {
   arquivarFicha,
   atualizarFicha,
@@ -159,6 +162,9 @@ function valoresIniciais(
     configuracao?.precificacao ?? CONFIGURACAO_SUGERIDA.precificacao;
 
   if (!ficha) {
+    // A mesma função que a biblioteca usa para montar a ficha-modelo
+    // (`DECISOES.md#d109`): salvo, senão sugerido, número por número.
+    const precificacao = precificacaoPadraoDaConta(configuracao);
     return {
       nome: "",
       categoria: "",
@@ -174,13 +180,11 @@ function valoresIniciais(
       itens: [],
       componentes: [],
       escolhas: [],
-      metodo: padrao.metodoPadrao,
-      markup: texto(padrao.markupPadrao),
-      margemDesejada: texto(padrao.margemPadrao),
-      taxaCartaoConsiderada: texto(
-        maiorTaxaAtiva(configuracao?.formasPagamento ?? []),
-      ),
-      outrasTaxas: texto(padrao.outrasTaxasPadrao),
+      metodo: precificacao.metodo,
+      markup: texto(precificacao.markup),
+      margemDesejada: texto(precificacao.margemDesejada),
+      taxaCartaoConsiderada: texto(precificacao.taxaCartaoConsiderada),
+      outrasTaxas: texto(precificacao.outrasTaxas),
       precoManual: false,
       precoVenda: 0,
     };
@@ -395,14 +399,18 @@ export function FormularioFicha({
   const custoEscolhas = custoDasEscolhas(escolhasResolvidas, fichas, ficha?.id);
   const kitComEscolhas = ehKit && escolhasResolvidas.length > 0;
 
-  const operacional: RateioOperacional =
-    configuracao?.operacional ?? SEM_RATEIO;
+  // Salvo, senão sugerido — a mesma regra que a biblioteca usa para montar a
+  // ficha-modelo (`DECISOES.md#d109`). Zero também é um número que o sistema
+  // inventou, e é o pior deles: é o erro da planilha dela, não se pagar.
+  const operacional: RateioOperacional = rateioDaConta(configuracao);
+  // Ela salvou e escolheu zero: decisão dela, e a faixa de hoje está certa.
   const rateioZerado =
     operacional.valorHoraTrabalho +
       operacional.custoEnergiaHora +
       operacional.custoGasHora +
       operacional.custoIndiretoPorHora ===
     0;
+  const nomesComPrecoMedio = insumosComPrecoMedio(valores.itens, insumos);
 
   const precificacao: ParametrosPreco = {
     metodo: valores.metodo,
@@ -410,9 +418,7 @@ export function FormularioFicha({
     margemDesejada: parseParaNumero(valores.margemDesejada),
     taxaCartaoConsiderada: parseParaNumero(valores.taxaCartaoConsiderada),
     outrasTaxas: parseParaNumero(valores.outrasTaxas),
-    arredondamento:
-      configuracao?.precificacao.arredondamento ??
-      CONFIGURACAO_SUGERIDA.precificacao.arredondamento,
+    arredondamento: precificacaoPadraoDaConta(configuracao).arredondamento,
   };
 
   const rendimento = parseParaNumero(valores.rendimento);
@@ -679,7 +685,32 @@ export function FormularioFicha({
 
       {/* Espaço no pé para o painel de preço não cobrir o último bloco. */}
       <div className="mt-4 space-y-4 pb-44 apertado:pb-32 lg:pb-40">
-        {rateioZerado && (
+        {/* Sem configuração salva, a ficha calcula com a sugerida inteira e
+            diz isso (`DECISOES.md#d109`): zero também é um número inventado,
+            e o pior deles. */}
+        {configuracao === null && (
+          <Faixa tom="atencao">
+            <p>
+              Seu tempo está a{" "}
+              {formatarMoeda(
+                CONFIGURACAO_SUGERIDA.operacional.valorHoraTrabalho,
+              )}{" "}
+              a hora, e o gás e a energia no valor sugerido. Ajuste em
+              Configuração e veja o preço mudar.
+            </p>
+            <Link
+              href="/configuracao"
+              className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-wine-700 underline underline-offset-2 dark:text-wine-300"
+            >
+              <Settings aria-hidden className="size-4" strokeWidth={1.75} />
+              Informar meus custos operacionais
+            </Link>
+          </Faixa>
+        )}
+
+        {/* Ela salvou e escolheu zero: decisão dela, e não ausência de
+            configuração. */}
+        {configuracao !== null && rateioZerado && (
           <Faixa tom="atencao">
             <p>
               Seu tempo de trabalho, o gás e as despesas fixas ainda não entram
@@ -692,6 +723,23 @@ export function FormularioFicha({
             >
               <Settings aria-hidden className="size-4" strokeWidth={1.75} />
               Informar meus custos operacionais
+            </Link>
+          </Faixa>
+        )}
+
+        {/* O insumo da biblioteca que ela ainda não conferiu (`#d109`). Some
+            sozinha conforme ela corrige o preço em Insumos. */}
+        {nomesComPrecoMedio.length > 0 && (
+          <Faixa tom="atencao">
+            <p>
+              {fraseDosPrecoMedio(nomesComPrecoMedio)} O seu chocolate custa
+              isso mesmo? Corrija em Insumos e o preço se refaz.
+            </p>
+            <Link
+              href="/insumos"
+              className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-wine-700 underline underline-offset-2 dark:text-wine-300"
+            >
+              Ir para Insumos
             </Link>
           </Faixa>
         )}
@@ -1317,6 +1365,18 @@ export function FormularioFicha({
       )}
     </>
   );
+}
+
+/** "Farinha de trigo, manteiga sem sal e mais 8 estão com o preço que a biblioteca sugeriu." */
+function fraseDosPrecoMedio(nomes: string[]): string {
+  if (nomes.length === 1) {
+    return `${nomes[0]} está com o preço que a biblioteca sugeriu.`;
+  }
+  if (nomes.length === 2) {
+    return `${nomes[0]} e ${nomes[1]} estão com o preço que a biblioteca sugeriu.`;
+  }
+  const resto = nomes.length - 2;
+  return `${nomes[0]}, ${nomes[1]} e mais ${resto} ${resto === 1 ? "está" : "estão"} com o preço que a biblioteca sugeriu.`;
 }
 
 function Faixa({ tom, children }: { tom: "atencao"; children: ReactNode }) {

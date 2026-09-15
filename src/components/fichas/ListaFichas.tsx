@@ -13,6 +13,7 @@ import { classesBotao } from "@/components/ui/estilosBotao";
 import { Botao } from "@/components/ui/Botao";
 import { LinhaFicha } from "./LinhaFicha";
 import { ID_FICHA_NOVA } from "./EditorFicha";
+import { BotaoBiblioteca } from "@/components/biblioteca/BotaoBiblioteca";
 import { EntradaContagemPronto } from "@/components/producao/EntradaContagemPronto";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { dataISODe } from "@/lib/domain/datas";
@@ -99,6 +100,9 @@ export function ListaFichas() {
   }, [dados, busca, filtro]);
 
   const despensaPronta = !despensa.carregando;
+  // O botão da biblioteca só existe em conta vazia (`DECISOES.md#d109`): sem
+  // isso o estado vazio de hoje trocaria de texto para quem já tem insumo.
+  const contaVazia = despensaPronta && insumos.length === 0;
   const semContagem =
     despensaPronta &&
     visiveis.some(
@@ -203,22 +207,40 @@ export function ListaFichas() {
           <EsqueletoLista />
         ) : visiveis.length === 0 ? (
           dados.length === 0 ? (
-            <EstadoVazio
-              titulo="Comece pelo que você mais vende"
-              descricao="Monte a receita com os insumos que você já cadastrou. O sistema soma o seu tempo, o gás e a taxa da maquininha, e devolve o preço que fecha a margem que você quer."
-              acao={
-                <Link
-                  href={`/fichas/${ID_FICHA_NOVA}`}
-                  className={classesBotao({
-                    variante: "primaria",
-                    tamanho: "lg",
-                  })}
-                >
-                  <Plus aria-hidden className="size-5" strokeWidth={2} />
-                  Criar primeira ficha
-                </Link>
-              }
-            />
+            contaVazia ? (
+              <EstadoVazio
+                titulo="Comece com um cookie que já tem preço"
+                descricao="Uma biblioteca de insumos e duas receitas de cookie, prontas para editar."
+                acao={
+                  <div className="flex flex-col items-center gap-3">
+                    <BotaoBiblioteca />
+                    <Link
+                      href={`/fichas/${ID_FICHA_NOVA}`}
+                      className={classesBotao({ variante: "terciaria" })}
+                    >
+                      Criar primeira ficha
+                    </Link>
+                  </div>
+                }
+              />
+            ) : (
+              <EstadoVazio
+                titulo="Comece pelo que você mais vende"
+                descricao="Monte a receita com os insumos que você já cadastrou. O sistema soma o seu tempo, o gás e a taxa da maquininha, e devolve o preço que fecha a margem que você quer."
+                acao={
+                  <Link
+                    href={`/fichas/${ID_FICHA_NOVA}`}
+                    className={classesBotao({
+                      variante: "primaria",
+                      tamanho: "lg",
+                    })}
+                  >
+                    <Plus aria-hidden className="size-5" strokeWidth={2} />
+                    Criar primeira ficha
+                  </Link>
+                }
+              />
+            )
           ) : (
             <EstadoVazio
               titulo="Nada com esse filtro"

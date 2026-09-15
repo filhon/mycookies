@@ -175,20 +175,6 @@ export type RateioOperacional = Pick<
   | "custoIndiretoPorHora"
 >;
 
-/**
- * O que uma ficha usa enquanto a conta não salvou configuração alguma.
- *
- * Zero, e não um palpite: um rateio inventado pelo sistema produz um preço
- * errado com aparência de certo, que é pior do que preço nenhum. A tela avisa
- * e aponta para `/configuracao` (`DECISOES.md#d17`).
- */
-export const SEM_RATEIO: RateioOperacional = {
-  valorHoraTrabalho: 0,
-  custoEnergiaHora: 0,
-  custoGasHora: 0,
-  custoIndiretoPorHora: 0,
-};
-
 export interface EntradaCustoFicha {
   itens: ItemParaCusto[];
   /** Sempre vazio em ficha simples. */
