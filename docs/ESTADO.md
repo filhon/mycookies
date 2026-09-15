@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-15 (roadmap do SaaS escrito; specs 015 e 016 executadas, roteiros por rodar).
+Atualizado em 2026-09-15 (roadmap do SaaS escrito e revisto pelo `#d108`; specs 015 e 016 executadas, roteiros por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -1697,11 +1697,16 @@ mais `limit`.
 
 **O projeto tem um roadmap de SaaS**: `docs/saas/ROADMAP.md`, escrito em 2026-09-15 a partir
 das três respostas em `docs/saas/` e das decisões `#d106` e `#d107` (marca MyCookie's, beta
-fechado antes de cadastro e cobrança, preço por plano, Stripe). Quatro fases, doze specs a
-partir da 017; a spec de uma fase só se escreve quando a anterior fechou. **A próxima spec a
-escrever é a `017-a-segunda-conta.md`** — cromo do login e da tela sem conta, `sair()`
-limpando o cache, `scripts/metricas.mjs`. Em paralelo e fora do código: 5 a 8 entrevistas e 3
-a 5 contas de beta liberadas por `conceder-acesso`.
+fechado antes de cadastro e cobrança, preço por plano, Stripe), e **revisto no mesmo dia pelo
+`#d108`**: a Maynara não conseguiu operar o sistema sozinha, e a fase 0 passou a ser "a usuária
+0 sozinha" — nenhuma conta de beta antes de ela chegar a um preço sem ajuda em dez minutos. A
+seção 2 do roadmap diz o que o repositório mostra sobre o porquê. **A próxima spec a escrever é
+a `017-o-preco-no-primeiro-minuto.md`** — a biblioteca de partida (~25 insumos, duas
+fichas-modelo) por um botão dela, caindo na ficha-modelo aberta com o preço no rodapé. Depois,
+na ordem: 018 o caminho reordenado para começar pelo preço, 019 os dois formulários com o resto
+atrás de "Mais detalhes", 020 o vocabulário perguntado a ela, e só então 021 a segunda conta.
+**Antes de cada spec da fase 0, fora do código:** gravar a tela da Maynara abrindo uma conta
+nova, sem ninguém explicar, e contar as perguntas. É a régua da fase.
 
 **Rodar o roteiro de sete passos da spec 015**, com DevTools em Offline do passo 1 ao 5. É o
 único lugar onde a correção pode ser vista: `npm test` não toca no Firestore. O passo 1 é o que
@@ -1765,15 +1770,15 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 
 | Dívida                                                                                          | Onde                                           | Quando resolver                                                                                |
 | ----------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Acesso concedido por script, sem cadastro self-serve                                            | `scripts/conceder-acesso.mjs`                  | Spec 023, fase 2 do roadmap — depois do beta (`#d16`, `#d106`)                                 |
-| `sair()` não limpa o cache do IndexedDB                                                         | `src/providers/AuthProvider.tsx`               | Spec 017, a próxima: em aparelho compartilhado vira vazamento                                  |
+| Acesso concedido por script, sem cadastro self-serve                                            | `scripts/conceder-acesso.mjs`                  | Spec 026, fase 2 do roadmap — depois do beta (`#d16`, `#d106`)                                 |
+| `sair()` não limpa o cache do IndexedDB                                                         | `src/providers/AuthProvider.tsx`               | Spec 021, fim da fase 0: em aparelho compartilhado vira vazamento                              |
 | Agregados incrementados no cliente                                                              | `src/lib/firebase/mutations/`                  | Deixou de ter prazo: nenhum número do agregado decide cobrança (`#d107`)                       |
 | Configuração aberta sem rede e sem cache diz "valores sugeridos"                                | `TelaConfiguracao.tsx`                         | Não tem conserto: cache vazio não distingue "não existe" de "não sei" (`#d43`)                 |
 | Agregado do mês pode ficar torto se um delta se perder no caminho                               | `mutations/agregado.ts`                        | Tem escape: "Recalcular o mês" na tela. A troca real é a mesma de D10                          |
 | Mudar um lançamento de mês não move o espelho da meta do mês destino                            | `mutations/transacoes.ts`                      | Mesmo escape e mesma troca: `DECISOES.md#d29`                                                  |
 | Produto revertido sobra zerado no agregado até recalcular                                       | `mutations/agregado.ts`                        | `produtosOrdenados` o esconde na leitura; recalcular limpa (`#d37`)                            |
 | `ultimoPedidoEm` do cliente não volta atrás ao desfazer um pagamento                            | `mutations/clientes.ts`                        | Só com histórico de pagamentos, que não existe (`#d37`)                                        |
-| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê                             | `mutations/clientes.ts`                        | Spec 020, fase 1 do roadmap (`#d35`)                                                           |
+| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê                             | `mutations/clientes.ts`                        | Spec 024, fase 1 do roadmap (`#d35`)                                                           |
 | Meta não guarda histórico: reescrever o alvo apaga o anterior                                   | `mutations/metas.ts`                           | Se "que meta eu tinha antes" virar pergunta real (`DECISOES.md#d27`)                           |
 | `FichaTecnica.ativo` é sempre `true`, sem tela que o desligue                                   | `src/lib/types/fichas.ts`                      | Se "produto fora de linha" virar diferente de "arquivado"                                      |
 | Quantidade volta em unidade base: 0,5 kg reabre como 500 g                                      | `FormularioFicha.tsx`                          | Se ela reclamar; exigiria gravar a unidade digitada, e não só o valor                          |
@@ -1797,7 +1802,7 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | `agregados/global` é escrito por três mutações e lido por ninguém                               | `types/financeiro.ts`                          | Se algum leitor aparecer; a 008 decidiu não ser ele (`#d67`)                                   |
 | `pedidosAbertos`, `proximaEntrega` e `ultimoNumeroPedido` nunca são escritos                    | `types/financeiro.ts`                          | Spec de limpeza, como a remoção de `estoqueMinimo` na 7A. Ninguém os lê hoje                   |
 | O cartão, a página, o gancho e a escrita na conta, sem teste                                    | `components/comecar/`                          | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
-| Os cinco textos do começo saíram do código, e não do que a 5B viu                               | `domain/onboarding.ts`                         | **Vencida**: a 5B rodou. Releitura curta, sem código — cabe de carona em qualquer spec         |
+| Os cinco textos do começo saíram do código, e não do que a 5B viu                               | `domain/onboarding.ts`                         | Spec 018: os cinco são reescritos com as palavras da gravação da usuária 0 (`#d108`)           |
 | Um passo fecha com o documento existindo, e não com ele estando bom                             | `domain/onboarding.ts`                         | Não tem conserto: o caminho diz onde ela está, e não se ela fez bem                            |
 | `/comecar` nunca foi vista em 360px nem no tema claro, e não há captura                         | `components/comecar/`                          | Critério da 8B em aberto: depende de navegador, de login e de conta de verdade                 |
 | O bloco de instalar nunca foi visto sumindo com o app instalado                                 | `InstalarNaTela.tsx`                           | Critério da 8B em aberto: exige instalar de fato, no iPhone e no Android                       |

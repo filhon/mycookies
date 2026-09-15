@@ -1,16 +1,20 @@
 # Roadmap do SaaS
 
-Escrito em 2026-09-15. Síntese de `gpt.md`, `claude.md` e `gemini.md` (as três respostas à
-mesma pergunta: "o que torna este sistema atrativo, vendável, rentável e escalável?") contra o
-que o repositório já entrega. Os três arquivos ficam como matéria-prima; **este é o que vale.**
+Escrito em 2026-09-15 e **revisto no mesmo dia** contra o único teste de uso que o produto teve.
+Síntese de `gpt.md`, `claude.md` e `gemini.md` (as três respostas à mesma pergunta: "o que torna
+este sistema atrativo, vendável, rentável e escalável?") contra o que o repositório já entrega.
+Os três arquivos ficam como matéria-prima; **este é o que vale.**
 
-Três decisões de quem conduz o projeto, tomadas em 2026-09-15, moldam tudo abaixo
-(`DECISOES.md#d106`, `#d107`):
+Quatro decisões de quem conduz o projeto moldam tudo abaixo (`DECISOES.md#d106`, `#d107`,
+`#d108`):
 
 - **MyCookie's continua sendo a marca do produto.** Não há spec de rebrand.
 - **Beta fechado antes de cadastro e cobrança.** As primeiras contas entram pelo script que
   já existe; cadastro self-serve e cobrança só nascem quando o beta disser o que generalizar.
 - **Stripe** é o provedor de cobrança, quando ela chegar.
+- **Nenhuma conta de beta entra antes de a usuária 0 chegar ao preço sozinha.** A Maynara não
+  conseguiu operar o sistema sem explicação (seção 2). Um beta sobre isso mede abandono, não
+  produto.
 
 O protocolo continua o mesmo: uma feature pensada aqui → uma spec em `docs/specs/` → uma
 sessão de implementação. **A spec de uma fase só é escrita quando a fase anterior fechou**,
@@ -34,13 +38,45 @@ O que sobra depois de descontar o que já existe são quatro coisas:
 3. **O cálculo precisa ser mais honesto que a planilha dela.** Já é (perda, embalagem, gás,
    energia, a hora dela, maquininha). A quebra da fornada é a única parcela que falta.
 4. **O risco é de escopo, não técnico.** O produto convida a virar ERP. A lista do que ele
-   nunca vai fazer está na seção 3, e vale mais que qualquer feature.
+   nunca vai fazer está na seção 4, e vale mais que qualquer feature.
 
 E uma verdade dura que os três dizem de jeitos diferentes: ticket baixo, churn alto, e boa
 parte das clientes fecha o negócio em meses porque a confeitaria era um bico. Anual com
 desconto e um trial curto são a resposta; free tier, não.
 
-## 2 · O que já existe
+## 2 · O que a usuária 0 provou
+
+A primeira versão deste roadmap dava o onboarding como entregue (spec 008). O único teste que
+ele teve — a Maynara, o público-alvo em pessoa, abrindo o app sem instrução — reprovou: ela
+precisou que alguém explicasse para que cada tela serve, o que existe, e qual o caminho até o
+preço sugerido. Isso não é falta de feature. É a soma de cinco coisas que o repositório mostra:
+
+1. **O primeiro passo do caminho é a tela mais difícil do sistema.** "Conferir a configuração"
+   abre cinco blocos e nove campos — valor da hora, horas por mês, energia por hora, gás por
+   hora, despesas fixas, margem, markup, outras taxas, arredondamento — antes de ela ter visto
+   um preço. É a linguagem do contador na porta de entrada. E não precisa ser primeiro: a ficha
+   já calcula com `CONFIGURACAO_SUGERIDA` quando nada foi salvo
+   (`FormularioFicha.tsx:159`). A ordem do caminho é a da dependência técnica, não a do valor.
+2. **Três formulários antes do primeiro "ahá".** Insumo: nove campos (nome, categoria, preço,
+   quantidade, unidade, perda, marca, onde compra, estoque) — vezes oito insumos para um
+   cookie. Ficha: nome, categoria, rende, unidade, tempo, **fornadas de reserva**, tipo, os
+   itens, sete parcelas de custo e quatro campos de preço. Tudo opcional que aparece é decisão
+   que ela precisa tomar.
+3. **O vocabulário é do software.** "Insumo", "ficha técnica", "fornada de reserva", "contagem
+   do pote", "competência". O `PRODUCT.md` manda falar a língua da confeitaria; a navegação
+   inferior diz "Insumos" e "Fichas".
+4. **Quatro telas fora do menu**, e `/comecar` tem uma seção "O que mais tem aqui" cuja
+   existência é a confissão: lista de compras, foto da nota, contagem da despensa e o que está
+   pronto só se acham por acaso ou pelo guia.
+5. **Toda spec desde a 009 foi aditiva.** Fornada, duas contagens, reserva, combo à escolha,
+   entregas a pagar, recalcular o mês — cada uma respondeu a um pedido real, e cada uma deixou
+   um campo, uma faixa ou uma tela na frente de quem está começando. Nenhuma tirou nada. É
+   assim que um produto vira ERP sem ninguém decidir.
+
+O `#d65` continua certo: tour não resolve isso. O que resolve é o preço aparecer no primeiro
+minuto e os formulários pedirem só o que o primeiro preço precisa.
+
+## 3 · O que já existe
 
 A maior parte das sugestões descreve o que o repositório já faz. Antes de qualquer spec:
 
@@ -52,7 +88,7 @@ A maior parte das sugestões descreve o que o repositório já faz. Antes de qua
 | Lista de compras contra a despensa (todas)                                   | `montarLista`, `/compras`, contagem com prazo (007)                          |
 | "Tenho 15 pedidos para amanhã, consigo?" (gpt §11)                           | capacidade por ficha, 13B                                                    |
 | Fechamento do mês numa tela (claude §3)                                      | `/financeiro`, agregado mensal (`#d09`)                                      |
-| Onboarding em passos, tempo até o primeiro "ahá" (todas)                     | `/comecar`, os cinco passos (008)                                            |
+| Onboarding em passos, tempo até o primeiro "ahá" (todas)                     | `/comecar` (008) **existe e reprovou no único teste** — é a fase 0, seção 2  |
 | Nota fiscal virando insumo (claude §2)                                       | foto + Gemini, spec 006 (QR da NFC-e fica como fallback, dívida já anotada)  |
 | WhatsApp (gpt §10, gemini §2)                                                | resumo por `wa.me`, spec 010 (`#d77`: link, não integração)                  |
 | Multi-tenant desde o dia um (gpt §20, gemini §4)                             | `contas/{contaId}`, claim por conta (`#d14`)                                 |
@@ -61,9 +97,7 @@ A maior parte das sugestões descreve o que o repositório já faz. Antes de qua
 | Dashboard que responde perguntas (gpt §12)                                   | tela Hoje ("o que preciso fazer") + `/financeiro` ("como estou")             |
 | Auditoria de estoque (gpt §21)                                               | `historicoPrecos`, fornada como fato datado (`#d87`), contagem com data      |
 
-Nenhuma dessas ganha spec. O que ganha é o que está na seção 4.
-
-## 3 · O que fica de fora, e por quê
+## 4 · O que fica de fora, e por quê
 
 Escrito para não ser relitigado. Cada item volta à mesa só com cliente pagante pedindo.
 
@@ -78,27 +112,83 @@ Escrito para não ser relitigado. Cada item volta à mesa só com cliente pagant
 | Etiqueta com tabela nutricional (claude §4)                   | Regulatório (RDC 429/819), outro produto.                                                                            |
 | Free tier (gpt §13)                                           | Suporte sem receita num público de ticket baixo. Trial de 14 dias.                                                   |
 | Vários planos com gating de funcionalidade (todas)            | Cada plano é código de permissão em cada tela. **Um plano no lançamento**; o segundo nasce com os upsells da fase 3. |
-| Checklists e fluxogramas interativos (gemini §1)              | `/comecar` já é isso, sem balão.                                                                                     |
-| Semear dado de exemplo automaticamente (gpt §16)              | `#d65`: o guia não semeia. A biblioteca é um botão que **ela** aperta (spec 018).                                    |
+| Tour, balões, vídeo de boas-vindas (gemini §1)                | `#d65`. O que reprovou não foi a falta de explicação: foi o que a tela pede antes de dar algo em troca.              |
+| Semear dado de exemplo automaticamente (gpt §16)              | `#d65`: o guia não semeia. A biblioteca é um botão que **ela** aperta (spec 017).                                    |
 | Anúncio pago no Meta (claude §5)                              | Não é código. O canal é professora de confeitaria com comissão recorrente, grupos, conteúdo sobre precificação.      |
 
-## 4 · Fases e specs
+E uma regra nova, que vale para toda spec daqui em diante (`#d108`): **spec que adiciona
+campo, faixa ou tela diz o que tira da frente de quem está começando.** "Nada" é resposta
+válida, mas tem que ser escrita.
+
+## 5 · Fases e specs
 
 Numeração continua de onde `docs/specs/` parou. Tamanho é sempre uma sessão; o que não couber
 em uma está grande demais e se divide na hora de escrever a spec.
 
-### Fase 0 · Beta fechado — o que existe, com mais gente usando
+### Fase 0 · A usuária 0 sozinha — o preço em dez minutos
 
-**Gatilho:** agora. **Sai da fase quando:** 3 a 5 contas usaram por 4 semanas e as entrevistas
-responderam "me mostra como você calcula o preço hoje".
+**Gatilho:** agora. **Sai da fase quando:** a Maynara, e depois uma confeiteira que nunca viu o
+app, abrem uma conta nova e chegam a um preço de venda **sem ninguém explicar nada**, em menos
+de dez minutos. Tela gravada. A medida é o número de perguntas que ela faz em voz alta; o alvo
+é zero. Enquanto isso não acontecer, nenhuma conta de beta entra.
 
-Fora do código, e antes dele: 5 a 8 entrevistas com confeiteiras que não são a Maynara, tela
-gravada, uma pergunta central. É o que diz o que generalizar (bolo por fatia, brigadeiro por
-cento, venda por peso — `UnidadeRendimento` já tem `porcao`, `g` e `ml`; o que falta só as
-entrevistas dizem). E a pergunta de saída do beta: "se sumisse amanhã, do que você sentiria
-falta?"
+O teste é o mais barato que existe e é o único que importa nesta fase: conta nova, celular
+dela, ninguém ao lado. Roda depois de cada spec abaixo, não só no fim.
 
-**017 · A segunda conta.** Conserto de cromo mais um script.
+**017 · O preço no primeiro minuto.** Biblioteca de partida mais o que ela desbloqueia.
+
+- Botão "Começar com o que toda cozinha tem" no estado vazio de `/fichas`, no de `/insumos` e
+  no primeiro passo do caminho: ~25 insumos (farinha, açúcares, manteiga, ovos, chocolate,
+  gotas, fermento, baunilha, leite condensado, cacau, saquinho, caixa, etiqueta…) com preço
+  médio e perda sugerida, todos editáveis, mais duas fichas-modelo (cookie clássico, cookie
+  recheado) já precificadas com a configuração sugerida.
+- `src/lib/domain/biblioteca.ts`: os dados e a função que monta os documentos. Puro, testado
+  (nenhum nome repetido, toda ficha referencia insumo da própria biblioteca). A escrita reusa
+  `corpoDeInsumoNovo` e `derivarFicha` num `writeBatch`, como `importarNota`.
+- Depois do toque, ela cai na ficha-modelo aberta, com o preço no rodapé e a frase: "calculado
+  com preços médios — o seu chocolate custa isso mesmo?". O primeiro "ahá" é aqui, no minuto um.
+- Respeita `#d65`: um toque dela, não uma semeadura do guia.
+- Aprovações: nenhuma.
+
+**018 · O caminho começa pelo preço.** Reordenar `domain/onboarding.ts`; sem tela nova.
+
+- Os cinco passos viram: (1) **ver quanto custa um cookie** — abre a ficha-modelo, ou o botão
+  da 017 se ela ainda não apertou; (2) **corrigir o preço do que você compra** — `/insumos`
+  com a biblioteca já lá, editar e não criar; (3) **ajustar o que é seu** — a configuração,
+  apresentada pela consequência: "sua primeira ficha usou R$ 20 a hora e o gás sugerido; ajuste
+  e veja o preço mudar"; (4) encomenda; (5) paga. A dependência técnica continua a mesma; só a
+  ordem em que ela é apresentada muda, porque a ficha já calcula sem configuração salva.
+- Os cinco textos de `CATALOGO_DO_COMECO` reescritos com as palavras que a Maynara usou na
+  gravação, e não as do código — a dívida "os textos saíram do código, e não do que a 5B viu"
+  fecha aqui.
+- Nenhum fato novo em `FatosDoComeco`: `temFicha` já fecha o passo 1.
+- Aprovações: nenhuma.
+
+**019 · Menos na frente.** Os dois formulários do primeiro preço pedem só o que ele precisa.
+
+- Insumo: nome, preço pago, quantidade e unidade na frente. Categoria, perda, marca, onde
+  compra e estoque atual atrás de "Mais detalhes" (`<details>` nativo, aberto quando editando
+  um insumo que já tem algum deles preenchido).
+- Ficha: nome, rende, unidade, tempo e os itens na frente. Categoria, **fornadas de reserva** e
+  o tipo kit atrás de "Mais detalhes" — mesma regra de abertura. O painel de preço não muda.
+- Nada sai do schema, nada sai da tela: só a ordem e a dobra. Configuração fica como está —
+  a 018 já a tirou da porta de entrada.
+- Aprovações: nenhuma.
+
+**020 · As palavras dela.** Vocabulário, com ela e não por ela.
+
+- Antes da spec: cinco perguntas à Maynara e à segunda confeiteira da gravação — como você
+  chama o que compra, a receita com custo, o que já assou, a encomenda, o dinheiro do mês. Se
+  a resposta for "insumo" e "ficha técnica", nada muda e a spec não existe.
+- Se mudar: `navegacao.ts`, os títulos de `CabecalhoPagina`, os estados vazios e
+  `CATALOGO_DO_COMECO`. Nenhum identificador de código, nenhum caminho do Firestore.
+- As quatro telas fora do menu: a spec diz, para cada uma, **em que tela e em que momento** o
+  atalho já aparece (compras: cartão da tela Hoje e cabeçalho de `/pedidos`) e onde falta. "O
+  que mais tem aqui" continua em `/comecar`, mas deixa de ser a única porta.
+- Aprovações: nenhuma.
+
+**021 · A segunda conta.** Conserto de cromo mais um script. Só depois de a fase 0 passar no
+teste com a Maynara; é o que abre a porta para a segunda confeiteira.
 
 - O login para de dizer "Acesso restrito à administradora da MyCookie's"; a tela "Este login
   ainda não abre nenhuma conta" para de mostrar `npm run conceder-acesso` (instrução de dev)
@@ -107,44 +197,44 @@ falta?"
   "em aparelho compartilhado vira vazamento" cai.
 - `scripts/metricas.mjs` (Admin SDK, irmão de `conceder-acesso.mjs`): por conta — criada em,
   último login (`lastSignInTime`), insumos, fichas, pedidos nos últimos 30 dias, primeira ficha
-  em. Imprime a tabela; a ativação (ficha em 7 dias) sai dela. Sem dependência, sem tela.
+  em, e **primeira ficha que não é da biblioteca em**. Imprime a tabela; o tempo até o primeiro
+  preço próprio sai dela. Sem dependência, sem tela.
 - Aprovações: nenhuma.
 
-**018 · Começar com o que toda cozinha tem.** Onboarding.
+### Fase 1 · Beta fechado e o hábito semanal
 
-- Botão "Começar com os insumos comuns" no estado vazio de `/insumos` e no passo 2 de
-  `/comecar`: ~25 insumos (farinha, açúcares, manteiga, ovos, chocolate, gotas, fermento,
-  baunilha, leite condensado, cacau, saquinho, caixa, etiqueta…) com preço médio e perda
-  sugerida, todos editáveis, mais duas fichas-modelo (cookie clássico, cookie recheado) já
-  precificadas com a configuração sugerida.
-- `src/lib/domain/biblioteca.ts`: os dados e a função que monta os documentos. Puro, testado
-  (nenhum nome repetido, toda ficha referencia insumo da própria biblioteca). A escrita reusa
-  `corpoDeInsumoNovo` e `derivarFicha` num `writeBatch`, como `importarNota`.
-- Respeita `#d65`: um toque dela, não uma semeadura do guia.
-- Aprovações: nenhuma.
+**Gatilho:** a fase 0 passou no teste. **Sai da fase quando:** 3 a 5 contas usaram por 4
+semanas e as entrevistas responderam "me mostra como você calcula o preço hoje".
 
-### Fase 1 · O hábito semanal — o que faz abrir o app sem ser para precificar
+Fora do código, e antes dele: 5 a 8 entrevistas com confeiteiras que não são a Maynara, tela
+gravada, uma pergunta central. É o que diz o que generalizar (bolo por fatia, brigadeiro por
+cento, venda por peso — `UnidadeRendimento` já tem `porcao`, `g` e `ml`; o que falta só as
+entrevistas dizem). E a pergunta de saída do beta: "se sumisse amanhã, do que você sentiria
+falta?"
 
-**Gatilho:** a fase 0 rodando; estas specs entram na ordem em que o beta pedir.
+As specs entram na ordem em que o beta pedir, com uma exceção: a 022 vem primeiro, porque
+perder trabalho em silêncio é o que mais mina a confiança de quem está operando sozinha.
 
-**019 · Fichas no vermelho.** O alerta de custo.
+**022 · Sair sem salvar.** Um hook, quatro editores (ficha, pedido, configuração, contagem).
+Dívida da tabela; com mais gente usando, deixa de ser "se acontecer".
+
+**023 · Fichas no vermelho.** O alerta de custo.
 
 - `derivarFicha` já recalcula uma ficha com os insumos de hoje. Um cartão na tela Hoje — "3
   fichas ficaram abaixo da margem depois da última compra" — e a linha em `/fichas` dizendo
   "sobra R$ 1,80 → R$ 0,90". Só leitura: `custoDesatualizado` e `historicoPrecos` já existem.
 - Aprovações: nenhuma.
 
-**020 · Quem mais compra de mim.** Tela de clientes (dívida da tabela).
+**024 · Quem mais compra de mim.** Tela de clientes (dívida da tabela).
 
 - `/clientes` lê `totalPedidos`, `totalGasto`, `ticketMedio` e `ultimoPedidoEm`, que são
   escritos e ninguém lê (`#d35`). Arquivar cliente. Fora do menu de baixo (teto de cinco),
   alcançada pelo cabeçalho de `/pedidos`. Índice já publicado.
+- É uma tela nova: pela regra do `#d108`, a spec diz o que ela tira da frente. Se não tirar
+  nada e ninguém do beta pedir, espera.
 - Aprovações: nenhuma.
 
-**021 · Sair sem salvar.** Um hook, quatro editores (ficha, pedido, configuração, contagem).
-Dívida da tabela; com mais gente usando, deixa de ser "se acontecer".
-
-**022 · A fornada que quebrou.** Só se as entrevistas pedirem.
+**025 · A fornada que quebrou.** Só se as entrevistas pedirem.
 
 - `Fornada.perdidas` (unidades descartadas) → custo real por unidade vendável na ficha: "nas
   últimas fornadas, 6% quebrou; o custo real é R$ X". Campo aditivo opcional.
@@ -152,15 +242,17 @@ Dívida da tabela; com mais gente usando, deixa de ser "se acontecer".
 
 ### Fase 2 · Cadastro e cobrança — a porta com algo atrás
 
-**Gatilho:** a fase 0 fechou com pelo menos três contas ativas e a frase do preço confirmada
+**Gatilho:** a fase 1 fechou com pelo menos três contas ativas e a frase do preço confirmada
 como defensável nas entrevistas. É o "segundo cliente pagante" de `#d16`.
 
-**023 · Criar a conta sozinha.**
+**026 · Criar a conta sozinha.**
 
 - `/cadastro`: `createUserWithEmailAndPassword` no aparelho, depois `POST /api/conta` (token,
   nome do negócio, nome dela). O corpo de `conceder-acesso.mjs` vira handler, no padrão de
   `/api/nota` e `firebaseAdmin.ts`: cria `contas/{id}` com `plano: "TRIAL"`, `status: "ATIVA"`,
   `trialAte` em 14 dias, e emite a claim. `reconferirAcesso()` já traz a claim sem sair.
+- A conta nova cai direto no passo 1 da 018: ver o preço de um cookie. Cadastro e primeiro
+  preço são a mesma sessão de uso.
 - Aceite de termos: caixa obrigatória ligando `/termos` e `/privacidade` (páginas estáticas;
   o texto é de quem conduz o projeto, a spec entrega o lugar). `Conta.termosAceitosEm`.
 - `Conta` ganha `plano`, `status`, `trialAte`, `termosAceitosEm` — os campos que o comentário
@@ -168,7 +260,7 @@ como defensável nas entrevistas. É o "segundo cliente pagante" de `#d16`.
 - O script continua valendo para liberar à mão.
 - Aprovações: schema aditivo em `Conta`. Regras não mudam.
 
-**024 · O teste acaba, e a assinatura.** Stripe, um plano.
+**027 · O teste acaba, e a assinatura.** Stripe, um plano.
 
 - Um plano, mensal e anual (anual com dois meses grátis). Sem gating: um plano é zero código
   de permissão por tela.
@@ -186,7 +278,7 @@ como defensável nas entrevistas. É o "segundo cliente pagante" de `#d16`.
 - Aprovações: dependência `stripe` (ou `fetch` cru com HMAC via `crypto` — a spec decide);
   **mudança de regra de segurança**; campos em `Conta`; cron no Vercel.
 
-**025 · Meus dados são meus.** LGPD, o mínimo que não é jurídico.
+**028 · Meus dados são meus.** LGPD, o mínimo que não é jurídico.
 
 - `GET /api/conta/exportar`: JSON com todas as coleções da conta. Botão em `/configuracao`.
 - "Encerrar minha conta" em `/configuracao`: `status: "ENCERRADA"`, claim removida, assinatura
@@ -196,31 +288,35 @@ como defensável nas entrevistas. É o "segundo cliente pagante" de `#d16`.
 
 ### Fase 3 · Crescimento — só com cliente pagante pedindo
 
-**026 · A ajudante.** Papel `AJUDANTE` na claim, convite por e-mail via handler, regras
+**029 · A ajudante.** Papel `AJUDANTE` na claim, convite por e-mail via handler, regras
 conferindo papel em `configuracao` e `financeiro`, seletor de conta no `AuthProvider` — o
 ponto único que `#d14` já nomeou. Vocabulário de papel nasce aqui, com o caso.
 
-**027 · Cardápio público com link de pedido.** `contas/{id}/publico/cardapio` escrito por ela
+**030 · Cardápio público com link de pedido.** `contas/{id}/publico/cardapio` escrito por ela
 (espelho das fichas ativas com preço), regra de leitura pública só nesse documento, página
 `/c/{contaId}`, pedido nascendo como `ORCAMENTO` por handler. Aprovação: a primeira regra
 pública do sistema.
 
-**028 · O segundo plano.** Só quando 026 e 027 existirem: são os upsells naturais. É aqui, e
+**031 · O segundo plano.** Só quando 029 e 030 existirem: são os upsells naturais. É aqui, e
 não antes, que gating de funcionalidade entra no código.
 
-## 5 · Métricas
+## 6 · Métricas
 
-Poucas, todas saindo de `scripts/metricas.mjs` (017) ou do painel do Stripe (024) — nada a
-construir além do script:
+Poucas, todas saindo de `scripts/metricas.mjs` (021), da gravação da fase 0 ou do painel do
+Stripe (027) — nada a construir além do script:
 
-- **Ativação:** contas com a primeira ficha em até 7 dias da criação.
+- **Perguntas em voz alta** na gravação de primeiro uso, sem ajuda. Alvo: zero. É a única
+  métrica da fase 0, e a única que uma pessoa só consegue medir.
+- **Tempo até o primeiro preço próprio:** da criação da conta à primeira ficha que não veio da
+  biblioteca. Alvo: o mesmo dia — "sete dias" era a régua de quem ainda não tinha visto a
+  usuária 0 travar.
 - **Retenção D30:** login nos últimos 30 dias, para contas com mais de 30 dias.
 - **Fichas por conta:** o melhor preditor de retenção — é onde mora o custo de sair.
 - **Churn mensal e MRR:** Stripe.
 
-## 6 · Preço
+## 7 · Preço
 
 Faixa realista no Brasil para o plano de entrada: R$ 29–49/mês. Com um plano só, o número
-fica no Stripe e a spec 024 não o conhece. O argumento de venda não é "sistema barato": é
+fica no Stripe e a spec 027 não o conhece. O argumento de venda não é "sistema barato": é
 "descubra quanto você realmente ganha em cada doce" — uma cliente que descobre R$ 600/mês de
 prejuízo por preço errado não está pagando R$ 49 por um app, está pagando por esse número.

@@ -3328,13 +3328,53 @@ não é técnico: é virar ERP.
   consultora, free tier, migração para outro banco. A tabela com o motivo de cada um está na
   seção 3 do roadmap. Cada item volta à mesa só com cliente pagante pedindo.
 
-**Consequência.** O roadmap tem quatro fases e doze specs, numeradas a partir da 017, e **a
-spec de uma fase só é escrita quando a fase anterior fechou**: cada uma muda `ESTADO.md` e o
-que a próxima precisa saber. A fase 0 (017 e 018) não cria infraestrutura nova — é cromo,
-um script de métricas e uma biblioteca de partida opt-in, que respeita o `#d65` porque é um
-botão que ela aperta e não uma semeadura do guia. O preço é que o segundo usuário real
-continua dependendo de alguém rodar `node` por mais algumas semanas, que é exatamente o que
-`#d16` previu.
+**Consequência.** O roadmap tem quatro fases, numeradas a partir da 017, e **a spec de uma
+fase só é escrita quando a fase anterior fechou**: cada uma muda `ESTADO.md` e o que a próxima
+precisa saber. A fase 0 não cria infraestrutura nova — uma biblioteca de partida opt-in, que
+respeita o `#d65` porque é um botão que ela aperta e não uma semeadura do guia, mais cromo e um
+script de métricas. O preço é que o segundo usuário real continua dependendo de alguém rodar
+`node` por mais algumas semanas, que é exatamente o que `#d16` previu. **A composição da fase 0
+foi revista no mesmo dia pelo `#d108`**: a seção 3 do roadmap virou seção 4, e o beta deixou de
+ser o gatilho da fase.
+
+---
+
+## D108 · Nenhuma conta de beta antes de a usuária 0 chegar ao preço sozinha — e toda spec diz o que tira da frente
+
+**Status:** vigente · decidida em 2026-09-15, na revisão do `docs/saas/ROADMAP.md`
+
+**Contexto.** A primeira versão do roadmap dava o onboarding (spec 008) como entregue e abria a
+fase 0 com o beta fechado. O único teste de uso que o produto teve reprovou: a Maynara, o
+público-alvo em pessoa, não conseguiu operar o sistema sem que alguém explicasse para que cada
+tela serve, o que existe e qual o caminho até o preço sugerido. Lido contra o repositório, o
+motivo não é falta de explicação, é o que o sistema pede antes de dar algo em troca: o primeiro
+passo do caminho é a configuração (cinco blocos, nove campos, vocabulário de contador), o
+primeiro preço fica atrás de três formulários (insumo com nove campos, ficha com "fornadas de
+reserva" e o tipo kit na frente), a navegação fala "insumo" e "ficha técnica", quatro telas só
+se acham pelo guia, e toda spec desde a 009 foi aditiva. A ficha já calcula com
+`CONFIGURACAO_SUGERIDA` quando nada foi salvo, então a configuração estar na porta é escolha de
+ordem, não necessidade.
+
+**Decisão.** Duas coisas:
+
+- **A fase 0 passa a ser "a usuária 0 sozinha"**, e sai só quando a Maynara, e depois uma
+  confeiteira que nunca viu o app, chegam a um preço de venda numa conta nova, sem ajuda, em
+  menos de dez minutos, com a tela gravada. A medida é o número de perguntas em voz alta; o
+  alvo é zero. Nenhuma conta de beta entra antes disso. As specs da fase são o preço no
+  primeiro minuto (biblioteca + ficha-modelo aberta), o caminho reordenado para começar pelo
+  preço e terminar na configuração, os dois formulários do primeiro preço com o resto atrás de
+  "Mais detalhes", e o vocabulário perguntado a ela. A segunda conta vem depois.
+- **Toda spec que adiciona campo, faixa ou tela diz o que tira da frente de quem está
+  começando.** "Nada" é resposta válida, mas tem que ser escrita. É a regra contra virar ERP
+  por acumulação, que é como se vira ERP.
+
+**Consequência.** O beta atrasa algumas semanas e mede produto em vez de abandono. O `#d65`
+continua de pé — não há tour —, e o que muda nele é a ordem do caminho e o que cada passo pede.
+Nada sai do schema: "menos na frente" é dobra de formulário, e a configuração continua sendo
+o passo que fecha o preço de verdade, só que apresentada pela consequência ("ajuste e veja o
+preço mudar") em vez de pela obrigação. A numeração do roadmap mudou: as specs de 017 a 028 da
+primeira versão viraram 021 a 031, e a tabela de dívidas do `ESTADO.md` aponta para os números
+novos.
 
 ---
 
