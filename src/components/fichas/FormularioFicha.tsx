@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type ReactNode } from "react";
+import { useId, useMemo, useState, type ReactNode } from "react";
 import {
   useFieldArray,
   useForm,
@@ -29,7 +29,8 @@ import {
 import { Bloco } from "@/components/ui/Bloco";
 import { Botao } from "@/components/ui/Botao";
 import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
-import { Campo, Seletor } from "@/components/ui/Campo";
+import { Campo, EnvelopeCampo, Seletor } from "@/components/ui/Campo";
+import { CampoImagem } from "@/components/ui/CampoImagem";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { EntradaContagemPronto } from "@/components/producao/EntradaContagemPronto";
@@ -60,9 +61,14 @@ import {
   formatarMoeda,
   parseParaNumero,
 } from "@/lib/domain/money";
+import {
+  FOTO_COM_ALPHA_MAX_BYTES,
+  FOTO_LADO_PX,
+  FOTO_MAX_BYTES,
+} from "@/lib/domain/orcamento";
 import type { ParametrosPreco } from "@/lib/domain/precificacao";
 import { projecaoDoPronto, temPronto } from "@/lib/domain/producao";
-import { esquemaFicha } from "@/lib/domain/schemas";
+import { DESCRICAO_MAX, esquemaFicha } from "@/lib/domain/schemas";
 import { paraBase, unidadesCompativeis } from "@/lib/domain/unidades";
 import { CONFIGURACAO_SUGERIDA } from "@/lib/firebase/mutations/configuracao";
 import {
@@ -108,6 +114,9 @@ interface LinhaEscolhaForm {
 interface ValoresFicha {
   nome: string;
   categoria: string;
+  descricao: string;
+  /** O `data:` URL já reduzido, ou `null` sem foto (`DECISOES.md#d109`). */
+  fotoUrl: string | null;
   tipo: TipoFicha;
   rendimento: string;
   unidadeRendimento: UnidadeRendimento;
@@ -162,6 +171,8 @@ function valoresIniciais(
     return {
       nome: "",
       categoria: "",
+      descricao: "",
+      fotoUrl: null,
       tipo: "SIMPLES",
       // Rendimento e tempo nascem vazios porque não há de onde derivá-los:
       // um palpite aqui vira preço errado com cara de certo.
@@ -189,6 +200,8 @@ function valoresIniciais(
   return {
     nome: ficha.nome,
     categoria: ficha.categoria,
+    descricao: ficha.descricao ?? "",
+    fotoUrl: ficha.fotoUrl ?? null,
     tipo: ficha.tipo,
     rendimento: texto(ficha.rendimento),
     unidadeRendimento: ficha.unidadeRendimento,
@@ -244,6 +257,7 @@ export function FormularioFicha({
   pendente: boolean;
 }) {
   const router = useRouter();
+  const idDescricao = useId();
   const form = useForm<ValoresFicha>({
     defaultValues: valoresIniciais(ficha, configuracao),
   });
@@ -557,6 +571,7 @@ export function FormularioFicha({
     const resultado = esquemaFicha.safeParse({
       nome: valores.nome,
       categoria: valores.categoria,
+      descricao: valores.descricao,
       tipo: valores.tipo,
       rendimento,
       unidadeRendimento: valores.unidadeRendimento,
@@ -606,6 +621,8 @@ export function FormularioFicha({
     const dados: DadosFicha = {
       nome: valores.nome,
       categoria: valores.categoria,
+      descricao: valores.descricao,
+      fotoUrl: valores.fotoUrl,
       tipo: valores.tipo,
       rendimento,
       unidadeRendimento: valores.unidadeRendimento,
@@ -852,6 +869,52 @@ export function FormularioFicha({
               <option key={categoria} value={categoria} />
             ))}
           </datalist>
+
+          {/* Os dois vão na folha do orçamento (spec 017), e só nela: a lista
+              de fichas continua lista, sem miniatura. */}
+          <EnvelopeCampo
+            id={idDescricao}
+            rotulo="Como você apresenta"
+            dica={
+              <span className="flex justify-between gap-3">
+                <span>
+                  Vai na folha do orçamento. Duas frases: o que é, o que tem
+                  dentro.
+                </span>
+                {valores.descricao.length > 200 && (
+                  <span className="num shrink-0 text-micro">
+                    {valores.descricao.length}/{DESCRICAO_MAX}
+                  </span>
+                )}
+              </span>
+            }
+            erro={form.formState.errors.descricao?.message}
+          >
+            <textarea
+              id={idDescricao}
+              rows={2}
+              placeholder="Massa amanteigada com gotas de chocolate, crocante por fora e macia por dentro, recheada com brigadeiro."
+              aria-invalid={form.formState.errors.descricao ? true : undefined}
+              className="w-full rounded-md border border-line-strong bg-surface px-3 py-2.5 text-body text-ink transition-colors duration-150 ease-quart placeholder:text-ink-subtle"
+              {...form.register("descricao")}
+            />
+          </EnvelopeCampo>
+
+          <CampoImagem
+            rotulo="Foto"
+            dica="A miniatura ao lado do produto na folha. Um PNG com fundo transparente sai solto sobre o papel, como no cardápio; uma foto comum sai num quadrado."
+            valor={valores.fotoUrl}
+            aoMudar={(dataUrl) => form.setValue("fotoUrl", dataUrl)}
+            reducao={{
+              ladoMaximo: FOTO_LADO_PX,
+              formato: "image/jpeg",
+              qualidade: 0.8,
+            }}
+            maxBytes={FOTO_MAX_BYTES}
+            comAlpha={{ maxBytes: FOTO_COM_ALPHA_MAX_BYTES }}
+            rotuloEscolher="Escolher foto"
+            rotuloTirar="Tirar a foto"
+          />
         </Bloco>
 
         <Bloco

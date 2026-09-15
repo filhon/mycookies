@@ -664,12 +664,12 @@ O que `npm test` não alcança: o PDF de verdade, nos três sistemas.
 
 **17B**
 
-- [ ] `FichaTecnica.descricao` e `fotoUrl` escritos pelo editor de ficha, com os tetos.
-- [ ] `ConfiguracaoGeral.contato` e `assinaturaDataUrl` escritos pela configuração.
-- [ ] `reduzirImagem` em `imagem.ts`, com `prepararParaLeitura` devolvendo o mesmo de antes.
-- [ ] A folha mostra foto, descrição, contato e assinatura, e degrada sem cada um deles.
+- [x] `FichaTecnica.descricao` e `fotoUrl` escritos pelo editor de ficha, com os tetos.
+- [x] `ConfiguracaoGeral.contato` e `assinaturaDataUrl` escritos pela configuração.
+- [x] `reduzirImagem` em `imagem.ts`, com `prepararParaLeitura` devolvendo o mesmo de antes.
+- [x] A folha mostra foto, descrição, contato e assinatura, e degrada sem cada um deles.
 - [ ] O passo 8 do roteiro passa.
-- [ ] Portão de conclusão, `ESTADO.md`, e nenhuma decisão nova (as cinco são da 17A).
+- [x] Portão de conclusão, `ESTADO.md`, e nenhuma decisão nova (as cinco são da 17A).
 
 ---
 

@@ -95,7 +95,7 @@ export function TelaOrcamento({ id }: { id: string }) {
   const situacao = situacaoDaValidade(orcamento.validoAteISO, hoje);
 
   return (
-    <div className="pt-4 lg:pt-6">
+    <div className="pt-4 lg:pt-6 print:pt-0">
       <div className="print:hidden">
         <div className="flex flex-wrap items-center gap-3">
           <Link

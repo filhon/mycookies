@@ -6,6 +6,18 @@ export interface ArquivoParaLeitura {
   dados: string;
 }
 
+export interface OpcoesDeReducao {
+  ladoMaximo: number;
+  /**
+   * WebP preserva o alpha em um quinto do PNG, mas o Safari não o codifica
+   * pelo `canvas` e devolve PNG em silêncio: quem lê o resultado confere o
+   * prefixo do `data:` URL, e não o formato pedido.
+   */
+  formato: "image/jpeg" | "image/png" | "image/webp";
+  /** Só para JPEG e WebP. */
+  qualidade?: number;
+}
+
 /**
  * A foto antes de subir.
  *
@@ -28,10 +40,12 @@ export async function prepararParaLeitura(
   }
 
   try {
-    const reduzida = await reduzir(arquivo);
-    if (reduzida) {
-      return { mimeType: "image/jpeg", dados: await paraBase64(reduzida) };
-    }
+    const reduzida = await reduzirImagem(arquivo, {
+      ladoMaximo: LADO_MAXIMO_PX,
+      formato: "image/jpeg",
+      qualidade: QUALIDADE_JPEG,
+    });
+    return { mimeType: "image/jpeg", dados: semPrefixo(reduzida) };
   } catch {
     // Cai para o original abaixo.
   }
@@ -39,11 +53,19 @@ export async function prepararParaLeitura(
   return { mimeType: tipo, dados: await paraBase64(arquivo) };
 }
 
-async function reduzir(arquivo: File): Promise<Blob | null> {
+/**
+ * A imagem reduzida, como `data:` URL. Lança se o navegador não souber
+ * desenhá-la. É o mesmo `canvas` para a nota fiscal, a miniatura do produto e
+ * a assinatura (spec 017): só o lado e o formato mudam.
+ */
+export async function reduzirImagem(
+  arquivo: File,
+  opcoes: OpcoesDeReducao,
+): Promise<string> {
   const fonte = await desenhavel(arquivo);
   const escala = Math.min(
     1,
-    LADO_MAXIMO_PX / Math.max(fonte.largura, fonte.altura),
+    opcoes.ladoMaximo / Math.max(fonte.largura, fonte.altura),
   );
 
   const tela = document.createElement("canvas");
@@ -51,18 +73,22 @@ async function reduzir(arquivo: File): Promise<Blob | null> {
   tela.height = Math.round(fonte.altura * escala);
 
   const pincel = tela.getContext("2d");
-  if (!pincel) return null;
+  if (!pincel) {
+    fonte.liberar();
+    throw new Error("Sem canvas");
+  }
 
-  // Fundo branco: nota fotografada com transparência (PNG) viraria preta no
-  // JPEG, e uma nota preta não se lê.
-  pincel.fillStyle = "#ffffff";
-  pincel.fillRect(0, 0, tela.width, tela.height);
+  // Fundo branco só em JPEG: transparência viraria preto, e uma nota preta
+  // não se lê. PNG preserva a transparência, que é o motivo de a assinatura
+  // ser PNG.
+  if (opcoes.formato === "image/jpeg") {
+    pincel.fillStyle = "#ffffff";
+    pincel.fillRect(0, 0, tela.width, tela.height);
+  }
   pincel.drawImage(fonte.imagem, 0, 0, tela.width, tela.height);
   fonte.liberar();
 
-  return new Promise((resolver) =>
-    tela.toBlob((blob) => resolver(blob), "image/jpeg", QUALIDADE_JPEG),
-  );
+  return tela.toDataURL(opcoes.formato, opcoes.qualidade);
 }
 
 interface Desenhavel {
@@ -115,13 +141,14 @@ async function desenhavel(arquivo: File): Promise<Desenhavel> {
   }
 }
 
+function semPrefixo(dataUrl: string): string {
+  return dataUrl.slice(dataUrl.indexOf(",") + 1);
+}
+
 function paraBase64(arquivo: Blob): Promise<string> {
   return new Promise((resolver, rejeitar) => {
     const leitor = new FileReader();
-    leitor.onload = () => {
-      const resultado = String(leitor.result);
-      resolver(resultado.slice(resultado.indexOf(",") + 1));
-    };
+    leitor.onload = () => resolver(semPrefixo(String(leitor.result)));
     leitor.onerror = () =>
       rejeitar(leitor.error ?? new Error("Leitura falhou"));
     leitor.readAsDataURL(arquivo);

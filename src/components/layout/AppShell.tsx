@@ -7,7 +7,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="textura-papel min-h-dvh bg-canvas">
       <BarraLateral />
 
-      <div className="lg:pl-60">
+      <div className="lg:pl-60 print:pl-0">
         {/* pb-24 no celular reserva a faixa da navegação inferior; com o
             teclado aberto ela não está lá, e a reserva vira vão morto. */}
         {/* Na impressão o shell some e a folha do orçamento é a página inteira

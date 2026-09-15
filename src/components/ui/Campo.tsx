@@ -66,6 +66,8 @@ export interface CampoProps extends Omit<
   rotulo: string;
   dica?: ReactNode;
   erro?: string;
+  /** Fixo à esquerda, como o `R$` do campo monetário: o `@` do Instagram. */
+  prefixo?: ReactNode;
   sufixo?: ReactNode;
   className?: string;
   /**
@@ -80,6 +82,7 @@ export function Campo({
   rotulo,
   dica,
   erro,
+  prefixo,
   sufixo,
   className,
   required,
@@ -97,6 +100,11 @@ export function Campo({
       className={className}
     >
       <div className="relative">
+        {prefixo && (
+          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-label font-medium text-ink-muted">
+            {prefixo}
+          </span>
+        )}
         <input
           id={id}
           aria-invalid={erro ? true : undefined}
@@ -106,6 +114,7 @@ export function Campo({
           className={cn(
             BASE_CONTROLE,
             erro ? "border-negative" : "border-line-strong",
+            prefixo && "pl-8",
             sufixo && "pr-14",
           )}
           {...props}

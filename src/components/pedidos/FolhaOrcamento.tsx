@@ -2,7 +2,11 @@ import type { ReactNode } from "react";
 import { Logotipo, SLOGAN } from "@/components/marca/Marca";
 import { rotuloDataCompleta, rotuloDiaPorExtenso } from "@/lib/domain/datas";
 import { formatarValor } from "@/lib/domain/money";
-import { frasesDoCombinado, type Orcamento } from "@/lib/domain/orcamento";
+import {
+  frasesDoCombinado,
+  temAlpha,
+  type Orcamento,
+} from "@/lib/domain/orcamento";
 import { quantidadeEmTexto } from "@/lib/domain/pedido";
 import type { Centavos } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
@@ -20,10 +24,13 @@ import { cn } from "@/lib/utils/cn";
 export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
   const { negocio, entrega } = orcamento;
   const entregaEmCasa = entrega.tipo === "ENTREGA";
+  // A coluna da miniatura só existe quando alguma linha tem foto: sem
+  // nenhuma, o texto começa na margem.
+  const colunas = orcamento.temFoto ? COLUNAS_COM_FOTO : COLUNAS;
 
   return (
     <article className="folha mx-auto flex flex-col text-[10.5pt] leading-[1.45] shadow-raised">
-      <header className="flex items-start justify-between gap-6 border-b-2 border-gold-500 pb-[12pt]">
+      <header className="flex items-start justify-between gap-6 border-b-2 border-gold-500 pb-4">
         <Logotipo orientacao="horizontal" tamanho="lg" />
         <div className="text-right">
           <Rotulo>Orçamento</Rotulo>
@@ -36,7 +43,7 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
         </div>
       </header>
 
-      <section className="mt-[24pt] flex items-start justify-between gap-6">
+      <section className="mt-8 flex items-start justify-between gap-6">
         <div className="min-w-0">
           <Rotulo>Para</Rotulo>
           <p className="font-display text-[17pt] font-semibold leading-tight">
@@ -64,17 +71,21 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
         </div>
       </section>
 
-      <section className="mt-[24pt]">
+      {/* Os respiros daqui para baixo são de 20 pt, e não 24: três linhas com
+          foto precisam caber numa página com o rodapé no pé, e 24 pt
+          empurravam o rodapé sozinho para uma segunda folha. */}
+      <section className="mt-[20pt]">
         <Rotulo>O que está incluído</Rotulo>
         {/* Lista com divisórias, e não grade de cartões. Cada linha é a sua
             própria grade para poder dizer `break-inside-avoid` sozinha. */}
-        <div className="mt-[6pt] divide-y divide-line">
+        <div className="mt-2 divide-y divide-line">
           <div
             className={cn(
-              COLUNAS,
-              "pb-[4pt] text-[7.5pt] font-medium uppercase tracking-[0.1em] text-ink-muted",
+              colunas,
+              "pb-[4pt] text-[7.5pt] font-medium uppercase tracking-widest text-ink-muted",
             )}
           >
+            {orcamento.temFoto && <span />}
             <span>Produto</span>
             <span className="text-right">Quantidade</span>
             <span className="text-right">Unitário</span>
@@ -83,11 +94,43 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
           {orcamento.linhas.map((linha, indice) => (
             <div
               key={indice}
-              className={cn(COLUNAS, "break-inside-avoid py-[8pt]")}
+              className={cn(colunas, "break-inside-avoid py-2")}
             >
-              <p className="min-w-0 text-[11.5pt] font-semibold leading-snug">
-                {linha.nome}
-              </p>
+              {/* Sem foto, o quadrado fica vazio em `--surface-sunken`, sem
+                  ícone: cinco cookies enfileirados seriam um padrão. Recorte
+                  transparente sai solto sobre o papel, como no cardápio. */}
+              {orcamento.temFoto && (
+                <div
+                  className={cn(
+                    "size-[20mm] overflow-hidden rounded-sm",
+                    !(linha.fotoUrl && temAlpha(linha.fotoUrl)) && "bg-sunken",
+                  )}
+                >
+                  {linha.fotoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={linha.fotoUrl}
+                      alt=""
+                      className={cn(
+                        "size-full",
+                        temAlpha(linha.fotoUrl)
+                          ? "object-contain"
+                          : "object-cover",
+                      )}
+                    />
+                  )}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-[11.5pt] font-semibold leading-snug">
+                  {linha.nome}
+                </p>
+                {linha.descricao && (
+                  <p className="mt-[2pt] line-clamp-2 text-[9.5pt] leading-snug text-ink-muted">
+                    {linha.descricao}
+                  </p>
+                )}
+              </div>
               <p className="num text-right font-semibold">
                 {quantidadeEmTexto(linha.quantidade)} {linha.unidade}
               </p>
@@ -116,7 +159,7 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
         )}
         {/* O único vinho cheio da folha, e o único trecho que precisa imprimir
             o fundo mesmo com "gráficos de fundo" desmarcado. */}
-        <div className="mt-[8pt] flex items-center justify-between gap-4 rounded-[10px] bg-wine-700 px-[12pt] py-[12pt] text-on-wine [-webkit-print-color-adjust:exact] [print-color-adjust:exact]">
+        <div className="mt-[8pt] flex items-center justify-between gap-4 rounded-md bg-wine-700 px-4 py-4 text-on-wine [-webkit-print-color-adjust:exact] [print-color-adjust:exact]">
           <span className="text-[8.5pt] font-medium uppercase tracking-[0.12em] text-on-wine-muted">
             Total
           </span>
@@ -128,7 +171,7 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
         </div>
       </section>
 
-      <section className="mt-[24pt] break-inside-avoid">
+      <section className="mt-[20pt] break-inside-avoid">
         <Rotulo>Combinado</Rotulo>
         <div className="mt-[4pt] max-w-[68ch]">
           {frasesDoCombinado(orcamento).map((frase) => (
@@ -143,16 +186,27 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
 
       {/* Coladas ao fim do conteúdo, e não ao pé da página: uma folha de três
           itens não deve ter um vão de 15 cm antes da assinatura. */}
-      <section className="mt-[28pt] flex gap-[24pt] break-inside-avoid">
+      <section className="mt-[20pt] flex gap-8 break-inside-avoid">
         <div className="w-[70mm]">
-          <div className="h-[20mm]" />
+          {/* A assinatura apoiada na linha. Sem imagem, o nome sobre a linha
+              ainda é uma assinatura. */}
+          <div className="flex h-[16mm] items-end">
+            {negocio.assinaturaDataUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={negocio.assinaturaDataUrl}
+                alt=""
+                className="max-h-[16mm] max-w-[60mm] object-contain object-bottom-left"
+              />
+            )}
+          </div>
           <div className="border-t-[0.5pt] border-line-strong pt-[4pt]">
             <p className="font-semibold">{negocio.proprietaria}</p>
             <p className="text-ink-muted">{negocio.nome}</p>
           </div>
         </div>
         <div className="w-[70mm]">
-          <div className="h-[20mm]" />
+          <div className="h-[16mm]" />
           <div className="border-t-[0.5pt] border-line-strong pt-[4pt]">
             <p className="font-semibold">Aprovado por</p>
             <p className="text-ink-subtle">Nome, cargo e data</p>
@@ -160,7 +214,7 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
         </div>
       </section>
 
-      <footer className="mt-auto flex items-end justify-between gap-6 pt-[24pt] text-[7.5pt] font-medium text-ink-muted">
+      <footer className="mt-auto flex items-end justify-between gap-6 pt-4 text-[7.5pt] font-medium text-ink-muted">
         <p>
           {[
             negocio.nome,
@@ -176,8 +230,10 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
   );
 }
 
-/** As quatro colunas da lista: flexível · 20 mm · 26 mm · 30 mm. */
-const COLUNAS = "grid grid-cols-[1fr_20mm_26mm_30mm] items-center gap-x-[8pt]";
+/** As colunas da lista: flexível · 20 mm · 26 mm · 30 mm, e 20 mm de foto na frente. */
+const COLUNAS = "grid grid-cols-[1fr_20mm_26mm_30mm] items-start gap-x-[8pt]";
+const COLUNAS_COM_FOTO =
+  "grid grid-cols-[20mm_1fr_20mm_26mm_30mm] items-start gap-x-[8pt]";
 
 function Rotulo({
   children,
@@ -238,7 +294,7 @@ function LinhaDeTotal({
   negativo?: boolean;
 }) {
   return (
-    <p className="flex items-baseline justify-between gap-4 py-[3pt]">
+    <p className="flex items-baseline justify-between gap-4 py-1">
       <span className="text-ink-muted">{rotulo}</span>
       <Valor centavos={centavos} negativo={negativo} />
     </p>

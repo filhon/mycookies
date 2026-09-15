@@ -3409,6 +3409,17 @@ que um mês de pedidos. `ponytail:` a assinatura mora em `configuracao/geral`, q
 inteiro lê ao subir. Com 60 KB típicos isso não pesa; se um dia pesar, ela vai para um
 documento irmão (`configuracao/assinatura`) que só a folha e a tela de configuração leem.
 
+**Ajuste na 17B (2026-09-15): a foto com fundo transparente.** O cardápio da MyCookie's
+mostra o cookie solto sobre o creme, e é assim que a folha deveria mostrá-lo. Um arquivo PNG
+escolhido para a foto preserva o alpha: sai WebP onde o navegador codifica pelo `canvas`
+(Chrome, Firefox) e PNG onde não (Safari devolve PNG em silêncio, e quem lê confere o prefixo
+do `data:` URL). PNG de textura de cookie a 320 px não cabe em 80 KB, então o teto desse
+caso é o da assinatura, 200 KB (`FOTO_COM_ALPHA_MAX_BYTES`); a foto comum continua JPEG em 80
+KB. Na folha e na prévia, imagem com alpha (`temAlpha`) sai em `object-fit: contain` sem o
+quadrado `--surface-sunken` por trás; JPEG continua em `cover` dentro dele. Custo aceito: no
+iPhone a foto transparente pesa até dez vezes mais que no Android; se doer, o conserto é
+codificar no servidor ou aceitar só WebP.
+
 ---
 
 ## D110 · A validade é campo gravado; a emissão é o dia da impressão

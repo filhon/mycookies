@@ -1,4 +1,5 @@
 import {
+  deleteField,
   doc,
   increment,
   setDoc,
@@ -50,6 +51,10 @@ export interface ComponenteDaFicha {
 export interface DadosFicha {
   nome: string;
   categoria: string;
+  /** Como ela apresenta o produto na folha do orçamento (spec 017). Vazio apaga. */
+  descricao?: string;
+  /** A miniatura como `data:` URL (`DECISOES.md#d109`). `null` tira a foto. */
+  fotoUrl?: string | null;
   tipo: TipoFicha;
   rendimento: number;
   unidadeRendimento: FichaTecnica["unidadeRendimento"];
@@ -119,6 +124,8 @@ function corpoDaFicha(dados: DadosFicha) {
     nome: dados.nome.trim(),
     nomeBusca: chaveDeBusca(dados.nome),
     categoria: dados.categoria.trim(),
+    ...(dados.descricao?.trim() && { descricao: dados.descricao.trim() }),
+    ...(dados.fotoUrl && { fotoUrl: dados.fotoUrl }),
     tipo: dados.tipo,
     rendimento: dados.rendimento,
     unidadeRendimento: dados.unidadeRendimento,
@@ -218,6 +225,11 @@ export async function atualizarFicha(
   despachar(
     updateDoc(docFicha(contaId, fichaId), {
       ...corpoDaFicha(dados),
+      // Chave ausente em `updateDoc` deixa o valor velho no lugar: tirar a
+      // foto e limpar a descrição precisam apagar, e não esconder.
+      ...(dados.fotoUrl === null && { fotoUrl: deleteField() }),
+      ...(dados.descricao !== undefined &&
+        !dados.descricao.trim() && { descricao: deleteField() }),
       atualizadoEm: agora(),
     }),
   );

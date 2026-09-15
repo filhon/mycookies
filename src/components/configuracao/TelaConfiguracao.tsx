@@ -8,6 +8,7 @@ import {
   Clock,
   Compass,
   CreditCard,
+  FileText,
   Flame,
   Receipt,
   Tag,
@@ -16,6 +17,7 @@ import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, Seletor } from "@/components/ui/Campo";
+import { CampoImagem } from "@/components/ui/CampoImagem";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
@@ -35,6 +37,10 @@ import {
   formatarMoeda,
   parseParaNumero,
 } from "@/lib/domain/money";
+import {
+  ASSINATURA_LADO_PX,
+  ASSINATURA_MAX_BYTES,
+} from "@/lib/domain/orcamento";
 import { errosPorCampo, esquemaConfiguracao } from "@/lib/domain/schemas";
 import { docConfiguracao } from "@/lib/firebase/colecoes";
 import {
@@ -80,6 +86,10 @@ interface EstadoConfiguracao {
   arredondamento: RegraArredondamento;
   formasPagamento: FormaPagamento[];
   categoriasProduto: string[];
+  // A folha do orçamento (spec 017). Texto vazio e `null` são "sem".
+  telefone: string;
+  instagram: string;
+  assinaturaDataUrl: string | null;
 }
 
 function texto(numero: number): string {
@@ -108,12 +118,19 @@ function estadoInicial(
     formasPagamento:
       dado?.formasPagamento ?? CONFIGURACAO_SUGERIDA.formasPagamento,
     categoriasProduto: dado?.categoriasProduto ?? [],
+    telefone: dado?.contato?.telefone ?? "",
+    instagram: dado?.contato?.instagram ?? "",
+    assinaturaDataUrl: dado?.assinaturaDataUrl ?? null,
   };
 }
 
 function paraDados(estado: EstadoConfiguracao): DadosConfiguracao {
   return {
     ...(estado.nomeNegocio ? { nomeNegocio: estado.nomeNegocio } : {}),
+    contato: { telefone: estado.telefone, instagram: estado.instagram },
+    ...(estado.assinaturaDataUrl && {
+      assinaturaDataUrl: estado.assinaturaDataUrl,
+    }),
     operacional: {
       valorHoraTrabalho: estado.valorHoraTrabalho,
       horasProdutivasMes: parseParaNumero(estado.horasProdutivasMes),
@@ -276,6 +293,8 @@ export function TelaConfiguracao() {
     const resultado = esquemaConfiguracao.safeParse({
       ...dados.operacional,
       ...dados.precificacao,
+      contato: dados.contato,
+      assinaturaDataUrl: dados.assinaturaDataUrl,
     });
 
     if (!resultado.success) {
@@ -478,6 +497,44 @@ export function TelaConfiguracao() {
               setFormaEmEdicao(undefined);
               setPainelAberto(true);
             }}
+          />
+        </BlocoConfiguracao>
+
+        <BlocoConfiguracao
+          icone={FileText}
+          titulo="Na folha do orçamento"
+          descricao="O que a empresa vê no rodapé e na assinatura da folha."
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Campo
+              rotulo="Telefone"
+              type="tel"
+              autoComplete="tel"
+              placeholder="81 98696-6176"
+              value={estado.telefone}
+              onChange={(evento) => definir("telefone", evento.target.value)}
+            />
+            <Campo
+              rotulo="Instagram"
+              prefixo="@"
+              autoCapitalize="none"
+              autoCorrect="off"
+              placeholder="MyCookiesArtesanais"
+              value={estado.instagram}
+              onChange={(evento) => definir("instagram", evento.target.value)}
+            />
+          </div>
+
+          <CampoImagem
+            rotulo="Assinatura"
+            dica="Uma imagem PNG com fundo transparente fica melhor. Uma foto da assinatura em papel branco também serve."
+            formato="largo"
+            valor={estado.assinaturaDataUrl}
+            aoMudar={(dataUrl) => definir("assinaturaDataUrl", dataUrl)}
+            reducao={{ ladoMaximo: ASSINATURA_LADO_PX, formato: "image/png" }}
+            maxBytes={ASSINATURA_MAX_BYTES}
+            rotuloEscolher="Escolher imagem"
+            rotuloTirar="Tirar"
           />
         </BlocoConfiguracao>
 

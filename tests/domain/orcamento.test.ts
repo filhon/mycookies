@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  ASSINATURA_MAX_BYTES,
   DIAS_DE_VALIDADE,
+  FOTO_MAX_BYTES,
   frasesDoCombinado,
   montarOrcamento,
   situacaoDaValidade,
+  tamanhoDoDataUrl,
+  temAlpha,
   validadeSugerida,
   type ConfiguracaoParaOrcar,
   type FichaParaOrcar,
@@ -343,6 +347,95 @@ describe("montarOrcamento", () => {
     expect(orcamento.negocio.assinaturaDataUrl).toBe(
       "data:image/png;base64,BBBB",
     );
+  });
+
+  it("ficha arquivada fica sem foto e sem descrição mesmo que a ficha viva tenha as duas", () => {
+    const viva: FichaParaOrcar = {
+      ...ficha("tradicional"),
+      fotoUrl: "data:image/jpeg;base64,AAAA",
+      descricao: "Massa amanteigada.",
+    };
+    const orcamento = montar(PEDIDO, { fichas: [viva] });
+
+    // A do Tradicional está viva; as outras duas saíram da lista.
+    expect(orcamento.linhas[0]?.descricao).toBe("Massa amanteigada.");
+    expect(orcamento.linhas[1]).not.toHaveProperty("fotoUrl");
+    expect(orcamento.linhas[1]).not.toHaveProperty("descricao");
+    expect(orcamento.linhas[2]).not.toHaveProperty("fotoUrl");
+  });
+
+  it("temFoto é verdadeiro com uma foto só, e a descrição em branco não entra", () => {
+    const orcamento = montar(PEDIDO, {
+      fichas: [
+        { ...ficha("tradicional"), descricao: "   " },
+        ficha("red-velvet"),
+        { ...ficha("pistachio"), fotoUrl: "data:image/jpeg;base64,CCCC" },
+      ],
+    });
+
+    expect(orcamento.temFoto).toBe(true);
+    expect(orcamento.linhas[0]).not.toHaveProperty("descricao");
+    expect(orcamento.linhas[0]).not.toHaveProperty("fotoUrl");
+    expect(orcamento.linhas[2]?.fotoUrl).toBe("data:image/jpeg;base64,CCCC");
+  });
+
+  it("lê o Instagram com e sem o arroba, e cala o contato em branco", () => {
+    const com = montar(PEDIDO, {
+      configuracao: {
+        ...CONFIGURACAO,
+        contato: { instagram: "@MyCookiesArtesanais" },
+      },
+    });
+    const sem = montar(PEDIDO, {
+      configuracao: {
+        ...CONFIGURACAO,
+        contato: { instagram: "MyCookiesArtesanais", telefone: "  " },
+      },
+    });
+
+    expect(com.negocio.instagram).toBe("MyCookiesArtesanais");
+    expect(sem.negocio.instagram).toBe("MyCookiesArtesanais");
+    expect(sem.negocio).not.toHaveProperty("telefone");
+    expect(montar().negocio).not.toHaveProperty("instagram");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// As imagens (`#d109`)
+// ---------------------------------------------------------------------------
+
+describe("tamanhoDoDataUrl", () => {
+  it("conta os bytes da imagem sem decodificá-la, descontando o enchimento", () => {
+    // "abc" → "YWJj"; "ab" → "YWI="; "a" → "YQ==".
+    expect(tamanhoDoDataUrl("data:image/png;base64,YWJj")).toBe(3);
+    expect(tamanhoDoDataUrl("data:image/png;base64,YWI=")).toBe(2);
+    expect(tamanhoDoDataUrl("data:image/png;base64,YQ==")).toBe(1);
+    expect(tamanhoDoDataUrl("data:image/png;base64,")).toBe(0);
+  });
+
+  it("fica dos dois lados de cada teto", () => {
+    const comBytes = (bytes: number) =>
+      `data:image/jpeg;base64,${btoa("x".repeat(bytes))}`;
+
+    expect(tamanhoDoDataUrl(comBytes(FOTO_MAX_BYTES))).toBe(FOTO_MAX_BYTES);
+    expect(tamanhoDoDataUrl(comBytes(FOTO_MAX_BYTES + 1))).toBeGreaterThan(
+      FOTO_MAX_BYTES,
+    );
+    expect(tamanhoDoDataUrl(comBytes(ASSINATURA_MAX_BYTES))).toBe(
+      ASSINATURA_MAX_BYTES,
+    );
+    expect(
+      tamanhoDoDataUrl(comBytes(ASSINATURA_MAX_BYTES + 1)),
+    ).toBeGreaterThan(ASSINATURA_MAX_BYTES);
+  });
+});
+
+describe("temAlpha", () => {
+  it("é PNG ou WebP, e nunca JPEG", () => {
+    expect(temAlpha("data:image/png;base64,AAAA")).toBe(true);
+    expect(temAlpha("data:image/webp;base64,AAAA")).toBe(true);
+    expect(temAlpha("data:image/jpeg;base64,AAAA")).toBe(false);
+    expect(temAlpha("https://exemplo/foto.png")).toBe(false);
   });
 });
 

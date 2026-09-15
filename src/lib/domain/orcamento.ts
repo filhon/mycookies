@@ -24,6 +24,35 @@ import { nomeComEscolhas, subtotalDoItem } from "./pedido";
 /** Quantos dias o preço vale, por sugestão. Ela edita antes de salvar. */
 export const DIAS_DE_VALIDADE = 7;
 
+// As duas únicas imagens que o sistema grava, e os tetos que as guardam
+// (`DECISOES.md#d109`): a redução acontece no aparelho, antes de gravar.
+export const FOTO_LADO_PX = 320;
+export const FOTO_MAX_BYTES = 80_000;
+/**
+ * Foto com fundo transparente (o recorte do cardápio) preserva o alpha: sai
+ * WebP onde o navegador codifica e PNG onde não (Safari), e PNG de textura de
+ * cookie a 320 px não cabe em 80 KB. O teto é o da assinatura.
+ */
+export const FOTO_COM_ALPHA_MAX_BYTES = 200_000;
+export const ASSINATURA_LADO_PX = 720;
+export const ASSINATURA_MAX_BYTES = 200_000;
+
+/** PNG e WebP carregam transparência; JPEG, nunca. Decide `contain` ou `cover`. */
+export function temAlpha(dataUrl: string): boolean {
+  return /^data:image\/(png|webp)[;,]/.test(dataUrl);
+}
+
+/**
+ * Quantos bytes a imagem de um `data:` URL ocupa, sem decodificá-la: base64
+ * gasta 4 caracteres por 3 bytes, e o `=` do fim é enchimento.
+ */
+export function tamanhoDoDataUrl(url: string): number {
+  const virgula = url.indexOf(",");
+  const corpo = virgula >= 0 ? url.slice(virgula + 1) : url;
+  const enchimento = corpo.endsWith("==") ? 2 : corpo.endsWith("=") ? 1 : 0;
+  return Math.max(0, Math.floor((corpo.length * 3) / 4) - enchimento);
+}
+
 /** hoje + `DIAS_DE_VALIDADE`. Sugestão, e não dado (`#d17`): salvar grava. */
 export function validadeSugerida(hojeISO: DataISO): DataISO {
   return diaVizinho(hojeISO, DIAS_DE_VALIDADE);
@@ -103,20 +132,16 @@ export type PedidoParaOrcar = Pick<
   | "validoAteISO"
 > & { entrega: Pick<Pedido["entrega"], "tipo" | "taxa" | "endereco"> };
 
-/** `descricao` nasce na ficha na 17B; a folha já sabe lê-la (`#d108`). */
+/** A foto e a descrição vêm da ficha viva (`#d108`). */
 export type FichaParaOrcar = Pick<
   FichaTecnica,
-  "id" | "unidadeRendimento" | "fotoUrl"
-> & { descricao?: string };
+  "id" | "unidadeRendimento" | "fotoUrl" | "descricao"
+>;
 
-/** `contato` e `assinaturaDataUrl` nascem na configuração na 17B. */
 export type ConfiguracaoParaOrcar = Pick<
   ConfiguracaoGeral,
-  "nomeNegocio" | "formasPagamento"
-> & {
-  contato?: { telefone?: string; instagram?: string };
-  assinaturaDataUrl?: string;
-};
+  "nomeNegocio" | "formasPagamento" | "contato" | "assinaturaDataUrl"
+>;
 
 /** Só entra no objeto o que tem valor: ausência é ausência, e não `undefined`. */
 function opcional<K extends string>(

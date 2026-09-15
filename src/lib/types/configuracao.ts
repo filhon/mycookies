@@ -76,5 +76,13 @@ export interface ConfiguracaoGeral {
   formasPagamento: FormaPagamento[];
   /** Categorias de produto criadas pela usuária (Cookie, Brownie, Kit...). */
   categoriasProduto: string[];
+  /** O que a empresa vê no rodapé da folha (spec 017). Nada disso é obrigatório. */
+  contato?: { telefone?: string; instagram?: string };
+  /**
+   * A assinatura dela, PNG com fundo transparente ou foto da assinatura em papel,
+   * até 720 px de lado e 200 KB, como `data:` URL (`DECISOES.md#d109`). Vai
+   * sobre a linha da folha; sem ela, o nome sobre a linha é a assinatura.
+   */
+  assinaturaDataUrl?: string;
   atualizadoEm: Timestamp;
 }
