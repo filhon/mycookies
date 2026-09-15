@@ -96,6 +96,9 @@ export interface DadosPedido {
   /** As formas da conta, para congelar a taxa da maquininha sobre o total. */
   formasPagamento: FormaPagamento[];
 
+  /** Até quando o orçamento vale. Ausente não apaga o que está gravado. */
+  validoAteISO?: DataISO;
+
   observacoes?: string;
 }
 
@@ -247,6 +250,10 @@ function corpoDoPedido(dados: DadosPedido) {
 
     custoTotalEstimado: derivado.custoTotalEstimado,
     lucroEstimado: derivado.lucroEstimado,
+
+    // Spread condicional, como `notaChave` (`#d54`): ausente deixa a validade
+    // que está lá, e o `updateDoc` não a apaga.
+    ...(dados.validoAteISO ? { validoAteISO: dados.validoAteISO } : {}),
 
     observacoes: texto(dados.observacoes),
   };

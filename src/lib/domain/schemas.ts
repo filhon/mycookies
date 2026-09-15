@@ -89,12 +89,24 @@ export const esquemaConfiguracao = z.object({
     .min(0, "As taxas não podem ser negativas.")
     .max(95, "Taxas acima de 95% do preço não sobram para ninguém."),
   arredondamento: z.enum(["NENHUM", "CENTAVO_90", "REAL_INTEIRO", "MEIO_REAL"]),
+  // O rodapé e a assinatura da folha do orçamento (spec 017). O Instagram
+  // guarda o que ela digitar, com ou sem `@`: a folha tira na leitura.
+  contato: z
+    .object({
+      telefone: z.string().trim().optional(),
+      instagram: z.string().trim().optional(),
+    })
+    .optional(),
+  assinaturaDataUrl: z.string().optional(),
 });
 
 export type EntradaConfiguracao = z.infer<typeof esquemaConfiguracao>;
 
 /** Uma fornada que passa de 24 horas é dedo errado, não receita. */
 const MINUTOS_MAXIMOS_PRODUCAO = 24 * 60;
+
+/** Duas frases na folha do orçamento (spec 017); o `line-clamp-2` é a rede. */
+export const DESCRICAO_MAX = 240;
 
 /**
  * A ficha inteira em um esquema só, validada no salvamento sobre os números já
@@ -108,6 +120,11 @@ export const esquemaFicha = z
   .object({
     nome: z.string().trim().min(2, "Dê um nome a esta ficha."),
     categoria: z.string().trim(),
+    descricao: z
+      .string()
+      .trim()
+      .max(DESCRICAO_MAX, "Duas frases bastam: até 240 caracteres.")
+      .optional(),
     tipo: z.enum(["SIMPLES", "KIT"]),
     rendimento: z.number().positive("Diga quantas unidades saem de um lote."),
     unidadeRendimento: z.enum(["un", "porcao", "g", "ml"]),
@@ -279,6 +296,12 @@ export const esquemaPedido = z.object({
   dataEntregaISO: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Escolha a data da entrega."),
+  // Só a forma: validade no passado é aviso na tela, não erro. Orçamento
+  // vencido é um fato que ela precisa poder salvar.
+  validoAteISO: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   status: z.enum([
     "ORCAMENTO",
     "CONFIRMADO",

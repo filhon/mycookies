@@ -75,8 +75,10 @@ import {
 import { docMeta, docResumoMensal } from "@/lib/firebase/colecoes";
 import { useDocumento } from "@/lib/hooks/useColecao";
 import { contextoDaCapacidade } from "@/lib/hooks/useDespensaParaProduzir";
+import { BlocoOrcamento } from "./BlocoOrcamento";
 import { BlocoPagamento } from "./BlocoPagamento";
 import { BlocoWhatsApp } from "./BlocoWhatsApp";
+import { validadeSugerida } from "@/lib/domain/orcamento";
 import type { ResumoParaCliente } from "@/lib/domain/whatsapp";
 import type {
   Centavos,
@@ -130,6 +132,8 @@ interface ValoresPedido {
   clienteNome: string;
   clienteTelefone: string;
   dataEntregaISO: DataISO;
+  /** Vazio é "sem prazo". */
+  validoAteISO: string;
   tipoEntrega: TipoEntrega;
   taxaEntrega: Centavos;
   endereco: string;
@@ -209,6 +213,9 @@ function valoresIniciais(
       // Hoje é o palpite honesto: a maioria das encomendas é combinada para os
       // próximos dias, e mudar a data é um toque.
       dataEntregaISO: hoje,
+      // Vazio no pedido novo: o bloco do orçamento só aparece em pedido que
+      // existe, e sugestão que ela não viu não vira dado (`#d17`).
+      validoAteISO: "",
       tipoEntrega: "RETIRADA",
       taxaEntrega: 0,
       endereco: "",
@@ -224,6 +231,11 @@ function valoresIniciais(
     clienteNome: pedido.clienteNome,
     clienteTelefone: pedido.clienteTelefone ?? "",
     dataEntregaISO: pedido.dataEntregaISO,
+    // Sem validade, o campo nasce com a sugestão só enquanto é orçamento:
+    // pedido confirmado sem validade fica sem (`DECISOES.md#d110`).
+    validoAteISO:
+      pedido.validoAteISO ??
+      (pedido.status === "ORCAMENTO" ? validadeSugerida(hoje) : ""),
     tipoEntrega: pedido.entrega.tipo,
     taxaEntrega: pedido.entrega.taxa,
     endereco: pedido.entrega.endereco ?? "",
@@ -689,6 +701,7 @@ export function FormularioPedido({
       desconto: valores.desconto,
       formaPagamentoId: valores.formaPagamentoId || undefined,
       formasPagamento: formas,
+      validoAteISO: valores.validoAteISO || undefined,
       observacoes: valores.observacoes || undefined,
     };
   }
@@ -698,6 +711,7 @@ export function FormularioPedido({
       clienteNome: valores.clienteNome,
       clienteTelefone: valores.clienteTelefone || undefined,
       dataEntregaISO: valores.dataEntregaISO,
+      validoAteISO: valores.validoAteISO || undefined,
       status,
       tipoEntrega: valores.tipoEntrega,
       taxaEntrega,
@@ -1350,6 +1364,17 @@ export function FormularioPedido({
             código não é um pedido, é uma proposta (`DECISOES.md#d78`). */}
         {pedido && (
           <>
+            {/* O orçamento vem antes da confirmação, na ordem em que a venda
+                acontece. A folha lê o gravado (`#d107`), o WhatsApp lê a tela
+                (`#d78`): um é documento assinado, o outro é conversa. */}
+            <BlocoOrcamento
+              pedidoId={pedido.id}
+              validoAteISO={valores.validoAteISO}
+              aoMudarValidade={(iso) => definir("validoAteISO", iso)}
+              hoje={hoje}
+              temItens={itensResolvidos.length > 0}
+            />
+
             <BlocoWhatsApp
               resumo={resumoParaCliente(pedido)}
               telefone={valores.clienteTelefone}

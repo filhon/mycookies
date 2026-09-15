@@ -27,6 +27,26 @@ import { useContaId } from "@/providers/AuthProvider";
 /** O id que a rota usa para "ainda não existe". */
 export const ID_PEDIDO_NOVO = "novo";
 
+/** O mesmo estado vazio para o editor e para a folha do orçamento. */
+export function PedidoNaoEncontrado() {
+  return (
+    <div className="mt-6 overflow-hidden rounded-lg border border-line bg-surface">
+      <EstadoVazio
+        titulo="Este pedido não está aqui"
+        descricao="Ele pode ter sido arquivado, ou o endereço veio errado. Sua agenda continua na lista de pedidos."
+        acao={
+          <Link
+            href="/pedidos"
+            className={classesBotao({ variante: "primaria", tamanho: "lg" })}
+          >
+            Ver meus pedidos
+          </Link>
+        }
+      />
+    </div>
+  );
+}
+
 /**
  * Carrega o que o pedido precisa e só então monta o formulário.
  *
@@ -98,24 +118,7 @@ export function EditorPedido({ id }: { id: string }) {
     );
   }
 
-  if (!ehNovo && !pedido.dado) {
-    return (
-      <div className="mt-6 overflow-hidden rounded-lg border border-line bg-surface">
-        <EstadoVazio
-          titulo="Este pedido não está aqui"
-          descricao="Ele pode ter sido arquivado, ou o endereço veio errado. Sua agenda continua na lista de pedidos."
-          acao={
-            <Link
-              href="/pedidos"
-              className={classesBotao({ variante: "primaria", tamanho: "lg" })}
-            >
-              Ver meus pedidos
-            </Link>
-          }
-        />
-      </div>
-    );
-  }
+  if (!ehNovo && !pedido.dado) return <PedidoNaoEncontrado />;
 
   return (
     <FormularioPedido

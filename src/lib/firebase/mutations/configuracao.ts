@@ -1,4 +1,4 @@
-import { setDoc, Timestamp } from "firebase/firestore";
+import { deleteField, setDoc, Timestamp } from "firebase/firestore";
 import { docConfiguracao } from "../colecoes";
 import { despachar } from "./despachar";
 import type { RateioOperacional } from "@/lib/domain/custoFicha";
@@ -30,6 +30,9 @@ export interface DadosConfiguracao {
   precificacao: PrecificacaoPadrao;
   formasPagamento: FormaPagamento[];
   categoriasProduto: string[];
+  /** O rodapé e a assinatura da folha do orçamento (spec 017). */
+  contato?: ConfiguracaoGeral["contato"];
+  assinaturaDataUrl?: string;
 }
 
 /**
@@ -96,7 +99,7 @@ export const CONFIGURACAO_SUGERIDA: DadosConfiguracao = {
 };
 
 /**
- * O rateio que uma ficha usa: o salvo, senão o sugerido (`DECISOES.md#d109`).
+ * O rateio que uma ficha usa: o salvo, senão o sugerido (`DECISOES.md#d114`).
  *
  * Zero era o que `custoFicha.ts` usava enquanto a conta não salvava nada — e
  * zero também é um número que o sistema inventou, o mesmo erro da planilha
@@ -165,6 +168,15 @@ export async function salvarConfiguracao(
         precificacao: dados.precificacao,
         formasPagamento: dados.formasPagamento,
         categoriasProduto: dados.categoriasProduto,
+        // Vazio apaga, e não esconde: com `merge`, uma chave ausente deixaria
+        // o telefone velho e a assinatura que ela acabou de tirar no documento.
+        ...(dados.contato && {
+          contato: {
+            telefone: dados.contato.telefone?.trim() || deleteField(),
+            instagram: dados.contato.instagram?.trim() || deleteField(),
+          },
+        }),
+        assinaturaDataUrl: dados.assinaturaDataUrl || deleteField(),
         atualizadoEm: Timestamp.now(),
       },
       { merge: true },

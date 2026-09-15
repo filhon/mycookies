@@ -296,6 +296,59 @@
   padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
 }
 
+/**
+ * A folha do orçamento: um A4 que é a mesma coisa na tela e no papel.
+ *
+ * Papel não tem modo noturno. Os tokens de superfície e tinta são redeclarados
+ * aqui com o valor claro, e `color-scheme: light` acompanha, para que a prévia
+ * no tema escuro seja o que vai sair da impressora. Nenhuma classe `dark:`
+ * entra na folha: passaria por cima disto (spec 017).
+ *
+ * A margem do A4 é o `padding` da folha, e não a `margin` do `@page`: é o que
+ * faz a prévia e o papel terem o mesmo desenho. `--folha-zoom` encolhe a prévia
+ * em tela estreita; na impressão volta a 1.
+ */
+@utility folha {
+  color-scheme: light;
+  --mc-canvas: oklch(0.955 0.014 88);
+  --mc-surface: oklch(0.985 0.008 88);
+  --mc-surface-sunken: oklch(0.925 0.016 86);
+  --mc-border: oklch(0.88 0.016 80);
+  --mc-border-strong: oklch(0.8 0.02 78);
+  --mc-ink: oklch(0.26 0.022 40);
+  --mc-ink-muted: oklch(0.52 0.02 50);
+  --mc-ink-subtle: oklch(0.64 0.018 55);
+
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 16mm 16mm 18mm;
+  background-color: var(--mc-surface);
+  color: var(--mc-ink);
+  zoom: var(--folha-zoom, 1);
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  html,
+  body,
+  .textura-papel {
+    background: white;
+  }
+  .textura-papel::before {
+    display: none;
+  }
+  .folha {
+    box-shadow: none;
+    zoom: 1;
+  }
+}
+
 @layer base {
   @media (prefers-reduced-motion: reduce) {
     *,

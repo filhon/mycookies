@@ -15,7 +15,7 @@ import type { ConfiguracaoGeral, FichaTecnica, Insumo } from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
 
 /**
- * O botão da biblioteca de partida (`DECISOES.md#d109`).
+ * O botão da biblioteca de partida (`DECISOES.md#d114`).
  *
  * Sabe sozinho quando existir: duas consultas `limit(1)` — as mesmas de
  * `useComeco` — mais o documento de configuração. Renderiza `null` enquanto

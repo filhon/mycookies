@@ -14,7 +14,7 @@ export function NavegacaoInferior() {
        Ver `DECISOES.md#d74`. */
     <nav
       aria-label="Navegação principal"
-      className="area-segura-inferior fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface apertado:hidden lg:hidden"
+      className="area-segura-inferior fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface apertado:hidden lg:hidden print:hidden"
     >
       <ul className="flex">
         {DESTINOS.map((destino) => {

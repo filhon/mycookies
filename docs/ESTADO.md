@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-15 (spec 017 executada — a biblioteca de partida; roteiro de sete passos por rodar).
+Atualizado em 2026-09-15 (17B da spec 017-orçamento entregue; spec 018-o-preço-no-primeiro-minuto executada; roteiros das 015, 016, 017 e 018 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -130,6 +130,19 @@ completos. Nenhum campo, nenhuma rota, nenhuma regra, nenhuma dependência. Insu
 paginam de propósito: são catálogo, e o recorte deles é o arquivo. **O roteiro de sete passos
 não rodou nesta sessão** — e é o único lugar onde uma consulta pode ser vista pedindo índice.
 
+A spec `017-orcamento-em-papel.md` está **entregue nas duas sessões**: o orçamento para empresa
+é uma folha A4 que o navegador imprime (`#d106`), lida do documento gravado (`#d107`), com a
+validade como campo do pedido e a emissão como o dia da impressão (`#d110`). A **17A** fez o
+módulo puro (`domain/orcamento.ts`), a rota (`/pedidos/[id]/orcamento`), o bloco no editor e
+`Pedido.validoAteISO`. A **17B** deu à folha a foto e a descrição de cada produto (da ficha
+viva, `#d108`), o telefone e o Instagram no rodapé e a assinatura sobre a linha, com as duas
+imagens gravadas como `data:` URL dentro do documento e reduzidas no aparelho (`#d109`). Quatro
+campos opcionais (`FichaTecnica.descricao`, `ConfiguracaoGeral.contato` e `assinaturaDataUrl`,
+mais `fotoUrl` que já existia e passou a ser escrito), um componente (`CampoImagem`), nenhuma
+rota, nenhuma regra, nenhum índice, nenhuma dependência. **O roteiro de aparelho de oito passos
+não rodou em nenhuma das duas sessões**: o PDF de verdade, nos três sistemas, é o que decide se
+o `#d106` estava certo, e o passo 8 é o único lugar onde a foto e a assinatura são vistas no papel.
+
 Fora das specs, em 2026-09-11, `/comecar` foi relida contra as specs 009 a 014. Pelo `#d70` o
 guia só ensina o que mora em tela que ela ainda não abriu, e o que faltava era uma só:
 `/fichas/contagem` entrou em "O que mais tem aqui" como a quarta tela fora do menu ("O que está
@@ -153,10 +166,11 @@ nunca visto rodando — **fechou com a 5B**. O que ficou dele é uma linha na ta
 releitura dos cinco textos de `src/lib/domain/onboarding.ts` contra o que a 5B viu, que a 8B
 não pôde fazer na época.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **502
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **526
 testes**, e build com 17 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
 `/insumos/contagem` na 7A, `/comecar` na 8A e `/fichas/contagem` na 13D — mais `/api/nota`,
-`/fichas/[id]` e `/pedidos/[id]` dinâmicas e service worker gerado.
+`/fichas/[id]`, `/pedidos/[id]` e `/pedidos/[id]/orcamento` (17A) dinâmicas e service worker
+gerado.
 
 **O app está de pé.** Projeto `mycookies-mrc`, `.env.local` preenchido, regras publicadas,
 chave de conta de serviço no disco (fora do git, coberta por `*firebase-adminsdk*.json`).
@@ -189,7 +203,7 @@ os números digitados de ponta a ponta.
 ## Módulos
 
 | #   | Módulo                                      | Estado                              | Spec                                      |
-| --- | ------------------------------------------- | ----------------------------------- | ----------------------------------------- |
+| --- | ------------------------------------------- | ----------------------------------- | ------------------------------------------ |
 | 0   | Fundação: design system, shell, acesso, PWA | pronto                              | —                                         |
 | 1   | Insumos e embalagens                        | pronto                              | —                                         |
 | —   | Contas e tenancy                            | pronto                              | `specs/000-contas.md`                     |
@@ -208,7 +222,8 @@ os números digitados de ponta a ponta.
 | 14  | O combo à escolha                           | pronto (14A e 14B)                  | `specs/014-combo-a-escolha.md`            |
 | 15  | Salvar no toque, no sistema inteiro         | pronto, sem o roteiro               | `specs/015-salvar-no-toque.md`            |
 | 16  | As listas que crescem                       | pronto, sem o roteiro               | `specs/016-listas-que-crescem.md`         |
-| 17  | O preço no primeiro minuto                  | pronto, sem o roteiro               | `specs/017-o-preco-no-primeiro-minuto.md` |
+| 17  | O orçamento em papel                        | pronto (17A e 17B), sem o roteiro   | `specs/017-orcamento-em-papel.md`         |
+| 18  | O preço no primeiro minuto                  | pronto, sem o roteiro               | `specs/018-o-preco-no-primeiro-minuto.md` |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -1694,7 +1709,150 @@ numa linha da tabela do `#d105` — 7 por `limit`, 7 por janela de tempo, 1 por 
 pelo arquivo (5 de `insumos`, 7 de `fichas`, 1 de `clientes`) e as 3 de `/pedidos` por status
 mais `limit`.
 
-## O que a sessão 017 deixou pronto
+## O que a sessão 17A deixou pronto
+
+A folha inteira, com o que o sistema já sabe. A 17B dá a ela a foto, a descrição, o contato e
+a assinatura.
+
+- `src/lib/types/vendas.ts`: `Pedido.validoAteISO?`, o único campo novo, opcional e
+  compatível. `esquemaPedido` confere só a forma; `DadosPedido.validoAteISO` é gravado por
+  spread condicional em `corpoDoPedido`, que serve a `criarPedido` e `atualizarPedido`.
+- `src/lib/domain/datas.ts`: `rotuloDataCompleta` ('15 de setembro de 2026'), com teste.
+- `src/lib/domain/orcamento.ts`, **módulo novo e puro**: `DIAS_DE_VALIDADE`, `validadeSugerida`,
+  `situacaoDaValidade`, `montarOrcamento` e `frasesDoCombinado`. As entradas são `Pick`s
+  (`PedidoParaOrcar`, `FichaParaOrcar`, `ConfiguracaoParaOrcar`), pelo motivo de
+  `PedidoParaEntrega`: `Timestamp` não atravessa para o domínio, e o teste monta só o que a
+  folha lê. `FichaParaOrcar.descricao`, `ConfiguracaoParaOrcar.contato` e `assinaturaDataUrl`
+  já estão tipados aqui para a 17B não reabrir o domínio; ninguém os grava ainda.
+- `tests/domain/orcamento.test.ts`: **17 testes** (491 → 509 com o de `datas`), com o pedido
+  da Tal Eventos número por número e o "Combinado" comparado inteiro, na ordem. Mais o sábado
+  no masculino ("Entrega no sábado"), o ponto que não dobra quando as instruções já terminam
+  com um, e os campos da 17B lidos de uma ficha e de uma configuração que já os tenham.
+- `src/components/pedidos/BlocoOrcamento.tsx`: "Orçamento para empresa", logo acima do
+  WhatsApp, com o campo "Válido até" (`Campo` nativo de data, `min` em hoje), a situação em uma
+  linha (com o triângulo em vencido e vence-hoje) e o `Link` para a folha. `FormularioPedido`
+  ganhou `valores.validoAteISO`: no pedido que existe e ainda é orçamento, nasce com a
+  sugestão; no pedido novo nasce vazio, porque o bloco não aparece lá e sugestão que ela não
+  viu não vira dado (`#d17`).
+- `src/components/pedidos/FolhaOrcamento.tsx`: a folha da seção "A folha" da spec, só
+  apresentação, em pontos e milímetros, sem nenhuma classe `dark:`. `Valor` é o `Dinheiro` em
+  `em`, para seguir a escala da folha e não a da tela.
+- `src/components/pedidos/TelaOrcamento.tsx` e a rota `/pedidos/[id]/orcamento`: carrega o
+  pedido pelo id, as fichas vivas sem `orderBy`, a configuração e a conta, e só então monta.
+  Barra com "Voltar ao pedido" e "Salvar em PDF" (`window.print()`), o aviso de vencido, e a
+  prévia encolhendo por `zoom` medido com `ResizeObserver` em ref de função.
+- `src/app/globals.css`: `@utility folha` (tokens claros, `color-scheme: light`,
+  `print-color-adjust`, A4 com a margem como `padding`, `zoom: var(--folha-zoom, 1)`) e o
+  `@media print` (`@page` A4 sem margem, fundo branco, textura desligada, folha sem sombra e
+  sem zoom).
+- `AppShell`, `BarraLateral` e `NavegacaoInferior`: quatro classes `print:`, nada muda em
+  tela. `Marca.tsx`: `DESCRITOR` e `SLOGAN` exportados, `Logotipo` com `orientacao`
+  ("horizontal" no cabeçalho da folha, "vertical" como padrão, intacto).
+- `EditorPedido.tsx`: o estado vazio de "Este pedido não está aqui" virou `PedidoNaoEncontrado`,
+  usado pelo editor e pela folha.
+- Decisões novas em `DECISOES.md#d106` a `#d110` — as cinco da abertura da spec, escritas nesta
+  sessão; a `#d108` e a `#d109` são executadas na 17B.
+
+Fora da letra da spec, e por quê:
+
+- **A unidade de uma ficha que rende em peso é `'g'`, e não `'kg'`.** A spec pedia `'kg'` para
+  quantidade `1,5`; o preço do pedido é por unidade de rendimento (por grama), e "1,5 kg" ao
+  lado de um preço por grama mentiria. Registrado em `#d108`. Se a Maynara vender por quilo um
+  dia, a conversão nasce junto do campo de unidade da linha, e não como rótulo.
+- **O combo sai como "Combo dupla (1 Tradicional + 1 Red Velvet)"**, com o `+` que o WhatsApp
+  já usa: a spec escreveu vírgula, mas é a mesma `nomeComEscolhas`, e duas seriam duas ordens.
+- **"Venceu em 22 de setembro de 2026"**, com ano, no bloco e na barra: `rotuloDataCompleta` é
+  a única função nova de data, e um orçamento vencido do ano passado sem o ano seria ambíguo.
+- **O lockup horizontal usa o `lg` que existe** (biscoito de 64 px, nome a 2,5 rem ≈ 30 pt), e
+  não os 14 mm / 26 pt da spec: uma segunda tabela de escala só para a folha seria um tamanho
+  com nome de uso. Se ficar grande no papel, é o passo 1 do roteiro que diz.
+- **`PedidoNaoEncontrado` extraído do editor**, para a folha cair no mesmo estado vazio sem
+  duplicar o texto.
+
+**O que a 17A não provou.** O de sempre, e mais um: `npm test` cobre `src/lib/domain/`, então
+o bloco, a barra, o `zoom` e o CSS de impressão não têm teste, e **nenhum PDF foi gerado nesta
+sessão**. Os passos 1 a 7 do roteiro de aparelho (o `#d106` em Chrome, tema escuro, Android,
+iPhone, validade vencida, doze itens e 360 px) são a próxima ação.
+
+## O que a sessão 17B deixou pronto
+
+A foto, a descrição, o contato e a assinatura: o que faz o gestor olhar duas vezes. O domínio
+já lia os quatro desde a 17A; esta sessão os fez existir.
+
+- `src/lib/types/fichas.ts`: `FichaTecnica.descricao?`, e o comentário de `fotoUrl` passou a
+  dizer o que ele carrega (JPEG de até 320 px e 80 KB como `data:` URL). `esquemaFicha` ganhou
+  `descricao` com o teto de 240 caracteres (`DESCRICAO_MAX` em `schemas.ts`).
+- `src/lib/types/configuracao.ts`: `ConfiguracaoGeral.contato?` (`telefone`, `instagram`) e
+  `assinaturaDataUrl?`. `esquemaConfiguracao` ganhou os dois, opcionais, sem regra além da forma.
+- `src/lib/domain/orcamento.ts`: os quatro tetos (`FOTO_LADO_PX`, `FOTO_MAX_BYTES`,
+  `ASSINATURA_LADO_PX`, `ASSINATURA_MAX_BYTES`) e `tamanhoDoDataUrl`, que conta os bytes da
+  imagem pelo comprimento do base64 sem decodificá-la. `FichaParaOrcar` e
+  `ConfiguracaoParaOrcar` viraram `Pick`s puros, porque os campos agora existem nos tipos.
+- `src/lib/utils/imagem.ts`: `reduzirImagem(arquivo, { ladoMaximo, formato, qualidade })`
+  devolve o `data:` URL, e `prepararParaLeitura` passou a chamá-la com os mesmos 1600 px / JPEG
+  0,8 da nota, devolvendo o mesmo par `{ mimeType, dados }` sem prefixo. O fundo branco é
+  pintado só em JPEG; PNG preserva a transparência da assinatura.
+- `src/lib/firebase/mutations/fichas.ts`: `DadosFicha.descricao?` e `fotoUrl?: string | null`.
+  `corpoDaFicha` grava os dois quando há; `atualizarFicha` apaga com `deleteField()` quando a
+  foto chega `null` ou a descrição chega vazia, porque chave ausente em `updateDoc` deixaria o
+  valor velho no lugar.
+- `src/lib/firebase/mutations/configuracao.ts`: `DadosConfiguracao.contato?` e
+  `assinaturaDataUrl?`. A escrita usa `deleteField()` para o vazio, pelo mesmo motivo com
+  `merge: true`: "Tirar" a assinatura precisa tirá-la do documento.
+- `src/components/ui/CampoImagem.tsx`, **componente novo**: o `<input type="file">` escondido
+  atrás de um botão secundário, a prévia (quadrada de 96 px para a foto, 200 × 64 em
+  `object-fit: contain` para a assinatura) sobre `--surface-sunken`, o terciário "Tirar" quando há
+  imagem, e a frase de erro com o triângulo quando a redução passa do teto ou o navegador não
+  desenha o formato. Chama `reduzirImagem` antes de o formulário saber da imagem.
+- `src/components/ui/Campo.tsx`: `prefixo`, o espelho de `sufixo`, para o `@` fixo do Instagram.
+- **Foto com fundo transparente**, pedida na sessão: arquivo PNG preserva o alpha (WebP onde o
+  navegador codifica, PNG no Safari), com teto de 200 KB (`FOTO_COM_ALPHA_MAX_BYTES`) no lugar
+  dos 80 KB do JPEG; `temAlpha(dataUrl)` decide `contain` sem o quadrado, na folha e na prévia.
+  `CampoImagem` ganhou `comAlpha`, e só a ficha o passa. Registrado como ajuste no `#d109`.
+- `FormularioFicha.tsx`: "Como você apresenta" (textarea de 2 linhas, contador em `micro`
+  quando passa de 200) e "Foto" no bloco "O produto". `/fichas` continua sem miniatura.
+- `TelaConfiguracao.tsx`: o sexto bloco, "Na folha do orçamento", entre "Formas de pagamento" e
+  "Preço padrão", com Telefone, Instagram e Assinatura. Vai na mesma escrita que o resto (`#d17`);
+  a frase de "você mudou" cobre o bloco sem código novo.
+- `FolhaOrcamento.tsx`: a coluna da miniatura (22 mm, só quando `temFoto`; sem foto, o quadrado
+  vazio em `--surface-sunken`), a descrição em 9,5 pt até duas linhas, a assinatura apoiada na
+  linha (até 60 × 20 mm, `object-fit: contain`) e o rodapé com telefone e Instagram.
+- `tests/domain/orcamento.test.ts`: **6 testes novos** (509 → 515): ficha arquivada sem foto e
+  sem descrição mesmo com a viva tendo as duas, `temFoto` com uma foto só e descrição em branco
+  que não entra, Instagram com e sem `@` e contato em branco calado, e `tamanhoDoDataUrl` nos
+  três enchimentos e dos dois lados de cada teto.
+
+Fora da letra da spec, e por quê:
+
+- **Vazio apaga, com `deleteField()`, em vez de "spread condicional".** A spec pedia a escrita
+  por spread condicional, que é a regra do `#d54`; mas `salvarConfiguracao` grava com
+  `merge: true`, e `atualizarFicha` com `updateDoc`: nos dois, chave ausente deixa o valor velho
+  no lugar, e "Tirar a foto" não tiraria nada. É a mesma dívida que o `#d110` registrou para
+  `validoAteISO`, evitada aqui porque as duas telas sempre sabem o valor inteiro do campo.
+- **`CampoImagem` como primitivo em `ui/`**, e não dois pares botão-prévia. A foto da ficha e a
+  assinatura são o mesmo gesto com duas medidas; dois seriam duas frases de erro esperando
+  para divergir.
+- **`reduzirImagem` devolve por `toDataURL`, e não por `toBlob` mais `FileReader`.** O JPEG
+  que sai é o mesmo, com uma etapa a menos; a nota fiscal continua recebendo o base64 sem
+  prefixo.
+
+**O primeiro PDF de verdade saiu na mesma sessão** (pedido de três linhas com foto, Chrome,
+desktop), e ele corrigiu duas coisas antes do roteiro: uma faixa branca no topo, porque o
+`pt-4 lg:pt-6` da `TelaOrcamento` sobrevivia à impressão (agora `print:pt-0`, e `print:pl-0`
+no recuo da barra lateral por segurança); e o rodapé sozinho numa segunda página, porque três
+miniaturas de 22 mm fizeram o conteúdo passar dos 297 mm em uns 20 mm. O ritmo vertical da
+folha encolheu para caber com folga: miniatura de 20 mm, linhas com 6 pt de respiro, os
+respiros de seção abaixo do filete em 20 pt (e não 24), o vão da assinatura em 16 mm e o
+rodapé com 12 pt acima. A ficha, a configuração, o `CampoImagem` e a foto no papel foram
+vistos funcionando nesse PDF; **a assinatura, o WebP no Android, o PNG no iPhone e a coluna
+sumindo num pedido sem foto** continuam sendo o passo 8 do roteiro.
+
+O PDF também mostrou o que a 17A não tinha como ver: com `@page { margin: 0 }` e a margem
+como `padding` da folha, **a segunda página de um pedido longo começa na borda do papel**, sem
+os 16 mm de cima, e a primeira vai até a borda de baixo. Está na tabela de dívidas; o passo 6
+do roteiro (doze itens) é onde se decide se a margem vai para o `@page`.
+
+## O que a sessão 018 deixou pronto
 
 A primeira spec da fase 0 do roadmap: um botão que instala 25 insumos com preço médio e duas
 fichas-modelo já precificadas, e cai direto na ficha-modelo aberta com o preço no rodapé.
@@ -1707,8 +1865,8 @@ fichas-modelo já precificadas, e cai direto na ficha-modelo aberta com o preço
   positivo, perda em 0–99, categoria válida), referência de todo item a um id da própria
   biblioteca, prefixo em todo documento que `montarBiblioteca` devolve, e o caso de aceite dos
   dois cookies número por número — R$ 3,30 e R$ 5,90 no clássico, R$ 7,19 e R$ 12,90 no
-  recheado, com `CONFIGURACAO_SUGERIDA`. 491 → 502 testes.
-- `DECISOES.md#d109`: revisa a metade do `#d17` que mandava calcular com rateio zero sem
+  recheado, com `CONFIGURACAO_SUGERIDA`.
+- `DECISOES.md#d114`: revisa a metade do `#d17` que mandava calcular com rateio zero sem
   configuração salva. Zero também é um número inventado, e é o pior deles. `rateioDaConta` e
   `precificacaoPadraoDaConta` (`mutations/configuracao.ts`) são o único lugar que decide
   "salvo, senão sugerido" — o editor de ficha e a biblioteca chamam as duas.
@@ -1747,18 +1905,31 @@ sumir depois do primeiro toque e o preço da ficha-modelo bater igual antes e de
 configuração (passo 6). **Também não rodou a gravação da Maynara** que o portão da fase 0 pede
 — isso é anterior à próxima spec, não a este código.
 
+**A spec nasceu como `017-o-preco-no-primeiro-minuto.md` e foi renomeada para
+`018-o-preco-no-primeiro-minuto.md`** ao trazer a branch de volta para `main`: a spec 017 já
+estava tomada por `017-orcamento-em-papel.md`, decidida e executada em paralelo. As decisões
+`#d106` a `#d109` desta sessão viraram `#d111` a `#d114` pelo mesmo motivo, e a numeração do
+roadmap (`docs/saas/ROADMAP.md`) subiu uma casa inteira: 018 a 032, e não mais 017 a 031.
+
 ## Próxima ação
 
-**Rodar o roteiro de sete passos da spec 017**, com DevTools em Offline do passo 1 ao 4, numa
-conta vazia (`npm run conceder-acesso -- <email> teste-017 "Teste 017" Teste`). O passo 6 —
-salvar a configuração sem mudar nada e ver o preço da ficha-modelo continuar o mesmo — é o que
-prova que `rateioDaConta` não tem um segundo lugar decidindo "salvo, senão sugerido". **E, fora
-do código, a régua da fase 0**: gravar a Maynara abrindo essa conta sem ninguém explicar,
-contando as perguntas. **A 018 só é escrita depois disso.**
+**Rodar o roteiro de aparelho da 17A/17B** (oito passos, no fim da spec `017-orcamento-em-papel.md`).
+O passo 1 é o que decide se a decisão 1 estava certa: Ctrl+P no Chrome, **uma página**, sem
+barra lateral, sem navegação, sem a barra de botões, e o bloco do total em vinho cheio mesmo com
+"Gráficos de fundo" desmarcado. O passo 3 (Android, app instalado) é o risco nomeado: se
+`window.print()` não abrir nada no modo `standalone`, a barra ganha "Abrir no navegador" e a
+spec registra. O passo 7 (360 px) é onde se decide se `zoom` fica ou vira `transform: scale`.
+O passo 8 é o da 17B: uma ficha com foto e outra sem no mesmo pedido, a assinatura PNG sobre a
+linha, e o pedido só de fichas sem foto com a coluna sumindo. Antes dele, a conta real precisa
+de uma foto numa ficha e da assinatura em `/configuracao`: são toques, e não código.
 
-Depois, na ordem do roadmap revisto pelo `#d108`: 018 o caminho reordenado para começar pelo
-preço, 019 os dois formulários com o resto atrás de "Mais detalhes", 020 o vocabulário
-perguntado a ela, e só então 021 a segunda conta.
+**Rodar também o roteiro de sete passos da spec 018**, com o passo 6 — salvar a configuração
+sem mudar nada e ver o preço da ficha-modelo continuar o mesmo — provando que `rateioDaConta`
+não tem um segundo lugar decidindo "salvo, senão sugerido". **E, fora do código, a régua da
+fase 0**: gravar a Maynara abrindo uma conta nova sem ninguém explicar, contando as perguntas.
+**A 019 só é escrita depois disso.** Depois, na ordem do roadmap revisto pelo `#d113`: 019 o
+caminho reordenado para começar pelo preço, 020 os dois formulários com o resto atrás de "Mais
+detalhes", 021 o vocabulário perguntado a ela, e só então 022 a segunda conta.
 
 **Rodar o roteiro de sete passos da spec 015**, com DevTools em Offline do passo 1 ao 5. É o
 único lugar onde a correção pode ser vista: `npm test` não toca no Firestore. O passo 1 é o que
@@ -1774,7 +1945,7 @@ com o mesmo número antes e depois de "Mostrar mais antigos" — é o que prova 
 `aReceber` está certa. Se der números diferentes, pare: a faixa precisa de mais um conjunto
 além dos dois.
 
-**Depois da 016, por ordem de valor**, e nenhuma delas com spec escrita ainda:
+**Depois da 017, por ordem de valor**, e nenhuma delas com spec escrita ainda:
 
 1. **Guarda de "sair sem salvar"** nos quatro editores que descartam em silêncio (ficha, pedido,
    configuração, contagem). Quatro telas, um hook.
@@ -1794,8 +1965,9 @@ que o aviso do `#d81` acusar, setembro de 2026 na frente; o "combo dupla" recria
 escolha "2 de Cookie" (`#d102`); e `FormaPagamento.instrucoes` preenchida na forma "Pix"
 (`#d98`). Nenhum dos quatro é código: são quatro toques na conta real.
 
-O portão de conclusão foi rodado de verdade em 2026-09-15, no fim da 017, e passa nos quatro:
-lint, typecheck, 502 testes e build com 17 rotas estáticas mais as dinâmicas. Portão passando não
+O portão de conclusão foi rodado de verdade em 2026-09-15, no fim da 17B e da 018, e passa nos
+quatro: lint, typecheck, 526 testes e build com 17 rotas estáticas mais as
+dinâmicas, a `/pedidos/[id]/orcamento` entre elas. Portão passando não
 é o mesmo que sistema pronto — nenhum dos quatro toca no Firestore nem abre um navegador —, e é
 por isso que os roteiros da 015, da 016 e da 017 são a próxima ação, e não itens já fechados.
 
@@ -1822,15 +1994,15 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 
 | Dívida                                                                                          | Onde                                           | Quando resolver                                                                                |
 | ----------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Acesso concedido por script, sem cadastro self-serve                                            | `scripts/conceder-acesso.mjs`                  | Spec 026, fase 2 do roadmap — depois do beta (`#d16`, `#d106`)                                 |
-| `sair()` não limpa o cache do IndexedDB                                                         | `src/providers/AuthProvider.tsx`               | Spec 021, fim da fase 0: em aparelho compartilhado vira vazamento                              |
-| Agregados incrementados no cliente                                                              | `src/lib/firebase/mutations/`                  | Deixou de ter prazo: nenhum número do agregado decide cobrança (`#d107`)                       |
+| Acesso concedido por script, sem cadastro self-serve                                            | `scripts/conceder-acesso.mjs`                  | Spec 027, fase 2 do roadmap — depois do beta (`#d16`, `#d111`)                                 |
+| `sair()` não limpa o cache do IndexedDB                                                         | `src/providers/AuthProvider.tsx`               | Spec 022, fim da fase 0: em aparelho compartilhado vira vazamento                              |
+| Agregados incrementados no cliente                                                              | `src/lib/firebase/mutations/`                  | Deixou de ter prazo: nenhum número do agregado decide cobrança (`#d112`)                       |
 | Configuração aberta sem rede e sem cache diz "valores sugeridos"                                | `TelaConfiguracao.tsx`                         | Não tem conserto: cache vazio não distingue "não existe" de "não sei" (`#d43`)                 |
 | Agregado do mês pode ficar torto se um delta se perder no caminho                               | `mutations/agregado.ts`                        | Tem escape: "Recalcular o mês" na tela. A troca real é a mesma de D10                          |
 | Mudar um lançamento de mês não move o espelho da meta do mês destino                            | `mutations/transacoes.ts`                      | Mesmo escape e mesma troca: `DECISOES.md#d29`                                                  |
 | Produto revertido sobra zerado no agregado até recalcular                                       | `mutations/agregado.ts`                        | `produtosOrdenados` o esconde na leitura; recalcular limpa (`#d37`)                            |
 | `ultimoPedidoEm` do cliente não volta atrás ao desfazer um pagamento                            | `mutations/clientes.ts`                        | Só com histórico de pagamentos, que não existe (`#d37`)                                        |
-| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê                             | `mutations/clientes.ts`                        | Spec 024, fase 1 do roadmap (`#d35`)                                                           |
+| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê                             | `mutations/clientes.ts`                        | Spec 025, fase 1 do roadmap (`#d35`)                                                           |
 | Meta não guarda histórico: reescrever o alvo apaga o anterior                                   | `mutations/metas.ts`                           | Se "que meta eu tinha antes" virar pergunta real (`DECISOES.md#d27`)                           |
 | `FichaTecnica.ativo` é sempre `true`, sem tela que o desligue                                   | `src/lib/types/fichas.ts`                      | Se "produto fora de linha" virar diferente de "arquivado"                                      |
 | Quantidade volta em unidade base: 0,5 kg reabre como 500 g                                      | `FormularioFicha.tsx`                          | Se ela reclamar; exigiria gravar a unidade digitada, e não só o valor                          |
@@ -1854,7 +2026,7 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | `agregados/global` é escrito por três mutações e lido por ninguém                               | `types/financeiro.ts`                          | Se algum leitor aparecer; a 008 decidiu não ser ele (`#d67`)                                   |
 | `pedidosAbertos`, `proximaEntrega` e `ultimoNumeroPedido` nunca são escritos                    | `types/financeiro.ts`                          | Spec de limpeza, como a remoção de `estoqueMinimo` na 7A. Ninguém os lê hoje                   |
 | O cartão, a página, o gancho e a escrita na conta, sem teste                                    | `components/comecar/`                          | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                      |
-| Os cinco textos do começo saíram do código, e não do que a 5B viu                               | `domain/onboarding.ts`                         | Spec 018: os cinco são reescritos com as palavras da gravação da usuária 0 (`#d108`)           |
+| Os cinco textos do começo saíram do código, e não do que a 5B viu                               | `domain/onboarding.ts`                         | Spec 019: os cinco são reescritos com as palavras da gravação da usuária 0 (`#d113`)           |
 | Um passo fecha com o documento existindo, e não com ele estando bom                             | `domain/onboarding.ts`                         | Não tem conserto: o caminho diz onde ela está, e não se ela fez bem                            |
 | `/comecar` nunca foi vista em 360px nem no tema claro, e não há captura                         | `components/comecar/`                          | Critério da 8B em aberto: depende de navegador, de login e de conta de verdade                 |
 | O bloco de instalar nunca foi visto sumindo com o app instalado                                 | `InstalarNaTela.tsx`                           | Critério da 8B em aberto: exige instalar de fato, no iPhone e no Android                       |
@@ -1883,4 +2055,10 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | A folha, as duas entradas, a consulta e as frases do forno sem teste                            | `components/producao/`, `compras/`, `estoque/` | `npm test` cobre só `domain/`; o que fecha isso é o roteiro da 13A em navegador                |
 | Entrega paga pela cliente e nunca acertada some de "Entregas a pagar" ao cair da página         | `ListaPedidos.tsx`                             | Se for inaceitável: `entrega.repassePendente` gravado por quatro mutações + backfill (`#d105`) |
 | O roteiro de sete passos da 016 nunca rodou: "A receber" por página e o botão offline sem prova | `ListaPedidos.tsx`                             | Próxima ação; o índice já respondeu via Admin SDK, e `npm test` não toca no Firestore          |
-| O roteiro de sete passos da 017 nunca rodou: o botão, a ficha-modelo e as duas faixas sem prova | `BotaoBiblioteca.tsx`, `FormularioFicha.tsx`   | Próxima ação, numa conta vazia de verdade; `npm test` não toca no Firestore                    |
+| O roteiro de sete passos da 018 nunca rodou: o botão, a ficha-modelo e as duas faixas sem prova | `BotaoBiblioteca.tsx`, `FormularioFicha.tsx`   | Próxima ação, numa conta vazia de verdade; `npm test` não toca no Firestore                    |
+| Limpar "Válido até" no editor não apaga a validade gravada: ela volta ao reabrir                   | `mutations/pedidos.ts`                         | `deleteField()` quando o campo chega vazio, se "sem prazo" virar escolha de verdade (`#d110`)                   |
+| Nenhum PDF foi gerado: o `#d106` nos três sistemas, o `zoom` a 360 px e o fundo do total sem prova | `TelaOrcamento.tsx`, `globals.css`             | Roteiro de aparelho da 017, oito passos; `npm test` não abre navegador                                          |
+| A folha lê o gravado e o WhatsApp lê a tela: um pedido editado e não salvo diverge entre os dois   | `BlocoOrcamento.tsx`                           | Aceito em `#d107`; se morder, o link salva antes de abrir (`#d78`)                                              |
+| A redução de imagem, o `CampoImagem` e a folha com foto e assinatura nunca foram vistos rodando    | `utils/imagem.ts`, `ui/CampoImagem.tsx`        | Passo 8 do roteiro da 017; `npm test` não tem `canvas`                                                          |
+| A assinatura mora em `configuracao/geral`, que o app inteiro lê ao subir                           | `types/configuracao.ts`                        | Se pesar: vai para `configuracao/assinatura`, lido só pela folha e pela configuração (`#d109`)                  |
+| Pedido de duas páginas: a segunda começa na borda do papel, porque a margem é `padding` da folha   | `globals.css`                                  | Passo 6 do roteiro da 017; o conserto é `@page { margin: 16mm 16mm 18mm }` com a folha sem padding na impressão |

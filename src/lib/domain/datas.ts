@@ -37,6 +37,12 @@ const DIA_POR_EXTENSO = new Intl.DateTimeFormat("pt-BR", {
   month: "long",
 });
 
+const DATA_COMPLETA = new Intl.DateTimeFormat("pt-BR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
 function doisDigitos(valor: number): string {
   return String(valor).padStart(2, "0");
 }
@@ -152,6 +158,15 @@ export function diasEntre(deISO: DataISO, ateISO: DataISO): number {
  */
 export function rotuloDiaPorExtenso(iso: DataISO): string {
   return DIA_POR_EXTENSO.format(dataDeISO(iso));
+}
+
+/**
+ * '15 de setembro de 2026' — a data com ano, sem dia da semana. Documento
+ * precisa de ano: a agenda e o WhatsApp são desta semana, a folha do orçamento
+ * é guardada numa pasta (spec 017).
+ */
+export function rotuloDataCompleta(iso: DataISO): string {
+  return DATA_COMPLETA.format(dataDeISO(iso));
 }
 
 /**

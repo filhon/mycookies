@@ -100,7 +100,7 @@ export function ListaFichas() {
   }, [dados, busca, filtro]);
 
   const despensaPronta = !despensa.carregando;
-  // O botão da biblioteca só existe em conta vazia (`DECISOES.md#d109`): sem
+  // O botão da biblioteca só existe em conta vazia (`DECISOES.md#d114`): sem
   // isso o estado vazio de hoje trocaria de texto para quem já tem insumo.
   const contaVazia = despensaPronta && insumos.length === 0;
   const semContagem =

@@ -143,6 +143,13 @@ export interface Pedido extends DocumentoBase {
   /** Vínculo com a entrada no fluxo de caixa, criada quando o pedido é pago. */
   transacaoId?: string;
 
+  /**
+   * Até quando o preço deste orçamento vale, no fuso do aparelho. Gravado
+   * porque é combinado, como a data de entrega; ausente em pedido feito antes
+   * da spec 017 ou que nunca foi orçamento (`DECISOES.md#d110`).
+   */
+  validoAteISO?: DataISO;
+
   observacoes?: string;
 }
 

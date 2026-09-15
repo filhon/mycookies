@@ -10,7 +10,7 @@ import { calcularCustoInsumo } from "./custoInsumo";
 import type { RateioOperacional } from "./custoFicha";
 import type { ParametrosPreco } from "./precificacao";
 
-/** Todo documento da biblioteca nasce com este prefixo no id (`DECISOES.md#d109`). */
+/** Todo documento da biblioteca nasce com este prefixo no id (`DECISOES.md#d114`). */
 export const PREFIXO_BIBLIOTECA = "biblioteca-";
 
 export function ehDaBiblioteca(id: string): boolean {
@@ -114,7 +114,7 @@ export interface DadosFichaDaBiblioteca {
 
 /**
  * Preços de setembro de 2026, redondos de propósito — média com centavos
- * parece medida. Todos editáveis; nenhum é dado até ela corrigir (`#d109`).
+ * parece medida. Todos editáveis; nenhum é dado até ela corrigir (`#d114`).
  */
 export const INSUMOS_DA_BIBLIOTECA: readonly InsumoDaBiblioteca[] = [
   {
@@ -396,7 +396,7 @@ export const FICHAS_DA_BIBLIOTECA: readonly FichaDaBiblioteca[] = [
 
 /**
  * Os documentos prontos para `corpoDeInsumoNovo` e `corpoDaFicha`, com o id de
- * cada um já carregando o prefixo (`#d109`).
+ * cada um já carregando o prefixo (`#d114`).
  *
  * Cada item de ficha é resolvido contra o insumo da própria biblioteca —
  * `calcularCustoInsumo` para o custo corrigido — para que a ficha-modelo grave

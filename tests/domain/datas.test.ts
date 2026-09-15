@@ -11,6 +11,7 @@ import {
   diaVizinho,
   rotuloAgenda,
   rotuloCompetencia,
+  rotuloDataCompleta,
   rotuloMes,
 } from "@/lib/domain/datas";
 
@@ -124,6 +125,13 @@ describe("rotuloAgenda", () => {
     expect(rotuloAgenda("2026-09-20", "2026-09-15")).toBe(
       "Domingo, 20 de setembro",
     );
+  });
+});
+
+describe("rotuloDataCompleta", () => {
+  it("escreve a data com ano e sem zero à esquerda", () => {
+    expect(rotuloDataCompleta("2026-09-15")).toBe("15 de setembro de 2026");
+    expect(rotuloDataCompleta("2026-09-05")).toBe("5 de setembro de 2026");
   });
 });
 

@@ -1,4 +1,4 @@
-# Spec 017 · O preço no primeiro minuto
+# Spec 018 · O preço no primeiro minuto
 
 **Tipo:** feature, a primeira da fase 0 do `docs/saas/ROADMAP.md`. Uma biblioteca de partida —
 25 insumos com preço médio e duas fichas-modelo já precificadas — que entra por **um toque
@@ -6,11 +6,11 @@ dela** e a deixa dentro de uma ficha com o preço no rodapé. Um módulo de dom�
 um componente, dois estados vazios, uma faixa no editor e um selo na lista. Nenhuma rota,
 nenhum índice, nenhuma regra de segurança, nenhuma dependência, **nenhum campo de schema**.
 **Tamanho:** uma sessão. O que pesa é a tabela de dados (copiar) e o teste número por número.
-**Origem:** `#d108`. A Maynara não chegou ao preço sem explicação; o primeiro preço fica atrás
+**Origem:** `#d113`. A Maynara não chegou ao preço sem explicação; o primeiro preço fica atrás
 de três formulários, e o primeiro deles é o mais difícil do sistema.
 **Depende de:** nada.
 **Aprovações pedidas:** nenhuma de schema, regra ou dependência. **Uma decisão a registrar**,
-`#d109`, que revisa metade do `#d17`: enquanto a conta não salvou configuração, a ficha passa
+`#d114`, que revisa metade do `#d17`: enquanto a conta não salvou configuração, a ficha passa
 a calcular com a configuração sugerida — e a dizer isso — em vez de calcular com rateio zero.
 Sem ela, a ficha-modelo gravada e a mesma ficha aberta no editor mostrariam dois preços.
 
@@ -24,17 +24,17 @@ seção 2 do roadmap descreve o que isso custou no único teste que houve.
 
 A leitura do código acrescenta três coisas que a spec precisa saber:
 
-1. **A premissa do `#d108` é meio verdadeira.** "A ficha já calcula com `CONFIGURACAO_SUGERIDA`
+1. **A premissa do `#d113` é meio verdadeira.** "A ficha já calcula com `CONFIGURACAO_SUGERIDA`
    quando nada foi salvo" vale para a precificação (`FormularioFicha.tsx:159`: margem, markup,
    arredondamento) e **não vale para o rateio**: `FormularioFicha.tsx:399` cai em `SEM_RATEIO`
    — hora, gás, energia e indireto a zero — e a faixa diz "o custo abaixo é só o dos insumos".
    Uma ficha-modelo "já precificada com a configuração sugerida" gravada com R$ 25 a hora e
    aberta num editor que calcula com R$ 0 a hora mostraria um preço na lista e outro no
-   rodapé. A 018 inteira ("sua primeira ficha usou a hora e o gás sugeridos; ajuste e veja o
+   rodapé. A 019 inteira ("sua primeira ficha usou a hora e o gás sugeridos; ajuste e veja o
    preço mudar") depende disto estar resolvido antes.
 2. **Nada distingue um preço médio de um preço dela.** Se a biblioteca entra como insumo
    comum, no dia seguinte não há como saber qual chocolate ela conferiu e qual ainda é a média
-   — nem para a frase do primeiro minuto, nem para a métrica da 021 ("primeira ficha que não
+   — nem para a frase do primeiro minuto, nem para a métrica da 022 ("primeira ficha que não
    é da biblioteca").
 3. **`#d65` diz "o guia não semeia dado"** e o motivo é "o dia em que ela apagar o exemplo é o
    dia em que aprende que o sistema inventa coisas". A biblioteca não é exemplo: é o que toda
@@ -43,7 +43,7 @@ A leitura do código acrescenta três coisas que a spec precisa saber:
 
 ---
 
-## O que sai da frente de quem está começando (`#d108`)
+## O que sai da frente de quem está começando (`#d113`)
 
 - **O formulário de nove campos como primeiro contato.** Em conta vazia, a ação primária de
   `/insumos` e de `/fichas` passa a ser a biblioteca; "Cadastrar insumo", "Ler uma nota" e
@@ -58,9 +58,9 @@ A leitura do código acrescenta três coisas que a spec precisa saber:
 
 ## O que esta spec decide
 
-Uma decisão, que vira `#d109` em `docs/DECISOES.md`, e uma linha de revisão no `#d65`.
+Uma decisão, que vira `#d114` em `docs/DECISOES.md`, e uma linha de revisão no `#d65`.
 
-### Sem configuração salva, a ficha calcula com a sugerida inteira e diz isso — `#d109`
+### Sem configuração salva, a ficha calcula com a sugerida inteira e diz isso — `#d114`
 
 `#d17` decidiu duas coisas: que sugestão não vira dado (o documento `configuracao/geral` só
 nasce no "Salvar") e que, enquanto isso, a ficha "sabe que não há configuração e avisa, em vez
@@ -77,13 +77,13 @@ lado de `CONFIGURACAO_SUGERIDA` e são o único lugar que conhece a regra "salvo
 `custoFicha.ts`: não sobra chamador.
 
 `temConfiguracao` continua sendo "o documento existe": o passo da configuração continua
-pendente até ela salvar, que é o que a 018 precisa para apresentá-lo pela consequência.
+pendente até ela salvar, que é o que a 019 precisa para apresentá-lo pela consequência.
 
 ### A biblioteca é um botão dela, marcada pelo id, e "preço médio" é o que ela ainda não corrigiu
 
 - **O id carrega a origem.** Todo documento da biblioteca nasce com id `biblioteca-<slug>`
   (`biblioteca-farinha-de-trigo`, `biblioteca-cookie-classico`). `ehDaBiblioteca(id)` é um
-  `startsWith`. Nenhum campo novo, e o script da 021 lê a mesma coisa. Apertar duas vezes é
+  `startsWith`. Nenhum campo novo, e o script da 022 lê a mesma coisa. Apertar duas vezes é
   `setDoc` no mesmo id — idempotente por construção.
 - **"Preço médio" é insumo da biblioteca com `historicoPrecos.length <= 1`.** Toda correção
   de preço, embalagem ou perda empurra uma entrada no histórico (`precoMudou`); enquanto há uma
@@ -221,10 +221,10 @@ estoque — a despensa dela não é média de nada.
   histórico → sim; com duas → não; insumo sem prefixo → não, qualquer histórico. A lista de
   nomes segue a ordem dos itens da ficha e não repete.
 
-### 3. `src/lib/firebase/mutations/configuracao.ts` — o `#d109` num lugar só
+### 3. `src/lib/firebase/mutations/configuracao.ts` — o `#d114` num lugar só
 
 ```ts
-/** O rateio que uma ficha usa: o salvo, senão o sugerido (`DECISOES.md#d109`). */
+/** O rateio que uma ficha usa: o salvo, senão o sugerido (`DECISOES.md#d114`). */
 export function rateioDaConta(
   configuracao: ConfiguracaoGeral | null,
 ): RateioOperacional;
@@ -265,7 +265,7 @@ Um `momento` só para os 27 documentos, como na nota. Devolve
 - **Sabe sozinho quando existir**: duas consultas `limit(1)` em `insumos` e `fichas` com
   `arquivado == false` (as mesmas de `useComeco`) e o documento de configuração. Renderiza
   `null` enquanto carrega e sempre que uma das duas listas tem alguma coisa. É o que permite
-  colocá-lo nos dois estados vazios hoje e no passo 1 do caminho na 018 sem que cada lugar
+  colocá-lo nos dois estados vazios hoje e no passo 1 do caminho na 019 sem que cada lugar
   decida a regra.
 - **Um botão primário, `lg`, 52px no celular:** "Começar com o que toda cozinha tem". Abaixo,
   uma linha: "25 ingredientes e embalagens com preço médio, e duas receitas de cookie já com
@@ -273,7 +273,7 @@ Um `momento` só para os 27 documentos, como na nota. Devolve
 - **No toque:** `instalarBiblioteca(contaId, configuracao)` e `router.push('/fichas/' + id)`
   no mesmo tique. Sem `await`, sem estado de "instalando": o cache já tem os documentos quando
   a rota abre.
-- Props: `variante?: "primaria" | "secundaria"` para a 018 poder pendurá-lo como ação do
+- Props: `variante?: "primaria" | "secundaria"` para a 019 poder pendurá-lo como ação do
   passo; nada mais.
 
 ### 7. Os dois estados vazios
@@ -303,22 +303,22 @@ Um `momento` só para os 27 documentos, como na nota. Devolve
 ### 9. `src/components/insumos/LinhaInsumo.tsx`
 
 Selo neutro "Preço médio" quando `temPrecoMedio(insumo)`, ao lado de onde "Contagem vencida"
-aparece. É o que faz o passo 2 da 018 ("corrigir o preço do que você compra") ter uma lista
+aparece. É o que faz o passo 2 da 019 ("corrigir o preço do que você compra") ter uma lista
 para percorrer em vez de 25 linhas iguais.
 
 ### 10. Documentação
 
-- `#d109` em `docs/DECISOES.md`; uma linha no `#d65` dizendo que a biblioteca é botão dela e
+- `#d114` em `docs/DECISOES.md`; uma linha no `#d65` dizendo que a biblioteca é botão dela e
   marcada pelo id, e que o guia continua não semeando.
-- `docs/ESTADO.md`: a seção da 017, a próxima ação apontando para a 018.
-- `docs/saas/ROADMAP.md`, linha da 018: "R$ 20 a hora" → R$ 25 (`valorHoraTrabalho: 2500`).
+- `docs/ESTADO.md`: a seção da 018, a próxima ação apontando para a 019.
+- `docs/saas/ROADMAP.md`, linha da 019: "R$ 20 a hora" → R$ 25 (`valorHoraTrabalho: 2500`).
 
 ---
 
 ## Roteiro de navegador
 
 Precisa de **conta vazia**: a real tem dados e o botão não aparece nela. Um segundo login com
-`npm run conceder-acesso -- <outro-email> teste-017 "Teste 017" Teste`. DevTools em
+`npm run conceder-acesso -- <outro-email> teste-018 "Teste 018" Teste`. DevTools em
 **Offline** do passo 1 ao 4 — sem rede é o estado normal, e é o que prova que nada espera.
 
 1. **`/fichas`.** Estado vazio com "Começar com o que toda cozinha tem" como primária e "Criar
@@ -329,7 +329,7 @@ Precisa de **conta vazia**: a real tem dados e o botão não aparece nela. Um se
    listando os insumos, e "R$ 25 a hora". O selo de sincronização acusa pendência.
 3. **`/insumos`.** 25 linhas, todas com "Preço médio", o botão sumiu. `/fichas`: duas fichas,
    o botão sumiu. Tela Hoje: "Primeiros passos, 2 de 5" — configuração continua sendo o passo
-   de agora (a 018 muda isso, não esta).
+   de agora (a 019 muda isso, não esta).
 4. **Corrigir as gotas de chocolate para R$ 55,00** e salvar. `/fichas` mostra o selo de custo
    desatualizado no clássico; abrir: a faixa lista um insumo a menos, o rodapé já diz o novo
    preço; "Recalcular e salvar".
@@ -356,7 +356,7 @@ Precisa de **conta vazia**: a real tem dados e o botão não aparece nela. Um se
 - [ ] Nenhum campo novo em `src/lib/types/`, nenhuma rota, nenhum índice, nenhuma regra,
       nenhuma dependência.
 - [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d109` escrito, `#d65` com a linha de revisão, `ESTADO.md` e a linha da 018 no roadmap
+- [ ] `#d114` escrito, `#d65` com a linha de revisão, `ESTADO.md` e a linha da 019 no roadmap
       atualizados.
 
 ---
@@ -365,10 +365,10 @@ Precisa de **conta vazia**: a real tem dados e o botão não aparece nela. Um se
 
 - **O botão no primeiro passo do caminho.** O roadmap o lista, mas hoje o passo 1 é "Conferir
   a configuração", e um botão de biblioteca ali seria um botão no lugar errado por uma
-  sessão. É a 018 que faz o passo 1 ser "ver quanto custa um cookie", e é ela que pendura o
+  sessão. É a 019 que faz o passo 1 ser "ver quanto custa um cookie", e é ela que pendura o
   `BotaoBiblioteca` — pronto, com a regra de sumir embutida.
-- **Reescrever `CATALOGO_DO_COMECO`** ou qualquer fato em `FatosDoComeco`. 018.
-- **"Mais detalhes" nos formulários.** 019.
+- **Reescrever `CATALOGO_DO_COMECO`** ou qualquer fato em `FatosDoComeco`. 019.
+- **"Mais detalhes" nos formulários.** 020.
 - **Uma ação "este preço está certo"** no insumo. Confirmar sem mudar continua sendo "preço
   médio"; ver "Decisões fáceis de rejeitar".
 - **Biblioteca para bolo, brigadeiro, venda por peso.** O que a segunda confeiteira faz só as
@@ -431,4 +431,4 @@ Precisa de **conta vazia**: a real tem dados e o botão não aparece nela. Um se
 `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`, os quatro, com o resultado
 real relatado. Mais o roteiro de sete passos numa conta vazia — o único lugar onde o botão
 existe. E, fora do código, o que a fase 0 pede: **a Maynara abrindo a conta de teste sem
-ninguém ao lado, com a tela gravada, contando as perguntas.** A 018 só é escrita depois disso.
+ninguém ao lado, com a tela gravada, contando as perguntas.** A 019 só é escrita depois disso.

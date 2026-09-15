@@ -91,7 +91,18 @@ export interface FichaTecnica extends DocumentoBase {
   nome: string;
   nomeBusca: string;
   categoria: string;
+  /**
+   * A miniatura do produto na folha do orçamento (spec 017): um `data:` URL
+   * de JPEG com até 320 px de lado e 80 KB, gravado pelo editor
+   * (`DECISOES.md#d109`). Ausente em ficha sem foto.
+   */
   fotoUrl?: string;
+  /**
+   * Como ela apresenta o produto para quem compra: duas frases, no máximo 240
+   * caracteres. Vai na folha do orçamento (spec 017). Ausente em ficha que
+   * nunca escreveu; `modoPreparo` é para dentro, esta é para fora.
+   */
+  descricao?: string;
   modoPreparo?: string;
 
   tipo: TipoFicha;
