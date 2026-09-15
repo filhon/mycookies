@@ -344,19 +344,19 @@ Precisa de **conta vazia**: a real tem dados e o botão não aparece nela. Um se
 
 ## Critérios de aceite
 
-- [ ] `src/lib/domain/biblioteca.ts` sem importar Firebase nem React; `tests/domain/biblioteca.test.ts` com forma, referência, prefixo, o caso de aceite dos dois cookies
+- [x] `src/lib/domain/biblioteca.ts` sem importar Firebase nem React; `tests/domain/biblioteca.test.ts` com forma, referência, prefixo, o caso de aceite dos dois cookies
       número por número e os dois predicados.
-- [ ] `instalarBiblioteca` é um `writeBatch` despachado que reusa `corpoDeInsumoNovo` e
+- [x] `instalarBiblioteca` é um `writeBatch` despachado que reusa `corpoDeInsumoNovo` e
       `corpoDaFicha`; `grep -n "await " src/lib/firebase/mutations/biblioteca.ts` não acha nada.
-- [ ] `grep -rn "SEM_RATEIO" src/ tests/` não acha nada; `rateioDaConta` e
+- [x] `grep -rn "SEM_RATEIO" src/ tests/` não acha nada; `rateioDaConta` e
       `precificacaoPadraoDaConta` são os únicos lugares que decidem "salvo, senão sugerido".
-- [ ] O `BotaoBiblioteca` não renderiza em conta com um insumo ou uma ficha viva, em nenhuma
+- [x] O `BotaoBiblioteca` não renderiza em conta com um insumo ou uma ficha viva, em nenhuma
       das duas telas.
 - [ ] O roteiro de sete passos passa, com os passos 1 a 4 em Offline.
-- [ ] Nenhum campo novo em `src/lib/types/`, nenhuma rota, nenhum índice, nenhuma regra,
+- [x] Nenhum campo novo em `src/lib/types/`, nenhuma rota, nenhum índice, nenhuma regra,
       nenhuma dependência.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d114` escrito, `#d65` com a linha de revisão, `ESTADO.md` e a linha da 019 no roadmap
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d114` escrito, `#d65` com a linha de revisão, `ESTADO.md` e a linha da 019 no roadmap
       atualizados.
 
 ---
