@@ -61,7 +61,7 @@ export function BotaoBiblioteca({
         Começar com o que toda cozinha tem
       </Botao>
       <p className="max-w-[42ch] text-label text-ink-muted">
-        25 ingredientes e embalagens com preço médio, e duas receitas de cookie
+        25 ingredientes e embalagens com preço médio, e dois produtos de cookie
         já com preço. Você corrige o que for diferente na sua cozinha.
       </p>
     </div>

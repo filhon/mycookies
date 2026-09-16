@@ -91,8 +91,8 @@ export default function PaginaInsumos() {
   return (
     <>
       <CabecalhoPagina
-        titulo="Insumos"
-        descricao="Ingredientes e embalagens. É daqui que sai o custo de toda receita."
+        titulo="Materiais"
+        descricao="Ingredientes e embalagens. É daqui que sai o custo de todo produto."
         acao={
           // "Ler uma nota" aparece nos dois tamanhos de tela, e "Novo insumo"
           // só no desktop: no celular a ação primária é o botão flutuante, e
@@ -107,7 +107,7 @@ export default function PaginaInsumos() {
               }
               className="hidden lg:inline-flex"
             >
-              Novo insumo
+              Novo material
             </Botao>
           </div>
         }
@@ -127,8 +127,8 @@ export default function PaginaInsumos() {
               type="search"
               value={busca}
               onChange={(evento) => setBusca(evento.target.value)}
-              placeholder="Buscar insumo"
-              aria-label="Buscar insumo"
+              placeholder="Buscar material"
+              aria-label="Buscar material"
               className="h-12 w-full rounded-md border border-line-strong bg-surface pl-10 pr-3 text-body text-ink placeholder:text-ink-subtle"
             />
           </div>
@@ -162,7 +162,7 @@ export default function PaginaInsumos() {
         <p className="text-label text-ink-muted" aria-live="polite">
           {carregando
             ? "Carregando"
-            : `${visiveis.length} ${visiveis.length === 1 ? "insumo" : "insumos"}`}
+            : `${visiveis.length} ${visiveis.length === 1 ? "material" : "materiais"}`}
         </p>
         <SeloSincronizacao pendente={pendente} />
       </div>
@@ -170,7 +170,7 @@ export default function PaginaInsumos() {
       <div className="mt-2 overflow-hidden rounded-lg border border-line bg-surface">
         {erro ? (
           <EstadoVazio
-            titulo="Não deu para carregar seus insumos"
+            titulo="Não deu para carregar seus materiais"
             descricao="Verifique a conexão. O que já foi aberto antes continua disponível offline."
           />
         ) : carregando ? (
@@ -179,13 +179,13 @@ export default function PaginaInsumos() {
           dados.length === 0 ? (
             <EstadoVazio
               titulo="Comece com o que toda cozinha tem"
-              descricao="25 insumos com preço médio e duas receitas de cookie já precificadas. Você corrige o que for diferente na sua cozinha."
+              descricao="25 materiais com preço médio e dois produtos de cookie já precificados. Você corrige o que for diferente na sua cozinha."
               acao={
                 <div className="flex flex-col items-center gap-4">
                   <BotaoBiblioteca />
                   <div className="flex items-center gap-3">
                     <Botao variante="terciaria" onClick={abrirNovo}>
-                      Cadastrar insumo
+                      Cadastrar material
                     </Botao>
                     <EntradaLeitura tamanho="sm" />
                   </div>
@@ -228,7 +228,7 @@ export default function PaginaInsumos() {
       <button
         type="button"
         onClick={abrirNovo}
-        aria-label="Novo insumo"
+        aria-label="Novo material"
         className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] right-4 z-30 flex size-14 items-center justify-center rounded-full bg-wine-700 text-on-wine shadow-overlay transition-colors duration-150 ease-quart hover:bg-wine-600 active:bg-wine-800 apertado:hidden lg:hidden"
       >
         <Plus aria-hidden className="size-6" strokeWidth={2} />

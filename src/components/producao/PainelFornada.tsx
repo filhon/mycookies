@@ -250,7 +250,7 @@ export function PainelFornada({
           </p>
           <p className="max-w-[56ch] text-label text-ink-muted">
             {contagem.quantidade === null
-              ? "Você ainda não contou o que está pronto desta receita. Contar agora abre o campo já com esta massa."
+              ? "Você ainda não contou o que está pronto deste produto. Contar agora abre o campo já com esta massa."
               : `Pela última contagem, ${texto(contagem.quantidade)} ${rotulo} (${rotuloDeIdade(contagem)}). Contar agora abre o campo já com esta massa somada, para você conferir no pote.`}
           </p>
         </div>
@@ -288,7 +288,7 @@ export function PainelFornada({
       <div className="space-y-5">
         {opcoes.length > 1 ? (
           <Seletor
-            rotulo="A ficha"
+            rotulo="O produto"
             value={estado.fichaId}
             onChange={(evento) => escolherFicha(evento.target.value)}
           >
@@ -300,7 +300,7 @@ export function PainelFornada({
           </Seletor>
         ) : (
           <div>
-            <p className="text-label font-medium text-ink">A ficha</p>
+            <p className="text-label font-medium text-ink">O produto</p>
             <p className="mt-1 text-body text-ink">{ficha?.nome}</p>
           </div>
         )}
@@ -341,7 +341,7 @@ export function PainelFornada({
             dividir de cabeça. */}
         {ficha && gravavel && (
           <p className="num text-label text-ink-muted">
-            A receita rende{" "}
+            O produto rende{" "}
             <span className="font-semibold text-ink">
               {texto(ficha.rendimento)}{" "}
               {ROTULO_UNIDADE_RENDIMENTO[ficha.unidadeRendimento]}
@@ -368,7 +368,7 @@ export function PainelFornada({
           </h3>
           {linhas.length === 0 ? (
             <p className="mt-1.5 px-5 text-label text-ink-muted">
-              Esta ficha não tem insumos cadastrados. Nada sai da despensa.
+              Este produto não tem materiais cadastrados. Nada sai da despensa.
             </p>
           ) : (
             <ul className="mt-1.5 divide-y divide-line border-y border-line">
@@ -445,7 +445,7 @@ function consequencia(linha: {
   const quanto = (valor: number) =>
     formatarQuantidade(valor, linha.unidadeBase);
 
-  if (!linha.contagem) return "insumo fora do cadastro";
+  if (!linha.contagem) return "material fora do cadastro";
   if (linha.disponivel === null || linha.fica === null) {
     return linha.contagem.frescor === "VENCIDA"
       ? "contagem vencida: sem projeção"

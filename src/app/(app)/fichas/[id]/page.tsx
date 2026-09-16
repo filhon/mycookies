@@ -1,6 +1,6 @@
 import { EditorFicha } from "@/components/fichas/EditorFicha";
 
-export const metadata = { title: "Ficha técnica" };
+export const metadata = { title: "Produto" };
 
 /**
  * O id `nova` é a ficha que ainda não existe. Uma rota só para os dois casos

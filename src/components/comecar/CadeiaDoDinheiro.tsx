@@ -29,7 +29,7 @@ const ELOS: readonly Elo[] = [
       "O pacote de farinha, a barra de chocolate, o saquinho da embalagem: o que vem dentro de cada um e o que você pagou.",
     autor: "VOCE",
     papel: "Você preenche",
-    tela: "Insumos",
+    tela: "Materiais",
     href: "/insumos",
   },
   {
@@ -38,16 +38,16 @@ const ELOS: readonly Elo[] = [
       "O preço do pacote sozinho não calcula nada. Dividido pelo que vem dentro, ele vira o número que todo o resto usa.",
     autor: "SISTEMA",
     papel: "O sistema calcula",
-    tela: "Insumos",
+    tela: "Materiais",
     href: "/insumos",
   },
   {
     titulo: "Quanto custa o doce pronto",
     frase:
-      "A receita diz o que entra e quanto rende. O custo do lote se divide pelo rendimento, e cada unidade passa a ter um número atrás dela.",
+      "O produto diz o que entra e quanto rende. O custo do lote se divide pelo rendimento, e cada unidade passa a ter um número atrás dela.",
     autor: "SISTEMA",
     papel: "O sistema calcula",
-    tela: "Fichas",
+    tela: "Produtos",
     href: "/fichas",
   },
   {
@@ -56,7 +56,7 @@ const ELOS: readonly Elo[] = [
       "Com o custo na mão, o preço deixa de ser chute: você escolhe quanto quer que sobre, e vê quanto sobra de verdade.",
     autor: "VOCE",
     papel: "Você decide",
-    tela: "Fichas",
+    tela: "Produtos",
     href: "/fichas",
   },
   {

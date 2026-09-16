@@ -180,19 +180,19 @@ export function FormularioMeta({
             dica={
               semFichas
                 ? undefined
-                : "Vem da média das suas fichas. Ajuste se o que você mais vende for mais caro ou mais barato."
+                : "Vem da média dos seus produtos. Ajuste se o que você mais vende for mais caro ou mais barato."
             }
           />
 
           {semFichas ? (
             <p className="mt-1.5 max-w-[52ch] text-label text-ink-muted">
-              Você ainda não tem ficha com preço, então não há média para
+              Você ainda não tem produto com preço, então não há média para
               sugerir.{" "}
               <Link
                 href="/fichas"
                 className="font-medium text-wine-700 underline underline-offset-2 dark:text-wine-300"
               >
-                Cadastrar uma ficha
+                Cadastrar um produto
               </Link>
             </p>
           ) : (
@@ -205,7 +205,7 @@ export function FormularioMeta({
                 className="toque -ml-2 mt-1 inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-wine-700 transition-colors duration-150 ease-quart hover:bg-wine-100 dark:text-wine-300"
               >
                 <Wand2 aria-hidden className="size-4" strokeWidth={1.75} />
-                Usar a média das fichas, {formatarMoeda(sugerido)}
+                Usar a média dos produtos, {formatarMoeda(sugerido)}
               </button>
             )
           )}

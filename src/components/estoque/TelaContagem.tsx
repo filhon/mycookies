@@ -287,7 +287,7 @@ export function TelaContagem() {
         ) : erro ? (
           <div className="overflow-hidden rounded-lg border border-line bg-surface">
             <EstadoVazio
-              titulo="Não deu para carregar seus insumos"
+              titulo="Não deu para carregar seus materiais"
               descricao="Verifique a conexão. O que já foi aberto antes continua disponível offline."
             />
           </div>
@@ -295,7 +295,7 @@ export function TelaContagem() {
           <div className="overflow-hidden rounded-lg border border-line bg-surface">
             <EstadoVazio
               titulo="Não há o que contar ainda"
-              descricao="A contagem lista os insumos que você já cadastrou. Cadastre a farinha, e ela aparece aqui na próxima vez."
+              descricao="A contagem lista os materiais que você já cadastrou. Cadastre a farinha, e ela aparece aqui na próxima vez."
               acao={
                 <Link
                   href="/insumos"
@@ -305,7 +305,7 @@ export function TelaContagem() {
                   })}
                 >
                   <Plus aria-hidden className="size-5" strokeWidth={2} />
-                  Cadastrar insumo
+                  Cadastrar material
                 </Link>
               }
             />

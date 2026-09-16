@@ -100,7 +100,7 @@ export function VendasPorPedido({
               href="/fichas"
               className="font-medium text-wine-700 underline underline-offset-2 dark:text-wine-300"
             >
-              Ver minhas fichas
+              Ver meus produtos
             </Link>
           </p>
         </div>

@@ -787,7 +787,7 @@ export function chaveDaNota(
 /** "Compra no Atacadão", ou "Compra de insumos" quando o nome não sai da nota. */
 export function descricaoDaCompra(estabelecimento: string): string {
   const nome = (estabelecimento ?? "").trim();
-  return nome ? `Compra no ${nome}` : "Compra de insumos";
+  return nome ? `Compra no ${nome}` : "Compra de materiais";
 }
 
 /**

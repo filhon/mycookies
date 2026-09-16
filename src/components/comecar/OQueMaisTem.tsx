@@ -21,9 +21,9 @@ interface Funcionalidade {
 }
 
 /**
- * As quatro que não estão na navegação inferior, e que por isso dependem de
- * descoberta acidental — que é o problema que esta página resolve. São
- * exatamente as que mais economizam trabalho dela. A quarta nasceu na 13D
+ * As quatro que não estão na navegação inferior. Cada uma tem a porta na
+ * tela do menu de que é consequência (13B, 13D, 3C, 6A); o que só esta
+ * página sabe dizer é o momento. A quarta nasceu na 13D
  * (`DECISOES.md#d97`): o pote é a irmã da despensa, um nível acima.
  */
 const FUNCIONALIDADES: readonly Funcionalidade[] = [
@@ -39,7 +39,7 @@ const FUNCIONALIDADES: readonly Funcionalidade[] = [
     icone: Camera,
     nome: "Foto da nota",
     frase:
-      "O cupom da compra vira uma lista que você confere antes de aprovar: os insumos entram todos de uma vez, já com o preço novo, e a compra ainda é lançada como saída no caixa.",
+      "O cupom da compra vira uma lista que você confere antes de aprovar: os materiais entram todos de uma vez, já com o preço novo, e a compra ainda é lançada como saída no caixa.",
     momento: "Na volta do mercado, com o cupom ainda na mão.",
     href: "/insumos/nota",
   },
@@ -47,7 +47,7 @@ const FUNCIONALIDADES: readonly Funcionalidade[] = [
     icone: ClipboardList,
     nome: "Contagem da despensa",
     frase:
-      "Você abre o armário e diz o que tem, insumo por insumo, em uma tela só. Sem contar, o sistema prefere te mandar comprar farinha de novo a te deixar sem farinha no meio da fornada.",
+      "Você abre o armário e diz o que tem, material por material, em uma tela só. Sem contar, o sistema prefere te mandar comprar farinha de novo a te deixar sem farinha no meio da fornada.",
     momento: "Domingo à noite, antes de montar a lista.",
     href: "/insumos/contagem",
   },
@@ -55,7 +55,7 @@ const FUNCIONALIDADES: readonly Funcionalidade[] = [
     icone: Cookie,
     nome: "O que está pronto",
     frase:
-      "O que já assou e a massa que está no congelador, receita por receita. Com isso, a ficha e a encomenda dizem se dá para atender com o que já está feito, antes de contar a despensa. A fornada que você registra já deixa esse número proposto.",
+      "O que já assou e a massa que está no congelador, produto por produto. Com isso, o produto e a encomenda dizem se dá para atender com o que já está feito, antes de contar a despensa. A fornada que você registra já deixa esse número proposto.",
     momento:
       "No fim do dia de fornada, ou antes de dizer sim a uma encomenda grande.",
     href: "/fichas/contagem",

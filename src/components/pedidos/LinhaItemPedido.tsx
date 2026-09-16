@@ -84,7 +84,7 @@ export function LinhaItemPedido({
                 tom="atencao"
                 icone={<RefreshCw aria-hidden className="size-3.5" />}
               >
-                Hoje esta ficha sai por {formatarMoeda(precoDeHoje)}
+                Hoje este produto sai por {formatarMoeda(precoDeHoje)}
               </Selo>
               <button
                 type="button"

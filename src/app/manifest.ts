@@ -49,6 +49,6 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     // Atalhos apontam só para rotas que já existem: um atalho para 404 é pior
     // do que atalho nenhum. Ganham entradas conforme os módulos entram.
-    shortcuts: [{ name: "Insumos", url: "/insumos" }],
+    shortcuts: [{ name: "Materiais", url: "/insumos" }],
   };
 }

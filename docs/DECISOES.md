@@ -3694,3 +3694,64 @@ O risco registrado na spec: se a dobra aberta nos insumos da biblioteca (farinha
 embalagens com categoria) ler como ruído na gravação do primeiro uso, o predicado do insumo
 encolhe para só o que ela digitou — marca, onde compra, estoque —, e categoria/perda passam a
 aparecer só na linha da dobra fechada. Decisão adiada até a gravação existir.
+
+---
+
+## D117 · O nome das coisas vem dela, perguntado antes da tela — e fica registrado mesmo quando não muda
+
+**Status:** vigente · decidida em 2026-09-16, na spec `021-as-palavras-dela`
+
+**Contexto.** A navegação e os formulários falavam a língua da planilha de custo ("Insumos",
+"Ficha técnica") ou a do curso de confeitaria ("receita"), e ninguém tinha perguntado à Maynara
+se eram essas as palavras dela (`#d113`). A mesma coisa também tinha dois nomes dentro do
+sistema: o menu dizia "Fichas técnicas", o corpo dizia "receita" — ora no sentido da ficha
+inteira, ora no sentido estreito do produto que não é kit.
+
+**Decisão.** Cinco perguntas, sobre a coisa e não sobre a tela, feitas antes de ela abrir o app
+no dia da resposta, sem oferecer alternativa. A tabela abaixo é o registro — inclusive as linhas
+em que a resposta foi "fica como está", porque essa é a diferença entre "perguntamos e ela disse
+que sim" e "não perguntamos".
+
+| #   | A pergunta                                                                                       | Maynara disse                                                                                                                                                                       | Fica                                                                                                                                                                  | Sai                                   |
+| --- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| 1   | "Farinha, chocolate, saquinho, etiqueta — quando você fala disso tudo junto, você chama de quê?" | "Material, ou ingrediente, mas como são ingredientes e itens diversos, acredito que material faça mais sentido."                                                                    | **material** / **materiais**. Menu "Materiais". "Despensa" continua o lugar.                                                                                          | insumo, insumos                       |
+| 2   | "A receita com quanto ela custa e por quanto você vende — isso é o quê pra você?"                | "Produto."                                                                                                                                                                          | **produto** / **produtos**. Menu "Produtos". "Receita" fica no sentido estreito (o produto que não é kit): filtro "Receitas · Kits", "A receita" / "O kit" do editor. | ficha, ficha técnica, fichas técnicas |
+| 3a  | "Quando você já assou e guardou, ou tem massa no congelador, como você fala disso?" (a ação)     | "Pensando de forma mais geral, para outros públicos e produtos, acredito que ação de assar e guardar é fornada."                                                                    | **fornada**. Nada muda.                                                                                                                                               | —                                     |
+| 3b  | (a contagem do pote e a massa crua)                                                              | "O cookie que eu já assei é enviado para entrega, pois asso sob demanda. Já a massa no congelador não tenho um nome muito bom ou definido: poderia ser pronta entrega? Ou estoque?" | **Em aberto.** "O que está pronto" fica até a gravação decidir — "pronta entrega" não descreve massa crua, e "estoque" já é o rótulo de "Estoque atual" no material.  | —                                     |
+| 4   | "Quando uma cliente pede cinquenta pra sábado, isso é o quê?"                                    | "Encomenda ou pedido. Acho que pedido fica melhor, não é?"                                                                                                                          | **pedido**. "Encomenda" fica no corpo: é palavra dela também, e sinônimo que ela usa não é segundo nome.                                                              | —                                     |
+| 5   | "O dinheiro que entrou e saiu no mês — como você chama isso?"                                    | "Caixa."                                                                                                                                                                            | **caixa**. Nada muda.                                                                                                                                                 | —                                     |
+
+A coluna da segunda confeiteira fica vazia: as cinco perguntas foram feitas só à Maynara em
+2026-09-16, por texto. Quando as duas divergirem, vale a da Maynara na fase 0, e a divergência
+fica escrita aqui; a segunda confeiteira é o primeiro dado da fase 1, e não segura esta spec.
+
+**Consequência.** "Insumo" → "material" e "ficha" → "produto" em todo texto de tela — JSX,
+`titulo`/`descricao`/`aria-label`/`placeholder`, `metadata.title`, o atalho do `manifest.ts`,
+`CATALOGO_DO_COMECO`, `OQueMaisTem`, `CadeiaDoDinheiro`, os mapas de rótulo do domínio
+(`ROTULO_CATEGORIA_TRANSACAO`, as mensagens de `schemas.ts`, as pendências de `listaCompras.ts`,
+`descricaoDaCompra` em `notaFiscal.ts`) — e em nenhum identificador, rota, coleção do Firestore
+ou comentário. "Ficha" é feminino e "produto" é masculino: cada frase foi relida, não trocada
+por `sed` — artigo, pronome e particípio mudaram junto ("Esta ficha não está aqui" → "Este
+produto não está aqui", "suas fichas" → "seus produtos"). Onde "receita" significava a ficha
+inteira, virou "produto"; onde significava o produto que não é kit (o filtro, o bloco do editor
+de `#d116`), ficou — essa é a régua que fecha o problema 2 da spec.
+
+Uma ponte em dois lugares: o comentário de cabeçalho de `src/lib/types/insumos.ts` e de
+`fichas.ts` ganhou a linha "Na tela, chama-se X (spec 021, `#d117`)", para a próxima sessão não
+"consertar" a tela de volta para o nome do tipo.
+
+O que não mudou, e por quê: **nenhuma rota, coleção, tipo ou componente foi renomeado** —
+`/insumos`, `/fichas`, `Insumo`, `FichaTecnica` continuam com esses nomes, porque o app
+instalado não tem barra de endereço e trocar `href` em quarenta arquivos mais o precache do
+service worker é o tipo de diff que quebra o que funcionava sem ela ver diferença nenhuma.
+**"Encomenda" não saiu do corpo**: a resposta 4 foi "as duas são minhas", e a regra de uma
+palavra por coisa vale contra a palavra que ela **não** usa, não contra a que usa de dois
+jeitos. **A 3b ficou em aberto**: "pronta entrega" e "estoque" são as duas candidatas dela, e
+escolher por ela é exatamente o que esta spec existe para não fazer — "O que está pronto" segue
+sem uma letra alterada até a gravação decidir.
+
+A seção 5 da spec conferiu que as quatro telas fora do menu (`/compras`, `/insumos/nota`,
+`/insumos/contagem`, `/fichas/contagem`) já tinham porta na tela do menu de que são consequência
+desde a 13D — a premissa de "descoberta acidental" do `#d113` e do roadmap do SaaS não era mais
+verdade. A porta que faltava, "Fechar e ler a nota" na caixa de confirmação de `/compras`, foi a
+única tela nova desta spec.

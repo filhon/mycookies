@@ -77,6 +77,19 @@ describe("a ordem dos cinco", () => {
       expect(passo.oQueEsperar).not.toMatch(/R\$|\d/);
     }
   });
+
+  it("nenhum dos cinco textos usa a palavra rejeitada da spec 021 (`#d117`)", () => {
+    const PALAVRAS_REJEITADAS = ["insumo", "ficha"];
+    for (const passo of CATALOGO_DO_COMECO) {
+      for (const palavra of PALAVRAS_REJEITADAS) {
+        const regex = new RegExp(`\\b${palavra}\\w*\\b`, "i");
+        expect(passo.titulo).not.toMatch(regex);
+        expect(passo.porque).not.toMatch(regex);
+        expect(passo.oQueEsperar).not.toMatch(regex);
+        expect(passo.rotuloAcao).not.toMatch(regex);
+      }
+    }
+  });
 });
 
 /**

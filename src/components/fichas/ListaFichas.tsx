@@ -29,7 +29,7 @@ import { useContaId } from "@/providers/AuthProvider";
 import { cn } from "@/lib/utils/cn";
 
 const FILTROS: { valor: TipoFicha | "TODAS"; rotulo: string }[] = [
-  { valor: "TODAS", rotulo: "Todas" },
+  { valor: "TODAS", rotulo: "Todos" },
   { valor: "SIMPLES", rotulo: "Receitas" },
   { valor: "KIT", rotulo: "Kits" },
 ];
@@ -113,8 +113,8 @@ export function ListaFichas() {
   return (
     <>
       <CabecalhoPagina
-        titulo="Fichas técnicas"
-        descricao="A receita, o custo real dela e o preço que fecha a sua margem."
+        titulo="Produtos"
+        descricao="O produto, o custo real dele e o preço que fecha a sua margem."
         acao={
           <div className="flex items-center gap-2">
             {/* No mesmo lugar em que `/pedidos` leva a "o que comprar": o que
@@ -129,7 +129,7 @@ export function ListaFichas() {
               })}
             >
               <Plus aria-hidden className="size-5" strokeWidth={2} />
-              Nova ficha
+              Novo produto
             </Link>
           </div>
         }
@@ -145,8 +145,8 @@ export function ListaFichas() {
               type="search"
               value={busca}
               onChange={(evento) => setBusca(evento.target.value)}
-              placeholder="Buscar ficha"
-              aria-label="Buscar ficha"
+              placeholder="Buscar produto"
+              aria-label="Buscar produto"
               className="h-12 w-full rounded-md border border-line-strong bg-surface pl-10 pr-3 text-body text-ink placeholder:text-ink-subtle"
             />
           </div>
@@ -180,7 +180,7 @@ export function ListaFichas() {
         <p className="text-label text-ink-muted" aria-live="polite">
           {carregando
             ? "Carregando"
-            : `${visiveis.length} ${visiveis.length === 1 ? "ficha" : "fichas"}`}
+            : `${visiveis.length} ${visiveis.length === 1 ? "produto" : "produtos"}`}
         </p>
         <SeloSincronizacao pendente={pendente} />
       </div>
@@ -190,7 +190,7 @@ export function ListaFichas() {
       {semContagem && (
         <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <p className="max-w-[48ch] text-label text-ink-muted">
-            Quantas fornadas dá sai da contagem, e há insumo sem contagem que
+            Quantas fornadas dá sai da contagem, e há material sem contagem que
             valha.
           </p>
           <EntradaContagem tamanho="sm" />
@@ -200,7 +200,7 @@ export function ListaFichas() {
       <div className="mt-2 overflow-hidden rounded-lg border border-line bg-surface">
         {erro ? (
           <EstadoVazio
-            titulo="Não deu para carregar suas fichas"
+            titulo="Não deu para carregar seus produtos"
             descricao="Verifique a conexão. O que já foi aberto antes continua disponível offline."
           />
         ) : carregando ? (
@@ -210,7 +210,7 @@ export function ListaFichas() {
             contaVazia ? (
               <EstadoVazio
                 titulo="Comece com um cookie que já tem preço"
-                descricao="Uma biblioteca de insumos e duas receitas de cookie, prontas para editar."
+                descricao="Uma biblioteca de materiais e dois produtos de cookie, prontos para editar."
                 acao={
                   <div className="flex flex-col items-center gap-3">
                     <BotaoBiblioteca />
@@ -218,7 +218,7 @@ export function ListaFichas() {
                       href={`/fichas/${ID_FICHA_NOVA}`}
                       className={classesBotao({ variante: "terciaria" })}
                     >
-                      Criar primeira ficha
+                      Criar primeiro produto
                     </Link>
                   </div>
                 }
@@ -226,7 +226,7 @@ export function ListaFichas() {
             ) : (
               <EstadoVazio
                 titulo="Comece pelo que você mais vende"
-                descricao="Monte a receita com os insumos que você já cadastrou. O sistema soma o seu tempo, o gás e a taxa da maquininha, e devolve o preço que fecha a margem que você quer."
+                descricao="Monte o produto com os materiais que você já cadastrou. O sistema soma o seu tempo, o gás e a taxa da maquininha, e devolve o preço que fecha a margem que você quer."
                 acao={
                   <Link
                     href={`/fichas/${ID_FICHA_NOVA}`}
@@ -236,7 +236,7 @@ export function ListaFichas() {
                     })}
                   >
                     <Plus aria-hidden className="size-5" strokeWidth={2} />
-                    Criar primeira ficha
+                    Criar primeiro produto
                   </Link>
                 }
               />
@@ -244,7 +244,7 @@ export function ListaFichas() {
           ) : (
             <EstadoVazio
               titulo="Nada com esse filtro"
-              descricao="Tente outro termo de busca ou volte para todas as fichas."
+              descricao="Tente outro termo de busca ou volte para todos os produtos."
               acao={
                 <Botao
                   onClick={() => {
@@ -280,7 +280,7 @@ export function ListaFichas() {
       {/* Ação primária ao alcance do polegar, acima da navegação inferior. */}
       <Link
         href={`/fichas/${ID_FICHA_NOVA}`}
-        aria-label="Nova ficha"
+        aria-label="Novo produto"
         className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] right-4 z-30 flex size-14 items-center justify-center rounded-full bg-wine-700 text-on-wine shadow-overlay transition-colors duration-150 ease-quart hover:bg-wine-600 active:bg-wine-800 apertado:hidden lg:hidden"
       >
         <Plus aria-hidden className="size-6" strokeWidth={2} />

@@ -98,14 +98,14 @@ export function EditorFicha({ id }: { id: string }) {
     return (
       <div className="mt-6 overflow-hidden rounded-lg border border-line bg-surface">
         <EstadoVazio
-          titulo="Esta ficha não está aqui"
-          descricao="Ela pode ter sido arquivada, ou o endereço veio errado. Suas fichas continuam na lista."
+          titulo="Este produto não está aqui"
+          descricao="Ele pode ter sido arquivado, ou o endereço veio errado. Seus produtos continuam na lista."
           acao={
             <Link
               href="/fichas"
               className={classesBotao({ variante: "primaria", tamanho: "lg" })}
             >
-              Ver minhas fichas
+              Ver meus produtos
             </Link>
           }
         />

@@ -223,7 +223,7 @@ export function TelaConfiguracao() {
       <>
         <CabecalhoPagina
           titulo="Configuração"
-          descricao="Os custos que não aparecem na receita, mas saem do seu bolso."
+          descricao="Os custos que não aparecem no produto, mas saem do seu bolso."
         />
         <div role="status" aria-label="Carregando" className="mt-4 space-y-4">
           {[0, 1, 2].map((indice) => (
@@ -326,7 +326,7 @@ export function TelaConfiguracao() {
     <>
       <CabecalhoPagina
         titulo="Configuração"
-        descricao="Os custos que não aparecem na receita, mas saem do seu bolso. É daqui que sai o rateio de toda ficha técnica."
+        descricao="Os custos que não aparecem no produto, mas saem do seu bolso. É daqui que sai o rateio de todo produto."
         acao={
           <Botao
             variante="primaria"
@@ -459,7 +459,7 @@ export function TelaConfiguracao() {
               <>
                 Suas despesas fixas custam{" "}
                 <Realce>{formatarMoeda(indireto)}</Realce> por hora produzida. É
-                essa fatia que entra em cada ficha técnica.
+                essa fatia que entra em cada produto.
               </>
             ) : (
               <>
@@ -541,7 +541,7 @@ export function TelaConfiguracao() {
         <BlocoConfiguracao
           icone={Tag}
           titulo="Preço padrão"
-          descricao="Como toda ficha nova começa. Cada produto pode fugir daqui depois."
+          descricao="Como todo produto novo começa. Cada produto pode fugir daqui depois."
           consequencia={
             estado.arredondamento === "NENHUM" ? (
               <>

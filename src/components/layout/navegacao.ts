@@ -24,14 +24,14 @@ export const DESTINOS: Destino[] = [
   { href: "/", rotulo: "Hoje", curto: "Hoje", icone: Home },
   {
     href: "/insumos",
-    rotulo: "Insumos",
-    curto: "Insumos",
+    rotulo: "Materiais",
+    curto: "Materiais",
     icone: ShoppingBasket,
   },
   {
     href: "/fichas",
-    rotulo: "Fichas técnicas",
-    curto: "Fichas",
+    rotulo: "Produtos",
+    curto: "Produtos",
     icone: BookOpen,
   },
   {

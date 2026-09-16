@@ -84,7 +84,7 @@ export const CATALOGO_DO_COMECO: readonly PassoBase[] = [
     porque:
       "Enquanto o preço sai da cabeça, não dá para saber se o doce paga o próprio custo e ainda sobra alguma coisa pra você.",
     oQueEsperar:
-      "Uma receita de cookie abre com o custo e o preço no rodapé. Depois dá para trocar tudo: o que entra, quanto rende e quanto tempo leva.",
+      "Um produto de cookie abre com o custo e o preço no rodapé. Depois dá para trocar tudo: o que entra, quanto rende e quanto tempo leva.",
     href: "/fichas",
     rotuloAcao: "Ver quanto custa um cookie",
   },
@@ -95,7 +95,7 @@ export const CATALOGO_DO_COMECO: readonly PassoBase[] = [
     porque:
       "O preço do pacote é o que vira custo por grama. Com o preço médio, o custo do seu doce é um palpite bem-feito; com o da sua nota, é o seu número.",
     oQueEsperar:
-      "A lista do que você compra, com o preço de cada pacote. Você abre o que for diferente na sua cozinha e troca o valor — o preço das receitas se refaz.",
+      "A lista do que você compra, com o preço de cada pacote. Você abre o que for diferente na sua cozinha e troca o valor — o preço dos produtos se refaz.",
     href: "/insumos",
     rotuloAcao: "Conferir os preços",
   },
@@ -106,7 +106,7 @@ export const CATALOGO_DO_COMECO: readonly PassoBase[] = [
     porque:
       "A sua hora, o gás, a energia e a taxa da maquininha entram em todo preço. Até você dizer os seus, o preço usa os valores que o sistema sugeriu.",
     oQueEsperar:
-      "Os campos já vêm preenchidos com a sugestão. Você troca os que são diferentes na sua cozinha e salva — e vê o preço das receitas mudar.",
+      "Os campos já vêm preenchidos com a sugestão. Você troca os que são diferentes na sua cozinha e salva — e vê o preço dos produtos mudar.",
     href: "/configuracao",
     rotuloAcao: "Ajustar o que é meu",
   },

@@ -140,8 +140,8 @@ function MaquininhaComeu({
             </p>
             <p className="mt-1 max-w-[52ch] text-label text-ink-muted">
               Sai da taxa de cada forma de pagamento e já está descontada do
-              resultado acima. É por isso que ela entra no preço das suas
-              fichas.{" "}
+              resultado acima. É por isso que ela entra no preço dos seus
+              produtos.{" "}
               <Link
                 href="/configuracao"
                 className="font-medium text-wine-700 underline underline-offset-2 dark:text-wine-300"

@@ -344,8 +344,8 @@ function EditorDePreco({
       />
 
       <p className="mt-2 max-w-[60ch] text-label text-ink-muted">
-        Salvar corrige o insumo e marca as fichas que usam {insumo.nome} como
-        custo desatualizado, para você não dar preço com número velho.
+        Salvar corrige o material e marca os produtos que usam {insumo.nome}{" "}
+        como custo desatualizado, para você não dar preço com número velho.
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">

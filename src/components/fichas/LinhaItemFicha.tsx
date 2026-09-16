@@ -114,7 +114,7 @@ export function LinhaItemFicha({
       etiqueta={ehEmbalagem ? <Selo tom="neutro">Embalagem</Selo> : undefined}
       custoLinha={custoLinha}
       aoRemover={aoRemover}
-      rotuloRemover={`Tirar ${nome} da ficha`}
+      rotuloRemover={`Tirar ${nome} do produto`}
       erro={erro}
       controles={
         <>

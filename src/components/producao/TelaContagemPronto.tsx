@@ -155,7 +155,7 @@ export function TelaContagemPronto() {
           className="toque -ml-2 inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-ink-muted transition-colors duration-150 ease-quart hover:text-ink"
         >
           <ArrowLeft aria-hidden className="size-4" strokeWidth={1.75} />
-          Fichas técnicas
+          Produtos
         </Link>
 
         <div className="mt-1 flex items-center justify-between gap-4">
@@ -166,7 +166,7 @@ export function TelaContagemPronto() {
         </div>
 
         <p className="mt-1 max-w-[60ch] text-label text-ink-muted lg:text-body">
-          A massa no congelador e o que já assou, por receita.{" "}
+          A massa no congelador e o que já assou, por produto.{" "}
           {semente
             ? "Confira no pote antes de salvar. Zero também é contagem: é você dizendo que acabou."
             : "Digite só o que você conferir. Zero também é contagem: é você dizendo que acabou."}
@@ -192,8 +192,8 @@ export function TelaContagemPronto() {
         <div className="mt-4 flex gap-2" role="group" aria-label="O que contar">
           {(
             [
-              { valor: true, rotulo: "Só esta receita", quantos: 1 },
-              { valor: false, rotulo: "Todas", quantos: fichas.length },
+              { valor: true, rotulo: "Só este produto", quantos: 1 },
+              { valor: false, rotulo: "Todos", quantos: fichas.length },
             ] as const
           ).map((opcao) => {
             const ativo = soEsta === opcao.valor;
@@ -228,7 +228,7 @@ export function TelaContagemPronto() {
         ) : erro ? (
           <div className="overflow-hidden rounded-lg border border-line bg-surface">
             <EstadoVazio
-              titulo="Não deu para carregar suas fichas"
+              titulo="Não deu para carregar seus produtos"
               descricao="Verifique a conexão. O que já foi aberto antes continua disponível offline."
             />
           </div>
@@ -236,7 +236,7 @@ export function TelaContagemPronto() {
           <div className="overflow-hidden rounded-lg border border-line bg-surface">
             <EstadoVazio
               titulo="Não há o que contar ainda"
-              descricao="A contagem lista as receitas que você já montou. Crie a primeira ficha, e ela aparece aqui."
+              descricao="A contagem lista os produtos que você já montou. Crie o primeiro produto, e ele aparece aqui."
               acao={
                 <Link
                   href="/fichas/nova"
@@ -246,7 +246,7 @@ export function TelaContagemPronto() {
                   })}
                 >
                   <Plus aria-hidden className="size-5" strokeWidth={2} />
-                  Criar ficha
+                  Criar produto
                 </Link>
               }
             />

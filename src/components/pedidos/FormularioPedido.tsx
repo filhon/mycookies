@@ -1107,16 +1107,16 @@ export function FormularioPedido({
         <Bloco
           icone={Receipt}
           titulo="O que ela pediu"
-          descricao="O preço entra congelado: mudar a ficha depois não mexe neste pedido."
+          descricao="O preço entra congelado: mudar o produto depois não mexe neste pedido."
           recuado={false}
         >
           <div className="lg:ml-8">
             <BuscaItem
               rotulo="Adicionar produto"
-              placeholder="Buscar ficha"
+              placeholder="Buscar produto"
               opcoes={opcoesFicha}
               aoEscolher={adicionarFicha}
-              semResultado="Nenhuma ficha com esse nome. Só o que já está precificado pode entrar em um pedido."
+              semResultado="Nenhum produto com esse nome. Só o que já está precificado pode entrar em um pedido."
             />
           </div>
 

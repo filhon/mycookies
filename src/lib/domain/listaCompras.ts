@@ -44,9 +44,9 @@ export interface Pendencia {
 }
 
 export const EXPLICACAO_PENDENCIA: Record<MotivoPendencia, string> = {
-  SEM_FICHA: "a ficha não está mais no seu caderno de receitas",
-  SEM_RENDIMENTO: "a ficha não diz quantas unidades saem de um lote",
-  SEM_INSUMO: "o insumo não está mais cadastrado",
+  SEM_FICHA: "o produto não está mais no seu caderno de receitas",
+  SEM_RENDIMENTO: "o produto não diz quantas unidades saem de um lote",
+  SEM_INSUMO: "o material não está mais cadastrado",
 };
 
 /** A mesma falta em três pedidos é uma falta, e não três linhas de aviso. */

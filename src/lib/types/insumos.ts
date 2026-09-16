@@ -14,6 +14,8 @@ import type {
  * Motivo: o comportamento de custo é idêntico (preço de compra → custo por
  * unidade base) e uma coleção única significa um motor de cálculo, uma tela de
  * cadastro e uma leitura só para popular o app inteiro.
+ *
+ * Na tela, chama-se material (spec 021, `#d117`).
  */
 export type CategoriaInsumo =
   "INGREDIENTE" | "EMBALAGEM" | "ETIQUETA" | "ARMAZENAMENTO" | "OUTRO";

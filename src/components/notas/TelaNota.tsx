@@ -354,7 +354,7 @@ export function TelaNota() {
           className="toque -ml-2 inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-ink-muted transition-colors duration-150 ease-quart hover:text-ink"
         >
           <ArrowLeft aria-hidden className="size-4" strokeWidth={1.75} />
-          Insumos
+          Materiais
         </Link>
 
         <div className="mt-1 flex items-center justify-between gap-4">
@@ -430,8 +430,8 @@ export function TelaNota() {
 
             <p className="max-w-[62ch] text-label text-ink-muted">
               A foto não é guardada: ela sobe, a leitura volta, e o arquivo é
-              descartado. O que fica é o preço de cada insumo, com a data da
-              compra, dentro do próprio insumo.
+              descartado. O que fica é o preço de cada material, com a data da
+              compra, dentro do próprio material.
             </p>
           </>
         )}
@@ -734,7 +734,7 @@ function Pronto({
           {criados > 0 && (
             <p>
               <strong className="num font-semibold text-ink">{criados}</strong>{" "}
-              {criados === 1 ? "insumo novo" : "insumos novos"}.
+              {criados === 1 ? "material novo" : "materiais novos"}.
             </p>
           )}
           {atualizados > 0 && (
@@ -753,8 +753,8 @@ function Pronto({
               <strong className="num font-semibold text-ink">
                 {fichasMarcadas}
               </strong>{" "}
-              {fichasMarcadas === 1 ? "ficha ficou" : "fichas ficaram"} com o
-              custo desatualizado. Abra e salve para o preço acompanhar.
+              {fichasMarcadas === 1 ? "produto ficou" : "produtos ficaram"} com
+              o custo desatualizado. Abra e salve para o preço acompanhar.
             </p>
           )}
           {lancado !== null && (
@@ -806,7 +806,7 @@ function Pronto({
             href="/insumos"
             className={classesBotao({ variante: "secundaria", tamanho: "lg" })}
           >
-            Ver os insumos
+            Ver os materiais
           </Link>
         </div>
       </div>

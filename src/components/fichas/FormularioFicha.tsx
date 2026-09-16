@@ -154,7 +154,7 @@ const TIPOS: { valor: TipoFicha; titulo: string; explicacao: string }[] = [
     valor: "KIT",
     titulo: "Kit",
     explicacao:
-      "Uma caixa que junta fichas prontas, ou um combo em que a cliente escolhe os sabores. Mais a embalagem dela.",
+      "Uma caixa que junta produtos prontos, ou um combo em que a cliente escolhe os sabores. Mais a embalagem dela.",
   },
 ];
 
@@ -387,7 +387,8 @@ export function FormularioFicha({
 
     return {
       insumoId: linha.insumoId,
-      nomeSnapshot: insumo?.nome ?? guardado?.nomeSnapshot ?? "Insumo removido",
+      nomeSnapshot:
+        insumo?.nome ?? guardado?.nomeSnapshot ?? "Material removido",
       categoria: insumo?.categoria ?? guardado?.categoria ?? "OUTRO",
       quantidade: paraBase(digitada, linha.unidade),
       unidadeBase,
@@ -406,7 +407,7 @@ export function FormularioFicha({
     return {
       fichaId: linha.fichaId,
       nomeSnapshot:
-        componente?.nome ?? guardado?.nomeSnapshot ?? "Ficha removida",
+        componente?.nome ?? guardado?.nomeSnapshot ?? "Produto removido",
       quantidade: parseParaNumero(linha.quantidade),
       custoUnitarioSnapshot: componente?.custoUnitario ?? 0,
       arquivado: !componente,
@@ -568,7 +569,7 @@ export function FormularioFicha({
     form.setValue("escolhas", []);
     setAviso(
       tinhaComponentes > 0
-        ? `Uma receita não leva outras fichas dentro: ${tinhaComponentes === 1 ? "a ficha que estava" : `as ${tinhaComponentes} fichas que estavam`} no kit ${tinhaComponentes === 1 ? "saiu" : "saíram"} da lista.`
+        ? `Uma receita não leva outros produtos dentro: ${tinhaComponentes === 1 ? "o produto que estava" : `os ${tinhaComponentes} produtos que estavam`} no kit ${tinhaComponentes === 1 ? "saiu" : "saíram"} da lista.`
         : tinhaEscolhas > 0
           ? "Uma receita não tem escolha da cliente: a escolha saiu do kit."
           : null,
@@ -625,7 +626,7 @@ export function FormularioFicha({
       componentesResolvidos.some((componente) => componente.arquivado)
     ) {
       setFalha(
-        "Há um item arquivado nesta ficha. Tire-o da lista ou reative o cadastro dele: sem preço, ele entraria no custo como zero.",
+        "Há um item arquivado neste produto. Tire-o da lista ou reative o cadastro dele: sem preço, ele entraria no custo como zero.",
       );
       return;
     }
@@ -682,7 +683,7 @@ export function FormularioFicha({
     }
   }
 
-  const titulo = valores.nome.trim() || (ficha ? ficha.nome : "Nova ficha");
+  const titulo = valores.nome.trim() || (ficha ? ficha.nome : "Novo produto");
 
   return (
     <>
@@ -695,7 +696,7 @@ export function FormularioFicha({
           className="toque -ml-2 inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-ink-muted transition-colors duration-150 ease-quart hover:text-ink apertado:hidden"
         >
           <ArrowLeft aria-hidden className="size-4" strokeWidth={1.75} />
-          Fichas técnicas
+          Produtos
         </Link>
 
         <div className="mt-1 flex items-center justify-between gap-4 apertado:mt-0">
@@ -747,7 +748,7 @@ export function FormularioFicha({
             <p>
               Seu tempo de trabalho, o gás e as despesas fixas ainda não entram
               neste preço: o rateio está zerado. O custo abaixo é só o dos
-              insumos.
+              materiais.
             </p>
             <Link
               href="/configuracao"
@@ -765,13 +766,13 @@ export function FormularioFicha({
           <Faixa tom="atencao">
             <p>
               {fraseDosPrecoMedio(nomesComPrecoMedio)} O seu chocolate custa
-              isso mesmo? Corrija em Insumos e o preço se refaz.
+              isso mesmo? Corrija em Materiais e o preço se refaz.
             </p>
             <Link
               href="/insumos"
               className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-wine-700 underline underline-offset-2 dark:text-wine-300"
             >
-              Ir para Insumos
+              Ir para Materiais
             </Link>
           </Faixa>
         )}
@@ -779,9 +780,9 @@ export function FormularioFicha({
         {ficha?.custoDesatualizado && (
           <Faixa tom="atencao">
             <p>
-              O preço de um insumo desta ficha mudou depois do último cálculo.
-              Os números aqui já são os de agora — salve para gravá-los e tirar
-              o aviso.
+              O preço de um material deste produto mudou depois do último
+              cálculo. Os números aqui já são os de agora — salve para gravá-los
+              e tirar o aviso.
             </p>
             <Botao
               tamanho="sm"
@@ -830,7 +831,7 @@ export function FormularioFicha({
                   <p className="max-w-[48ch] text-label text-ink-muted">
                     {pronto.contagem.frescor === "VENCIDA"
                       ? "A contagem do que está pronto venceu."
-                      : "Você ainda não contou o que está pronto desta receita."}
+                      : "Você ainda não contou o que está pronto deste produto."}
                   </p>
                 ) : (
                   <FraseDoPronto
@@ -1053,21 +1054,21 @@ export function FormularioFicha({
           <Bloco
             icone={ChefHat}
             titulo="O que vai no kit"
-            descricao="As fichas prontas que entram nesta caixa. Um kit não leva outro kit dentro."
+            descricao="Os produtos prontos que entram nesta caixa. Um kit não leva outro kit dentro."
             recuado={false}
           >
             <div className="lg:ml-8">
               <BuscaItem
-                rotulo="Adicionar ficha ao kit"
+                rotulo="Adicionar produto ao kit"
                 placeholder="Buscar receita"
                 opcoes={opcoesComponente}
                 aoEscolher={adicionarComponente}
-                semResultado="Nenhuma receita com esse nome. Só fichas do tipo receita podem entrar em um kit."
+                semResultado="Nenhuma receita com esse nome. Só produtos do tipo receita podem entrar em um kit."
               />
             </div>
 
             <ListaDeLinhas
-              vazio="Nenhuma ficha no kit ainda. Busque acima e toque para adicionar."
+              vazio="Nenhum produto no kit ainda. Busque acima e toque para adicionar."
               erro={erroDaLista(errosComponentes)}
               quantidade={listaComponentes.fields.length}
             >
@@ -1086,7 +1087,7 @@ export function FormularioFicha({
                     aoRemover={() => listaComponentes.remove(indice)}
                     erro={
                       componente.arquivado
-                        ? "Esta ficha foi arquivada e não tem mais custo. Tire-a do kit ou reative o cadastro."
+                        ? "Este produto foi arquivado e não tem mais custo. Tire-o do kit ou reative o cadastro."
                         : erroDaLinha(errosComponentes, indice)
                     }
                   />
@@ -1169,14 +1170,14 @@ export function FormularioFicha({
         >
           <div className="lg:ml-8">
             <BuscaItem
-              rotulo={ehKit ? "Adicionar embalagem" : "Adicionar insumo"}
-              placeholder={ehKit ? "Buscar embalagem" : "Buscar insumo"}
+              rotulo={ehKit ? "Adicionar embalagem" : "Adicionar material"}
+              placeholder={ehKit ? "Buscar embalagem" : "Buscar material"}
               opcoes={opcoesInsumo}
               aoEscolher={adicionarInsumo}
               semResultado={
                 ehKit
-                  ? "Nenhuma embalagem com esse nome. Cadastre-a em Insumos, na categoria Embalagem."
-                  : "Nenhum insumo com esse nome. Cadastre-o em Insumos primeiro."
+                  ? "Nenhuma embalagem com esse nome. Cadastre-a em Materiais, na categoria Embalagem."
+                  : "Nenhum material com esse nome. Cadastre-o em Materiais primeiro."
               }
             />
           </div>
@@ -1184,8 +1185,8 @@ export function FormularioFicha({
           <ListaDeLinhas
             vazio={
               ehKit
-                ? "Sem embalagem, o kit sai pelo custo das fichas de dentro."
-                : "Nenhum insumo ainda. Busque acima e toque para adicionar."
+                ? "Sem embalagem, o kit sai pelo custo dos produtos de dentro."
+                : "Nenhum material ainda. Busque acima e toque para adicionar."
             }
             erro={erroDaLista(errosItens)}
             quantidade={listaItens.fields.length}
@@ -1205,7 +1206,7 @@ export function FormularioFicha({
                   aoRemover={() => listaItens.remove(indice)}
                   erro={
                     item.arquivado
-                      ? "Este insumo foi arquivado e não tem mais preço. Tire-o da ficha ou reative o cadastro."
+                      ? "Este material foi arquivado e não tem mais preço. Tire-o do produto ou reative o cadastro."
                       : erroDaLinha(errosItens, indice)
                   }
                 />
@@ -1222,11 +1223,11 @@ export function FormularioFicha({
           {/* Recibo, não tabela: a coluna para antes da borda para o rótulo e o
               valor não ficarem em pontas opostas da tela. */}
           <dl className="max-w-xl space-y-2 text-label">
-            <Parcela rotulo="Insumos" valor={derivado.custo.custoInsumos} />
+            <Parcela rotulo="Materiais" valor={derivado.custo.custoInsumos} />
             <Parcela rotulo="Embalagem" valor={derivado.custo.custoEmbalagem} />
             {ehKit && (
               <Parcela
-                rotulo="Fichas de dentro"
+                rotulo="Produtos de dentro"
                 valor={derivado.custo.custoComponentes}
               />
             )}
@@ -1391,8 +1392,8 @@ export function FormularioFicha({
             <div className="rounded-lg border border-negative/30 bg-negative-soft p-4">
               <p className="text-label text-ink">
                 Arquivar <strong className="font-semibold">{ficha.nome}</strong>
-                ? Ela sai da lista e da busca, mas continua nos pedidos antigos
-                e nos kits que a usam, para o histórico de custo não se perder.
+                ? Ele sai da lista e da busca, mas continua nos pedidos antigos
+                e nos kits que o usam, para o histórico de custo não se perder.
               </p>
               <div className="mt-3 flex gap-2">
                 <Botao
@@ -1422,7 +1423,7 @@ export function FormularioFicha({
                   <Archive aria-hidden className="size-4" strokeWidth={1.75} />
                 }
               >
-                Arquivar ficha
+                Arquivar produto
               </Botao>
             </div>
           ))}

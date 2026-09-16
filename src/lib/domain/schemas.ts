@@ -3,7 +3,7 @@ import { PERDA_MAXIMA } from "./custoInsumo";
 
 /** Mensagens na língua da confeitaria, não na do validador. */
 export const esquemaInsumo = z.object({
-  nome: z.string().trim().min(2, "Dê um nome ao insumo."),
+  nome: z.string().trim().min(2, "Dê um nome ao material."),
   categoria: z.enum([
     "INGREDIENTE",
     "EMBALAGEM",
@@ -118,7 +118,7 @@ export const DESCRICAO_MAX = 240;
  */
 export const esquemaFicha = z
   .object({
-    nome: z.string().trim().min(2, "Dê um nome a esta ficha."),
+    nome: z.string().trim().min(2, "Dê um nome a este produto."),
     categoria: z.string().trim(),
     descricao: z
       .string()
@@ -139,7 +139,7 @@ export const esquemaFicha = z
     itens: z.array(
       z.object({
         insumoId: z.string().min(1),
-        quantidade: z.number().positive("Diga quanto deste insumo vai."),
+        quantidade: z.number().positive("Diga quanto deste material vai."),
       }),
     ),
     componentes: z.array(
@@ -180,7 +180,7 @@ export const esquemaFicha = z
   // vira um preço zero que parece resposta.
   .refine((ficha) => ficha.tipo !== "SIMPLES" || ficha.itens.length > 0, {
     path: ["itens"],
-    message: "Uma receita precisa de pelo menos um insumo.",
+    message: "Uma receita precisa de pelo menos um material.",
   })
   // Um kit é conteúdo fixo, escolha da cliente, ou os dois (`#d99`): vazio
   // dos dois lados é uma caixa sem nada dentro.
@@ -191,7 +191,7 @@ export const esquemaFicha = z
     {
       path: ["componentes"],
       message:
-        "Um kit precisa de pelo menos uma ficha dentro dele, ou de uma escolha para a cliente.",
+        "Um kit precisa de pelo menos um produto dentro dele, ou de uma escolha para a cliente.",
     },
   )
   .refine((ficha) => ficha.tipo !== "SIMPLES" || ficha.escolhas.length === 0, {

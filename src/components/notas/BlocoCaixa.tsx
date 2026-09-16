@@ -41,7 +41,7 @@ export function BlocoCaixa({
     <Bloco
       icone={Wallet}
       titulo="Esta compra no caixa"
-      descricao="Uma nota é um lançamento só. O detalhe item a item já fica guardado dentro de cada insumo."
+      descricao="Uma nota é um lançamento só. O detalhe item a item já fica guardado dentro de cada material."
     >
       {duplicado && (
         <p
@@ -62,7 +62,7 @@ export function BlocoCaixa({
             <strong className="num font-semibold">
               {formatarMoeda(duplicado.valor)}
             </strong>
-            . Os insumos podem ser cadastrados de novo à vontade — atualizar
+            . Os materiais podem ser cadastrados de novo à vontade — atualizar
             preço não repete nada.
           </span>
         </p>

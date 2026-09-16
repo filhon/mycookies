@@ -514,7 +514,7 @@ export function saidasOrdenadas(
 
 export const ROTULO_CATEGORIA_TRANSACAO: Record<CategoriaTransacao, string> = {
   VENDA: "Venda",
-  COMPRA_INSUMO: "Compra de insumo",
+  COMPRA_INSUMO: "Compra de material",
   EMBALAGEM: "Embalagem",
   ENTREGA: "Entrega",
   DESPESA_FIXA: "Despesa fixa",

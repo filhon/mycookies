@@ -226,7 +226,7 @@ export function ListaPedidos() {
           {nadaGravado ? (
             <EstadoVazio
               titulo="A encomenda sai do WhatsApp e entra na agenda"
-              descricao="Monte o pedido com as fichas que você já precificou: o sistema soma o total, desconta a maquininha e diz quanto sobra antes de você fechar o combinado."
+              descricao="Monte o pedido com os produtos que você já precificou: o sistema soma o total, desconta a maquininha e diz quanto sobra antes de você fechar o combinado."
               acao={
                 <Link
                   href={`/pedidos/${ID_PEDIDO_NOVO}`}

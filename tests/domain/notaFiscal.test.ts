@@ -608,7 +608,7 @@ describe("a compra vira saída no caixa", () => {
   });
 
   it("sem nome de loja, a descrição continua dizendo o que é", () => {
-    expect(descricaoDaCompra("")).toBe("Compra de insumos");
+    expect(descricaoDaCompra("")).toBe("Compra de materiais");
     expect(descricaoDaCompra("  Atacadão  ")).toBe("Compra no Atacadão");
   });
 

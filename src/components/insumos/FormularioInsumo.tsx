@@ -199,10 +199,10 @@ export function FormularioInsumo({
     <Painel
       aberto={aberto}
       aoFechar={aoFechar}
-      titulo={insumo ? "Editar insumo" : "Novo insumo"}
+      titulo={insumo ? "Editar material" : "Novo material"}
       descricao={
         insumo
-          ? "Mudar o preço aqui marca todas as fichas que usam este insumo para recálculo."
+          ? "Mudar o preço aqui marca todos os produtos que usam este material para recálculo."
           : "Cadastre como você compra. O custo por grama o sistema calcula."
       }
       rodape={
@@ -216,7 +216,7 @@ export function FormularioInsumo({
             carregando={salvando}
             className="flex-[1.6]"
           >
-            {insumo ? "Salvar alterações" : "Cadastrar insumo"}
+            {insumo ? "Salvar alterações" : "Cadastrar material"}
           </Botao>
         </div>
       }
@@ -365,8 +365,8 @@ export function FormularioInsumo({
               <p className="text-label text-ink">
                 Arquivar{" "}
                 <strong className="font-semibold">{insumo.nome}</strong>? Ele
-                sai das listas e da busca, mas continua nas fichas e nos pedidos
-                antigos, para o histórico de custo não se perder.
+                sai das listas e da busca, mas continua nos produtos e nos
+                pedidos antigos, para o histórico de custo não se perder.
               </p>
               <div className="mt-3 flex gap-2">
                 <Botao
@@ -396,7 +396,7 @@ export function FormularioInsumo({
                   <Archive aria-hidden className="size-4" strokeWidth={1.75} />
                 }
               >
-                Arquivar insumo
+                Arquivar material
               </Botao>
             </div>
           ))}

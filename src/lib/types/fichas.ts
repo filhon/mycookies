@@ -15,6 +15,8 @@ import type { MetodoPrecificacao } from "./configuracao";
  *
  * Um kit não pode conter outro kit. Um nível de profundidade mantém a explosão
  * de demanda da lista de compras finita e o custo auditável.
+ *
+ * Na tela, chama-se produto (spec 021, `#d117`).
  */
 export type TipoFicha = "SIMPLES" | "KIT";
 

@@ -196,7 +196,7 @@ function fraseDoPiso(
   if (!primeira) return null;
 
   if (abaixo.length > 1) {
-    return `${abaixo.length} fichas abaixo da reserva: ${listarNomes(
+    return `${abaixo.length} produtos abaixo da reserva: ${listarNomes(
       abaixo.map((atual) => atual.capacidade.nome),
       3,
     )}`;

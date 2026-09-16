@@ -64,7 +64,9 @@ export function RodapeNota({
           disabled={linhas === 0 || incompletas > 0}
           onClick={aoCadastrar}
         >
-          {linhas === 1 ? "Cadastrar 1 insumo" : `Cadastrar ${linhas} insumos`}
+          {linhas === 1
+            ? "Cadastrar 1 material"
+            : `Cadastrar ${linhas} materiais`}
         </Botao>
       </div>
 
@@ -99,7 +101,7 @@ export function RodapeNota({
 }
 
 function contagem(linhas: number, atualizacoes: number): string {
-  const itens = `${linhas} ${linhas === 1 ? "insumo" : "insumos"}`;
+  const itens = `${linhas} ${linhas === 1 ? "material" : "materiais"}`;
   if (atualizacoes === 0) return itens;
   return `${itens} · ${atualizacoes} ${
     atualizacoes === 1 ? "atualização" : "atualizações"

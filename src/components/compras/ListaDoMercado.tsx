@@ -10,11 +10,13 @@ import {
   ClipboardList,
   FileQuestion,
   RefreshCw,
+  ScanLine,
   ShoppingCart,
 } from "lucide-react";
 import { EntradaContagem } from "@/components/estoque/EntradaContagem";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
+import { AvisoLeituraSemRede } from "@/components/notas/EntradaLeitura";
 import { Botao } from "@/components/ui/Botao";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { LinhaCompra, LinhaJaTem } from "./LinhaCompra";
@@ -22,6 +24,7 @@ import { RodapeCompras } from "./RodapeCompras";
 import { agruparPorCorredor, ROTULO_CORREDOR } from "@/lib/domain/corredores";
 import { diaVizinho, rotuloDia } from "@/lib/domain/datas";
 import { contagemDoInsumo, entradasDaLista } from "@/lib/domain/estoque";
+import { useConexao } from "@/lib/hooks/useDispositivo";
 import {
   entraNaLista,
   explodirDemanda,
@@ -98,6 +101,7 @@ export function ListaDoMercado({
   pendente: boolean;
 }) {
   const router = useRouter();
+  const online = useConexao();
 
   // O período nasce do que está gravado, e não de um padrão que ignoraria a
   // lista já montada: reabrir a tela no mercado precisa devolver o mesmo
@@ -272,6 +276,14 @@ export function ListaDoMercado({
     router.push("/insumos/contagem");
   };
 
+  // A nota faz o que "guardar na despensa" faz e mais dois: corrige os preços e
+  // lança a compra no caixa. Fecha a lista do mesmo jeito, e a contagem que a
+  // nota propõe volta para `/compras` sem lista — a compra acabou.
+  const fecharELerANota = () => {
+    fechar();
+    router.push("/insumos/nota");
+  };
+
   return (
     <>
       <CabecalhoPagina
@@ -356,10 +368,10 @@ export function ListaDoMercado({
               titulo="Da encomenda para o carrinho"
               descricao={
                 noPeriodo.length > 0
-                  ? `São ${noPeriodo.length} ${noPeriodo.length === 1 ? "pedido confirmado" : "pedidos confirmados"} neste período. O sistema soma o que as receitas consomem, desconta o que você já tem e diz quantos pacotes faltam.`
+                  ? `São ${noPeriodo.length} ${noPeriodo.length === 1 ? "pedido confirmado" : "pedidos confirmados"} neste período. O sistema soma o que os produtos consomem, desconta o que você já tem e diz quantos pacotes faltam.`
                   : reserva.size > 0
-                    ? "Nenhum pedido confirmado neste período, mas há ficha com fornada de reserva. O sistema soma o que a reserva consome, desconta o que você já tem e diz quantos pacotes faltam."
-                    : "Assim que houver um pedido confirmado para os próximos dias, ou uma ficha com fornada de reserva, o sistema soma o que cada receita consome e diz quantos pacotes comprar."
+                    ? "Nenhum pedido confirmado neste período, mas há produto com fornada de reserva. O sistema soma o que a reserva consome, desconta o que você já tem e diz quantos pacotes faltam."
+                    : "Assim que houver um pedido confirmado para os próximos dias, ou um produto com fornada de reserva, o sistema soma o que cada produto consome e diz quantos pacotes comprar."
               }
               acao={
                 <Botao
@@ -384,7 +396,7 @@ export function ListaDoMercado({
           <div className="overflow-hidden rounded-lg border border-line bg-surface">
             <EstadoVazio
               titulo="Nada a comprar por enquanto"
-              descricao="Nenhum pedido confirmado neste período consome insumo, e nenhuma ficha pede reserva. Confirme um orçamento ou aumente o período, e refaça a lista."
+              descricao="Nenhum pedido confirmado neste período consome material, e nenhum produto pede reserva. Confirme um orçamento ou aumente o período, e refaça a lista."
             />
           </div>
         ) : (
@@ -476,6 +488,11 @@ export function ListaDoMercado({
                 compra terminou.
               </p>
 
+              <p className="mt-2 max-w-[60ch] text-label text-ink-muted">
+                Com o cupom na mão, ler a nota corrige os preços e lança a
+                compra no caixa de uma vez.
+              </p>
+
               {/* A compra sabe quanto entrou e não sabe o que saiu desde então:
                   somar e gravar seria inventar a metade que falta. Então ela
                   propõe, com os campos já preenchidos, e a decisão continua
@@ -506,10 +523,25 @@ export function ListaDoMercado({
                 >
                   Fechar a lista
                 </Botao>
+                <Botao
+                  tamanho="sm"
+                  variante={online ? "primaria" : "secundaria"}
+                  disabled={!online}
+                  onClick={fecharELerANota}
+                  iconeInicial={
+                    <ScanLine
+                      aria-hidden
+                      className="size-4"
+                      strokeWidth={1.75}
+                    />
+                  }
+                >
+                  Fechar e ler a nota
+                </Botao>
                 {entradasDaCompra.size > 0 && (
                   <Botao
                     tamanho="sm"
-                    variante="primaria"
+                    variante={online ? "secundaria" : "primaria"}
                     onClick={guardarNaDespensa}
                     iconeInicial={
                       <ClipboardList
@@ -522,6 +554,9 @@ export function ListaDoMercado({
                     Fechar e guardar na despensa
                   </Botao>
                 )}
+              </div>
+              <div className="mt-2">
+                <AvisoLeituraSemRede />
               </div>
             </div>
           ) : (
@@ -665,7 +700,7 @@ function SemContagemRecente({
       <p className="mt-2 max-w-[62ch] text-label text-ink">
         {todos ? "Sem descontar o que você já tem: " : "Sem descontar: "}
         <strong className="num font-semibold">
-          {quantos} {quantos === 1 ? "insumo está" : "insumos estão"}
+          {quantos} {quantos === 1 ? "material está" : "materiais estão"}
         </strong>{" "}
         sem contagem recente. Contar leva dois minutos e pode tirar itens do
         carrinho.
@@ -721,7 +756,7 @@ function NaoExplodiu({ pendencias }: { pendencias: Pendencia[] }) {
 
       <p className="mt-2 max-w-[60ch] text-label text-ink-muted">
         A lista soma o resto normalmente. Confira estes na mão antes de sair, ou
-        acerte a ficha e refaça a lista.
+        acerte o produto e refaça a lista.
       </p>
     </section>
   );

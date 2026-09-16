@@ -67,7 +67,9 @@ preço sugerido. Isso não é falta de feature. É a soma de cinco coisas que o 
    inferior diz "Insumos" e "Fichas".
 4. **Quatro telas fora do menu**, e `/comecar` tem uma seção "O que mais tem aqui" cuja
    existência é a confissão: lista de compras, foto da nota, contagem da despensa e o que está
-   pronto só se acham por acaso ou pelo guia.
+   pronto só se acham por acaso ou pelo guia. **Corrigido pela spec 021**: a premissa deixou de
+   ser verdade entre a 8B e a 13D — cada uma das quatro já tem porta na tela do menu de que é
+   consequência; o que faltava era uma porta, a nota ao fechar a lista de compras, e a 021 a deu.
 5. **Toda spec desde a 009 foi aditiva.** Fornada, duas contagens, reserva, combo à escolha,
    entregas a pagar, recalcular o mês — cada uma respondeu a um pedido real, e cada uma deixou
    um campo, uma faixa ou uma tela na frente de quem está começando. Nenhuma tirou nada. É
@@ -175,7 +177,7 @@ dela, ninguém ao lado. Roda depois de cada spec abaixo, não só no fim.
   a 019 já a tirou da porta de entrada.
 - Aprovações: nenhuma.
 
-**021 · As palavras dela.** Vocabulário, com ela e não por ela.
+**021 · As palavras dela. Entregue em 2026-09-16.** Vocabulário, com ela e não por ela.
 
 - Antes da spec: cinco perguntas à Maynara e à segunda confeiteira da gravação — como você
   chama o que compra, a receita com custo, o que já assou, a encomenda, o dinheiro do mês. Se

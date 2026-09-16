@@ -121,7 +121,7 @@ export function CartaoPrimeirosPassos() {
                       className: "self-center",
                     })}
                   >
-                    Montar a minha ficha do zero
+                    Montar o meu produto do zero
                   </Link>
                 </div>
               ) : (
