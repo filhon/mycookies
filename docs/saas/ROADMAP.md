@@ -150,7 +150,7 @@ dela, ninguém ao lado. Roda depois de cada spec abaixo, não só no fim.
 - Respeita `#d65`: um toque dela, não uma semeadura do guia.
 - Aprovações: nenhuma.
 
-**019 · O caminho começa pelo preço.** Reordenar `domain/onboarding.ts`; sem tela nova.
+**019 · O caminho começa pelo preço. Entregue em 2026-09-16.** Reordenar `domain/onboarding.ts`; sem tela nova.
 
 - Os cinco passos viram: (1) **ver quanto custa um cookie** — abre a ficha-modelo, ou o botão
   da 018 se ela ainda não apertou; (2) **corrigir o preço do que você compra** — `/insumos`

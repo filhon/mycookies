@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-15 (17B da spec 017-orçamento entregue; spec 018-o-preço-no-primeiro-minuto executada; roteiros das 015, 016, 017 e 018 por rodar).
+Atualizado em 2026-09-16 (spec 019-o-caminho-começa-pelo-preço executada; roteiros das 015, 016, 017, 018 e 019 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -202,28 +202,29 @@ os números digitados de ponta a ponta.
 
 ## Módulos
 
-| #   | Módulo                                      | Estado                              | Spec                                      |
-| --- | ------------------------------------------- | ----------------------------------- | ----------------------------------------- |
-| 0   | Fundação: design system, shell, acesso, PWA | pronto                              | —                                         |
-| 1   | Insumos e embalagens                        | pronto                              | —                                         |
-| —   | Contas e tenancy                            | pronto                              | `specs/000-contas.md`                     |
-| 2   | Custos operacionais e precificação          | pronto (2A e 2B)                    | `specs/002-precificacao.md`               |
-| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)                | `specs/003-pedidos.md`                    |
-| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                    | `specs/004-caixa.md`                      |
-| 5   | Prontidão: conserto e verificação           | pronto (5A e 5B)                    | `specs/005-prontidao.md`                  |
-| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)                    | `specs/006-nota-fiscal.md`                |
-| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)                    | `specs/007-estoque.md`                    |
-| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)                    | `specs/008-onboarding.md`                 |
-| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros             | `specs/009-teclado-e-barra.md`            |
-| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro               | `specs/010-resumo-no-whatsapp.md`         |
-| —   | O caixa que não perde a conta               | pronto, sem o roteiro               | `specs/011-caixa-que-nao-perde-conta.md`  |
-| —   | O acerto das entregas                       | pronto, sem o roteiro               | `specs/012-entregas-a-pagar.md`           |
-| 13  | A fornada                                   | pronto (13A a 13D), sem os roteiros | `specs/013-a-fornada.md`                  |
-| 14  | O combo à escolha                           | pronto (14A e 14B)                  | `specs/014-combo-a-escolha.md`            |
-| 15  | Salvar no toque, no sistema inteiro         | pronto, sem o roteiro               | `specs/015-salvar-no-toque.md`            |
-| 16  | As listas que crescem                       | pronto, sem o roteiro               | `specs/016-listas-que-crescem.md`         |
-| 17  | O orçamento em papel                        | pronto (17A e 17B), sem o roteiro   | `specs/017-orcamento-em-papel.md`         |
-| 18  | O preço no primeiro minuto                  | pronto, sem o roteiro               | `specs/018-o-preco-no-primeiro-minuto.md` |
+| #   | Módulo                                      | Estado                              | Spec                                       |
+| --- | ------------------------------------------- | ----------------------------------- | ------------------------------------------ |
+| 0   | Fundação: design system, shell, acesso, PWA | pronto                              | —                                          |
+| 1   | Insumos e embalagens                        | pronto                              | —                                          |
+| —   | Contas e tenancy                            | pronto                              | `specs/000-contas.md`                      |
+| 2   | Custos operacionais e precificação          | pronto (2A e 2B)                    | `specs/002-precificacao.md`                |
+| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)                | `specs/003-pedidos.md`                     |
+| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                    | `specs/004-caixa.md`                       |
+| 5   | Prontidão: conserto e verificação           | pronto (5A e 5B)                    | `specs/005-prontidao.md`                   |
+| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)                    | `specs/006-nota-fiscal.md`                 |
+| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)                    | `specs/007-estoque.md`                     |
+| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)                    | `specs/008-onboarding.md`                  |
+| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros             | `specs/009-teclado-e-barra.md`             |
+| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro               | `specs/010-resumo-no-whatsapp.md`          |
+| —   | O caixa que não perde a conta               | pronto, sem o roteiro               | `specs/011-caixa-que-nao-perde-conta.md`   |
+| —   | O acerto das entregas                       | pronto, sem o roteiro               | `specs/012-entregas-a-pagar.md`            |
+| 13  | A fornada                                   | pronto (13A a 13D), sem os roteiros | `specs/013-a-fornada.md`                   |
+| 14  | O combo à escolha                           | pronto (14A e 14B)                  | `specs/014-combo-a-escolha.md`             |
+| 15  | Salvar no toque, no sistema inteiro         | pronto, sem o roteiro               | `specs/015-salvar-no-toque.md`             |
+| 16  | As listas que crescem                       | pronto, sem o roteiro               | `specs/016-listas-que-crescem.md`          |
+| 17  | O orçamento em papel                        | pronto (17A e 17B), sem o roteiro   | `specs/017-orcamento-em-papel.md`          |
+| 18  | O preço no primeiro minuto                  | pronto, sem o roteiro               | `specs/018-o-preco-no-primeiro-minuto.md`  |
+| 19  | O caminho começa pelo preço                 | pronto, sem o roteiro               | `specs/019-o-caminho-comeca-pelo-preco.md` |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -1911,7 +1912,58 @@ estava tomada por `017-orcamento-em-papel.md`, decidida e executada em paralelo.
 `#d106` a `#d109` desta sessão viraram `#d111` a `#d114` pelo mesmo motivo, e a numeração do
 roadmap (`docs/saas/ROADMAP.md`) subiu uma casa inteira: 018 a 032, e não mais 017 a 031.
 
+## O que a sessão 019 deixou pronto
+
+A segunda reordenação da fase 0: os cinco passos do começo passam a ser apresentados na ordem
+em que dão alguma coisa em troca, e não na ordem em que o código depende de si mesmo. Um array
+reordenado, cinco textos reescritos, um botão pendurado no passo 1.
+
+- `src/lib/domain/onboarding.ts`: `CATALOGO_DO_COMECO` reordenado para
+  `FICHAS, INSUMOS, CONFIGURACAO, PEDIDOS, CAIXA`, numerados de 1 a 5 nessa ordem, com os
+  textos dos três primeiros reescritos para falar de preço em vez de conferir configuração.
+  `FatosDoComeco`, `passosDoComeco`, `proximoPasso` e `progressoDoComeco` sem uma linha
+  alterada — a regra "`FEITO` é o fato, em qualquer posição" já funciona em qualquer ordem.
+- `src/lib/hooks/useComeco.ts`: **zero linhas mudadas**, que era o critério de aceite.
+- `src/components/comecar/CartaoPrimeirosPassos.tsx`: com o passo de agora sendo `FICHAS` numa
+  conta sem ficha e sem insumo, a ação primária vira `BotaoBiblioteca` (que já sabia sumir
+  sozinho, `#d114`), com "Montar a minha ficha do zero" como link terciário abaixo. A conta
+  vazia sai dos mesmos dois fatos que `useComeco` já entrega — nenhuma assinatura nova.
+- `src/components/comecar/TelaComecar.tsx`: as duas frases que prometiam "a ordem em que uma
+  coisa depende da outra" foram reescritas — a dependência agora é dita como estando na cadeia
+  do dinheiro, que continua logo abaixo, intocada.
+- `tests/domain/onboarding.test.ts`: reescrito para a ordem nova — a tabela do caso de aceite
+  passo a passo, o caminho de quem ignora a biblioteca e cadastra à mão, o fora de ordem
+  invertido (salvar a configuração antes de ter ficha), o estado exato de uma conta um segundo
+  depois do toque na biblioteca, e a regra de nenhum número no texto. **A combinação das 32
+  possibilidades exigiu conserto**: o teste que compara `passo.estado === "FEITO"` contra a
+  ordem dos cinco fatos usava a ordem antiga (`temConfiguracao, temInsumo, temFicha, ...`) e
+  continuava verde por acidente — é exatamente o risco que a spec nomeou, e apareceu.
+- `DECISOES.md#d115` (a decisão desta spec) e uma linha de revisão em `#d66`: "os cinco são a
+  navegação inferior lida em voz alta" deixou de valer, porque a ordem nova não é mais a de
+  `navegacao.ts`.
+
+Nenhum campo, nenhuma tela, nenhuma rota, nenhum índice, nenhuma regra, nenhuma dependência.
+`CadeiaDoDinheiro`, `OQueMaisTem`, `QuandoNaoTemInternet`, `InstalarNaTela`, `navegacao.ts` e os
+estados vazios não mudaram uma letra — isso é escopo das specs 020 e 021.
+
+**A gravação da usuária 0 não rodou antes desta sessão** (nada neste arquivo registra que
+rodou), e por isso a dívida "os cinco textos saíram do código, e não do que a 5B viu" continua
+na tabela: os textos novos são melhores — falam de preço, e não de conferir configuração —, mas
+"as palavras que ela usou" é uma afirmação que só a gravação confirma. **O roteiro de sete
+passos, numa conta vazia de verdade com DevTools em Offline nos quatro primeiros, não rodou
+nesta sessão.**
+
 ## Próxima ação
+
+**Gravar a Maynara abrindo uma conta nova sem ninguém ao lado**, contando as perguntas em voz
+alta — é essa contagem, e não o portão de conclusão, que diz se a spec 020 é a próxima ou se a
+019 precisa de uma segunda passada. Quando a gravação acontecer, conferir os cinco textos de
+`onboarding.ts` contra as palavras dela, um a um, e só então tirar a linha da tabela de dívidas.
+
+**Rodar o roteiro de sete passos da spec 019** (conta vazia de verdade, DevTools em Offline nos
+passos 1 a 4): confirma que o cartão oferece a biblioteca como ação primária do passo 1 numa
+conta vazia e o link numa conta com insumo cadastrado à mão, e que `/comecar` não promete mais
+dependência na ordem dos cinco.
 
 **Rodar o roteiro de aparelho da 17A/17B** (oito passos, no fim da spec `017-orcamento-em-papel.md`).
 O passo 1 é o que decide se a decisão 1 estava certa: Ctrl+P no Chrome, **uma página**, sem
@@ -1925,11 +1977,14 @@ de uma foto numa ficha e da assinatura em `/configuracao`: são toques, e não c
 
 **Rodar também o roteiro de sete passos da spec 018**, com o passo 6 — salvar a configuração
 sem mudar nada e ver o preço da ficha-modelo continuar o mesmo — provando que `rateioDaConta`
-não tem um segundo lugar decidindo "salvo, senão sugerido". **E, fora do código, a régua da
-fase 0**: gravar a Maynara abrindo uma conta nova sem ninguém explicar, contando as perguntas.
-**A 019 só é escrita depois disso.** Depois, na ordem do roadmap revisto pelo `#d113`: 019 o
-caminho reordenado para começar pelo preço, 020 os dois formulários com o resto atrás de "Mais
-detalhes", 021 o vocabulário perguntado a ela, e só então 022 a segunda conta.
+não tem um segundo lugar decidindo "salvo, senão sugerido".
+
+**A 019 já rodou** (a reordenação acima), sem esperar a gravação — a spec previa isso: os cinco
+textos novos já são melhores que os de antes, e a dívida de conferi-los contra a gravação fica
+na tabela. O que a gravação ainda decide é se a **020** é a próxima da fase 0 ou se a 019
+precisa de uma segunda passada. Na ordem do roadmap revisto pelo `#d113`: 020 os dois
+formulários com o resto atrás de "Mais detalhes", 021 o vocabulário perguntado a ela, e só
+então 022 a segunda conta.
 
 **Rodar o roteiro de sete passos da spec 015**, com DevTools em Offline do passo 1 ao 5. É o
 único lugar onde a correção pode ser vista: `npm test` não toca no Firestore. O passo 1 é o que
@@ -2026,7 +2081,7 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | `agregados/global` é escrito por três mutações e lido por ninguém                                  | `types/financeiro.ts`                          | Se algum leitor aparecer; a 008 decidiu não ser ele (`#d67`)                                                    |
 | `pedidosAbertos`, `proximaEntrega` e `ultimoNumeroPedido` nunca são escritos                       | `types/financeiro.ts`                          | Spec de limpeza, como a remoção de `estoqueMinimo` na 7A. Ninguém os lê hoje                                    |
 | O cartão, a página, o gancho e a escrita na conta, sem teste                                       | `components/comecar/`                          | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                                       |
-| Os cinco textos do começo saíram do código, e não do que a 5B viu                                  | `domain/onboarding.ts`                         | Spec 019: os cinco são reescritos com as palavras da gravação da usuária 0 (`#d113`)                            |
+| Os cinco textos do começo são melhores que os de antes, mas ainda são nossos, não os dela          | `domain/onboarding.ts`                         | Quando a gravação da usuária 0 acontecer: conferir os cinco, um a um, contra as palavras dela (`#d115`)         |
 | Um passo fecha com o documento existindo, e não com ele estando bom                                | `domain/onboarding.ts`                         | Não tem conserto: o caminho diz onde ela está, e não se ela fez bem                                             |
 | `/comecar` nunca foi vista em 360px nem no tema claro, e não há captura                            | `components/comecar/`                          | Critério da 8B em aberto: depende de navegador, de login e de conta de verdade                                  |
 | O bloco de instalar nunca foi visto sumindo com o app instalado                                    | `InstalarNaTela.tsx`                           | Critério da 8B em aberto: exige instalar de fato, no iPhone e no Android                                        |

@@ -16,6 +16,12 @@
  * passos — o cartão da tela Hoje e `/comecar` —, e duas cópias da mesma frase
  * divergiriam.
  *
+ * A cadeia de dependência técnica continua sendo essa — insumos → fichas →
+ * pedidos → caixa, com a configuração dando os números que não são de
+ * ingrediente — e é o que `/comecar` explica na "Cadeia do dinheiro". **A
+ * ordem dos passos abaixo é outra coisa**: é a ordem em que o sistema dá
+ * alguma coisa em troca, e não a ordem em que ele calcula (`DECISOES.md#d115`).
+ *
  * Nada aqui toca o Firestore, e nada aqui sabe quem perguntou: o gancho traz os
  * cinco fatos prontos, este módulo devolve a ordem e o estado de cada um.
  */
@@ -60,54 +66,56 @@ export type PassoBase = Omit<PassoDoComeco, "estado">;
 /**
  * Os cinco, na ordem, e a ordem não depende dos fatos.
  *
- * **São a navegação inferior lida em voz alta** — Insumos, Fichas, Pedidos,
- * Caixa, na ordem em que os destinos já estão em `navegacao.ts` —, com a
- * configuração como o zero que não coube lá. Quem termina o caminho aprendeu o
- * menu sem que o menu tenha sido explicado.
+ * **Não são mais a navegação inferior lida em voz alta** (`DECISOES.md#d66`,
+ * revisto pelo `#d115`): a ordem deixou de ser a dos destinos em
+ * `navegacao.ts` e passou a ser a ordem em que o sistema dá alguma coisa em
+ * troca. Quem termina o caminho ainda conhece os cinco destinos — Fichas,
+ * Insumos, Configuração, Pedidos, Caixa —, só que tendo visto um preço no
+ * primeiro deles.
  *
  * A meta ficou de fora de propósito (`DECISOES.md#d66`): ela já tem quem a peça,
  * e quem pede é o `CartaoMetaHoje`, logo abaixo deste cartão na mesma tela.
  */
 export const CATALOGO_DO_COMECO: readonly PassoBase[] = [
   {
-    id: "CONFIGURACAO",
+    id: "FICHAS",
     numero: 1,
-    titulo: "Conferir a configuração",
+    titulo: "Ver quanto custa um cookie",
     porque:
-      "É daqui que saem a sua hora, o gás, a energia e a taxa da maquininha. Sem conferir, a ficha calcula o preço pela metade e o caixa não desconta o que a maquininha leva.",
+      "Enquanto o preço sai da cabeça, não dá para saber se o doce paga o próprio custo e ainda sobra alguma coisa pra você.",
     oQueEsperar:
-      "Os valores já vêm sugeridos. Você confere o que é seu, ajusta e salva.",
-    href: "/configuracao",
-    rotuloAcao: "Conferir a configuração",
+      "Uma receita de cookie abre com o custo e o preço no rodapé. Depois dá para trocar tudo: o que entra, quanto rende e quanto tempo leva.",
+    href: "/fichas",
+    rotuloAcao: "Ver quanto custa um cookie",
   },
   {
     id: "INSUMOS",
     numero: 2,
-    titulo: "Cadastrar o que você compra",
+    titulo: "Conferir o preço do que você compra",
     porque:
-      "O preço do pacote é o que vira custo por grama. Sem um insumo cadastrado, nenhum doce tem custo.",
+      "O preço do pacote é o que vira custo por grama. Com o preço médio, o custo do seu doce é um palpite bem-feito; com o da sua nota, é o seu número.",
     oQueEsperar:
-      "Nome, quanto vem no pacote e quanto você pagou. Uma foto da nota cadastra vários de uma vez.",
+      "A lista do que você compra, com o preço de cada pacote. Você abre o que for diferente na sua cozinha e troca o valor — o preço das receitas se refaz.",
     href: "/insumos",
-    rotuloAcao: "Cadastrar um insumo",
+    rotuloAcao: "Conferir os preços",
   },
   {
-    id: "FICHAS",
+    id: "CONFIGURACAO",
     numero: 3,
-    titulo: "Montar a primeira ficha",
+    titulo: "Ajustar o que é seu",
     porque:
-      "Enquanto o preço sai da intuição, não dá para saber se o doce paga o próprio custo.",
+      "A sua hora, o gás, a energia e a taxa da maquininha entram em todo preço. Até você dizer os seus, o preço usa os valores que o sistema sugeriu.",
     oQueEsperar:
-      "A receita como você faz: os insumos, o rendimento do lote e o tempo de bancada. O preço aparece no rodapé.",
-    href: "/fichas",
-    rotuloAcao: "Montar uma ficha",
+      "Os campos já vêm preenchidos com a sugestão. Você troca os que são diferentes na sua cozinha e salva — e vê o preço das receitas mudar.",
+    href: "/configuracao",
+    rotuloAcao: "Ajustar o que é meu",
   },
   {
     id: "PEDIDOS",
     numero: 4,
     titulo: "Registrar uma encomenda",
     porque:
-      "É o pedido que enche a agenda da semana, monta a lista do mercado e mostra o que você ainda tem a receber.",
+      "É a encomenda que enche a agenda da semana, monta a lista do mercado e mostra o que você ainda tem a receber.",
     oQueEsperar:
       "A cliente, o dia da entrega e o que ela pediu. O total e o quanto sobra ficam no rodapé.",
     href: "/pedidos",
@@ -122,7 +130,7 @@ export const CATALOGO_DO_COMECO: readonly PassoBase[] = [
     oQueEsperar:
       "Abra a encomenda entregue e diga o dia em que o dinheiro caiu. O caixa do mês se refaz sozinho.",
     href: "/pedidos",
-    rotuloAcao: "Abrir os pedidos",
+    rotuloAcao: "Abrir as encomendas",
   },
 ];
 

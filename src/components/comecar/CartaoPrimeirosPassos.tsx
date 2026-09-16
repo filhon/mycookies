@@ -4,8 +4,10 @@ import Link from "next/link";
 import type { Route } from "next";
 import { useState } from "react";
 import { ArrowRight, Check, Compass } from "lucide-react";
+import { BotaoBiblioteca } from "@/components/biblioteca/BotaoBiblioteca";
 import { Botao } from "@/components/ui/Botao";
 import { classesBotao } from "@/components/ui/estilosBotao";
+import type { IdPasso } from "@/lib/domain/onboarding";
 import { concluirPrimeirosPassos } from "@/lib/firebase/mutations/conta";
 import { useComeco } from "@/lib/hooks/useComeco";
 import { useAuth } from "@/providers/AuthProvider";
@@ -26,12 +28,19 @@ import { Trilha } from "./Trilha";
  */
 export function CartaoPrimeirosPassos() {
   const { contaId } = useAuth();
-  const { progresso, proximo, carregando, encerrado } = useComeco();
+  const { passos, progresso, proximo, carregando, encerrado } = useComeco();
   const [encerradoAqui, setEncerradoAqui] = useState(false);
 
   // Carregando não vira esqueleto: um "0 de 5" que aparece e some no instante
   // seguinte mexeria com a tela inteira embaixo dele.
   if (!contaId || carregando || encerrado || encerradoAqui) return null;
+
+  // Conta vazia sai dos fatos que o cartão já tem: são as mesmas duas
+  // perguntas que o `BotaoBiblioteca` faz por dentro, e é isso que impede os
+  // dois de discordarem sobre quem é a ação primária.
+  const feito = (id: IdPasso) =>
+    passos.some((passo) => passo.id === id && passo.estado === "FEITO");
+  const contaVazia = !feito("FICHAS") && !feito("INSUMOS");
 
   function encerrar() {
     if (!contaId) return;
@@ -101,17 +110,33 @@ export function CartaoPrimeirosPassos() {
             {/* 52px no celular: é a ação primária da tela de entrada, e ela a
                 toca em pé, com farinha no dedo. */}
             <div className="mt-4">
-              <Link
-                href={proximo.href as Route}
-                className={classesBotao({
-                  variante: "primaria",
-                  tamanho: "lg",
-                  className: "w-full sm:w-auto",
-                })}
-              >
-                {proximo.rotuloAcao}
-                <ArrowRight aria-hidden className="size-4" strokeWidth={2} />
-              </Link>
+              {proximo.id === "FICHAS" && contaVazia ? (
+                <div className="flex flex-col gap-3">
+                  <BotaoBiblioteca />
+                  <Link
+                    href={proximo.href as Route}
+                    className={classesBotao({
+                      variante: "terciaria",
+                      tamanho: "sm",
+                      className: "self-center",
+                    })}
+                  >
+                    Montar a minha ficha do zero
+                  </Link>
+                </div>
+              ) : (
+                <Link
+                  href={proximo.href as Route}
+                  className={classesBotao({
+                    variante: "primaria",
+                    tamanho: "lg",
+                    className: "w-full sm:w-auto",
+                  })}
+                >
+                  {proximo.rotuloAcao}
+                  <ArrowRight aria-hidden className="size-4" strokeWidth={2} />
+                </Link>
+              )}
             </div>
           </>
         )}

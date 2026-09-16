@@ -1905,6 +1905,12 @@ Os cinco são a navegação inferior lida em voz alta, com a configuração como
 coube no teto de cinco destinos de `navegacao.ts`. Quem termina o caminho aprendeu o menu sem
 que o menu tenha sido explicado.
 
+**Revisto pelo `#d115`, 2026-09-16.** O último parágrafo deixou de valer: os cinco passos não
+são mais a ordem de `navegacao.ts` lida em voz alta, são a ordem em que o sistema dá alguma
+coisa em troca. Quem termina o caminho continua conhecendo os cinco destinos — só que na ordem
+Fichas, Insumos, Configuração, Pedidos, Caixa, e não na ordem do menu. O resto desta decisão
+— os cinco passos, a meta de fora, pagar como passo próprio — continua vigente.
+
 ---
 
 ## D67 · O estado do começo é perguntado à coleção, e não ao contador
@@ -3593,3 +3599,44 @@ exatamente igual antes e depois de salvar — é o que o passo 6 do roteiro da 0
 faixa "o rateio está zerado" continua existindo, mas só quando `configuracao !== null`: é o
 caso em que ela **salvou** zero de propósito, decisão dela, e o texto de hoje continua certo
 para isso.
+
+---
+
+## D115 · O caminho começa pelo preço; a dependência não muda, a ordem de apresentação sim
+
+**Status:** vigente · decidida em 2026-09-16, na spec `019-o-caminho-comeca-pelo-preco`
+
+**Contexto.** A ordem dos cinco passos do começo era a da dependência técnica — configuração →
+insumos → fichas → pedidos → caixa —, que é a ordem em que o sistema calcula. Não é mais a
+ordem em que uma pessoa aprende: o `#d113` já tinha apontado que o primeiro passo era a tela
+mais difícil do sistema (cinco blocos, nove campos) e a que menos devolve, e o `#d114` tirou a
+premissa técnica que sustentava vir primeiro — a ficha já calcula com `CONFIGURACAO_SUGERIDA`
+inteira, rateio incluído, quando nada foi salvo, e diz de onde o número veio.
+
+**Decisão.** A cadeia de dependência não muda — sem insumo não há custo por grama, sem custo
+por grama não há custo de ficha, sem ficha não há preço no pedido, sem pedido não há caixa. O
+que muda é que essa cadeia deixou de ser a ordem de apresentação. `CATALOGO_DO_COMECO` passa a
+`FICHAS, INSUMOS, CONFIGURACAO, PEDIDOS, CAIXA`, com os cinco textos reescritos para falar de
+preço em vez de conferir configuração. `FatosDoComeco`, `FATO_DO_PASSO`, `passosDoComeco`,
+`proximoPasso` e `progressoDoComeco` não mudam uma linha: a regra "`FEITO` é o fato, em
+qualquer posição; o primeiro não feito é o `AGORA`" já funciona em qualquer ordem — é a
+reordenação de um array.
+
+O passo 2 continua fechando com um insumo existindo, mesmo com preço médio, e o passo 1
+continua fechando com uma ficha qualquer, inclusive a da biblioteca (`#d114`) que ela não
+montou: o caminho diz onde ela está, e não se ela fez bem, o mesmo princípio de 2026-09-03. O
+`BotaoBiblioteca` aparece agora também no passo 1 do cartão da tela Hoje, numa conta vazia —
+`contaVazia` sai de `passos.some(id === "FICHAS" || "INSUMOS", estado === "FEITO")`, que é
+exatamente a mesma pergunta que o `BotaoBiblioteca` já faz sozinho para decidir se se desenha,
+e é isso que impede o cartão e o botão de discordarem sobre quem é a ação primária.
+
+**Consequência.** O `#d66` ganha uma linha de revisão: "os cinco são a navegação inferior lida
+em voz alta" deixa de valer, porque a ordem nova (Fichas, Insumos, Configuração, Pedidos,
+Caixa) não é mais a de `navegacao.ts` (Insumos, Fichas, Pedidos, Caixa). Quem termina o caminho
+continua conhecendo os cinco destinos, só que tendo visto um preço no primeiro deles. Nenhum
+fato novo, nenhuma tela nova, nenhuma rota, nenhuma dependência: o custo desta spec é só cópia.
+
+A dívida "os cinco textos saíram do código, e não do que a 5B viu" não sai da tabela por esta
+sessão sozinha — sai quando a gravação do primeiro uso acontecer e os cinco textos forem
+conferidos contra ela, palavra por palavra. Continua na tabela, com o prazo apontando para essa
+conferência.

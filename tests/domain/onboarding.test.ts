@@ -34,9 +34,9 @@ function ids(entrada: FatosDoComeco): IdPasso[] {
 describe("a ordem dos cinco", () => {
   it("é fixa e não depende dos fatos", () => {
     const esperada: IdPasso[] = [
-      "CONFIGURACAO",
-      "INSUMOS",
       "FICHAS",
+      "INSUMOS",
+      "CONFIGURACAO",
       "PEDIDOS",
       "CAIXA",
     ];
@@ -70,15 +70,23 @@ describe("a ordem dos cinco", () => {
       expect(passo.href.startsWith("/")).toBe(true);
     }
   });
+
+  it("nenhum dos cinco textos cita um número: nem R$, nem dígito", () => {
+    for (const passo of CATALOGO_DO_COMECO) {
+      expect(passo.porque).not.toMatch(/R\$|\d/);
+      expect(passo.oQueEsperar).not.toMatch(/R\$|\d/);
+    }
+  });
 });
 
 /**
- * O caso de aceite da spec 008, estado por estado. Cada linha é uma escrita da
- * usuária: salvar a configuração, cadastrar a farinha, salvar a ficha do cookie,
- * confirmar o pedido de 20 cookies, marcar como pago.
+ * O caso de aceite da spec 019, estado por estado. Cada linha é uma escrita da
+ * usuária: tocar na biblioteca, salvar a configuração, confirmar o pedido de
+ * 20 cookies, marcar como pago — mais o caminho de quem ignora a biblioteca e
+ * cadastra à mão.
  */
 describe("o caso de aceite, passo a passo", () => {
-  it("entrar pela primeira vez: 0 de 5, e o de agora é a configuração", () => {
+  it("entrar pela primeira vez: 0 de 5, e o de agora é ver quanto custa um cookie", () => {
     const passos = passosDoComeco(ZERADA);
 
     expect(estados(ZERADA)).toEqual([
@@ -93,27 +101,12 @@ describe("o caso de aceite, passo a passo", () => {
       total: 5,
       concluido: false,
     });
-    expect(proximoPasso(passos)?.id).toBe("CONFIGURACAO");
-    expect(proximoPasso(passos)?.href).toBe("/configuracao");
+    expect(proximoPasso(passos)?.id).toBe("FICHAS");
+    expect(proximoPasso(passos)?.href).toBe("/fichas");
   });
 
-  it("salvar a configuração: 1 de 5, e o de agora são os insumos", () => {
-    const entrada = fatos({ temConfiguracao: true });
-    const passos = passosDoComeco(entrada);
-
-    expect(estados(entrada)).toEqual([
-      "FEITO",
-      "AGORA",
-      "DEPOIS",
-      "DEPOIS",
-      "DEPOIS",
-    ]);
-    expect(progressoDoComeco(passos).feitos).toBe(1);
-    expect(proximoPasso(passos)?.href).toBe("/insumos");
-  });
-
-  it("cadastrar a farinha: 2 de 5, e o de agora são as fichas", () => {
-    const entrada = fatos({ temConfiguracao: true, temInsumo: true });
+  it('tocar em "Começar com o que toda cozinha tem": 2 de 5, e o de agora é ajustar o que é seu', () => {
+    const entrada = fatos({ temFicha: true, temInsumo: true });
     const passos = passosDoComeco(entrada);
 
     expect(estados(entrada)).toEqual([
@@ -124,14 +117,15 @@ describe("o caso de aceite, passo a passo", () => {
       "DEPOIS",
     ]);
     expect(progressoDoComeco(passos).feitos).toBe(2);
-    expect(proximoPasso(passos)?.href).toBe("/fichas");
+    expect(proximoPasso(passos)?.id).toBe("CONFIGURACAO");
+    expect(proximoPasso(passos)?.href).toBe("/configuracao");
   });
 
-  it("salvar a ficha do cookie: 3 de 5, e o de agora são os pedidos", () => {
+  it("salvar a configuração: 3 de 5, e o de agora são os pedidos", () => {
     const entrada = fatos({
-      temConfiguracao: true,
-      temInsumo: true,
       temFicha: true,
+      temInsumo: true,
+      temConfiguracao: true,
     });
     const passos = passosDoComeco(entrada);
 
@@ -148,9 +142,9 @@ describe("o caso de aceite, passo a passo", () => {
 
   it("confirmar o pedido: 4 de 5, e o de agora é marcar como paga", () => {
     const entrada = fatos({
-      temConfiguracao: true,
-      temInsumo: true,
       temFicha: true,
+      temInsumo: true,
+      temConfiguracao: true,
       temPedido: true,
     });
     const passos = passosDoComeco(entrada);
@@ -172,9 +166,9 @@ describe("o caso de aceite, passo a passo", () => {
 
   it("marcar como pago: 5 de 5, concluído e sem próximo", () => {
     const entrada = fatos({
-      temConfiguracao: true,
-      temInsumo: true,
       temFicha: true,
+      temInsumo: true,
+      temConfiguracao: true,
       temPedido: true,
       temLancamento: true,
     });
@@ -194,10 +188,8 @@ describe("o caso de aceite, passo a passo", () => {
     });
     expect(proximoPasso(passos)).toBeNull();
   });
-});
 
-describe("fora de ordem", () => {
-  it("o insumo antes da configuração marca o 2 e mantém o 1 como o de agora", () => {
+  it("ou, sem a biblioteca: 1 insumo cadastrado à mão mantém o passo 1 como o de agora", () => {
     const entrada = fatos({ temInsumo: true });
     const passos = passosDoComeco(entrada);
 
@@ -209,7 +201,76 @@ describe("fora de ordem", () => {
       "DEPOIS",
     ]);
     expect(progressoDoComeco(passos).feitos).toBe(1);
+    expect(proximoPasso(passos)?.id).toBe("FICHAS");
+    expect(proximoPasso(passos)?.href).toBe("/fichas");
+  });
+
+  it("... e a primeira ficha montada à mão: 2 de 5, e o de agora é ajustar o que é seu", () => {
+    const entrada = fatos({ temInsumo: true, temFicha: true });
+    const passos = passosDoComeco(entrada);
+
+    expect(estados(entrada)).toEqual([
+      "FEITO",
+      "FEITO",
+      "AGORA",
+      "DEPOIS",
+      "DEPOIS",
+    ]);
+    expect(progressoDoComeco(passos).feitos).toBe(2);
     expect(proximoPasso(passos)?.id).toBe("CONFIGURACAO");
+    expect(proximoPasso(passos)?.href).toBe("/configuracao");
+  });
+});
+
+describe("o estado depois de apertar a biblioteca", () => {
+  it("uma ficha e um insumo ao mesmo tempo: 2 de 5, e o de agora é a configuração", () => {
+    const entrada = fatos({ temFicha: true, temInsumo: true });
+    const passos = passosDoComeco(entrada);
+
+    expect(estados(entrada)).toEqual([
+      "FEITO",
+      "FEITO",
+      "AGORA",
+      "DEPOIS",
+      "DEPOIS",
+    ]);
+    expect(progressoDoComeco(passos)).toEqual({
+      feitos: 2,
+      total: 5,
+      concluido: false,
+    });
+    expect(proximoPasso(passos)?.id).toBe("CONFIGURACAO");
+  });
+
+  it("cada um dos cinco leva para a tela certa", () => {
+    const hrefs = Object.fromEntries(
+      CATALOGO_DO_COMECO.map((passo) => [passo.id, passo.href]),
+    );
+
+    expect(hrefs).toEqual({
+      FICHAS: "/fichas",
+      INSUMOS: "/insumos",
+      CONFIGURACAO: "/configuracao",
+      PEDIDOS: "/pedidos",
+      CAIXA: "/pedidos",
+    });
+  });
+});
+
+describe("fora de ordem", () => {
+  it("salvar a configuração antes de ter ficha marca o 3 e mantém o 1 como o de agora", () => {
+    const entrada = fatos({ temConfiguracao: true });
+    const passos = passosDoComeco(entrada);
+
+    expect(estados(entrada)).toEqual([
+      "AGORA",
+      "DEPOIS",
+      "FEITO",
+      "DEPOIS",
+      "DEPOIS",
+    ]);
+    expect(progressoDoComeco(passos).feitos).toBe(1);
+    expect(proximoPasso(passos)?.id).toBe("FICHAS");
   });
 
   it("o último passo feito sozinho não fecha nada antes dele", () => {
@@ -259,9 +320,9 @@ describe("as trinta e duas combinações", () => {
   it("marcam FEITO exatamente onde o fato está, e contam o mesmo tanto", () => {
     for (const entrada of TODAS) {
       const esperados = [
-        entrada.temConfiguracao,
-        entrada.temInsumo,
         entrada.temFicha,
+        entrada.temInsumo,
+        entrada.temConfiguracao,
         entrada.temPedido,
         entrada.temLancamento,
       ];

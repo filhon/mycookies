@@ -64,7 +64,8 @@ export function TelaComecar() {
       ) : encerrado ? (
         <p className="mt-4 max-w-[62ch] text-body text-ink-muted">
           Você já encerrou o caminho do começo. Os cinco passos ficam aqui como
-          referência, na ordem em que uma coisa depende da outra.
+          referência, na ordem em que vale a pena fazer — a dependência entre
+          eles está na cadeia do dinheiro, logo abaixo.
         </p>
       ) : (
         <section className="mt-4 rounded-lg border border-line bg-surface px-4 py-4 lg:px-5">
@@ -86,7 +87,7 @@ export function TelaComecar() {
           <p className="mt-2.5 max-w-[62ch] text-label text-ink-muted">
             {progresso.concluido
               ? "Os cinco estão feitos. O cartão da tela Hoje espera o seu Concluir."
-              : "Nenhum passo é obrigatório e nenhuma tela fica trancada. Esta é só a ordem que evita refazer trabalho."}
+              : "Nenhum passo é obrigatório e nenhuma tela fica trancada. Esta é só a ordem que chega mais rápido a um preço."}
           </p>
         </section>
       )}
