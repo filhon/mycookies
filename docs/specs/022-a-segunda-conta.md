@@ -342,7 +342,7 @@ Precisa da **conta real**, de um **e-mail sem login** (para o convite de ponta a
 - [x] `npm run metricas` imprime as dez colunas para toda conta; "1º próprio" ignora ids
       `biblioteca-`; nenhuma consulta pede índice.
 - [x] `git diff src/lib/domain/ src/lib/types/ src/lib/firebase/mutations/ firestore.rules
-  firestore.indexes.json` vazio. `package.json` só com a linha do script. `npm test` com os
+firestore.indexes.json` vazio. `package.json` só com a linha do script. `npm test` com os
       mesmos 526 testes.
 - [x] `lint`, `typecheck`, `test` e `build` passam.
 - [x] `#d118` e `#d119` escritos; `ESTADO.md` (dívida removida, linha 22, próxima ação na fase 1),
