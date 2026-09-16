@@ -14,8 +14,10 @@ npm run lint
 npm run typecheck    # app + service worker
 npm test             # vitest, só o núcleo de domínio
 npm run build
-npm run conceder-acesso -- <email> <contaId>   # cria a conta e emite a claim;
+npm run conceder-acesso -- <email> <contaId>   # cria o login e a conta e emite a claim;
                                                # exige GOOGLE_APPLICATION_CREDENTIALS
+npm run metricas     # uma linha por conta, lida por quem conduz o projeto;
+                      # exige GOOGLE_APPLICATION_CREDENTIALS
 ```
 
 **Portão de conclusão:** nenhuma tarefa está pronta antes de `lint`, `typecheck`, `test` e

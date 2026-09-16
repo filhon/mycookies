@@ -6,7 +6,7 @@ import { RefreshCw, ShieldAlert } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Cookie } from "@/components/marca/Marca";
 import { Botao } from "@/components/ui/Botao";
-import { useAuth } from "@/providers/AuthProvider";
+import { AVISO_SAIR_PENDENTE, useAuth } from "@/providers/AuthProvider";
 
 /** Resultado da última reconferência. `null` = ainda não tentou. */
 type Tentativa = null | "sem-acesso" | "sem-conexao";
@@ -16,6 +16,17 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [conferindo, setConferindo] = useState(false);
   const [tentativa, setTentativa] = useState<Tentativa>(null);
+  const [saindo, setSaindo] = useState(false);
+  const [sairPendente, setSairPendente] = useState(false);
+
+  async function aoSair() {
+    setSairPendente(false);
+    setSaindo(true);
+    if (!(await sair())) {
+      setSairPendente(true);
+      setSaindo(false);
+    }
+  }
 
   useEffect(() => {
     if (!carregando && !usuario) router.replace("/login");
@@ -62,12 +73,10 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
           Este login ainda não abre nenhuma conta
         </h1>
         <p className="max-w-[46ch] text-body text-ink-muted">
-          Ele existe, mas não está vinculado ao negócio. Quem cuida da conta
-          libera o acesso rodando{" "}
-          <code className="rounded-sm bg-sunken px-1.5 py-0.5 text-label">
-            npm run conceder-acesso -- {usuario.email} &lt;id-da-conta&gt;
-          </code>
-          .
+          Você entrou com{" "}
+          <strong className="font-semibold">{usuario.email}</strong>, mas esse
+          e-mail ainda não está ligado a nenhum negócio. Avise quem te convidou
+          e, quando liberarem, confira de novo aqui.
         </p>
 
         <div className="mt-2 flex flex-col items-center gap-3">
@@ -89,14 +98,28 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
             className="min-h-5 max-w-[42ch] text-label text-ink-muted"
           >
             {tentativa === "sem-acesso" &&
-              "Ainda não. Assim que rodarem o comando, é só conferir de novo."}
+              "Ainda não. Assim que liberarem, é só conferir de novo."}
             {tentativa === "sem-conexao" &&
               "Não deu para conferir agora. Verifique a internet e tente de novo."}
           </p>
 
-          <Botao tamanho="sm" onClick={() => void sair()} disabled={conferindo}>
+          <Botao
+            tamanho="sm"
+            onClick={() => void aoSair()}
+            disabled={conferindo || saindo}
+            carregando={saindo}
+          >
             Sair
           </Botao>
+
+          {sairPendente && (
+            <p
+              aria-live="polite"
+              className="max-w-[42ch] text-center text-label text-ink-muted"
+            >
+              {AVISO_SAIR_PENDENTE}
+            </p>
+          )}
         </div>
       </div>
     );

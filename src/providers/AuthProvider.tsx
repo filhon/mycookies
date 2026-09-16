@@ -16,7 +16,12 @@ import {
   type ParsedToken,
   type User,
 } from "firebase/auth";
-import { obterAuth } from "@/lib/firebase/client";
+import {
+  clearIndexedDbPersistence,
+  terminate,
+  waitForPendingWrites,
+} from "firebase/firestore";
+import { obterAuth, obterDb } from "@/lib/firebase/client";
 import { docConta } from "@/lib/firebase/colecoes";
 import { useDocumento } from "@/lib/hooks/useColecao";
 import type { Conta, ContasDaClaim } from "@/lib/types";
@@ -30,7 +35,11 @@ interface ContextoAuth {
   conta: Conta | null;
   carregando: boolean;
   entrar: (email: string, senha: string) => Promise<void>;
-  sair: () => Promise<void>;
+  /**
+   * Resolve `false` — e não sai — quando há escrita que ainda não subiu: o
+   * cache local que vai ser apagado é onde ela mora (`DECISOES.md#d118`).
+   */
+  sair: () => Promise<boolean>;
   /**
    * Reconfere o vínculo forçando a renovação do token. Resolve `true` quando
    * há conta, `false` quando o acesso ainda não foi concedido, e rejeita se
@@ -54,6 +63,13 @@ const MENSAGENS: Record<string, string> = {
     "Sem conexão para entrar. Verifique a internet.",
   "auth/missing-email": "Escreva o seu e-mail no campo acima.",
 };
+
+/** Mostrada nos três lugares que chamam `sair()` quando ele devolve `false`. */
+export const AVISO_SAIR_PENDENTE =
+  "O que você salvou ainda não subiu. Conecte à internet e tente sair de novo.";
+
+/** Quanto esperar a fila de escritas subir antes de recusar a saída. */
+const ESPERA_PENDENTES_MS = 5_000;
 
 /**
  * O mesmo mapa serve à entrada e à recuperação de senha, e por isso a frase de
@@ -126,8 +142,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signInWithEmailAndPassword(obterAuth(), email.trim(), senha);
   }, []);
 
-  const sair = useCallback(async () => {
-    await signOut(obterAuth());
+  /**
+   * Sai e apaga o cache local. Resolve `false` — e não sai — quando há escrita
+   * que ainda não subiu: o cache que vai ser apagado é onde ela mora
+   * (`DECISOES.md#d118`). Quando sai, não resolve: a página é recarregada em
+   * `/login`.
+   */
+  const sair = useCallback(async (): Promise<boolean> => {
+    const db = obterDb();
+    const subiu = await Promise.race([
+      waitForPendingWrites(db).then(() => true),
+      new Promise<boolean>((r) =>
+        setTimeout(() => r(false), ESPERA_PENDENTES_MS),
+      ),
+    ]);
+    if (!subiu) return false;
+
+    try {
+      await signOut(obterAuth());
+      await terminate(db);
+      await clearIndexedDbPersistence(db);
+    } finally {
+      // Navegação dura, não `router`: nada do que está montado sobrevive a um
+      // Firestore terminado, e o singleton de `client.ts` também não.
+      window.location.replace("/login");
+    }
+    return true;
   }, []);
 
   /**

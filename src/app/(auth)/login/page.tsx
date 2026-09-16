@@ -114,7 +114,8 @@ export default function PaginaLogin() {
             Entrar no sistema
           </h1>
           <p className="mt-1.5 text-body text-ink-muted">
-            Acesso restrito à administradora da MyCookie&rsquo;s.
+            Só entra quem foi convidada. Na primeira vez, toque em
+            &ldquo;Esqueci minha senha&rdquo; para criar a sua.
           </p>
 
           <form onSubmit={aoEnviar} className="mt-8 space-y-5" noValidate>

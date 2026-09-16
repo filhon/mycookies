@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { Compass, LogOut, Settings } from "lucide-react";
 import { Cookie } from "@/components/marca/Marca";
-import { useAuth } from "@/providers/AuthProvider";
+import { AVISO_SAIR_PENDENTE, useAuth } from "@/providers/AuthProvider";
 import { DESTINOS, destinoAtivo } from "./navegacao";
 import { cn } from "@/lib/utils/cn";
 
@@ -16,6 +17,17 @@ import { cn } from "@/lib/utils/cn";
 export function BarraLateral() {
   const caminho = usePathname();
   const { usuario, sair } = useAuth();
+  const [saindo, setSaindo] = useState(false);
+  const [pendente, setPendente] = useState(false);
+
+  async function aoSair() {
+    setPendente(false);
+    setSaindo(true);
+    if (!(await sair())) {
+      setPendente(true);
+      setSaindo(false);
+    }
+  }
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-wine-900 text-on-wine lg:flex print:hidden">
@@ -101,17 +113,28 @@ export function BarraLateral() {
 
         <button
           type="button"
-          onClick={() => void sair()}
-          className="toque flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-label font-medium text-on-wine-muted transition-colors duration-150 ease-quart hover:bg-wine-800 hover:text-on-wine"
+          onClick={() => void aoSair()}
+          disabled={saindo}
+          aria-busy={saindo}
+          className="toque flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-label font-medium text-on-wine-muted transition-colors duration-150 ease-quart hover:bg-wine-800 hover:text-on-wine disabled:opacity-60"
         >
           <LogOut aria-hidden className="size-5 shrink-0" strokeWidth={1.75} />
           Sair
         </button>
 
-        {usuario?.email && (
-          <p className="truncate px-3 pt-2 text-micro text-on-wine-muted/70">
-            {usuario.email}
+        {pendente ? (
+          <p
+            aria-live="polite"
+            className="px-3 pt-2 text-micro text-on-wine-muted"
+          >
+            {AVISO_SAIR_PENDENTE}
           </p>
+        ) : (
+          usuario?.email && (
+            <p className="truncate px-3 pt-2 text-micro text-on-wine-muted/70">
+              {usuario.email}
+            </p>
+          )
         )}
       </div>
     </aside>

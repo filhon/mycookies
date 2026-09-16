@@ -10,6 +10,7 @@ import {
   CreditCard,
   FileText,
   Flame,
+  LogOut,
   Receipt,
   Tag,
 } from "lucide-react";
@@ -55,7 +56,11 @@ import type {
   MetodoPrecificacao,
   RegraArredondamento,
 } from "@/lib/types";
-import { useAuth, useContaId } from "@/providers/AuthProvider";
+import {
+  AVISO_SAIR_PENDENTE,
+  useAuth,
+  useContaId,
+} from "@/providers/AuthProvider";
 import { cn } from "@/lib/utils/cn";
 
 /** Preço de exemplo para mostrar o que a regra de arredondamento faz. */
@@ -176,7 +181,18 @@ const METODOS: {
 
 export function TelaConfiguracao() {
   const contaId = useContaId();
-  const { conta } = useAuth();
+  const { conta, usuario, sair } = useAuth();
+  const [saindo, setSaindo] = useState(false);
+  const [sairPendente, setSairPendente] = useState(false);
+
+  async function aoSair() {
+    setSairPendente(false);
+    setSaindo(true);
+    if (!(await sair())) {
+      setSairPendente(true);
+      setSaindo(false);
+    }
+  }
 
   const referencia = useMemo(() => docConfiguracao(contaId), [contaId]);
   const { dado, carregando, erro, pendente } =
@@ -696,6 +712,36 @@ export function TelaConfiguracao() {
             strokeWidth={1.75}
           />
         </Link>
+
+        {/* Onde o celular já busca o que não cabe no menu de baixo — a mesma
+            prateleira do guia acima. No desktop duplica a barra lateral, e é
+            assim que "Como funciona" já é: sair é raro, e não merece o sexto
+            destino nem um lugar visível na tela Hoje. */}
+        <button
+          type="button"
+          onClick={() => void aoSair()}
+          disabled={saindo}
+          aria-busy={saindo}
+          className="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-4 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken disabled:opacity-60 lg:px-5"
+        >
+          <LogOut
+            aria-hidden
+            className="size-5 shrink-0 text-ink-muted"
+            strokeWidth={1.75}
+          />
+          <span className="min-w-0 flex-1">
+            <span className="block text-body font-medium text-ink">Sair</span>
+            <span className="mt-0.5 block text-label text-ink-muted">
+              Você entrou como {usuario?.email}.
+            </span>
+          </span>
+        </button>
+
+        {sairPendente && (
+          <p aria-live="polite" className="text-label text-ink-muted">
+            {AVISO_SAIR_PENDENTE}
+          </p>
+        )}
       </div>
 
       {/* Barra de salvar acima da navegação inferior: no celular a ação

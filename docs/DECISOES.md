@@ -3755,3 +3755,57 @@ A seção 5 da spec conferiu que as quatro telas fora do menu (`/compras`, `/ins
 desde a 13D — a premissa de "descoberta acidental" do `#d113` e do roadmap do SaaS não era mais
 verdade. A porta que faltava, "Fechar e ler a nota" na caixa de confirmação de `/compras`, foi a
 única tela nova desta spec.
+
+---
+
+## D118 · Sair apaga o cache local, e recusa em vez de confirmar com pendência
+
+**Status:** vigente · decidida em 2026-09-16, na spec `022-a-segunda-conta`
+
+**Contexto.** `sair()` era só `signOut()`. O cache persistente do Firestore
+(`persistentLocalCache`, `client.ts:56`) fica no IndexedDB com todos os documentos da conta, e
+sair não tirava nada de lá: no aparelho compartilhado da família ou da ajudante, o próximo login
+com outra conta começava com o cache da anterior ainda em disco — a dívida "`sair()` não limpa o
+cache" da tabela de `ESTADO.md`.
+
+**Decisão.** `sair()` passa a ser quatro chamadas na ordem — `waitForPendingWrites` →
+`signOut` → `terminate` → `clearIndexedDbPersistence` — com um teto de 5 s na primeira e uma
+navegação dura (`window.location.replace("/login")`) no fim. **Sem rede e com escrita
+pendente, `sair()` devolve `false` e não sai**, em vez de oferecer um modal de confirmação
+destrutiva: a fila de escrita mora no mesmo IndexedDB que vai ser apagado, o dado só existe
+naquele aparelho, e não existe versão de "sair mesmo assim" que não seja perder o dia de
+trabalho. `AVISO_SAIR_PENDENTE` é a mesma constante nos três lugares que chamam `sair()`
+(barra lateral, `/configuracao` no celular, a tela "sem conta").
+
+**Consequência.** `signOut` vem antes de `terminate` de propósito: com o usuário nulo o layout
+desmonta toda tela autenticada e as assinaturas do Firestore se cancelam sozinhas — cancelar
+assinatura numa instância terminada é no-op, abrir uma nova não é. A navegação dura, e não
+reiniciar o singleton `dbCache` de `client.ts`, é o preço de menos código: sair é o único
+momento do sistema em que recarregar a página é a escolha aceitável. O risco conhecido é outra
+aba aberta segurando o mesmo IndexedDB (`persistentMultipleTabManager`): `clearIndexedDbPersistence`
+pode recusar com `failed-precondition`, o `finally` navega mesmo assim, e a outra aba recebe
+`versionchange` e vai para `/login` pelo próprio Auth.
+
+---
+
+## D119 · O convite é o link de "Esqueci minha senha", e o script cria o login
+
+**Status:** vigente · decidida em 2026-09-16, na spec `022-a-segunda-conta`
+
+**Contexto.** `conceder-acesso.mjs` vinculava um login que já precisava existir. Para a segunda
+conta, isso significava: rodar o script, ver falhar, abrir o console do Firebase, criar o
+usuário com uma senha inventada, rodar de novo, e mandar a senha por WhatsApp — sem o app ter
+tela para ela trocar. O convite passava por uma senha que quem convida conhece.
+
+**Decisão.** `conceder-acesso.mjs` cria o login quando ele não existe, com `auth.createUser({
+email })`, **sem senha**. A instrução impressa é "abra a tela de login e toque em 'Esqueci
+minha senha' com esse e-mail — o link que chega cria a senha", o padrão de convite do próprio
+Firebase Auth. O texto de `AVISO_ENVIO` no login já dizia isso; nada mudou nele.
+
+**Consequência.** O console do Firebase sai do caminho normal de convite — a tela "sem conta"
+continua existindo como rede de segurança para login criado por outro meio, mas deixa de ser a
+porta usual. Duas coisas ficam de fora de propósito: se o link de reset não criar senha num
+login que nunca teve uma, o script troca para `crypto.randomUUID()` sem imprimir — mesmo efeito,
+uma linha, e só se o roteiro provar que é preciso. E o preâmbulo repetido entre
+`conceder-acesso.mjs` e `metricas.mjs` (credencial, `auth`, `db`) virou `scripts/admin.mjs`:
+vinte linhas em um lugar em vez de dois.

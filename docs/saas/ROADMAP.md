@@ -189,14 +189,18 @@ dela, ninguém ao lado. Roda depois de cada spec abaixo, não só no fim.
   que mais tem aqui" continua em `/comecar`, mas deixa de ser a única porta.
 - Aprovações: nenhuma.
 
-**022 · A segunda conta.** Conserto de cromo mais um script. Só depois de a fase 0 passar no
-teste com a Maynara; é o que abre a porta para a segunda confeiteira.
+**022 · A segunda conta. Entregue em 2026-09-16.** Conserto de cromo mais um script — a que abre
+a porta para a segunda confeiteira.
 
 - O login para de dizer "Acesso restrito à administradora da MyCookie's"; a tela "Este login
   ainda não abre nenhuma conta" para de mostrar `npm run conceder-acesso` (instrução de dev)
   e diz "avise quem te convidou", mantendo o botão de reconferir.
 - `sair()` limpa o cache local (`terminate` + `clearIndexedDbPersistence`) — a dívida
-  "em aparelho compartilhado vira vazamento" cai.
+  "em aparelho compartilhado vira vazamento" cai. Sem rede e com escrita pendente, recusa em
+  vez de confirmar (`DECISOES.md#d118`). "Sair" ganhou lugar em `/configuracao`, a primeira vez
+  que dá para sair do app no celular.
+- `conceder-acesso.mjs` passou a criar o login, sem senha: o convite é "toque em 'Esqueci minha
+  senha'" (`DECISOES.md#d119`), e o console do Firebase saiu do caminho normal.
 - `scripts/metricas.mjs` (Admin SDK, irmão de `conceder-acesso.mjs`): por conta — criada em,
   último login (`lastSignInTime`), insumos, fichas, pedidos nos últimos 30 dias, primeira ficha
   em, e **primeira ficha que não é da biblioteca em**. Imprime a tabela; o tempo até o primeiro
