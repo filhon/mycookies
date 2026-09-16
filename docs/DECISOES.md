@@ -2897,6 +2897,12 @@ confiar na lista. Quatro escolhas de execução ficam registradas:
 `/compras` continua fora da navegação inferior. Se a operação disser que o cartão não basta, a
 troca é uma linha em `navegacao.ts`, e o que sai é `/insumos`.
 
+**Revisão em 2026-09-16, spec `020-menos-na-frente`.** O piso continua morando no editor da
+ficha, mas o campo "Fornadas de reserva" saiu do bloco visível e passou para trás de "Mais
+detalhes" (`#d116`): nasce em zero, e a dobra abre sozinha quando o piso está ligado. Nada do
+que esta decisão registra muda — o campo é o mesmo, `reservaDeProducao` é o mesmo —, só o
+lugar em que ela pede o número.
+
 ---
 
 ## D97 · O que está pronto é contagem, a fornada propõe, e o pedido tem dono nos prontos
@@ -3640,3 +3646,51 @@ A dívida "os cinco textos saíram do código, e não do que a 5B viu" não sai 
 sessão sozinha — sai quando a gravação do primeiro uso acontecer e os cinco textos forem
 conferidos contra ela, palavra por palavra. Continua na tabela, com o prazo apontando para essa
 conferência.
+
+---
+
+## D116 · Na frente fica o que o primeiro preço precisa; o resto abre sozinho quando é dela
+
+**Status:** vigente · decidida em 2026-09-16, na spec `020-menos-na-frente`
+
+**Contexto.** O `#d113` mapeou o problema: o primeiro preço, que a 018 e a 019 já tinham
+trazido para um toque, continua atrás de dois formulários que não encolheram — `FormularioInsumo`
+com seis campos na frente e uma dobra que nunca abre sozinha, `FormularioFicha` com cinco
+decisões antes dos itens, a primeira delas "Receita ou Kit" para quem não tem como responder.
+
+**Decisão.** Uma régua só, nos dois formulários: na frente fica o que `calcularCustoInsumo` e
+`derivarFicha` não conseguem calcular sem — no insumo, nome, preço pago, quantidade e unidade;
+na ficha, nome, rende, unidade, tempo e os itens. O resto (categoria e perda no insumo; tipo,
+categoria, reserva, descrição e foto na ficha) vai atrás de um `<details>` nativo rotulado
+"Mais detalhes", que **abre sozinho** quando o documento salvo difere do que um cadastro novo
+receberia, ou quando um campo de dentro tem erro de validação. A dobra lê o documento salvo, e
+não o que está sendo digitado, para não abrir e fechar enquanto ela escreve.
+
+Uma exceção nomeada: a categoria da **ficha** não entra no predicado que abre a dobra, porque
+as duas fichas da biblioteca (`#d114`) vêm com categoria "Cookies" e são a primeira tela que
+ela vê — com a categoria na regra, a ficha-modelo abriria com a dobra aberta. A categoria do
+**insumo** continua na regra: é ela que decide a linha do recibo (`#d20`), e a biblioteca já
+traz os seis que não são ingrediente com a categoria certa.
+
+Na ficha, os blocos "O produto" e "Rendimento e tempo" viram um, "A receita" (ou "O kit" com o
+tipo em `KIT`), com nome, rende, unidade e tempo. O tipo (receita ou kit) mora dentro da dobra,
+e é por isso que ela fica **antes** dos itens: trocar para kit muda os blocos que aparecem
+abaixo, e com a dobra depois dos itens esses blocos apareceriam acima do dedo dela.
+
+**Consequência.** O insumo vai de seis campos na frente para quatro; a ficha vai de cinco
+decisões antes dos itens para zero. Nada de schema, mutação, rota ou regra muda: é organização
+de tela sobre os mesmos campos. Duas escolhas ficam registradas porque um leitor futuro vai
+questioná-las:
+
+- **O markup do `<details>` é copiado nos dois formulários, e não extraído em
+  `components/ui/`.** São dois usos com o mesmo texto; o terceiro — configuração ou pedido,
+  quando pedirem — é o que justifica a extração, pela mesma regra que promoveu `Bloco`.
+- **A dobra do insumo tem `key={chaveAtual}` e a da ficha não.** O painel de insumo é uma
+  instância que troca de insumo sem desmontar (o truque de `chave`); o editor de ficha é uma
+  rota por ficha, e `EditorFicha` já monta o formulário com a ficha na mão — a mesma razão pela
+  qual `defaultValues` do `useForm` funciona sem `key`.
+
+O risco registrado na spec: se a dobra aberta nos insumos da biblioteca (farinha com perda,
+embalagens com categoria) ler como ruído na gravação do primeiro uso, o predicado do insumo
+encolhe para só o que ela digitou — marca, onde compra, estoque —, e categoria/perda passam a
+aparecer só na linha da dobra fechada. Decisão adiada até a gravação existir.

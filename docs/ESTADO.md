@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-16 (spec 019-o-caminho-começa-pelo-preço executada; roteiros das 015, 016, 017, 018 e 019 por rodar).
+Atualizado em 2026-09-16 (spec 020-menos-na-frente executada; roteiros das 015, 016, 017, 018, 019 e 020 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -225,6 +225,7 @@ os números digitados de ponta a ponta.
 | 17  | O orçamento em papel                        | pronto (17A e 17B), sem o roteiro   | `specs/017-orcamento-em-papel.md`          |
 | 18  | O preço no primeiro minuto                  | pronto, sem o roteiro               | `specs/018-o-preco-no-primeiro-minuto.md`  |
 | 19  | O caminho começa pelo preço                 | pronto, sem o roteiro               | `specs/019-o-caminho-comeca-pelo-preco.md` |
+| 20  | Menos na frente                             | pronto, sem o roteiro               | `specs/020-menos-na-frente.md`             |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -1953,12 +1954,53 @@ na tabela: os textos novos são melhores — falam de preço, e não de conferir
 passos, numa conta vazia de verdade com DevTools em Offline nos quatro primeiros, não rodou
 nesta sessão.**
 
+## O que a sessão 020 deixou pronto
+
+A terceira dobra da fase 0: os dois formulários do primeiro preço — insumo e ficha — passam a
+pedir na frente só o que o primeiro preço precisa. Dois arquivos de componente, nenhum de
+`src/lib/`; JSX movido, nenhum campo, mutação, rota, índice ou regra tocado.
+
+- `src/components/insumos/FormularioInsumo.tsx`: na frente, Nome, "Como você compra" (Preço
+  pago, Quantidade, Unidade) e `ResumoCusto`. Categoria, Perda, Marca, Onde compra e Estoque
+  atual foram para trás de "Mais detalhes", que abre sozinha quando o insumo salvo difere do
+  que um cadastro novo recebe (`categoria !== "INGREDIENTE"`, perda > 0, marca, fornecedor ou
+  estoque preenchidos) ou quando um desses campos tem erro. A dobra ganhou `key={chaveAtual}`,
+  pela mesma razão de `chave` na linha 85: o painel não desmonta entre um insumo e outro.
+- `src/components/fichas/FormularioFicha.tsx`: os blocos "O produto" e "Rendimento e tempo"
+  viraram um, "A receita" (ou "O kit"), com Nome, Rende, Em e Tempo — `Clock` saiu dos imports.
+  Tipo (receita ou kit), Categoria, Fornadas de reserva, "Como você apresenta" e Foto foram
+  para a mesma dobra "Mais detalhes", **antes** de "O que vai dentro" — o tipo precisa vir
+  antes dos itens porque trocar para kit muda os blocos que aparecem logo abaixo. A dobra abre
+  sozinha quando `tipo === "KIT"`, há reserva, descrição ou foto, ou erro num desses campos; a
+  categoria da ficha fica de fora do predicado de propósito (`DECISOES.md#d116`), porque as
+  duas fichas da biblioteca (`#d114`) vêm com "Cookies" e são a primeira tela que ela vê. Sem
+  `key`: o editor é uma rota por ficha, e monta com a ficha na mão.
+- `DECISOES.md#d116` (a decisão desta spec) e uma linha de revisão em `#d96`: o piso continua
+  morando no editor da ficha, agora atrás de "Mais detalhes".
+
+Nada de schema, mutação, rota, índice, regra ou dependência mudou. `PainelPreco.tsx`,
+`LinhaItemFicha.tsx` e `EditorFicha.tsx` sem uma linha alterada. Os 530 testes de domínio
+continuam os mesmos, porque nada disto mora em `src/lib/`.
+
+**O roteiro de oito passos não rodou nesta sessão** — precisa de duas contas (uma vazia e a
+real, com insumos que têm marca, fornecedor e estoque preenchidos) e de alguém no navegador. É
+o único lugar onde dá para ver a dobra abrir sozinha na farinha e no saquinho, e fechada na
+ficha-modelo e no açúcar.
+
 ## Próxima ação
 
+**Rodar o roteiro de oito passos da spec 020** (duas contas, DevTools em Offline nos passos 1 a
+5): confirma que a ficha-modelo abre com "Mais detalhes" fechada, que insumos da conta real com
+marca ou fornecedor abrem a dobra sozinhos, e que um erro dentro de uma dobra fechada a força a
+abrir. É esse roteiro, e não o portão de conclusão, que diz se a dobra ficou no lugar certo.
+
+**A 021 vem em seguida**, e começa com cinco perguntas à Maynara sobre vocabulário — "insumo",
+"ficha técnica", "rende", "perda" —, não com código.
+
 **Gravar a Maynara abrindo uma conta nova sem ninguém ao lado**, contando as perguntas em voz
-alta — é essa contagem, e não o portão de conclusão, que diz se a spec 020 é a próxima ou se a
-019 precisa de uma segunda passada. Quando a gravação acontecer, conferir os cinco textos de
-`onboarding.ts` contra as palavras dela, um a um, e só então tirar a linha da tabela de dívidas.
+alta — é essa contagem, e não o portão de conclusão, que diz se a fase 0 está perto do fim.
+Quando a gravação acontecer, conferir os cinco textos de `onboarding.ts` contra as palavras
+dela, um a um, e só então tirar a linha da tabela de dívidas.
 
 **Rodar o roteiro de sete passos da spec 019** (conta vazia de verdade, DevTools em Offline nos
 passos 1 a 4): confirma que o cartão oferece a biblioteca como ação primária do passo 1 numa
@@ -2111,6 +2153,7 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | Entrega paga pela cliente e nunca acertada some de "Entregas a pagar" ao cair da página            | `ListaPedidos.tsx`                             | Se for inaceitável: `entrega.repassePendente` gravado por quatro mutações + backfill (`#d105`)                  |
 | O roteiro de sete passos da 016 nunca rodou: "A receber" por página e o botão offline sem prova    | `ListaPedidos.tsx`                             | Próxima ação; o índice já respondeu via Admin SDK, e `npm test` não toca no Firestore                           |
 | O roteiro de sete passos da 018 nunca rodou: o botão, a ficha-modelo e as duas faixas sem prova    | `BotaoBiblioteca.tsx`, `FormularioFicha.tsx`   | Próxima ação, numa conta vazia de verdade; `npm test` não toca no Firestore                                     |
+| O roteiro de oito passos da 020 nunca rodou: a dobra abrindo e fechando sozinha sem prova          | `FormularioInsumo.tsx`, `FormularioFicha.tsx`  | Próxima ação, com duas contas (uma vazia, a real); `npm test` não toca no Firestore                             |
 | Limpar "Válido até" no editor não apaga a validade gravada: ela volta ao reabrir                   | `mutations/pedidos.ts`                         | `deleteField()` quando o campo chega vazio, se "sem prazo" virar escolha de verdade (`#d110`)                   |
 | Nenhum PDF foi gerado: o `#d106` nos três sistemas, o `zoom` a 360 px e o fundo do total sem prova | `TelaOrcamento.tsx`, `globals.css`             | Roteiro de aparelho da 017, oito passos; `npm test` não abre navegador                                          |
 | A folha lê o gravado e o WhatsApp lê a tela: um pedido editado e não salvo diverge entre os dois   | `BlocoOrcamento.tsx`                           | Aceito em `#d107`; se morder, o link salva antes de abrir (`#d78`)                                              |

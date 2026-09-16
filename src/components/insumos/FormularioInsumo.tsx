@@ -100,6 +100,26 @@ export function FormularioInsumo({
   const quantidade = parseParaNumero(estado.quantidadeCompra);
   const perda = parseParaNumero(estado.perdaPercentual);
 
+  // Abre sobre o que é dela: o que difere do que um insumo novo recebe, ou o
+  // que está errado — uma dobra fechada em cima de um erro é um "Salvar" que
+  // não faz nada e não diz por quê. Lê o documento salvo, e não o digitado,
+  // para não abrir e fechar enquanto ela escreve. A `key` refaz a decisão
+  // quando o painel troca de insumo sem desmontar.
+  const temMaisDetalhes =
+    !!insumo &&
+    (insumo.categoria !== "INGREDIENTE" ||
+      insumo.perdaPercentual > 0 ||
+      !!insumo.marca ||
+      !!insumo.fornecedor ||
+      insumo.estoqueAtual !== undefined);
+  const erroNosDetalhes = !!(
+    erros.categoria ||
+    erros.perdaPercentual ||
+    erros.marca ||
+    erros.fornecedor ||
+    erros.estoqueAtual
+  );
+
   const custo = useMemo(
     () =>
       calcularCustoInsumo({
@@ -212,20 +232,6 @@ export function FormularioInsumo({
           onChange={(evento) => definir("nome", evento.target.value)}
         />
 
-        <Seletor
-          rotulo="Categoria"
-          value={estado.categoria}
-          onChange={(evento) =>
-            definir("categoria", evento.target.value as CategoriaInsumo)
-          }
-        >
-          {CATEGORIAS_INSUMO.map((categoria) => (
-            <option key={categoria.valor} value={categoria.valor}>
-              {categoria.rotulo}
-            </option>
-          ))}
-        </Seletor>
-
         <div className="rounded-lg border border-line bg-surface p-4">
           <h3 className="text-subheading font-semibold text-ink">
             Como você compra
@@ -273,6 +279,40 @@ export function FormularioInsumo({
                 ))}
               </Seletor>
             </div>
+          </div>
+        </div>
+
+        {podeCalcular && <ResumoCusto custo={custo} perdaPercentual={perda} />}
+
+        <details
+          key={chaveAtual}
+          open={temMaisDetalhes || erroNosDetalhes}
+          className="group rounded-lg border border-line bg-surface"
+        >
+          <summary className="toque flex cursor-pointer list-none items-center justify-between px-4 py-3 text-subheading font-semibold text-ink">
+            Mais detalhes
+            <span
+              aria-hidden
+              className="text-label font-normal text-ink-muted group-open:hidden"
+            >
+              categoria, perda, marca, onde compra, estoque
+            </span>
+          </summary>
+
+          <div className="space-y-4 border-t border-line px-4 py-4">
+            <Seletor
+              rotulo="Categoria"
+              value={estado.categoria}
+              onChange={(evento) =>
+                definir("categoria", evento.target.value as CategoriaInsumo)
+              }
+            >
+              {CATEGORIAS_INSUMO.map((categoria) => (
+                <option key={categoria.valor} value={categoria.valor}>
+                  {categoria.rotulo}
+                </option>
+              ))}
+            </Seletor>
 
             <Campo
               rotulo="Perda"
@@ -285,23 +325,7 @@ export function FormularioInsumo({
                 definir("perdaPercentual", evento.target.value)
               }
             />
-          </div>
-        </div>
 
-        {podeCalcular && <ResumoCusto custo={custo} perdaPercentual={perda} />}
-
-        <details className="group rounded-lg border border-line bg-surface">
-          <summary className="toque flex cursor-pointer list-none items-center justify-between px-4 py-3 text-subheading font-semibold text-ink">
-            Detalhes opcionais
-            <span
-              aria-hidden
-              className="text-label font-normal text-ink-muted group-open:hidden"
-            >
-              marca, fornecedor, estoque
-            </span>
-          </summary>
-
-          <div className="space-y-4 border-t border-line px-4 py-4">
             <Campo
               rotulo="Marca"
               value={estado.marca}

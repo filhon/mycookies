@@ -164,7 +164,7 @@ dela, ninguém ao lado. Roda depois de cada spec abaixo, não só no fim.
 - Nenhum fato novo em `FatosDoComeco`: `temFicha` já fecha o passo 1.
 - Aprovações: nenhuma.
 
-**020 · Menos na frente.** Os dois formulários do primeiro preço pedem só o que ele precisa.
+**020 · Menos na frente. Entregue em 2026-09-16.** Os dois formulários do primeiro preço pedem só o que ele precisa.
 
 - Insumo: nome, preço pago, quantidade e unidade na frente. Categoria, perda, marca, onde
   compra e estoque atual atrás de "Mais detalhes" (`<details>` nativo, aberto quando editando

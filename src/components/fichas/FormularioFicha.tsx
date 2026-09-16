@@ -15,7 +15,6 @@ import {
   ArrowLeft,
   Check,
   ChefHat,
-  Clock,
   CookingPot,
   Hand,
   Package,
@@ -345,6 +344,22 @@ export function FormularioFicha({
   );
 
   const ehKit = valores.tipo === "KIT";
+
+  // Abre sobre o que é dela. A categoria fica de fora de propósito: a
+  // ficha-modelo da biblioteca vem com "Cookies" e é a primeira tela que
+  // ela vê (`DECISOES.md#d116`).
+  const temMaisDetalhes =
+    !!ficha &&
+    (ficha.tipo === "KIT" ||
+      (ficha.fornadasMinimas ?? 0) > 0 ||
+      !!ficha.descricao ||
+      !!ficha.fotoUrl);
+  const erroNosDetalhes = !!(
+    form.formState.errors.tipo ||
+    form.formState.errors.categoria ||
+    form.formState.errors.fornadasMinimas ||
+    form.formState.errors.descricao
+  );
 
   /** As categorias que uma escolha pode apontar: as das receitas que servem. */
   const categoriasDeEscolha = useMemo(
@@ -842,57 +857,9 @@ export function FormularioFicha({
 
         <Bloco
           icone={Tag}
-          titulo="O produto"
-          descricao="Como ele aparece na hora de montar um pedido."
+          titulo={ehKit ? "O kit" : "A receita"}
+          descricao="O nome, quanto sai de um lote e quanto tempo ele toma do começo ao fim: forno, bancada e embalagem."
         >
-          <fieldset>
-            <legend className="text-label font-medium text-ink">
-              O que você está montando
-            </legend>
-            <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
-              {TIPOS.map((opcao) => {
-                const ativo = valores.tipo === opcao.valor;
-                return (
-                  <button
-                    key={opcao.valor}
-                    type="button"
-                    aria-pressed={ativo}
-                    onClick={() => trocarTipo(opcao.valor)}
-                    className={cn(
-                      "rounded-md border p-3 text-left transition-colors duration-150 ease-quart",
-                      ativo
-                        ? "border-wine-700 bg-wine-100"
-                        : "border-line-strong hover:bg-sunken",
-                    )}
-                  >
-                    <span className="flex items-center gap-1.5 text-label font-semibold text-ink">
-                      {ativo && (
-                        <Check
-                          aria-hidden
-                          className="size-4 shrink-0 text-wine-700 dark:text-wine-300"
-                          strokeWidth={2}
-                        />
-                      )}
-                      {opcao.titulo}
-                    </span>
-                    <span className="mt-1 block text-label text-ink-muted">
-                      {opcao.explicacao}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            {aviso && (
-              <p
-                role="status"
-                className="mt-2 text-label text-ink-muted"
-                aria-live="polite"
-              >
-                {aviso}
-              </p>
-            )}
-          </fieldset>
-
           <div className="grid gap-4 sm:grid-cols-2">
             <Campo
               rotulo="Nome"
@@ -903,74 +870,6 @@ export function FormularioFicha({
               {...form.register("nome")}
             />
 
-            <Campo
-              rotulo="Categoria"
-              list="categorias-de-ficha"
-              placeholder="Cookie"
-              dica="Serve para agrupar na lista e no relatório de vendas."
-              erro={form.formState.errors.categoria?.message}
-              {...form.register("categoria")}
-            />
-          </div>
-          <datalist id="categorias-de-ficha">
-            {categoriasConhecidas.map((categoria) => (
-              <option key={categoria} value={categoria} />
-            ))}
-          </datalist>
-
-          {/* Os dois vão na folha do orçamento (spec 017), e só nela: a lista
-              de fichas continua lista, sem miniatura. */}
-          <EnvelopeCampo
-            id={idDescricao}
-            rotulo="Como você apresenta"
-            dica={
-              <span className="flex justify-between gap-3">
-                <span>
-                  Vai na folha do orçamento. Duas frases: o que é, o que tem
-                  dentro.
-                </span>
-                {valores.descricao.length > 200 && (
-                  <span className="num shrink-0 text-micro">
-                    {valores.descricao.length}/{DESCRICAO_MAX}
-                  </span>
-                )}
-              </span>
-            }
-            erro={form.formState.errors.descricao?.message}
-          >
-            <textarea
-              id={idDescricao}
-              rows={2}
-              placeholder="Massa amanteigada com gotas de chocolate, crocante por fora e macia por dentro, recheada com brigadeiro."
-              aria-invalid={form.formState.errors.descricao ? true : undefined}
-              className="w-full rounded-md border border-line-strong bg-surface px-3 py-2.5 text-body text-ink transition-colors duration-150 ease-quart placeholder:text-ink-subtle"
-              {...form.register("descricao")}
-            />
-          </EnvelopeCampo>
-
-          <CampoImagem
-            rotulo="Foto"
-            dica="A miniatura ao lado do produto na folha. Um PNG com fundo transparente sai solto sobre o papel, como no cardápio; uma foto comum sai num quadrado."
-            valor={valores.fotoUrl}
-            aoMudar={(dataUrl) => form.setValue("fotoUrl", dataUrl)}
-            reducao={{
-              ladoMaximo: FOTO_LADO_PX,
-              formato: "image/jpeg",
-              qualidade: 0.8,
-            }}
-            maxBytes={FOTO_MAX_BYTES}
-            comAlpha={{ maxBytes: FOTO_COM_ALPHA_MAX_BYTES }}
-            rotuloEscolher="Escolher foto"
-            rotuloTirar="Tirar a foto"
-          />
-        </Bloco>
-
-        <Bloco
-          icone={Clock}
-          titulo="Rendimento e tempo"
-          descricao="Quanto sai de um lote e quanto tempo ele toma do começo ao fim: forno, bancada e embalagem."
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid grid-cols-[1fr_8rem] gap-3">
               <Campo
                 rotulo="Rende"
@@ -999,29 +898,156 @@ export function FormularioFicha({
               {...form.register("tempoProducaoMinutos")}
             />
           </div>
-
-          {/* O piso é por ficha, e mora na tela onde ela já pensa neste
-              produto (`#d96`). Nasce em zero: ligado, é a única coisa que faz a
-              lista de compras crescer sem pedido nenhum atrás. Some no kit com
-              escolhas: reservar "1 combo" não diz de que sabor, e a reserva é
-              das receitas. */}
-          {!kitComEscolhas && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Campo
-                rotulo="Fornadas de reserva"
-                inputMode="numeric"
-                sufixo={
-                  parseParaNumero(valores.fornadasMinimas) === 1
-                    ? "fornada"
-                    : "fornadas"
-                }
-                erro={form.formState.errors.fornadasMinimas?.message}
-                dica="Sempre poder fazer esta quantidade. Quando a despensa não der mais isso, o que falta entra na lista de compras. Zero desliga."
-                {...form.register("fornadasMinimas")}
-              />
-            </div>
-          )}
         </Bloco>
+
+        <details
+          open={temMaisDetalhes || erroNosDetalhes}
+          className="group rounded-lg border border-line bg-surface"
+        >
+          <summary className="toque flex cursor-pointer list-none items-center justify-between px-4 py-3 text-subheading font-semibold text-ink">
+            Mais detalhes
+            <span
+              aria-hidden
+              className="text-label font-normal text-ink-muted group-open:hidden"
+            >
+              receita ou kit, categoria, reserva, descrição, foto
+            </span>
+          </summary>
+
+          <div className="space-y-4 border-t border-line px-4 py-4">
+            <fieldset>
+              <legend className="text-label font-medium text-ink">
+                O que você está montando
+              </legend>
+              <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
+                {TIPOS.map((opcao) => {
+                  const ativo = valores.tipo === opcao.valor;
+                  return (
+                    <button
+                      key={opcao.valor}
+                      type="button"
+                      aria-pressed={ativo}
+                      onClick={() => trocarTipo(opcao.valor)}
+                      className={cn(
+                        "rounded-md border p-3 text-left transition-colors duration-150 ease-quart",
+                        ativo
+                          ? "border-wine-700 bg-wine-100"
+                          : "border-line-strong hover:bg-sunken",
+                      )}
+                    >
+                      <span className="flex items-center gap-1.5 text-label font-semibold text-ink">
+                        {ativo && (
+                          <Check
+                            aria-hidden
+                            className="size-4 shrink-0 text-wine-700 dark:text-wine-300"
+                            strokeWidth={2}
+                          />
+                        )}
+                        {opcao.titulo}
+                      </span>
+                      <span className="mt-1 block text-label text-ink-muted">
+                        {opcao.explicacao}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {aviso && (
+                <p
+                  role="status"
+                  className="mt-2 text-label text-ink-muted"
+                  aria-live="polite"
+                >
+                  {aviso}
+                </p>
+              )}
+            </fieldset>
+
+            <Campo
+              rotulo="Categoria"
+              list="categorias-de-ficha"
+              placeholder="Cookie"
+              dica="Serve para agrupar na lista e no relatório de vendas."
+              erro={form.formState.errors.categoria?.message}
+              {...form.register("categoria")}
+            />
+            <datalist id="categorias-de-ficha">
+              {categoriasConhecidas.map((categoria) => (
+                <option key={categoria} value={categoria} />
+              ))}
+            </datalist>
+
+            {/* O piso é por ficha, e mora na tela onde ela já pensa neste
+                produto (`#d96`). Nasce em zero: ligado, é a única coisa que faz a
+                lista de compras crescer sem pedido nenhum atrás. Some no kit com
+                escolhas: reservar "1 combo" não diz de que sabor, e a reserva é
+                das receitas. */}
+            {!kitComEscolhas && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Campo
+                  rotulo="Fornadas de reserva"
+                  inputMode="numeric"
+                  sufixo={
+                    parseParaNumero(valores.fornadasMinimas) === 1
+                      ? "fornada"
+                      : "fornadas"
+                  }
+                  erro={form.formState.errors.fornadasMinimas?.message}
+                  dica="Sempre poder fazer esta quantidade. Quando a despensa não der mais isso, o que falta entra na lista de compras. Zero desliga."
+                  {...form.register("fornadasMinimas")}
+                />
+              </div>
+            )}
+
+            {/* Os dois vão na folha do orçamento (spec 017), e só nela: a lista
+                de fichas continua lista, sem miniatura. */}
+            <EnvelopeCampo
+              id={idDescricao}
+              rotulo="Como você apresenta"
+              dica={
+                <span className="flex justify-between gap-3">
+                  <span>
+                    Vai na folha do orçamento. Duas frases: o que é, o que tem
+                    dentro.
+                  </span>
+                  {valores.descricao.length > 200 && (
+                    <span className="num shrink-0 text-micro">
+                      {valores.descricao.length}/{DESCRICAO_MAX}
+                    </span>
+                  )}
+                </span>
+              }
+              erro={form.formState.errors.descricao?.message}
+            >
+              <textarea
+                id={idDescricao}
+                rows={2}
+                placeholder="Massa amanteigada com gotas de chocolate, crocante por fora e macia por dentro, recheada com brigadeiro."
+                aria-invalid={
+                  form.formState.errors.descricao ? true : undefined
+                }
+                className="w-full rounded-md border border-line-strong bg-surface px-3 py-2.5 text-body text-ink transition-colors duration-150 ease-quart placeholder:text-ink-subtle"
+                {...form.register("descricao")}
+              />
+            </EnvelopeCampo>
+
+            <CampoImagem
+              rotulo="Foto"
+              dica="A miniatura ao lado do produto na folha. Um PNG com fundo transparente sai solto sobre o papel, como no cardápio; uma foto comum sai num quadrado."
+              valor={valores.fotoUrl}
+              aoMudar={(dataUrl) => form.setValue("fotoUrl", dataUrl)}
+              reducao={{
+                ladoMaximo: FOTO_LADO_PX,
+                formato: "image/jpeg",
+                qualidade: 0.8,
+              }}
+              maxBytes={FOTO_MAX_BYTES}
+              comAlpha={{ maxBytes: FOTO_COM_ALPHA_MAX_BYTES }}
+              rotuloEscolher="Escolher foto"
+              rotuloTirar="Tirar a foto"
+            />
+          </div>
+        </details>
 
         {ehKit && (
           <Bloco
