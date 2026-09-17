@@ -89,7 +89,7 @@ export function LinhaItemPedido({
               <button
                 type="button"
                 onClick={aoUsarPrecoDeHoje}
-                className="toque -my-2 inline-flex items-center rounded-md px-2 text-label font-medium text-wine-700 transition-colors duration-150 ease-quart hover:bg-wine-100 dark:text-wine-300"
+                className="toque -my-2 inline-flex items-center rounded-md px-2 text-label font-medium text-wine-ink transition-colors duration-150 ease-quart hover:bg-wine-100"
               >
                 Usar o preço de hoje
               </button>

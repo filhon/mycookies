@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   useFieldArray,
   useForm,
@@ -12,9 +12,9 @@ import {
 import type { ZodError } from "zod";
 import {
   Archive,
-  ArrowLeft,
   Check,
   ChefHat,
+  ChevronDown,
   CookingPot,
   Hand,
   Package,
@@ -28,9 +28,10 @@ import {
 import { Bloco } from "@/components/ui/Bloco";
 import { Botao } from "@/components/ui/Botao";
 import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
-import { Campo, EnvelopeCampo, Seletor } from "@/components/ui/Campo";
+import { AreaTexto, Campo, Seletor } from "@/components/ui/Campo";
 import { CampoImagem } from "@/components/ui/CampoImagem";
 import { Dinheiro } from "@/components/ui/Dinheiro";
+import { LinkVoltar } from "@/components/ui/LinkVoltar";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { EntradaContagemPronto } from "@/components/producao/EntradaContagemPronto";
 import { FornadasRecentes } from "@/components/producao/FornadasRecentes";
@@ -260,7 +261,6 @@ export function FormularioFicha({
   pendente: boolean;
 }) {
   const router = useRouter();
-  const idDescricao = useId();
   const form = useForm<ValoresFicha>({
     defaultValues: valoresIniciais(ficha, configuracao),
   });
@@ -691,13 +691,9 @@ export function FormularioFicha({
           botão físico de voltar do Android existe e fecha o teclado antes de
           sair. O título e o Salvar não mudam de tamanho. */}
       <header className="sticky top-0 z-30 -mx-4 border-b border-line bg-canvas px-4 py-3 apertado:py-2 lg:-mx-8 lg:px-8 lg:pb-4 lg:pt-6">
-        <Link
-          href="/fichas"
-          className="toque -ml-2 inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-ink-muted transition-colors duration-150 ease-quart hover:text-ink apertado:hidden"
-        >
-          <ArrowLeft aria-hidden className="size-4" strokeWidth={1.75} />
+        <LinkVoltar href="/fichas" className="apertado:hidden">
           Produtos
-        </Link>
+        </LinkVoltar>
 
         <div className="mt-1 flex items-center justify-between gap-4 apertado:mt-0">
           <h1 className="min-w-0 truncate font-display text-title font-semibold text-ink lg:text-display">
@@ -733,7 +729,7 @@ export function FormularioFicha({
             </p>
             <Link
               href="/configuracao"
-              className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-wine-700 underline underline-offset-2 dark:text-wine-300"
+              className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-wine-ink underline underline-offset-2"
             >
               <Settings aria-hidden className="size-4" strokeWidth={1.75} />
               Informar meus custos operacionais
@@ -752,7 +748,7 @@ export function FormularioFicha({
             </p>
             <Link
               href="/configuracao"
-              className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-wine-700 underline underline-offset-2 dark:text-wine-300"
+              className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-wine-ink underline underline-offset-2"
             >
               <Settings aria-hidden className="size-4" strokeWidth={1.75} />
               Informar meus custos operacionais
@@ -770,7 +766,7 @@ export function FormularioFicha({
             </p>
             <Link
               href="/insumos"
-              className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-wine-700 underline underline-offset-2 dark:text-wine-300"
+              className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-wine-ink underline underline-offset-2"
             >
               Ir para Materiais
             </Link>
@@ -781,7 +777,7 @@ export function FormularioFicha({
           <Faixa tom="atencao">
             <p>
               O preço de um material deste produto mudou depois do último
-              cálculo. Os números aqui já são os de agora — salve para gravá-los
+              cálculo. Os números aqui já são os de agora: salve para gravá-los
               e tirar o aviso.
             </p>
             <Botao
@@ -905,13 +901,20 @@ export function FormularioFicha({
           open={temMaisDetalhes || erroNosDetalhes}
           className="group rounded-lg border border-line bg-surface"
         >
-          <summary className="toque flex cursor-pointer list-none items-center justify-between px-4 py-3 text-subheading font-semibold text-ink">
+          <summary className="toque flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-subheading font-semibold text-ink">
             Mais detalhes
-            <span
-              aria-hidden
-              className="text-label font-normal text-ink-muted group-open:hidden"
-            >
-              receita ou kit, categoria, reserva, descrição, foto
+            <span className="flex min-w-0 items-center gap-2">
+              <span
+                aria-hidden
+                className="truncate text-label font-normal text-ink-muted group-open:hidden"
+              >
+                receita ou kit, categoria, reserva, descrição, foto
+              </span>
+              <ChevronDown
+                aria-hidden
+                className="size-5 shrink-0 text-ink-muted transition-transform duration-150 ease-quart group-open:rotate-180"
+                strokeWidth={1.75}
+              />
             </span>
           </summary>
 
@@ -932,7 +935,7 @@ export function FormularioFicha({
                       className={cn(
                         "rounded-md border p-3 text-left transition-colors duration-150 ease-quart",
                         ativo
-                          ? "border-wine-700 bg-wine-100"
+                          ? "border-wine-ink bg-wine-100"
                           : "border-line-strong hover:bg-sunken",
                       )}
                     >
@@ -940,7 +943,7 @@ export function FormularioFicha({
                         {ativo && (
                           <Check
                             aria-hidden
-                            className="size-4 shrink-0 text-wine-700 dark:text-wine-300"
+                            className="size-4 shrink-0 text-wine-ink"
                             strokeWidth={2}
                           />
                         )}
@@ -1002,9 +1005,10 @@ export function FormularioFicha({
 
             {/* Os dois vão na folha do orçamento (spec 017), e só nela: a lista
                 de fichas continua lista, sem miniatura. */}
-            <EnvelopeCampo
-              id={idDescricao}
+            <AreaTexto
               rotulo="Como você apresenta"
+              rows={2}
+              placeholder="Massa amanteigada com gotas de chocolate, crocante por fora e macia por dentro, recheada com brigadeiro."
               dica={
                 <span className="flex justify-between gap-3">
                   <span>
@@ -1019,18 +1023,8 @@ export function FormularioFicha({
                 </span>
               }
               erro={form.formState.errors.descricao?.message}
-            >
-              <textarea
-                id={idDescricao}
-                rows={2}
-                placeholder="Massa amanteigada com gotas de chocolate, crocante por fora e macia por dentro, recheada com brigadeiro."
-                aria-invalid={
-                  form.formState.errors.descricao ? true : undefined
-                }
-                className="w-full rounded-md border border-line-strong bg-surface px-3 py-2.5 text-body text-ink transition-colors duration-150 ease-quart placeholder:text-ink-subtle"
-                {...form.register("descricao")}
-              />
-            </EnvelopeCampo>
+              {...form.register("descricao")}
+            />
 
             <CampoImagem
               rotulo="Foto"
@@ -1320,7 +1314,7 @@ export function FormularioFicha({
                     className={cn(
                       "toque rounded-md border px-3 text-left text-label font-semibold transition-colors duration-150 ease-quart",
                       ativo
-                        ? "border-wine-700 bg-wine-100 text-ink"
+                        ? "border-wine-ink bg-wine-100 text-ink"
                         : "border-line-strong text-ink hover:bg-sunken",
                     )}
                   >
@@ -1328,7 +1322,7 @@ export function FormularioFicha({
                       {ativo && (
                         <Check
                           aria-hidden
-                          className="size-4 shrink-0 text-wine-700 dark:text-wine-300"
+                          className="size-4 shrink-0 text-wine-ink"
                           strokeWidth={2}
                         />
                       )}

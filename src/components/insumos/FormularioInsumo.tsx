@@ -13,7 +13,7 @@ import {
 import { parseParaNumero } from "@/lib/domain/money";
 import { errosPorCampo, esquemaInsumo } from "@/lib/domain/schemas";
 import { GRUPOS_UNIDADE, ROTULO_UNIDADE_COMPRA } from "@/lib/domain/unidades";
-import { Archive } from "lucide-react";
+import { Archive, ChevronDown } from "lucide-react";
 import {
   arquivarInsumo,
   atualizarInsumo,
@@ -289,13 +289,20 @@ export function FormularioInsumo({
           open={temMaisDetalhes || erroNosDetalhes}
           className="group rounded-lg border border-line bg-surface"
         >
-          <summary className="toque flex cursor-pointer list-none items-center justify-between px-4 py-3 text-subheading font-semibold text-ink">
+          <summary className="toque flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-subheading font-semibold text-ink">
             Mais detalhes
-            <span
-              aria-hidden
-              className="text-label font-normal text-ink-muted group-open:hidden"
-            >
-              categoria, perda, marca, onde compra, estoque
+            <span className="flex min-w-0 items-center gap-2">
+              <span
+                aria-hidden
+                className="truncate text-label font-normal text-ink-muted group-open:hidden"
+              >
+                categoria, perda, marca, onde compra, estoque
+              </span>
+              <ChevronDown
+                aria-hidden
+                className="size-5 shrink-0 text-ink-muted transition-transform duration-150 ease-quart group-open:rotate-180"
+                strokeWidth={1.75}
+              />
             </span>
           </summary>
 

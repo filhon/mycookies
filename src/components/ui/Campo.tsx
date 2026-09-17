@@ -7,6 +7,7 @@ import {
   type ReactNode,
   type Ref,
   type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from "react";
 import { cn } from "@/lib/utils/cn";
 
@@ -190,4 +191,58 @@ export function Seletor({
   );
 }
 
-export { Envelope as EnvelopeCampo, BASE_CONTROLE };
+export interface AreaTextoProps extends Omit<
+  TextareaHTMLAttributes<HTMLTextAreaElement>,
+  "id"
+> {
+  rotulo: string;
+  dica?: ReactNode;
+  erro?: string;
+  className?: string;
+  /** Mesma razão do `ref` de `Campo`. */
+  ref?: Ref<HTMLTextAreaElement>;
+}
+
+/**
+ * O campo de mais de uma linha: observações do pedido, dados do Pix, a
+ * descrição do produto. Era um `<textarea>` copiado em cinco telas, nenhum com
+ * estado de erro nem de desabilitado — o mesmo controle de `Campo`, sem a
+ * altura fixa.
+ */
+export function AreaTexto({
+  rotulo,
+  dica,
+  erro,
+  className,
+  required,
+  rows = 3,
+  ...props
+}: AreaTextoProps) {
+  const id = useId();
+
+  return (
+    <Envelope
+      id={id}
+      rotulo={rotulo}
+      dica={dica}
+      erro={erro}
+      obrigatorio={required}
+      className={className}
+    >
+      <textarea
+        id={id}
+        rows={rows}
+        aria-invalid={erro ? true : undefined}
+        aria-describedby={erro ? `${id}-erro` : dica ? `${id}-dica` : undefined}
+        className={cn(
+          BASE_CONTROLE,
+          "h-auto py-2.5",
+          erro ? "border-negative" : "border-line-strong",
+        )}
+        {...props}
+      />
+    </Envelope>
+  );
+}
+
+export { BASE_CONTROLE };

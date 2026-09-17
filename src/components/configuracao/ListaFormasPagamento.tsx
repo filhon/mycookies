@@ -61,7 +61,7 @@ function LinhaForma({
         onClick={() => aoAbrir(forma)}
         className={cn(
           "flex w-full items-center gap-3 px-4 py-3 text-left",
-          "min-h-14 transition-colors duration-150 ease-quart hover:bg-sunken",
+          "min-h-14 transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken",
         )}
       >
         <Icone

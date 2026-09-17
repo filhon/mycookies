@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-16 (spec 022-a-segunda-conta executada; roteiros das 015, 016, 017, 018, 019, 020, 021 e 022 por rodar).
+Atualizado em 2026-09-17 (passagem de polimento `/impeccable polish` executada por cima da 022; roteiros das 015, 016, 017, 018, 019, 020, 021 e 022 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -2102,6 +2102,58 @@ do login, que só tira uma pergunta. O próximo passo não é mais uma spec da f
 as 5 a 8 entrevistas com confeiteiras que não são a Maynara (`docs/saas/ROADMAP.md`, seção
 "Fase 1"), e a spec `023-sair-sem-salvar.md` primeiro, porque perder trabalho em silêncio é o
 que mais mina a confiança de quem está operando sozinha.
+
+## O que a passagem de polimento deixou pronto
+
+Fora de spec, em 2026-09-17: `/impeccable polish` nas telas do sistema, contra o `DESIGN.md`.
+Nenhum campo, nenhuma rota, nenhuma regra, nenhuma dependência, nenhuma mutação. O que mudou é
+o que o `DESIGN.md` já pedia e o código tinha deixado de cumprir em cópia. `DECISOES.md#d120` e
+`#d121` registram as duas decisões.
+
+- **Dois tokens novos, `wine-ink` e `gold-ink`** (`#d120`): a marca como tinta, que inverte no
+  escuro. Substituíram 41 ocorrências de `text-wine-700 dark:text-wine-300` e afins em 25
+  arquivos; `rg "dark:" src` só devolve um comentário. **Conserto de tema que veio de carona:**
+  a borda da opção escolhida (método de preço em `/configuracao` e no editor de ficha, tipo de
+  ficha, lado do caixa) sumia no escuro em quatro dos cinco lugares. A `.folha` fixa os dois no
+  claro.
+- **Seis primitivos em `src/components/ui/`** (`#d121`): `Pilulas` (seis telas), `BotaoFlutuante`
+  (quatro), `CampoBusca` (três, `BuscaItem` inclusa), `LinkVoltar` (cinco), `AreaTexto` em
+  `Campo.tsx` (cinco `<textarea>` copiados, agora com erro, desabilitado e `aria-invalid`) e
+  `Realce` (estava definido duas vezes). `EnvelopeCampo` deixou de ser exportado.
+- **"Mais detalhes" ganhou a seta** nos dois editores (`FormularioInsumo`, `FormularioFicha`):
+  `list-none` tinha tirado o marcador do `<details>` e nada dizia que a dobra abria.
+- **`/configuracao` não pula mais ao carregar**: o esqueleto usava uma descrição mais curta que a
+  tela carregada, e o cabeçalho mudava de altura quando os dados chegavam.
+- **`active:` onde faltava**: a linha de forma de pagamento e o cartão da meta na tela Hoje.
+- **Do celular, depois de olhar `/pedidos`:** no toque nenhuma rolagem tem barra (`globals.css`,
+  base, `@media (pointer: coarse)`, o mesmo sinal de `apertado`; no desktop o mouse continua com
+  a dele), e a linha do pedido passou a ter **uma** pílula, a do status. "Pago" e "Entrega" viraram `Marcador`
+  (`ui/Selo.tsx`), o selo sem fundo: três pílulas em 360px quebravam em duas linhas de cor. A
+  agenda da tela Hoje seguiu a mesma regra (a data e a entrega em marcador).
+- **A linha de produto e a de material viraram três andares** (`LinhaFicha`, `LinhaInsumo`):
+  nome | preço | seta em cima, custo · rendimento | sobra no meio (a sobra alinhada sob o preço,
+  `pr-8`), e o que é produção (pronto, fornadas, despensa, selos) embaixo, **na largura inteira**.
+  Antes as frases de produção moravam na coluna esquerda, ao lado do preço, em ~190px, e cada
+  uma quebrava em três a cinco linhas no celular. Nenhuma frase mudou de texto.
+- **O botão flutuante deixou de ser o círculo com "+"** (`ui/BotaoFlutuante.tsx`, `DESIGN.md`,
+  Componentes): pílula de 52px com o nome da ação visível ("Novo pedido", "Lançar"), sombra
+  `raised` em vez de `overlay`, centrada acima da navegação. No canto direito ele cobria a coluna
+  do dinheiro da última linha da lista.
+- **Travessão saiu da prosa de interface** (regra de cópia do polimento): 17 frases em componentes
+  e 3 em `domain/` (`onboarding.ts`, `notaFiscal.ts`) viraram dois-pontos, vírgula ou ponto. O
+  travessão como **glifo de vazio** (`—` no lugar de um número que não existe) e o separador da
+  mensagem de WhatsApp ficaram: um é tipografia, o outro é texto para a cliente.
+
+**Deixado de propósito.** `Bloco` e `BlocoConfiguracao` continuam dois (o motivo está no
+comentário de `Bloco.tsx`); o cabeçalho das cinco telas fora do menu continua montado à mão
+(`#d121`); o "Sair" duplicado no desktop de `/configuracao` continua (`022`). O cartão de opção
+escolhida (`rounded-md border p-3 ... aria-pressed`) aparece em cinco lugares e não virou
+primitivo: três variam em anatomia (com e sem explicação, compacto com `toque`), e o token
+`wine-ink` já foi o conserto que importava.
+
+Portão de conclusão: lint limpo, typecheck limpo, **531 testes**, build com as mesmas rotas.
+**Nada disto foi visto em navegador nesta sessão**: o escuro com a borda da opção escolhida e a
+seta de "Mais detalhes" são os dois lugares onde vale olhar primeiro.
 
 ## Próxima ação
 

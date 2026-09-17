@@ -204,7 +204,7 @@ function fraseDoPiso(
 
   const { capacidade, fornadasMinimas } = primeira;
   const trava = capacidade.gargalo
-    ? ` — trava em ${capacidade.gargalo.nome}`
+    ? `, trava em ${capacidade.gargalo.nome}`
     : "";
   if (capacidade.fornadas === 0) {
     return `${capacidade.nome} não dá nem uma fornada${trava}`;

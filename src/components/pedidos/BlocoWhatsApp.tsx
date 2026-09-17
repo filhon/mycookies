@@ -36,11 +36,11 @@ export function BlocoWhatsApp({
     <Bloco
       icone={MessageCircle}
       titulo="Mandar o resumo pra cliente"
-      descricao="Abre o WhatsApp com o pedido escrito. Você confere e envia — nada sai daqui sozinho."
+      descricao="Abre o WhatsApp com o pedido escrito. Você confere e envia: nada sai daqui sozinho."
     >
       {resumo.itens.length === 0 ? (
         <p className="max-w-[60ch] text-label text-ink-muted">
-          Adicione o que ela pediu — o resumo precisa ter o que confirmar.
+          Adicione o que ela pediu: o resumo precisa ter o que confirmar.
         </p>
       ) : (
         <div>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Check, ChevronRight, Truck, TriangleAlert } from "lucide-react";
 import { Dinheiro } from "@/components/ui/Dinheiro";
-import { Selo } from "@/components/ui/Selo";
+import { Marcador } from "@/components/ui/Selo";
 import { SeloStatus } from "./SeloStatus";
 import { formatarMoeda } from "@/lib/domain/money";
 import { resumoDosItens } from "@/lib/domain/pedido";
@@ -33,27 +33,33 @@ export function LinhaPedido({ pedido }: { pedido: Pedido }) {
             {resumoDosItens(pedido.itens)}
           </p>
 
-          <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          {/* Uma pílula só, a do status. Pago e entrega são marcadores sem
+              fundo: em 360px três pílulas quebravam em duas linhas de cor. */}
+          <span className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
             <SeloStatus status={pedido.status} />
-            {/* O selo de pago é o que separa a agenda do caixa: sem ele, "a
+            {/* O marcador de pago é o que separa a agenda do caixa: sem ele, "a
                 receber" seria um número sem nenhuma linha que o explique. */}
             {pedido.pago && (
-              <Selo
-                tom="positivo"
+              <Marcador
                 icone={
-                  <Check aria-hidden className="size-3.5" strokeWidth={2} />
+                  <Check
+                    aria-hidden
+                    className="size-3.5 text-positive"
+                    strokeWidth={2.5}
+                  />
                 }
               >
                 Pago
-              </Selo>
+              </Marcador>
             )}
             {pedido.entrega.tipo === "ENTREGA" && (
-              <Selo
-                tom="neutro"
-                icone={<Truck aria-hidden className="size-3.5" />}
+              <Marcador
+                icone={
+                  <Truck aria-hidden className="size-3.5" strokeWidth={1.75} />
+                }
               >
                 Entrega
-              </Selo>
+              </Marcador>
             )}
           </span>
         </div>

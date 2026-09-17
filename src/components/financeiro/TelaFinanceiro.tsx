@@ -7,6 +7,7 @@ import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { BlocoMeta } from "@/components/metas/BlocoMeta";
 import { FormularioMeta } from "@/components/metas/FormularioMeta";
 import { Botao } from "@/components/ui/Botao";
+import { BotaoFlutuante } from "@/components/ui/BotaoFlutuante";
 import { EsqueletoLista, Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import {
@@ -335,15 +336,7 @@ export function TelaFinanceiro() {
         </div>
       )}
 
-      {/* Ação primária ao alcance do polegar, acima da navegação inferior. */}
-      <button
-        type="button"
-        onClick={() => abrirPainel()}
-        aria-label="Novo lançamento"
-        className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] right-4 z-30 flex size-14 items-center justify-center rounded-full bg-wine-700 text-on-wine shadow-overlay transition-colors duration-150 ease-quart hover:bg-wine-600 active:bg-wine-800 apertado:hidden lg:hidden"
-      >
-        <Plus aria-hidden className="size-6" strokeWidth={2} />
-      </button>
+      <BotaoFlutuante rotulo="Lançar" onClick={() => abrirPainel()} />
 
       <FormularioTransacao
         chave={String(aberturas)}

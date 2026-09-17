@@ -54,6 +54,10 @@ O dourado nunca preenche áreas grandes nem vira fundo de botão: dourado chapad
 | `--ink`            | `oklch(0.26 0.022 40)`                 | `oklch(0.94 0.012 85)`                    |
 | `--ink-muted`      | `oklch(0.52 0.020 50)`                 | `oklch(0.70 0.014 80)`                    |
 | `--ink-subtle`     | `oklch(0.64 0.018 55)`                 | `oklch(0.56 0.014 75)`                    |
+| `--wine-ink`       | `--wine-700`                           | `--wine-300`                              |
+| `--gold-ink`       | `--gold-600`                           | `--gold-500`                              |
+
+`--wine-ink` e `--gold-ink` são a marca **como tinta** sobre a superfície: link, ícone de seleção, destino ativo, barra de progresso, borda da opção escolhida. Invertem no escuro como a papelaria inverte. O vinho como **fundo** (botão primário, barra lateral) continua `--wine-700` e `--wine-900` nos dois temas; é a tinta que muda de tom, nunca o cromo.
 
 ### Semânticos
 
@@ -119,6 +123,7 @@ Usados só quando o conteúdo é de fato uma unidade destacável e clicável, co
 Todo componente interativo entrega: `default`, `hover`, `focus-visible`, `active`, `disabled`, `loading`, `error`.
 
 - **Botão.** Primário vinho sólido com texto creme; secundário com contorno e fundo transparente; terciário só texto. Raio 10px. Um botão primário por tela.
+- **Botão flutuante.** Só no celular. Uma pílula de 52px com o nome da ação ("Novo pedido"), vinho sobre creme, sombra baixa, centrada acima da navegação inferior. Nunca o círculo com o sinal de mais: um "+" sozinho obriga a adivinhar o que nasce, e a sombra alta do círculo é plástico sobre papel. No desktop a mesma ação mora no cabeçalho.
 - **Campo.** Rótulo acima, sempre visível, nunca _placeholder_ como rótulo. Altura 48px, raio 10px, contorno `--border-strong`. Foco: anel de 2px em `--wine-700` com 2px de deslocamento.
 - **Campo monetário.** Prefixo `R$` fixo, teclado numérico no mobile, formatação em centavos ao digitar, alinhamento à direita.
 - **Lista.** Divisórias de 1px em `--border`, linha com 56px de altura mínima, área de toque cobrindo a linha inteira.

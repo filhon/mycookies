@@ -60,7 +60,7 @@ export function CartaoMetaHoje() {
         <p className="mt-2 flex items-center gap-2 font-display text-title font-semibold text-ink">
           <Check
             aria-hidden
-            className="size-6 shrink-0 text-gold-600 dark:text-gold-500"
+            className="size-6 shrink-0 text-gold-ink"
             strokeWidth={2.25}
           />
           Meta batida
@@ -117,7 +117,7 @@ function Cartao({
       href="/financeiro"
       className={cn(
         "group block rounded-lg border border-line bg-surface px-5 py-4",
-        "transition-colors duration-150 ease-quart hover:bg-sunken",
+        "transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken",
         dourado && "filete-dourado",
       )}
     >

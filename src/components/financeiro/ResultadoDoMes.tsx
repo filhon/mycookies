@@ -144,7 +144,7 @@ function MaquininhaComeu({
               produtos.{" "}
               <Link
                 href="/configuracao"
-                className="font-medium text-wine-700 underline underline-offset-2 dark:text-wine-300"
+                className="font-medium text-wine-ink underline underline-offset-2"
               >
                 Ver minhas taxas
               </Link>

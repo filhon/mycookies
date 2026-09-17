@@ -19,10 +19,14 @@ import { cn } from "@/lib/utils/cn";
  * Uma ficha na lista: nome, o que ela custa, o que ela deixa e quantas
  * fornadas a despensa aguenta hoje.
  *
- * O preço sozinho não informa, então ele nunca aparece sozinho: ao lado dele
+ * O preço sozinho não informa, então ele nunca aparece sozinho: embaixo dele
  * vem o que sobra por unidade, que é a pergunta que trouxe a Maynara até aqui.
- * A capacidade vem embaixo porque é a pergunta que a cliente faz no WhatsApp,
- * e esta é a tela que ela abre para responder.
+ *
+ * Três andares, e não duas colunas. Em cima, nome e preço; no meio, custo e
+ * sobra, com a sobra alinhada sob o preço; embaixo, o que está pronto e quantas
+ * fornadas dá, na **largura inteira da linha**. Com as frases de produção na
+ * coluna da esquerda, ao lado do preço, cada uma quebrava em três a cinco
+ * linhas num celular de 360px, e a lista virava um muro de texto.
  */
 export function LinhaFicha({
   ficha,
@@ -37,58 +41,41 @@ export function LinhaFicha({
 }) {
   const lucro = ficha.precificacao.lucroUnitario;
   const noPrejuizo = lucro < 0;
+  const temProducao =
+    !!pronto ||
+    !!capacidade ||
+    ficha.tipo === "KIT" ||
+    ficha.custoDesatualizado;
 
   return (
     <li>
       <Link
         href={`/fichas/${ficha.id}`}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken"
+        className="block px-4 py-3 transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken"
       >
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-body font-medium text-ink">
+        <div className="flex items-center gap-3">
+          <p className="min-w-0 flex-1 truncate text-body font-medium text-ink">
             {ficha.nome}
           </p>
+          <Dinheiro centavos={ficha.precificacao.precoVenda} />
+          <ChevronRight
+            aria-hidden
+            className="size-5 shrink-0 text-ink-subtle"
+            strokeWidth={1.75}
+          />
+        </div>
 
-          <p className="num mt-0.5 truncate text-label text-ink-muted">
+        {/* `pr-8` é a seta mais o vão: a sobra fica debaixo do preço. */}
+        <div className="mt-0.5 flex items-baseline gap-3 pr-8">
+          <p className="num min-w-0 flex-1 truncate text-label text-ink-muted">
             custa {formatarMoeda(ficha.custoUnitario)}
             <span className="mx-1.5 text-ink-subtle">·</span>
             rende {ficha.rendimento}{" "}
             {ROTULO_UNIDADE_RENDIMENTO[ficha.unidadeRendimento]}
           </p>
-
-          {pronto && (
-            <FraseDoPronto
-              projecao={pronto.pronto}
-              unidade={ficha.unidadeRendimento}
-              reservado={pronto.reservado}
-              className="mt-1"
-            />
-          )}
-
-          {capacidade && (
-            <FraseDaCapacidade capacidade={capacidade} className="mt-1" />
-          )}
-
-          {(ficha.tipo === "KIT" || ficha.custoDesatualizado) && (
-            <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
-              {ficha.tipo === "KIT" && <Selo tom="neutro">Kit</Selo>}
-              {ficha.custoDesatualizado && (
-                <Selo
-                  tom="atencao"
-                  icone={<RefreshCw aria-hidden className="size-3.5" />}
-                >
-                  Custo desatualizado
-                </Selo>
-              )}
-            </span>
-          )}
-        </div>
-
-        <div className="shrink-0 text-right">
-          <Dinheiro centavos={ficha.precificacao.precoVenda} />
           <p
             className={cn(
-              "num mt-0.5 flex items-center justify-end gap-1 text-micro",
+              "num flex shrink-0 items-center gap-1 text-micro",
               noPrejuizo ? "text-negative" : "text-ink-muted",
             )}
           >
@@ -103,11 +90,27 @@ export function LinhaFicha({
           </p>
         </div>
 
-        <ChevronRight
-          aria-hidden
-          className="size-5 shrink-0 text-ink-subtle"
-          strokeWidth={1.75}
-        />
+        {temProducao && (
+          <div className="mt-2 flex flex-wrap items-start gap-x-5 gap-y-1">
+            {pronto && (
+              <FraseDoPronto
+                projecao={pronto.pronto}
+                unidade={ficha.unidadeRendimento}
+                reservado={pronto.reservado}
+              />
+            )}
+            {capacidade && <FraseDaCapacidade capacidade={capacidade} />}
+            {ficha.tipo === "KIT" && <Selo tom="neutro">Kit</Selo>}
+            {ficha.custoDesatualizado && (
+              <Selo
+                tom="atencao"
+                icone={<RefreshCw aria-hidden className="size-3.5" />}
+              >
+                Custo desatualizado
+              </Selo>
+            )}
+          </div>
+        )}
       </Link>
     </li>
   );

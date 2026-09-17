@@ -111,7 +111,7 @@ export const MENSAGEM_FALHA: Record<FalhaNota, string> = {
   "sem-arquivo": "Não deu para ler esse arquivo. Escolha uma foto ou um PDF.",
   "arquivo-grande":
     "Esse arquivo é grande demais, mesmo depois de reduzido. Fotografe a nota mais de perto, em partes.",
-  "linhas-demais": `Esta nota tem mais de ${LIMITE_LINHAS} linhas. Fotografe em partes e leia uma parte de cada vez — o que já foi cadastrado não se perde.`,
+  "linhas-demais": `Esta nota tem mais de ${LIMITE_LINHAS} linhas. Fotografe em partes e leia uma parte de cada vez: o que já foi cadastrado não se perde.`,
   "fora-de-forma":
     "A leitura voltou embaralhada. Tente de novo com a nota mais plana e a foto mais reta.",
   "sem-resposta":

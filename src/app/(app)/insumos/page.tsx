@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { orderBy, query, where } from "firebase/firestore";
 import { useMemo, useState } from "react";
 import { BotaoBiblioteca } from "@/components/biblioteca/BotaoBiblioteca";
@@ -13,8 +13,11 @@ import {
   EntradaLeitura,
 } from "@/components/notas/EntradaLeitura";
 import { Botao } from "@/components/ui/Botao";
+import { BotaoFlutuante } from "@/components/ui/BotaoFlutuante";
+import { CampoBusca } from "@/components/ui/CampoBusca";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
+import { Pilulas, type OpcaoPilula } from "@/components/ui/Pilulas";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { dataISODe } from "@/lib/domain/datas";
 import { colInsumos } from "@/lib/firebase/colecoes";
@@ -22,9 +25,8 @@ import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
 import { useColecao } from "@/lib/hooks/useColecao";
 import type { CategoriaInsumo, Fornada, Insumo } from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
-import { cn } from "@/lib/utils/cn";
 
-const FILTROS: { valor: CategoriaInsumo | "TODOS"; rotulo: string }[] = [
+const FILTROS: OpcaoPilula<CategoriaInsumo | "TODOS">[] = [
   { valor: "TODOS", rotulo: "Todos" },
   { valor: "INGREDIENTE", rotulo: "Ingredientes" },
   { valor: "EMBALAGEM", rotulo: "Embalagens" },
@@ -117,44 +119,19 @@ export default function PaginaInsumos() {
               é a faixa que tem a largura da página. */}
           <AvisoLeituraSemRede />
 
-          <div className="relative">
-            <Search
-              aria-hidden
-              className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-ink-subtle"
-              strokeWidth={1.75}
-            />
-            <input
-              type="search"
-              value={busca}
-              onChange={(evento) => setBusca(evento.target.value)}
-              placeholder="Buscar material"
-              aria-label="Buscar material"
-              className="h-12 w-full rounded-md border border-line-strong bg-surface pl-10 pr-3 text-body text-ink placeholder:text-ink-subtle"
-            />
-          </div>
+          <CampoBusca
+            rotulo="Buscar material"
+            placeholder="Buscar material"
+            value={busca}
+            onChange={(evento) => setBusca(evento.target.value)}
+          />
 
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:px-0">
-            {FILTROS.map((opcao) => {
-              const ativo = filtro === opcao.valor;
-              return (
-                <button
-                  key={opcao.valor}
-                  type="button"
-                  onClick={() => setFiltro(opcao.valor)}
-                  aria-pressed={ativo}
-                  className={cn(
-                    "h-11 shrink-0 rounded-full px-4 text-label font-medium",
-                    "transition-colors duration-150 ease-quart",
-                    ativo
-                      ? "bg-wine-700 text-on-wine"
-                      : "border border-line-strong text-ink-muted hover:bg-sunken",
-                  )}
-                >
-                  {opcao.rotulo}
-                </button>
-              );
-            })}
-          </div>
+          <Pilulas
+            rotulo="Categoria"
+            opcoes={FILTROS}
+            valor={filtro}
+            aoMudar={setFiltro}
+          />
         </div>
       </CabecalhoPagina>
 
@@ -224,15 +201,7 @@ export default function PaginaInsumos() {
         )}
       </div>
 
-      {/* Ação primária ao alcance do polegar, acima da navegação inferior. */}
-      <button
-        type="button"
-        onClick={abrirNovo}
-        aria-label="Novo material"
-        className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] right-4 z-30 flex size-14 items-center justify-center rounded-full bg-wine-700 text-on-wine shadow-overlay transition-colors duration-150 ease-quart hover:bg-wine-600 active:bg-wine-800 apertado:hidden lg:hidden"
-      >
-        <Plus aria-hidden className="size-6" strokeWidth={2} />
-      </button>
+      <BotaoFlutuante rotulo="Novo material" onClick={abrirNovo} />
 
       <FormularioInsumo
         aberto={painelAberto}

@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Archive,
-  ArrowLeft,
   CalendarDays,
   Check,
   ClipboardList,
@@ -29,8 +28,9 @@ import {
 import { Bloco } from "@/components/ui/Bloco";
 import { Botao } from "@/components/ui/Botao";
 import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
-import { Campo, EnvelopeCampo, Seletor } from "@/components/ui/Campo";
+import { AreaTexto, Campo, Seletor } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
+import { LinkVoltar } from "@/components/ui/LinkVoltar";
 import { Selo } from "@/components/ui/Selo";
 import { EscolhaDoCombo } from "./EscolhaDoCombo";
 import { LinhaItemPedido } from "./LinhaItemPedido";
@@ -289,7 +289,6 @@ export function FormularioPedido({
   pendente: boolean;
 }) {
   const router = useRouter();
-  const idObservacoes = useId();
 
   const [valores, setValores] = useState<ValoresPedido>(() =>
     valoresIniciais(pedido, configuracao, hoje),
@@ -878,13 +877,9 @@ export function FormularioPedido({
     <>
       {/* Mesmo encolhimento do editor de ficha, e pelo mesmo motivo. */}
       <header className="sticky top-0 z-30 -mx-4 border-b border-line bg-canvas px-4 py-3 apertado:py-2 lg:-mx-8 lg:px-8 lg:pb-4 lg:pt-6">
-        <Link
-          href="/pedidos"
-          className="toque -ml-2 inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-ink-muted transition-colors duration-150 ease-quart hover:text-ink apertado:hidden"
-        >
-          <ArrowLeft aria-hidden className="size-4" strokeWidth={1.75} />
+        <LinkVoltar href="/pedidos" className="apertado:hidden">
           Pedidos
-        </Link>
+        </LinkVoltar>
 
         <div className="mt-1 flex items-center justify-between gap-4 apertado:mt-0">
           <div className="min-w-0">
@@ -1077,7 +1072,7 @@ export function FormularioPedido({
                       >
                         <Check
                           aria-hidden
-                          className="size-4 text-wine-700 dark:text-wine-300"
+                          className="size-4 text-wine-ink"
                           strokeWidth={2}
                         />
                         {candidata.nome}
@@ -1298,7 +1293,7 @@ export function FormularioPedido({
               />
               <Campo
                 rotulo="Endereço"
-                placeholder="Rua das Acácias, 120 — apto 42"
+                placeholder="Rua das Acácias, 120, apto 42"
                 value={valores.endereco}
                 onChange={(evento) => definir("endereco", evento.target.value)}
               />
@@ -1350,7 +1345,7 @@ export function FormularioPedido({
               Você ainda não cadastrou formas de pagamento.{" "}
               <Link
                 href="/configuracao"
-                className="font-medium text-wine-700 underline underline-offset-2 dark:text-wine-300"
+                className="font-medium text-wine-ink underline underline-offset-2"
               >
                 Cadastrar agora
               </Link>
@@ -1397,16 +1392,12 @@ export function FormularioPedido({
           titulo="Observações"
           descricao="O que você vai querer lembrar na hora de produzir e de embalar."
         >
-          <EnvelopeCampo id={idObservacoes} rotulo="Sobre este pedido">
-            <textarea
-              id={idObservacoes}
-              rows={3}
-              value={valores.observacoes}
-              placeholder="Sem nozes. Laço vinho. Entregar depois das 18h."
-              onChange={(evento) => definir("observacoes", evento.target.value)}
-              className="w-full rounded-md border border-line-strong bg-surface px-3 py-2.5 text-body text-ink transition-colors duration-150 ease-quart placeholder:text-ink-subtle"
-            />
-          </EnvelopeCampo>
+          <AreaTexto
+            rotulo="Sobre este pedido"
+            value={valores.observacoes}
+            placeholder="Sem nozes. Laço vinho. Entregar depois das 18h."
+            onChange={(evento) => definir("observacoes", evento.target.value)}
+          />
         </Bloco>
 
         {falha && (
@@ -1510,7 +1501,7 @@ function Escolha({
       className={cn(
         "rounded-md border p-3 text-left transition-colors duration-150 ease-quart",
         ativo
-          ? "border-wine-700 bg-wine-100"
+          ? "border-wine-ink bg-wine-100"
           : "border-line-strong hover:bg-sunken",
       )}
     >
@@ -1518,7 +1509,7 @@ function Escolha({
         {ativo ? (
           <Check
             aria-hidden
-            className="size-4 shrink-0 text-wine-700 dark:text-wine-300"
+            className="size-4 shrink-0 text-wine-ink"
             strokeWidth={2}
           />
         ) : (

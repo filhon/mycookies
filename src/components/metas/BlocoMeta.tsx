@@ -129,7 +129,7 @@ export function BlocoMeta({
           <button
             type="button"
             onClick={aoAbrir}
-            className="toque -mr-2 -mt-2 flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-wine-700 transition-colors duration-150 ease-quart hover:bg-wine-100 dark:text-wine-300"
+            className="toque -mr-2 -mt-2 flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-wine-ink transition-colors duration-150 ease-quart hover:bg-wine-100"
           >
             <Pencil aria-hidden className="size-4" strokeWidth={1.75} />
             Editar
@@ -267,7 +267,7 @@ function Barra({ progresso, batida }: { progresso: number; batida: boolean }) {
         style={{ width: `${Math.min(100, Math.max(0, progresso))}%` }}
         className={cn(
           "h-full rounded-full transition-[width] duration-260 ease-quart",
-          batida ? "bg-gold-500" : "bg-wine-700 dark:bg-wine-300",
+          batida ? "bg-gold-500" : "bg-wine-ink",
         )}
       />
     </div>
@@ -293,7 +293,7 @@ function Ritmo({
 }) {
   if (batida) {
     return (
-      <p className="mt-3 flex items-center gap-2 text-label font-medium text-gold-600 dark:text-gold-500">
+      <p className="mt-3 flex items-center gap-2 text-label font-medium text-gold-ink">
         <Check aria-hidden className="size-4 shrink-0" strokeWidth={2.25} />
         Meta batida
       </p>

@@ -89,8 +89,3 @@ export function BlocoConfiguracao({
     </section>
   );
 }
-
-/** Número dentro da frase de consequência. O dado tem peso; a frase não. */
-export function Realce({ children }: { children: ReactNode }) {
-  return <strong className="num font-semibold text-ink">{children}</strong>;
-}

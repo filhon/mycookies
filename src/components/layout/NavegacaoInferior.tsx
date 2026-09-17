@@ -29,9 +29,7 @@ export function NavegacaoInferior() {
                 className={cn(
                   "flex min-h-14 flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2",
                   "transition-colors duration-150 ease-quart",
-                  ativo
-                    ? "text-wine-700 dark:text-wine-300"
-                    : "text-ink-subtle",
+                  ativo ? "text-wine-ink" : "text-ink-subtle",
                 )}
               >
                 <span

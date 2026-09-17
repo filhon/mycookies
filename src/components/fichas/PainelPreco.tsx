@@ -4,6 +4,7 @@ import { CornerDownRight, TriangleAlert, Wand2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Dinheiro } from "@/components/ui/Dinheiro";
+import { Realce } from "@/components/ui/Realce";
 import { RodapeFixo } from "@/components/ui/RodapeFixo";
 import type { DerivadosFicha } from "@/lib/domain/custoFicha";
 import {
@@ -196,7 +197,7 @@ export function PainelPreco({
                 <button
                   type="button"
                   onClick={aoUsarSugerido}
-                  className="toque -my-2 inline-flex items-center gap-1 rounded-md px-2 text-label font-medium text-wine-700 transition-colors duration-150 ease-quart hover:bg-wine-100 dark:text-wine-300"
+                  className="toque -my-2 inline-flex items-center gap-1 rounded-md px-2 text-label font-medium text-wine-ink transition-colors duration-150 ease-quart hover:bg-wine-100"
                 >
                   <Wand2 aria-hidden className="size-4" strokeWidth={1.75} />
                   Usar
@@ -234,9 +235,4 @@ export function PainelPreco({
       </div>
     </RodapeFixo>
   );
-}
-
-/** Número dentro da frase. O dado tem peso; a frase não. */
-function Realce({ children }: { children: ReactNode }) {
-  return <strong className="num font-semibold text-ink">{children}</strong>;
 }

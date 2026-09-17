@@ -1,8 +1,8 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 import { Botao } from "@/components/ui/Botao";
-import { Campo, EnvelopeCampo } from "@/components/ui/Campo";
+import { AreaTexto, Campo } from "@/components/ui/Campo";
 import { Painel } from "@/components/ui/Painel";
 import { errosPorCampo, esquemaCliente } from "@/lib/domain/schemas";
 import {
@@ -61,8 +61,6 @@ export function PainelCliente({
   /** Muda a cada abertura, para o painel não reabrir com o que ficou. */
   chave: string;
 }) {
-  const idObservacoes = useId();
-
   const [estado, setEstado] = useState<EstadoCliente>(() =>
     inicial(cliente, nomeSugerido),
   );
@@ -185,24 +183,17 @@ export function PainelCliente({
           rotulo="Endereço"
           value={estado.endereco}
           erro={erros.endereco}
-          placeholder="Rua das Acácias, 120 — apto 42"
+          placeholder="Rua das Acácias, 120, apto 42"
           dica="O endereço da entrega vem para o pedido quando você escolher entregar."
           onChange={(evento) => definir("endereco", evento.target.value)}
         />
 
-        <EnvelopeCampo
-          id={idObservacoes}
+        <AreaTexto
           rotulo="Observações"
           dica="Alergia, preferência, o laço que ela gosta. O detalhe que salva a próxima encomenda."
-        >
-          <textarea
-            id={idObservacoes}
-            rows={3}
-            value={estado.observacoes}
-            onChange={(evento) => definir("observacoes", evento.target.value)}
-            className="w-full rounded-md border border-line-strong bg-surface px-3 py-2.5 text-body text-ink transition-colors duration-150 ease-quart placeholder:text-ink-subtle"
-          />
-        </EnvelopeCampo>
+          value={estado.observacoes}
+          onChange={(evento) => definir("observacoes", evento.target.value)}
+        />
 
         {falha && (
           <p role="alert" className="text-label text-negative">

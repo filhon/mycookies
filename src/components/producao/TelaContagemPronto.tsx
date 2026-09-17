@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { orderBy, query, where } from "firebase/firestore";
-import { ArrowLeft, Check, CookingPot, Plus } from "lucide-react";
+import { Check, CookingPot, Plus } from "lucide-react";
 import { RodapeContagem } from "@/components/estoque/RodapeContagem";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { BASE_CONTROLE } from "@/components/ui/Campo";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
+import { LinkVoltar } from "@/components/ui/LinkVoltar";
+import { Pilulas } from "@/components/ui/Pilulas";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
   ROTULO_UNIDADE_RENDIMENTO,
@@ -150,13 +152,7 @@ export function TelaContagemPronto() {
   return (
     <>
       <header className="sticky top-0 z-30 -mx-4 border-b border-line bg-canvas px-4 pb-3 pt-3 lg:-mx-8 lg:px-8 lg:pb-4 lg:pt-6">
-        <Link
-          href="/fichas"
-          className="toque -ml-2 inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-ink-muted transition-colors duration-150 ease-quart hover:text-ink"
-        >
-          <ArrowLeft aria-hidden className="size-4" strokeWidth={1.75} />
-          Produtos
-        </Link>
+        <LinkVoltar href="/fichas">Produtos</LinkVoltar>
 
         <div className="mt-1 flex items-center justify-between gap-4">
           <h1 className="min-w-0 truncate font-display text-title font-semibold text-ink lg:text-display">
@@ -189,33 +185,17 @@ export function TelaContagemPronto() {
       )}
 
       {semente && semeada && (
-        <div className="mt-4 flex gap-2" role="group" aria-label="O que contar">
-          {(
-            [
-              { valor: true, rotulo: "Só este produto", quantos: 1 },
-              { valor: false, rotulo: "Todos", quantos: fichas.length },
-            ] as const
-          ).map((opcao) => {
-            const ativo = soEsta === opcao.valor;
-            return (
-              <button
-                key={String(opcao.valor)}
-                type="button"
-                onClick={() => setSoEsta(opcao.valor)}
-                aria-pressed={ativo}
-                className={cn(
-                  "num h-11 shrink-0 rounded-full px-4 text-label font-medium",
-                  "transition-colors duration-150 ease-quart",
-                  ativo
-                    ? "bg-wine-700 text-on-wine"
-                    : "border border-line-strong text-ink-muted hover:bg-sunken",
-                )}
-              >
-                {opcao.rotulo} ({opcao.quantos})
-              </button>
-            );
-          })}
-        </div>
+        <Pilulas
+          className="mt-4"
+          rotulo="O que contar"
+          numerico
+          opcoes={[
+            { valor: true, rotulo: "Só este produto (1)" },
+            { valor: false, rotulo: `Todos (${fichas.length})` },
+          ]}
+          valor={soEsta}
+          aoMudar={setSoEsta}
+        />
       )}
 
       <div className="mt-4 pb-52 lg:pb-44">

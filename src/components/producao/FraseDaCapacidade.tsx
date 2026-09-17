@@ -292,7 +292,7 @@ export function FraseCabeNoPedido({
         <Separador />
         <Link
           href="/insumos/contagem"
-          className="font-medium text-wine-700 underline underline-offset-2 dark:text-wine-300"
+          className="font-medium text-wine-ink underline underline-offset-2"
         >
           Contar a despensa
         </Link>

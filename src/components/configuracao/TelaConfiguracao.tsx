@@ -22,8 +22,9 @@ import { CampoImagem } from "@/components/ui/CampoImagem";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
+import { Realce } from "@/components/ui/Realce";
 import { RodapeFixo } from "@/components/ui/RodapeFixo";
-import { BlocoConfiguracao, Realce } from "./BlocoConfiguracao";
+import { BlocoConfiguracao } from "./BlocoConfiguracao";
 import { CustoPorHora } from "./CustoPorHora";
 import { FormularioFormaPagamento } from "./FormularioFormaPagamento";
 import { ListaFormasPagamento } from "./ListaFormasPagamento";
@@ -65,6 +66,9 @@ import { cn } from "@/lib/utils/cn";
 
 /** Preço de exemplo para mostrar o que a regra de arredondamento faz. */
 const PRECO_EXEMPLO = 1237;
+
+const DESCRICAO =
+  "Os custos que não aparecem no produto, mas saem do seu bolso. É daqui que sai o rateio de todo produto.";
 
 const REGRAS: RegraArredondamento[] = [
   "CENTAVO_90",
@@ -237,10 +241,9 @@ export function TelaConfiguracao() {
   if (!estado) {
     return (
       <>
-        <CabecalhoPagina
-          titulo="Configuração"
-          descricao="Os custos que não aparecem no produto, mas saem do seu bolso."
-        />
+        {/* A mesma frase da tela carregada: uma descrição mais curta aqui faz
+            o cabeçalho mudar de altura quando os dados chegam. */}
+        <CabecalhoPagina titulo="Configuração" descricao={DESCRICAO} />
         <div role="status" aria-label="Carregando" className="mt-4 space-y-4">
           {[0, 1, 2].map((indice) => (
             <Esqueleto key={indice} className="h-52 rounded-lg" />
@@ -342,7 +345,7 @@ export function TelaConfiguracao() {
     <>
       <CabecalhoPagina
         titulo="Configuração"
-        descricao="Os custos que não aparecem no produto, mas saem do seu bolso. É daqui que sai o rateio de todo produto."
+        descricao={DESCRICAO}
         acao={
           <Botao
             variante="primaria"
@@ -596,7 +599,7 @@ export function TelaConfiguracao() {
                     className={cn(
                       "rounded-md border p-3 text-left transition-colors duration-150 ease-quart",
                       ativo
-                        ? "border-wine-700 bg-wine-100"
+                        ? "border-wine-ink bg-wine-100"
                         : "border-line-strong hover:bg-sunken",
                     )}
                   >
@@ -605,7 +608,7 @@ export function TelaConfiguracao() {
                       {ativo && (
                         <Check
                           aria-hidden
-                          className="size-4 shrink-0 text-wine-700 dark:text-wine-300"
+                          className="size-4 shrink-0 text-wine-ink"
                           strokeWidth={2}
                         />
                       )}

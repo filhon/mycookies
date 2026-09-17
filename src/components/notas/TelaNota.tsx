@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { orderBy, query, where } from "firebase/firestore";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
-  ArrowLeft,
   Check,
   CircleAlert,
   ClipboardList,
@@ -19,6 +18,7 @@ import { Bloco } from "@/components/ui/Bloco";
 import { Botao } from "@/components/ui/Botao";
 import { Campo } from "@/components/ui/Campo";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
+import { LinkVoltar } from "@/components/ui/LinkVoltar";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { BlocoCaixa } from "./BlocoCaixa";
 import {
@@ -339,7 +339,7 @@ export function TelaNota() {
       setEtapa("pronto");
     } catch {
       setErroAoGravar(
-        "Não deu para cadastrar agora. Nada foi gravado pela metade — tente de novo em instantes.",
+        "Não deu para cadastrar agora. Nada foi gravado pela metade: tente de novo em instantes.",
       );
     } finally {
       setSalvando(false);
@@ -349,13 +349,7 @@ export function TelaNota() {
   return (
     <>
       <header className="sticky top-0 z-30 -mx-4 border-b border-line bg-canvas px-4 pb-3 pt-3 lg:-mx-8 lg:px-8 lg:pb-4 lg:pt-6">
-        <Link
-          href="/insumos"
-          className="toque -ml-2 inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-ink-muted transition-colors duration-150 ease-quart hover:text-ink"
-        >
-          <ArrowLeft aria-hidden className="size-4" strokeWidth={1.75} />
-          Materiais
-        </Link>
+        <LinkVoltar href="/insumos">Materiais</LinkVoltar>
 
         <div className="mt-1 flex items-center justify-between gap-4">
           <h1 className="min-w-0 truncate font-display text-title font-semibold text-ink lg:text-display">
@@ -618,10 +612,7 @@ function Aviso({ children }: { children: ReactNode }) {
 function Lendo() {
   return (
     <div className="flex flex-col items-center rounded-lg border border-line bg-surface px-6 py-16 text-center">
-      <Cookie
-        gotas={false}
-        className="size-12 animate-pulse text-wine-700 dark:text-wine-300"
-      />
+      <Cookie gotas={false} className="size-12 animate-pulse text-wine-ink" />
       <p
         aria-live="polite"
         className="mt-5 font-display text-title font-semibold text-ink"
@@ -629,7 +620,7 @@ function Lendo() {
         Lendo a nota
       </p>
       <p className="mt-2 max-w-[42ch] text-body text-ink-muted">
-        Isso leva alguns segundos. Não feche a tela — nada é cadastrado antes de
+        Isso leva alguns segundos. Não feche a tela: nada é cadastrado antes de
         você conferir.
       </p>
     </div>
@@ -770,7 +761,7 @@ function Pronto({
         {aoGuardar && (
           <p className="mt-5 max-w-[46ch] text-label text-ink-muted">
             O que você comprou ainda não entrou na despensa. Guardar abre a
-            contagem já preenchida com o que a nota trouxe — você confere na
+            contagem já preenchida com o que a nota trouxe. Você confere na
             prateleira e salva.
           </p>
         )}

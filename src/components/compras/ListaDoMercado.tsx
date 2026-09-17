@@ -19,6 +19,7 @@ import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { AvisoLeituraSemRede } from "@/components/notas/EntradaLeitura";
 import { Botao } from "@/components/ui/Botao";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
+import { Pilulas } from "@/components/ui/Pilulas";
 import { LinhaCompra, LinhaJaTem } from "./LinhaCompra";
 import { RodapeCompras } from "./RodapeCompras";
 import { agruparPorCorredor, ROTULO_CORREDOR } from "@/lib/domain/corredores";
@@ -333,7 +334,7 @@ export function ListaDoMercado({
               {rotuloDia(lista.periodoFim)}
             </span>
             . Toque em <strong className="font-semibold">Refazer</strong> para
-            incluir as de até {rotuloDia(periodoFim)} — o que você já marcou
+            incluir as de até {rotuloDia(periodoFim)}. O que você já marcou
             continua marcado.
           </p>
         )}
@@ -350,10 +351,10 @@ export function ListaDoMercado({
             contou" seria falsa nesses dois casos. */}
         {desatualizada && (
           <p className="rounded-lg border border-line bg-sunken px-4 py-3 text-label text-ink-muted">
-            A conta mudou depois que esta lista foi montada — uma contagem da
+            A conta mudou depois que esta lista foi montada: uma contagem da
             despensa, um pedido novo, outro tamanho de pacote. Toque em{" "}
             <strong className="font-semibold text-ink">Refazer</strong> para
-            descontar o que você tem agora — o que já está marcado continua
+            descontar o que você tem agora. O que já está marcado continua
             marcado.
           </p>
         )}
@@ -612,28 +613,16 @@ function Periodo({
 }) {
   return (
     <div>
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:px-0">
-        {HORIZONTES.map((opcao) => {
-          const ativo = dias === opcao;
-          return (
-            <button
-              key={opcao}
-              type="button"
-              onClick={() => aoMudar(opcao)}
-              aria-pressed={ativo}
-              className={cn(
-                "h-11 shrink-0 rounded-full px-4 text-label font-medium",
-                "transition-colors duration-150 ease-quart",
-                ativo
-                  ? "bg-wine-700 text-on-wine"
-                  : "border border-line-strong text-ink-muted hover:bg-sunken",
-              )}
-            >
-              {opcao} dias
-            </button>
-          );
-        })}
-      </div>
+      <Pilulas
+        rotulo="Período"
+        numerico
+        opcoes={HORIZONTES.map((opcao) => ({
+          valor: opcao,
+          rotulo: `${opcao} dias`,
+        }))}
+        valor={dias}
+        aoMudar={aoMudar}
+      />
 
       <div className="mt-2 flex items-center justify-between gap-3">
         <p className="num flex items-center gap-2 text-label text-ink-muted">

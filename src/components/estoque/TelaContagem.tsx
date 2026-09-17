@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { orderBy, query, where } from "firebase/firestore";
-import { ArrowLeft, Plus, ShoppingBasket } from "lucide-react";
+import { Plus, ShoppingBasket } from "lucide-react";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
+import { LinkVoltar } from "@/components/ui/LinkVoltar";
+import { Pilulas } from "@/components/ui/Pilulas";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { LinhaContagem } from "./LinhaContagem";
 import { RodapeContagem } from "./RodapeContagem";
@@ -30,7 +32,6 @@ import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
 import { useColecao } from "@/lib/hooks/useColecao";
 import type { Fornada, Insumo } from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
-import { cn } from "@/lib/utils/cn";
 
 /**
  * Sem compra atrás dela, a tela nasce com todos os campos vazios. O mapa vazio
@@ -194,13 +195,7 @@ export function TelaContagem() {
   return (
     <>
       <header className="sticky top-0 z-30 -mx-4 border-b border-line bg-canvas px-4 pb-3 pt-3 lg:-mx-8 lg:px-8 lg:pb-4 lg:pt-6">
-        <Link
-          href="/compras"
-          className="toque -ml-2 inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-ink-muted transition-colors duration-150 ease-quart hover:text-ink"
-        >
-          <ArrowLeft aria-hidden className="size-4" strokeWidth={1.75} />
-          Compras
-        </Link>
+        <LinkVoltar href="/compras">Compras</LinkVoltar>
 
         <div className="mt-1 flex items-center justify-between gap-4">
           <h1 className="min-w-0 truncate font-display text-title font-semibold text-ink lg:text-display">
@@ -231,8 +226,8 @@ export function TelaContagem() {
           <span className="max-w-[62ch]">
             Os campos já vêm com o que{" "}
             {semente.origem === "NOTA" ? "a nota" : "a compra"} trouxe, somado à
-            sua última contagem. Confira na prateleira e corrija o que não bater
-            — nada é gravado antes de você salvar.
+            sua última contagem. Confira na prateleira e corrija o que não
+            bater: nada é gravado antes de você salvar.
           </span>
         </p>
       )}
@@ -240,41 +235,20 @@ export function TelaContagem() {
       {/* O recorte: só as linhas que a compra trouxe, ou a despensa inteira.
           Pílulas como as de período em `/compras`, porque é a mesma escolha. */}
       {semente && (
-        <div className="mt-4 flex gap-2" role="group" aria-label="O que contar">
-          {(
-            [
-              {
-                valor: true,
-                rotulo: `Só o que ${semente.origem === "NOTA" ? "a nota" : "a compra"} trouxe`,
-                quantos: semente.entradas.size,
-              },
-              {
-                valor: false,
-                rotulo: "A despensa inteira",
-                quantos: todas.length,
-              },
-            ] as const
-          ).map((opcao) => {
-            const ativo = soDaCompra === opcao.valor;
-            return (
-              <button
-                key={String(opcao.valor)}
-                type="button"
-                onClick={() => setSoDaCompra(opcao.valor)}
-                aria-pressed={ativo}
-                className={cn(
-                  "num h-11 shrink-0 rounded-full px-4 text-label font-medium",
-                  "transition-colors duration-150 ease-quart",
-                  ativo
-                    ? "bg-wine-700 text-on-wine"
-                    : "border border-line-strong text-ink-muted hover:bg-sunken",
-                )}
-              >
-                {opcao.rotulo} ({opcao.quantos})
-              </button>
-            );
-          })}
-        </div>
+        <Pilulas
+          className="mt-4"
+          rotulo="O que contar"
+          numerico
+          opcoes={[
+            {
+              valor: true,
+              rotulo: `Só o que ${semente.origem === "NOTA" ? "a nota" : "a compra"} trouxe (${semente.entradas.size})`,
+            },
+            { valor: false, rotulo: `A despensa inteira (${todas.length})` },
+          ]}
+          valor={soDaCompra}
+          aoMudar={setSoDaCompra}
+        />
       )}
 
       <div className="mt-4 space-y-4 pb-52 lg:pb-44">

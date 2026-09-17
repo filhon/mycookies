@@ -27,7 +27,7 @@ export function Trilha({
           key={indice}
           className={cn(
             "h-1.5 flex-1 rounded-full transition-colors duration-150 ease-quart",
-            indice < feitos ? "bg-wine-700 dark:bg-wine-300" : "bg-line",
+            indice < feitos ? "bg-wine-ink" : "bg-line",
           )}
         />
       ))}

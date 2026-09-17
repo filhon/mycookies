@@ -48,7 +48,7 @@ export function QuandoNaoTemInternet() {
 
       <Fala icone={Download} titulo="A tela que você nunca abriu">
         O aplicativo guarda as telas por onde você já passou. Uma tela aberta
-        pela primeira vez sem sinal mostra um aviso no lugar do conteúdo — abra
+        pela primeira vez sem sinal mostra um aviso no lugar do conteúdo. Abra
         ela uma vez com internet, e ela passa a funcionar offline também.
       </Fala>
     </div>

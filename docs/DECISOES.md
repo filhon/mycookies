@@ -3809,3 +3809,51 @@ login que nunca teve uma, o script troca para `crypto.randomUUID()` sem imprimir
 uma linha, e só se o roteiro provar que é preciso. E o preâmbulo repetido entre
 `conceder-acesso.mjs` e `metricas.mjs` (credencial, `auth`, `db`) virou `scripts/admin.mjs`:
 vinte linhas em um lugar em vez de dois.
+
+## D120 · A marca como tinta tem nome: `wine-ink` e `gold-ink`
+
+**Status:** vigente · decidida em 2026-09-17, na passagem de polimento (`/impeccable polish`)
+
+**Contexto.** O vinho como tinta sobre a superfície (link, ícone de seleção, destino ativo,
+barra de progresso, borda da opção escolhida) precisa clarear no tema escuro, e o par
+`text-wine-700 dark:text-wine-300` estava escrito em 31 lugares de 23 arquivos. Em cinco deles
+a inversão tinha sido esquecida: a borda da opção escolhida (`border-wine-700`, L 0.36) sumia
+sobre o `wine-100` escuro (L 0.32) em quatro telas, e só o formulário de lançamento invertia.
+Um valor repetido à mão é um valor que uma das cópias erra.
+
+**Decisão.** Dois tokens novos em `globals.css`, com o mesmo arranjo de `--mc-focus` e
+`--mc-accent`: `--mc-wine-ink` (`wine-700` no claro, `wine-300` no escuro) e `--mc-gold-ink`
+(`gold-600` / `gold-500`), expostos como `wine-ink` e `gold-ink` no Tailwind. A `.folha` do
+orçamento fixa os dois no valor claro, porque papel não tem modo noturno (`#d106`). Nenhuma
+classe `dark:` sobrou em `src/`, e a regra passa a ser: vinho como **tinta** é `wine-ink`; vinho
+como **fundo** (botão primário, barra lateral, pílula ativa) continua `wine-700` e `wine-900`
+nos dois temas, porque é o cromo que fica constante e a tinta que inverte.
+
+**Consequência.** `DESIGN.md` documenta os dois na tabela de superfícies. Quem precisar de vinho
+com opacidade por tema (a marca d'água do estado vazio) escreve `text-wine-ink/8
+dark:text-wine-ink/10`: a única variação legítima de tema que sobrou é a de opacidade, nunca a
+de matiz.
+
+## D121 · Seis primitivos que já existiam sem nome
+
+**Status:** vigente · decidida em 2026-09-17, na passagem de polimento (`/impeccable polish`)
+
+**Contexto.** A passagem de polimento contra o `DESIGN.md` encontrou o mesmo trecho de interface
+copiado entre telas: as pílulas de filtro em seis (`h-11 rounded-full ...`), o botão flutuante
+em quatro, o campo de busca com a lupa em três, o link de voltar do cabeçalho em cinco, o
+`<textarea>` em cinco (nenhum com estado de erro ou de desabilitado, um só com `aria-invalid`),
+e `Realce` (o `<strong className="num font-semibold text-ink">`) definido duas vezes. Cada cópia
+divergia um pouco: as pílulas da contagem tinham `num`, as outras não; a linha de forma de
+pagamento não tinha `active:`; o botão flutuante era `<button>` numa tela e `<Link>` nas outras.
+
+**Decisão.** Cada um virou um primitivo em `src/components/ui/`: `Pilulas`, `BotaoFlutuante`,
+`CampoBusca`, `LinkVoltar`, `AreaTexto` (dentro de `Campo.tsx`, com o mesmo `BASE_CONTROLE` e o
+mesmo envelope de rótulo, dica e erro dos irmãos) e `Realce`. `EnvelopeCampo` deixou de ser
+exportado: o único uso era montar o `<textarea>` à mão. Nenhum comportamento mudou de propósito;
+o que mudou por tabela foi para o lado da regra do `DESIGN.md` ("todo componente interativo
+entrega default, hover, focus-visible, active, disabled, loading, error").
+
+**Consequência.** A próxima tela que precisar de filtro, busca ou campo longo não escreve
+classe: chama o primitivo. O cabeçalho das telas fora do menu (as duas contagens, a nota, os
+dois editores) continua montado à mão, porque cada um varia no que fica à direita do título e
+no que some com o teclado aberto (`apertado:`); só o link de voltar era igual, e é o que saiu.

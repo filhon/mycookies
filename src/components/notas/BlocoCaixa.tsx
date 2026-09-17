@@ -62,7 +62,7 @@ export function BlocoCaixa({
             <strong className="num font-semibold">
               {formatarMoeda(duplicado.valor)}
             </strong>
-            . Os materiais podem ser cadastrados de novo à vontade — atualizar
+            . Os materiais podem ser cadastrados de novo à vontade: atualizar
             preço não repete nada.
           </span>
         </p>

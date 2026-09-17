@@ -7,7 +7,7 @@ import { limit, orderBy, query, where } from "firebase/firestore";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
-import { Selo } from "@/components/ui/Selo";
+import { Marcador } from "@/components/ui/Selo";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { ID_PEDIDO_NOVO } from "./EditorPedido";
 import { SeloStatus } from "./SeloStatus";
@@ -149,15 +149,20 @@ function CartaoDaAgenda({ pedido, hoje }: { pedido: Pedido; hoje: DataISO }) {
         <Dinheiro centavos={pedido.total} />
       </div>
 
-      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+      {/* Mesma regra da lista de pedidos: uma pílula, o resto em marcador. */}
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
         <SeloStatus status={pedido.status} />
         {pedido.dataEntregaISO !== hoje && (
-          <Selo tom="neutro">{rotuloAgenda(pedido.dataEntregaISO, hoje)}</Selo>
+          <Marcador>{rotuloAgenda(pedido.dataEntregaISO, hoje)}</Marcador>
         )}
         {pedido.entrega.tipo === "ENTREGA" && (
-          <Selo tom="neutro" icone={<Truck aria-hidden className="size-3.5" />}>
+          <Marcador
+            icone={
+              <Truck aria-hidden className="size-3.5" strokeWidth={1.75} />
+            }
+          >
             Entrega
-          </Selo>
+          </Marcador>
         )}
       </div>
     </Link>

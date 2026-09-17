@@ -40,19 +40,33 @@ export function LinhaInsumo({
   const projecao = projecaoDoInsumo(fornadas, insumo, hoje);
   const comForno = projecao.fornadas > 0 && contagem.quantidade !== null;
 
+  // Três andares, como a linha da ficha: nome e custo em cima, a compra e a
+  // unidade no meio, e a despensa na largura inteira embaixo. Ao lado do custo,
+  // a despensa quebrava em três linhas num celular de 360px.
   return (
     <li>
       <button
         type="button"
         onClick={() => aoAbrir(insumo)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken"
+        className="block w-full px-4 py-3 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken"
       >
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-body font-medium text-ink">
+        <div className="flex items-center gap-3">
+          <p className="min-w-0 flex-1 truncate text-body font-medium text-ink">
             {insumo.nome}
           </p>
+          <p className="num shrink-0 text-body font-semibold text-ink">
+            {formatarCustoUnitario(insumo.custoUnidadeBaseCorrigido)}
+          </p>
+          <ChevronRight
+            aria-hidden
+            className="size-5 shrink-0 text-ink-subtle"
+            strokeWidth={1.75}
+          />
+        </div>
 
-          <p className="num mt-0.5 truncate text-label text-ink-muted">
+        {/* `pr-8` é a seta mais o vão: a unidade fica debaixo do custo. */}
+        <div className="mt-0.5 flex items-baseline gap-3 pr-8">
+          <p className="num min-w-0 flex-1 truncate text-label text-ink-muted">
             {formatarMoeda(insumo.precoCompra)}
             <span className="mx-1.5 text-ink-subtle">·</span>
             {formatarQuantidade(insumo.quantidadeBase, insumo.unidadeBase)}
@@ -63,18 +77,23 @@ export function LinhaInsumo({
               </>
             )}
           </p>
+          <p className="shrink-0 text-micro text-ink-muted">
+            por {insumo.unidadeBase}
+          </p>
+        </div>
 
+        <div className="mt-2 flex flex-wrap items-start gap-x-5 gap-y-1">
           {/* A despensa, e desde quando. Sem a idade o número é um palpite
-              antigo tratado como verdade — que é exatamente o que a lista de
+              antigo tratado como verdade, que é exatamente o que a lista de
               compras deixou de fazer. */}
-          <p className="num mt-0.5 truncate text-label text-ink-subtle">
+          <p className="num text-label text-ink-subtle">
             {contagem.anotado === null
               ? "nunca contada"
               : `${formatarQuantidade(contagem.anotado, insumo.unidadeBase)} na despensa · ${rotuloDeIdade(contagem)}`}
           </p>
 
           {comForno && (
-            <p className="num mt-0.5 text-label text-ink-subtle">
+            <p className="num text-label text-ink-subtle">
               {projecao.fornadas === 1
                 ? "1 fornada desde então"
                 : `${projecao.fornadas} fornadas desde então`}
@@ -84,33 +103,16 @@ export function LinhaInsumo({
             </p>
           )}
 
-          {(contagemVencida || temPrecoMedio(insumo)) && (
-            <p className="mt-1.5 flex flex-wrap gap-1.5">
-              {contagemVencida && (
-                <Selo
-                  tom="atencao"
-                  icone={<TriangleAlert aria-hidden className="size-3.5" />}
-                >
-                  Contagem vencida
-                </Selo>
-              )}
-              {temPrecoMedio(insumo) && <Selo tom="neutro">Preço médio</Selo>}
-            </p>
+          {contagemVencida && (
+            <Selo
+              tom="atencao"
+              icone={<TriangleAlert aria-hidden className="size-3.5" />}
+            >
+              Contagem vencida
+            </Selo>
           )}
+          {temPrecoMedio(insumo) && <Selo tom="neutro">Preço médio</Selo>}
         </div>
-
-        <div className="shrink-0 text-right">
-          <p className="num text-body font-semibold text-ink">
-            {formatarCustoUnitario(insumo.custoUnidadeBaseCorrigido)}
-          </p>
-          <p className="text-micro text-ink-muted">por {insumo.unidadeBase}</p>
-        </div>
-
-        <ChevronRight
-          aria-hidden
-          className="size-5 shrink-0 text-ink-subtle"
-          strokeWidth={1.75}
-        />
       </button>
     </li>
   );

@@ -1,7 +1,8 @@
 "use client";
 
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useId, useState } from "react";
+import { CampoBusca } from "./CampoBusca";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 
 export interface OpcaoBusca {
@@ -60,22 +61,14 @@ export function BuscaItem({
         {rotulo}
       </label>
 
-      <div className="relative mt-1.5">
-        <Search
-          aria-hidden
-          className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-ink-subtle"
-          strokeWidth={1.75}
-        />
-        <input
-          id={id}
-          type="search"
-          value={termo}
-          onChange={(evento) => setTermo(evento.target.value)}
-          placeholder={placeholder}
-          autoComplete="off"
-          className="h-12 w-full rounded-md border border-line-strong bg-surface pl-10 pr-3 text-body text-ink placeholder:text-ink-subtle"
-        />
-      </div>
+      <CampoBusca
+        id={id}
+        rotulo={rotulo}
+        className="mt-1.5"
+        value={termo}
+        onChange={(evento) => setTermo(evento.target.value)}
+        placeholder={placeholder}
+      />
 
       {chave && (
         <>
@@ -101,7 +94,7 @@ export function BuscaItem({
                   >
                     <Plus
                       aria-hidden
-                      className="size-5 shrink-0 text-wine-700 dark:text-wine-300"
+                      className="size-5 shrink-0 text-wine-ink"
                       strokeWidth={2}
                     />
                     <span className="min-w-0 flex-1">

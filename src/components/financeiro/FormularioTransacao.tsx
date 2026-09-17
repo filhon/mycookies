@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useId, useState } from "react";
 import { Archive, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { Botao } from "@/components/ui/Botao";
-import { Campo, EnvelopeCampo, Seletor } from "@/components/ui/Campo";
+import { AreaTexto, Campo, Seletor } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Painel } from "@/components/ui/Painel";
 import {
@@ -130,7 +130,6 @@ export function FormularioTransacao({
   chave: string;
 }) {
   const idRecorrente = useId();
-  const idObservacoes = useId();
 
   const [estado, setEstado] = useState<EstadoLancamento>(() =>
     transacao ? daTransacao(transacao) : novoLancamento(dataPadrao, formas),
@@ -290,7 +289,7 @@ export function FormularioTransacao({
                     "flex flex-col items-start gap-0.5 rounded-md border px-3 py-2.5 text-left",
                     "transition-colors duration-150 ease-quart",
                     ativo
-                      ? "border-wine-700 bg-wine-100 dark:border-wine-300"
+                      ? "border-wine-ink bg-wine-100"
                       : "border-line-strong hover:bg-sunken",
                   )}
                 >
@@ -392,7 +391,7 @@ export function FormularioTransacao({
                 Você ainda não cadastrou formas de pagamento.{" "}
                 <Link
                   href="/configuracao"
-                  className="font-medium text-wine-700 underline underline-offset-2 dark:text-wine-300"
+                  className="font-medium text-wine-ink underline underline-offset-2"
                 >
                   Cadastrar agora
                 </Link>
@@ -418,19 +417,12 @@ export function FormularioTransacao({
           </label>
         </div>
 
-        <EnvelopeCampo
-          id={idObservacoes}
+        <AreaTexto
           rotulo="Observações"
           dica="Opcional. O detalhe que você vai querer lembrar daqui a três meses."
-        >
-          <textarea
-            id={idObservacoes}
-            rows={3}
-            value={estado.observacoes}
-            onChange={(evento) => definir("observacoes", evento.target.value)}
-            className="w-full rounded-md border border-line-strong bg-surface px-3 py-2.5 text-body text-ink transition-colors duration-150 ease-quart placeholder:text-ink-subtle"
-          />
-        </EnvelopeCampo>
+          value={estado.observacoes}
+          onChange={(evento) => definir("observacoes", evento.target.value)}
+        />
 
         {falha && (
           <p role="alert" className="text-label text-negative">
@@ -443,7 +435,7 @@ export function FormularioTransacao({
             <div className="rounded-lg border border-negative/30 bg-negative-soft p-4">
               <p className="text-label text-ink">
                 Arquivar este lançamento? Ele sai do resultado do mês na hora,
-                mas continua guardado — nada é apagado de verdade no caixa.
+                mas continua guardado: nada é apagado de verdade no caixa.
               </p>
               <div className="mt-3 flex gap-2">
                 <Botao

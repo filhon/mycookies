@@ -45,6 +45,13 @@
 
   --mc-focus: var(--mc-wine-700);
 
+  /* Vinho e dourado como tinta sobre a superfície: link, ícone de seleção,
+     destino ativo, barra de progresso. Invertem no escuro como a papelaria
+     inverte, e são o que `text-wine-700 dark:text-wine-300` repetia em
+     trinta lugares antes de existir um nome. */
+  --mc-wine-ink: var(--mc-wine-700);
+  --mc-gold-ink: var(--mc-gold-600);
+
   /* Tinta dos controles que o navegador desenha sozinho: caixa de marcar,
      rádio e o dia escolhido no calendário nativo. Sem isto eles saem no azul
      do sistema, que não é cor da marca. */
@@ -82,6 +89,8 @@
 
     --mc-focus: var(--mc-wine-300);
     --mc-accent: var(--mc-wine-300);
+    --mc-wine-ink: var(--mc-wine-300);
+    --mc-gold-ink: var(--mc-gold-500);
 
     --mc-shadow-raised:
       0 1px 2px oklch(0 0 0 / 0.3), 0 4px 12px oklch(0 0 0 / 0.25);
@@ -101,10 +110,12 @@
   --color-wine-600: var(--mc-wine-600);
   --color-wine-300: var(--mc-wine-300);
   --color-wine-100: var(--mc-wine-100);
+  --color-wine-ink: var(--mc-wine-ink);
 
   --color-gold-600: var(--mc-gold-600);
   --color-gold-500: var(--mc-gold-500);
   --color-gold-100: var(--mc-gold-100);
+  --color-gold-ink: var(--mc-gold-ink);
 
   --color-on-wine: var(--mc-on-wine);
   --color-on-wine-muted: var(--mc-on-wine-muted);
@@ -216,6 +227,22 @@
   input[type="number"] {
     -moz-appearance: textfield;
   }
+
+  /**
+   * No dedo, nenhuma barra de rolagem: a rolagem é o gesto, e a barra só
+   * repete com ruído o que o conteúdo cortado na borda já diz. `pointer:
+   * coarse` é o mesmo sinal de `apertado`: é o toque que decide, e não a
+   * largura, para que uma janela estreita no desktop continue tendo a barra
+   * que o mouse precisa.
+   */
+  @media (pointer: coarse) {
+    * {
+      scrollbar-width: none;
+    }
+    *::-webkit-scrollbar {
+      display: none;
+    }
+  }
 }
 
 /* ============================================================
@@ -318,6 +345,8 @@
   --mc-ink: oklch(0.26 0.022 40);
   --mc-ink-muted: oklch(0.52 0.02 50);
   --mc-ink-subtle: oklch(0.64 0.018 55);
+  --mc-wine-ink: var(--mc-wine-700);
+  --mc-gold-ink: var(--mc-gold-600);
 
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;

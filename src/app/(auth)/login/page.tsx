@@ -104,10 +104,7 @@ export default function PaginaLogin() {
       <main className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
           <div className="mb-10 lg:hidden">
-            <Logotipo
-              tamanho="md"
-              className="text-wine-700 dark:text-wine-300"
-            />
+            <Logotipo tamanho="md" className="text-wine-ink" />
           </div>
 
           <h1 className="font-display text-title font-semibold text-ink">

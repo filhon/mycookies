@@ -119,7 +119,7 @@ export function OQueMaisTem() {
         passo do começo, e é de propósito. Ela mora no{" "}
         <Link
           href="/financeiro"
-          className="font-medium text-wine-700 underline decoration-line-strong underline-offset-4 hover:decoration-current dark:text-wine-300"
+          className="font-medium text-wine-ink underline decoration-line-strong underline-offset-4 hover:decoration-current"
         >
           Caixa
         </Link>

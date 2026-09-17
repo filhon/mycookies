@@ -48,10 +48,7 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
   if (carregando) {
     return (
       <div className="textura-papel flex min-h-dvh items-center justify-center bg-canvas">
-        <Cookie
-          className="size-12 animate-pulse text-wine-700 dark:text-wine-300"
-          gotas={false}
-        />
+        <Cookie className="size-12 animate-pulse text-wine-ink" gotas={false} />
         <span className="sr-only">Carregando</span>
       </div>
     );
