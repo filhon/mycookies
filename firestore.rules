@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// MyCookie's — acesso estritamente privado.
+// Rende — acesso estritamente privado.
 // Regra de ouro: NADA fora de contas/{contaId}. O dono do dado é o negócio,
 // não o login: quem entrou traz na claim o mapa das contas que pode abrir.
 service cloud.firestore {

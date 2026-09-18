@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { RefreshCw, ShieldAlert } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
-import { Cookie } from "@/components/marca/Marca";
+import { Simbolo } from "@/components/marca/Marca";
 import { Botao } from "@/components/ui/Botao";
 import { AVISO_SAIR_PENDENTE, useAuth } from "@/providers/AuthProvider";
 
@@ -48,10 +48,8 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
   if (carregando) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-canvas">
-        <Cookie
-          className="size-12 animate-pulse text-brand-ink"
-          gotas={false}
-        />
+        {/* Indicador de estado, e não decoração: o pulso é o que diz "carregando". */}
+        <Simbolo className="size-12 animate-pulse" />
         <span className="sr-only">Carregando</span>
       </div>
     );
@@ -64,11 +62,7 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
   if (!contaId) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-canvas px-8 text-center">
-        <ShieldAlert
-          aria-hidden
-          className="size-10 text-attention"
-          strokeWidth={1.75}
-        />
+        <Simbolo className="size-16" />
         <h1 className="font-display text-title font-semibold text-ink">
           Este login ainda não abre nenhuma conta
         </h1>

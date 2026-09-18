@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Logotipo, SLOGAN } from "@/components/marca/Marca";
 import { rotuloDataCompleta, rotuloDiaPorExtenso } from "@/lib/domain/datas";
 import { formatarValor } from "@/lib/domain/money";
 import {
@@ -11,15 +10,20 @@ import { quantidadeEmTexto } from "@/lib/domain/pedido";
 import type { Centavos } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
+// ponytail: constante até a C gravar ConfiguracaoGeral.frase (#d127)
+const FRASE_RODAPE = "Feito com amor em cada mordida.";
+
 /**
  * A folha A4 do orçamento. Só apresentação: nenhum hook, nenhuma conta.
  *
- * Restrained no papel, Committed num bloco só: o total é o único trecho vinho
- * cheio, como o cartão fidelidade é vinho cheio na mão. Nenhum outro fundo,
- * nenhuma borda lateral, nenhum cartão dentro de cartão. As medidas são em
- * ponto e milímetro porque a folha é papel, na tela e na impressora, e a
- * classe `.folha` fixa os tokens claros (spec 017). **Nenhuma classe `dark:`
- * aqui dentro**: passaria por cima deles.
+ * **A folha é dela, e não nossa** (`DECISOES.md#d127`): o cabeçalho é o nome
+ * do negócio em display, sem logotipo — nem o dela, que não existe, nem o do
+ * Rende. O total é o único bloco cheio, em `ink`; a linha "feito com Rende"
+ * do rodapé é da sessão C, junto da frase dela. Nenhum outro fundo, nenhuma
+ * borda lateral, nenhum cartão dentro de cartão. As medidas são em ponto e
+ * milímetro porque a folha é papel, na tela e na impressora, e a classe
+ * `.folha` fixa os tokens claros (spec 017). **Nenhuma classe `dark:` aqui
+ * dentro**: passaria por cima deles.
  */
 export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
   const { negocio, entrega } = orcamento;
@@ -30,8 +34,10 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
 
   return (
     <article className="folha mx-auto flex flex-col text-[10.5pt] leading-[1.45] shadow-raised">
-      <header className="flex items-start justify-between gap-6 border-b-2 border-accent-500 pb-4">
-        <Logotipo orientacao="horizontal" tamanho="lg" />
+      <header className="flex items-start justify-between gap-6 border-b-2 border-line-strong pb-4">
+        <p className="font-display text-[20pt] font-bold leading-none">
+          {negocio.nome}
+        </p>
         <div className="text-right">
           <Rotulo>Orçamento</Rotulo>
           <p className="num text-[13pt] font-semibold leading-tight">
@@ -157,16 +163,18 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
         {orcamento.taxaEntrega > 0 && (
           <LinhaDeTotal rotulo="Entrega" centavos={orcamento.taxaEntrega} />
         )}
-        {/* O único vinho cheio da folha, e o único trecho que precisa imprimir
-            o fundo mesmo com "gráficos de fundo" desmarcado. */}
-        <div className="mt-[8pt] flex items-center justify-between gap-4 rounded-md bg-brand-700 px-4 py-4 text-on-brand [-webkit-print-color-adjust:exact] [print-color-adjust:exact]">
-          <span className="text-[8.5pt] font-medium uppercase tracking-[0.12em] text-on-brand-muted">
+        {/* O único bloco cheio da folha, e o único trecho que precisa imprimir
+            o fundo mesmo com "gráficos de fundo" desmarcado. É `ink`, e não
+            `brand-700`: na `.folha` os dois são quase o mesmo tom, mas a tinta
+            é dela e a marca é nossa (`#d127`). */}
+        <div className="mt-[8pt] flex items-center justify-between gap-4 rounded-md bg-ink px-4 py-4 text-surface [-webkit-print-color-adjust:exact] [print-color-adjust:exact]">
+          <span className="text-[8.5pt] font-medium uppercase tracking-[0.12em] text-surface/70">
             Total
           </span>
           <Valor
             centavos={orcamento.total}
             className="font-display text-[22pt] leading-none"
-            classeDoSimbolo="text-on-brand-muted"
+            classeDoSimbolo="text-surface/70"
           />
         </div>
       </section>
@@ -224,7 +232,7 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
             .filter(Boolean)
             .join(" · ")}
         </p>
-        <p className="shrink-0">{SLOGAN}</p>
+        <p className="shrink-0">{FRASE_RODAPE}</p>
       </footer>
     </article>
   );

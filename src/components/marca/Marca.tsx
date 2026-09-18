@@ -1,146 +1,77 @@
 import { cn } from "@/lib/utils/cn";
 
-/** Círculo de 42 de raio com uma mordida de 16 recortada no canto superior direito. */
-const TRACADO_COOKIE =
-  "M90.62 39.33 A 42 42 0 1 1 72.9 14.79 A 16 16 0 0 0 90.62 39.33 Z";
+/**
+ * A marca Rende em tela (`docs/marca/rende/MARCA.md` § 2.1 e § 2.4).
+ *
+ * A regra que importa a quem mexer aqui: **o ponto âmbar é a assinatura**, é
+ * único na tela e **nunca vira ícone de interface** — para isso existe o Lucide.
+ * Onde o ponto marca dado (o painel de preço, o estado vazio) é a sessão C da
+ * spec 033 que decide, e ela lista os únicos lugares em que ele pode aparecer.
+ */
 
 /**
- * O biscoito da identidade, em traço, com as gotas em dourado.
- * Usado como marca d'água em estados vazios e na tela de acesso.
- * Nunca como ícone de interface: para isso existe o Lucide.
+ * O símbolo: a régua creme fechada pelo ponto âmbar, sobre tinta. É o SVG de
+ * `logo/rende-simbolo.svg` com as cores nos tokens, para que a régua e o ponto
+ * sigam o tema. Tamanho mínimo 48px (`size-12`); nenhum uso abaixo disso.
  */
-export function Cookie({
-  className,
-  gotas = true,
-}: {
-  className?: string;
-  gotas?: boolean;
-}) {
+export function Simbolo({ className }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 100 100"
-      fill="none"
+      viewBox="0 0 96 96"
       aria-hidden="true"
-      className={cn("h-12 w-12", className)}
+      className={cn("size-12 shrink-0", className)}
     >
-      <path
-        d={TRACADO_COOKIE}
-        stroke="currentColor"
-        strokeWidth="3.5"
-        strokeLinejoin="round"
+      <rect width="96" height="96" rx="21" fill="var(--brand-700)" />
+      <rect
+        x="13.2"
+        y="42.48"
+        width="38.4"
+        height="11.04"
+        rx="5.52"
+        fill="var(--on-brand)"
       />
-      {gotas && (
-        <g fill="var(--accent-500)">
-          <circle cx="35" cy="41" r="6.5" />
-          <circle cx="60" cy="58" r="7" />
-          <circle cx="33" cy="65" r="5" />
-          <circle cx="55" cy="32" r="4" />
-          <circle cx="66" cy="76" r="4.5" />
-        </g>
-      )}
+      <circle cx="70.8" cy="48" r="12" fill="var(--accent-500)" />
     </svg>
   );
 }
 
 /**
- * O papel de embrulho da marca: biscoitos repetidos em traço.
- * Decorativo por definição, então vive só em superfícies de marca (acesso,
- * cabeçalho vinho) e nunca atrás de dado financeiro.
- */
-export function PadraoCookie({ className }: { className?: string }) {
-  return (
-    <svg aria-hidden="true" className={cn("h-full w-full", className)}>
-      <defs>
-        <pattern
-          id="padrao-cookie"
-          width="92"
-          height="92"
-          patternUnits="userSpaceOnUse"
-          patternTransform="rotate(-8)"
-        >
-          <path
-            d={TRACADO_COOKIE}
-            transform="translate(12 12) scale(0.44)"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="6"
-            strokeLinejoin="round"
-          />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#padrao-cookie)" />
-    </svg>
-  );
-}
-
-/**
- * As duas frases da embalagem. São marca, e não configuração: o dia em que
- * houver segunda conta, as duas saem juntas para `configuracao/geral`.
- */
-export const DESCRITOR = "Biscoitos artesanais";
-export const SLOGAN = "Feito com amor em cada mordida.";
-
-/**
- * Logotipo completo. Serifa para o nome, caixa alta espaçada para o descritor.
- * De pé na tela de acesso; deitado no cabeçalho da folha do orçamento.
+ * O logotipo: "rende" em Archivo 700, caixa baixa, fechado pelo ponto. É HTML,
+ * e não o SVG do pacote: a Archivo já está na página, e um `<span>` herda
+ * `currentColor` — a negativa sai de graça.
+ *
+ * A geometria é a de `logo/rende-principal.svg` (círculo de raio 11 num corpo
+ * de 76): diâmetro `0.29em`, base `0.04em` abaixo da linha de base, encostado
+ * no "e". A margem do ponto cancela o `letter-spacing` que sobra depois da
+ * última letra. `md` (28px) é o menor tamanho que passa dos 88px de largura
+ * que o manual exige; abaixo disso, só o símbolo.
  */
 export function Logotipo({
-  className,
   tamanho = "md",
-  descritor = true,
-  orientacao = "vertical",
+  tom = "tinta",
+  className,
 }: {
+  tamanho?: "md" | "lg";
+  /** `negativa` é creme sobre tinta; `tinta` inverte com o tema. */
+  tom?: "tinta" | "negativa";
   className?: string;
-  tamanho?: "sm" | "md" | "lg";
-  descritor?: boolean;
-  orientacao?: "vertical" | "horizontal";
 }) {
-  const escala = {
-    sm: { cookie: "h-6 w-6", nome: "text-subheading", desc: "text-[0.5rem]" },
-    md: { cookie: "h-10 w-10", nome: "text-title", desc: "text-micro" },
-    lg: {
-      cookie: "h-16 w-16",
-      nome: "text-[2.5rem] leading-none",
-      desc: "text-label",
-    },
-  }[tamanho];
-
-  const deitado = orientacao === "horizontal";
-
   return (
-    <div
+    <span
+      role="img"
+      aria-label="Rende"
       className={cn(
-        "flex items-center",
-        deitado ? "flex-row gap-3" : "flex-col gap-2",
+        "inline-block whitespace-nowrap font-display font-bold lowercase leading-none tracking-[-0.03em]",
+        tamanho === "lg" ? "text-[2.5rem]" : "text-[1.75rem]",
+        tom === "negativa" ? "text-on-brand" : "text-brand-ink",
         className,
       )}
     >
-      <Cookie className={cn("shrink-0", escala.cookie)} />
-      <div
-        className={cn(
-          "flex flex-col",
-          deitado ? "items-start" : "items-center",
-        )}
-      >
-        <span
-          className={cn(
-            "font-display font-semibold tracking-tight",
-            escala.nome,
-          )}
-        >
-          MyCookie&rsquo;s
-        </span>
-        {descritor && (
-          <span
-            className={cn(
-              "font-medium uppercase tracking-[0.32em] opacity-70",
-              escala.desc,
-            )}
-          >
-            {DESCRITOR}
-          </span>
-        )}
-      </div>
-    </div>
+      rende
+      <span
+        aria-hidden="true"
+        className="ml-[0.03em] inline-block size-[0.29em] rounded-full bg-accent-500 align-[-0.04em]"
+      />
+    </span>
   );
 }

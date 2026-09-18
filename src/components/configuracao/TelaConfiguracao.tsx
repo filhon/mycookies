@@ -538,7 +538,7 @@ export function TelaConfiguracao() {
               prefixo="@"
               autoCapitalize="none"
               autoCorrect="off"
-              placeholder="MyCookiesArtesanais"
+              placeholder="suaconfeitaria"
               value={estado.instagram}
               onChange={(evento) => definir("instagram", evento.target.value)}
             />

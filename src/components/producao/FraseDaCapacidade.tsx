@@ -3,8 +3,8 @@ import Link from "next/link";
 import {
   Check,
   CircleHelp,
-  Cookie,
   CookingPot,
+  PackageOpen,
   TriangleAlert,
 } from "lucide-react";
 import { ROTULO_UNIDADE_RENDIMENTO } from "@/lib/domain/custoFicha";
@@ -52,7 +52,7 @@ export function FraseDoPronto({
   if (livres === null) return null;
 
   return (
-    <Frase icone={Cookie} className={className}>
+    <Frase icone={PackageOpen} className={className}>
       {livres === 0 ? "nada pronto" : prontas(livres, unidade)}
       {reservado > 0 && " além dos pedidos"}
       <Separador />

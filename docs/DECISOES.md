@@ -3943,3 +3943,74 @@ progresso da meta batida está em `bg-accent-500` pela troca literal `gold-500` 
 e a 3.C.2 lista os únicos lugares em que o âmbar pode ser área; a C decide se ela vira
 `positive` ou fica. O que na `#d120` se chamava `wine-ink`/`gold-ink` chama-se agora
 `brand-ink`/`accent-ink`; a regra, tinta inverte e cromo fica, é a mesma.
+
+---
+
+## D124 · A barra do sistema vira `brand-700`, e o app precisa ser reinstalado
+
+**Status:** vigente · decidida em 2026-09-18, na spec 033 (valores gravados na A, registro na B)
+
+**Contexto.** O `#d76` decidiu que a barra do sistema tem uma cor só, a do ícone, porque o
+Android assa `theme_color` e `background_color` dentro do WebAPK na instalação e nem media
+query nem `<meta name="theme-color">` alcançam lá dentro. Com a marca nova o ícone deixou de
+ser vinho, e a barra vinho sobre um app azul-preto é a única quimera que o deploy conjunto de A
+e B não consegue evitar sozinho.
+
+**Decisão.** `theme_color` e `viewport.themeColor` passam de `#5e1725` para `#2A2C3A`, o
+`brand-700` que é o fundo do ícone — pelo mesmo raciocínio do `#d76`: a barra é a moldura do
+ícone. `background_color` passa de `#f3eee3` para `#F7F4EE`, o `canvas` claro do pacote, e
+**não** para o `brand-800` que o `DESIGN.md` do pacote pede para a "abertura": o
+`background_color` é a única tela de abertura que um PWA tem, e um ícone `brand-700` sobre
+`brand-800` é um quadrado escuro sobre fundo escuro. Os PNGs do ícone são regenerados a partir
+do SVG novo, **sem o `rx`**, pelo script do `#d44`: o pacote rasterizou os dele com o canto
+arredondado, e canto dentro do canto do sistema aparece como falha.
+
+**Consequência.** Os dois valores são assados no WebAPK: **até desinstalar e reinstalar o
+app, o celular da Maynara abre o Rende com a barra vinho.** É o passo 8 do roteiro da spec, e é
+o único lugar onde esta decisão é vista. Se no aparelho o creme da abertura parecer um flash
+antes do tema escuro, `#1C1E28` é uma linha e uma reinstalação, e esta decisão ganha a nota.
+`chrome://webapks` continua sendo onde se separa cor errada de instalação velha.
+
+---
+
+## D125 · O que do pacote da marca não entra no código, e por quê
+
+**Status:** vigente · decidida em 2026-09-18, na spec 033 (aplicada na A, registrada na B)
+
+**Contexto.** O pacote em `docs/marca/rende/` tem três camadas: `MARCA.md`, `DESIGN.md` e
+`tokens.css` são o manual; as pranchas `.dc.html` são maquetes geradas para provar os tokens.
+Em alguns pontos as pranchas contradizem o próprio manual, e em outros o manual pede o que o
+`/impeccable` proíbe ou o que a bancada já reprovou.
+
+**Decisão.** O manual é a fonte; as pranchas são derivação. Sete coisas ficam de fora:
+
+1. **A faixa âmbar de 3px à esquerda do item ativo** da barra lateral (`DESIGN.md` §
+   Components). É o _side-stripe_ da lista de proibições do `/impeccable`. Entra o que já
+   existia: item ativo com fundo `brand-700` cheio.
+2. **"↗ sobram 3,19" em verde em toda linha** de lista (`Telas`, 2 e 4). Seta fora do Lucide
+   e cor cheia em estado inativo. A sobra continua tabular, em `ink`; negativa com sinal, cor
+   `negative` e `trending-down`.
+3. **Estado vazio com o ponto e a faixa, sem dado** (`Telas`, 8). Quebra "uma assinatura por
+   peça" e "a faixa nunca é decorativa" (`MARCA.md` § 2.4) de uma vez. O que o estado vazio
+   ganha é decisão da sessão C; nesta B a marca d'água do biscoito saiu e nada entrou.
+4. **Navegação inferior ativa em `--accent-500`.** `#D89B3C` sobre `#FEFCF8` dá ~2,3:1 e
+   reprova AA. Ativa em `accent-ink`, o token que o próprio pacote tem para âmbar como texto.
+5. **A escala 15/13px e o raio 12** (`DESIGN.md` § Typography). A escala é estrutura do
+   produto, não da marca; 16/14 foi o que a usuária 0 usou na bancada. Registrado na `#d123`.
+6. **A tela de abertura em `brand-800`** (`DESIGN.md` § Motion). Ícone escuro sobre fundo
+   escuro; o `canvas` claro fica (`#d124`).
+7. **Os PNGs do ícone e o logotipo em SVG.** Os PNGs foram rasterizados com o `rx` e são
+   regenerados sem ele (`#d44`, `#d124`). O logotipo é HTML em `Marca.tsx`, e não o
+   `rende-principal.svg`: o SVG usa `<text>` em Archivo, a fonte precisa estar carregada de
+   qualquer jeito, e no HTML ela já está, com `currentColor` dando a negativa de graça. Se um
+   dia o "rende" precisar sair do app (e-mail, PDF sem Archivo), é o SVG em curvas que o
+   `LEIA-ME.md` já pede.
+
+E dois que o pacote não desenhou e o código precisou: o valor escuro de `--brand-100` (fundo
+de hover terciário; o claro do pacote é quase branco e vira um flash no escuro) e `--on-accent`
+/ `--on-brand-muted`, os dois na `#d123`.
+
+**Consequência.** `DESIGN.md` da raiz é a autoridade e já diz tudo isto; o do pacote fica como
+veio. Quem abrir `Rende — Telas.dc.html` ao lado do app e ver diferença nestes sete pontos
+está vendo decisão, e não dívida. O `LEIA-ME.md` do pacote ganhou a seção "Como está no
+código" apontando para cá.

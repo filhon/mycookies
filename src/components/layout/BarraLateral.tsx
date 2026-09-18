@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Compass, LogOut, Settings } from "lucide-react";
-import { Cookie } from "@/components/marca/Marca";
+import { Logotipo } from "@/components/marca/Marca";
 import { AVISO_SAIR_PENDENTE, useAuth } from "@/providers/AuthProvider";
 import { DESTINOS, destinoAtivo } from "./navegacao";
 import { cn } from "@/lib/utils/cn";
@@ -31,16 +31,10 @@ export function BarraLateral() {
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-brand-800 text-on-brand lg:flex print:hidden">
-      <div className="flex items-center gap-2.5 px-5 pb-5 pt-6">
-        <Cookie className="size-8 shrink-0" />
-        <div className="flex min-w-0 flex-col">
-          <span className="font-display text-subheading font-semibold leading-tight">
-            MyCookie&rsquo;s
-          </span>
-          <span className="text-[0.5625rem] font-medium uppercase tracking-[0.28em] text-on-brand-muted">
-            Biscoitos artesanais
-          </span>
-        </div>
+      {/* Só o logotipo: 32px é abaixo do mínimo do símbolo, e a marca não tem
+          descritor. */}
+      <div className="px-5 pb-5 pt-6">
+        <Logotipo tamanho="md" tom="negativa" />
       </div>
 
       <nav aria-label="Navegação principal" className="flex-1 px-3">

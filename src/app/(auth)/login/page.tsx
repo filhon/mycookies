@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { Logotipo, PadraoCookie } from "@/components/marca/Marca";
+import { Logotipo } from "@/components/marca/Marca";
 import { Botao } from "@/components/ui/Botao";
 import { Campo } from "@/components/ui/Campo";
 import { obterAuth } from "@/lib/firebase/client";
@@ -88,15 +88,14 @@ export default function PaginaLogin() {
 
   return (
     <div className="flex min-h-dvh bg-canvas">
-      {/* Painel de marca: o papel de embrulho da MyCookie's, só no desktop. */}
-      <aside className="relative hidden w-[42%] shrink-0 overflow-hidden bg-brand-800 lg:flex lg:flex-col lg:justify-between">
-        <PadraoCookie className="absolute inset-0 text-on-brand opacity-[0.07]" />
-
-        <div className="relative px-10 pt-12">
-          <Logotipo tamanho="lg" className="items-start text-on-brand" />
+      {/* Painel de marca: tinta lisa, o logotipo em negativa e a tagline. Só
+          no desktop, e sem enfeite: o ponto do logotipo é a única peça âmbar. */}
+      <aside className="hidden w-[42%] shrink-0 bg-brand-800 lg:flex lg:flex-col lg:justify-between">
+        <div className="px-10 pt-12">
+          <Logotipo tamanho="lg" tom="negativa" />
         </div>
 
-        <p className="relative max-w-[26ch] px-10 pb-14 font-display text-title font-semibold leading-snug text-on-brand">
+        <p className="max-w-[26ch] px-10 pb-14 font-display text-title font-semibold leading-snug text-on-brand">
           O preço certo de cada doce, antes de mandar o orçamento.
         </p>
       </aside>
@@ -104,11 +103,11 @@ export default function PaginaLogin() {
       <main className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
           <div className="mb-10 lg:hidden">
-            <Logotipo tamanho="md" className="text-brand-ink" />
+            <Logotipo tamanho="md" />
           </div>
 
           <h1 className="font-display text-title font-semibold text-ink">
-            Entrar no sistema
+            Entrar
           </h1>
           <p className="mt-1.5 text-body text-ink-muted">
             Só entra quem foi convidada. Na primeira vez, toque em

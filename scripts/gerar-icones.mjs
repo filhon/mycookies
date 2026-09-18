@@ -47,22 +47,22 @@ const origem = await readFile(ORIGEM, "utf8");
 
 // Erra alto se o desenho mudar de forma: um `replace` que não encontra nada
 // devolveria silenciosamente o ícone errado, e ninguém confere PNG no diff.
-if (!origem.includes('rx="22"')) {
+if (!origem.includes('rx="112.64"')) {
   console.error(
-    `${ORIGEM} não tem mais o \`rx="22"\` do fundo.\n` +
+    `${ORIGEM} não tem mais o \`rx="112.64"\` do fundo.\n` +
       "Confira o desenho e ajuste este script antes de gerar de novo.",
   );
   process.exit(1);
 }
 
-const quadrado = origem.replace(' rx="22"', "");
+const quadrado = origem.replace(' rx="112.64"', "");
 
 for (const { arquivo, lado } of DESTINOS) {
-  // Largura e altura explícitas: sem elas o rasterizador usa o tamanho natural
-  // do viewBox (100px) e o resultado sai borrado ao ser ampliado.
+  // Largura e altura explícitas no tamanho de saída: sem elas o rasterizador
+  // usa o tamanho natural do SVG e o resultado sai borrado ao ser ampliado.
   const svg = quadrado.replace(
-    'viewBox="0 0 100 100"',
-    `viewBox="0 0 100 100" width="${lado}" height="${lado}"`,
+    'viewBox="0 0 512 512" width="512" height="512"',
+    `viewBox="0 0 512 512" width="${lado}" height="${lado}"`,
   );
 
   const png = await sharp(Buffer.from(svg))

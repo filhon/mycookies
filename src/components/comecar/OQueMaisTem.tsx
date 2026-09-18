@@ -6,7 +6,7 @@ import {
   ChevronRight,
   ClipboardList,
   Clock,
-  Cookie,
+  PackageOpen,
   ShoppingCart,
 } from "lucide-react";
 
@@ -52,7 +52,9 @@ const FUNCIONALIDADES: readonly Funcionalidade[] = [
     href: "/insumos/contagem",
   },
   {
-    icone: Cookie,
+    // O pote aberto, e não o biscoito: para quem faz bolo o biscoito é o
+    // ícone errado, e o pacote pede "nada de biscoito" (spec 033, 3.B.7).
+    icone: PackageOpen,
     nome: "O que está pronto",
     frase:
       "O que já assou e a massa que está no congelador, produto por produto. Com isso, o produto e a encomenda dizem se dá para atender com o que já está feito, antes de contar a despensa. A fornada que você registra já deixa esse número proposto.",

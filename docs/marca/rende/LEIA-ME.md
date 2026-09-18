@@ -31,6 +31,24 @@ retrabalho.
 4. As telas em `.dc.html` usam exatamente os valores de `tokens.css` — abra lado a lado com
    a implementação para conferir.
 
+## Como está no código
+
+Aplicado na spec 033 (sessões A e B, 2026-09-18). O que difere do "Como usar" acima é decisão
+registrada, não esquecimento.
+
+- **Tokens:** `src/app/globals.css` declara os nomes de `tokens.css` um a um (`--brand-700`,
+  `--canvas`, `--accent-ink`…), sem os blocos `[data-theme]` e mais três do código
+  (`DECISOES.md#d123`). O `@theme inline` traduz para nome de uso no Tailwind.
+- **Logotipo:** `src/components/marca/Marca.tsx`, em HTML e não o SVG — "rende" em Archivo 700
+  com o ponto como `<span>`; `currentColor` dá a negativa. O símbolo é o SVG de
+  `rende-simbolo.svg` com as cores nos tokens.
+- **Ícones:** `src/app/icon.svg` é `icone-app-512.svg`; `public/icons/icone-maskable.svg` é o
+  maskable. Os PNGs **não** são os daqui: `scripts/gerar-icones.mjs` os regenera do SVG sem o
+  `rx`, porque canto arredondado dentro do canto do sistema aparece como falha (`#d44`).
+- **O que não entrou:** faixa lateral no item ativo, seta verde nas listas, estado vazio com
+  ponto e faixa, navegação em `--accent-500`, escala 15/13, abertura em `brand-800`. Motivos em
+  `DECISOES.md#d125`.
+
 ## Ressalvas honestas
 
 - **Nome:** disponibilidade de `rende.com.br`, do handle `@rende.app` e do registro no INPI

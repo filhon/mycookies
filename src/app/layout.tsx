@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Figtree } from "next/font/google";
 import { AuthProvider } from "@/providers/AuthProvider";
+import { DESCRICAO } from "./descricao";
 import "./globals.css";
 
 // Só 600 e 700: a marca não tem Archivo 400, e `font-display` sem peso
@@ -20,19 +21,19 @@ const interface_ = Figtree({
 
 export const metadata: Metadata = {
   title: {
-    default: "MyCookie's",
-    template: "%s · MyCookie's",
+    default: "Rende",
+    template: "%s · Rende",
   },
-  description:
-    "Precificação, produção e fluxo de caixa dos doces artesanais da MyCookie’s.",
-  applicationName: "MyCookie's",
+  description: DESCRICAO,
+  applicationName: "Rende",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "MyCookie's",
+    title: "Rende",
     statusBarStyle: "default",
   },
-  // Sistema interno de uma pessoa só: não existe motivo para ser indexado.
+  // O app é área logada; a página de venda, quando existir, é outra rota e é
+  // indexável.
   robots: { index: false, follow: false },
   formatDetection: { telephone: false },
 };

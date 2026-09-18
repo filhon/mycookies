@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-18 (sessão 033-A entregue, **não publicada**: A e B saem juntas; roteiros das 015, 016, 017, 018, 019, 020, 021 e 022 por rodar).
+Atualizado em 2026-09-18 (sessões 033-A e 033-B entregues, **prontas para publicar juntas**; roteiros das 015, 016, 017, 018, 019, 020, 021 e 022 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -22,13 +22,13 @@ DESIGN.md, tokens.css, logo/, pranchas), e a spec que o leva ao código é
 `specs/033-a-marca-rende.md`, em três sessões — **A** (a tinta: tokens, fontes, o que era da
 MyCookie's e sai do CSS), **B** (o nome e o símbolo: logotipo, ícones, manifesto, telas de
 marca) e **C** (o ponto, a faixa, a cópia e a passagem do `/impeccable`). **A e B saem no mesmo
-deploy.** **A A está entregue** (`#d122`, `#d123`): o repositório está na tinta do Rende nos
-dois temas, Archivo no lugar da Fraunces, `DESIGN.md` e `PRODUCT.md` da raiz reescritos, e
-nenhum `wine`, `gold`, `--mc-`, `textura-papel` ou `filete-dourado` sobrou em `src/`. **Não
-publicar antes da B**: o app ainda se chama MyCookie's e ainda tem o biscoito no logotipo, e é
-essa quimera que o deploy conjunto evita. O app publicado continua vinho e creme. A 033 está
-fora da ordem do roadmap de propósito (023–032 são citados na 022 e nas decisões); a fase 1
-volta a ser o próximo passo depois dela.
+deploy.** **A A e a B estão entregues** (`#d122` a `#d125`): o repositório está na tinta do
+Rende nos dois temas, Archivo no lugar da Fraunces, `DESIGN.md` e `PRODUCT.md` da raiz
+reescritos, o app se chama Rende na aba, no manifesto e na barra lateral, o ícone é a régua com
+o ponto, e nenhum biscoito sobrou fora do texto de produto. **Pode publicar**: A e B juntas, e
+depois o passo 8 do roteiro (reinstalar o app no aparelho, `#d124`). O app publicado hoje ainda
+é vinho e creme. A 033 está fora da ordem do roadmap de propósito (023–032 são citados na 022 e
+nas decisões); a fase 1 volta a ser o próximo passo depois dela.
 
 **Todas as specs de módulo estão executadas.** Fora delas, a spec `005-prontidao.md` tem duas
 sessões — `5A` conserta o que impede o primeiro uso, `5B` faz a verificação em navegador. **As
@@ -244,7 +244,7 @@ os números digitados de ponta a ponta.
 | 20  | Menos na frente                             | pronto, sem o roteiro                    | `specs/020-menos-na-frente.md`             |
 | 21  | As palavras dela                            | pronto, sem o roteiro                    | `specs/021-as-palavras-dela.md`            |
 | 22  | A segunda conta                             | pronto, sem o roteiro                    | `specs/022-a-segunda-conta.md`             |
-| 33  | A marca Rende                               | A pronta, não publicada; B e C por rodar | `specs/033-a-marca-rende.md`               |
+| 33  | A marca Rende                               | A e B prontas, por publicar; C por rodar | `specs/033-a-marca-rende.md`               |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -2239,14 +2239,80 @@ o que o `sed` não vê: um botão azul-preto onde deveria ser âmbar, o anel de 
 âmbar, o hover da barra lateral mais claro que o ativo, e a meta batida e o passo atual ditos
 sem o filete.
 
+## O que a sessão 033-B deixou pronto
+
+O nome e o símbolo (`specs/033-a-marca-rende.md`, seção 3.B; `DECISOES.md#d124` e `#d125`).
+Nenhum campo, nenhuma rota, nenhuma regra (um comentário em `firestore.rules`), nenhum índice,
+nenhuma dependência; `git diff src/lib/domain/ src/lib/firebase/ firestore.indexes.json
+package.json` vazio.
+
+- **`Marca.tsx` reescrito**: exporta `Simbolo` (o SVG de `rende-simbolo.svg` com as cores nos
+  tokens, `size-12` mínimo, `aria-hidden`) e `Logotipo` ("rende" em HTML, Archivo 700, o ponto
+  como `<span>` de `0.29em` com a base `0.04em` abaixo da linha; `tom="negativa"` é só
+  `text-on-brand`), e nada mais. `Cookie`, `PadraoCookie`, `TRACADO_COOKIE`, `DESCRITOR` e
+  `SLOGAN` morreram. **Um desvio da letra da spec:** `md` é `1.75rem` (28px), e não
+  `text-title` (24px) — a geometria do pacote dá ~3,2em de largura total, e 24px ficaria em
+  ~77px, abaixo dos 88px que o manual exige; 28px dá ~90px.
+- **Os sete importadores:** login (painel `brand-800` liso, `Logotipo lg` negativa em cima,
+  tagline embaixo; no celular `Logotipo md` em tinta; `<h1>` "Entrar"), barra lateral (só o
+  `Logotipo md` negativa, sem símbolo e sem descritor), carregando e "Lendo a nota" (`Simbolo`
+  `size-12` com o pulso), sem conta e `/offline` (`Simbolo size-16`; na tela sem conta o
+  `ShieldAlert` saiu, porque a frase é instrução e não alerta), `EstadoVazio` (a marca d'água
+  saiu, nada entrou — 3.C.2 decide), e a folha do orçamento (`#d127`: nome do negócio em
+  display no cabeçalho, borda `line-strong`, total em `bg-ink text-surface`, e `FRASE_RODAPE`
+  como constante local com o comentário `ponytail:` até a C gravar `ConfiguracaoGeral.frase`).
+  A linha "feito com Rende" do rodapé **não** entrou: é da 3.C.3.
+- **Ícones:** `src/app/icon.svg` ← `icone-app-512.svg`; `public/icons/icone-maskable.svg` ←
+  o maskable, com o comentário reescrito. `gerar-icones.mjs` com a guarda `rx="112.64"` e o
+  `viewBox` 512; rodado:
+
+  ```
+  src/app/apple-icon.png · 180×180 · 1501 bytes
+  public/icons/icone-192.png · 192×192 · 1593 bytes
+  public/icons/icone-512.png · 512×512 · 5062 bytes
+  ```
+
+  Os três quadrados, sem `rx`, conferidos abrindo o de 512.
+
+- **Manifesto e metadata:** `name`/`short_name`/`title`/`applicationName`/`appleWebApp.title`
+  "Rende", `template: "%s · Rende"`, descrição de loja de `MARCA.md` § 3.5 numa constante
+  (`src/app/descricao.ts`) lida pelos dois. O comentário de `robots` diz o motivo novo (área
+  logada; a página de venda será outra rota). `theme_color` `#2A2C3A` e `background_color`
+  `#F7F4EE` já estavam da A; o comentário do `background_color` agora diz por que não é o
+  `brand-800` do pacote.
+- **O que ainda dizia MyCookie's:** o comentário de `firestore.rules` e o placeholder do
+  Instagram (`"suaconfeitaria"`). Ficam, de propósito: `conceder-acesso.mjs` (id da conta real),
+  `types/conta.ts` (exemplo de dado), `tests/domain/*` (fixtures).
+- **O biscoito do Lucide:** `PackageOpen` nos três lugares (`EntradaContagemPronto`,
+  `FraseDaCapacidade`, `OQueMaisTem`). Se no navegador ler como "encomenda", `Archive`.
+- `#d124` e `#d125` em `DECISOES.md`; `LEIA-ME.md` do pacote com "Como está no código".
+
+**Critério de aceite da B, conferido:** `rg -n "MyCookie|Biscoitos artesanais|Cookie\b" src/
+--glob '!**/lib/domain/**' --glob '!**/tests/**'` devolve `types/conta.ts` e seis linhas de
+texto de produto (placeholders de ficha, comentários de exemplo). `Marca.tsx` exporta `Simbolo`
+e `Logotipo` e nada mais.
+
+Portão de conclusão rodado de verdade: lint limpo, typecheck limpo (app e service worker),
+**531 testes**, build com as 18 rotas de antes (mais `/icon.svg` e `/apple-icon.png`, que já
+eram) e o service worker gerado; `manifest.webmanifest` gerado com `"name":"Rende"`, e o CSS
+gerado tem o `vertical-align:-.04em`, o `width:.29em` e o `letter-spacing:-.03em` do logotipo.
+**Nada disto foi visto em navegador nesta sessão.** O roteiro "Depois da B" (passos 6 a 10) é
+o que confere o que o build não vê: o ponto encostado no "e" e na altura certa nos dois
+tamanhos, o painel do login, a folha sem logotipo com o total em tinta, e o pote aberto onde
+era o biscoito.
+
 ## Próxima ação
 
-**Rodar a sessão B da 033** (`specs/033-a-marca-rende.md`, seção 3.B) **e só então publicar A e
-B juntas**. Depois do deploy, o passo 8 do roteiro: desinstalar e reinstalar o app no Android
-e no iPhone, porque `theme_color` e `background_color` são assados no WebAPK (`#d76`, `#d124`).
-Antes da B, vale o roteiro "Depois da A" (passos 1 a 5) no `npm run dev`, nos dois temas, a
-360px e a 1280px: é o único lugar onde uma troca de classe que acertou o nome e errou o papel
-aparece.
+**Publicar A e B juntas** (`docs/DEPLOY.md`). Antes, o roteiro "Depois da A" (passos 1 a 5) e
+"Depois da B" (passos 6, 7, 9 e 10) no `npm run dev`, nos dois temas, a 360px e a 1280px: é o
+único lugar onde uma troca de classe que acertou o nome e errou o papel aparece, e onde a
+geometria do ponto do logotipo é vista de verdade. Depois do deploy, **o passo 8**: desinstalar
+e reinstalar o app no Android e no iPhone, porque `theme_color` e `background_color` são
+assados no WebAPK (`#d76`, `#d124`) — até lá, a barra é vinho sobre um app azul-preto.
+
+**Depois, a sessão C da 033** (seção 3.C): o ponto no painel de preço, a faixa de composição,
+`ConfiguracaoGeral.frase` (a única aprovação da spec), as vinte microcopy e a passagem do
+`/impeccable`. A `FRASE_RODAPE` da folha e o "feito com Rende" são dela.
 
 **Rodar o roteiro de oito passos da spec 020** (duas contas, DevTools em Offline nos passos 1 a
 5): confirma que a ficha-modelo abre com "Mais detalhes" fechada, que insumos da conta real com
@@ -2398,7 +2464,7 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | `LIMITE_ARQUIVO_BYTES` é 8 MB e o Vercel corta o corpo em 4,5 MB (~3,3 MB)                                                            | `domain/notaFiscal.ts`                         | Se PDF de nota grande virar rotina: baixar para 3 MB e recusar antes do upload                                   |
 | A chave de conta de serviço fica legível no painel e não gira sozinha                                                                 | `FIREBASE_SERVICE_ACCOUNT`                     | No dia do SaaS: gerenciador de segredos com rotação (`#d72`)                                                     |
 | O roteiro A da 009 nunca rodou: nenhuma tela foi vista com o teclado aberto                                                           | `ui/RodapeFixo.tsx`, `globals.css`             | Exige Android na mão. Seis telas que funcionavam foram editadas sem teste por trás                               |
-| A barra vinho nunca foi vista no aparelho: o WebAPK assa a cor na instalação                                                          | `app/manifest.ts`                              | Roteiro B: o deploy já existe; falta desinstalar e reinstalar o app no Android                                   |
+| A barra `brand-700` e o ícone novo nunca foram vistos no aparelho: o WebAPK assa cor e ícone na instalação                            | `app/manifest.ts`                              | Passo 8 do roteiro da 033, depois do deploy: desinstalar e reinstalar o app no Android e no iPhone (`#d124`)     |
 | 560px é limiar chutado: aparelho pequeno com fonte aumentada pode entrar nele                                                         | `globals.css`                                  | Degradação feia, não quebra. O conserto é `visualViewport` (`#d74`)                                              |
 | O `wa.me` nunca foi aberto: ninguém viu a mensagem chegar escrita na conversa                                                         | `pedidos/BlocoWhatsApp.tsx`                    | Roteiro de aparelho da 010: exige celular com WhatsApp instalado, e depois desktop                               |
 | O resumo pode ser mandado sem o pedido estar salvo                                                                                    | `FormularioPedido.tsx`                         | Aceito em `#d78`; se morder, o botão salva antes de abrir o link                                                 |

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Cookie } from "lucide-react";
+import { PackageOpen } from "lucide-react";
 import { classesBotao } from "@/components/ui/estilosBotao";
 
 /**
@@ -15,8 +15,8 @@ export function EntradaContagemPronto({ className }: { className?: string }) {
       aria-label="Contar o que está pronto"
       className={classesBotao({ tamanho: "sm", className })}
     >
-      <Cookie aria-hidden className="size-4" strokeWidth={1.75} />O que está
-      pronto
+      <PackageOpen aria-hidden className="size-4" strokeWidth={1.75} />O que
+      está pronto
     </Link>
   );
 }

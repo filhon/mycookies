@@ -554,16 +554,16 @@ Precisa da **conta real**, dos dois temas (DevTools → Rendering → `prefers-c
 
 **B**
 
-- [ ] `rg -n "MyCookie|Biscoitos artesanais|Cookie\b" src/ --glob '!**/lib/domain/**' --glob
-  '!**/tests/**'` devolve só `types/conta.ts` (exemplos) e texto de produto (placeholders de
+- [x] `rg -n "MyCookie|Biscoitos artesanais|Cookie\b" src/ --glob '!**/lib/domain/**' --glob
+'!**/tests/**'` devolve só `types/conta.ts` (exemplos) e texto de produto (placeholders de
       ficha, biblioteca).
-- [ ] `Marca.tsx` exporta `Simbolo` e `Logotipo`, e nada mais.
-- [ ] Os três PNGs regenerados pelo script a partir do SVG novo, quadrados; a saída do script no
+- [x] `Marca.tsx` exporta `Simbolo` e `Logotipo`, e nada mais.
+- [x] Os três PNGs regenerados pelo script a partir do SVG novo, quadrados; a saída do script no
       `ESTADO.md`.
-- [ ] Manifesto e metadata dizem "Rende"; `theme_color` `#2A2C3A`; `background_color` `#F7F4EE`.
-- [ ] A folha do orçamento sem logotipo, com o nome dela em display, e a frase dela ainda no
+- [x] Manifesto e metadata dizem "Rende"; `theme_color` `#2A2C3A`; `background_color` `#F7F4EE`.
+- [x] A folha do orçamento sem logotipo, com o nome dela em display, e a frase dela ainda no
       rodapé.
-- [ ] `#d124`, `#d125`; `LEIA-ME.md` com "Como está no código".
+- [x] `#d124`, `#d125`; `LEIA-ME.md` com "Como está no código".
 
 **C**
 
