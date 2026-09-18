@@ -1,0 +1,180 @@
+/* Rende · tokens.css
+   Território "Ponto" · tinta azul-preta + âmbar
+   Fonte de verdade em OKLCH; hex ao lado é fallback de leitura, não de produção.
+   Nomes em inglês curto porque é assim que o código consome.
+   Tema claro é o padrão; escuro por [data-theme="dark"] e por prefers-color-scheme. */
+
+:root {
+  /* ---------- marca ---------- */
+  --brand-900: oklch(0.19 0.03 272); /* #15171F */
+  --brand-800: oklch(0.22 0.03 272); /* #1C1E28 */
+  --brand-700: oklch(0.26 0.035 272); /* #2A2C3A  primária */
+  --brand-600: oklch(0.34 0.035 272); /* #3C3E4D */
+  --brand-500: oklch(0.44 0.033 272); /* #545768 */
+  --brand-400: oklch(0.56 0.028 272); /* #6E7183 */
+  --brand-300: oklch(0.7 0.022 272); /* #9B9DAC */
+  --brand-200: oklch(0.85 0.015 272); /* #CFD0D8 */
+  --brand-100: oklch(0.94 0.01 272); /* #EBECF1 */
+
+  /* ---------- acento (o ponto) ---------- */
+  --accent-600: oklch(0.62 0.13 75); /* #A9752A */
+  --accent-500: oklch(0.74 0.14 78); /* #D89B3C  acento */
+  --accent-300: oklch(0.85 0.09 80); /* #EFC384 */
+  --accent-100: oklch(0.93 0.05 82); /* #F7E7C8 */
+  --accent-ink: oklch(
+    0.45 0.1 70
+  ); /* #6E4A12  âmbar como tinta, AA sobre canvas */
+
+  /* ---------- superfícies · tema claro ---------- */
+  --canvas: oklch(0.972 0.008 85); /* #F7F4EE */
+  --surface: oklch(0.995 0.004 85); /* #FEFCF8 */
+  --surface-sunken: oklch(0.945 0.01 85); /* #EFEBE3 */
+  --border: oklch(0.885 0.01 85); /* #E1DCD3 */
+  --border-strong: oklch(0.78 0.012 85); /* #C3BDB2 */
+  --ink: oklch(0.24 0.02 272); /* #22242E */
+  --ink-muted: oklch(0.5 0.015 272); /* #6A6C78 */
+  --ink-subtle: oklch(0.63 0.012 272); /* #8E909B */
+  --on-brand: oklch(0.965 0.006 85); /* #F6F3ED  tinta sobre brand-700 */
+  --brand-as-ink: oklch(
+    0.26 0.035 272
+  ); /* #2A2C3A  marca como tinta no claro */
+
+  /* ---------- semânticos · tema claro ---------- */
+  --positive: oklch(0.5 0.12 152); /* #17724A */
+  --positive-bg: oklch(0.94 0.04 152); /* #DDF0E4 */
+  --attention: oklch(0.48 0.1 72); /* #7A5410 */
+  --attention-bg: oklch(0.93 0.05 82); /* #F7E7C8 */
+  --negative: oklch(0.5 0.17 27); /* #B02A1C */
+  --negative-bg: oklch(0.94 0.04 27); /* #FADFDA */
+  --info: oklch(0.48 0.12 250); /* #2A5C9E */
+  --info-bg: oklch(0.93 0.03 250); /* #DCE7F5 */
+
+  /* ---------- tipografia ---------- */
+  --font-display: "Archivo", system-ui, sans-serif;
+  --font-ui: "Figtree", system-ui, sans-serif;
+
+  --text-display: 1.875rem;
+  --lh-display: 1.15;
+  --fw-display: 700;
+  --text-title: 1.5rem;
+  --lh-title: 1.25;
+  --fw-title: 700;
+  --text-heading: 1.25rem;
+  --lh-heading: 1.3;
+  --fw-heading: 600;
+  --text-subheading: 1.0625rem;
+  --lh-subheading: 1.4;
+  --fw-subheading: 600;
+  --text-body: 0.9375rem;
+  --lh-body: 1.55;
+  --fw-body: 400;
+  --text-label: 0.8125rem;
+  --lh-label: 1.35;
+  --fw-label: 500;
+  --text-micro: 0.75rem;
+  --lh-micro: 1.35;
+  --fw-micro: 500;
+
+  /* ---------- espaçamento (base 4) ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* ---------- raio ---------- */
+  --radius-field: 10px;
+  --radius-card: 12px;
+  --radius-pill: 999px;
+  --radius-icon: 22%;
+
+  /* ---------- sombra (baixa ou nenhuma) ---------- */
+  --shadow-none: none;
+  --shadow-sheet: 0 -2px 0 oklch(0.885 0.01 85);
+  --shadow-panel: 0 8px 24px oklch(0.24 0.02 272 / 0.1);
+
+  /* ---------- toque ---------- */
+  --touch-min: 44px;
+  --touch-gap: 8px;
+  --field-height: 48px;
+  --action-height: 52px;
+
+  /* ---------- motion ---------- */
+  --ease: cubic-bezier(0.165, 0.84, 0.44, 1); /* ease-out-quart */
+  --dur-state: 180ms;
+  --dur-state-min: 150ms;
+  --dur-state-max: 220ms;
+  --dur-sheet: 260ms;
+
+  /* ---------- z-index ---------- */
+  --z-sticky: 10;
+  --z-nav: 20;
+  --z-sheet: 30;
+  --z-modal: 40;
+  --z-toast: 50;
+}
+
+/* ---------- tema escuro · a marca vira fundo, a superfície vira tinta ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --canvas: oklch(0.19 0.025 272); /* #15171F */
+    --surface: oklch(0.235 0.028 272); /* #1E2029 */
+    --surface-sunken: oklch(0.165 0.022 272); /* #101219 */
+    --border: oklch(0.31 0.025 272); /* #343641 */
+    --border-strong: oklch(0.42 0.028 272); /* #4C4F5C */
+    --ink: oklch(0.955 0.006 85); /* #F4F1EB */
+    --ink-muted: oklch(0.74 0.012 272); /* #A8AAB5 */
+    --ink-subtle: oklch(0.6 0.015 272); /* #7F8290 */
+    --on-brand: oklch(0.965 0.006 85);
+    --brand-as-ink: oklch(
+      0.88 0.012 272
+    ); /* #DADCE4  marca como tinta no escuro */
+
+    --positive: oklch(0.76 0.14 152); /* #5FD49A */
+    --positive-bg: oklch(0.27 0.05 152); /* #163021 */
+    --attention: oklch(0.8 0.12 80); /* #E3B267 */
+    --attention-bg: oklch(0.28 0.055 78); /* #34280F */
+    --negative: oklch(0.72 0.15 27); /* #F08070 */
+    --negative-bg: oklch(0.28 0.06 27); /* #3A1A16 */
+    --info: oklch(0.76 0.1 250); /* #8FB6E8 */
+    --info-bg: oklch(0.27 0.05 250); /* #14243A */
+
+    --accent-500: oklch(0.78 0.13 78); /* #E3A94F  âmbar sobe no escuro */
+    --accent-ink: oklch(0.82 0.12 80); /* #EDB863 */
+    --shadow-sheet: 0 -2px 0 oklch(0.31 0.025 272);
+    --shadow-panel: 0 8px 24px oklch(0.12 0.02 272 / 0.5);
+  }
+}
+
+:root[data-theme="dark"] {
+  --canvas: oklch(0.19 0.025 272);
+  --surface: oklch(0.235 0.028 272);
+  --surface-sunken: oklch(0.165 0.022 272);
+  --border: oklch(0.31 0.025 272);
+  --border-strong: oklch(0.42 0.028 272);
+  --ink: oklch(0.955 0.006 85);
+  --ink-muted: oklch(0.74 0.012 272);
+  --ink-subtle: oklch(0.6 0.015 272);
+  --brand-as-ink: oklch(0.88 0.012 272);
+  --positive: oklch(0.76 0.14 152);
+  --positive-bg: oklch(0.27 0.05 152);
+  --attention: oklch(0.8 0.12 80);
+  --attention-bg: oklch(0.28 0.055 78);
+  --negative: oklch(0.72 0.15 27);
+  --negative-bg: oklch(0.28 0.06 27);
+  --info: oklch(0.76 0.1 250);
+  --info-bg: oklch(0.27 0.05 250);
+  --accent-500: oklch(0.78 0.13 78);
+  --accent-ink: oklch(0.82 0.12 80);
+  --shadow-sheet: 0 -2px 0 oklch(0.31 0.025 272);
+  --shadow-panel: 0 8px 24px oklch(0.12 0.02 272 / 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-state: 1ms;
+    --dur-sheet: 1ms;
+  }
+}

@@ -1,0 +1,3342 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="./support.js"></script>
+  </head>
+  <body>
+    <x-dc>
+      <helmet>
+        <meta name="design_doc_mode" content="canvas" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap"
+          rel="stylesheet"
+        />
+        <style>
+          body {
+            margin: 0;
+            background: #f2efe9;
+          }
+          a {
+            color: #1f5fa8;
+            text-decoration: none;
+            border-bottom: 1px solid #c3d3e6;
+          }
+          a:hover {
+            color: #14446f;
+            border-bottom-color: #14446f;
+          }
+        </style>
+      </helmet>
+
+      <section
+        style="
+          display: flex;
+          flex-direction: column;
+          gap: 40px;
+          padding: 56px 56px 96px;
+          font-family: &quot;Public Sans&quot;, system-ui, sans-serif;
+          color: #23242e;
+          max-width: 1880px;
+        "
+      >
+        <header
+          style="
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 880px;
+          "
+        >
+          <div style="display: flex; align-items: center; gap: 12px">
+            <span
+              style="
+                font-family: &quot;Archivo&quot;, sans-serif;
+                font-size: 12px;
+                font-weight: 700;
+                letter-spacing: 0.14em;
+                text-transform: uppercase;
+                color: #8a5a00;
+                background: #f7ebd2;
+                padding: 6px 10px;
+                border-radius: 6px;
+              "
+              >Fase 1 · parada para escolha</span
+            >
+            <span style="font-size: 13px; color: #6a6b76">18 set 2026</span>
+          </div>
+          <h1
+            style="
+              font-family: &quot;Archivo&quot;, sans-serif;
+              font-size: 52px;
+              line-height: 1.05;
+              font-weight: 700;
+              margin: 0;
+              letter-spacing: -0.02em;
+              text-wrap: pretty;
+            "
+          >
+            Estratégia, nome e território para o sistema de precificação
+          </h1>
+          <p
+            style="
+              font-size: 19px;
+              line-height: 1.55;
+              margin: 0;
+              color: #43444f;
+              text-wrap: pretty;
+            "
+          >
+            Três entregas nesta página: o posicionamento em uma página, oito
+            nomes com justificativa e risco, e três territórios visuais
+            distintos — cada um com paleta, tipografia e a tela mais importante
+            do produto (o editor de produto, no celular, com os dados reais do
+            brief). Nada de identidade completa até você escolher nome e
+            território.
+          </p>
+          <p
+            style="
+              font-size: 15px;
+              line-height: 1.6;
+              margin: 0;
+              color: #6a6b76;
+              border-left: 3px solid #ded7cb;
+              padding-left: 14px;
+              text-wrap: pretty;
+            "
+          >
+            <strong style="color: #43444f">O que assumi:</strong>
+            disponibilidade de domínio e de handle não foi verificada em nenhum
+            nome — todos estão marcados <em>verificar</em>. As telas usam tema
+            claro; o escuro entra na Fase 2, junto com a escala completa de cor.
+            Os três territórios já respeitam as restrições do brief (matiz
+            primária fora de ~10–40, neutros tingidos, duas famílias, base 4px,
+            raio 10px, sem vidro e sem brilho) — a escolha é de caráter, não de
+            conformidade.
+          </p>
+        </header>
+
+        <div style="height: 1px; background: #ded7cb"></div>
+
+        <!-- ===================== POSICIONAMENTO ===================== -->
+        <div style="display: flex; flex-direction: column; gap: 24px">
+          <h2
+            style="
+              font-family: &quot;Archivo&quot;, sans-serif;
+              font-size: 13px;
+              font-weight: 700;
+              letter-spacing: 0.16em;
+              text-transform: uppercase;
+              color: #6a6b76;
+              margin: 0;
+            "
+          >
+            01 · Posicionamento em uma página
+          </h2>
+
+          <div
+            style="
+              background: #ffffff;
+              border: 1px solid #e2ded6;
+              border-radius: 10px;
+              padding: 36px 40px;
+              display: flex;
+              flex-direction: column;
+              gap: 28px;
+            "
+          >
+            <p
+              style="
+                font-family: &quot;Archivo&quot;, sans-serif;
+                font-size: 34px;
+                line-height: 1.25;
+                font-weight: 600;
+                margin: 0;
+                letter-spacing: -0.01em;
+                max-width: 1000px;
+                text-wrap: pretty;
+              "
+            >
+              “Este doce te custa R$ 3,41 e você deveria cobrar R$ 8,50.”
+            </p>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+                gap: 1px;
+                background: #e2ded6;
+                border: 1px solid #e2ded6;
+                border-radius: 10px;
+                overflow: hidden;
+              "
+            >
+              <div
+                style="
+                  background: #ffffff;
+                  padding: 22px 24px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                "
+              >
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #6a6b76;
+                  "
+                  >Para quem</span
+                >
+                <p style="margin: 0; font-size: 15px; line-height: 1.55">
+                  A confeiteira artesanal que trabalha sozinha — compra, produz,
+                  embala, vende, entrega e fecha o caixa. Cookie, bolo,
+                  brigadeiro, salgado, pão: o produto muda, o problema não.
+                </p>
+              </div>
+              <div
+                style="
+                  background: #ffffff;
+                  padding: 22px 24px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                "
+              >
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #6a6b76;
+                  "
+                  >Contra o quê</span
+                >
+                <p style="margin: 0; font-size: 15px; line-height: 1.55">
+                  A planilha do curso, o caderno, a calculadora do celular e a
+                  intuição. No extremo oposto, o ERP genérico que ela abre e
+                  fecha. Não competimos por preço de software.
+                </p>
+              </div>
+              <div
+                style="
+                  background: #ffffff;
+                  padding: 22px 24px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                "
+              >
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #6a6b76;
+                  "
+                  >Promessa</span
+                >
+                <p style="margin: 0; font-size: 15px; line-height: 1.55">
+                  Descubra quanto você realmente ganha em cada doce — antes de
+                  dar o preço. O sistema faz a conta; a decisão é dela.
+                </p>
+              </div>
+              <div
+                style="
+                  background: #ffffff;
+                  padding: 22px 24px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                "
+              >
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #6a6b76;
+                  "
+                  >Prova</span
+                >
+                <p style="margin: 0; font-size: 15px; line-height: 1.55">
+                  O custo por unidade aberto parcela por parcela: R$ 4,41 =
+                  materiais 3,12 · embalagem 0,45 · a hora dela 0,56 · gás e
+                  energia 0,18 · fixos 0,10. E a MyCookie's, em uso diário há
+                  meses.
+                </p>
+              </div>
+            </div>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 24px;
+              "
+            >
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #1f7a4d;
+                  "
+                  >A marca é</span
+                >
+                <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                  direta · precisa · calma · confiante · da cozinha · ferramenta
+                  de dona de negócio
+                </p>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #b3261e;
+                  "
+                  >A marca não é</span
+                >
+                <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                  planilha · ERP azul · rede social com confete · dashboard
+                  escuro genérico · blog de receita fofo · MyCookie's
+                </p>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #6a6b76;
+                  "
+                  >Arquitetura</span
+                >
+                <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                  “A MyCookie's usa [nome].” Primeira cliente e primeiro caso —
+                  nunca dona, nunca sub-marca, sem emprestar cor ou tipografia.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===================== NOMES ===================== -->
+        <div style="display: flex; flex-direction: column; gap: 24px">
+          <h2
+            style="
+              font-family: &quot;Archivo&quot;, sans-serif;
+              font-size: 13px;
+              font-weight: 700;
+              letter-spacing: 0.16em;
+              text-transform: uppercase;
+              color: #6a6b76;
+              margin: 0;
+            "
+          >
+            02 · Oito nomes, na ordem da minha recomendação
+          </h2>
+
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+              gap: 16px;
+            "
+          >
+            <div
+              style="
+                background: #ffffff;
+                border: 1px solid #e2ded6;
+                border-radius: 10px;
+                padding: 26px 28px;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+              "
+            >
+              <div style="display: flex; align-items: baseline; gap: 12px">
+                <span
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    background: #2a2c3a;
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                  "
+                  >01</span
+                >
+                <h3
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 32px;
+                    font-weight: 700;
+                    margin: 0;
+                    letter-spacing: -0.015em;
+                  "
+                >
+                  Rende
+                </h3>
+                <span style="font-size: 13px; color: #6a6b76"
+                  >/ˈʁẽ.dʒi/ · 2 sílabas</span
+                >
+              </div>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                <strong>Vem de</strong> “esta receita rende 20” e de
+                “rendimento” no sentido de dinheiro. É a única palavra da
+                cozinha que também é palavra de lucro — o produto inteiro mora
+                nessa ponte.
+              </p>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                <strong>Evoca</strong> quanto sai do lote e quanto sobra pra
+                ela, sem citar doce nenhum. Serve bolo, brigadeiro, pão.
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 15px;
+                  line-height: 1.6;
+                  color: #43444f;
+                "
+              >
+                <strong>Tagline</strong> · “Saiba quanto rende cada doce, antes
+                de dar o preço.”
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #b3261e;
+                "
+              >
+                <strong>Risco</strong> · verbo comum: em busca orgânica compete
+                com “rende quanto”. Domínio exato improvável (avaliar
+                <em>rende.app</em>, <em>usarende.com.br</em>).
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #6a6b76;
+                "
+              >
+                <strong>Ícone</strong> R monolinear, ou o “20” do rendimento.
+                <strong>Handle</strong> @rende.app · @userende —
+                <em>verificar</em>
+              </p>
+            </div>
+
+            <div
+              style="
+                background: #ffffff;
+                border: 1px solid #e2ded6;
+                border-radius: 10px;
+                padding: 26px 28px;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+              "
+            >
+              <div style="display: flex; align-items: baseline; gap: 12px">
+                <span
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    background: #2a2c3a;
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                  "
+                  >02</span
+                >
+                <h3
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 32px;
+                    font-weight: 700;
+                    margin: 0;
+                    letter-spacing: -0.015em;
+                  "
+                >
+                  Colher
+                </h3>
+                <span style="font-size: 13px; color: #6a6b76"
+                  >/koˈʎeʁ/ · 2 sílabas</span
+                >
+              </div>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                <strong>Vem de</strong> dois sentidos que o português junta de
+                graça: a colher da bancada e colher o que se plantou.
+                Instrumento de medida e colheita de resultado na mesma palavra.
+              </p>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                <strong>Evoca</strong> medida caseira, cuidado, e “colher os
+                frutos” do mês. Universal em qualquer cozinha.
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 15px;
+                  line-height: 1.6;
+                  color: #43444f;
+                "
+              >
+                <strong>Tagline</strong> · “A conta do seu doce, na medida.”
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #b3261e;
+                "
+              >
+                <strong>Risco</strong> · muitos negócios de cozinha já usam a
+                palavra; o símbolo “colher” beira o clichê de utensílio —
+                resolvemos com letra, não com desenho de colher.
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #6a6b76;
+                "
+              >
+                <strong>Ícone</strong> C com um corte reto.
+                <strong>Handle</strong> @colher.app — <em>verificar</em>
+              </p>
+            </div>
+
+            <div
+              style="
+                background: #ffffff;
+                border: 1px solid #e2ded6;
+                border-radius: 10px;
+                padding: 26px 28px;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+              "
+            >
+              <div style="display: flex; align-items: baseline; gap: 12px">
+                <span
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    background: #2a2c3a;
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                  "
+                  >03</span
+                >
+                <h3
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 32px;
+                    font-weight: 700;
+                    margin: 0;
+                    letter-spacing: -0.015em;
+                  "
+                >
+                  Tacho
+                </h3>
+                <span style="font-size: 13px; color: #6a6b76"
+                  >/ˈta.ʃu/ · 2 sílabas</span
+                >
+              </div>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                <strong>Vem de</strong> o tacho de cobre do brigadeiro, do doce
+                de leite, da calda. É o objeto onde o doce brasileiro acontece —
+                e não é o objeto de nenhum nicho específico.
+              </p>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                <strong>Evoca</strong> ofício, fundo grosso, coisa séria de
+                cozinha. Nome concreto, memorável depois de ouvir uma vez.
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 15px;
+                  line-height: 1.6;
+                  color: #43444f;
+                "
+              >
+                <strong>Tagline</strong> · “O preço certo sai do tacho.”
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #b3261e;
+                "
+              >
+                <strong>Risco</strong> · não diz nada sobre preço por si;
+                depende da tagline. “Tacho” também é gíria de cargo (“no tacho”)
+                em algumas regiões.
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #6a6b76;
+                "
+              >
+                <strong>Ícone</strong> T que também é um tacho visto de frente.
+                <strong>Handle</strong> @tacho.app — <em>verificar</em>
+              </p>
+            </div>
+
+            <div
+              style="
+                background: #ffffff;
+                border: 1px solid #e2ded6;
+                border-radius: 10px;
+                padding: 26px 28px;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+              "
+            >
+              <div style="display: flex; align-items: baseline; gap: 12px">
+                <span
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    background: #2a2c3a;
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                  "
+                  >04</span
+                >
+                <h3
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 32px;
+                    font-weight: 700;
+                    margin: 0;
+                    letter-spacing: -0.015em;
+                  "
+                >
+                  Balança
+                </h3>
+                <span style="font-size: 13px; color: #6a6b76"
+                  >/baˈlɐ̃.sa/ · 3 sílabas</span
+                >
+              </div>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                <strong>Vem de</strong> a balança da bancada e o verbo balançar
+                as contas. O único utensílio que já é, literalmente, precisão.
+              </p>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                <strong>Evoca</strong> exatidão, equilíbrio entre custo e preço,
+                pesar antes de decidir.
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 15px;
+                  line-height: 1.6;
+                  color: #43444f;
+                "
+              >
+                <strong>Tagline</strong> · “Pese o custo antes de dar o preço.”
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #b3261e;
+                "
+              >
+                <strong>Risco</strong> · três sílabas e a mais longa da lista;
+                “balança” puxa também para justiça/jurídico e para balança
+                comercial.
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #6a6b76;
+                "
+              >
+                <strong>Ícone</strong> um traço sobre um ponto de apoio.
+                <strong>Handle</strong> @balanca.app — <em>verificar</em>
+              </p>
+            </div>
+
+            <div
+              style="
+                background: #ffffff;
+                border: 1px solid #e2ded6;
+                border-radius: 10px;
+                padding: 26px 28px;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+              "
+            >
+              <div style="display: flex; align-items: baseline; gap: 12px">
+                <span
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    background: #2a2c3a;
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                  "
+                  >05</span
+                >
+                <h3
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 32px;
+                    font-weight: 700;
+                    margin: 0;
+                    letter-spacing: -0.015em;
+                  "
+                >
+                  Quanto
+                </h3>
+                <span style="font-size: 13px; color: #6a6b76"
+                  >/ˈkwɐ̃.tu/ · 2 sílabas</span
+                >
+              </div>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                <strong>Vem de</strong> a pergunta que ela faz todo dia: quanto
+                custa, quanto cobrar, quanto sobra. O nome é a dúvida; o produto
+                é a resposta.
+              </p>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                <strong>Evoca</strong> conta e número sem uma palavra de
+                contabilidade. Zero risco de infantilizar.
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 15px;
+                  line-height: 1.6;
+                  color: #43444f;
+                "
+              >
+                <strong>Tagline</strong> · “Quanto sobra pra você, em cada
+                doce.”
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #b3261e;
+                "
+              >
+                <strong>Risco</strong> · palavra funcional: em frase solta soa
+                incompleta (“abri o Quanto”). Busca e domínio difíceis; não tem
+                cheiro de cozinha.
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #6a6b76;
+                "
+              >
+                <strong>Ícone</strong> ponto de interrogação geométrico ou Q.
+                <strong>Handle</strong> @quanto.app — <em>verificar</em>
+              </p>
+            </div>
+
+            <div
+              style="
+                background: #ffffff;
+                border: 1px solid #e2ded6;
+                border-radius: 10px;
+                padding: 26px 28px;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+              "
+            >
+              <div style="display: flex; align-items: baseline; gap: 12px">
+                <span
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    background: #2a2c3a;
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                  "
+                  >06</span
+                >
+                <h3
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 32px;
+                    font-weight: 700;
+                    margin: 0;
+                    letter-spacing: -0.015em;
+                  "
+                >
+                  Ponto
+                </h3>
+                <span style="font-size: 13px; color: #6a6b76"
+                  >/ˈpõ.tu/ · 2 sílabas</span
+                >
+              </div>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                <strong>Vem de</strong> ponto de bala, ponto de fio, ponto de
+                calda — o vocabulário técnico do doce — e de “estar no ponto”, o
+                preço nem baixo nem alto.
+              </p>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                <strong>Evoca</strong> precisão de confeiteira; é a palavra mais
+                “de ofício” da lista.
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 15px;
+                  line-height: 1.6;
+                  color: #43444f;
+                "
+              >
+                <strong>Tagline</strong> · “Seu preço no ponto.”
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #b3261e;
+                "
+              >
+                <strong>Risco</strong> · palavra saturada: ponto de venda, ponto
+                comercial, bater ponto. Ambiguidade alta e marca registrada
+                provável em várias classes.
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #6a6b76;
+                "
+              >
+                <strong>Ícone</strong> um círculo cheio.
+                <strong>Handle</strong> @ponto.app — <em>verificar</em>
+              </p>
+            </div>
+
+            <div
+              style="
+                background: #ffffff;
+                border: 1px solid #e2ded6;
+                border-radius: 10px;
+                padding: 26px 28px;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+              "
+            >
+              <div style="display: flex; align-items: baseline; gap: 12px">
+                <span
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    background: #2a2c3a;
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                  "
+                  >07</span
+                >
+                <h3
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 32px;
+                    font-weight: 700;
+                    margin: 0;
+                    letter-spacing: -0.015em;
+                  "
+                >
+                  Sobra
+                </h3>
+                <span style="font-size: 13px; color: #6a6b76"
+                  >/ˈso.bɾa/ · 2 sílabas</span
+                >
+              </div>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                <strong>Vem de</strong> “quanto sobra pra você”, a frase que o
+                próprio produto já usa em toda tela de preço. É o nome mais fiel
+                ao glossário dela.
+              </p>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                <strong>Evoca</strong> o número final, o que fica no bolso
+                depois da maquininha.
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 15px;
+                  line-height: 1.6;
+                  color: #43444f;
+                "
+              >
+                <strong>Tagline</strong> · “Veja o que sobra antes de dar o
+                preço.”
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #b3261e;
+                "
+              >
+                <strong>Risco</strong> · o outro sentido de sobra é resto,
+                desperdício, comida velha — péssimo ao lado de doce. Foi o que o
+                derrubou da metade de cima.
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #6a6b76;
+                "
+              >
+                <strong>Ícone</strong> S com barra de valor.
+                <strong>Handle</strong> @sobra.app — <em>verificar</em>
+              </p>
+            </div>
+
+            <div
+              style="
+                background: #ffffff;
+                border: 1px solid #e2ded6;
+                border-radius: 10px;
+                padding: 26px 28px;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+              "
+            >
+              <div style="display: flex; align-items: baseline; gap: 12px">
+                <span
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    background: #2a2c3a;
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                  "
+                  >08</span
+                >
+                <h3
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 32px;
+                    font-weight: 700;
+                    margin: 0;
+                    letter-spacing: -0.015em;
+                  "
+                >
+                  Fornada
+                </h3>
+                <span style="font-size: 13px; color: #6a6b76"
+                  >/foʁˈna.da/ · 3 sílabas</span
+                >
+              </div>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                <strong>Vem de</strong> a palavra do glossário para o ato de
+                produzir: assar e guardar. Sonora, quente, inequivocamente
+                artesanal.
+              </p>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                <strong>Evoca</strong> produção em lote, rotina semanal, cheiro
+                de forno.
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 15px;
+                  line-height: 1.6;
+                  color: #43444f;
+                "
+              >
+                <strong>Tagline</strong> · “Toda fornada com o preço certo.”
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #b3261e;
+                "
+              >
+                <strong>Risco</strong> · trava em forno: brigadeiro, doce de
+                colher e geladinho não passam pela “fornada”. Falha o teste da
+                confeiteira de bolo gelado. Está aqui como opção consciente, não
+                como recomendação.
+              </p>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #6a6b76;
+                "
+              >
+                <strong>Ícone</strong> F em bloco.
+                <strong>Handle</strong> @fornada.app — <em>verificar</em>
+              </p>
+            </div>
+          </div>
+
+          <p
+            style="
+              margin: 0;
+              font-size: 15px;
+              line-height: 1.65;
+              color: #43444f;
+              max-width: 900px;
+              border-left: 3px solid #2a2c3a;
+              padding-left: 14px;
+              text-wrap: pretty;
+            "
+          >
+            <strong>Por que Rende na frente:</strong> é o único nome que fala de
+            rendimento de receita e de rendimento de dinheiro ao mesmo tempo,
+            não cita doce algum, tem duas sílabas, se escreve sem soletrar e
+            cabe em áudio de WhatsApp (“eu uso o Rende”). Colher é o segundo
+            porque tem a mesma ponte semântica com mais calor e menos precisão.
+            Se a busca de registro derrubar os dois, Tacho é o plano B com maior
+            distinção sonora.
+          </p>
+        </div>
+
+        <!-- ===================== TERRITÓRIOS ===================== -->
+        <div style="display: flex; flex-direction: column; gap: 20px">
+          <h2
+            style="
+              font-family: &quot;Archivo&quot;, sans-serif;
+              font-size: 13px;
+              font-weight: 700;
+              letter-spacing: 0.16em;
+              text-transform: uppercase;
+              color: #6a6b76;
+              margin: 0;
+            "
+          >
+            03 · Três territórios visuais · <a href="#1a">1a</a> ·
+            <a href="#1b">1b</a> · <a href="#1c">1c</a>
+          </h2>
+          <p
+            style="
+              margin: 0;
+              font-size: 15px;
+              line-height: 1.6;
+              color: #43444f;
+              max-width: 900px;
+              text-wrap: pretty;
+            "
+          >
+            Cada território mostra paleta, as duas famílias tipográficas e a
+            mesma tela: <strong>Produto, editor</strong> — a mais importante do
+            sistema. Em todas, o preço e a sobra são as duas maiores massas de
+            tinta da tela e vivem no painel preso ao pé, na altura do dedo. O
+            nome aplicado nas maquetes é “Rende” como placeholder; troca sem
+            custo.
+          </p>
+
+          <div
+            style="
+              display: flex;
+              flex-wrap: wrap;
+              gap: 20px;
+              align-items: flex-start;
+            "
+          >
+            <!-- ============ 1a · BANCADA ============ -->
+            <div
+              id="1a"
+              style="
+                width: 560px;
+                background: #ffffff;
+                border: 1px solid #e2ded6;
+                border-radius: 10px;
+                padding: 28px;
+                display: flex;
+                flex-direction: column;
+                gap: 22px;
+              "
+            >
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    background: #2f4c36;
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                  "
+                  >1a</span
+                >
+                <h3
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 26px;
+                    font-weight: 700;
+                    margin: 0;
+                  "
+                >
+                  Bancada
+                </h3>
+                <span style="font-size: 13px; color: #6a6b76"
+                  >verde-oliva profundo · areia</span
+                >
+              </div>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                O território da cozinha de trabalho: madeira clara, verde de
+                horta, tinta quase preta. Calor sem doçura — a superfície onde
+                se corta e se pesa, não a vitrine. A densidade respira em
+                neutros de areia; a cor da marca só aparece cheia no cromo
+                (cabeçalho de contexto, barra lateral).
+              </p>
+
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #6a6b76;
+                  "
+                  >Paleta</span
+                >
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(6, 1fr);
+                    gap: 6px;
+                  "
+                >
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #24382a;
+                    "
+                  ></div>
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #2f4c36;
+                    "
+                  ></div>
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #4c7256;
+                    "
+                  ></div>
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #d6e4d6;
+                    "
+                  ></div>
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #faf6ee;
+                      border: 1px solid #ded7cb;
+                    "
+                  ></div>
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #2b2e27;
+                    "
+                  ></div>
+                </div>
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 4px 16px;
+                    font-family: &quot;IBM Plex Sans&quot;, monospace;
+                    font-size: 11px;
+                    color: #6a6b76;
+                    line-height: 1.5;
+                  "
+                >
+                  <span>brand-800 · oklch(.32 .06 148) #24382A</span>
+                  <span>brand-700 · oklch(.38 .075 148) #2F4C36</span>
+                  <span>brand-500 · oklch(.52 .09 148) #4C7256</span>
+                  <span>brand-100 · oklch(.90 .03 148) #D6E4D6</span>
+                  <span>canvas · oklch(.975 .012 85) #FAF6EE</span>
+                  <span>ink · oklch(.26 .02 120) #2B2E27</span>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #6a6b76;
+                  "
+                  >Tipografia</span
+                >
+                <div
+                  style="
+                    font-family: &quot;Bricolage Grotesque&quot;, sans-serif;
+                    font-size: 40px;
+                    font-weight: 700;
+                    line-height: 1;
+                    letter-spacing: -0.02em;
+                  "
+                >
+                  Bricolage Grotesque
+                </div>
+                <span style="font-size: 12px; color: #6a6b76"
+                  >display · título de página, valor em destaque, estado
+                  vazio</span
+                >
+                <div
+                  style="
+                    font-family: &quot;IBM Plex Sans&quot;, sans-serif;
+                    font-size: 19px;
+                    font-weight: 500;
+                    line-height: 1.3;
+                  "
+                >
+                  IBM Plex Sans · 1234567890
+                </div>
+                <span style="font-size: 12px; color: #6a6b76"
+                  >interface · numerais tabulares, rótulo, tabela,
+                  navegação</span
+                >
+              </div>
+
+              <!-- tela 1a -->
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #6a6b76;
+                  "
+                  >Produto, editor · 360×800</span
+                >
+                <div
+                  style="
+                    width: 360px;
+                    height: 800px;
+                    background: #faf6ee;
+                    border: 1px solid #ded7cb;
+                    border-radius: 14px;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                    font-family: &quot;IBM Plex Sans&quot;, sans-serif;
+                    color: #2b2e27;
+                  "
+                >
+                  <div
+                    style="
+                      background: #2f4c36;
+                      color: #f2efe4;
+                      padding: 14px 16px 16px;
+                      display: flex;
+                      flex-direction: column;
+                      gap: 10px;
+                    "
+                  >
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        font-size: 11px;
+                        opacity: 0.75;
+                        font-variant-numeric: tabular-nums;
+                      "
+                    >
+                      <span>21:04</span><span>salvo no aparelho</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px">
+                      <span style="font-size: 20px; line-height: 1">‹</span>
+                      <span
+                        style="
+                          font-size: 12px;
+                          letter-spacing: 0.1em;
+                          text-transform: uppercase;
+                          opacity: 0.8;
+                        "
+                        >Produto</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        font-family:
+                          &quot;Bricolage Grotesque&quot;, sans-serif;
+                        font-size: 26px;
+                        font-weight: 700;
+                        letter-spacing: -0.01em;
+                      "
+                    >
+                      Cookie clássico
+                    </div>
+                    <div style="display: flex; gap: 8px">
+                      <span
+                        style="
+                          font-size: 12px;
+                          background: rgba(255, 255, 255, 0.14);
+                          border-radius: 8px;
+                          padding: 5px 9px;
+                          font-variant-numeric: tabular-nums;
+                        "
+                        >rende 20 un</span
+                      >
+                      <span
+                        style="
+                          font-size: 12px;
+                          background: rgba(255, 255, 255, 0.14);
+                          border-radius: 8px;
+                          padding: 5px 9px;
+                          font-variant-numeric: tabular-nums;
+                        "
+                        >45 min</span
+                      >
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      flex: 1;
+                      overflow: hidden;
+                      display: flex;
+                      flex-direction: column;
+                    "
+                  >
+                    <div
+                      style="
+                        padding: 12px 16px 6px;
+                        font-size: 12px;
+                        font-weight: 600;
+                        letter-spacing: 0.1em;
+                        text-transform: uppercase;
+                        color: #6e7268;
+                      "
+                    >
+                      Materiais da receita
+                    </div>
+                    <div
+                      style="
+                        background: #fffcf6;
+                        border-top: 1px solid #e7e0d4;
+                        border-bottom: 1px solid #e7e0d4;
+                      "
+                    >
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          padding: 10px 16px;
+                          border-bottom: 1px solid #efe9de;
+                          min-height: 44px;
+                        "
+                      >
+                        <div
+                          style="
+                            display: flex;
+                            flex-direction: column;
+                            gap: 2px;
+                          "
+                        >
+                          <span style="font-size: 15px">Farinha de trigo</span
+                          ><span
+                            style="
+                              font-size: 12px;
+                              color: #6e7268;
+                              font-variant-numeric: tabular-nums;
+                            "
+                            >640 g · perda 5%</span
+                          >
+                        </div>
+                        <span
+                          style="
+                            font-size: 15px;
+                            font-weight: 600;
+                            font-variant-numeric: tabular-nums;
+                          "
+                          ><span style="font-size: 11px; color: #8a8d83"
+                            >R$ </span
+                          >3,46</span
+                        >
+                      </div>
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          padding: 10px 16px;
+                          border-bottom: 1px solid #efe9de;
+                          min-height: 44px;
+                        "
+                      >
+                        <div
+                          style="
+                            display: flex;
+                            flex-direction: column;
+                            gap: 3px;
+                          "
+                        >
+                          <span style="font-size: 15px">Chocolate 53%</span
+                          ><span
+                            style="
+                              font-size: 11px;
+                              color: #8a5a00;
+                              background: #f7ebd2;
+                              border-radius: 5px;
+                              padding: 2px 6px;
+                              align-self: flex-start;
+                            "
+                            >⚠ custo desatualizado</span
+                          >
+                        </div>
+                        <span
+                          style="
+                            font-size: 15px;
+                            font-weight: 600;
+                            font-variant-numeric: tabular-nums;
+                          "
+                          ><span style="font-size: 11px; color: #8a8d83"
+                            >R$ </span
+                          >35,64</span
+                        >
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        padding: 8px 16px 9px;
+                        font-size: 14px;
+                        color: #4c7256;
+                        font-weight: 600;
+                      "
+                    >
+                      + 4 materiais
+                    </div>
+                    <div
+                      style="
+                        margin: 4px 16px 0;
+                        flex-shrink: 0;
+                        background: #fffcf6;
+                        border: 1px solid #e7e0d4;
+                        border-radius: 10px;
+                        padding: 12px 16px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 6px;
+                      "
+                    >
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: baseline;
+                        "
+                      >
+                        <span
+                          style="
+                            font-size: 13px;
+                            font-weight: 600;
+                            letter-spacing: 0.08em;
+                            text-transform: uppercase;
+                            color: #6e7268;
+                          "
+                          >O custo do lote</span
+                        >
+                        <span
+                          style="
+                            font-size: 12px;
+                            color: #6e7268;
+                            font-variant-numeric: tabular-nums;
+                          "
+                          >20 un</span
+                        >
+                      </div>
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          font-size: 13px;
+                          font-variant-numeric: tabular-nums;
+                        "
+                      >
+                        <span>Materiais</span><span>62,40</span>
+                      </div>
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          font-size: 13px;
+                          font-variant-numeric: tabular-nums;
+                        "
+                      >
+                        <span>Embalagem</span><span>9,00</span>
+                      </div>
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          font-size: 13px;
+                          font-variant-numeric: tabular-nums;
+                        "
+                      >
+                        <span>Sua hora</span><span>11,20</span>
+                      </div>
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          font-size: 13px;
+                          font-variant-numeric: tabular-nums;
+                        "
+                      >
+                        <span>Gás e energia</span><span>3,60</span>
+                      </div>
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          font-size: 13px;
+                          font-variant-numeric: tabular-nums;
+                        "
+                      >
+                        <span>Fixos rateados</span><span>2,00</span>
+                      </div>
+                      <div
+                        style="height: 1px; background: #2f4c36; opacity: 0.25"
+                      ></div>
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          font-size: 16px;
+                          font-weight: 600;
+                          font-variant-numeric: tabular-nums;
+                        "
+                      >
+                        <span>Total do lote</span><span>R$ 88,20</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      background: #fffcf6;
+                      border-top: 2px solid #2f4c36;
+                      padding: 14px 16px 18px;
+                      display: flex;
+                      flex-direction: column;
+                      gap: 12px;
+                    "
+                  >
+                    <div style="display: flex; gap: 10px">
+                      <div
+                        style="
+                          flex: 1;
+                          display: flex;
+                          flex-direction: column;
+                          gap: 3px;
+                        "
+                      >
+                        <span
+                          style="
+                            font-size: 11px;
+                            letter-spacing: 0.08em;
+                            text-transform: uppercase;
+                            color: #6e7268;
+                          "
+                          >Custo / un</span
+                        ><span
+                          style="
+                            font-family:
+                              &quot;Bricolage Grotesque&quot;, sans-serif;
+                            font-size: 22px;
+                            font-weight: 700;
+                            font-variant-numeric: tabular-nums;
+                          "
+                          ><span style="font-size: 13px; color: #8a8d83"
+                            >R$ </span
+                          >4,41</span
+                        >
+                      </div>
+                      <div
+                        style="
+                          flex: 1;
+                          display: flex;
+                          flex-direction: column;
+                          gap: 3px;
+                        "
+                      >
+                        <span
+                          style="
+                            font-size: 11px;
+                            letter-spacing: 0.08em;
+                            text-transform: uppercase;
+                            color: #6e7268;
+                          "
+                          >Sugerido · 45%</span
+                        ><span
+                          style="
+                            font-family:
+                              &quot;Bricolage Grotesque&quot;, sans-serif;
+                            font-size: 22px;
+                            font-weight: 700;
+                            font-variant-numeric: tabular-nums;
+                          "
+                          ><span style="font-size: 13px; color: #8a8d83"
+                            >R$ </span
+                          >8,50</span
+                        >
+                      </div>
+                      <div
+                        style="
+                          flex: 1;
+                          display: flex;
+                          flex-direction: column;
+                          gap: 3px;
+                        "
+                      >
+                        <span
+                          style="
+                            font-size: 11px;
+                            letter-spacing: 0.08em;
+                            text-transform: uppercase;
+                            color: #6e7268;
+                          "
+                          >Praticado</span
+                        ><span
+                          style="
+                            font-family:
+                              &quot;Bricolage Grotesque&quot;, sans-serif;
+                            font-size: 22px;
+                            font-weight: 700;
+                            font-variant-numeric: tabular-nums;
+                          "
+                          ><span style="font-size: 13px; color: #8a8d83"
+                            >R$ </span
+                          >8,00</span
+                        >
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        background: #d6e4d6;
+                        border-radius: 10px;
+                        padding: 12px 14px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 2px;
+                      "
+                    >
+                      <span
+                        style="
+                          font-family:
+                            &quot;Bricolage Grotesque&quot;, sans-serif;
+                          font-size: 27px;
+                          font-weight: 700;
+                          color: #24382a;
+                          font-variant-numeric: tabular-nums;
+                          line-height: 1.1;
+                        "
+                        >Sobram R$ 3,19 pra você</span
+                      >
+                      <span style="font-size: 12px; color: #3b5b43"
+                        >por unidade, depois da maquininha (4,99%)</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        background: #2f4c36;
+                        color: #f7f4ea;
+                        border-radius: 10px;
+                        height: 52px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 16px;
+                        font-weight: 600;
+                      "
+                    >
+                      Salvar produto
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <div style="display: flex; flex-direction: column; gap: 4px">
+                  <span
+                    style="
+                      font-size: 11px;
+                      font-weight: 700;
+                      letter-spacing: 0.14em;
+                      text-transform: uppercase;
+                      color: #6a6b76;
+                    "
+                    >Assinatura visual</span
+                  >
+                  <p style="margin: 0; font-size: 14px; line-height: 1.6">
+                    O <strong>filete de medida</strong> (régua de dois traços,
+                    herdeira honesta do filete dourado, sem ouro) e a
+                    <strong>barra de parcelas</strong> — o custo desenhado como
+                    faixas proporcionais. Aparecem em estado vazio, login, ícone
+                    e divulgação; nunca na interface.
+                  </p>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center">
+                  <div
+                    style="
+                      width: 120px;
+                      height: 26px;
+                      background: #faf6ee;
+                      border-top: 2px solid #2f4c36;
+                      border-bottom: 1px solid #4c7256;
+                    "
+                  ></div>
+                  <div
+                    style="
+                      display: flex;
+                      height: 22px;
+                      width: 180px;
+                      border-radius: 4px;
+                      overflow: hidden;
+                    "
+                  >
+                    <div style="flex: 71; background: #2f4c36"></div>
+                    <div style="flex: 10; background: #4c7256"></div>
+                    <div style="flex: 13; background: #8fa894"></div>
+                    <div style="flex: 4; background: #d6e4d6"></div>
+                    <div style="flex: 2; background: #efe9de"></div>
+                  </div>
+                </div>
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 14px;
+                    line-height: 1.6;
+                    color: #b3261e;
+                  "
+                >
+                  <strong>Risco honesto:</strong> marca verde e semântico
+                  positivo verde são vizinhos. Aqui o positivo migra para teal
+                  (matiz 168) e o lucro nunca depende só de cor — seta e texto
+                  sempre presentes. Passa o teste do vizinho de matiz contra o
+                  vermelho com folga.
+                </p>
+              </div>
+            </div>
+
+            <!-- ============ 1b · INSTRUMENTO ============ -->
+            <div
+              id="1b"
+              style="
+                width: 560px;
+                background: #ffffff;
+                border: 1px solid #e2ded6;
+                border-radius: 10px;
+                padding: 28px;
+                display: flex;
+                flex-direction: column;
+                gap: 22px;
+              "
+            >
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    background: #1f5066;
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                  "
+                  >1b</span
+                >
+                <h3
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 26px;
+                    font-weight: 700;
+                    margin: 0;
+                  "
+                >
+                  Instrumento
+                </h3>
+                <span style="font-size: 13px; color: #6a6b76"
+                  >petróleo · cinza-pedra</span
+                >
+              </div>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                O território do aparelho de medição: balança digital, termômetro
+                de calda, paquímetro. Azul-petróleo escuro — longe do azul
+                corporativo porque é quase preto e esverdeado —, neutros de
+                pedra, marcas de escala como grafismo. Diz “esta conta está
+                certa” antes de qualquer palavra.
+              </p>
+
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #6a6b76;
+                  "
+                  >Paleta</span
+                >
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(6, 1fr);
+                    gap: 6px;
+                  "
+                >
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #143b4c;
+                    "
+                  ></div>
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #1f5066;
+                    "
+                  ></div>
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #3e7d97;
+                    "
+                  ></div>
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #d9e8ed;
+                    "
+                  ></div>
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #f5f6f7;
+                      border: 1px solid #dcdfe3;
+                    "
+                  ></div>
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #262a31;
+                    "
+                  ></div>
+                </div>
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 4px 16px;
+                    font-family: &quot;IBM Plex Sans&quot;, monospace;
+                    font-size: 11px;
+                    color: #6a6b76;
+                    line-height: 1.5;
+                  "
+                >
+                  <span>brand-800 · oklch(.33 .06 215) #143B4C</span>
+                  <span>brand-700 · oklch(.40 .075 215) #1F5066</span>
+                  <span>brand-500 · oklch(.55 .09 215) #3E7D97</span>
+                  <span>brand-100 · oklch(.92 .025 215) #D9E8ED</span>
+                  <span>canvas · oklch(.975 .004 230) #F5F6F7</span>
+                  <span>ink · oklch(.25 .02 250) #262A31</span>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #6a6b76;
+                  "
+                  >Tipografia</span
+                >
+                <div
+                  style="
+                    font-family: &quot;Space Grotesk&quot;, sans-serif;
+                    font-size: 40px;
+                    font-weight: 700;
+                    line-height: 1;
+                    letter-spacing: -0.02em;
+                  "
+                >
+                  Space Grotesk
+                </div>
+                <span style="font-size: 12px; color: #6a6b76"
+                  >display · título, valor em destaque, estado vazio</span
+                >
+                <div
+                  style="
+                    font-family: &quot;Public Sans&quot;, sans-serif;
+                    font-size: 19px;
+                    font-weight: 500;
+                    line-height: 1.3;
+                  "
+                >
+                  Public Sans · 1234567890
+                </div>
+                <span style="font-size: 12px; color: #6a6b76"
+                  >interface · numerais tabulares, rótulo, tabela,
+                  navegação</span
+                >
+              </div>
+
+              <!-- tela 1b -->
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #6a6b76;
+                  "
+                  >Produto, editor · 360×800</span
+                >
+                <div
+                  style="
+                    width: 360px;
+                    height: 800px;
+                    background: #f5f6f7;
+                    border: 1px solid #dcdfe3;
+                    border-radius: 14px;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                    font-family: &quot;Public Sans&quot;, sans-serif;
+                    color: #262a31;
+                  "
+                >
+                  <div
+                    style="
+                      background: #1f5066;
+                      color: #eaf1f4;
+                      padding: 14px 16px 0;
+                      display: flex;
+                      flex-direction: column;
+                      gap: 10px;
+                    "
+                  >
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        font-size: 11px;
+                        opacity: 0.75;
+                        font-variant-numeric: tabular-nums;
+                      "
+                    >
+                      <span>21:04</span><span>salvo no aparelho</span>
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                      "
+                    >
+                      <span
+                        style="
+                          font-size: 12px;
+                          letter-spacing: 0.12em;
+                          text-transform: uppercase;
+                          opacity: 0.8;
+                        "
+                        >‹ Produtos</span
+                      >
+                      <span style="font-size: 12px; opacity: 0.8">Editar</span>
+                    </div>
+                    <div
+                      style="
+                        font-family: &quot;Space Grotesk&quot;, sans-serif;
+                        font-size: 25px;
+                        font-weight: 700;
+                      "
+                    >
+                      Cookie clássico
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        gap: 18px;
+                        font-size: 12px;
+                        font-variant-numeric: tabular-nums;
+                        opacity: 0.85;
+                      "
+                    >
+                      <span>rende 20 un</span><span>45 min</span
+                      ><span>receita</span>
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        gap: 2px;
+                        align-items: flex-end;
+                        height: 10px;
+                        opacity: 0.5;
+                      "
+                    >
+                      <div
+                        style="width: 1px; height: 10px; background: #eaf1f4"
+                      ></div>
+                      <div
+                        style="width: 1px; height: 5px; background: #eaf1f4"
+                      ></div>
+                      <div
+                        style="width: 1px; height: 5px; background: #eaf1f4"
+                      ></div>
+                      <div
+                        style="width: 1px; height: 5px; background: #eaf1f4"
+                      ></div>
+                      <div
+                        style="width: 1px; height: 5px; background: #eaf1f4"
+                      ></div>
+                      <div
+                        style="width: 1px; height: 10px; background: #eaf1f4"
+                      ></div>
+                      <div
+                        style="width: 1px; height: 5px; background: #eaf1f4"
+                      ></div>
+                      <div
+                        style="width: 1px; height: 5px; background: #eaf1f4"
+                      ></div>
+                      <div
+                        style="width: 1px; height: 5px; background: #eaf1f4"
+                      ></div>
+                      <div
+                        style="width: 1px; height: 5px; background: #eaf1f4"
+                      ></div>
+                      <div
+                        style="width: 1px; height: 10px; background: #eaf1f4"
+                      ></div>
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      flex: 1;
+                      overflow: hidden;
+                      display: flex;
+                      flex-direction: column;
+                    "
+                  >
+                    <div
+                      style="
+                        padding: 16px 16px 8px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: baseline;
+                      "
+                    >
+                      <span
+                        style="
+                          font-size: 12px;
+                          font-weight: 600;
+                          letter-spacing: 0.1em;
+                          text-transform: uppercase;
+                          color: #5d6470;
+                        "
+                        >Materiais da receita</span
+                      >
+                      <span
+                        style="
+                          font-size: 13px;
+                          color: #1f5066;
+                          font-weight: 600;
+                        "
+                        >Adicionar</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        background: #ffffff;
+                        border-top: 1px solid #e4e7ea;
+                        border-bottom: 1px solid #e4e7ea;
+                      "
+                    >
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          padding: 12px 16px;
+                          border-bottom: 1px solid #edf0f2;
+                          min-height: 44px;
+                        "
+                      >
+                        <div
+                          style="
+                            display: flex;
+                            flex-direction: column;
+                            gap: 2px;
+                          "
+                        >
+                          <span style="font-size: 15px">Farinha de trigo</span
+                          ><span
+                            style="
+                              font-size: 12px;
+                              color: #5d6470;
+                              font-variant-numeric: tabular-nums;
+                            "
+                            >640 g · perda 5%</span
+                          >
+                        </div>
+                        <span
+                          style="
+                            font-size: 15px;
+                            font-weight: 600;
+                            font-variant-numeric: tabular-nums;
+                          "
+                          ><span style="font-size: 11px; color: #8a909a"
+                            >R$ </span
+                          >3,46</span
+                        >
+                      </div>
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          padding: 12px 16px;
+                          border-bottom: 1px solid #edf0f2;
+                          min-height: 44px;
+                          background: #fcf7ec;
+                        "
+                      >
+                        <div
+                          style="
+                            display: flex;
+                            flex-direction: column;
+                            gap: 3px;
+                          "
+                        >
+                          <span style="font-size: 15px">Chocolate 53%</span
+                          ><span
+                            style="
+                              font-size: 11px;
+                              color: #8a5a00;
+                              font-weight: 600;
+                            "
+                            >⚠ custo desatualizado · subiu 8%</span
+                          >
+                        </div>
+                        <span
+                          style="
+                            font-size: 15px;
+                            font-weight: 600;
+                            font-variant-numeric: tabular-nums;
+                          "
+                          ><span style="font-size: 11px; color: #8a909a"
+                            >R$ </span
+                          >35,64</span
+                        >
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        padding: 10px 16px;
+                        font-size: 14px;
+                        color: #1f5066;
+                        font-weight: 600;
+                      "
+                    >
+                      + 4 materiais
+                    </div>
+                    <div
+                      style="
+                        padding: 4px 16px 0;
+                        flex-shrink: 0;
+                        font-size: 12px;
+                        font-weight: 600;
+                        letter-spacing: 0.1em;
+                        text-transform: uppercase;
+                        color: #5d6470;
+                      "
+                    >
+                      O custo do lote · 20 un
+                    </div>
+                    <div
+                      style="
+                        background: #ffffff;
+                        border-top: 1px solid #e4e7ea;
+                        margin-top: 8px;
+                        flex-shrink: 0;
+                      "
+                    >
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          padding: 8px 16px;
+                          font-size: 13px;
+                          font-variant-numeric: tabular-nums;
+                          border-bottom: 1px solid #edf0f2;
+                        "
+                      >
+                        <span>Materiais</span><span>62,40</span>
+                      </div>
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          padding: 8px 16px;
+                          font-size: 13px;
+                          font-variant-numeric: tabular-nums;
+                          border-bottom: 1px solid #edf0f2;
+                        "
+                      >
+                        <span>Embalagem</span><span>9,00</span>
+                      </div>
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          padding: 8px 16px;
+                          font-size: 13px;
+                          font-variant-numeric: tabular-nums;
+                          border-bottom: 1px solid #edf0f2;
+                        "
+                      >
+                        <span>Sua hora · 45 min</span><span>11,20</span>
+                      </div>
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          padding: 8px 16px;
+                          font-size: 13px;
+                          font-variant-numeric: tabular-nums;
+                          border-bottom: 1px solid #edf0f2;
+                        "
+                      >
+                        <span>Gás e energia</span><span>3,60</span>
+                      </div>
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          padding: 8px 16px;
+                          font-size: 13px;
+                          font-variant-numeric: tabular-nums;
+                          border-bottom: 1px solid #edf0f2;
+                        "
+                      >
+                        <span>Fixos rateados</span><span>2,00</span>
+                      </div>
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          padding: 11px 16px;
+                          font-size: 16px;
+                          font-weight: 700;
+                          font-variant-numeric: tabular-nums;
+                          background: #f0f4f6;
+                        "
+                      >
+                        <span>Total do lote</span><span>R$ 88,20</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      background: #ffffff;
+                      border-top: 1px solid #dcdfe3;
+                      box-shadow: 0 -1px 0 #dcdfe3;
+                      padding: 14px 16px 18px;
+                      display: flex;
+                      flex-direction: column;
+                      gap: 12px;
+                    "
+                  >
+                    <div
+                      style="
+                        display: flex;
+                        align-items: flex-end;
+                        justify-content: space-between;
+                        gap: 10px;
+                      "
+                    >
+                      <div
+                        style="display: flex; flex-direction: column; gap: 2px"
+                      >
+                        <span
+                          style="
+                            font-size: 11px;
+                            letter-spacing: 0.08em;
+                            text-transform: uppercase;
+                            color: #5d6470;
+                          "
+                          >Custo / un</span
+                        ><span
+                          style="
+                            font-family: &quot;Space Grotesk&quot;, sans-serif;
+                            font-size: 21px;
+                            font-weight: 700;
+                            font-variant-numeric: tabular-nums;
+                          "
+                          ><span style="font-size: 12px; color: #8a909a"
+                            >R$ </span
+                          >4,41</span
+                        >
+                      </div>
+                      <div
+                        style="display: flex; flex-direction: column; gap: 2px"
+                      >
+                        <span
+                          style="
+                            font-size: 11px;
+                            letter-spacing: 0.08em;
+                            text-transform: uppercase;
+                            color: #5d6470;
+                          "
+                          >Sugerido 45%</span
+                        ><span
+                          style="
+                            font-family: &quot;Space Grotesk&quot;, sans-serif;
+                            font-size: 21px;
+                            font-weight: 700;
+                            color: #1f5066;
+                            font-variant-numeric: tabular-nums;
+                          "
+                          ><span style="font-size: 12px; opacity: 0.6">R$ </span
+                          >8,50</span
+                        >
+                      </div>
+                      <div
+                        style="display: flex; flex-direction: column; gap: 2px"
+                      >
+                        <span
+                          style="
+                            font-size: 11px;
+                            letter-spacing: 0.08em;
+                            text-transform: uppercase;
+                            color: #5d6470;
+                          "
+                          >Praticado</span
+                        ><span
+                          style="
+                            font-family: &quot;Space Grotesk&quot;, sans-serif;
+                            font-size: 21px;
+                            font-weight: 700;
+                            font-variant-numeric: tabular-nums;
+                          "
+                          ><span style="font-size: 12px; color: #8a909a"
+                            >R$ </span
+                          >8,00</span
+                        >
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        border: 1px solid #1f5066;
+                        border-left: 6px solid #1f5066;
+                        border-radius: 10px;
+                        padding: 11px 14px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 2px;
+                      "
+                    >
+                      <span
+                        style="
+                          font-family: &quot;Space Grotesk&quot;, sans-serif;
+                          font-size: 26px;
+                          font-weight: 700;
+                          color: #143b4c;
+                          font-variant-numeric: tabular-nums;
+                          line-height: 1.1;
+                        "
+                        >Sobram R$ 3,19</span
+                      >
+                      <span style="font-size: 12px; color: #4a5260"
+                        >pra você, por unidade, depois da maquininha
+                        (4,99%)</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        background: #1f5066;
+                        color: #ffffff;
+                        border-radius: 10px;
+                        height: 52px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 16px;
+                        font-weight: 600;
+                      "
+                    >
+                      Salvar produto
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <div style="display: flex; flex-direction: column; gap: 4px">
+                  <span
+                    style="
+                      font-size: 11px;
+                      font-weight: 700;
+                      letter-spacing: 0.14em;
+                      text-transform: uppercase;
+                      color: #6a6b76;
+                    "
+                    >Assinatura visual</span
+                  >
+                  <p style="margin: 0; font-size: 14px; line-height: 1.6">
+                    A <strong>escala</strong> (marcas de régua de alturas
+                    alternadas, sempre presa a uma borda) e o
+                    <strong>sinal de igual</strong> como selo — a conta que
+                    fecha. Ícone de app: um “=” em bloco sobre petróleo, legível
+                    a 48px.
+                  </p>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center">
+                  <div
+                    style="
+                      display: flex;
+                      gap: 3px;
+                      align-items: flex-end;
+                      height: 24px;
+                    "
+                  >
+                    <div
+                      style="width: 2px; height: 24px; background: #1f5066"
+                    ></div>
+                    <div
+                      style="width: 2px; height: 12px; background: #3e7d97"
+                    ></div>
+                    <div
+                      style="width: 2px; height: 12px; background: #3e7d97"
+                    ></div>
+                    <div
+                      style="width: 2px; height: 12px; background: #3e7d97"
+                    ></div>
+                    <div
+                      style="width: 2px; height: 24px; background: #1f5066"
+                    ></div>
+                    <div
+                      style="width: 2px; height: 12px; background: #3e7d97"
+                    ></div>
+                    <div
+                      style="width: 2px; height: 12px; background: #3e7d97"
+                    ></div>
+                    <div
+                      style="width: 2px; height: 12px; background: #3e7d97"
+                    ></div>
+                    <div
+                      style="width: 2px; height: 24px; background: #1f5066"
+                    ></div>
+                  </div>
+                  <div
+                    style="
+                      width: 44px;
+                      height: 44px;
+                      border-radius: 10px;
+                      background: #1f5066;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-family: &quot;Space Grotesk&quot;, sans-serif;
+                      color: #ffffff;
+                      font-size: 24px;
+                      font-weight: 700;
+                    "
+                  >
+                    =
+                  </div>
+                </div>
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 14px;
+                    line-height: 1.6;
+                    color: #b3261e;
+                  "
+                >
+                  <strong>Risco honesto:</strong> é o território mais perto do
+                  “ERP azul” e o que mais depende de disciplina para não virar
+                  dashboard genérico — o antídoto é o neutro quente nas
+                  superfícies e a ausência total de cartão sobre cartão. Em
+                  troca, é o que tem os quatro semânticos mais livres (só o
+                  informativo precisa sair para matiz 265).
+                </p>
+              </div>
+            </div>
+
+            <!-- ============ 1c · PONTO ============ -->
+            <div
+              id="1c"
+              style="
+                width: 560px;
+                background: #ffffff;
+                border: 1px solid #e2ded6;
+                border-radius: 10px;
+                padding: 28px;
+                display: flex;
+                flex-direction: column;
+                gap: 22px;
+              "
+            >
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    background: #2a2c3a;
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                  "
+                  >1c</span
+                >
+                <h3
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 26px;
+                    font-weight: 700;
+                    margin: 0;
+                  "
+                >
+                  Ponto
+                </h3>
+                <span style="font-size: 13px; color: #6a6b76"
+                  >tinta quase preta · âmbar</span
+                >
+              </div>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6">
+                Quase monocromático: tinta azul-preta como cor de marca, um
+                único âmbar quente de caramelo como acento, papel cru como
+                superfície. A cor não decora — marca o número que importa. É o
+                território mais editorial e o que mais parece “produto”, não
+                “ferramenta interna”.
+              </p>
+
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #6a6b76;
+                  "
+                  >Paleta</span
+                >
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(6, 1fr);
+                    gap: 6px;
+                  "
+                >
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #1c1e28;
+                    "
+                  ></div>
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #2a2c3a;
+                    "
+                  ></div>
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #d89b3c;
+                    "
+                  ></div>
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #f7e7c8;
+                    "
+                  ></div>
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #f7f4ef;
+                      border: 1px solid #e2ded6;
+                    "
+                  ></div>
+                  <div
+                    style="
+                      height: 56px;
+                      border-radius: 8px;
+                      background: #ffffff;
+                      border: 1px solid #e2ded6;
+                    "
+                  ></div>
+                </div>
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 4px 16px;
+                    font-family: &quot;IBM Plex Sans&quot;, monospace;
+                    font-size: 11px;
+                    color: #6a6b76;
+                    line-height: 1.5;
+                  "
+                >
+                  <span>brand-900 · oklch(.22 .03 272) #1C1E28</span>
+                  <span>brand-700 · oklch(.26 .035 272) #2A2C3A</span>
+                  <span>accent · oklch(.74 .14 78) #D89B3C</span>
+                  <span>accent-100 · oklch(.92 .05 82) #F7E7C8</span>
+                  <span>canvas · oklch(.97 .008 90) #F7F4EF</span>
+                  <span>surface · oklch(1 0 0) #FFFFFF</span>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #6a6b76;
+                  "
+                  >Tipografia</span
+                >
+                <div
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 40px;
+                    font-weight: 700;
+                    line-height: 1;
+                    letter-spacing: -0.025em;
+                  "
+                >
+                  Archivo Semi-Expanded
+                </div>
+                <span style="font-size: 12px; color: #6a6b76"
+                  >display · título, valor em destaque, estado vazio</span
+                >
+                <div
+                  style="
+                    font-family: &quot;Figtree&quot;, sans-serif;
+                    font-size: 19px;
+                    font-weight: 500;
+                    line-height: 1.3;
+                  "
+                >
+                  Figtree · 1234567890
+                </div>
+                <span style="font-size: 12px; color: #6a6b76"
+                  >interface · já no código hoje, numerais tabulares, fica</span
+                >
+              </div>
+
+              <!-- tela 1c -->
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #6a6b76;
+                  "
+                  >Produto, editor · 360×800</span
+                >
+                <div
+                  style="
+                    width: 360px;
+                    height: 800px;
+                    background: #f7f4ef;
+                    border: 1px solid #e2ded6;
+                    border-radius: 14px;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                    font-family: &quot;Figtree&quot;, sans-serif;
+                    color: #23242e;
+                  "
+                >
+                  <div
+                    style="
+                      background: #2a2c3a;
+                      color: #f3f1ec;
+                      padding: 14px 16px 16px;
+                      display: flex;
+                      flex-direction: column;
+                      gap: 10px;
+                    "
+                  >
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        font-size: 11px;
+                        opacity: 0.7;
+                        font-variant-numeric: tabular-nums;
+                      "
+                    >
+                      <span>21:04</span><span>salvo no aparelho</span>
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                      "
+                    >
+                      <span
+                        style="
+                          font-size: 12px;
+                          letter-spacing: 0.12em;
+                          text-transform: uppercase;
+                          opacity: 0.75;
+                        "
+                        >‹ Produtos</span
+                      >
+                      <span
+                        style="
+                          width: 6px;
+                          height: 6px;
+                          border-radius: 50%;
+                          background: #d89b3c;
+                        "
+                      ></span>
+                    </div>
+                    <div
+                      style="
+                        font-family: &quot;Archivo&quot;, sans-serif;
+                        font-size: 26px;
+                        font-weight: 700;
+                        letter-spacing: -0.015em;
+                      "
+                    >
+                      Cookie clássico
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        gap: 8px;
+                        font-size: 12px;
+                        font-variant-numeric: tabular-nums;
+                      "
+                    >
+                      <span
+                        style="
+                          border: 1px solid rgba(243, 241, 236, 0.3);
+                          border-radius: 8px;
+                          padding: 4px 9px;
+                        "
+                        >rende 20 un</span
+                      >
+                      <span
+                        style="
+                          border: 1px solid rgba(243, 241, 236, 0.3);
+                          border-radius: 8px;
+                          padding: 4px 9px;
+                        "
+                        >45 min</span
+                      >
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      flex: 1;
+                      overflow: hidden;
+                      display: flex;
+                      flex-direction: column;
+                    "
+                  >
+                    <div
+                      style="
+                        padding: 16px 16px 8px;
+                        font-size: 12px;
+                        font-weight: 700;
+                        letter-spacing: 0.1em;
+                        text-transform: uppercase;
+                        color: #6a6b76;
+                      "
+                    >
+                      Materiais da receita
+                    </div>
+                    <div
+                      style="
+                        background: #ffffff;
+                        border-top: 1px solid #e7e3db;
+                        border-bottom: 1px solid #e7e3db;
+                      "
+                    >
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          padding: 13px 16px;
+                          border-bottom: 1px solid #f0ede6;
+                          min-height: 44px;
+                        "
+                      >
+                        <div
+                          style="
+                            display: flex;
+                            flex-direction: column;
+                            gap: 2px;
+                          "
+                        >
+                          <span style="font-size: 15px; font-weight: 500"
+                            >Farinha de trigo</span
+                          ><span
+                            style="
+                              font-size: 12px;
+                              color: #6a6b76;
+                              font-variant-numeric: tabular-nums;
+                            "
+                            >640 g · perda 5%</span
+                          >
+                        </div>
+                        <span
+                          style="
+                            font-size: 15px;
+                            font-weight: 600;
+                            font-variant-numeric: tabular-nums;
+                          "
+                          ><span style="font-size: 11px; color: #9a9aa4"
+                            >R$ </span
+                          >3,46</span
+                        >
+                      </div>
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          padding: 13px 16px;
+                          border-bottom: 1px solid #f0ede6;
+                          min-height: 44px;
+                        "
+                      >
+                        <div
+                          style="
+                            display: flex;
+                            flex-direction: column;
+                            gap: 3px;
+                          "
+                        >
+                          <span style="font-size: 15px; font-weight: 500"
+                            >Chocolate 53%</span
+                          ><span
+                            style="
+                              font-size: 11px;
+                              color: #7a5410;
+                              border-left: 3px solid #d89b3c;
+                              padding-left: 6px;
+                            "
+                            >⚠ custo desatualizado</span
+                          >
+                        </div>
+                        <span
+                          style="
+                            font-size: 15px;
+                            font-weight: 600;
+                            font-variant-numeric: tabular-nums;
+                          "
+                          ><span style="font-size: 11px; color: #9a9aa4"
+                            >R$ </span
+                          >35,64</span
+                        >
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        padding: 10px 16px;
+                        font-size: 14px;
+                        font-weight: 600;
+                        color: #23242e;
+                        text-decoration: underline;
+                        text-decoration-color: #d89b3c;
+                        text-underline-offset: 4px;
+                      "
+                    >
+                      + 4 materiais
+                    </div>
+                    <div
+                      style="
+                        margin: 4px 16px 0;
+                        flex-shrink: 0;
+                        background: #ffffff;
+                        border: 1px solid #e7e3db;
+                        border-radius: 10px;
+                        overflow: hidden;
+                      "
+                    >
+                      <div
+                        style="
+                          padding: 10px 14px 8px;
+                          display: flex;
+                          flex-direction: column;
+                          gap: 7px;
+                        "
+                      >
+                        <span
+                          style="
+                            font-size: 12px;
+                            font-weight: 700;
+                            letter-spacing: 0.08em;
+                            text-transform: uppercase;
+                            color: #6a6b76;
+                          "
+                          >O custo do lote · 20 un</span
+                        >
+                        <div
+                          style="
+                            display: flex;
+                            height: 10px;
+                            border-radius: 3px;
+                            overflow: hidden;
+                          "
+                        >
+                          <div style="flex: 6240; background: #2a2c3a"></div>
+                          <div style="flex: 900; background: #5a5c6b"></div>
+                          <div style="flex: 1120; background: #d89b3c"></div>
+                          <div style="flex: 360; background: #a6a8b3"></div>
+                          <div style="flex: 200; background: #dcdad2"></div>
+                        </div>
+                        <div
+                          style="
+                            display: flex;
+                            justify-content: space-between;
+                            font-size: 13px;
+                            font-variant-numeric: tabular-nums;
+                          "
+                        >
+                          <span>Materiais</span><span>62,40</span>
+                        </div>
+                        <div
+                          style="
+                            display: flex;
+                            justify-content: space-between;
+                            font-size: 13px;
+                            font-variant-numeric: tabular-nums;
+                          "
+                        >
+                          <span>Embalagem</span><span>9,00</span>
+                        </div>
+                        <div
+                          style="
+                            display: flex;
+                            justify-content: space-between;
+                            font-size: 13px;
+                            font-variant-numeric: tabular-nums;
+                            color: #7a5410;
+                            font-weight: 600;
+                          "
+                        >
+                          <span>Sua hora · 45 min</span><span>11,20</span>
+                        </div>
+                        <div
+                          style="
+                            display: flex;
+                            justify-content: space-between;
+                            font-size: 13px;
+                            font-variant-numeric: tabular-nums;
+                          "
+                        >
+                          <span>Gás e energia</span><span>3,60</span>
+                        </div>
+                        <div
+                          style="
+                            display: flex;
+                            justify-content: space-between;
+                            font-size: 13px;
+                            font-variant-numeric: tabular-nums;
+                          "
+                        >
+                          <span>Fixos rateados</span><span>2,00</span>
+                        </div>
+                      </div>
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          padding: 11px 14px;
+                          background: #f7f4ef;
+                          border-top: 1px solid #e7e3db;
+                          font-size: 16px;
+                          font-weight: 700;
+                          font-variant-numeric: tabular-nums;
+                        "
+                      >
+                        <span>Total do lote</span><span>R$ 88,20</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      background: #ffffff;
+                      border-top: 1px solid #e7e3db;
+                      padding: 14px 16px 18px;
+                      display: flex;
+                      flex-direction: column;
+                      gap: 12px;
+                    "
+                  >
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        gap: 10px;
+                      "
+                    >
+                      <div
+                        style="display: flex; flex-direction: column; gap: 2px"
+                      >
+                        <span
+                          style="
+                            font-size: 11px;
+                            letter-spacing: 0.08em;
+                            text-transform: uppercase;
+                            color: #6a6b76;
+                          "
+                          >Custo / un</span
+                        ><span
+                          style="
+                            font-family: &quot;Archivo&quot;, sans-serif;
+                            font-size: 21px;
+                            font-weight: 700;
+                            font-variant-numeric: tabular-nums;
+                          "
+                          ><span style="font-size: 12px; color: #9a9aa4"
+                            >R$ </span
+                          >4,41</span
+                        >
+                      </div>
+                      <div
+                        style="display: flex; flex-direction: column; gap: 2px"
+                      >
+                        <span
+                          style="
+                            font-size: 11px;
+                            letter-spacing: 0.08em;
+                            text-transform: uppercase;
+                            color: #6a6b76;
+                          "
+                          >Sugerido 45%</span
+                        ><span
+                          style="
+                            font-family: &quot;Archivo&quot;, sans-serif;
+                            font-size: 21px;
+                            font-weight: 700;
+                            font-variant-numeric: tabular-nums;
+                          "
+                          ><span style="font-size: 12px; color: #9a9aa4"
+                            >R$ </span
+                          >8,50</span
+                        >
+                      </div>
+                      <div
+                        style="display: flex; flex-direction: column; gap: 2px"
+                      >
+                        <span
+                          style="
+                            font-size: 11px;
+                            letter-spacing: 0.08em;
+                            text-transform: uppercase;
+                            color: #6a6b76;
+                          "
+                          >Praticado</span
+                        ><span
+                          style="
+                            font-family: &quot;Archivo&quot;, sans-serif;
+                            font-size: 21px;
+                            font-weight: 700;
+                            font-variant-numeric: tabular-nums;
+                          "
+                          ><span style="font-size: 12px; color: #9a9aa4"
+                            >R$ </span
+                          >8,00</span
+                        >
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        background: #2a2c3a;
+                        border-radius: 10px;
+                        padding: 12px 14px;
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                      "
+                    >
+                      <span
+                        style="
+                          width: 4px;
+                          align-self: stretch;
+                          background: #d89b3c;
+                          border-radius: 2px;
+                        "
+                      ></span>
+                      <div
+                        style="display: flex; flex-direction: column; gap: 2px"
+                      >
+                        <span
+                          style="
+                            font-family: &quot;Archivo&quot;, sans-serif;
+                            font-size: 26px;
+                            font-weight: 700;
+                            color: #ffffff;
+                            font-variant-numeric: tabular-nums;
+                            line-height: 1.1;
+                          "
+                          >Sobram R$ 3,19</span
+                        >
+                        <span style="font-size: 12px; color: #cfcdc6"
+                          >pra você, por unidade, depois da maquininha
+                          (4,99%)</span
+                        >
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        background: #d89b3c;
+                        color: #231a08;
+                        border-radius: 10px;
+                        height: 52px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 16px;
+                        font-weight: 700;
+                      "
+                    >
+                      Salvar produto
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <div style="display: flex; flex-direction: column; gap: 4px">
+                  <span
+                    style="
+                      font-size: 11px;
+                      font-weight: 700;
+                      letter-spacing: 0.14em;
+                      text-transform: uppercase;
+                      color: #6a6b76;
+                    "
+                    >Assinatura visual</span
+                  >
+                  <p style="margin: 0; font-size: 14px; line-height: 1.6">
+                    O <strong>ponto âmbar</strong> (um círculo cheio, sempre
+                    único na peça, marcando o número que decide) e a
+                    <strong>faixa de composição</strong> — a barra de parcelas
+                    de custo, que aqui é ao mesmo tempo gráfico e grafismo de
+                    marca. Ícone de app: ponto âmbar sobre tinta.
+                  </p>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center">
+                  <div
+                    style="
+                      width: 44px;
+                      height: 44px;
+                      border-radius: 10px;
+                      background: #2a2c3a;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                    "
+                  >
+                    <span
+                      style="
+                        width: 16px;
+                        height: 16px;
+                        border-radius: 50%;
+                        background: #d89b3c;
+                      "
+                    ></span>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      height: 22px;
+                      width: 180px;
+                      border-radius: 4px;
+                      overflow: hidden;
+                    "
+                  >
+                    <div style="flex: 6240; background: #2a2c3a"></div>
+                    <div style="flex: 900; background: #5a5c6b"></div>
+                    <div style="flex: 1120; background: #d89b3c"></div>
+                    <div style="flex: 360; background: #a6a8b3"></div>
+                    <div style="flex: 200; background: #dcdad2"></div>
+                  </div>
+                </div>
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 14px;
+                    line-height: 1.6;
+                    color: #b3261e;
+                  "
+                >
+                  <strong>Risco honesto:</strong> tinta escura como “cor de
+                  marca” é o caminho mais curto para o dashboard genérico — o
+                  que salva é o papel cru, o âmbar quente e a ausência de cinza
+                  puro. O âmbar também disputa com o semântico de atenção: aqui
+                  atenção passa a ser o próprio âmbar com ícone obrigatório, e
+                  nenhum outro amarelo entra no sistema.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===================== PARADA ===================== -->
+        <div
+          style="
+            background: #2a2c3a;
+            color: #f3f1ec;
+            border-radius: 10px;
+            padding: 32px 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            max-width: 900px;
+          "
+        >
+          <h2
+            style="
+              font-family: &quot;Archivo&quot;, sans-serif;
+              font-size: 24px;
+              font-weight: 700;
+              margin: 0;
+            "
+          >
+            Parada. Preciso de duas escolhas.
+          </h2>
+          <p
+            style="margin: 0; font-size: 16px; line-height: 1.6; color: #dad8d1"
+          >
+            1 · o <strong style="color: #ffffff">nome</strong> (ou dois, se
+            quiser que eu espere a busca no INPI e no registro.br) · 2 · o
+            <strong style="color: #ffffff">território</strong>:
+            <a
+              href="#1a"
+              style="
+                color: #f3f1ec;
+                border-bottom-color: rgba(243, 241, 236, 0.5);
+              "
+              >1a Bancada</a
+            >,
+            <a
+              href="#1b"
+              style="
+                color: #f3f1ec;
+                border-bottom-color: rgba(243, 241, 236, 0.5);
+              "
+              >1b Instrumento</a
+            >
+            ou
+            <a
+              href="#1c"
+              style="
+                color: #f3f1ec;
+                border-bottom-color: rgba(243, 241, 236, 0.5);
+              "
+              >1c Ponto</a
+            >. Combinações também servem (“1c com a paleta de 1a”).
+          </p>
+          <p
+            style="margin: 0; font-size: 15px; line-height: 1.6; color: #b8b6b0"
+          >
+            Com isso eu entro na Fase 2: MARCA.md, DESIGN.md, tokens.css nos
+            dois temas, logo/, as nove telas de exemplo em celular e desktop, e
+            as aplicações da seção 8.6.
+          </p>
+        </div>
+      </section>
+    </x-dc>
+  </body>
+</html>

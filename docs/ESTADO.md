@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-17 (passagem de polimento `/impeccable polish` executada por cima da 022; roteiros das 015, 016, 017, 018, 019, 020, 021 e 022 por rodar).
+Atualizado em 2026-09-18 (spec `033-a-marca-rende.md` escrita, por rodar; roteiros das 015, 016, 017, 018, 019, 020, 021 e 022 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -14,6 +14,18 @@ e `clientes`, as telas `/pedidos` e `/pedidos/[id]` e a agenda da tela Hoje; a 3
 pedido ao caixa e preencheu a metade do agregado que a spec 004 tinha deixado em zero; a 3C
 entregou a coleção `listasCompra` e a tela `/compras`, que fecha o ciclo do produto — do
 pedido combinado até o carrinho no mercado.
+
+**Em 2026-09-18 o produto ganhou marca própria: Rende.** A decisão de quem conduz o projeto
+reverte o primeiro item do `#d111` ("MyCookie's continua sendo a marca do produto"); o brief
+está em `docs/saas/BRIEF-MARCA.md`, o pacote aprovado em `docs/marca/rende/` (MARCA.md,
+DESIGN.md, tokens.css, logo/, pranchas), e a spec que o leva ao código é
+`specs/033-a-marca-rende.md`, em três sessões — **A** (a tinta: tokens, fontes, o que era da
+MyCookie's e sai do CSS), **B** (o nome e o símbolo: logotipo, ícones, manifesto, telas de
+marca) e **C** (o ponto, a faixa, a cópia e a passagem do `/impeccable`). **A e B saem no mesmo
+deploy.** Nada foi aplicado ainda: o app publicado continua vinho e creme, e o `DESIGN.md` da
+raiz ainda descreve a marca antiga — a sessão A o reescreve antes de qualquer código. A 033
+está fora da ordem do roadmap de propósito (023–032 são citados na 022 e nas decisões); a fase
+1 volta a ser o próximo passo depois dela.
 
 **Todas as specs de módulo estão executadas.** Fora delas, a spec `005-prontidao.md` tem duas
 sessões — `5A` conserta o que impede o primeiro uso, `5B` faz a verificação em navegador. **As
@@ -229,6 +241,7 @@ os números digitados de ponta a ponta.
 | 20  | Menos na frente                             | pronto, sem o roteiro               | `specs/020-menos-na-frente.md`             |
 | 21  | As palavras dela                            | pronto, sem o roteiro               | `specs/021-as-palavras-dela.md`            |
 | 22  | A segunda conta                             | pronto, sem o roteiro               | `specs/022-a-segunda-conta.md`             |
+| 33  | A marca Rende                               | spec escrita, por rodar (A, B e C)  | `specs/033-a-marca-rende.md`               |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:

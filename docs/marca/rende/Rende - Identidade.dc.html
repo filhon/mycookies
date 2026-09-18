@@ -1,0 +1,1394 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="./support.js"></script>
+  </head>
+  <body>
+    <x-dc>
+      <helmet>
+        <meta name="design_doc_mode" content="canvas" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+        <style>
+          body {
+            margin: 0;
+            background: #efebe3;
+          }
+          a {
+            color: #2a5c9e;
+            text-decoration: none;
+            border-bottom: 1px solid #b9cbe4;
+          }
+          a:hover {
+            color: #1b406f;
+            border-bottom-color: #1b406f;
+          }
+        </style>
+      </helmet>
+
+      <section
+        style="
+          padding: 56px 56px 96px;
+          display: flex;
+          flex-direction: column;
+          gap: 44px;
+          font-family: &quot;Figtree&quot;, system-ui, sans-serif;
+          color: #22242e;
+          max-width: 1560px;
+        "
+      >
+        <header
+          style="
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            max-width: 860px;
+          "
+        >
+          <span
+            style="
+              font-family: &quot;Archivo&quot;, sans-serif;
+              font-size: 12px;
+              font-weight: 700;
+              letter-spacing: 0.16em;
+              text-transform: uppercase;
+              color: #6e4a12;
+            "
+            >Fase 2 · identidade visual</span
+          >
+          <div style="display: flex; align-items: center; gap: 18px">
+            <img
+              src="logo/rende-horizontal.svg"
+              alt="Rende"
+              style="height: 52px; width: auto"
+            />
+          </div>
+          <p
+            style="
+              margin: 0;
+              font-size: 18px;
+              line-height: 1.55;
+              color: #3c3e4d;
+              text-wrap: pretty;
+            "
+          >
+            Território Ponto aplicado ao nome Rende. Tinta azul-preta como cor
+            de marca, um único âmbar como acento, papel cru como superfície. Os
+            arquivos desta prancha são os mesmos de
+            <a href="logo/rende-principal.svg">logo/</a>; as cores são as de
+            <a href="tokens.css">tokens.css</a>.
+          </p>
+        </header>
+
+        <!-- LOGOTIPO -->
+        <div style="display: flex; flex-direction: column; gap: 16px">
+          <h2
+            style="
+              font-family: &quot;Archivo&quot;, sans-serif;
+              font-size: 13px;
+              font-weight: 700;
+              letter-spacing: 0.16em;
+              text-transform: uppercase;
+              color: #6a6c78;
+              margin: 0;
+            "
+          >
+            Logotipo
+          </h2>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px">
+            <div
+              style="
+                background: #fefcf8;
+                border: 1px solid #e1dcd3;
+                border-radius: 12px;
+                padding: 32px;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                min-width: 320px;
+                flex: 1;
+              "
+            >
+              <img
+                src="logo/rende-principal.svg"
+                alt="Rende, versão principal"
+                style="width: 240px; height: auto"
+              />
+              <span style="font-size: 13px; font-weight: 500; color: #6a6c78"
+                >principal · tinta sobre claro</span
+              >
+            </div>
+            <div
+              style="
+                background: #2a2c3a;
+                border: 1px solid #2a2c3a;
+                border-radius: 12px;
+                padding: 32px;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                min-width: 320px;
+                flex: 1;
+              "
+            >
+              <img
+                src="logo/rende-principal-negativa.svg"
+                alt="Rende, versão negativa"
+                style="width: 240px; height: auto"
+              />
+              <span style="font-size: 13px; font-weight: 500; color: #a8aab5"
+                >negativa · creme sobre tinta</span
+              >
+            </div>
+            <div
+              style="
+                background: #fefcf8;
+                border: 1px solid #e1dcd3;
+                border-radius: 12px;
+                padding: 32px;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                min-width: 240px;
+              "
+            >
+              <img
+                src="logo/rende-simbolo.svg"
+                alt="Símbolo do Rende"
+                style="width: 88px; height: 88px"
+              />
+              <span style="font-size: 13px; font-weight: 500; color: #6a6c78"
+                >símbolo · a régua e o ponto</span
+              >
+            </div>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px">
+            <div
+              style="
+                background: #fefcf8;
+                border: 1px solid #e1dcd3;
+                border-radius: 12px;
+                padding: 28px 32px;
+                display: flex;
+                flex-direction: column;
+                gap: 18px;
+                flex: 1;
+                min-width: 300px;
+              "
+            >
+              <img
+                src="logo/rende-empilhada.svg"
+                alt="Rende, versão empilhada"
+                style="width: 150px; height: auto"
+              />
+              <span style="font-size: 13px; font-weight: 500; color: #6a6c78"
+                >empilhada · avatar, adesivo, lâmina</span
+              >
+            </div>
+            <div
+              style="
+                background: #fefcf8;
+                border: 1px solid #e1dcd3;
+                border-radius: 12px;
+                padding: 28px 32px;
+                display: flex;
+                flex-direction: column;
+                gap: 18px;
+                flex: 1;
+                min-width: 300px;
+              "
+            >
+              <img
+                src="logo/rende-mono-positiva.svg"
+                alt="Rende, monocromática positiva"
+                style="width: 200px; height: auto"
+              />
+              <span style="font-size: 13px; font-weight: 500; color: #6a6c78"
+                >mono positiva · carimbo, gravação, uma cor</span
+              >
+            </div>
+            <div
+              style="
+                background: #1c1e28;
+                border-radius: 12px;
+                padding: 28px 32px;
+                display: flex;
+                flex-direction: column;
+                gap: 18px;
+                flex: 1;
+                min-width: 300px;
+              "
+            >
+              <img
+                src="logo/rende-mono-negativa.svg"
+                alt="Rende, monocromática negativa"
+                style="width: 200px; height: auto"
+              />
+              <span style="font-size: 13px; font-weight: 500; color: #a8aab5"
+                >mono negativa</span
+              >
+            </div>
+          </div>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+              gap: 16px;
+            "
+          >
+            <div
+              style="
+                background: #fefcf8;
+                border: 1px solid #e1dcd3;
+                border-radius: 12px;
+                padding: 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+              "
+            >
+              <span
+                style="
+                  font-size: 13px;
+                  font-weight: 700;
+                  letter-spacing: 0.1em;
+                  text-transform: uppercase;
+                  color: #17724a;
+                "
+                >Pode</span
+              >
+              <ul
+                style="
+                  margin: 0;
+                  padding-left: 20px;
+                  font-size: 15px;
+                  line-height: 1.7;
+                  color: #3c3e4d;
+                "
+              >
+                <li>
+                  Área de proteção igual à altura do “r”, em todos os lados.
+                </li>
+                <li>Mínimo de 88px de largura em tela; 48px para o símbolo.</li>
+                <li>
+                  Sobre tinta, canvas, surface, branco, ou tarja de tinta na
+                  foto.
+                </li>
+              </ul>
+            </div>
+            <div
+              style="
+                background: #fefcf8;
+                border: 1px solid #e1dcd3;
+                border-radius: 12px;
+                padding: 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+              "
+            >
+              <span
+                style="
+                  font-size: 13px;
+                  font-weight: 700;
+                  letter-spacing: 0.1em;
+                  text-transform: uppercase;
+                  color: #b02a1c;
+                "
+                >Não pode</span
+              >
+              <ul
+                style="
+                  margin: 0;
+                  padding-left: 20px;
+                  font-size: 15px;
+                  line-height: 1.7;
+                  color: #3c3e4d;
+                "
+              >
+                <li>
+                  Trocar a cor do ponto, inclinar, deformar, contornar,
+                  sombrear.
+                </li>
+                <li>
+                  Caixa alta, outra fonte, ponto sozinho como ícone de
+                  interface.
+                </li>
+                <li>
+                  Logotipo sobre âmbar (o ponto desaparece) ou sobre semântico.
+                </li>
+                <li>
+                  Refazer o símbolo com utensílio de cozinha. Não é marca de
+                  confeitaria.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- PALETA -->
+        <div style="display: flex; flex-direction: column; gap: 16px">
+          <h2
+            style="
+              font-family: &quot;Archivo&quot;, sans-serif;
+              font-size: 13px;
+              font-weight: 700;
+              letter-spacing: 0.16em;
+              text-transform: uppercase;
+              color: #6a6c78;
+              margin: 0;
+            "
+          >
+            Paleta · 70% neutro · 25% tinta · 5% âmbar
+          </h2>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+              gap: 10px;
+            "
+          >
+            <div
+              style="
+                border-radius: 10px;
+                overflow: hidden;
+                border: 1px solid #e1dcd3;
+              "
+            >
+              <div style="height: 68px; background: #15171f"></div>
+              <div
+                style="
+                  background: #fefcf8;
+                  padding: 10px 12px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 2px;
+                "
+              >
+                <span style="font-size: 13px; font-weight: 600">brand-900</span
+                ><span
+                  style="
+                    font-size: 11px;
+                    color: #6a6c78;
+                    font-variant-numeric: tabular-nums;
+                  "
+                  >0.19 .030 272</span
+                >
+              </div>
+            </div>
+            <div
+              style="
+                border-radius: 10px;
+                overflow: hidden;
+                border: 1px solid #e1dcd3;
+              "
+            >
+              <div style="height: 68px; background: #1c1e28"></div>
+              <div
+                style="
+                  background: #fefcf8;
+                  padding: 10px 12px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 2px;
+                "
+              >
+                <span style="font-size: 13px; font-weight: 600">brand-800</span
+                ><span
+                  style="
+                    font-size: 11px;
+                    color: #6a6c78;
+                    font-variant-numeric: tabular-nums;
+                  "
+                  >0.22 .030 272</span
+                >
+              </div>
+            </div>
+            <div
+              style="
+                border-radius: 10px;
+                overflow: hidden;
+                border: 1px solid #e1dcd3;
+              "
+            >
+              <div style="height: 68px; background: #2a2c3a"></div>
+              <div
+                style="
+                  background: #fefcf8;
+                  padding: 10px 12px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 2px;
+                "
+              >
+                <span style="font-size: 13px; font-weight: 600"
+                  >brand-700 · primária</span
+                ><span
+                  style="
+                    font-size: 11px;
+                    color: #6a6c78;
+                    font-variant-numeric: tabular-nums;
+                  "
+                  >0.26 .035 272</span
+                >
+              </div>
+            </div>
+            <div
+              style="
+                border-radius: 10px;
+                overflow: hidden;
+                border: 1px solid #e1dcd3;
+              "
+            >
+              <div style="height: 68px; background: #545768"></div>
+              <div
+                style="
+                  background: #fefcf8;
+                  padding: 10px 12px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 2px;
+                "
+              >
+                <span style="font-size: 13px; font-weight: 600">brand-500</span
+                ><span
+                  style="
+                    font-size: 11px;
+                    color: #6a6c78;
+                    font-variant-numeric: tabular-nums;
+                  "
+                  >0.44 .033 272</span
+                >
+              </div>
+            </div>
+            <div
+              style="
+                border-radius: 10px;
+                overflow: hidden;
+                border: 1px solid #e1dcd3;
+              "
+            >
+              <div style="height: 68px; background: #cfd0d8"></div>
+              <div
+                style="
+                  background: #fefcf8;
+                  padding: 10px 12px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 2px;
+                "
+              >
+                <span style="font-size: 13px; font-weight: 600">brand-200</span
+                ><span
+                  style="
+                    font-size: 11px;
+                    color: #6a6c78;
+                    font-variant-numeric: tabular-nums;
+                  "
+                  >0.85 .015 272</span
+                >
+              </div>
+            </div>
+            <div
+              style="
+                border-radius: 10px;
+                overflow: hidden;
+                border: 1px solid #e1dcd3;
+              "
+            >
+              <div style="height: 68px; background: #d89b3c"></div>
+              <div
+                style="
+                  background: #fefcf8;
+                  padding: 10px 12px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 2px;
+                "
+              >
+                <span style="font-size: 13px; font-weight: 600"
+                  >accent-500 · o ponto</span
+                ><span
+                  style="
+                    font-size: 11px;
+                    color: #6a6c78;
+                    font-variant-numeric: tabular-nums;
+                  "
+                  >0.74 .140 78</span
+                >
+              </div>
+            </div>
+            <div
+              style="
+                border-radius: 10px;
+                overflow: hidden;
+                border: 1px solid #e1dcd3;
+              "
+            >
+              <div style="height: 68px; background: #f7e7c8"></div>
+              <div
+                style="
+                  background: #fefcf8;
+                  padding: 10px 12px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 2px;
+                "
+              >
+                <span style="font-size: 13px; font-weight: 600">accent-100</span
+                ><span
+                  style="
+                    font-size: 11px;
+                    color: #6a6c78;
+                    font-variant-numeric: tabular-nums;
+                  "
+                  >0.93 .050 82</span
+                >
+              </div>
+            </div>
+            <div
+              style="
+                border-radius: 10px;
+                overflow: hidden;
+                border: 1px solid #e1dcd3;
+              "
+            >
+              <div style="height: 68px; background: #6e4a12"></div>
+              <div
+                style="
+                  background: #fefcf8;
+                  padding: 10px 12px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 2px;
+                "
+              >
+                <span style="font-size: 13px; font-weight: 600">accent-ink</span
+                ><span
+                  style="
+                    font-size: 11px;
+                    color: #6a6c78;
+                    font-variant-numeric: tabular-nums;
+                  "
+                  >0.45 .100 70</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+              gap: 16px;
+            "
+          >
+            <div
+              style="
+                background: #f7f4ee;
+                border: 1px solid #e1dcd3;
+                border-radius: 12px;
+                padding: 22px 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+              "
+            >
+              <span
+                style="
+                  font-size: 12px;
+                  font-weight: 700;
+                  letter-spacing: 0.12em;
+                  text-transform: uppercase;
+                  color: #6a6c78;
+                "
+                >Superfícies · tema claro</span
+              >
+              <div style="display: flex; gap: 8px">
+                <div
+                  style="
+                    flex: 1;
+                    height: 52px;
+                    border-radius: 8px;
+                    background: #f7f4ee;
+                    border: 1px solid #e1dcd3;
+                  "
+                ></div>
+                <div
+                  style="
+                    flex: 1;
+                    height: 52px;
+                    border-radius: 8px;
+                    background: #fefcf8;
+                    border: 1px solid #e1dcd3;
+                  "
+                ></div>
+                <div
+                  style="
+                    flex: 1;
+                    height: 52px;
+                    border-radius: 8px;
+                    background: #efebe3;
+                    border: 1px solid #e1dcd3;
+                  "
+                ></div>
+                <div
+                  style="
+                    flex: 1;
+                    height: 52px;
+                    border-radius: 8px;
+                    background: #c3bdb2;
+                  "
+                ></div>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 4px;
+                  font-size: 13px;
+                  color: #6a6c78;
+                "
+              >
+                <span>canvas · surface · surface-sunken · border-strong</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 3px">
+                <span style="font-size: 16px; color: #22242e"
+                  >ink — o número e o nome</span
+                >
+                <span style="font-size: 15px; color: #6a6c78"
+                  >ink-muted — a unidade, o detalhe</span
+                >
+                <span style="font-size: 13px; color: #8e909b"
+                  >ink-subtle — o “R$”, a nota</span
+                >
+              </div>
+            </div>
+            <div
+              style="
+                background: #15171f;
+                border: 1px solid #343641;
+                border-radius: 12px;
+                padding: 22px 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+              "
+            >
+              <span
+                style="
+                  font-size: 12px;
+                  font-weight: 700;
+                  letter-spacing: 0.12em;
+                  text-transform: uppercase;
+                  color: #a8aab5;
+                "
+                >Superfícies · tema escuro</span
+              >
+              <div style="display: flex; gap: 8px">
+                <div
+                  style="
+                    flex: 1;
+                    height: 52px;
+                    border-radius: 8px;
+                    background: #15171f;
+                    border: 1px solid #343641;
+                  "
+                ></div>
+                <div
+                  style="
+                    flex: 1;
+                    height: 52px;
+                    border-radius: 8px;
+                    background: #1e2029;
+                    border: 1px solid #343641;
+                  "
+                ></div>
+                <div
+                  style="
+                    flex: 1;
+                    height: 52px;
+                    border-radius: 8px;
+                    background: #101219;
+                    border: 1px solid #343641;
+                  "
+                ></div>
+                <div
+                  style="
+                    flex: 1;
+                    height: 52px;
+                    border-radius: 8px;
+                    background: #4c4f5c;
+                  "
+                ></div>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 4px;
+                  font-size: 13px;
+                  color: #a8aab5;
+                "
+              >
+                <span>canvas · surface · surface-sunken · border-strong</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 3px">
+                <span style="font-size: 16px; color: #f4f1eb"
+                  >ink — o número e o nome</span
+                >
+                <span style="font-size: 15px; color: #a8aab5"
+                  >ink-muted — a unidade, o detalhe</span
+                >
+                <span style="font-size: 13px; color: #7f8290"
+                  >ink-subtle — o “R$”, a nota</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+              gap: 12px;
+            "
+          >
+            <div
+              style="
+                background: #ddf0e4;
+                border-radius: 10px;
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+              "
+            >
+              <span
+                style="
+                  font-size: 12px;
+                  font-weight: 700;
+                  letter-spacing: 0.1em;
+                  text-transform: uppercase;
+                  color: #17724a;
+                "
+                >Positivo</span
+              ><span style="font-size: 15px; color: #17724a; font-weight: 600"
+                >↗ Sobraram R$ 2.084,40</span
+              ><span style="font-size: 13px; color: #3c3e4d"
+                >lucro, entrada, meta batida</span
+              >
+            </div>
+            <div
+              style="
+                background: #f7e7c8;
+                border-radius: 10px;
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+              "
+            >
+              <span
+                style="
+                  font-size: 12px;
+                  font-weight: 700;
+                  letter-spacing: 0.1em;
+                  text-transform: uppercase;
+                  color: #7a5410;
+                "
+                >Atenção</span
+              ><span style="font-size: 15px; color: #7a5410; font-weight: 600"
+                >⚠ custo desatualizado</span
+              ><span style="font-size: 13px; color: #3c3e4d"
+                >despensa baixa, escrita pendente</span
+              >
+            </div>
+            <div
+              style="
+                background: #fadfda;
+                border-radius: 10px;
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+              "
+            >
+              <span
+                style="
+                  font-size: 12px;
+                  font-weight: 700;
+                  letter-spacing: 0.1em;
+                  text-transform: uppercase;
+                  color: #b02a1c;
+                "
+                >Negativo</span
+              ><span style="font-size: 15px; color: #b02a1c; font-weight: 600"
+                >↘ Perde R$ 0,38 por unidade</span
+              ><span style="font-size: 13px; color: #3c3e4d"
+                >prejuízo, saída, erro</span
+              >
+            </div>
+            <div
+              style="
+                background: #dce7f5;
+                border-radius: 10px;
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+              "
+            >
+              <span
+                style="
+                  font-size: 12px;
+                  font-weight: 700;
+                  letter-spacing: 0.1em;
+                  text-transform: uppercase;
+                  color: #2a5c9e;
+                "
+                >Informativo</span
+              ><span style="font-size: 15px; color: #2a5c9e; font-weight: 600"
+                >ⓘ Margem é quanto do preço sobra</span
+              ><span style="font-size: 13px; color: #3c3e4d"
+                >dica de cálculo</span
+              >
+            </div>
+          </div>
+          <p
+            style="
+              margin: 0;
+              font-size: 14px;
+              line-height: 1.6;
+              color: #6a6c78;
+              max-width: 860px;
+            "
+          >
+            A primária está em matiz 272, a 245° do vermelho de erro: prejuízo
+            ao lado da cor da marca é inequívoco. Mesmo assim, todo estado leva
+            ícone e palavra — cor nunca é o único portador de significado.
+          </p>
+        </div>
+
+        <!-- TIPOGRAFIA -->
+        <div style="display: flex; flex-direction: column; gap: 16px">
+          <h2
+            style="
+              font-family: &quot;Archivo&quot;, sans-serif;
+              font-size: 13px;
+              font-weight: 700;
+              letter-spacing: 0.16em;
+              text-transform: uppercase;
+              color: #6a6c78;
+              margin: 0;
+            "
+          >
+            Tipografia · Archivo + Figtree
+          </h2>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+              gap: 16px;
+            "
+          >
+            <div
+              style="
+                background: #fefcf8;
+                border: 1px solid #e1dcd3;
+                border-radius: 12px;
+                padding: 26px 28px;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+              "
+            >
+              <span
+                style="
+                  font-size: 12px;
+                  font-weight: 700;
+                  letter-spacing: 0.12em;
+                  text-transform: uppercase;
+                  color: #6a6c78;
+                "
+                >Display · Archivo</span
+              >
+              <span
+                style="
+                  font-family: &quot;Archivo&quot;, sans-serif;
+                  font-size: 44px;
+                  font-weight: 700;
+                  letter-spacing: -0.03em;
+                  line-height: 1.05;
+                "
+                >R$ 8,50</span
+              >
+              <span
+                style="
+                  font-family: &quot;Archivo&quot;, sans-serif;
+                  font-size: 24px;
+                  font-weight: 700;
+                "
+                >Cookie clássico</span
+              >
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #6a6c78;
+                "
+              >
+                Título de página, valor em destaque, número de estado vazio,
+                manchete de peça. Não entra em rótulo, tabela, formulário,
+                navegação nem microcopy.
+              </p>
+            </div>
+            <div
+              style="
+                background: #fefcf8;
+                border: 1px solid #e1dcd3;
+                border-radius: 12px;
+                padding: 26px 28px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+              "
+            >
+              <span
+                style="
+                  font-size: 12px;
+                  font-weight: 700;
+                  letter-spacing: 0.12em;
+                  text-transform: uppercase;
+                  color: #6a6c78;
+                "
+                >Interface · Figtree</span
+              >
+              <div style="display: flex; flex-direction: column; gap: 7px">
+                <span style="font-size: 20px; font-weight: 600"
+                  >heading 20 · O custo do lote</span
+                >
+                <span style="font-size: 17px; font-weight: 600"
+                  >subheading 17 · Chocolate 53%</span
+                >
+                <span style="font-size: 15px"
+                  >body 15 · Cadastre o que você compra e o custo sai
+                  sozinho.</span
+                >
+                <span style="font-size: 13px; font-weight: 500"
+                  >label 13 · Preço praticado</span
+                >
+                <span style="font-size: 12px; font-weight: 500; color: #6a6c78"
+                  >micro 12 · depois da maquininha (4,99%)</span
+                >
+                <span
+                  style="
+                    font-size: 15px;
+                    font-weight: 600;
+                    font-variant-numeric: tabular-nums;
+                  "
+                  >tabular 0123456789 · R$ 1.612,40</span
+                >
+              </div>
+            </div>
+            <div
+              style="
+                background: #2a2c3a;
+                border-radius: 12px;
+                padding: 26px 28px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+              "
+            >
+              <span
+                style="
+                  font-size: 12px;
+                  font-weight: 700;
+                  letter-spacing: 0.12em;
+                  text-transform: uppercase;
+                  color: #a8aab5;
+                "
+                >A regra dos números</span
+              >
+              <div
+                style="
+                  display: flex;
+                  align-items: baseline;
+                  gap: 2px;
+                  font-family: &quot;Archivo&quot;, sans-serif;
+                  font-weight: 700;
+                  color: #f4f1eb;
+                  font-variant-numeric: tabular-nums;
+                "
+              >
+                <span style="font-size: 18px; color: #7f8290">R$ </span
+                ><span style="font-size: 40px">4,41</span>
+              </div>
+              <span style="font-size: 14px; color: #dadce4"
+                >Tabular, peso 600, “R$” um degrau menor e apagado.</span
+              >
+              <span style="font-size: 14px; color: #dadce4"
+                >Todo número vem com a consequência:
+                <strong style="color: #d89b3c">sobram R$ 3,19 pra você</strong>,
+                por unidade, depois da maquininha.</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- ASSINATURA -->
+        <div style="display: flex; flex-direction: column; gap: 16px">
+          <h2
+            style="
+              font-family: &quot;Archivo&quot;, sans-serif;
+              font-size: 13px;
+              font-weight: 700;
+              letter-spacing: 0.16em;
+              text-transform: uppercase;
+              color: #6a6c78;
+              margin: 0;
+            "
+          >
+            Assinatura visual · dois elementos
+          </h2>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+              gap: 16px;
+            "
+          >
+            <div
+              style="
+                background: #fefcf8;
+                border: 1px solid #e1dcd3;
+                border-radius: 12px;
+                padding: 26px 28px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+              "
+            >
+              <span
+                style="
+                  font-family: &quot;Archivo&quot;, sans-serif;
+                  font-size: 20px;
+                  font-weight: 700;
+                "
+                >1 · O ponto âmbar</span
+              >
+              <div style="display: flex; align-items: center; gap: 16px">
+                <span
+                  style="
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 50%;
+                    background: #d89b3c;
+                  "
+                ></span>
+                <span
+                  style="
+                    width: 12px;
+                    height: 12px;
+                    border-radius: 50%;
+                    background: #d89b3c;
+                  "
+                ></span>
+                <span
+                  style="
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    background: #d89b3c;
+                  "
+                ></span>
+              </div>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 15px;
+                  line-height: 1.6;
+                  color: #3c3e4d;
+                "
+              >
+                Um círculo cheio, sempre único na peça, marcando o número que
+                decide. 8 a 16px em tela. Aparece em logotipo, ícone, painel de
+                preço, estado vazio e divulgação — nunca como ícone de
+                interface, nunca em série.
+              </p>
+            </div>
+            <div
+              style="
+                background: #fefcf8;
+                border: 1px solid #e1dcd3;
+                border-radius: 12px;
+                padding: 26px 28px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+              "
+            >
+              <span
+                style="
+                  font-family: &quot;Archivo&quot;, sans-serif;
+                  font-size: 20px;
+                  font-weight: 700;
+                "
+                >2 · A faixa de composição</span
+              >
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <div
+                  style="
+                    display: flex;
+                    height: 10px;
+                    border-radius: 3px;
+                    overflow: hidden;
+                  "
+                >
+                  <div style="flex: 6240; background: #2a2c3a"></div>
+                  <div style="flex: 900; background: #545768"></div>
+                  <div style="flex: 1120; background: #d89b3c"></div>
+                  <div style="flex: 360; background: #9b9dac"></div>
+                  <div style="flex: 200; background: #cfd0d8"></div>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    gap: 12px;
+                    flex-wrap: wrap;
+                    font-size: 12px;
+                    color: #6a6c78;
+                    font-variant-numeric: tabular-nums;
+                  "
+                >
+                  <span>materiais 62,40</span><span>embalagem 9,00</span
+                  ><span style="color: #6e4a12; font-weight: 600"
+                    >sua hora 11,20</span
+                  ><span>gás 3,60</span><span>fixos 2,00</span>
+                </div>
+              </div>
+              <p
+                style="
+                  margin: 0;
+                  font-size: 15px;
+                  line-height: 1.6;
+                  color: #3c3e4d;
+                "
+              >
+                A barra segmentada na proporção real do custo do lote. É gráfico
+                e grafismo ao mesmo tempo — sempre com dados verdadeiros, nunca
+                proporção inventada. O segmento “sua hora” é o âmbar, porque é o
+                que ela mais esquece de cobrar.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ÍCONE -->
+        <div style="display: flex; flex-direction: column; gap: 16px">
+          <h2
+            style="
+              font-family: &quot;Archivo&quot;, sans-serif;
+              font-size: 13px;
+              font-weight: 700;
+              letter-spacing: 0.16em;
+              text-transform: uppercase;
+              color: #6a6c78;
+              margin: 0;
+            "
+          >
+            Ícone de app · na tela de início
+          </h2>
+          <div
+            style="
+              display: flex;
+              flex-wrap: wrap;
+              gap: 16px;
+              align-items: flex-start;
+            "
+          >
+            <div
+              style="
+                background: #fefcf8;
+                border: 1px solid #e1dcd3;
+                border-radius: 12px;
+                padding: 26px 28px;
+                display: flex;
+                gap: 26px;
+                align-items: flex-end;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 8px;
+                "
+              >
+                <img
+                  src="logo/icone-app-512.png"
+                  alt="Ícone do Rende, 512"
+                  style="width: 96px; height: 96px; border-radius: 21px"
+                /><span style="font-size: 12px; color: #6a6c78"
+                  >512 · 96px</span
+                >
+              </div>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 8px;
+                "
+              >
+                <img
+                  src="logo/icone-app-192.png"
+                  alt="Ícone do Rende, 192"
+                  style="width: 64px; height: 64px; border-radius: 14px"
+                /><span style="font-size: 12px; color: #6a6c78"
+                  >192 · 64px</span
+                >
+              </div>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 8px;
+                "
+              >
+                <img
+                  src="logo/icone-app-48.png"
+                  alt="Ícone do Rende, 48"
+                  style="width: 48px; height: 48px; border-radius: 11px"
+                /><span style="font-size: 12px; color: #6a6c78"
+                  >48px · o teste real</span
+                >
+              </div>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 8px;
+                "
+              >
+                <img
+                  src="logo/icone-app-maskable-512.png"
+                  alt="Ícone maskable"
+                  style="width: 64px; height: 64px; border-radius: 0"
+                /><span style="font-size: 12px; color: #6a6c78">maskable</span>
+              </div>
+            </div>
+            <div
+              style="
+                width: 280px;
+                background: #1c1e28;
+                border-radius: 22px;
+                padding: 22px 18px;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+              "
+            >
+              <span
+                style="font-size: 12px; color: #a8aab5; letter-spacing: 0.08em"
+                >tela de início · 21:04</span
+              >
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(4, 1fr);
+                  gap: 16px 12px;
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 6px;
+                  "
+                >
+                  <img
+                    src="logo/icone-app-192.png"
+                    alt="Rende"
+                    style="width: 48px; height: 48px; border-radius: 11px"
+                  /><span style="font-size: 10px; color: #f4f1eb">Rende</span>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 6px;
+                  "
+                >
+                  <span
+                    style="
+                      width: 48px;
+                      height: 48px;
+                      border-radius: 11px;
+                      background: #25d366;
+                    "
+                  ></span
+                  ><span style="font-size: 10px; color: #f4f1eb">WhatsApp</span>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 6px;
+                  "
+                >
+                  <span
+                    style="
+                      width: 48px;
+                      height: 48px;
+                      border-radius: 11px;
+                      background: #c13584;
+                    "
+                  ></span
+                  ><span style="font-size: 10px; color: #f4f1eb"
+                    >Instagram</span
+                  >
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 6px;
+                  "
+                >
+                  <span
+                    style="
+                      width: 48px;
+                      height: 48px;
+                      border-radius: 11px;
+                      background: #4285f4;
+                    "
+                  ></span
+                  ><span style="font-size: 10px; color: #f4f1eb">Agenda</span>
+                </div>
+              </div>
+              <span style="font-size: 12px; line-height: 1.5; color: #7f8290"
+                >O ícone é a régua fechada pelo ponto. Sem letra, sem biscoito:
+                lê a 48px ao lado dos outros.</span
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+    </x-dc>
+  </body>
+</html>

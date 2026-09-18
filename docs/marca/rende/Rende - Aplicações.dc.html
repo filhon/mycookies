@@ -1,0 +1,1512 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="./support.js"></script>
+  </head>
+  <body>
+    <x-dc>
+      <helmet>
+        <meta name="design_doc_mode" content="canvas" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+        <style>
+          body {
+            margin: 0;
+            background: #efebe3;
+          }
+          a {
+            color: #2a5c9e;
+            text-decoration: none;
+            border-bottom: 1px solid #b9cbe4;
+          }
+          a:hover {
+            color: #1b406f;
+            border-bottom-color: #1b406f;
+          }
+        </style>
+      </helmet>
+
+      <section
+        style="
+          padding: 56px 56px 96px;
+          display: flex;
+          flex-direction: column;
+          gap: 40px;
+          font-family: &quot;Figtree&quot;, system-ui, sans-serif;
+          color: #22242e;
+          max-width: 2400px;
+        "
+      >
+        <header
+          style="
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            max-width: 880px;
+          "
+        >
+          <span
+            style="
+              font-family: &quot;Archivo&quot;, sans-serif;
+              font-size: 12px;
+              font-weight: 700;
+              letter-spacing: 0.16em;
+              text-transform: uppercase;
+              color: #6e4a12;
+            "
+            >Fase 2 · aplicações</span
+          >
+          <h1
+            style="
+              font-family: &quot;Archivo&quot;, sans-serif;
+              font-size: 40px;
+              font-weight: 700;
+              margin: 0;
+              letter-spacing: -0.02em;
+            "
+          >
+            Onde a marca aparece fora do app
+          </h1>
+          <p
+            style="
+              margin: 0;
+              font-size: 17px;
+              line-height: 1.55;
+              color: #3c3e4d;
+              text-wrap: pretty;
+            "
+          >
+            Abertura, página de venda, Instagram, e-mail, adesivo e a lâmina
+            para a professora de confeitaria. Assumido: R$ 39/mês como preço do
+            plano único (faixa do brief R$ 29–49), teste de 14 dias, anual com
+            dois meses de desconto.
+          </p>
+        </header>
+
+        <!-- ABERTURA + LANDING MOBILE -->
+        <div
+          style="
+            display: flex;
+            flex-wrap: wrap;
+            gap: 28px;
+            align-items: flex-start;
+          "
+        >
+          <div style="display: flex; flex-direction: column; gap: 12px">
+            <div
+              style="
+                width: 360px;
+                height: 800px;
+                background: #1c1e28;
+                border-radius: 14px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 26px;
+                border: 1px solid #343641;
+              "
+            >
+              <img
+                src="logo/rende-simbolo.svg"
+                alt="Rende"
+                style="width: 96px; height: 96px"
+              />
+              <img
+                src="logo/rende-principal-negativa.svg"
+                alt="Rende"
+                style="width: 132px; height: auto"
+              />
+            </div>
+            <div
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                max-width: 360px;
+              "
+            >
+              <span
+                style="
+                  font-family: &quot;Archivo&quot;, sans-serif;
+                  font-size: 16px;
+                  font-weight: 700;
+                "
+                >Tela de abertura</span
+              >
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #3c3e4d;
+                "
+              >
+                A régua já desenhada; o ponto âmbar entra em 180ms de 0.9 a 1.
+                Sem rotação, sem quique. Com
+                <code style="font-size: 13px">prefers-reduced-motion</code>,
+                aparece pronto.
+              </p>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 12px">
+            <div
+              style="
+                width: 360px;
+                height: 800px;
+                background: #f7f4ee;
+                border: 1px solid #c3bdb2;
+                border-radius: 14px;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+              "
+            >
+              <div
+                style="
+                  padding: 20px 20px 0;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                "
+              >
+                <img
+                  src="logo/rende-principal.svg"
+                  alt="Rende"
+                  style="width: 104px; height: auto"
+                />
+                <span style="font-size: 13px; font-weight: 600; color: #22242e"
+                  >Entrar</span
+                >
+              </div>
+              <div
+                style="
+                  flex: 1;
+                  padding: 28px 20px 0;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 18px;
+                "
+              >
+                <h2
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 33px;
+                    line-height: 1.12;
+                    font-weight: 700;
+                    margin: 0;
+                    letter-spacing: -0.025em;
+                  "
+                >
+                  Você sabe fazer doce. A conta é que estava errada.
+                </h2>
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 16px;
+                    line-height: 1.55;
+                    color: #3c3e4d;
+                  "
+                >
+                  O Rende soma materiais, embalagem, gás, a sua hora e a
+                  maquininha — e diz quanto cobrar em cada doce.
+                </p>
+                <div
+                  style="
+                    background: #2a2c3a;
+                    border-radius: 12px;
+                    padding: 16px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                  "
+                >
+                  <span
+                    style="
+                      font-size: 12px;
+                      letter-spacing: 0.1em;
+                      text-transform: uppercase;
+                      color: #a8aab5;
+                    "
+                    >Cookie clássico</span
+                  >
+                  <div
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: flex-end;
+                    "
+                  >
+                    <div
+                      style="display: flex; flex-direction: column; gap: 2px"
+                    >
+                      <span style="font-size: 12px; color: #a8aab5">custa</span
+                      ><span
+                        style="
+                          font-family: &quot;Archivo&quot;, sans-serif;
+                          font-size: 26px;
+                          font-weight: 700;
+                          color: #f6f3ed;
+                          font-variant-numeric: tabular-nums;
+                        "
+                        >R$ 4,41</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 2px;
+                        align-items: flex-end;
+                      "
+                    >
+                      <span style="font-size: 12px; color: #a8aab5"
+                        >deveria cobrar</span
+                      ><span
+                        style="
+                          font-family: &quot;Archivo&quot;, sans-serif;
+                          font-size: 26px;
+                          font-weight: 700;
+                          color: #d89b3c;
+                          font-variant-numeric: tabular-nums;
+                        "
+                        >R$ 8,50</span
+                      >
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      height: 10px;
+                      border-radius: 3px;
+                      overflow: hidden;
+                    "
+                  >
+                    <div style="flex: 6240; background: #dadce4"></div>
+                    <div style="flex: 900; background: #7f8290"></div>
+                    <div style="flex: 1120; background: #d89b3c"></div>
+                    <div style="flex: 360; background: #4c4f5c"></div>
+                    <div style="flex: 200; background: #343641"></div>
+                  </div>
+                  <span style="font-size: 12px; color: #dadce4"
+                    >materiais · embalagem ·
+                    <strong style="color: #d89b3c">sua hora</strong> · gás ·
+                    fixos</span
+                  >
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px">
+                  <div
+                    style="
+                      background: #d89b3c;
+                      color: #231a08;
+                      border-radius: 10px;
+                      height: 52px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-size: 16px;
+                      font-weight: 700;
+                    "
+                  >
+                    Testar 14 dias grátis
+                  </div>
+                  <span
+                    style="font-size: 13px; text-align: center; color: #6a6c78"
+                    >R$ 39/mês depois. Sem cartão agora.</span
+                  >
+                </div>
+              </div>
+              <div
+                style="
+                  background: #fefcf8;
+                  border-top: 1px solid #e1dcd3;
+                  padding: 16px 20px 22px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 8px;
+                "
+              >
+                <span
+                  style="
+                    font-size: 12px;
+                    font-weight: 700;
+                    letter-spacing: 0.1em;
+                    text-transform: uppercase;
+                    color: #6a6c78;
+                  "
+                  >Quem já usa</span
+                >
+                <p style="margin: 0; font-size: 15px; line-height: 1.55">
+                  “Eu vendia cookie a R$ 6,00. Estava perdendo R$ 0,41 em cada
+                  um.”
+                </p>
+                <span style="font-size: 13px; color: #6a6c78"
+                  >Maynara · MyCookie's · Sorocaba</span
+                >
+              </div>
+            </div>
+            <div
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                max-width: 360px;
+              "
+            >
+              <span
+                style="
+                  font-family: &quot;Archivo&quot;, sans-serif;
+                  font-size: 16px;
+                  font-weight: 700;
+                "
+                >Página de venda · celular, uma dobra</span
+              >
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #3c3e4d;
+                "
+              >
+                Manchete, a frase do preço como demonstração real, preço do
+                plano, botão de teste e a prova da MyCookie's — tudo acima da
+                linha de rolagem em 800px.
+              </p>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 12px">
+            <div
+              style="
+                width: 1280px;
+                height: 720px;
+                background: #f7f4ee;
+                border: 1px solid #c3bdb2;
+                border-radius: 14px;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+              "
+            >
+              <div
+                style="
+                  padding: 22px 48px;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  border-bottom: 1px solid #e1dcd3;
+                "
+              >
+                <img
+                  src="logo/rende-principal.svg"
+                  alt="Rende"
+                  style="width: 112px; height: auto"
+                />
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 26px;
+                    font-size: 15px;
+                  "
+                >
+                  <span>Como funciona</span><span>Preço</span
+                  ><span style="font-weight: 600">Entrar</span>
+                  <span
+                    style="
+                      background: #d89b3c;
+                      color: #231a08;
+                      font-weight: 700;
+                      border-radius: 10px;
+                      padding: 12px 18px;
+                    "
+                    >Testar 14 dias</span
+                  >
+                </div>
+              </div>
+              <div
+                style="
+                  flex: 1;
+                  display: grid;
+                  grid-template-columns: 1.05fr 0.95fr;
+                  gap: 48px;
+                  padding: 48px;
+                  align-items: center;
+                "
+              >
+                <div style="display: flex; flex-direction: column; gap: 22px">
+                  <h2
+                    style="
+                      font-family: &quot;Archivo&quot;, sans-serif;
+                      font-size: 52px;
+                      line-height: 1.08;
+                      font-weight: 700;
+                      margin: 0;
+                      letter-spacing: -0.03em;
+                      text-wrap: pretty;
+                    "
+                  >
+                    Este doce te custa R$ 3,41 e você deveria cobrar R$ 8,50.
+                  </h2>
+                  <p
+                    style="
+                      margin: 0;
+                      font-size: 19px;
+                      line-height: 1.55;
+                      color: #3c3e4d;
+                      max-width: 520px;
+                    "
+                  >
+                    O Rende calcula o custo real de cada doce — com embalagem,
+                    gás, a sua hora e a taxa da maquininha — e mostra quanto
+                    sobra pra você antes de você dar o preço.
+                  </p>
+                  <div style="display: flex; align-items: center; gap: 18px">
+                    <span
+                      style="
+                        background: #d89b3c;
+                        color: #231a08;
+                        font-size: 17px;
+                        font-weight: 700;
+                        border-radius: 10px;
+                        padding: 16px 26px;
+                      "
+                      >Testar 14 dias grátis</span
+                    >
+                    <span style="font-size: 15px; color: #6a6c78"
+                      >R$ 39/mês · R$ 390/ano · sem cartão agora</span
+                    >
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 12px;
+                      align-items: center;
+                      padding-top: 8px;
+                      border-top: 1px solid #e1dcd3;
+                    "
+                  >
+                    <span
+                      style="
+                        width: 10px;
+                        height: 10px;
+                        border-radius: 50%;
+                        background: #d89b3c;
+                      "
+                    ></span>
+                    <p
+                      style="
+                        margin: 0;
+                        font-size: 15px;
+                        line-height: 1.5;
+                        color: #3c3e4d;
+                      "
+                    >
+                      “Eu vendia cookie a R$ 6,00. Estava perdendo R$ 0,41 em
+                      cada um.” — <strong>Maynara, MyCookie's</strong>
+                    </p>
+                  </div>
+                </div>
+                <div
+                  style="
+                    background: #2a2c3a;
+                    border-radius: 14px;
+                    padding: 28px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                  "
+                >
+                  <span
+                    style="
+                      font-size: 12px;
+                      letter-spacing: 0.1em;
+                      text-transform: uppercase;
+                      color: #a8aab5;
+                    "
+                    >Cookie clássico · rende 20</span
+                  >
+                  <div
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: flex-end;
+                    "
+                  >
+                    <div
+                      style="display: flex; flex-direction: column; gap: 3px"
+                    >
+                      <span style="font-size: 13px; color: #a8aab5"
+                        >custo por unidade</span
+                      ><span
+                        style="
+                          font-family: &quot;Archivo&quot;, sans-serif;
+                          font-size: 40px;
+                          font-weight: 700;
+                          color: #f6f3ed;
+                          font-variant-numeric: tabular-nums;
+                        "
+                        >R$ 4,41</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 3px;
+                        align-items: flex-end;
+                      "
+                    >
+                      <span style="font-size: 13px; color: #a8aab5"
+                        >sugerido · 45%</span
+                      ><span
+                        style="
+                          font-family: &quot;Archivo&quot;, sans-serif;
+                          font-size: 40px;
+                          font-weight: 700;
+                          color: #d89b3c;
+                          font-variant-numeric: tabular-nums;
+                        "
+                        >R$ 8,50</span
+                      >
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      height: 12px;
+                      border-radius: 4px;
+                      overflow: hidden;
+                    "
+                  >
+                    <div style="flex: 6240; background: #dadce4"></div>
+                    <div style="flex: 900; background: #7f8290"></div>
+                    <div style="flex: 1120; background: #d89b3c"></div>
+                    <div style="flex: 360; background: #4c4f5c"></div>
+                    <div style="flex: 200; background: #343641"></div>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 7px;
+                      font-size: 14px;
+                      color: #f4f1eb;
+                      font-variant-numeric: tabular-nums;
+                    "
+                  >
+                    <div style="display: flex; justify-content: space-between">
+                      <span>Materiais</span><span>R$ 3,12</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between">
+                      <span>Embalagem</span><span>R$ 0,45</span>
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        color: #e3b267;
+                        font-weight: 600;
+                      "
+                    >
+                      <span>Sua hora</span><span>R$ 0,56</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between">
+                      <span>Gás e energia</span><span>R$ 0,18</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between">
+                      <span>Fixos rateados</span><span>R$ 0,10</span>
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      background: #15171f;
+                      border-radius: 10px;
+                      padding: 14px 16px;
+                      display: flex;
+                      align-items: center;
+                      gap: 12px;
+                    "
+                  >
+                    <span
+                      style="
+                        width: 4px;
+                        align-self: stretch;
+                        background: #d89b3c;
+                        border-radius: 2px;
+                      "
+                    ></span>
+                    <div
+                      style="display: flex; flex-direction: column; gap: 2px"
+                    >
+                      <span
+                        style="
+                          font-family: &quot;Archivo&quot;, sans-serif;
+                          font-size: 24px;
+                          font-weight: 700;
+                          color: #f6f3ed;
+                          font-variant-numeric: tabular-nums;
+                        "
+                        >Sobram R$ 3,19</span
+                      >
+                      <span style="font-size: 12px; color: #a8aab5"
+                        >vendendo a R$ 8,00, depois da maquininha</span
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                max-width: 900px;
+              "
+            >
+              <span
+                style="
+                  font-family: &quot;Archivo&quot;, sans-serif;
+                  font-size: 16px;
+                  font-weight: 700;
+                "
+                >Página de venda · desktop</span
+              >
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #3c3e4d;
+                "
+              >
+                A mesma dobra em duas colunas: argumento à esquerda, a conta
+                real à direita. A prova é o próprio produto funcionando, não um
+                mock decorativo — os cinco valores somam R$ 4,41.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- INSTAGRAM -->
+        <h2
+          style="
+            font-family: &quot;Archivo&quot;, sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #6a6c78;
+            margin: 0;
+          "
+        >
+          Instagram
+        </h2>
+        <div
+          style="
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            align-items: flex-start;
+          "
+        >
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; gap: 16px; align-items: flex-end">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 8px;
+                "
+              >
+                <img
+                  src="logo/icone-app-192.png"
+                  alt="avatar"
+                  style="width: 88px; height: 88px; border-radius: 50%"
+                /><span style="font-size: 12px; color: #6a6c78">avatar</span>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 8px;
+                "
+              >
+                <div
+                  style="
+                    width: 72px;
+                    height: 72px;
+                    border-radius: 50%;
+                    background: #f7e7c8;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <span
+                    style="
+                      width: 20px;
+                      height: 20px;
+                      border-radius: 50%;
+                      background: #d89b3c;
+                    "
+                  ></span>
+                </div>
+                <span style="font-size: 12px; color: #6a6c78"
+                  >destaque “preço”</span
+                >
+              </div>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 8px;
+                "
+              >
+                <div
+                  style="
+                    width: 72px;
+                    height: 72px;
+                    border-radius: 50%;
+                    background: #2a2c3a;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <div
+                    style="
+                      width: 34px;
+                      height: 5px;
+                      border-radius: 3px;
+                      background: #f6f3ed;
+                    "
+                  ></div>
+                </div>
+                <span style="font-size: 12px; color: #6a6c78"
+                  >destaque “conta”</span
+                >
+              </div>
+            </div>
+            <span
+              style="
+                font-size: 13px;
+                color: #3c3e4d;
+                max-width: 280px;
+                line-height: 1.5;
+              "
+              >@rende.app — <em>verificar</em>. Avatar é o ícone; capas de
+              destaque usam só as duas assinaturas.</span
+            >
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <div
+              style="
+                width: 320px;
+                height: 320px;
+                background: #2a2c3a;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                padding: 28px;
+              "
+            >
+              <span
+                style="
+                  width: 14px;
+                  height: 14px;
+                  border-radius: 50%;
+                  background: #d89b3c;
+                "
+              ></span>
+              <div style="display: flex; flex-direction: column; gap: 12px">
+                <span
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 31px;
+                    line-height: 1.1;
+                    font-weight: 700;
+                    color: #f6f3ed;
+                    letter-spacing: -0.02em;
+                  "
+                  >Seu cookie custa R$ 4,41.</span
+                >
+                <span style="font-size: 16px; color: #dadce4">Você sabia?</span>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                "
+              >
+                <img
+                  src="logo/rende-principal-negativa.svg"
+                  alt="Rende"
+                  style="width: 82px; height: auto"
+                /><span style="font-size: 12px; color: #a8aab5">arraste →</span>
+              </div>
+            </div>
+            <span style="font-size: 13px; color: #6a6c78"
+              >post de feed · 1080×1080</span
+            >
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; gap: 10px">
+              <div
+                style="
+                  width: 200px;
+                  height: 200px;
+                  background: #f7f4ee;
+                  border: 1px solid #e1dcd3;
+                  padding: 20px;
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: space-between;
+                "
+              >
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.12em;
+                    text-transform: uppercase;
+                    color: #6a6c78;
+                  "
+                  >1 de 6</span
+                >
+                <span
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 21px;
+                    line-height: 1.15;
+                    font-weight: 700;
+                  "
+                  >Materiais: R$ 3,12</span
+                >
+                <span style="font-size: 13px; line-height: 1.45; color: #3c3e4d"
+                  >É o único número que a maioria soma.</span
+                >
+              </div>
+              <div
+                style="
+                  width: 200px;
+                  height: 200px;
+                  background: #f7e7c8;
+                  padding: 20px;
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: space-between;
+                "
+              >
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.12em;
+                    text-transform: uppercase;
+                    color: #7a5410;
+                  "
+                  >4 de 6</span
+                >
+                <span
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 21px;
+                    line-height: 1.15;
+                    font-weight: 700;
+                    color: #231a08;
+                  "
+                  >Sua hora: R$ 0,56</span
+                >
+                <span style="font-size: 13px; line-height: 1.45; color: #6e4a12"
+                  >45 minutos de trabalho por fornada. Isso é custo.</span
+                >
+              </div>
+              <div
+                style="
+                  width: 200px;
+                  height: 200px;
+                  background: #2a2c3a;
+                  padding: 20px;
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: space-between;
+                "
+              >
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.12em;
+                    text-transform: uppercase;
+                    color: #a8aab5;
+                  "
+                  >6 de 6</span
+                >
+                <span
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 21px;
+                    line-height: 1.15;
+                    font-weight: 700;
+                    color: #f6f3ed;
+                  "
+                  >Sobram R$ 3,19</span
+                >
+                <span style="font-size: 13px; line-height: 1.45; color: #dadce4"
+                  >Cobrando R$ 8,00, já sem a maquininha. Feito no Rende.</span
+                >
+              </div>
+            </div>
+            <span style="font-size: 13px; color: #6a6c78"
+              >carrossel educativo · três das seis telas</span
+            >
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <div
+              style="
+                width: 230px;
+                height: 409px;
+                background: #1c1e28;
+                border-radius: 10px;
+                padding: 26px 22px;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+              "
+            >
+              <img
+                src="logo/rende-principal-negativa.svg"
+                alt="Rende"
+                style="width: 76px; height: auto"
+              />
+              <div style="display: flex; flex-direction: column; gap: 14px">
+                <span
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 25px;
+                    line-height: 1.15;
+                    font-weight: 700;
+                    color: #f4f1eb;
+                  "
+                  >Quanto sobra pra você neste doce?</span
+                >
+                <span style="font-size: 14px; line-height: 1.5; color: #a8aab5"
+                  >Se a resposta for “acho que uns 3 reais”, a gente tem uma
+                  conta pra te mostrar.</span
+                >
+              </div>
+              <div
+                style="
+                  background: #e3a94f;
+                  color: #231a08;
+                  border-radius: 999px;
+                  height: 46px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 14px;
+                  font-weight: 700;
+                "
+              >
+                arrasta pra cima
+              </div>
+            </div>
+            <span style="font-size: 13px; color: #6a6c78"
+              >story · 1080×1920</span
+            >
+          </div>
+        </div>
+
+        <!-- EMAIL + ADESIVO -->
+        <h2
+          style="
+            font-family: &quot;Archivo&quot;, sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #6a6c78;
+            margin: 0;
+          "
+        >
+          E-mail, adesivo e cartão
+        </h2>
+        <div
+          style="
+            display: flex;
+            flex-wrap: wrap;
+            gap: 28px;
+            align-items: flex-start;
+          "
+        >
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <div
+              style="
+                width: 600px;
+                background: #fefcf8;
+                border: 1px solid #e1dcd3;
+                border-radius: 12px;
+                overflow: hidden;
+              "
+            >
+              <div
+                style="
+                  background: #2a2c3a;
+                  padding: 22px 28px;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                "
+              >
+                <img
+                  src="logo/rende-principal-negativa.svg"
+                  alt="Rende"
+                  style="width: 96px; height: auto"
+                />
+                <span style="font-size: 12px; color: #a8aab5"
+                  >14 dias de teste</span
+                >
+              </div>
+              <div
+                style="
+                  padding: 28px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 16px;
+                "
+              >
+                <h3
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 26px;
+                    font-weight: 700;
+                    margin: 0;
+                    line-height: 1.2;
+                  "
+                >
+                  Bem-vinda ao Rende. Comece por um produto só.
+                </h3>
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 16px;
+                    line-height: 1.6;
+                    color: #3c3e4d;
+                  "
+                >
+                  Oi, Maynara. Você tem 14 dias. Não precisa cadastrar tudo:
+                  escolha o doce que você mais vende, monte a receita e veja o
+                  custo real por unidade. Leva uns dez minutos.
+                </p>
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 16px;
+                    line-height: 1.6;
+                    color: #3c3e4d;
+                  "
+                >
+                  Se o preço que aparecer te surpreender, era exatamente pra
+                  isso.
+                </p>
+                <div
+                  style="
+                    background: #d89b3c;
+                    color: #231a08;
+                    border-radius: 10px;
+                    height: 52px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 16px;
+                    font-weight: 700;
+                    max-width: 280px;
+                  "
+                >
+                  Precificar meu primeiro doce
+                </div>
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 14px;
+                    line-height: 1.6;
+                    color: #6a6c78;
+                  "
+                >
+                  Precisa de ajuda? Responde este e-mail — quem lê sou eu.
+                </p>
+              </div>
+              <div
+                style="
+                  border-top: 1px solid #e1dcd3;
+                  padding: 18px 28px;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  background: #f7f4ee;
+                "
+              >
+                <span style="font-size: 12px; color: #6a6c78"
+                  >Rende · rende.com.br · <em>verificar</em></span
+                >
+                <span style="font-size: 12px; color: #6a6c78"
+                  >cancelar avisos</span
+                >
+              </div>
+            </div>
+            <span style="font-size: 13px; color: #6a6c78"
+              >e-mail transacional · boas-vindas</span
+            >
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 20px">
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <div
+                style="
+                  width: 180px;
+                  height: 180px;
+                  border-radius: 50%;
+                  background: #f7f4ee;
+                  border: 1px dashed #c3bdb2;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+                  gap: 10px;
+                "
+              >
+                <span
+                  style="
+                    width: 12px;
+                    height: 12px;
+                    border-radius: 50%;
+                    background: #d89b3c;
+                  "
+                ></span>
+                <span style="font-size: 13px; font-weight: 600; color: #3c3e4d"
+                  >feito com</span
+                >
+                <img
+                  src="logo/rende-principal.svg"
+                  alt="Rende"
+                  style="width: 86px; height: auto"
+                />
+              </div>
+              <span
+                style="
+                  font-size: 13px;
+                  color: #6a6c78;
+                  max-width: 180px;
+                  line-height: 1.5;
+                "
+                >adesivo de embalagem · opcional, nunca obrigatório</span
+              >
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <div
+                style="
+                  width: 320px;
+                  height: 190px;
+                  background: #2a2c3a;
+                  border-radius: 10px;
+                  padding: 24px;
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: space-between;
+                "
+              >
+                <img
+                  src="logo/rende-principal-negativa.svg"
+                  alt="Rende"
+                  style="width: 96px; height: auto"
+                />
+                <div style="display: flex; flex-direction: column; gap: 4px">
+                  <span style="font-size: 14px; color: #f4f1eb"
+                    >O preço certo de cada doce,</span
+                  >
+                  <span style="font-size: 14px; color: #f4f1eb"
+                    >antes de mandar o orçamento.</span
+                  >
+                  <span
+                    style="font-size: 13px; color: #d89b3c; padding-top: 6px"
+                    >rende.com.br · @rende.app</span
+                  >
+                </div>
+              </div>
+              <span style="font-size: 13px; color: #6a6c78"
+                >cartão · 90×50mm</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- LÂMINA -->
+        <h2
+          style="
+            font-family: &quot;Archivo&quot;, sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #6a6c78;
+            margin: 0;
+          "
+        >
+          Lâmina para a professora de confeitaria
+        </h2>
+        <div style="display: flex; flex-direction: column; gap: 12px">
+          <div
+            style="
+              width: 1280px;
+              height: 720px;
+              background: #f7f4ee;
+              border: 1px solid #c3bdb2;
+              border-radius: 14px;
+              overflow: hidden;
+              display: flex;
+              flex-direction: column;
+            "
+          >
+            <div
+              style="
+                background: #2a2c3a;
+                padding: 28px 48px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              "
+            >
+              <img
+                src="logo/rende-principal-negativa.svg"
+                alt="Rende"
+                style="width: 112px; height: auto"
+              />
+              <span style="font-size: 14px; color: #a8aab5"
+                >Para quem ensina confeitaria</span
+              >
+            </div>
+            <div
+              style="
+                flex: 1;
+                padding: 44px 48px;
+                display: flex;
+                flex-direction: column;
+                gap: 32px;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 14px;
+                  max-width: 980px;
+                "
+              >
+                <h3
+                  style="
+                    font-family: &quot;Archivo&quot;, sans-serif;
+                    font-size: 44px;
+                    line-height: 1.1;
+                    font-weight: 700;
+                    margin: 0;
+                    letter-spacing: -0.025em;
+                    text-wrap: pretty;
+                  "
+                >
+                  Suas alunas saem do curso com a planilha. Elas podiam sair com
+                  a conta certa.
+                </h3>
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 18px;
+                    line-height: 1.55;
+                    color: #3c3e4d;
+                    max-width: 820px;
+                  "
+                >
+                  A planilha quebra na segunda alteração de preço. O Rende
+                  mantém o custo vivo: quando o chocolate sobe, os produtos
+                  afetados avisam, e o preço se recalcula.
+                </p>
+              </div>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(3, 1fr);
+                  gap: 20px;
+                "
+              >
+                <div
+                  style="
+                    background: #fefcf8;
+                    border: 1px solid #e1dcd3;
+                    border-radius: 12px;
+                    padding: 22px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                  "
+                >
+                  <span
+                    style="
+                      font-family: &quot;Archivo&quot;, sans-serif;
+                      font-size: 30px;
+                      font-weight: 700;
+                      font-variant-numeric: tabular-nums;
+                    "
+                    >R$ 4,41</span
+                  >
+                  <span
+                    style="font-size: 15px; line-height: 1.5; color: #3c3e4d"
+                    >O custo real por unidade, com embalagem, gás, a hora dela e
+                    os fixos.</span
+                  >
+                </div>
+                <div
+                  style="
+                    background: #fefcf8;
+                    border: 1px solid #e1dcd3;
+                    border-radius: 12px;
+                    padding: 22px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                  "
+                >
+                  <span
+                    style="
+                      font-family: &quot;Archivo&quot;, sans-serif;
+                      font-size: 30px;
+                      font-weight: 700;
+                      color: #6e4a12;
+                      font-variant-numeric: tabular-nums;
+                    "
+                    >R$ 8,50</span
+                  >
+                  <span
+                    style="font-size: 15px; line-height: 1.5; color: #3c3e4d"
+                    >O preço sugerido por margem — e o que sobra no preço que
+                    ela já pratica.</span
+                  >
+                </div>
+                <div
+                  style="
+                    background: #fefcf8;
+                    border: 1px solid #e1dcd3;
+                    border-radius: 12px;
+                    padding: 22px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                  "
+                >
+                  <span
+                    style="
+                      font-family: &quot;Archivo&quot;, sans-serif;
+                      font-size: 30px;
+                      font-weight: 700;
+                      color: #17724a;
+                      font-variant-numeric: tabular-nums;
+                    "
+                    >R$ 3,19</span
+                  >
+                  <span
+                    style="font-size: 15px; line-height: 1.5; color: #3c3e4d"
+                    >Quanto sobra pra ela por unidade, já descontada a
+                    maquininha.</span
+                  >
+                </div>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: flex-end;
+                  gap: 32px;
+                  margin-top: auto;
+                "
+              >
+                <div style="display: flex; gap: 12px; align-items: center">
+                  <span
+                    style="
+                      width: 12px;
+                      height: 12px;
+                      border-radius: 50%;
+                      background: #d89b3c;
+                    "
+                  ></span>
+                  <p
+                    style="
+                      margin: 0;
+                      font-size: 16px;
+                      line-height: 1.5;
+                      color: #3c3e4d;
+                      max-width: 560px;
+                    "
+                  >
+                    “Eu vendia cookie a R$ 6,00. Estava perdendo R$ 0,41 em cada
+                    um.” — <strong>Maynara, MyCookie's</strong>, primeira
+                    cliente do Rende.
+                  </p>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                    align-items: flex-end;
+                  "
+                >
+                  <span
+                    style="
+                      background: #d89b3c;
+                      color: #231a08;
+                      font-size: 16px;
+                      font-weight: 700;
+                      border-radius: 10px;
+                      padding: 15px 24px;
+                    "
+                    >Indicar às suas alunas</span
+                  >
+                  <span style="font-size: 14px; color: #6a6c78"
+                    >R$ 39/mês · 14 dias grátis · rende.com.br</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+          <p
+            style="
+              margin: 0;
+              font-size: 14px;
+              line-height: 1.6;
+              color: #3c3e4d;
+              max-width: 900px;
+            "
+          >
+            Precisa provar que a marca convence quem indica, e não só quem usa:
+            o argumento é contra a planilha, os três números são os mesmos do
+            app, e a MyCookie's aparece como cliente — nunca como dona da marca.
+          </p>
+        </div>
+      </section>
+    </x-dc>
+  </body>
+</html>
