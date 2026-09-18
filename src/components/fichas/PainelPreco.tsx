@@ -1,6 +1,6 @@
 "use client";
 
-import { CornerDownRight, TriangleAlert, Wand2 } from "lucide-react";
+import { TrendingDown, TriangleAlert, Wand2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Dinheiro } from "@/components/ui/Dinheiro";
@@ -15,12 +15,13 @@ import {
 import type { Centavos } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
-type Tom = "neutro" | "positivo" | "atencao";
+type Tom = "neutro" | "positivo" | "atencao" | "negativo";
 
 const TONS: Record<Tom, string> = {
   neutro: "border-line bg-sunken text-ink-muted",
   positivo: "border-line bg-sunken text-ink-muted",
   atencao: "border-attention/30 bg-attention-soft text-ink",
+  negativo: "border-negative/30 bg-negative-soft text-ink",
 };
 
 function Metrica({
@@ -35,7 +36,9 @@ function Metrica({
 }) {
   return (
     <div className="min-w-0">
-      <p className="text-micro font-medium uppercase tracking-wide text-ink-subtle">
+      {/* `ink-muted`, e não `ink-subtle`: é o nome dos dois números que ela
+          veio ver, a meio metro, e 3,45:1 não passa como texto. */}
+      <p className="text-micro font-medium uppercase tracking-wide text-ink-muted">
         {rotulo}
       </p>
       <p className="mt-0.5 flex items-center gap-2">
@@ -131,12 +134,20 @@ export function PainelPreco({
       };
     }
 
-    // O prejuízo carrega ícone e a palavra: a cor sozinha nunca decide.
+    // O prejuízo carrega ícone e a palavra: a cor sozinha nunca decide. É
+    // negativo, e não atenção, como nas listas: a mesma notícia, a mesma cor,
+    // e o ocre fica para a pendência e para o preço que não existe.
     if (lucro < 0) {
       return {
-        tom: "atencao",
+        tom: "negativo",
         correcao: true,
-        icone: alerta,
+        icone: (
+          <TrendingDown
+            aria-hidden
+            className="mt-0.5 size-4 shrink-0 text-negative"
+            strokeWidth={1.75}
+          />
+        ),
         mensagem: (
           <>
             Neste preço você <strong className="font-semibold">perde</strong>{" "}
@@ -147,14 +158,16 @@ export function PainelPreco({
       };
     }
 
+    // O ponto âmbar marca o número que decide: é a assinatura da marca, e
+    // este é o único lugar do app em que ele marca dado. Nos casos de atenção
+    // ele sai, porque o triângulo é quem fala (`MARCA.md` § 2.2).
     return {
       tom: "positivo",
       correcao: false,
       icone: (
-        <CornerDownRight
+        <span
           aria-hidden
-          className="mt-0.5 size-4 shrink-0 text-ink-subtle"
-          strokeWidth={1.75}
+          className="mt-1 size-2.5 shrink-0 rounded-full bg-accent-500"
         />
       ),
       mensagem: (

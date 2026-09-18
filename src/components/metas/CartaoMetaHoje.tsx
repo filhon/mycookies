@@ -60,7 +60,7 @@ export function CartaoMetaHoje() {
         <p className="mt-2 flex items-center gap-2 font-display text-title font-semibold text-ink">
           <Check
             aria-hidden
-            className="size-6 shrink-0 text-accent-ink"
+            className="size-6 shrink-0 text-positive"
             strokeWidth={2.25}
           />
           Meta batida

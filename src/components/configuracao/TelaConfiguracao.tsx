@@ -99,6 +99,7 @@ interface EstadoConfiguracao {
   telefone: string;
   instagram: string;
   assinaturaDataUrl: string | null;
+  frase: string;
 }
 
 function texto(numero: number): string {
@@ -130,6 +131,7 @@ function estadoInicial(
     telefone: dado?.contato?.telefone ?? "",
     instagram: dado?.contato?.instagram ?? "",
     assinaturaDataUrl: dado?.assinaturaDataUrl ?? null,
+    frase: dado?.frase ?? "",
   };
 }
 
@@ -137,6 +139,7 @@ function paraDados(estado: EstadoConfiguracao): DadosConfiguracao {
   return {
     ...(estado.nomeNegocio ? { nomeNegocio: estado.nomeNegocio } : {}),
     contato: { telefone: estado.telefone, instagram: estado.instagram },
+    frase: estado.frase,
     ...(estado.assinaturaDataUrl && {
       assinaturaDataUrl: estado.assinaturaDataUrl,
     }),
@@ -314,6 +317,7 @@ export function TelaConfiguracao() {
       ...dados.precificacao,
       contato: dados.contato,
       assinaturaDataUrl: dados.assinaturaDataUrl,
+      frase: dados.frase,
     });
 
     if (!resultado.success) {
@@ -543,6 +547,16 @@ export function TelaConfiguracao() {
               onChange={(evento) => definir("instagram", evento.target.value)}
             />
           </div>
+
+          <Campo
+            rotulo="Frase do orçamento"
+            dica="Aparece embaixo da folha, ao lado do seu contato."
+            placeholder="Feito com amor em cada mordida."
+            maxLength={80}
+            value={estado.frase}
+            onChange={(evento) => definir("frase", evento.target.value)}
+            erro={erros.frase}
+          />
 
           <CampoImagem
             rotulo="Assinatura"

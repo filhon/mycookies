@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   calcularCustoFicha,
+  composicaoDoLote,
   custoDasEscolhas,
   custoLinhaItem,
   ehEmbalagem,
@@ -337,5 +338,92 @@ describe("podeSerComponente", () => {
   it("recusa a própria ficha e o que está arquivado", () => {
     expect(podeSerComponente(cookie, "cookie")).toBe(false);
     expect(podeSerComponente({ ...cookie, arquivado: true })).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spec 033-C · a faixa de composição é dado (`#d126`).
+// ---------------------------------------------------------------------------
+
+describe("composicaoDoLote", () => {
+  it("fecha o caso de aceite: cinco parcelas sobre 8820, o trabalho em destaque", () => {
+    // O cookie clássico de MARCA.md § 1.1: R$ 4,41 a unidade, 20 por lote.
+    const segmentos = composicaoDoLote({
+      custoInsumos: 6240,
+      custoEmbalagem: 900,
+      custoComponentes: 0,
+      custoEscolhas: 0,
+      custoMaoDeObra: 1120,
+      custoEnergiaGas: 360,
+      custoIndireto: 200,
+      custoTotalLote: 8820,
+      custoUnitario: 441,
+    });
+
+    expect(segmentos.map((s) => s.rotulo)).toEqual([
+      "Materiais",
+      "Embalagem",
+      "Seu trabalho",
+      "Energia e gás",
+      "Fatia das despesas fixas",
+    ]);
+    expect(segmentos.map((s) => s.centavos)).toEqual([
+      6240, 900, 1120, 360, 200,
+    ]);
+    expect(segmentos.map((s) => Number(s.fracao.toFixed(4)))).toEqual([
+      0.7075, 0.102, 0.127, 0.0408, 0.0227,
+    ]);
+    expect(segmentos.reduce((soma, s) => soma + s.fracao, 0)).toBeCloseTo(
+      1,
+      10,
+    );
+    expect(segmentos.filter((s) => s.destaque).map((s) => s.rotulo)).toEqual([
+      "Seu trabalho",
+    ]);
+  });
+
+  it("custo zero: faixa nenhuma", () => {
+    expect(
+      composicaoDoLote(calcularCustoFicha(ficha({ operacional: RATEIO_ZERO }))),
+    ).toEqual([]);
+  });
+
+  it("kit com componentes e escolhas: sete parcelas, na ordem das linhas", () => {
+    const custo = calcularCustoFicha(
+      ficha({
+        itens: [
+          {
+            categoria: "INGREDIENTE",
+            custoUnidadeBaseCorrigido: 1,
+            quantidade: 100,
+          },
+          {
+            categoria: "EMBALAGEM",
+            custoUnidadeBaseCorrigido: 50,
+            quantidade: 1,
+          },
+        ],
+        componentes: [{ custoUnitarioSnapshot: 441, quantidade: 2 }],
+        custoEscolhas: 620,
+        tempoProducaoMinutos: 60,
+      }),
+    );
+    const segmentos = composicaoDoLote(custo);
+
+    expect(segmentos.map((s) => s.rotulo)).toEqual([
+      "Materiais",
+      "Embalagem",
+      "Produtos de dentro",
+      "O que a cliente escolhe (pela opção mais cara)",
+      "Seu trabalho",
+      "Energia e gás",
+      "Fatia das despesas fixas",
+    ]);
+    expect(segmentos.map((s) => s.centavos)).toEqual([
+      100, 50, 882, 620, 2500, 300, 1000,
+    ]);
+    expect(segmentos.reduce((soma, s) => soma + s.centavos, 0)).toBe(
+      custo.custoTotalLote,
+    );
   });
 });

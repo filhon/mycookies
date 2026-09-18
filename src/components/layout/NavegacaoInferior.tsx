@@ -30,8 +30,10 @@ export function NavegacaoInferior() {
                   "flex min-h-14 flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2",
                   "transition-colors duration-150 ease-quart",
                   // `accent-ink`, e não `accent-500`: o âmbar como texto sobre
-                  // a superfície reprova AA (~2,3:1).
-                  ativo ? "text-accent-ink" : "text-ink-subtle",
+                  // a superfície reprova AA (~2,3:1). Inativo em `ink-muted`,
+                  // e não `ink-subtle` (3,45:1): rótulo de navegação é texto,
+                  // e 12px não tem exceção no piso de 4,5.
+                  ativo ? "text-accent-ink" : "text-ink-muted",
                 )}
               >
                 <span

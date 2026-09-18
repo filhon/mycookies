@@ -101,10 +101,13 @@ export function AgendaHoje() {
             titulo="Nada marcado para os próximos dias"
             descricao="Quando você anotar uma encomenda, ela aparece aqui no dia da entrega, com o que precisa ser produzido e quanto sobra."
             acao={
+              // Secundário: na tela Hoje o primário é do cartão dos primeiros
+              // passos enquanto ele existe, e depois a Hoje é tela de leitura.
+              // "Novo pedido" mora em `/pedidos`.
               <Link
                 href={`/pedidos/${ID_PEDIDO_NOVO}`}
                 className={classesBotao({
-                  variante: "primaria",
+                  variante: "secundaria",
                   tamanho: "lg",
                 })}
               >

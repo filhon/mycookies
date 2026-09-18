@@ -42,9 +42,11 @@ import {
   LinhaEscolhaFicha,
   LinhaItemFicha,
 } from "./LinhaItemFicha";
+import { FaixaDeComposicao } from "./FaixaDeComposicao";
 import { PainelPreco } from "./PainelPreco";
 import { insumosComPrecoMedio } from "@/lib/domain/biblioteca";
 import {
+  composicaoDoLote,
   custoDasEscolhas,
   custoLinhaComponente,
   custoLinhaItem,
@@ -52,6 +54,7 @@ import {
   ehEmbalagem,
   opcoesDaEscolha,
   podeSerComponente,
+  ROTULO_PARCELA,
   ROTULO_UNIDADE_RENDIMENTO,
   type RateioOperacional,
 } from "@/lib/domain/custoFicha";
@@ -712,6 +715,15 @@ export function FormularioFicha({
         </div>
       </header>
 
+      {/* Logo abaixo do Salvar, que é onde ela está olhando quando o
+          salvamento para: no pé de um formulário longo a falha ficava fora da
+          tela, e "não salva" era a leitura. */}
+      {falha && (
+        <p role="alert" className="mt-3 text-label text-negative">
+          {falha}
+        </p>
+      )}
+
       {/* Espaço no pé para o painel de preço não cobrir o último bloco. */}
       <div className="mt-4 space-y-4 pb-44 apertado:pb-32 lg:pb-40">
         {/* Sem configuração salva, a ficha calcula com a sugerida inteira e
@@ -1214,33 +1226,47 @@ export function FormularioFicha({
           titulo="O custo do lote"
           descricao="A conta que a sua concorrente não fez."
         >
+          {/* A faixa de composição (`#d126`): as linhas abaixo são a legenda,
+              e a de "Seu trabalho" é a única colorida, para casar com o
+              segmento âmbar. Custo zero, faixa nenhuma. */}
+          <FaixaDeComposicao
+            segmentos={composicaoDoLote(derivado.custo)}
+            className="mb-4 max-w-xl"
+          />
           {/* Recibo, não tabela: a coluna para antes da borda para o rótulo e o
               valor não ficarem em pontas opostas da tela. */}
           <dl className="max-w-xl space-y-2 text-label">
-            <Parcela rotulo="Materiais" valor={derivado.custo.custoInsumos} />
-            <Parcela rotulo="Embalagem" valor={derivado.custo.custoEmbalagem} />
+            <Parcela
+              rotulo={ROTULO_PARCELA.custoInsumos}
+              valor={derivado.custo.custoInsumos}
+            />
+            <Parcela
+              rotulo={ROTULO_PARCELA.custoEmbalagem}
+              valor={derivado.custo.custoEmbalagem}
+            />
             {ehKit && (
               <Parcela
-                rotulo="Produtos de dentro"
+                rotulo={ROTULO_PARCELA.custoComponentes}
                 valor={derivado.custo.custoComponentes}
               />
             )}
             {kitComEscolhas && (
               <Parcela
-                rotulo="O que a cliente escolhe (pela opção mais cara)"
+                rotulo={ROTULO_PARCELA.custoEscolhas}
                 valor={derivado.custo.custoEscolhas}
               />
             )}
             <Parcela
-              rotulo="Seu trabalho"
+              rotulo={ROTULO_PARCELA.custoMaoDeObra}
               valor={derivado.custo.custoMaoDeObra}
+              destaque
             />
             <Parcela
-              rotulo="Energia e gás"
+              rotulo={ROTULO_PARCELA.custoEnergiaGas}
               valor={derivado.custo.custoEnergiaGas}
             />
             <Parcela
-              rotulo="Fatia das despesas fixas"
+              rotulo={ROTULO_PARCELA.custoIndireto}
               valor={derivado.custo.custoIndireto}
             />
 
@@ -1375,12 +1401,6 @@ export function FormularioFicha({
           </div>
         </Bloco>
 
-        {falha && (
-          <p role="alert" className="text-label text-negative">
-            {falha}
-          </p>
-        )}
-
         {ficha &&
           (confirmandoArquivo ? (
             <div className="rounded-lg border border-negative/30 bg-negative-soft p-4">
@@ -1511,11 +1531,27 @@ function ListaDeLinhas({
   );
 }
 
-function Parcela({ rotulo, valor }: { rotulo: string; valor: number }) {
+function Parcela({
+  rotulo,
+  valor,
+  destaque = false,
+}: {
+  rotulo: string;
+  valor: number;
+  /** A linha que casa com o segmento âmbar da faixa. Uma só. */
+  destaque?: boolean;
+}) {
   return (
-    <div className="flex items-baseline justify-between gap-4">
-      <dt className="text-ink-muted">{rotulo}</dt>
-      <dd className="num font-medium text-ink">{formatarMoeda(valor)}</dd>
+    <div
+      className={cn(
+        "flex items-baseline justify-between gap-4",
+        destaque && "font-semibold text-accent-ink",
+      )}
+    >
+      <dt className={cn(!destaque && "text-ink-muted")}>{rotulo}</dt>
+      <dd className={cn("num", !destaque && "font-medium text-ink")}>
+        {formatarMoeda(valor)}
+      </dd>
     </div>
   );
 }

@@ -3938,11 +3938,30 @@ selo no mesmo cartão). `Fraunces` → `Archivo` 600/700; a tagline do login per
 
 **Consequência.** `rg "wine|gold|--mc-|textura-papel|filete-dourado" src/` devolve zero. O
 `theme_color` e o `background_color` do manifesto viraram `#2A2C3A` e `#F7F4EE` (a `#d124`, da
-sessão B, registra a reinstalação que isso exige). Uma coisa fica para a C: a barra de
-progresso da meta batida está em `bg-accent-500` pela troca literal `gold-500` → `accent-500`,
-e a 3.C.2 lista os únicos lugares em que o âmbar pode ser área; a C decide se ela vira
-`positive` ou fica. O que na `#d120` se chamava `wine-ink`/`gold-ink` chama-se agora
-`brand-ink`/`accent-ink`; a regra, tinta inverte e cromo fica, é a mesma.
+sessão B, registra a reinstalação que isso exige). A barra de progresso da meta batida ficou
+em `bg-accent-500` pela troca literal `gold-500` → `accent-500`; **a C a levou para
+`positive`** (barra, texto e ícone), porque a 3.C.2 lista os únicos lugares em que o âmbar
+pode ser área e a tabela de semânticos do pacote põe "meta batida" em positivo (`#d126`). O
+que na `#d120` se chamava `wine-ink`/`gold-ink` chama-se agora `brand-ink`/`accent-ink`; a
+regra, tinta inverte e cromo fica, é a mesma.
+
+**Nota da C (contraste recomputado, 3.C.5).** Os seis pares que a marca criou passam com
+folga (7,0 a 11,0; valores no `ESTADO.md`) e nenhum token mudou. Dois pares fora da lista
+reprovam e foram tratados no uso, não no token: `--ink-subtle` como **texto** mede 3,45:1
+sobre `surface` no claro (o pacote o define para metadado; a navegação inferior inativa e os
+rótulos do painel de preço passaram a `ink-muted`, e `ink-subtle` fica para metadado não
+crítico e para ícone, onde 3:1 basta); `--border-strong` como contorno mede 1,97:1 nos dois
+temas, e **fica**: é o token do pacote, o campo tem rótulo acima e 48px de altura, o botão
+secundário tem texto em `ink`, e escurecer o contorno para 3:1 (L ≈ 0,62) pesaria toda a
+interface. Se a bancada reclamar do contorno, é uma linha no `:root` e esta nota ganha o
+valor. `brand-500` entrou no `@theme inline` como a divisória da barra lateral, no lugar de um
+`border-white/10` solto. **Um token mudou**: o anel de foco. `--focus` era `accent-500` nos
+dois temas, e sobre o papel cru mede 2,16:1 (`canvas`) e 2,31:1 (`surface`), abaixo dos 3:1
+que o `PRODUCT.md` promete para foco; no claro passou a `var(--accent-600)` (3,4:1 e 3,7:1) e
+no escuro continua `accent-500` (9,1:1). Sobre o botão primário o anel é um âmbar mais escuro
+que o botão, com os 2px de `outline-offset` de superfície entre os dois; a spec previa
+`brand-700` só no primário se o âmbar não bastasse, e o `accent-600` resolve nos dois lugares
+com uma linha por tema.
 
 ---
 
@@ -4014,3 +4033,67 @@ de hover terciário; o claro do pacote é quase branco e vira um flash no escuro
 veio. Quem abrir `Rende — Telas.dc.html` ao lado do app e ver diferença nestes sete pontos
 está vendo decisão, e não dívida. O `LEIA-ME.md` do pacote ganhou a seção "Como está no
 código" apontando para cá.
+
+---
+
+## D126 · A faixa é dado, nunca enfeite
+
+**Status:** vigente · decidida em 2026-09-18, na spec 033-C
+
+**Contexto.** A marca tem duas assinaturas (`MARCA.md` § 2.4): o ponto âmbar e a faixa de
+composição, a barra segmentada na proporção do custo real do lote. A prancha `Telas` do pacote
+punha a faixa no estado vazio, sem dado e a 40% de opacidade, e o manual diz o contrário:
+"nunca uma faixa decorativa com proporções inventadas" e "uma assinatura por peça".
+
+**Decisão.** A faixa só existe onde existe custo calculado: o bloco "O custo do lote" do editor
+de produto. Ela é desenhada a partir de uma função pura, `composicaoDoLote(custo)` em
+`domain/custoFicha.ts`, com as mesmas parcelas e na mesma ordem das linhas que o bloco já
+mostra, e os rótulos das linhas saem da mesma constante (`ROTULO_PARCELA`): as linhas **são** a
+legenda. Parcela zerada não vira segmento; lote zerado não tem faixa (e nenhum espaço vazio no
+lugar). O segmento âmbar é "Seu trabalho" (a palavra dela, `#d117`, e não "Sua hora" do
+manual), e a linha correspondente é a única colorida do bloco, em `accent-ink`. Os outros
+segmentos são `ink` com opacidade (`/90`, `/60`, `/40`, `/25`, recomeçando no kit com
+escolhas), e não os `brand-400/500` do pacote: `brand-700` some sobre a superfície escura, e
+`ink` inverte sozinho. Sem vão entre segmentos; a luminância separa. `role="img"` com o
+`aria-label` dizendo as parcelas com percentual.
+
+**Onde ela não entra**, de propósito: `insumos/ResumoCusto` (é um material, não um lote), a
+folha do orçamento (é dela, `#d127`), a lista de produtos, a tela Hoje e qualquer estado vazio.
+
+**Consequência.** Com a faixa, a ordem e os nomes das parcelas têm um dono só, e a barra de
+progresso da meta batida deixou de ser âmbar: `bg-accent-500` em `src/` devolve exatamente os
+sete lugares que a spec lista (botão primário, flutuante, `Logotipo`, `Simbolo`, `PainelPreco`,
+`EstadoVazio`, `FaixaDeComposicao`); qualquer outra linha é uma segunda peça âmbar disputando.
+"Meta batida" virou `positive` (barra e texto), que é onde a tabela de semânticos do pacote a
+põe.
+
+---
+
+## D127 · A folha é dela; "feito com Rende" é uma linha fixa por enquanto
+
+**Status:** vigente · decidida em 2026-09-18, na spec 033 (B e C)
+
+**Contexto.** O orçamento A4 (`FolhaOrcamento`) trazia o logotipo da MyCookie's no cabeçalho,
+o total em vinho e o slogan "Feito com amor em cada mordida." como constante de marca. Com a
+marca própria, nada disso é nosso: a folha é o documento que a confeiteira entrega à empresa,
+e `MARCA.md` § 2.5 é explícito: "cabeçalho e cores são dela; o Rende aparece em uma linha de
+rodapé, tinta apagada".
+
+**Decisão.** A folha **não ganha** o logotipo do Rende. O cabeçalho é o nome do negócio em
+display; o único bloco cheio (o total) é `ink`, não `brand-700`, porque a tinta é dela e a
+marca é nossa (na `.folha` os dois tons são quase iguais; a diferença é semântica, e é este
+token que ela troca se um dia tiver cor própria). O Rende aparece como o manual manda: "feito
+com Rende", 7,5pt, `ink-subtle`, à direita do rodapé. O slogan dela deixou de ser constante e
+virou `ConfiguracaoGeral.frase` (campo opcional, aditivo, a única aprovação da spec 033; até 80
+caracteres, "Frase do orçamento" em `/configuracao`, no bloco da folha), lida por
+`montarOrcamento` como o telefone e o Instagram, e impressa ao centro do rodapé quando existe.
+Sem frase, o contato e o "feito com" fecham a linha sem buraco. **A conta real precisa preencher
+o campo uma vez**, senão a frase que as clientes dela leem há meses some da folha.
+
+**O que fica para a 028.** O manual pede a linha "feito com Rende" desligável nas
+configurações. Hoje ninguém paga; quando pagar, desligar é o que a assinatura compra. Até lá é
+uma linha fixa, e a 028 recebe a nota no `ROADMAP.md`.
+
+**Consequência.** `Orcamento.negocio.frase?`, `esquemaConfiguracao.frase`,
+`salvarConfiguracao` gravando com `deleteField()` no vazio (como o contato), e a constante
+`FRASE_RODAPE` da B morta. Resumo de WhatsApp, etiqueta e embalagem continuam sem marca Rende.

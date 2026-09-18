@@ -398,6 +398,22 @@ describe("montarOrcamento", () => {
     expect(sem.negocio).not.toHaveProperty("telefone");
     expect(montar().negocio).not.toHaveProperty("instagram");
   });
+
+  it("leva a frase dela para o rodapé, e cala quando não há (#d127)", () => {
+    const com = montar(PEDIDO, {
+      configuracao: {
+        ...CONFIGURACAO,
+        frase: "  Feito com amor em cada mordida.  ",
+      },
+    });
+    const branco = montar(PEDIDO, {
+      configuracao: { ...CONFIGURACAO, frase: "   " },
+    });
+
+    expect(com.negocio.frase).toBe("Feito com amor em cada mordida.");
+    expect(branco.negocio).not.toHaveProperty("frase");
+    expect(montar().negocio).not.toHaveProperty("frase");
+  });
 });
 
 // ---------------------------------------------------------------------------

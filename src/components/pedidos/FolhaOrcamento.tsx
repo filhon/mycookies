@@ -10,16 +10,14 @@ import { quantidadeEmTexto } from "@/lib/domain/pedido";
 import type { Centavos } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
-// ponytail: constante até a C gravar ConfiguracaoGeral.frase (#d127)
-const FRASE_RODAPE = "Feito com amor em cada mordida.";
-
 /**
  * A folha A4 do orçamento. Só apresentação: nenhum hook, nenhuma conta.
  *
  * **A folha é dela, e não nossa** (`DECISOES.md#d127`): o cabeçalho é o nome
  * do negócio em display, sem logotipo — nem o dela, que não existe, nem o do
- * Rende. O total é o único bloco cheio, em `ink`; a linha "feito com Rende"
- * do rodapé é da sessão C, junto da frase dela. Nenhum outro fundo, nenhuma
+ * Rende. O total é o único bloco cheio, em `ink`; o Rende aparece como o
+ * manual manda, uma linha apagada no rodapé, e a frase dela vem da
+ * configuração, entre o contato e essa linha. Nenhum outro fundo, nenhuma
  * borda lateral, nenhum cartão dentro de cartão. As medidas são em ponto e
  * milímetro porque a folha é papel, na tela e na impressora, e a classe
  * `.folha` fixa os tokens claros (spec 017). **Nenhuma classe `dark:` aqui
@@ -222,6 +220,7 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
         </div>
       </section>
 
+      {/* Sem frase, o contato e o "feito com" fecham a linha sem buraco. */}
       <footer className="mt-auto flex items-end justify-between gap-6 pt-4 text-[7.5pt] font-medium text-ink-muted">
         <p>
           {[
@@ -232,7 +231,10 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
             .filter(Boolean)
             .join(" · ")}
         </p>
-        <p className="shrink-0">{FRASE_RODAPE}</p>
+        {negocio.frase && (
+          <p className="max-w-[70mm] text-center">{negocio.frase}</p>
+        )}
+        <p className="shrink-0 text-ink-subtle">feito com Rende</p>
       </footer>
     </article>
   );

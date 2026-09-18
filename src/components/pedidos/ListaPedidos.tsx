@@ -142,6 +142,9 @@ export function ListaPedidos() {
     agenda.dados.length === 0 &&
     entreguesEmAberto.dados.length === 0 &&
     historico.dados.length === 0;
+  // Um botão primário por tela: enquanto o estado vazio ensina a tela, a ação
+  // é dele, e o botão do cabeçalho e a pílula flutuante saem.
+  const estadoVazioNaTela = !carregando && !erro && nadaGravado;
 
   return (
     <>
@@ -154,16 +157,18 @@ export function ListaPedidos() {
                 destinos é o teto —, e é daqui que ela nasce: o que comprar é
                 consequência do que foi combinado. */}
             <AtalhoParaCompras />
-            <Link
-              href={`/pedidos/${ID_PEDIDO_NOVO}`}
-              className={classesBotao({
-                variante: "primaria",
-                className: "hidden lg:inline-flex",
-              })}
-            >
-              <Plus aria-hidden className="size-5" strokeWidth={2} />
-              Novo pedido
-            </Link>
+            {!estadoVazioNaTela && (
+              <Link
+                href={`/pedidos/${ID_PEDIDO_NOVO}`}
+                className={classesBotao({
+                  variante: "primaria",
+                  className: "hidden lg:inline-flex",
+                })}
+              >
+                <Plus aria-hidden className="size-5" strokeWidth={2} />
+                Novo pedido
+              </Link>
+            )}
           </div>
         }
       >
@@ -210,8 +215,8 @@ export function ListaPedidos() {
         <Caixa>
           {nadaGravado ? (
             <EstadoVazio
-              titulo="A encomenda sai do WhatsApp e entra na agenda"
-              descricao="Monte o pedido com os produtos que você já precificou: o sistema soma o total, desconta a maquininha e diz quanto sobra antes de você fechar o combinado."
+              titulo="Nenhuma encomenda combinada."
+              descricao="Anote o pedido com o preço de hoje. Ele fica congelado mesmo se o chocolate subir amanhã."
               acao={
                 <Link
                   href={`/pedidos/${ID_PEDIDO_NOVO}`}
@@ -282,10 +287,12 @@ export function ListaPedidos() {
         </div>
       )}
 
-      <BotaoFlutuante
-        rotulo="Novo pedido"
-        href={`/pedidos/${ID_PEDIDO_NOVO}`}
-      />
+      {!estadoVazioNaTela && (
+        <BotaoFlutuante
+          rotulo="Novo pedido"
+          href={`/pedidos/${ID_PEDIDO_NOVO}`}
+        />
+      )}
     </>
   );
 }

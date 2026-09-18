@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-18 (sessões 033-A e 033-B entregues, **prontas para publicar juntas**; roteiros das 015, 016, 017, 018, 019, 020, 021 e 022 por rodar).
+Atualizado em 2026-09-18 (spec 033 entregue nas três sessões, **A e B por publicar juntas, C junto**; roteiros das 015, 016, 017, 018, 019, 020, 021, 022 e 033 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -22,13 +22,17 @@ DESIGN.md, tokens.css, logo/, pranchas), e a spec que o leva ao código é
 `specs/033-a-marca-rende.md`, em três sessões — **A** (a tinta: tokens, fontes, o que era da
 MyCookie's e sai do CSS), **B** (o nome e o símbolo: logotipo, ícones, manifesto, telas de
 marca) e **C** (o ponto, a faixa, a cópia e a passagem do `/impeccable`). **A e B saem no mesmo
-deploy.** **A A e a B estão entregues** (`#d122` a `#d125`): o repositório está na tinta do
+deploy.** **As três estão entregues** (`#d122` a `#d127`): o repositório está na tinta do
 Rende nos dois temas, Archivo no lugar da Fraunces, `DESIGN.md` e `PRODUCT.md` da raiz
 reescritos, o app se chama Rende na aba, no manifesto e na barra lateral, o ícone é a régua com
-o ponto, e nenhum biscoito sobrou fora do texto de produto. **Pode publicar**: A e B juntas, e
-depois o passo 8 do roteiro (reinstalar o app no aparelho, `#d124`). O app publicado hoje ainda
-é vinho e creme. A 033 está fora da ordem do roadmap de propósito (023–032 são citados na 022 e
-nas decisões); a fase 1 volta a ser o próximo passo depois dela.
+o ponto, nenhum biscoito sobrou fora do texto de produto, e a C pôs as duas assinaturas onde
+o manual manda (o ponto no painel de preço e nos estados vazios, a faixa de composição no
+editor de produto, com dado de verdade), reescreveu os cinco estados vazios na voz da marca,
+levou o slogan da folha para `ConfiguracaoGeral.frase` e passou o `/impeccable` (critique
+29/40 antes, 30/40 depois; os relatórios estão na seção da C). **Pode publicar**: as três juntas, e depois o passo 8 do
+roteiro (reinstalar o app no aparelho, `#d124`) e a frase em `/configuracao` (`#d127`). O app
+publicado hoje ainda é vinho e creme. A 033 está fora da ordem do roadmap de propósito
+(023–032 são citados na 022 e nas decisões); a fase 1 volta a ser o próximo passo depois dela.
 
 **Todas as specs de módulo estão executadas.** Fora delas, a spec `005-prontidao.md` tem duas
 sessões — `5A` conserta o que impede o primeiro uso, `5B` faz a verificação em navegador. **As
@@ -169,6 +173,8 @@ escolhe os sabores. Nenhum número de exemplo entrou.
 
 Fora das specs, em 2026-09-11, o resumo do WhatsApp passou a dizer **como pagar**: `FormaPagamento.instrucoes` (texto livre em `/configuracao`, "Dados para pagar") entra na mensagem em parágrafo próprio enquanto o pedido não está pago (`#d98`). Nenhum dado bancário no código: **a conta real precisa preencher o campo na forma "Pix" uma vez.**
 
+Do mesmo tipo, em 2026-09-18 (spec 033-C, `#d127`): o slogan da folha do orçamento deixou de ser constante e virou `ConfiguracaoGeral.frase` ("Frase do orçamento" em `/configuracao`). **A conta real precisa preencher o campo uma vez** com "Feito com amor em cada mordida.", senão a folha sai sem a frase que as clientes dela leem há meses.
+
 Fora das specs, o projeto foi **preparado para publicar no Vercel** em 2026-09-03: a
 credencial do Admin SDK deixou de exigir um arquivo em disco, a falta dela parou de ser
 confundida com login inválido, e `functions/` saiu do `tsconfig` da raiz — sem isso o build
@@ -218,33 +224,33 @@ os números digitados de ponta a ponta.
 
 ## Módulos
 
-| #   | Módulo                                      | Estado                                   | Spec                                       |
-| --- | ------------------------------------------- | ---------------------------------------- | ------------------------------------------ |
-| 0   | Fundação: design system, shell, acesso, PWA | pronto                                   | —                                          |
-| 1   | Insumos e embalagens                        | pronto                                   | —                                          |
-| —   | Contas e tenancy                            | pronto                                   | `specs/000-contas.md`                      |
-| 2   | Custos operacionais e precificação          | pronto (2A e 2B)                         | `specs/002-precificacao.md`                |
-| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)                     | `specs/003-pedidos.md`                     |
-| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                         | `specs/004-caixa.md`                       |
-| 5   | Prontidão: conserto e verificação           | pronto (5A e 5B)                         | `specs/005-prontidao.md`                   |
-| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)                         | `specs/006-nota-fiscal.md`                 |
-| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)                         | `specs/007-estoque.md`                     |
-| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)                         | `specs/008-onboarding.md`                  |
-| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros                  | `specs/009-teclado-e-barra.md`             |
-| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro                    | `specs/010-resumo-no-whatsapp.md`          |
-| —   | O caixa que não perde a conta               | pronto, sem o roteiro                    | `specs/011-caixa-que-nao-perde-conta.md`   |
-| —   | O acerto das entregas                       | pronto, sem o roteiro                    | `specs/012-entregas-a-pagar.md`            |
-| 13  | A fornada                                   | pronto (13A a 13D), sem os roteiros      | `specs/013-a-fornada.md`                   |
-| 14  | O combo à escolha                           | pronto (14A e 14B)                       | `specs/014-combo-a-escolha.md`             |
-| 15  | Salvar no toque, no sistema inteiro         | pronto, sem o roteiro                    | `specs/015-salvar-no-toque.md`             |
-| 16  | As listas que crescem                       | pronto, sem o roteiro                    | `specs/016-listas-que-crescem.md`          |
-| 17  | O orçamento em papel                        | pronto (17A e 17B), sem o roteiro        | `specs/017-orcamento-em-papel.md`          |
-| 18  | O preço no primeiro minuto                  | pronto, sem o roteiro                    | `specs/018-o-preco-no-primeiro-minuto.md`  |
-| 19  | O caminho começa pelo preço                 | pronto, sem o roteiro                    | `specs/019-o-caminho-comeca-pelo-preco.md` |
-| 20  | Menos na frente                             | pronto, sem o roteiro                    | `specs/020-menos-na-frente.md`             |
-| 21  | As palavras dela                            | pronto, sem o roteiro                    | `specs/021-as-palavras-dela.md`            |
-| 22  | A segunda conta                             | pronto, sem o roteiro                    | `specs/022-a-segunda-conta.md`             |
-| 33  | A marca Rende                               | A e B prontas, por publicar; C por rodar | `specs/033-a-marca-rende.md`               |
+| #   | Módulo                                      | Estado                              | Spec                                       |
+| --- | ------------------------------------------- | ----------------------------------- | ------------------------------------------ |
+| 0   | Fundação: design system, shell, acesso, PWA | pronto                              | —                                          |
+| 1   | Insumos e embalagens                        | pronto                              | —                                          |
+| —   | Contas e tenancy                            | pronto                              | `specs/000-contas.md`                      |
+| 2   | Custos operacionais e precificação          | pronto (2A e 2B)                    | `specs/002-precificacao.md`                |
+| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)                | `specs/003-pedidos.md`                     |
+| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                    | `specs/004-caixa.md`                       |
+| 5   | Prontidão: conserto e verificação           | pronto (5A e 5B)                    | `specs/005-prontidao.md`                   |
+| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)                    | `specs/006-nota-fiscal.md`                 |
+| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)                    | `specs/007-estoque.md`                     |
+| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)                    | `specs/008-onboarding.md`                  |
+| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros             | `specs/009-teclado-e-barra.md`             |
+| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro               | `specs/010-resumo-no-whatsapp.md`          |
+| —   | O caixa que não perde a conta               | pronto, sem o roteiro               | `specs/011-caixa-que-nao-perde-conta.md`   |
+| —   | O acerto das entregas                       | pronto, sem o roteiro               | `specs/012-entregas-a-pagar.md`            |
+| 13  | A fornada                                   | pronto (13A a 13D), sem os roteiros | `specs/013-a-fornada.md`                   |
+| 14  | O combo à escolha                           | pronto (14A e 14B)                  | `specs/014-combo-a-escolha.md`             |
+| 15  | Salvar no toque, no sistema inteiro         | pronto, sem o roteiro               | `specs/015-salvar-no-toque.md`             |
+| 16  | As listas que crescem                       | pronto, sem o roteiro               | `specs/016-listas-que-crescem.md`          |
+| 17  | O orçamento em papel                        | pronto (17A e 17B), sem o roteiro   | `specs/017-orcamento-em-papel.md`          |
+| 18  | O preço no primeiro minuto                  | pronto, sem o roteiro               | `specs/018-o-preco-no-primeiro-minuto.md`  |
+| 19  | O caminho começa pelo preço                 | pronto, sem o roteiro               | `specs/019-o-caminho-comeca-pelo-preco.md` |
+| 20  | Menos na frente                             | pronto, sem o roteiro               | `specs/020-menos-na-frente.md`             |
+| 21  | As palavras dela                            | pronto, sem o roteiro               | `specs/021-as-palavras-dela.md`            |
+| 22  | A segunda conta                             | pronto, sem o roteiro               | `specs/022-a-segunda-conta.md`             |
+| 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`               |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -2301,18 +2307,261 @@ o que confere o que o build não vê: o ponto encostado no "e" e na altura certa
 tamanhos, o painel do login, a folha sem logotipo com o total em tinta, e o pote aberto onde
 era o biscoito.
 
+## O que a sessão 033-C deixou pronto
+
+O ponto, a faixa e as palavras (`specs/033-a-marca-rende.md`, seção 3.C; `DECISOES.md#d126` e
+`#d127`). A seção de código está mais abaixo; primeiro, como a spec manda, o relatório da
+critique **antes de qualquer conserto**.
+
+### Critique antes (3.C.5, passo 1)
+
+Protocolo do `/impeccable critique`: a avaliação A (revisão de design) rodou num sub-agente
+isolado, só a partir do código (sem navegador nesta sessão: os dois temas foram deduzidos dos
+tokens e os dois tamanhos das classes `lg:`/`apertado:`); a avaliação B é o detector
+determinístico, `npx impeccable --json src/` (4.1.0), rodado em separado: **`[]`, zero
+achados**, como na A. As cinco telas: `/login`, `/` (Hoje), `/fichas/[id]`, `/pedidos`,
+`/financeiro`. Os P1 do relatório foram conferidos no código antes de virarem conserto (ver "O
+que a critique mudou", abaixo).
+
+**Veredito de IA:** não lê como interface gerada. A voz é única ("O que a maquininha comeu",
+"Ele fica congelado mesmo se o chocolate subir amanhã"), nenhuma proibição absoluta violada
+(sem faixa lateral, sem gradiente, sem vidro, sem grade de cartões, sem modal por reflexo, sem
+travessão em tela), a faixa é proporção real e só existe no editor. Três tiques apontados:
+ícone Lucide na frente de quase todo título de bloco; os rótulos do painel de preço em micro
+caixa alta com `tracking-wide` (idioma de KPI de template, sobre os dois números mais
+importantes do app); e três blocos de `/financeiro` com a mesma anatomia (número grande,
+frase, faixa rebaixada). Um quarto, menor: "A conta que a sua concorrente não fez." é tagline
+dentro de um cabeçalho de formulário.
+
+| #   | Heurística             | Nota      | Ponto-chave                                                                                                                                                    |
+| --- | ---------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Visibilidade do estado | 3         | Esqueletos, `aria-busy`, selo. Salvar a ficha faz `router.push` sem confirmação: o pico termina em silêncio.                                                   |
+| 2   | Mundo real             | 3         | A melhor dimensão. Vazam "rateio", "Ticket médio" como rótulo, e "Esqueci minha senha" servindo de "criar minha senha".                                        |
+| 3   | Controle e liberdade   | 3         | `Painel` com Esc, scrim, foco devolvido, `inert`. Falta guarda de edição não salva no editor.                                                                  |
+| 4   | Consistência           | 3         | Primitivos fortes. Pedido é cartão na Hoje e linha em `/pedidos`; `SeloStatus` diverge da tabela do `DESIGN.md`; prejuízo ocre no editor, vermelho nas listas. |
+| 5   | Prevenção de erros     | 3         | Campo monetário só dígitos, unidade única vira rótulo, "Arquivar mesmo assim" atrás de "Deixar como está". Perda de edição sem aviso.                          |
+| 6   | Reconhecimento         | 3         | Todo ícone de navegação tem rótulo. `/compras` só é alcançável por cartão condicional e por um botão em `/pedidos`.                                            |
+| 7   | Flexibilidade          | 2         | Sem atalho de teclado, sem ação em lote. É o mínimo.                                                                                                           |
+| 8   | Estética e minimalismo | 3         | Hierarquia de dinheiro certa. Até três faixas ocre antes do primeiro campo do editor; nove seções em `/financeiro`; ícone em todo título.                      |
+| 9   | Recuperar de erros     | 3         | Mensagens nomeiam o problema e a saída. Nenhum erro de campo leva ícone.                                                                                       |
+| 10  | Ajuda                  | 3         | Contextual, uma linha, no lugar do número.                                                                                                                     |
+|     | **Total**              | **29/40** | **"Good": base sólida, atacar as áreas fracas.**                                                                                                               |
+
+**Carga cognitiva (8 itens):** `/login` 0 falhas; Hoje 1 (2 na conta nova: dois botões âmbar,
+sete ações visíveis); `/fichas/[id]` 2 (até três faixas ocre antes de "A receita"; cinco
+controles em "Como calcular o preço"); `/pedidos` 2 (sete pílulas de filtro, e a 360px rolam
+sem barra); `/financeiro` 2 (nove seções, nada colapsável; "Recalcular o mês" duas vezes).
+
+**Jornada emocional:** o pico é o `PainelPreco` com o ponto e "Sobram R$ X por unidade", no
+lugar certo. O fim é plano: salvar troca de tela sem dizer nada. Os vales (arquivar, prejuízo,
+a receber, offline, agregado errado) têm ícone, palavra e a saída; o vale escondido é a perda
+de edição sem guarda.
+
+**Problemas prioritários:**
+
+- **P1 · "Salvar" da ficha mora no cabeçalho no celular, e não há guarda de edição.** O
+  `DESIGN.md` diz que no celular o primário é a pílula flutuante ou o botão do painel de pé;
+  a navegação inferior fica viva durante a edição e um toque descarta dez minutos de receita.
+- **P1 · Rótulo inativo da navegação inferior reprova AA.** `text-ink-subtle` em 12px mede
+  **3,45:1** sobre `surface` no claro (4,23 no escuro). O `DESIGN.md` chamava isso de "só micro
+  ✔"; WCAG não tem exceção para 12px. Mesmo par nos rótulos "Custo da unidade" e "Sugerido" do
+  painel de preço.
+- **P1 · Dois botões âmbar na mesma tela.** `/pedidos` vazio (cabeçalho/flutuante + "Anotar
+  primeiro pedido"), `/financeiro` vazio (idem + "Lançar o primeiro"), Hoje com o onboarding
+  ativo (o CTA do passo + "Anotar um pedido" da agenda).
+- **P2 · Prejuízo tem duas cores conforme a tela.** Ocre com triângulo no editor; vermelho com
+  triângulo nas listas. O `DESIGN.md` põe prejuízo em negativo com `trending-down`.
+- **P2 · `--border-strong` mede 1,97:1 sobre `surface` nos dois temas.** É o contorno de campo,
+  de botão secundário e de pílula inativa; o piso de componente é 3:1.
+
+**Personas:** Casey (uma mão, interrompida): Salvar no alto do editor, pílula flutuante
+cobrindo a última linha das listas, `/compras` sem porta fixa, sete pílulas rolando sem barra.
+Sam (leitor de tela): navegação a 3,45:1; sinal "−" sem a palavra "saída" na linha de
+lançamento; 31 `sr-only` de dias zerados em `MovimentoPorDia`; "Entrar" desabilitado sem dizer
+por quê. Jordan (primeira vez): "Esqueci minha senha" para criar senha; "rateio" e "Ticket
+médio" sem a frase de uma linha; "Não preciso disto agora" fecha o caminho sem confirmação.
+Maynara: os rótulos do painel a 3,45:1 a meio metro; "Fornadas de reserva" dobrada em "Mais
+detalhes"; pedido com dois desenhos (cartão na Hoje, linha em `/pedidos`).
+
+**Observações menores:** `SeloStatus` mais certo que o `DESIGN.md` (em produção como atenção
+obrigaria o triângulo); `font-display` em `SeletorMes`, "Meta batida" e no cartão dos passos;
+`border-white/10` na barra lateral (valor solto); o primário do celular no editor é `md` e o
+`DESIGN.md` pede 52px; doze cartões idênticos na agenda da Hoje; o ponto do estado vazio
+decidido por convenção de string (fácil esquecer o ponto); `animate-spin` contínuo no selo;
+32px de vão reservado para um selo que quase sempre é `null`; anel de foco âmbar sobre
+`attention-bg` merece o navegador.
+
+**Perguntas:** de quem é a ação primária quando a tela está vazia? Prejuízo é atenção ou
+negativo? O ponto no estado vazio é assinatura ou decoração (no desktop o logotipo da barra
+lateral já carrega um ponto em toda tela)?
+
+**Contraste recomputado (3.C.5, passo 2), OKLCH → sRGB → luminância, os seis pares que a marca
+criou:** `on-accent` sobre `accent-500` **7,73** (claro) e **8,94** (escuro); `accent-ink`
+sobre `canvas` **7,01** / sobre `surface` **7,50** (claro), **10,49** / **9,47** (escuro);
+`on-brand-muted` sobre `brand-800` **10,97**; `attention` sobre `attention-bg` **7,78**
+(escuro). Todos passam 4,5 com folga; nenhum token da `#d123` muda. Dois pares fora da lista
+reprovam: **`ink-subtle` como texto** (3,45 claro / 4,23 escuro sobre `surface`; 3,23 sobre
+`canvas`) e **`border-strong` como contorno** (1,97 nos dois temas). `accent-500` como texto
+sobre `canvas` mede 2,16 e confirma a regra "âmbar nunca é texto"; nenhum `text-accent-500` no
+código.
+
+### O que a critique mudou (3.C.5, passo 2)
+
+- **P1 · dois âmbar na mesma tela: consertado.** Em `/insumos`, `/fichas`, `/pedidos` e
+  `/financeiro`, enquanto o estado vazio de conta vazia está na tela (`!carregando && !erro &&
+nada gravado`), o botão do cabeçalho e a pílula flutuante saem: a ação é do estado vazio, que
+  é quem ensina. Na tela Hoje, "Anotar um pedido" da agenda vazia virou `secundaria` (o
+  primário da Hoje é o cartão dos primeiros passos enquanto ele existe; depois a Hoje é tela
+  de leitura, e "Novo pedido" mora em `/pedidos`). As 26 ocorrências de `variante="primaria"`
+  foram percorridas: as outras são mutuamente exclusivas por breakpoint (`hidden
+lg:inline-flex` × flutuante `lg:hidden`), por estado (`ListaDoMercado` alterna
+  primaria/secundaria entre os três botões de fechar) ou moram dentro de painel com scrim.
+  **Nenhuma outra troca.**
+- **P1 · contraste da navegação inferior e dos rótulos do painel: consertado.** Inativo em
+  `text-ink-muted` (5,1:1) e não `text-ink-subtle` (3,45:1); rótulos "Custo da unidade" e
+  "Sugerido" idem. Token não mudou; `ink-subtle` fica para ícone e metadado. Registrado na
+  `#d123` e na tabela de contraste do `DESIGN.md`.
+- **P1 · "Salvar" no cabeçalho do editor e guarda de edição: recusado, com motivo.** O
+  cabeçalho é `sticky`, então o Salvar está sempre visível; o pé do editor é o painel de
+  preço, e a 360px ele já leva três números e o campo; pôr um botão ali é o que a `#d75`
+  tirou. A guarda de "sair sem salvar" nos quatro editores é a primeira linha de "Depois da
+  017, por ordem de valor" deste arquivo e é spec própria, não conserto de marca.
+- **P2 · prejuízo com duas cores: consertado.** `PainelPreco` ganhou o tom `negativo`
+  (`bg-negative-soft`, `TrendingDown` em `text-negative`) para "Neste preço você perde": a
+  mesma notícia com a mesma cor das listas, e o ocre fica para pendência e para o preço que
+  não existe. É também a saída para o risco "âmbar e atenção no mesmo matiz" que a spec
+  nomeia: o botão âmbar e a faixa de prejuízo deixaram de dividir matiz.
+- **P2 · `border-strong` a 1,97:1: recusado, com motivo** (`#d123`): token do pacote, campo
+  com rótulo e 48px, e escurecer o contorno pesaria toda a interface.
+- **Menor:** `border-white/10` da barra lateral virou `border-brand-500` (`brand-500` entrou
+  no `@theme inline`).
+- **Não tocado, de propósito** (é gosto ou é outra spec): ícone na frente de título de bloco,
+  os rótulos em micro caixa alta do painel, a anatomia repetida de `/financeiro`, "A conta que
+  a sua concorrente não fez.", `SeloStatus` × tabela do `DESIGN.md` (o código está mais
+  certo; o documento é dívida da 033-A), `font-display` em `SeletorMes`, os doze cartões da
+  agenda, `/compras` sem porta fixa, as sete pílulas de `/pedidos`.
+
+**Anel de foco sobre o botão âmbar e o teste da desassociação no aparelho (3.C.5): não
+vistos.** Sem navegador nesta sessão. O `outline-offset: 2px` deixa 2px de superfície entre o
+anel e o botão, e a critique acha que basta; o passo 11 do roteiro é quem confirma.
+
+**Audit (3.C.5, passo 3), por máquina e por grep:** `dark:` em `src/` devolve zero fora de
+comentário; cor solta zero (o `border-white/10` saiu); nenhum `<button>`/`<Link>` com altura
+abaixo de 44px fora da classe `toque`; a faixa tem `role="img"` e `aria-label` com as parcelas
+em percentual; o ponto do estado vazio é `aria-hidden` com `<span class="sr-only">.</span>`
+ao lado; o ponto do painel é `aria-hidden` e a frase carrega o dado; o campo "Frase do
+orçamento" é `Campo` de 48px com `maxLength={80}` e erro do schema.
+
+**Polish (3.C.5, passo 4):** o ponto do painel subiu de `mt-1.5` para `mt-1` (centro na
+primeira linha de 19,6px); a frase do rodapé da folha ganhou `max-w-[70mm]` para não espremer
+o contato e o "feito com". `npx impeccable --json src/` **antes e depois: `[]`**.
+
+### Critique depois (passo 15 do roteiro)
+
+Segundo sub-agente, isolado, sem ver o primeiro relatório, mesma pauta. **30/40** (antes:
+29/40), "Good"; a heurística 2 (mundo real) subiu de 3 para 4, e o veredito de IA continua
+"não". O relatório confirma no código o que a C mudou: "um botão primário por tela **de fato se
+sustenta** nas cinco telas, incluindo estados vazios"; "nenhum `text-accent-500`; o âmbar
+nunca é texto"; "nenhum texto reprova" contraste nos dois temas; "o ponto âmbar aparece uma
+vez, no dado que decide". O que ele apontou de novo, e o que foi feito:
+
+- **P1 · anel de foco a 2,16:1 sobre o papel cru no claro: consertado no token.** `--focus`
+  é `accent-600` no claro (3,4:1) e `accent-500` no escuro (9,1:1). É o único token que a C
+  mudou; registrado na `#d123` e no `DESIGN.md`. Era exatamente a verificação que a 3.C.5
+  pedia para o navegador, e a conta a antecipou.
+- **P1 · a falha de salvamento da ficha nascia no pé de um formulário de 1.500 linhas com o
+  Salvar no cabeçalho: consertado.** O `role="alert"` foi para logo abaixo do cabeçalho. A
+  segunda metade (levar o foco ao primeiro campo com erro) **não** entrou: o campo pode estar
+  numa dobra fechada, e o `focus()` num elemento oculto falha em silêncio; é da mesma spec da
+  guarda de edição.
+- **P1 · a 360px `/pedidos` empurra a agenda para baixo da dobra: recusado por ora.** É
+  estimativa de altura a partir do código, e o próprio relatório pede para "confirmar no
+  navegador"; nenhuma das três mudanças propostas (descrição só no desktop, atalho de compras
+  fora do cabeçalho no celular, faixas de uma linha) é de marca. Fica para o roteiro, e se
+  confirmar, é spec de layout da `/pedidos`.
+- **P2 · dinheiro em `text-micro` ("sobram R$" na linha do pedido) e `formatarMoeda` cru ao lado
+  de `<Dinheiro>` no recibo do lote: não tocado.** Pré-existente, três telas, e a `Parcela`
+  em `Dinheiro` muda a leitura do bloco inteiro; é polimento de outra sessão.
+- **P2 · `border-strong` a 1,97:1: mesma recusa da primeira critique** (`#d123`).
+- **P2 · `SeloStatus` × `DESIGN.md`: consertado no documento.** O código estava certo nas duas
+  critiques (em produção como atenção obrigaria o triângulo); a linha do `DESIGN.md` agora
+  descreve o código, e a de "meta batida" já dizia `positive`.
+- **P3 · o degrau mais claro da faixa (`/25`) lia como trilha vazia no claro (1,3:1):
+  consertado**, escala `/90 /65 /45 /30`. O swatch de legenda ao lado de cada linha **não**
+  entrou: as linhas são a legenda por ordem e o `aria-label` diz as parcelas; um quadradinho
+  colorido por linha é cromo que a `#d126` não pediu.
+- **O resto** (login com submit desabilitado, erro de campo sem ícone, `Salvar` em 48px no
+  celular, confirmação de salvamento, guarda de edição, cartão × linha na Hoje, configuração
+  sem porta fora da Hoje, sete pílulas, `SeletorMes` em display) é a mesma lista da primeira
+  critique, e continua sendo de outras specs, não de marca.
+
+### O código da C
+
+Nenhuma rota, nenhum índice, nenhuma regra, nenhuma dependência. `git diff src/lib/types/
+src/lib/firebase/` mostra **só** `ConfiguracaoGeral.frase` e `salvarConfiguracao` gravando o
+campo; `package.json` sem linha nova.
+
+- **A faixa (`#d126`):** `composicaoDoLote(custo): Segmento[]` e `ROTULO_PARCELA` em
+  `domain/custoFicha.ts`; `components/fichas/FaixaDeComposicao.tsx` (10px, raio 3, `ink` em
+  quatro degraus de opacidade e `accent-500` no destaque, sem vão, `role="img"`); acima das
+  linhas de `Parcela` em "O custo do lote", que agora leem os rótulos da mesma constante, e a
+  linha "Seu trabalho" em `accent-ink font-semibold`. Testes: o caso de aceite número por
+  número (6240 · 900 · 1120 · 360 · 200 sobre 8820, frações 0,7075 · 0,1020 · 0,1270 · 0,0408 ·
+  0,0227), custo zero → `[]`, e um kit com componentes e escolhas em sete parcelas. **Nenhum
+  teste existente mudou**: 531 → 535.
+- **O ponto (3.C.2):** no `PainelPreco` o `CornerDownRight` virou o ponto âmbar
+  (`size-2.5`), só no caso positivo; nos de atenção o triângulo fica. Em `EstadoVazio`, título
+  que termina em "." troca o ponto final pelo ponto âmbar (`size-2`, `aria-hidden`) mais um
+  `sr-only` com o ponto: cobre os cinco estados vazios da marca e, de propósito, nenhum erro
+  de carga nem "Nada com esse filtro". A barra e o texto de "Meta batida" foram para
+  `positive`. `rg "bg-accent-500" src/` devolve exatamente os sete lugares da spec.
+- **A frase dela (`#d127`):** `ConfiguracaoGeral.frase?`, `esquemaConfiguracao.frase`
+  (`max(80)`), campo "Frase do orçamento" no bloco "Na folha do orçamento" de `/configuracao`
+  (o bloco não tem "Mais detalhes"; a dobra é dos dois formulários da 020, e um campo só atrás
+  de uma dobra seria esconder por esconder), `salvarConfiguracao` com `deleteField()` no vazio,
+  `Orcamento.negocio.frase?` lida como o telefone, teste com e sem, e o rodapé da folha em três
+  partes: contato · a frase dela (quando há) · "feito com Rende" em `ink-subtle`.
+  `FRASE_RODAPE` morreu. **A conta real precisa preencher o campo uma vez** ("Feito com amor
+  em cada mordida."), ao lado da nota do Pix (`#d98`).
+- **As palavras (3.C.4):** as microcopy 1 a 10 e 12 de `MARCA.md` § 3.4 entraram, sem
+  travessão (dois-pontos no lugar). Adaptações registradas: "Nada pra comprar **por
+  enquanto**" (o período tem pílulas de 7, 15 e 30 dias; "esta semana" mentiria em duas
+  delas), e só no estado sem pedido e sem reserva, porque com pedido a frase do botão "Montar
+  a lista" é a que ensina; o estado vazio do caixa perdeu o nome do mês no título (o
+  `SeletorMes` logo acima já o diz) e ganhou "A encomenda paga entra sozinha." ao fim da
+  frase do manual, porque era a informação que a frase antiga carregava; `/offline` diz "Sem
+  internet, e tudo bem." e mantém a instrução de voltar a uma tela já aberta (é a única coisa
+  que aquela página resolve), sem "sincroniza". O selo virou "Salvo no aparelho" (offline) e
+  "Enviando" (fila com sinal): o selo não conta pendências, então o "3 alterações sobem" do
+  manual fica de fora. "Custo desatualizado" já era a palavra. A confirmação de arquivar
+  pedido trocou o botão "Cancelar" por "Deixar como está": a frase ao lado fala em _cancelar
+  o pedido_, e o botão dizia a mesma palavra para o contrário. Itens 16 a 19 comparados e
+  mantidos (as palavras dela, `#d117`); o "mínimo pra não perder" do item 19 não entrou porque
+  o "Sugerido" ao lado já é a saída. `rg "insumo|ficha técnica|dashboard|onboarding|sincroniza"`
+  em texto de tela: zero (só identificadores e rotas).
+
+Portão de conclusão rodado de verdade: lint limpo, typecheck limpo (app e service worker),
+**535 testes**, build com as 18 rotas de antes e o service worker gerado. **Nada disto foi visto
+em navegador nesta sessão.** O roteiro "Depois da C" (passos 11 a 15) é o que confere o que o
+build não vê: a faixa alinhada com a linha "Seu trabalho", o ponto no painel e nos estados
+vazios, a frase no rodapé da folha, e o anel de foco sobre o botão âmbar.
+
 ## Próxima ação
 
-**Publicar A e B juntas** (`docs/DEPLOY.md`). Antes, o roteiro "Depois da A" (passos 1 a 5) e
-"Depois da B" (passos 6, 7, 9 e 10) no `npm run dev`, nos dois temas, a 360px e a 1280px: é o
-único lugar onde uma troca de classe que acertou o nome e errou o papel aparece, e onde a
-geometria do ponto do logotipo é vista de verdade. Depois do deploy, **o passo 8**: desinstalar
-e reinstalar o app no Android e no iPhone, porque `theme_color` e `background_color` são
-assados no WebAPK (`#d76`, `#d124`) — até lá, a barra é vinho sobre um app azul-preto.
+**Publicar a 033 inteira** (`docs/DEPLOY.md`). Antes, o roteiro da spec no `npm run dev`, nos
+dois temas, a 360px e a 1280px: "Depois da A" (passos 1 a 5), "Depois da B" (6, 7, 9 e 10) e
+"Depois da C" (11, 13, 14 e 15). É o único lugar onde uma troca de classe que acertou o nome e
+errou o papel aparece, onde a geometria do ponto do logotipo é vista de verdade, onde o
+segmento âmbar da faixa se alinha (ou não) com a linha "Seu trabalho", e onde o anel de foco
+âmbar sobre o botão âmbar é julgado (3.C.5; se não bastar, `outline-color: var(--brand-700)`
+no `:focus-visible` do primário e a nota na `#d123`). Depois do deploy, **o passo 8**:
+desinstalar e reinstalar o app no Android e no iPhone, porque `theme_color` e
+`background_color` são assados no WebAPK (`#d76`, `#d124`); **o passo 12**, o teste da bancada
+a meio metro, e o teste da desassociação: `/fichas/[id]` ao lado da caixa da MyCookie's; e
+**a frase**: "Frase do orçamento" em `/configuracao`, uma vez (`#d127`).
 
-**Depois, a sessão C da 033** (seção 3.C): o ponto no painel de preço, a faixa de composição,
-`ConfiguracaoGeral.frase` (a única aprovação da spec), as vinte microcopy e a passagem do
-`/impeccable`. A `FRASE_RODAPE` da folha e o "feito com Rende" são dela.
+**Com a 033 fechada, o próximo passo volta a ser o que era antes dela:** a fase 1 do roadmap,
+com a 023 e as entrevistas antes dela (`docs/saas/ROADMAP.md`).
 
 **Rodar o roteiro de oito passos da spec 020** (duas contas, DevTools em Offline nos passos 1 a
 5): confirma que a ficha-modelo abre com "Mais detalhes" fechada, que insumos da conta real com

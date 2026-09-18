@@ -105,6 +105,9 @@ export function ListaFichas() {
   // O botão da biblioteca só existe em conta vazia (`DECISOES.md#d114`): sem
   // isso o estado vazio de hoje trocaria de texto para quem já tem insumo.
   const contaVazia = despensaPronta && insumos.length === 0;
+  // Um botão primário por tela: enquanto o estado vazio ensina a tela, a ação
+  // é dele, e o botão do cabeçalho e a pílula flutuante saem.
+  const estadoVazioNaTela = !carregando && !erro && dados.length === 0;
   const semContagem =
     despensaPronta &&
     visiveis.some(
@@ -123,16 +126,18 @@ export function ListaFichas() {
                 está pronto é consequência do que foi feito, e é daqui que se
                 responde "tem cookie?". */}
             <EntradaContagemPronto />
-            <Link
-              href={`/fichas/${ID_FICHA_NOVA}`}
-              className={classesBotao({
-                variante: "primaria",
-                className: "hidden lg:inline-flex",
-              })}
-            >
-              <Plus aria-hidden className="size-5" strokeWidth={2} />
-              Novo produto
-            </Link>
+            {!estadoVazioNaTela && (
+              <Link
+                href={`/fichas/${ID_FICHA_NOVA}`}
+                className={classesBotao({
+                  variante: "primaria",
+                  className: "hidden lg:inline-flex",
+                })}
+              >
+                <Plus aria-hidden className="size-5" strokeWidth={2} />
+                Novo produto
+              </Link>
+            )}
           </div>
         }
       >
@@ -186,8 +191,8 @@ export function ListaFichas() {
           dados.length === 0 ? (
             contaVazia ? (
               <EstadoVazio
-                titulo="Comece com um cookie que já tem preço"
-                descricao="Uma biblioteca de materiais e dois produtos de cookie, prontos para editar."
+                titulo="Nenhum produto com preço ainda."
+                descricao="Monte uma receita, diga quanto ela rende, e o Rende mostra quanto custa e quanto cobrar."
                 acao={
                   <div className="flex flex-col items-center gap-3">
                     <BotaoBiblioteca />
@@ -254,7 +259,12 @@ export function ListaFichas() {
         )}
       </div>
 
-      <BotaoFlutuante rotulo="Novo produto" href={`/fichas/${ID_FICHA_NOVA}`} />
+      {!estadoVazioNaTela && (
+        <BotaoFlutuante
+          rotulo="Novo produto"
+          href={`/fichas/${ID_FICHA_NOVA}`}
+        />
+      )}
     </>
   );
 }

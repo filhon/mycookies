@@ -78,6 +78,8 @@ export interface ConfiguracaoGeral {
   categoriasProduto: string[];
   /** O que a empresa vê no rodapé da folha (spec 017). Nada disso é obrigatório. */
   contato?: { telefone?: string; instagram?: string };
+  /** Uma frase sua, para o rodapé do orçamento (spec 033, `DECISOES.md#d127`). */
+  frase?: string;
   /**
    * A assinatura dela, PNG com fundo transparente ou foto da assinatura em papel,
    * até 720 px de lado e 200 KB, como `data:` URL (`DECISOES.md#d109`). Vai

@@ -271,6 +271,8 @@ como defensável nas entrevistas. É o "segundo cliente pagante" de `#d16`.
 
 - Um plano, mensal e anual (anual com dois meses grátis). Sem gating: um plano é zero código
   de permissão por tela.
+- Desligar o "feito com Rende" na folha do orçamento é da assinatura (`#d127`): hoje é uma
+  linha fixa; o toggle em `/configuracao` nasce aqui, e é o que uma assinatura paga compra.
 - `POST /api/assinatura/checkout` (Checkout Session com `client_reference_id = contaId`),
   `POST /api/assinatura/portal` (Customer Portal), `POST /api/stripe/webhook` (assinatura
   verificada) gravando `plano`, `status`, `stripeCustomerId`, `stripeSubscriptionId` e

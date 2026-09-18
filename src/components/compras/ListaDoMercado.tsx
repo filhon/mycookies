@@ -366,13 +366,17 @@ export function ListaDoMercado({
         {!lista ? (
           <div className="overflow-hidden rounded-lg border border-line bg-surface">
             <EstadoVazio
-              titulo="Da encomenda para o carrinho"
+              titulo={
+                montada.linhas.length === 0
+                  ? "Nada pra comprar por enquanto."
+                  : "Da encomenda para o carrinho"
+              }
               descricao={
                 noPeriodo.length > 0
                   ? `São ${noPeriodo.length} ${noPeriodo.length === 1 ? "pedido confirmado" : "pedidos confirmados"} neste período. O sistema soma o que os produtos consomem, desconta o que você já tem e diz quantos pacotes faltam.`
                   : reserva.size > 0
                     ? "Nenhum pedido confirmado neste período, mas há produto com fornada de reserva. O sistema soma o que a reserva consome, desconta o que você já tem e diz quantos pacotes faltam."
-                    : "Assim que houver um pedido confirmado para os próximos dias, ou um produto com fornada de reserva, o sistema soma o que cada produto consome e diz quantos pacotes comprar."
+                    : "Quando você confirmar um pedido, a lista aparece aqui: só o que falta na despensa."
               }
               acao={
                 <Botao

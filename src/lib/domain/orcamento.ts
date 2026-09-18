@@ -94,6 +94,8 @@ export interface Orcamento {
     /** Sem o `@`: a folha o desenha. */
     instagram?: string;
     assinaturaDataUrl?: string;
+    /** A frase dela no rodapé (`#d127`). */
+    frase?: string;
   };
   codigo: string;
   /** O dia da impressão, e não um campo gravado (`#d110`). */
@@ -140,7 +142,7 @@ export type FichaParaOrcar = Pick<
 
 export type ConfiguracaoParaOrcar = Pick<
   ConfiguracaoGeral,
-  "nomeNegocio" | "formasPagamento" | "contato" | "assinaturaDataUrl"
+  "nomeNegocio" | "formasPagamento" | "contato" | "assinaturaDataUrl" | "frase"
 >;
 
 /** Só entra no objeto o que tem valor: ausência é ausência, e não `undefined`. */
@@ -197,6 +199,7 @@ export function montarOrcamento(entrada: {
         configuracao?.contato?.instagram?.trim().replace(/^@/, ""),
       ),
       ...opcional("assinaturaDataUrl", configuracao?.assinaturaDataUrl),
+      ...opcional("frase", configuracao?.frase),
     },
     codigo: pedido.codigo,
     emitidoEmISO: hojeISO,

@@ -264,7 +264,7 @@ function Barra({ progresso, batida }: { progresso: number; batida: boolean }) {
         style={{ width: `${Math.min(100, Math.max(0, progresso))}%` }}
         className={cn(
           "h-full rounded-full transition-[width] duration-260 ease-quart",
-          batida ? "bg-accent-500" : "bg-brand-ink",
+          batida ? "bg-positive" : "bg-brand-ink",
         )}
       />
     </div>
@@ -290,7 +290,7 @@ function Ritmo({
 }) {
   if (batida) {
     return (
-      <p className="mt-3 flex items-center gap-2 text-label font-medium text-accent-ink">
+      <p className="mt-3 flex items-center gap-2 text-label font-medium text-positive">
         <Check aria-hidden className="size-4 shrink-0" strokeWidth={2.25} />
         Meta batida
       </p>

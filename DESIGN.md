@@ -64,7 +64,7 @@ Tudo em OKLCH; o hex ao lado é leitura, não produção.
 | `--accent-500` | `oklch(0.74 0.140 78)`  | `#D89B3C` | **o ponto**: botão primário, flutuante, marcação          |
 | `--accent-300` | `oklch(0.85 0.090 80)`  | `#EFC384` | reservado                                                 |
 | `--accent-100` | `oklch(0.93 0.050 82)`  | `#F7E7C8` | fundo de destaque discreto                                |
-| `--accent-ink` | `oklch(0.45 0.100 70)`  | `#6E4A12` | âmbar como texto: destino ativo, meta batida              |
+| `--accent-ink` | `oklch(0.45 0.100 70)`  | `#6E4A12` | âmbar como texto: destino ativo, a linha "Seu trabalho"   |
 | `--on-accent`  | `oklch(0.20 0.030 75)`  | `#231A08` | tinta sobre o botão âmbar                                 |
 
 O âmbar sobe de luminosidade no escuro (`--accent-500` → `oklch(0.78 0.13 78)`,
@@ -112,29 +112,35 @@ matiz**: a atenção é o ocre `--attention`, nunca o `--accent-500`, e sempre l
 
 ### Contraste (AA como piso)
 
-Medições aproximadas a partir dos hex; a sessão C da spec 033 recomputa os pares que a marca
-criou.
+Os pares que a marca criou foram recomputados na sessão C da spec 033 (OKLCH → sRGB →
+luminância, `ESTADO.md`); os demais continuam aproximados a partir dos hex. `--ink-subtle`
+**não é cor de texto**: é ícone e metadado não crítico (3:1). Rótulo de navegação e o nome
+de um número são `--ink-muted`.
 
-| Par                                                     | Ratio                | Piso        |
-| ------------------------------------------------------- | -------------------- | ----------- |
-| `--ink` sobre `--canvas` (claro)                        | ~14.8:1              | 4.5 ✔       |
-| `--ink-muted` sobre `--canvas`                          | ~5.1:1               | 4.5 ✔       |
-| `--ink-subtle` sobre `--surface`                        | ~3.4:1               | só micro ✔  |
-| `--on-brand` sobre `--brand-700`                        | ~12.9:1              | 4.5 ✔       |
-| `--on-brand-muted` sobre `--brand-800`                  | ~10:1                | 4.5 ✔       |
-| `--on-accent` sobre `--accent-500` (botão)              | ~9.1:1               | 4.5 ✔       |
-| `--accent-ink` sobre `--canvas`                         | ~6.4:1               | 4.5 ✔       |
-| `--accent-500` sobre `--canvas` como texto              | ~2.3:1               | **reprova** |
-| positivo sobre `--canvas` / `--positive-bg`             | ~5.6:1 / ~5.0:1      | 4.5 ✔       |
-| atenção sobre `--attention-bg`                          | ~5.2:1               | 4.5 ✔       |
-| negativo sobre `--canvas` / `--negative-bg`             | ~5.4:1 / ~4.9:1      | 4.5 ✔       |
-| informativo sobre `--info-bg`                           | ~5.1:1               | 4.5 ✔       |
-| escuro: `--ink` sobre `--canvas`                        | ~15.4:1              | 4.5 ✔       |
-| escuro: `--ink-muted` sobre `--surface`                 | ~6.6:1               | 4.5 ✔       |
-| escuro: positivo / atenção / negativo sobre `--surface` | ~8.4 / ~7.9 / ~6.5:1 | 4.5 ✔       |
-| escuro: `--accent-500` sobre `--surface`                | ~7.4:1               | 4.5 ✔       |
+| Par                                                     | Ratio                | Piso                                   |
+| ------------------------------------------------------- | -------------------- | -------------------------------------- |
+| `--ink` sobre `--canvas` (claro)                        | ~14.8:1              | 4.5 ✔                                  |
+| `--ink-muted` sobre `--canvas`                          | ~5.1:1               | 4.5 ✔                                  |
+| `--ink-subtle` sobre `--surface`                        | 3.45:1 (3.23 canvas) | **reprova texto**; só ícone e metadado |
+| `--on-brand` sobre `--brand-700`                        | ~12.9:1              | 4.5 ✔                                  |
+| `--on-brand-muted` sobre `--brand-800`                  | 11.0:1               | 4.5 ✔                                  |
+| `--on-accent` sobre `--accent-500` (botão)              | 7.7:1 (8.9 escuro)   | 4.5 ✔                                  |
+| `--accent-ink` sobre `--canvas` / `--surface`           | 7.0 / 7.5:1          | 4.5 ✔                                  |
+| `--border-strong` sobre `--surface` (contorno)          | 1.97:1               | **reprova 3:1**; aceito, ver `#d123`   |
+| `--accent-500` sobre `--canvas` como texto              | ~2.3:1               | **reprova**                            |
+| positivo sobre `--canvas` / `--positive-bg`             | ~5.6:1 / ~5.0:1      | 4.5 ✔                                  |
+| atenção sobre `--attention-bg`                          | ~5.2:1               | 4.5 ✔                                  |
+| negativo sobre `--canvas` / `--negative-bg`             | ~5.4:1 / ~4.9:1      | 4.5 ✔                                  |
+| informativo sobre `--info-bg`                           | ~5.1:1               | 4.5 ✔                                  |
+| escuro: `--ink` sobre `--canvas`                        | ~15.4:1              | 4.5 ✔                                  |
+| escuro: `--ink-muted` sobre `--surface`                 | ~6.6:1               | 4.5 ✔                                  |
+| escuro: positivo / atenção / negativo sobre `--surface` | ~8.4 / ~7.9 / ~6.5:1 | 4.5 ✔                                  |
+| escuro: `--accent-ink` sobre `--canvas` / `--surface`   | 10.5 / 9.5:1         | 4.5 ✔                                  |
+| escuro: `--attention` sobre `--attention-bg`            | 7.8:1                | 4.5 ✔                                  |
 
-A linha que reprova é a razão de o âmbar nunca ser texto: como texto ele é `--accent-ink`.
+A linha do âmbar que reprova é a razão de ele nunca ser texto: como texto ele é
+`--accent-ink`. A do contorno é uma exceção aceita (`#d123`): o campo tem rótulo e 48px, e o
+contorno não é o único sinal.
 
 ## Typography
 
@@ -213,36 +219,38 @@ cartões. Cartão dentro de cartão é sempre erro.
 ## Components
 
 Todo componente interativo entrega: `default`, `hover`, `focus-visible`, `active`, `disabled`,
-`loading`, `error`, nos dois temas. Foco visível sempre: anel de 2px em `--accent-500` com 2px
+`loading`, `error`, nos dois temas. Foco visível sempre: anel de 2px em `--focus` (`--accent-600` no claro, porque o `accent-500` sobre o papel cru mede 2,2:1; `--accent-500` no escuro) com 2px
 de deslocamento.
 
-| Componente                          | Regra                                                                                                                                                                          |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Botão primário**                  | `--accent-500` com tinta `--on-accent`; hover e pressionado `--accent-600`. 52px no celular. **Um por tela.**                                                                  |
-| **Botão secundário**                | borda `--border-strong`, tinta `--ink`, fundo transparente.                                                                                                                    |
-| **Botão terciário**                 | só texto em `--brand-as-ink`, hover `--brand-100`.                                                                                                                             |
-| **Botão destrutivo**                | tinta `--negative` sobre `--negative-bg`. Nunca a marca: ela não pode significar destruição.                                                                                   |
-| **Botão flutuante**                 | só no celular; pílula de 52px com o nome da ação ("Novo pedido"), âmbar com `--on-accent`, sombra baixa, centrada acima da navegação. Nunca círculo com "+".                   |
-| **Campo**                           | rótulo acima, sempre visível; 48px, raio 10px, contorno `--border-strong`. Placeholder nunca é rótulo.                                                                         |
-| **Campo monetário**                 | prefixo fixo "R$" em `--ink-subtle`, teclado numérico, tabular, alinhado à direita.                                                                                            |
-| **Seletor**                         | mesma caixa do campo, ícone `chevron-down`; no celular abre folha inferior.                                                                                                    |
-| **Lista com divisórias**            | divisória 1px `--border`; linha com 44px mínimo, alvo inteiro, nome + detalhe à esquerda, valor tabular à direita.                                                             |
-| **Cartão**                          | `--surface`, borda `--border`, raio 14px, padding 16–20. Só onde cabe.                                                                                                         |
-| **Painel lateral / folha inferior** | mesmo componente e mesma API; 260ms. Modal só para confirmação destrutiva: título com a consequência, dois botões, sem "X".                                                    |
-| **Selo de status do pedido**        | orçamento (neutro) · confirmado (informativo) · em produção (atenção) · entregue (marca: `--brand-100` / `--brand-as-ink`) · pago (positivo). Sempre texto, nunca só cor.      |
-| **Selo de sincronização**           | "salvo no aparelho" em micro, tinta `--attention` sobre `--attention-bg`. Nunca vermelho, nunca alerta: offline é normal.                                                      |
-| **Estado vazio**                    | display + uma linha que ensina a tela + ação. Nunca "nenhum registro encontrado".                                                                                              |
-| **Esqueleto**                       | blocos com a forma do conteúdo, `--surface-sunken`, pulso. Nunca spinner: com cache offline o conteúdo quase sempre chega em milissegundos.                                    |
-| **Navegação inferior**              | cinco destinos, ícone 24px + micro. Ativo em `--accent-ink` (ícone e rótulo) com pílula `--brand-100` atrás do ícone. **Não** `--accent-500`: como texto ele reprova AA.       |
-| **Barra lateral**                   | 240px, `--brand-800`, texto `--on-brand-muted`; item ativo com fundo `--brand-700` cheio e `--on-brand` em 600; hover `--brand-600`. **Sem faixa lateral** de nenhuma largura. |
-| **Pílula de filtro**                | 44px, ativa em `--brand-700` com `--on-brand`; inativa com borda `--border-strong`.                                                                                            |
-| **Faixa de aviso**                  | atenção ou informativo, ícone + frase + ação em texto.                                                                                                                         |
-| **Barra de progresso de meta**      | trilha `--surface-sunken`, preenchimento `--brand-as-ink`; batida, `--accent-500`. Rótulo com a tradução em unidades.                                                          |
+| Componente                          | Regra                                                                                                                                                                                                      |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Botão primário**                  | `--accent-500` com tinta `--on-accent`; hover e pressionado `--accent-600`. 52px no celular. **Um por tela.**                                                                                              |
+| **Botão secundário**                | borda `--border-strong`, tinta `--ink`, fundo transparente.                                                                                                                                                |
+| **Botão terciário**                 | só texto em `--brand-as-ink`, hover `--brand-100`.                                                                                                                                                         |
+| **Botão destrutivo**                | tinta `--negative` sobre `--negative-bg`. Nunca a marca: ela não pode significar destruição.                                                                                                               |
+| **Botão flutuante**                 | só no celular; pílula de 52px com o nome da ação ("Novo pedido"), âmbar com `--on-accent`, sombra baixa, centrada acima da navegação. Nunca círculo com "+".                                               |
+| **Campo**                           | rótulo acima, sempre visível; 48px, raio 10px, contorno `--border-strong`. Placeholder nunca é rótulo.                                                                                                     |
+| **Campo monetário**                 | prefixo fixo "R$" em `--ink-subtle`, teclado numérico, tabular, alinhado à direita.                                                                                                                        |
+| **Seletor**                         | mesma caixa do campo, ícone `chevron-down`; no celular abre folha inferior.                                                                                                                                |
+| **Lista com divisórias**            | divisória 1px `--border`; linha com 44px mínimo, alvo inteiro, nome + detalhe à esquerda, valor tabular à direita.                                                                                         |
+| **Cartão**                          | `--surface`, borda `--border`, raio 14px, padding 16–20. Só onde cabe.                                                                                                                                     |
+| **Painel lateral / folha inferior** | mesmo componente e mesma API; 260ms. Modal só para confirmação destrutiva: título com a consequência, dois botões, sem "X".                                                                                |
+| **Selo de status do pedido**        | orçamento (neutro) · confirmado (marca: `--brand-100` / `--brand-as-ink`) · em produção (informativo) · pronto (positivo) · entregue (neutro) · cancelado (negativo). Nunca atenção: produzir não é aviso. |
+| **Selo de sincronização**           | "Salvo no aparelho" em micro, tinta `--attention` sobre `--attention-bg`; com sinal e fila, "Enviando" em informativo. Nunca vermelho, nunca alerta: offline é normal.                                     |
+| **Estado vazio**                    | display + uma linha que ensina a tela + ação. Título que termina em ponto ganha o ponto âmbar no lugar do ponto final (o leitor de tela lê o ponto). Nunca "nenhum registro".                              |
+| **Esqueleto**                       | blocos com a forma do conteúdo, `--surface-sunken`, pulso. Nunca spinner: com cache offline o conteúdo quase sempre chega em milissegundos.                                                                |
+| **Navegação inferior**              | cinco destinos, ícone 24px + micro. Ativo em `--accent-ink` (ícone e rótulo) com pílula `--brand-100` atrás do ícone. **Não** `--accent-500`: como texto ele reprova AA.                                   |
+| **Barra lateral**                   | 240px, `--brand-800`, texto `--on-brand-muted`; item ativo com fundo `--brand-700` cheio e `--on-brand` em 600; hover `--brand-600`. **Sem faixa lateral** de nenhuma largura.                             |
+| **Pílula de filtro**                | 44px, ativa em `--brand-700` com `--on-brand`; inativa com borda `--border-strong`.                                                                                                                        |
+| **Faixa de aviso**                  | atenção ou informativo, ícone + frase + ação em texto.                                                                                                                                                     |
+| **Barra de progresso de meta**      | trilha `--surface-sunken`, preenchimento `--brand-as-ink`; batida, `--positive` (é semântico, não marca). Rótulo com a tradução em unidades.                                                               |
 
 ### Padrões
 
 - **Um botão primário por tela.** No celular ele é a pílula flutuante ou o botão do painel de
-  pé; no desktop, o canto superior direito do cabeçalho.
+  pé; no desktop, o canto superior direito do cabeçalho. Enquanto o estado vazio ensina a tela,
+  a ação primária é dele: o botão do cabeçalho e a pílula saem. A tela Hoje é de leitura; a
+  ação da agenda vazia é secundária.
 - **Todo número mostra sua consequência.** O par obrigatório é "preço + sobra": nunca um preço
   sozinho. Valor em display, consequência em rótulo logo abaixo ("sobram R$ 3,19 pra você, por
   unidade, depois da maquininha").

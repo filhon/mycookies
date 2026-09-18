@@ -1421,7 +1421,7 @@ export function FormularioPedido({
                   onClick={() => setConfirmandoArquivo(false)}
                   disabled={salvando}
                 >
-                  Cancelar
+                  Deixar como está
                 </Botao>
                 <Botao
                   tamanho="sm"

@@ -14,7 +14,7 @@ export function SeloSincronizacao({ pendente }: { pendente: boolean }) {
   if (!online) {
     return (
       <Selo tom="atencao" icone={<CloudOff aria-hidden className="size-3.5" />}>
-        Sem conexão, salvando no aparelho
+        Salvo no aparelho
       </Selo>
     );
   }
@@ -25,7 +25,7 @@ export function SeloSincronizacao({ pendente }: { pendente: boolean }) {
         tom="info"
         icone={<RefreshCw aria-hidden className="size-3.5 animate-spin" />}
       >
-        Sincronizando
+        Enviando
       </Selo>
     );
   }

@@ -90,6 +90,10 @@ export default function PaginaInsumos() {
     setPainelAberto(true);
   }
 
+  // Um botão primário por tela: enquanto o estado vazio ensina a tela, a ação
+  // é dele (a biblioteca), e o botão do cabeçalho e a pílula flutuante saem.
+  const estadoVazioNaTela = !carregando && !erro && dados.length === 0;
+
   return (
     <>
       <CabecalhoPagina
@@ -101,16 +105,18 @@ export default function PaginaInsumos() {
           // dois flutuantes disputariam o mesmo polegar.
           <div className="flex items-start gap-2">
             <EntradaLeitura />
-            <Botao
-              variante="primaria"
-              onClick={abrirNovo}
-              iconeInicial={
-                <Plus aria-hidden className="size-5" strokeWidth={2} />
-              }
-              className="hidden lg:inline-flex"
-            >
-              Novo material
-            </Botao>
+            {!estadoVazioNaTela && (
+              <Botao
+                variante="primaria"
+                onClick={abrirNovo}
+                iconeInicial={
+                  <Plus aria-hidden className="size-5" strokeWidth={2} />
+                }
+                className="hidden lg:inline-flex"
+              >
+                Novo material
+              </Botao>
+            )}
           </div>
         }
       >
@@ -155,8 +161,8 @@ export default function PaginaInsumos() {
         ) : visiveis.length === 0 ? (
           dados.length === 0 ? (
             <EstadoVazio
-              titulo="Comece com o que toda cozinha tem"
-              descricao="25 materiais com preço médio e dois produtos de cookie já precificados. Você corrige o que for diferente na sua cozinha."
+              titulo="Sua despensa começa aqui."
+              descricao="Cadastre o que você compra: farinha, saquinho, caixa. O custo de cada doce sai sozinho."
               acao={
                 <div className="flex flex-col items-center gap-4">
                   <BotaoBiblioteca />
@@ -201,7 +207,9 @@ export default function PaginaInsumos() {
         )}
       </div>
 
-      <BotaoFlutuante rotulo="Novo material" onClick={abrirNovo} />
+      {!estadoVazioNaTela && (
+        <BotaoFlutuante rotulo="Novo material" onClick={abrirNovo} />
+      )}
 
       <FormularioInsumo
         aberto={painelAberto}

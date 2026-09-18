@@ -69,7 +69,7 @@ export function BarraLateral() {
         </ul>
       </nav>
 
-      <div className="space-y-0.5 border-t border-white/10 px-3 py-3">
+      <div className="space-y-0.5 border-t border-brand-500 px-3 py-3">
         {/* Acima da configuração, no mesmo bloco do pé: o guia é consultado
             raramente e não gasta o sexto destino de uma navegação que tem
             cinco. No celular a entrada é o pé de `/configuracao`. */}

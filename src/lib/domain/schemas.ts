@@ -98,6 +98,12 @@ export const esquemaConfiguracao = z.object({
     })
     .optional(),
   assinaturaDataUrl: z.string().optional(),
+  // A frase dela no rodapé da folha (`#d127`). Uma linha: 80 caracteres.
+  frase: z
+    .string()
+    .trim()
+    .max(80, "A frase precisa caber numa linha: até 80 letras.")
+    .optional(),
 });
 
 export type EntradaConfiguracao = z.infer<typeof esquemaConfiguracao>;

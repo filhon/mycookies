@@ -115,6 +115,9 @@ export function TelaFinanceiro() {
   // O mês existe se ele tem lançamento, e não se o documento de agregado
   // existe: um mês em que tudo foi arquivado não tem resultado a mostrar.
   const temMovimento = lancamentos.dados.length > 0;
+  // Um botão primário por tela: enquanto o estado vazio ensina a tela, a ação
+  // é dele, e o botão do cabeçalho e a pílula flutuante saem.
+  const estadoVazioNaTela = !carregando && !lancamentos.erro && !temMovimento;
 
   /**
    * A lista confere o agregado, porque a tela já assina os dois (`#d81`).
@@ -173,16 +176,18 @@ export function TelaFinanceiro() {
         titulo="Caixa"
         descricao="O que entrou, o que saiu, e o que sobrou de verdade."
         acao={
-          <Botao
-            variante="primaria"
-            onClick={() => abrirPainel()}
-            className="hidden lg:inline-flex"
-            iconeInicial={
-              <Plus aria-hidden className="size-5" strokeWidth={2} />
-            }
-          >
-            Lançar
-          </Botao>
+          !estadoVazioNaTela && (
+            <Botao
+              variante="primaria"
+              onClick={() => abrirPainel()}
+              className="hidden lg:inline-flex"
+              iconeInicial={
+                <Plus aria-hidden className="size-5" strokeWidth={2} />
+              }
+            >
+              Lançar
+            </Botao>
+          )
         }
       >
         <SeletorMes
@@ -225,8 +230,8 @@ export function TelaFinanceiro() {
 
           <div className="overflow-hidden rounded-lg border border-line bg-surface">
             <EstadoVazio
-              titulo={`Nada lançado em ${rotuloCompetencia(competencia)}`}
-              descricao="As compras e as despesas entram aqui na mão, e a venda de balcão também. A encomenda não precisa: no dia em que você marca o pedido como pago, ele vira um lançamento sozinho, com a taxa da maquininha já descontada."
+              titulo="O mês está em branco."
+              descricao="Lance o que entrou e o que saiu. No fim do mês você vê o que sobrou de verdade, já sem a maquininha. A encomenda paga entra sozinha."
               acao={
                 <Botao
                   variante="primaria"
@@ -336,7 +341,9 @@ export function TelaFinanceiro() {
         </div>
       )}
 
-      <BotaoFlutuante rotulo="Lançar" onClick={() => abrirPainel()} />
+      {!estadoVazioNaTela && (
+        <BotaoFlutuante rotulo="Lançar" onClick={() => abrirPainel()} />
+      )}
 
       <FormularioTransacao
         chave={String(aberturas)}
@@ -427,7 +434,7 @@ function AgregadoAtrasado({
 
       <p className="mt-2 max-w-[60ch] text-label text-ink-muted">
         Os lançamentos abaixo estão todos salvos. Refazer o mês a partir deles
-        põe o resumo no lugar — isso precisa de internet.
+        põe o resumo no lugar. Isso precisa de internet.
       </p>
 
       <Botao

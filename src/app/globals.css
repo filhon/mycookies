@@ -60,10 +60,12 @@
   --info: oklch(0.48 0.12 250); /* #2A5C9E */
   --info-bg: oklch(0.93 0.03 250); /* #DCE7F5 */
 
-  /* O anel de foco é o âmbar do pacote. Sobre o botão primário âmbar ele é
-     da cor do fundo; os 2px de `outline-offset` deixam superfície entre os
-     dois, e é isso que o torna visível. */
-  --focus: var(--accent-500);
+  /* O anel de foco é âmbar, como no pacote, mas no claro é o `accent-600`:
+     o `accent-500` sobre o papel cru mede 2,2:1, abaixo dos 3:1 de foco
+     (`#d123`). Sobre o botão primário `accent-500` os 2px de `outline-offset`
+     deixam superfície entre os dois, e é isso que o torna visível. No escuro o
+     `accent-500` passa (9:1) e volta a ser o anel. */
+  --focus: var(--accent-600);
 
   /* ---------- sombra (baixa ou nenhuma), na matiz da tinta ----------
      `--shadow-*` é namespace do Tailwind; o valor bruto mora em `--elevation-*`
@@ -107,6 +109,7 @@
 
     --accent-500: oklch(0.78 0.13 78); /* #E3A94F  âmbar sobe no escuro */
     --accent-ink: oklch(0.82 0.12 80); /* #EDB863 */
+    --focus: var(--accent-500);
 
     --elevation-raised:
       0 1px 2px oklch(0 0 0 / 0.3), 0 4px 12px oklch(0 0 0 / 0.25);
@@ -123,6 +126,8 @@
   --color-brand-800: var(--brand-800);
   --color-brand-700: var(--brand-700);
   --color-brand-600: var(--brand-600);
+  /* Divisória sobre a marca: a única borda da barra lateral. */
+  --color-brand-500: var(--brand-500);
   --color-brand-100: var(--brand-100);
   /* A marca como tinta sobre a superfície: link, ícone de seleção, barra
      de progresso, borda da opção escolhida. Inverte no escuro. */

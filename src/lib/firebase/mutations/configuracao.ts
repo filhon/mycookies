@@ -33,6 +33,8 @@ export interface DadosConfiguracao {
   /** O rodapé e a assinatura da folha do orçamento (spec 017). */
   contato?: ConfiguracaoGeral["contato"];
   assinaturaDataUrl?: string;
+  /** A frase dela no rodapé (`#d127`). */
+  frase?: string;
 }
 
 /**
@@ -177,6 +179,7 @@ export async function salvarConfiguracao(
           },
         }),
         assinaturaDataUrl: dados.assinaturaDataUrl || deleteField(),
+        frase: dados.frase?.trim() || deleteField(),
         atualizadoEm: Timestamp.now(),
       },
       { merge: true },

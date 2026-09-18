@@ -278,6 +278,48 @@ export function calcularCustoFicha(
   };
 }
 
+/**
+ * O nome de cada parcela, na ordem em que o bloco "O custo do lote" as lista.
+ * As linhas do bloco são a legenda da faixa de composição: um nome só.
+ */
+export const ROTULO_PARCELA = {
+  custoInsumos: "Materiais",
+  custoEmbalagem: "Embalagem",
+  custoComponentes: "Produtos de dentro",
+  custoEscolhas: "O que a cliente escolhe (pela opção mais cara)",
+  custoMaoDeObra: "Seu trabalho",
+  custoEnergiaGas: "Energia e gás",
+  custoIndireto: "Fatia das despesas fixas",
+} as const satisfies Partial<Record<keyof CustoFichaCalculado, string>>;
+
+/** Um segmento da faixa de composição (`DECISOES.md#d126`). */
+export interface Segmento {
+  rotulo: string;
+  centavos: Centavos;
+  /** A fatia do lote, de 0 a 1. Somam 1 dentro do arredondamento. */
+  fracao: number;
+  /** O segmento âmbar. Só o trabalho dela. */
+  destaque: boolean;
+}
+
+/**
+ * A faixa de composição é dado, nunca enfeite: só existe onde existe custo
+ * calculado, com as parcelas e a ordem das linhas que o bloco já mostra.
+ * Parcela zerada não vira segmento; lote zerado não tem faixa.
+ */
+export function composicaoDoLote(custo: CustoFichaCalculado): Segmento[] {
+  const total = custo.custoTotalLote;
+  if (total <= 0) return [];
+  return (Object.keys(ROTULO_PARCELA) as (keyof typeof ROTULO_PARCELA)[])
+    .filter((chave) => custo[chave] > 0)
+    .map((chave) => ({
+      rotulo: ROTULO_PARCELA[chave],
+      centavos: custo[chave],
+      fracao: custo[chave] / total,
+      destaque: chave === "custoMaoDeObra",
+    }));
+}
+
 export interface EntradaFicha extends EntradaCustoFicha {
   precificacao: ParametrosPreco;
   /** Preço praticado escolhido pela usuária. `null` aceita o sugerido. */
