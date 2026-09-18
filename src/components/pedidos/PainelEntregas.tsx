@@ -244,7 +244,7 @@ function LinhaEntrega({
             "flex size-6 shrink-0 items-center justify-center rounded-md border-2",
             "transition-colors duration-150 ease-quart",
             marcada
-              ? "border-wine-700 bg-wine-700 text-on-wine"
+              ? "border-brand-ink bg-brand-ink text-surface"
               : "border-line-strong",
           )}
         >

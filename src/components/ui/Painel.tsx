@@ -115,7 +115,7 @@ export function Painel({
         tabIndex={-1}
         onClick={aoFechar}
         className={cn(
-          "absolute inset-0 bg-wine-900/35 transition-opacity duration-260 ease-quart",
+          "absolute inset-0 bg-brand-800/35 transition-opacity duration-260 ease-quart",
           aberto ? "opacity-100" : "opacity-0",
         )}
       />

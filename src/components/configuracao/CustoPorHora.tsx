@@ -35,7 +35,7 @@ export function CustoPorHora({
   );
 
   return (
-    <div className="filete-dourado rounded-lg bg-sunken px-4 py-5 lg:px-5">
+    <div className="rounded-lg bg-sunken px-4 py-5 lg:px-5">
       <p className="text-label font-medium text-ink-muted">
         Cada hora de produção custa
       </p>

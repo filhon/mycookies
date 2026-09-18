@@ -16,7 +16,7 @@ export function ResumoCusto({
   const temPerda = perdaPercentual > 0;
 
   return (
-    <div className="filete-dourado rounded-lg bg-sunken px-4 pb-4 pt-4">
+    <div className="rounded-lg bg-sunken px-4 pb-4 pt-4">
       <p className="text-label font-medium text-ink-muted">
         Cada {ROTULO_UNIDADE_BASE[custo.unidadeBase]} aproveitado custa
       </p>

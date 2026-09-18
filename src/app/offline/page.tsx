@@ -4,8 +4,8 @@ export const metadata = { title: "Sem conexão" };
 
 export default function PaginaOffline() {
   return (
-    <div className="textura-papel flex min-h-dvh flex-col items-center justify-center gap-4 bg-canvas px-8 text-center">
-      <Cookie className="size-16 text-wine-ink" />
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-canvas px-8 text-center">
+      <Cookie className="size-16 text-brand-ink" />
       <h1 className="font-display text-title font-semibold text-ink">
         Esta tela ainda não foi baixada
       </h1>

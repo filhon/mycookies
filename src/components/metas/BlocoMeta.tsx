@@ -105,12 +105,9 @@ export function BlocoMeta({
   return (
     <section
       aria-labelledby="meta-do-mes"
-      className={cn(
-        "overflow-hidden rounded-lg border border-line bg-surface",
-        // O filete dourado da embalagem marca a meta batida. É o único uso de
-        // dourado em área, e não vira confete: o que motiva é o número.
-        medida.batida && "filete-dourado",
-      )}
+      // A meta batida é dita pela frase e pelo ícone de `Ritmo`, não por
+      // enfeite no cartão: o que motiva é o número.
+      className="overflow-hidden rounded-lg border border-line bg-surface"
     >
       <div className="px-5 pb-5 pt-5">
         <div className="flex items-start justify-between gap-3">
@@ -129,7 +126,7 @@ export function BlocoMeta({
           <button
             type="button"
             onClick={aoAbrir}
-            className="toque -mr-2 -mt-2 flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-wine-ink transition-colors duration-150 ease-quart hover:bg-wine-100"
+            className="toque -mr-2 -mt-2 flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-brand-ink transition-colors duration-150 ease-quart hover:bg-brand-100"
           >
             <Pencil aria-hidden className="size-4" strokeWidth={1.75} />
             Editar
@@ -267,7 +264,7 @@ function Barra({ progresso, batida }: { progresso: number; batida: boolean }) {
         style={{ width: `${Math.min(100, Math.max(0, progresso))}%` }}
         className={cn(
           "h-full rounded-full transition-[width] duration-260 ease-quart",
-          batida ? "bg-gold-500" : "bg-wine-ink",
+          batida ? "bg-accent-500" : "bg-brand-ink",
         )}
       />
     </div>
@@ -275,8 +272,8 @@ function Barra({ progresso, batida }: { progresso: number; batida: boolean }) {
 }
 
 /**
- * A frase de ritmo. Nunca só cor: o vinho da marca e o vermelho de erro são
- * vizinhos de matiz, então estar atrás do ritmo carrega ícone e palavra.
+ * A frase de ritmo. Nunca só cor: estar atrás do ritmo carrega ícone e
+ * palavra.
  */
 function Ritmo({
   batida,
@@ -293,7 +290,7 @@ function Ritmo({
 }) {
   if (batida) {
     return (
-      <p className="mt-3 flex items-center gap-2 text-label font-medium text-gold-ink">
+      <p className="mt-3 flex items-center gap-2 text-label font-medium text-accent-ink">
         <Check aria-hidden className="size-4 shrink-0" strokeWidth={2.25} />
         Meta batida
       </p>

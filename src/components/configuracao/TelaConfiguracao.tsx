@@ -599,7 +599,7 @@ export function TelaConfiguracao() {
                     className={cn(
                       "rounded-md border p-3 text-left transition-colors duration-150 ease-quart",
                       ativo
-                        ? "border-wine-ink bg-wine-100"
+                        ? "border-brand-ink bg-brand-100"
                         : "border-line-strong hover:bg-sunken",
                     )}
                   >
@@ -608,7 +608,7 @@ export function TelaConfiguracao() {
                       {ativo && (
                         <Check
                           aria-hidden
-                          className="size-4 shrink-0 text-wine-ink"
+                          className="size-4 shrink-0 text-brand-ink"
                           strokeWidth={2}
                         />
                       )}

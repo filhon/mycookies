@@ -729,7 +729,7 @@ export function FormularioFicha({
             </p>
             <Link
               href="/configuracao"
-              className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-wine-ink underline underline-offset-2"
+              className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-brand-ink underline underline-offset-2"
             >
               <Settings aria-hidden className="size-4" strokeWidth={1.75} />
               Informar meus custos operacionais
@@ -748,7 +748,7 @@ export function FormularioFicha({
             </p>
             <Link
               href="/configuracao"
-              className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-wine-ink underline underline-offset-2"
+              className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-brand-ink underline underline-offset-2"
             >
               <Settings aria-hidden className="size-4" strokeWidth={1.75} />
               Informar meus custos operacionais
@@ -766,7 +766,7 @@ export function FormularioFicha({
             </p>
             <Link
               href="/insumos"
-              className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-wine-ink underline underline-offset-2"
+              className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-brand-ink underline underline-offset-2"
             >
               Ir para Materiais
             </Link>
@@ -935,7 +935,7 @@ export function FormularioFicha({
                       className={cn(
                         "rounded-md border p-3 text-left transition-colors duration-150 ease-quart",
                         ativo
-                          ? "border-wine-ink bg-wine-100"
+                          ? "border-brand-ink bg-brand-100"
                           : "border-line-strong hover:bg-sunken",
                       )}
                     >
@@ -943,7 +943,7 @@ export function FormularioFicha({
                         {ativo && (
                           <Check
                             aria-hidden
-                            className="size-4 shrink-0 text-wine-ink"
+                            className="size-4 shrink-0 text-brand-ink"
                             strokeWidth={2}
                           />
                         )}
@@ -1314,7 +1314,7 @@ export function FormularioFicha({
                     className={cn(
                       "toque rounded-md border px-3 text-left text-label font-semibold transition-colors duration-150 ease-quart",
                       ativo
-                        ? "border-wine-ink bg-wine-100 text-ink"
+                        ? "border-brand-ink bg-brand-100 text-ink"
                         : "border-line-strong text-ink hover:bg-sunken",
                     )}
                   >
@@ -1322,7 +1322,7 @@ export function FormularioFicha({
                       {ativo && (
                         <Check
                           aria-hidden
-                          className="size-4 shrink-0 text-wine-ink"
+                          className="size-4 shrink-0 text-brand-ink"
                           strokeWidth={2}
                         />
                       )}

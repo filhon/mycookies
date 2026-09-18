@@ -27,7 +27,7 @@ export function Trilha({
           key={indice}
           className={cn(
             "h-1.5 flex-1 rounded-full transition-colors duration-150 ease-quart",
-            indice < feitos ? "bg-wine-ink" : "bg-line",
+            indice < feitos ? "bg-brand-ink" : "bg-line",
           )}
         />
       ))}
@@ -47,9 +47,9 @@ const APARENCIA: Record<
 /**
  * O estado de um passo, com ícone e palavra.
  *
- * A invariante de nunca deixar a cor sozinha vale duplamente aqui: o vinho de
- * "agora" e o verde de "feito" não podem ser a única diferença entre um passo
- * que ela precisa fazer e um que ela já fez.
+ * A invariante de nunca deixar a cor sozinha vale aqui: a tinta de "agora" e
+ * o verde de "feito" não podem ser a única diferença entre um passo que ela
+ * precisa fazer e um que ela já fez.
  */
 export function SeloDoPasso({ estado }: { estado: EstadoPasso }) {
   const { rotulo, tom } = APARENCIA[estado];

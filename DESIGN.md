@@ -1,90 +1,162 @@
 # Design
 
-Sistema visual do MyCookie's, derivado da identidade de marca já existente (logotipo, embalagem, cartão fidelidade). A marca vem da confeitaria; este documento a traduz para uma ferramenta de trabalho.
+Sistema visual do Rende. A regra de uso mora aqui; os valores vivem em `src/app/globals.css`,
+com os mesmos nomes de `docs/marca/rende/tokens.css`. Onde este arquivo e o pacote da marca
+divergem (escala, raio, dois componentes), **este é o que vale**: o motivo está na spec 033 e
+em `DECISOES.md#d125`.
 
 ## Visual Theme
 
-**Papelaria de confeitaria fina virada ferramenta.**
+**Um instrumento de precisão em mãos experientes.**
 
-A referência física é a caixa da MyCookie's: papel creme texturizado, faixa vinho profundo, detalhe dourado, tipografia serifada quente. O sistema reproduz essa materialidade em superfícies claras e opacas, sem brilho, sem vidro, sem sombra pesada. Nada aqui deve parecer plástico.
+Território "Ponto". Quase monocromático: tinta azul-preta (`--brand-700`, matiz OKLCH 272)
+como cor de marca, um único âmbar quente (`--accent-500`, matiz 78) como acento, papel cru como
+superfície. A cor não decora: marca o número que decide.
 
-O vinho não é enfeite: ele é a estrutura. Aparece cheio e sólido no cromo do aplicativo (barra lateral no desktop, cabeçalhos de contexto), exatamente como aparece cheio e sólido no cartão fidelidade. O conteúdo, onde moram os números, fica em creme e branco quente para que a densidade de dados respire.
+A primária está a 245° do vermelho de erro, então positivo, atenção e negativo são
+inequívocos ao lado dela. O que sobra de risco é o âmbar dividindo matiz com a atenção; a
+resposta é a mesma de sempre: **cor nunca é o único portador de significado**.
 
 ### Tema
 
-**Claro por padrão.** A cena que decide isso: Maynara com o celular apoiado na bancada às duas da tarde, cozinha iluminada, farinha na mão. Um painel escuro nessa luz é ilegível, e seria também o segundo reflexo previsível de "app de gestão que não quer parecer planilha".
+**Claro por padrão.** A cena que decide isso: a confeiteira com o celular apoiado na bancada às
+duas da tarde, cozinha iluminada, farinha na mão. Um painel escuro nessa luz é ilegível.
 
-**Escuro suportado**, seguindo `prefers-color-scheme`, para o uso noturno de planejamento. No escuro a marca inverte como inverte na papelaria: o vinho vira o fundo quase preto ameixado e o creme vira a tinta.
+**Escuro suportado**, seguindo `prefers-color-scheme`, para o uso noturno de planejamento. No
+escuro a marca inverte: a cor de estrutura vira fundo e a superfície vira tinta. Não é um "modo
+escuro" colado; é a mesma marca com os papéis trocados. Não há alternador de tema.
+
+Celular primeiro; o desktop é a versão confortável do mesmo desenho. Offline é o estado normal.
 
 ### Color Strategy
 
-**Restrained no conteúdo, Committed no cromo.**
+**Contida no conteúdo, comprometida no cromo.**
 
-Superfícies de dados usam neutros tingidos de creme com o vinho reservado a ação primária, seleção e estado. O cromo do aplicativo assume o vinho por inteiro. Essa divisão mantém a marca presente sem transformar tabela de custo em cartaz.
+A tinta da marca aparece cheia e sólida no cromo: barra lateral do desktop, cabeçalho de
+contexto, pílula ativa. As superfícies onde moram os números ficam em neutros quentes, para a
+densidade respirar. O âmbar é o ponto: botão primário, o valor que decide, o segmento "sua
+hora" da faixa. Nunca preenche área grande.
+
+Nenhum neutro é puro. No tema claro os neutros carregam a matiz 85 (o calor do papel, matiz do
+acento) em croma 0.004–0.012; no escuro carregam a matiz 272 (a tinta da marca) em croma
+0.022–0.028.
+
+Proporção: ~70% neutro · ~25% tinta · ~5% âmbar.
 
 ## Color Palette
 
-Tudo em OKLCH. Nenhum neutro é puro: todos carregam a matiz quente da marca (croma 0.008–0.02).
+Tudo em OKLCH; o hex ao lado é leitura, não produção.
 
 ### Marca
 
-| Token        | OKLCH                  | Uso                                                                      |
-| ------------ | ---------------------- | ------------------------------------------------------------------------ |
-| `--wine-900` | `oklch(0.24 0.085 18)` | Fundo da barra lateral no desktop, cabeçalho de contexto                 |
-| `--wine-800` | `oklch(0.30 0.105 18)` | Hover dentro de superfícies vinho                                        |
-| `--wine-700` | `oklch(0.36 0.128 18)` | **Primária.** Botões, links, seleção. Equivale ao vinho do logotipo      |
-| `--wine-600` | `oklch(0.43 0.140 20)` | Hover de primária                                                        |
-| `--wine-300` | `oklch(0.72 0.090 20)` | Vinho sobre fundo escuro                                                 |
-| `--wine-100` | `oklch(0.93 0.028 22)` | Fundo de estado selecionado, tag                                         |
-| `--gold-600` | `oklch(0.58 0.090 72)` | Dourado legível como texto sobre creme                                   |
-| `--gold-500` | `oklch(0.73 0.095 78)` | **Acento.** Filete, meta atingida, detalhe. Equivale ao dourado da marca |
-| `--gold-100` | `oklch(0.94 0.035 82)` | Fundo de destaque discreto                                               |
+| Token          | OKLCH                   | hex       | Uso                                                       |
+| -------------- | ----------------------- | --------- | --------------------------------------------------------- |
+| `--brand-900`  | `oklch(0.19 0.030 272)` | `#15171F` | reservado (é o `--canvas` escuro)                         |
+| `--brand-800`  | `oklch(0.22 0.030 272)` | `#1C1E28` | barra lateral, painel de marca do acesso                  |
+| `--brand-700`  | `oklch(0.26 0.035 272)` | `#2A2C3A` | **primária**: item ativo, pílula ativa, seleção, ícone    |
+| `--brand-600`  | `oklch(0.34 0.035 272)` | `#3C3E4D` | hover sobre superfície de marca                           |
+| `--brand-500`  | `oklch(0.44 0.033 272)` | `#545768` | divisória sobre marca                                     |
+| `--brand-400`  | `oklch(0.56 0.028 272)` | `#6E7183` | reservado                                                 |
+| `--brand-300`  | `oklch(0.70 0.022 272)` | `#9B9DAC` | ícone desativado                                          |
+| `--brand-200`  | `oklch(0.85 0.015 272)` | `#CFD0D8` | borda em superfície de marca; é o `--on-brand-muted`      |
+| `--brand-100`  | `oklch(0.94 0.010 272)` | `#EBECF1` | realce frio: opção escolhida, hover terciário, selo marca |
+| `--accent-600` | `oklch(0.62 0.130 75)`  | `#A9752A` | hover e pressionado do botão âmbar                        |
+| `--accent-500` | `oklch(0.74 0.140 78)`  | `#D89B3C` | **o ponto**: botão primário, flutuante, marcação          |
+| `--accent-300` | `oklch(0.85 0.090 80)`  | `#EFC384` | reservado                                                 |
+| `--accent-100` | `oklch(0.93 0.050 82)`  | `#F7E7C8` | fundo de destaque discreto                                |
+| `--accent-ink` | `oklch(0.45 0.100 70)`  | `#6E4A12` | âmbar como texto: destino ativo, meta batida              |
+| `--on-accent`  | `oklch(0.20 0.030 75)`  | `#231A08` | tinta sobre o botão âmbar                                 |
 
-O dourado nunca preenche áreas grandes nem vira fundo de botão: dourado chapado em tela lê como plástico dourado, e a marca usa dourado como tinta de detalhe. Ele é filete, ícone e marcador.
+O âmbar sobe de luminosidade no escuro (`--accent-500` → `oklch(0.78 0.13 78)`,
+`--accent-ink` → `oklch(0.82 0.12 80)`) para manter 4.5:1 sobre `--surface`. `--brand-100`
+ganha valor escuro (`oklch(0.30 0.030 272)`) porque é fundo de hover e de opção escolhida, e o
+claro do pacote seria um flash sobre o tema escuro.
 
 ### Superfícies
 
-| Token              | Claro                                  | Escuro                                    |
-| ------------------ | -------------------------------------- | ----------------------------------------- |
-| `--canvas`         | `oklch(0.955 0.014 88)` creme de papel | `oklch(0.19 0.014 20)` ameixa quase preto |
-| `--surface`        | `oklch(0.985 0.008 88)` branco quente  | `oklch(0.235 0.016 20)`                   |
-| `--surface-sunken` | `oklch(0.925 0.016 86)`                | `oklch(0.165 0.012 20)`                   |
-| `--border`         | `oklch(0.88 0.016 80)`                 | `oklch(0.32 0.018 20)`                    |
-| `--border-strong`  | `oklch(0.80 0.020 78)`                 | `oklch(0.42 0.020 20)`                    |
-| `--ink`            | `oklch(0.26 0.022 40)`                 | `oklch(0.94 0.012 85)`                    |
-| `--ink-muted`      | `oklch(0.52 0.020 50)`                 | `oklch(0.70 0.014 80)`                    |
-| `--ink-subtle`     | `oklch(0.64 0.018 55)`                 | `oklch(0.56 0.014 75)`                    |
-| `--wine-ink`       | `--wine-700`                           | `--wine-300`                              |
-| `--gold-ink`       | `--gold-600`                           | `--gold-500`                              |
+| Token              | Claro                               | Escuro                               |
+| ------------------ | ----------------------------------- | ------------------------------------ |
+| `--canvas`         | `oklch(0.972 0.008 85)` · `#F7F4EE` | `oklch(0.19 0.025 272)` · `#15171F`  |
+| `--surface`        | `oklch(0.995 0.004 85)` · `#FEFCF8` | `oklch(0.235 0.028 272)` · `#1E2029` |
+| `--surface-sunken` | `oklch(0.945 0.010 85)` · `#EFEBE3` | `oklch(0.165 0.022 272)` · `#101219` |
+| `--border`         | `oklch(0.885 0.010 85)` · `#E1DCD3` | `oklch(0.31 0.025 272)` · `#343641`  |
+| `--border-strong`  | `oklch(0.78 0.012 85)` · `#C3BDB2`  | `oklch(0.42 0.028 272)` · `#4C4F5C`  |
+| `--ink`            | `oklch(0.24 0.020 272)` · `#22242E` | `oklch(0.955 0.006 85)` · `#F4F1EB`  |
+| `--ink-muted`      | `oklch(0.50 0.015 272)` · `#6A6C78` | `oklch(0.74 0.012 272)` · `#A8AAB5`  |
+| `--ink-subtle`     | `oklch(0.63 0.012 272)` · `#8E909B` | `oklch(0.60 0.015 272)` · `#7F8290`  |
+| `--on-brand`       | `oklch(0.965 0.006 85)` · `#F6F3ED` | igual                                |
+| `--on-brand-muted` | `var(--brand-200)` · `#CFD0D8`      | igual                                |
+| `--brand-as-ink`   | `var(--brand-700)` · `#2A2C3A`      | `oklch(0.88 0.012 272)` · `#DADCE4`  |
 
-`--wine-ink` e `--gold-ink` são a marca **como tinta** sobre a superfície: link, ícone de seleção, destino ativo, barra de progresso, borda da opção escolhida. Invertem no escuro como a papelaria inverte. O vinho como **fundo** (botão primário, barra lateral) continua `--wine-700` e `--wine-900` nos dois temas; é a tinta que muda de tom, nunca o cromo.
+`--brand-as-ink` é a marca **como tinta** sobre a superfície: link, ícone de seleção, barra de
+progresso, borda da opção escolhida, botão terciário. Inverte no escuro. A marca como **fundo**
+(barra lateral, item ativo, pílula ativa) continua `--brand-800` e `--brand-700` nos dois
+temas: é o cromo que fica constante e a tinta que inverte. `--on-brand-muted` é o texto apagado
+sobre a barra lateral (`#CFD0D8` sobre `#1C1E28` ≈ 10:1).
 
 ### Semânticos
 
-| Token         | OKLCH                   | Uso                                                        |
-| ------------- | ----------------------- | ---------------------------------------------------------- |
-| `--positive`  | `oklch(0.52 0.115 152)` | Lucro, entrada de caixa, meta batida                       |
-| `--attention` | `oklch(0.66 0.150 55)`  | Estoque baixo, custo desatualizado, sincronização pendente |
-| `--negative`  | `oklch(0.55 0.200 27)`  | Prejuízo, saída de caixa, erro de validação                |
-| `--info`      | `oklch(0.52 0.095 245)` | Neutro informativo, dica de cálculo                        |
+| Papel       | Claro (tinta / fundo) | Escuro (tinta / fundo) | Onde                                                  |
+| ----------- | --------------------- | ---------------------- | ----------------------------------------------------- |
+| positivo    | `#17724A` / `#DDF0E4` | `#5FD49A` / `#163021`  | lucro, entrada de caixa, meta batida                  |
+| atenção     | `#7A5410` / `#F7E7C8` | `#E3B267` / `#34280F`  | despensa baixa, custo desatualizado, escrita pendente |
+| negativo    | `#B02A1C` / `#FADFDA` | `#F08070` / `#3A1A16`  | prejuízo, saída, erro                                 |
+| informativo | `#2A5C9E` / `#DCE7F5` | `#8FB6E8` / `#14243A`  | dica de cálculo                                       |
 
-**Restrição obrigatória:** `--negative` e `--wine-700` são vizinhos de matiz. O vermelho de erro é mais claro e muito mais saturado que o vinho da marca, mas a distinção não é confiável sozinha. Todo estado negativo carrega ícone ou texto. Vinho nunca é usado para comunicar erro, e vermelho nunca é usado para ação primária.
+No Tailwind o fundo semântico chama-se `*-soft` (`bg-positive-soft`); no `:root` ele é o
+`--*-bg` do pacote.
+
+Cada semântico tem **ícone obrigatório** (Lucide: `trending-up`, `triangle-alert`,
+`trending-down`, `info`) e palavra. Nenhum estado depende de cor. **Atenção e âmbar dividem
+matiz**: a atenção é o ocre `--attention`, nunca o `--accent-500`, e sempre leva o triângulo.
+
+### Contraste (AA como piso)
+
+Medições aproximadas a partir dos hex; a sessão C da spec 033 recomputa os pares que a marca
+criou.
+
+| Par                                                     | Ratio                | Piso        |
+| ------------------------------------------------------- | -------------------- | ----------- |
+| `--ink` sobre `--canvas` (claro)                        | ~14.8:1              | 4.5 ✔       |
+| `--ink-muted` sobre `--canvas`                          | ~5.1:1               | 4.5 ✔       |
+| `--ink-subtle` sobre `--surface`                        | ~3.4:1               | só micro ✔  |
+| `--on-brand` sobre `--brand-700`                        | ~12.9:1              | 4.5 ✔       |
+| `--on-brand-muted` sobre `--brand-800`                  | ~10:1                | 4.5 ✔       |
+| `--on-accent` sobre `--accent-500` (botão)              | ~9.1:1               | 4.5 ✔       |
+| `--accent-ink` sobre `--canvas`                         | ~6.4:1               | 4.5 ✔       |
+| `--accent-500` sobre `--canvas` como texto              | ~2.3:1               | **reprova** |
+| positivo sobre `--canvas` / `--positive-bg`             | ~5.6:1 / ~5.0:1      | 4.5 ✔       |
+| atenção sobre `--attention-bg`                          | ~5.2:1               | 4.5 ✔       |
+| negativo sobre `--canvas` / `--negative-bg`             | ~5.4:1 / ~4.9:1      | 4.5 ✔       |
+| informativo sobre `--info-bg`                           | ~5.1:1               | 4.5 ✔       |
+| escuro: `--ink` sobre `--canvas`                        | ~15.4:1              | 4.5 ✔       |
+| escuro: `--ink-muted` sobre `--surface`                 | ~6.6:1               | 4.5 ✔       |
+| escuro: positivo / atenção / negativo sobre `--surface` | ~8.4 / ~7.9 / ~6.5:1 | 4.5 ✔       |
+| escuro: `--accent-500` sobre `--surface`                | ~7.4:1               | 4.5 ✔       |
+
+A linha que reprova é a razão de o âmbar nunca ser texto: como texto ele é `--accent-ink`.
 
 ## Typography
 
-Duas famílias. A serifa vem do logotipo e fica restrita ao que é editorial; a sans carrega toda a interface.
+Duas famílias, nenhuma serifa.
 
-- **Display: Fraunces** (variável, `opsz` alto, `SOFT` moderado). Ecoa a serifa quente e de terminais arredondados do logotipo. Usada em título de página, valor financeiro de destaque no painel, e estados vazios. Nunca em rótulo, botão ou célula de tabela.
-- **Interface: Figtree.** Humanista, quente, legível a meio metro, com numerais tabulares. Carrega rótulo, formulário, tabela, navegação e corpo de texto.
+- **Display: Archivo**, pesos 600 e 700. Título de página, valor financeiro em destaque,
+  número de estado vazio, o logotipo. Nunca em rótulo, botão, tabela, navegação, corpo ou
+  microcopy. Não existe Archivo 400 carregada: `font-display` sem `font-semibold` ou
+  `font-bold` é erro.
+- **Interface: Figtree**, pesos 400 a 700. Humanista, legível a meio metro, com numerais
+  tabulares. Carrega rótulo, formulário, tabela, navegação e corpo de texto.
 
 ### Escala
 
-Fixa em rem, razão ~1.2. Nada de tipografia fluida: a Maynara vê a mesma tela em DPI consistente e um título que encolhe dentro de um painel fica pior, não melhor.
+Fixa em rem, razão ~1.2. Nada de tipografia fluida: a mesma tela em DPI consistente, e um
+título que encolhe dentro de um painel fica pior, não melhor. **É a escala do código, não a
+do pacote** (`#d123`): 16px de corpo e 14px de rótulo foram o que a usuária 0 usou na bancada.
 
 | Papel        | Tamanho         | Família / peso                           |
 | ------------ | --------------- | ---------------------------------------- |
-| `display`    | 2rem / 1.15     | Fraunces 600                             |
-| `title`      | 1.5rem / 1.2    | Fraunces 600                             |
+| `display`    | 2rem / 1.15     | Archivo 600                              |
+| `title`      | 1.5rem / 1.2    | Archivo 600                              |
 | `heading`    | 1.25rem / 1.3   | Figtree 600                              |
 | `subheading` | 1.0625rem / 1.4 | Figtree 600                              |
 | `body`       | 1rem / 1.55     | Figtree 400                              |
@@ -95,58 +167,136 @@ Corpo de texto corrido limitado a 68ch. Tabelas e painéis densos podem passar d
 
 ### Números
 
-Todo valor monetário e toda quantidade usam `font-variant-numeric: tabular-nums`, peso 600. Dinheiro nunca aparece em fonte de rótulo nem em `micro`: é o dado que a usuária veio buscar.
+Todo valor monetário e toda quantidade usam `font-variant-numeric: tabular-nums`, peso 600.
+Dinheiro nunca aparece em fonte de rótulo nem em `micro`: é o dado que a usuária veio buscar.
 
-O símbolo `R$` é renderizado menor e em `--ink-muted`, com o valor em `--ink`. O que importa é a cifra, não a moeda.
+O símbolo `R$` é renderizado menor e em `--ink-muted`, com o valor em `--ink`. Decimal com
+vírgula, milhar com ponto. Valores que se comparam em coluna ficam alinhados à direita.
+Percentual sempre acompanhado do que ele significa em reais ("45% · R$ 8,50"). Valor negativo:
+sinal, cor negativa **e** `trending-down`.
 
 ## Layout & Spacing
 
-Base de 4px. Ritmo `4 · 8 · 12 · 16 · 24 · 32 · 48`, com variação deliberada entre seções: densidade dentro de um grupo, respiro entre grupos.
+Base de 4px. Ritmo `4 · 8 · 12 · 16 · 24 · 32 · 48`, com variação deliberada entre seções:
+densidade dentro de um grupo, respiro entre grupos.
 
 ### Estrutura responsiva
 
 Uma estrutura só, dois arranjos. A quebra é estrutural, nunca tipográfica.
 
-- **Mobile (< 768px):** conteúdo em coluna única, navegação inferior fixa com cinco destinos, ação primária como botão flutuante ou barra fixa acima da navegação. Detalhes e formulários abrem em _bottom sheet_ arrastável.
-- **Desktop (≥ 1024px):** barra lateral vinho de largura fixa (240px), conteúdo em coluna com largura máxima, detalhes e formulários abrem em painel lateral direito. Nunca modal quando um painel resolve.
+- **Celular (< 768px):** conteúdo em coluna única, navegação inferior fixa com cinco destinos,
+  ação primária como pílula flutuante ou barra fixa acima da navegação. Detalhes e formulários
+  abrem em folha inferior arrastável.
+- **Desktop (≥ 1024px):** barra lateral `--brand-800` de 240px, conteúdo em coluna com largura
+  máxima, detalhes e formulários abrem em painel lateral direito. Nunca modal quando um painel
+  resolve.
+
+### Raios
+
+Os do código (`#d123`): `sm` 8px (selo, esqueleto), `md` 10px (botão, campo, pílula de
+navegação), `lg` 14px (cartão, bloco), `xl` 20px (reservado), `full` (pílula de filtro,
+flutuante, distintivo). Superfícies opacas: sem vidro, sem brilho, sem plástico. Sombras baixas
+ou nenhuma, na matiz 272.
 
 ### Toque
 
-44×44px é o mínimo absoluto, com 8px entre alvos vizinhos. Ações primárias no mobile têm 52px de altura. Campos de formulário têm 48px. Isso não é generosidade: é farinha no dedo.
+44×44px é o mínimo absoluto, com 8px entre alvos vizinhos. Ações primárias no celular têm 52px
+de altura. Campos têm 48px. Linha de lista tem alvo inteiro. Isso não é generosidade: é farinha
+no dedo.
 
 ### Cartões
 
-Usados só quando o conteúdo é de fato uma unidade destacável e clicável, como um pedido na agenda. Listas de insumo e linhas de ficha técnica são **listas com divisórias**, não grades de cartões. Cartão dentro de cartão é sempre erro.
+Usados só quando o conteúdo é de fato uma unidade destacável e clicável (meta, compras, resumo
+do mês). Listas de material e linhas de produto são **listas com divisórias**, não grades de
+cartões. Cartão dentro de cartão é sempre erro.
 
 ## Components
 
-Todo componente interativo entrega: `default`, `hover`, `focus-visible`, `active`, `disabled`, `loading`, `error`.
+Todo componente interativo entrega: `default`, `hover`, `focus-visible`, `active`, `disabled`,
+`loading`, `error`, nos dois temas. Foco visível sempre: anel de 2px em `--accent-500` com 2px
+de deslocamento.
 
-- **Botão.** Primário vinho sólido com texto creme; secundário com contorno e fundo transparente; terciário só texto. Raio 10px. Um botão primário por tela.
-- **Botão flutuante.** Só no celular. Uma pílula de 52px com o nome da ação ("Novo pedido"), vinho sobre creme, sombra baixa, centrada acima da navegação inferior. Nunca o círculo com o sinal de mais: um "+" sozinho obriga a adivinhar o que nasce, e a sombra alta do círculo é plástico sobre papel. No desktop a mesma ação mora no cabeçalho.
-- **Campo.** Rótulo acima, sempre visível, nunca _placeholder_ como rótulo. Altura 48px, raio 10px, contorno `--border-strong`. Foco: anel de 2px em `--wine-700` com 2px de deslocamento.
-- **Campo monetário.** Prefixo `R$` fixo, teclado numérico no mobile, formatação em centavos ao digitar, alinhamento à direita.
-- **Lista.** Divisórias de 1px em `--border`, linha com 56px de altura mínima, área de toque cobrindo a linha inteira.
-- **Superfície flutuante.** _Bottom sheet_ no mobile, painel lateral no desktop, mesmo componente e mesma API. Modal fica reservado a confirmação destrutiva.
-- **Estado vazio.** Ensina a tela: uma frase do que aquilo faz, a ação para começar, e o motivo do cookie da marca em traço, discreto. Nunca "nenhum registro encontrado".
-- **Estado de carregamento.** Esqueleto com a forma do conteúdo real. Nunca _spinner_ no meio da tela, porque com cache offline o conteúdo quase sempre chega em milissegundos.
-- **Selo de sincronização.** Quando há escrita pendente, um selo discreto em `--attention` diz "salvo no aparelho". Nunca um alerta vermelho: offline é normal, não é falha.
+| Componente                          | Regra                                                                                                                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Botão primário**                  | `--accent-500` com tinta `--on-accent`; hover e pressionado `--accent-600`. 52px no celular. **Um por tela.**                                                                  |
+| **Botão secundário**                | borda `--border-strong`, tinta `--ink`, fundo transparente.                                                                                                                    |
+| **Botão terciário**                 | só texto em `--brand-as-ink`, hover `--brand-100`.                                                                                                                             |
+| **Botão destrutivo**                | tinta `--negative` sobre `--negative-bg`. Nunca a marca: ela não pode significar destruição.                                                                                   |
+| **Botão flutuante**                 | só no celular; pílula de 52px com o nome da ação ("Novo pedido"), âmbar com `--on-accent`, sombra baixa, centrada acima da navegação. Nunca círculo com "+".                   |
+| **Campo**                           | rótulo acima, sempre visível; 48px, raio 10px, contorno `--border-strong`. Placeholder nunca é rótulo.                                                                         |
+| **Campo monetário**                 | prefixo fixo "R$" em `--ink-subtle`, teclado numérico, tabular, alinhado à direita.                                                                                            |
+| **Seletor**                         | mesma caixa do campo, ícone `chevron-down`; no celular abre folha inferior.                                                                                                    |
+| **Lista com divisórias**            | divisória 1px `--border`; linha com 44px mínimo, alvo inteiro, nome + detalhe à esquerda, valor tabular à direita.                                                             |
+| **Cartão**                          | `--surface`, borda `--border`, raio 14px, padding 16–20. Só onde cabe.                                                                                                         |
+| **Painel lateral / folha inferior** | mesmo componente e mesma API; 260ms. Modal só para confirmação destrutiva: título com a consequência, dois botões, sem "X".                                                    |
+| **Selo de status do pedido**        | orçamento (neutro) · confirmado (informativo) · em produção (atenção) · entregue (marca: `--brand-100` / `--brand-as-ink`) · pago (positivo). Sempre texto, nunca só cor.      |
+| **Selo de sincronização**           | "salvo no aparelho" em micro, tinta `--attention` sobre `--attention-bg`. Nunca vermelho, nunca alerta: offline é normal.                                                      |
+| **Estado vazio**                    | display + uma linha que ensina a tela + ação. Nunca "nenhum registro encontrado".                                                                                              |
+| **Esqueleto**                       | blocos com a forma do conteúdo, `--surface-sunken`, pulso. Nunca spinner: com cache offline o conteúdo quase sempre chega em milissegundos.                                    |
+| **Navegação inferior**              | cinco destinos, ícone 24px + micro. Ativo em `--accent-ink` (ícone e rótulo) com pílula `--brand-100` atrás do ícone. **Não** `--accent-500`: como texto ele reprova AA.       |
+| **Barra lateral**                   | 240px, `--brand-800`, texto `--on-brand-muted`; item ativo com fundo `--brand-700` cheio e `--on-brand` em 600; hover `--brand-600`. **Sem faixa lateral** de nenhuma largura. |
+| **Pílula de filtro**                | 44px, ativa em `--brand-700` com `--on-brand`; inativa com borda `--border-strong`.                                                                                            |
+| **Faixa de aviso**                  | atenção ou informativo, ícone + frase + ação em texto.                                                                                                                         |
+| **Barra de progresso de meta**      | trilha `--surface-sunken`, preenchimento `--brand-as-ink`; batida, `--accent-500`. Rótulo com a tradução em unidades.                                                          |
+
+### Padrões
+
+- **Um botão primário por tela.** No celular ele é a pílula flutuante ou o botão do painel de
+  pé; no desktop, o canto superior direito do cabeçalho.
+- **Todo número mostra sua consequência.** O par obrigatório é "preço + sobra": nunca um preço
+  sozinho. Valor em display, consequência em rótulo logo abaixo ("sobram R$ 3,19 pra você, por
+  unidade, depois da maquininha").
+- **Erro sem depender de cor:** ícone + palavra + a saída ("O mínimo pra não perder é R$ 4,64").
+- **Sem internet:** selo "salvo no aparelho"; quando a tela depende de dado remoto, faixa
+  informativa. Nunca bloquear a tela.
+- **O sistema faz a conta:** nunca pedir um número derivável de outro.
 
 ## Motion
 
-- Transições de estado entre 150ms e 220ms. Entrada de painel e _bottom sheet_ em 260ms.
-- Curva única: `cubic-bezier(0.25, 1, 0.5, 1)` (ease-out-quart). Sem elástico, sem quique.
-- Movimento comunica estado: abertura de painel, confirmação de salvamento, progresso de meta. Nada decorativo, nenhuma coreografia de carregamento de página.
-- `prefers-reduced-motion: reduce` elimina translação e escala, preservando mudança de opacidade e de cor.
+- Transições de estado entre 150ms e 220ms. Entrada de painel e folha inferior em 260ms.
+- Curva única: `cubic-bezier(0.25, 1, 0.5, 1)` (`ease-quart`). Sem elástico, sem quique.
+- Movimento comunica estado: abertura de painel, confirmação de salvamento, progresso de meta.
+  Nada decorativo, nenhuma coreografia de carregamento de página. O PWA não tem tela de
+  abertura própria; o que existe é o `background_color` creme e o ícone.
+- `prefers-reduced-motion: reduce` elimina translação e escala, preservando mudança de
+  opacidade e de cor.
 
 ## Iconography
 
-Lucide, traço de 1.75px, 20px em linha e 24px em navegação. Estilo de contorno consistente em toda a interface, sem ícones preenchidos misturados a contornados.
+Lucide, traço de 1.75px, 20px em linha e 24px em navegação. Sempre contorno; nunca misturar
+preenchido. Ícone nunca substitui rótulo em navegação. **Nada de biscoito**: o produto é de
+precificação, e a segunda confeiteira faz bolo.
 
 ## Signature
 
-Três elementos ligam o sistema à papelaria da marca, usados com parcimônia:
+Dois elementos, e só dois. Nunca como ícone de interface.
 
-1. **Textura de papel.** Grão sutil (`feTurbulence` em SVG, opacidade ~3%) sobre `--canvas`. Dá a matéria do papel creme sem custo de imagem.
-2. **Filete dourado.** Uma linha de 2px em `--gold-500` marca o topo de superfícies de destaque, ecoando a faixa dourada da embalagem. É o único uso de dourado em área.
-3. **Motivo do cookie.** O contorno do biscoito da identidade, em traço, aparece em marca d'água nos estados vazios e na tela de acesso. Nunca como ícone de interface nem repetido em padrão dentro do aplicativo.
+1. **O ponto âmbar.** Círculo cheio em `--accent-500`, único na peça, marcando o número que
+   decide. Diâmetro entre 8 e 16px em tela; no logotipo, a altura da linha de base. Nunca em
+   série (três pontos é decoração).
+2. **A faixa de composição.** Barra horizontal segmentada na proporção **real** do custo do
+   lote (materiais · embalagem · sua hora · gás e energia · fixos), altura 10px, raio 3px,
+   segmento "sua hora" em âmbar. Só existe onde existe custo calculado: o editor de produto.
+   Nunca decorativa, nunca com proporções inventadas (`#d126`).
+
+Uma assinatura por peça. As duas só convivem no editor de produto, onde a faixa é dado e o
+ponto é o painel de preço. A folha do orçamento é da confeiteira, não nossa: o Rende aparece
+nela como uma linha de rodapé (`#d127`).
+
+## Tokens no código
+
+Duas camadas em `src/app/globals.css`:
+
+1. **`:root` e `@media (prefers-color-scheme: dark)`** declaram os tokens com os **nomes do
+   pacote** (`--brand-700`, `--canvas`, `--accent-ink`, `--positive-bg`…), para que
+   `docs/marca/rende/tokens.css` e o código se comparem com `diff`. Três tokens são do código e
+   não do pacote: `--on-accent`, `--on-brand-muted` e o valor escuro de `--brand-100`. Os
+   blocos `[data-theme]` do pacote não entram: o app segue o sistema.
+2. **`@theme inline`** dá o **nome de uso** ao Tailwind: `brand-700`, `brand-ink`
+   (`--brand-as-ink`), `accent-ink`, `on-brand`, `on-accent`, `canvas`, `surface`, `sunken`,
+   `line`, `line-strong`, `ink*`, `positive` / `positive-soft` e irmãos. É também onde moram a
+   escala de texto, os raios, as sombras e a curva, que são do código.
+
+Tipografia, espaçamento, raio, toque, motion e z-index do pacote **não** entram como custom
+properties: o Tailwind já tem `text-*`, `rounded-*`, `duration-*`, e duplicar seria dois donos
+para o mesmo valor.

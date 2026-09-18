@@ -131,8 +131,7 @@ export function PainelPreco({
       };
     }
 
-    // O prejuízo carrega ícone e a palavra: a cor sozinha nunca decide, e o
-    // vermelho de erro é vizinho do vinho da marca.
+    // O prejuízo carrega ícone e a palavra: a cor sozinha nunca decide.
     if (lucro < 0) {
       return {
         tom: "atencao",
@@ -197,7 +196,7 @@ export function PainelPreco({
                 <button
                   type="button"
                   onClick={aoUsarSugerido}
-                  className="toque -my-2 inline-flex items-center gap-1 rounded-md px-2 text-label font-medium text-wine-ink transition-colors duration-150 ease-quart hover:bg-wine-100"
+                  className="toque -my-2 inline-flex items-center gap-1 rounded-md px-2 text-label font-medium text-brand-ink transition-colors duration-150 ease-quart hover:bg-brand-100"
                 >
                   <Wand2 aria-hidden className="size-4" strokeWidth={1.75} />
                   Usar

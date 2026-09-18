@@ -612,7 +612,7 @@ function Aviso({ children }: { children: ReactNode }) {
 function Lendo() {
   return (
     <div className="flex flex-col items-center rounded-lg border border-line bg-surface px-6 py-16 text-center">
-      <Cookie gotas={false} className="size-12 animate-pulse text-wine-ink" />
+      <Cookie gotas={false} className="size-12 animate-pulse text-brand-ink" />
       <p
         aria-live="polite"
         className="mt-5 font-display text-title font-semibold text-ink"

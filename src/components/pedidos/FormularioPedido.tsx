@@ -1072,7 +1072,7 @@ export function FormularioPedido({
                       >
                         <Check
                           aria-hidden
-                          className="size-4 text-wine-ink"
+                          className="size-4 text-brand-ink"
                           strokeWidth={2}
                         />
                         {candidata.nome}
@@ -1345,7 +1345,7 @@ export function FormularioPedido({
               Você ainda não cadastrou formas de pagamento.{" "}
               <Link
                 href="/configuracao"
-                className="font-medium text-wine-ink underline underline-offset-2"
+                className="font-medium text-brand-ink underline underline-offset-2"
               >
                 Cadastrar agora
               </Link>
@@ -1501,7 +1501,7 @@ function Escolha({
       className={cn(
         "rounded-md border p-3 text-left transition-colors duration-150 ease-quart",
         ativo
-          ? "border-wine-ink bg-wine-100"
+          ? "border-brand-ink bg-brand-100"
           : "border-line-strong hover:bg-sunken",
       )}
     >
@@ -1509,7 +1509,7 @@ function Escolha({
         {ativo ? (
           <Check
             aria-hidden
-            className="size-4 shrink-0 text-wine-ink"
+            className="size-4 shrink-0 text-brand-ink"
             strokeWidth={2}
           />
         ) : (

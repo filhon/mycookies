@@ -10,9 +10,9 @@ import { DESTINOS, destinoAtivo } from "./navegacao";
 import { cn } from "@/lib/utils/cn";
 
 /**
- * O cromo assume o vinho por inteiro, como a faixa da embalagem e o cartão
- * fidelidade. É aqui que a marca fala alto, para que a área de dados possa
- * ficar calma.
+ * O cromo assume a tinta da marca por inteiro. É aqui que a marca fala alto,
+ * para que a área de dados possa ficar calma. Item ativo com fundo cheio, e
+ * nunca uma faixa lateral (`DECISOES.md#d125`).
  */
 export function BarraLateral() {
   const caminho = usePathname();
@@ -30,14 +30,14 @@ export function BarraLateral() {
   }
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-wine-900 text-on-wine lg:flex print:hidden">
-      <div className="filete-dourado flex items-center gap-2.5 px-5 pb-5 pt-6">
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-brand-800 text-on-brand lg:flex print:hidden">
+      <div className="flex items-center gap-2.5 px-5 pb-5 pt-6">
         <Cookie className="size-8 shrink-0" />
         <div className="flex min-w-0 flex-col">
           <span className="font-display text-subheading font-semibold leading-tight">
             MyCookie&rsquo;s
           </span>
-          <span className="text-[0.5625rem] font-medium uppercase tracking-[0.28em] text-on-wine-muted">
+          <span className="text-[0.5625rem] font-medium uppercase tracking-[0.28em] text-on-brand-muted">
             Biscoitos artesanais
           </span>
         </div>
@@ -58,8 +58,8 @@ export function BarraLateral() {
                     "toque flex items-center gap-3 rounded-md px-3 py-2.5 text-body",
                     "transition-colors duration-150 ease-quart",
                     ativo
-                      ? "bg-wine-700 font-semibold text-on-wine"
-                      : "font-medium text-on-wine-muted hover:bg-wine-800 hover:text-on-wine",
+                      ? "bg-brand-700 font-semibold text-on-brand"
+                      : "font-medium text-on-brand-muted hover:bg-brand-600 hover:text-on-brand",
                   )}
                 >
                   <Icone
@@ -85,8 +85,8 @@ export function BarraLateral() {
             "toque flex items-center gap-3 rounded-md px-3 py-2.5 text-label font-medium",
             "transition-colors duration-150 ease-quart",
             destinoAtivo(caminho, "/comecar")
-              ? "bg-wine-700 text-on-wine"
-              : "text-on-wine-muted hover:bg-wine-800 hover:text-on-wine",
+              ? "bg-brand-700 text-on-brand"
+              : "text-on-brand-muted hover:bg-brand-600 hover:text-on-brand",
           )}
         >
           <Compass aria-hidden className="size-5 shrink-0" strokeWidth={1.75} />
@@ -99,8 +99,8 @@ export function BarraLateral() {
             "toque flex items-center gap-3 rounded-md px-3 py-2.5 text-label font-medium",
             "transition-colors duration-150 ease-quart",
             destinoAtivo(caminho, "/configuracao")
-              ? "bg-wine-700 text-on-wine"
-              : "text-on-wine-muted hover:bg-wine-800 hover:text-on-wine",
+              ? "bg-brand-700 text-on-brand"
+              : "text-on-brand-muted hover:bg-brand-600 hover:text-on-brand",
           )}
         >
           <Settings
@@ -116,7 +116,7 @@ export function BarraLateral() {
           onClick={() => void aoSair()}
           disabled={saindo}
           aria-busy={saindo}
-          className="toque flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-label font-medium text-on-wine-muted transition-colors duration-150 ease-quart hover:bg-wine-800 hover:text-on-wine disabled:opacity-60"
+          className="toque flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-label font-medium text-on-brand-muted transition-colors duration-150 ease-quart hover:bg-brand-600 hover:text-on-brand disabled:opacity-60"
         >
           <LogOut aria-hidden className="size-5 shrink-0" strokeWidth={1.75} />
           Sair
@@ -125,13 +125,13 @@ export function BarraLateral() {
         {pendente ? (
           <p
             aria-live="polite"
-            className="px-3 pt-2 text-micro text-on-wine-muted"
+            className="px-3 pt-2 text-micro text-on-brand-muted"
           >
             {AVISO_SAIR_PENDENTE}
           </p>
         ) : (
           usuario?.email && (
-            <p className="truncate px-3 pt-2 text-micro text-on-wine-muted/70">
+            <p className="truncate px-3 pt-2 text-micro text-on-brand-muted/70">
               {usuario.email}
             </p>
           )

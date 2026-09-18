@@ -29,13 +29,15 @@ export function NavegacaoInferior() {
                 className={cn(
                   "flex min-h-14 flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2",
                   "transition-colors duration-150 ease-quart",
-                  ativo ? "text-wine-ink" : "text-ink-subtle",
+                  // `accent-ink`, e não `accent-500`: o âmbar como texto sobre
+                  // a superfície reprova AA (~2,3:1).
+                  ativo ? "text-accent-ink" : "text-ink-subtle",
                 )}
               >
                 <span
                   className={cn(
                     "flex h-7 w-12 items-center justify-center rounded-full transition-colors duration-150 ease-quart",
-                    ativo && "bg-wine-100",
+                    ativo && "bg-brand-100",
                   )}
                 >
                   <Icone

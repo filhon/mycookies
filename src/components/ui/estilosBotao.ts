@@ -4,13 +4,14 @@ export type VarianteBotao = "primaria" | "secundaria" | "terciaria" | "perigo";
 export type TamanhoBotao = "sm" | "md" | "lg";
 
 const VARIANTES: Record<VarianteBotao, string> = {
+  // O ponto: âmbar com tinta escura. É o único botão âmbar da tela.
   primaria:
-    "bg-wine-700 text-on-wine hover:bg-wine-600 active:bg-wine-800 disabled:bg-wine-700",
+    "bg-accent-500 text-on-accent hover:bg-accent-600 active:bg-accent-600 disabled:bg-accent-500",
   secundaria:
     "border border-line-strong bg-transparent text-ink hover:bg-sunken active:bg-line",
   terciaria:
-    "bg-transparent text-wine-700 hover:bg-wine-100 active:bg-wine-100",
-  // Nunca vinho: a marca não pode significar destruição.
+    "bg-transparent text-brand-ink hover:bg-brand-100 active:bg-brand-100",
+  // Nunca a marca: ela não pode significar destruição.
   perigo:
     "border border-negative/40 bg-transparent text-negative hover:bg-negative-soft active:bg-negative-soft",
 };

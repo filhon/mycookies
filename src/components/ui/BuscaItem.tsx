@@ -94,7 +94,7 @@ export function BuscaItem({
                   >
                     <Plus
                       aria-hidden
-                      className="size-5 shrink-0 text-wine-ink"
+                      className="size-5 shrink-0 text-brand-ink"
                       strokeWidth={2}
                     />
                     <span className="min-w-0 flex-1">

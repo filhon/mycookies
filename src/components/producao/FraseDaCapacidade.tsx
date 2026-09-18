@@ -88,7 +88,7 @@ export function texto(numero: number): string {
  * A leitura decide a frase, e nunca o contrário: `MEDIDA` diz o número,
  * `PISO` diz "pelo menos" e nomeia o que falta contar, `DESCONHECIDA` diz que
  * não dá para saber. Zero é dito com ícone, porque zero é o número que ela
- * precisa ver antes de prometer, e vinho e vermelho são vizinhos.
+ * precisa ver antes de prometer, e a cor sozinha nunca decide.
  */
 export function FraseDaCapacidade({
   capacidade,
@@ -205,7 +205,7 @@ function Frase({
   );
 }
 
-/** O ícone acompanha a cor: vinho e vermelho são vizinhos de matiz. */
+/** O ícone acompanha a cor: a cor sozinha nunca decide. */
 const TOM = {
   neutro: "text-ink-muted",
   atencao: "text-attention",
@@ -292,7 +292,7 @@ export function FraseCabeNoPedido({
         <Separador />
         <Link
           href="/insumos/contagem"
-          className="font-medium text-wine-ink underline underline-offset-2"
+          className="font-medium text-brand-ink underline underline-offset-2"
         >
           Contar a despensa
         </Link>

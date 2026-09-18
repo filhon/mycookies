@@ -112,7 +112,7 @@ export function CadeiaDoDinheiro() {
                     "flex size-7 shrink-0 items-center justify-center rounded-full",
                     elo.autor === "VOCE"
                       ? "border border-line-strong text-ink-muted"
-                      : "bg-wine-100 text-wine-ink",
+                      : "bg-brand-100 text-brand-ink",
                   )}
                 >
                   <Icone aria-hidden className="size-3.5" strokeWidth={1.75} />
@@ -137,7 +137,7 @@ export function CadeiaDoDinheiro() {
                   <span className="text-micro font-medium text-ink-subtle">
                     {elo.papel}
                   </span>
-                  <span className="inline-flex items-center gap-0.5 text-label font-medium text-wine-ink">
+                  <span className="inline-flex items-center gap-0.5 text-label font-medium text-brand-ink">
                     {elo.tela}
                     <ChevronRight
                       aria-hidden

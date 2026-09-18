@@ -47,8 +47,11 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
 
   if (carregando) {
     return (
-      <div className="textura-papel flex min-h-dvh items-center justify-center bg-canvas">
-        <Cookie className="size-12 animate-pulse text-wine-ink" gotas={false} />
+      <div className="flex min-h-dvh items-center justify-center bg-canvas">
+        <Cookie
+          className="size-12 animate-pulse text-brand-ink"
+          gotas={false}
+        />
         <span className="sr-only">Carregando</span>
       </div>
     );
@@ -60,7 +63,7 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
   // falha apareça como instrução, e não como uma lista vazia inexplicável.
   if (!contaId) {
     return (
-      <div className="textura-papel flex min-h-dvh flex-col items-center justify-center gap-4 bg-canvas px-8 text-center">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-canvas px-8 text-center">
         <ShieldAlert
           aria-hidden
           className="size-10 text-attention"

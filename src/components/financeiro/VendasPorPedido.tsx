@@ -98,7 +98,7 @@ export function VendasPorPedido({
             gastou no mercado neste mês.{" "}
             <Link
               href="/fichas"
-              className="font-medium text-wine-ink underline underline-offset-2"
+              className="font-medium text-brand-ink underline underline-offset-2"
             >
               Ver meus produtos
             </Link>

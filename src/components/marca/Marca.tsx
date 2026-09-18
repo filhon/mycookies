@@ -30,7 +30,7 @@ export function Cookie({
         strokeLinejoin="round"
       />
       {gotas && (
-        <g fill="var(--mc-gold-500)">
+        <g fill="var(--accent-500)">
           <circle cx="35" cy="41" r="6.5" />
           <circle cx="60" cy="58" r="7" />
           <circle cx="33" cy="65" r="5" />

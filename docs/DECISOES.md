@@ -3473,7 +3473,8 @@ quando o campo chega vazio, se um dia "sem prazo" virar escolha de verdade.
 
 ## D111 · O SaaS nasce como beta fechado sobre o que existe, com a marca MyCookie's e uma lista do que nunca vai fazer
 
-**Status:** vigente · decidida em 2026-09-15, no `docs/saas/ROADMAP.md`
+**Status:** vigente, **superada no primeiro item** pela `#d122` (2026-09-18: o produto ganhou
+marca própria, Rende) · decidida em 2026-09-15, no `docs/saas/ROADMAP.md`
 
 **Contexto.** Três respostas (`docs/saas/gpt.md`, `claude.md`, `gemini.md`) à pergunta "o que
 torna este sistema vendável e escalável" foram lidas contra o repositório. A maior parte do que
@@ -3812,7 +3813,9 @@ vinte linhas em um lugar em vez de dois.
 
 ## D120 · A marca como tinta tem nome: `wine-ink` e `gold-ink`
 
-**Status:** vigente · decidida em 2026-09-17, na passagem de polimento (`/impeccable polish`)
+**Status:** vigente · decidida em 2026-09-17, na passagem de polimento (`/impeccable polish`).
+Com a `#d123` (spec 033-A) os dois viraram `brand-ink` (`--brand-as-ink`) e `accent-ink`
+(`--accent-ink`); a regra, tinta inverte e cromo fica, é a mesma.
 
 **Contexto.** O vinho como tinta sobre a superfície (link, ícone de seleção, destino ativo,
 barra de progresso, borda da opção escolhida) precisa clarear no tema escuro, e o par
@@ -3857,3 +3860,86 @@ entrega default, hover, focus-visible, active, disabled, loading, error").
 classe: chama o primitivo. O cabeçalho das telas fora do menu (as duas contagens, a nota, os
 dois editores) continua montado à mão, porque cada um varia no que fica à direita do título e
 no que some com o teclado aberto (`apertado:`); só o link de voltar era igual, e é o que saiu.
+
+## D122 · A marca é própria: Rende
+
+**Status:** vigente · decidida em 2026-09-18 por quem conduz o projeto, executada na spec 033
+
+**Contexto.** O sistema herdou por inteiro a identidade da confeitaria para a qual nasceu:
+vinho, creme de papel texturizado, filete dourado, serifa quente, o biscoito em marca d'água, e
+o nome. O `#d111` decidiu que isso não mudaria e a 022 tirou da frente só a cópia que presumia
+uma dona. A segunda confeiteira, que faz bolo, abriria o app sentindo que está na ferramenta
+interna de uma concorrente. O brief está em `docs/saas/BRIEF-MARCA.md`; o pacote aprovado
+(estratégia, manual, tokens, logotipo, pranchas) em `docs/marca/rende/`.
+
+**Decisão.** O produto chama-se **Rende**, território "Ponto": tinta azul-preta (`brand-700`,
+matiz 272) mais um único âmbar (`accent-500`, matiz 78), Archivo e Figtree. A MyCookie's vira a
+primeira cliente e o primeiro caso, e não é dona da marca: o Rende não empresta nem toma
+emprestado cor, tipografia ou símbolo dela. **Supera o primeiro item do `#d111`**; os outros
+dois (beta fechado, a lista do que nunca vai fazer) continuam valendo.
+
+**Consequência.** Três sessões na spec 033: A (a tinta), B (o nome e o símbolo), C (o ponto, a
+faixa e as palavras); **A e B saem no mesmo deploy**, porque entre elas o app é nome antigo em
+cor nova. `DESIGN.md` e `PRODUCT.md` da raiz foram reescritos antes de qualquer código, porque
+são o que o `/impeccable` lê. O que **não** muda: `package.json`, a pasta do repositório, o
+projeto Firebase `mycookies-mrc`, o projeto Vercel e a conta `contas/mycookies`, que são
+identificadores de infraestrutura e de dado e não aparecem para a usuária. O que fica de fora
+do código, e por quê, é a `#d125` (sessão B). A biblioteca de partida continua sendo de cookie:
+generalizar é o que as entrevistas da fase 1 vão dizer, não a marca.
+
+---
+
+## D123 · Os tokens entram com o nome do pacote; o Tailwind fica com o nome de papel
+
+**Status:** vigente · decidida em 2026-09-18, na spec 033-A
+
+**Contexto.** `globals.css` tinha um prefixo próprio (`--mc-wine-700`) e o `@theme inline` o
+traduzia para `wine-700`. Com um pacote de marca externo (`docs/marca/rende/tokens.css`), um
+prefixo próprio obriga a traduzir a cada comparação, e é na tradução que um valor diverge sem
+ninguém ver.
+
+**Decisão.** O `:root` e o `@media (prefers-color-scheme: dark)` declaram **exatamente os
+nomes de `tokens.css`** (`--brand-700`, `--canvas`, `--accent-ink`, `--positive-bg`…), para que
+os dois arquivos se comparem com `diff`. As exceções, todas declaradas: os blocos
+`[data-theme]` não entram (o app segue o sistema, sem alternador); os tokens de tipografia,
+espaçamento, raio, toque, motion e z-index não entram como custom properties (o Tailwind já
+tem `text-*`, `rounded-*`, `duration-*`; duplicar seria dois donos para o mesmo valor); e três
+tokens são do código e não do pacote: `--on-accent: oklch(0.20 0.030 75)` (o `#231A08` que o
+pacote cita como tinta do botão âmbar e nunca nomeia), `--on-brand-muted: var(--brand-200)`
+(texto apagado sobre a barra lateral, ≈ 10:1) e o valor escuro de `--brand-100`
+(`oklch(0.30 0.030 272)`, porque o claro do pacote é quase branco e vira um flash como fundo de
+hover no tema escuro). O anel de foco é `--accent-500` (o do pacote), a seleção é `brand-700`
+sobre `on-brand`, e `accent-color` dos controles nativos é `--brand-as-ink`. As sombras
+continuam com os nomes do código, `raised` e `overlay`, na matiz 272; o valor bruto mora em
+`--elevation-*` porque `--shadow-*` é namespace do Tailwind e um `--shadow-raised: var(--shadow-raised)`
+no `@theme` seria um ciclo.
+
+O `@theme inline` continua sendo a camada de **nome de uso**, e é onde o vinho e o dourado
+morreram: `wine-900` → `brand-800`, `wine-800` → `brand-600`, `wine-700` → `brand-700`,
+`wine-600` → `brand-600`, `wine-300` e `wine-ink` → `brand-ink` (`--brand-as-ink`), `wine-100`
+→ `brand-100`, `gold-*` → `accent-*`, `gold-ink` → `accent-ink`, `on-wine` → `on-brand`,
+`on-wine-muted` → `on-brand-muted`; `*-soft` fica como nome do `--*-bg` do pacote. **A escala
+de texto e os raios não mudam**: o pacote pede 15/13px e raio 12, o código tem 16/14 e 10/14,
+e foi o 16/14 que a usuária 0 usou na bancada; 13px de rótulo a meio metro é regressão. O
+`DESIGN.md` da raiz é reescrito com os valores do código e passa a ser a fonte.
+
+**Onde a troca não foi 1:1**, porque o papel mudou e não só a cor: o botão primário e o
+flutuante viraram âmbar com `on-accent` (o ponto é a ação primária); o terciário virou
+`brand-ink` sobre `brand-100`; a navegação inferior ativa virou `accent-ink` com pílula
+`brand-100` (não `accent-500`: como texto sobre `canvas` dá ~2,3:1); a barra lateral virou
+`brand-800` com hover `brand-600`, item ativo `brand-700` cheio e **sem filete**; e os dois
+marcadores de seleção desenhados à mão (`LinhaCompra`, `PainelEntregas`) viraram `brand-ink`
+sobre `text-surface`, porque `brand-700` (L 0,26) sobre a superfície escura (L 0,235) some, e
+a tinta inverte sozinha. Pelo mesmo motivo os dois `<input type="checkbox">` perderam o
+`accent-wine-700` e herdam o `accent-color` do `body`. Saíram `textura-papel` e `filete-dourado`
+(nos três lugares em que o filete marcava estado, o estado já era dito por frase, ícone ou
+selo no mesmo cartão). `Fraunces` → `Archivo` 600/700; a tagline do login perdeu o
+`font-normal`, porque Archivo 400 não existe na marca e não é carregada.
+
+**Consequência.** `rg "wine|gold|--mc-|textura-papel|filete-dourado" src/` devolve zero. O
+`theme_color` e o `background_color` do manifesto viraram `#2A2C3A` e `#F7F4EE` (a `#d124`, da
+sessão B, registra a reinstalação que isso exige). Uma coisa fica para a C: a barra de
+progresso da meta batida está em `bg-accent-500` pela troca literal `gold-500` → `accent-500`,
+e a 3.C.2 lista os únicos lugares em que o âmbar pode ser área; a C decide se ela vira
+`positive` ou fica. O que na `#d120` se chamava `wine-ink`/`gold-ink` chama-se agora
+`brand-ink`/`accent-ink`; a regra, tinta inverte e cromo fica, é a mesma.

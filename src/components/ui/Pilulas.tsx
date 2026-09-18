@@ -53,7 +53,7 @@ export function Pilulas<V extends string | number | boolean>({
               "transition-colors duration-150 ease-quart",
               numerico && "num",
               ativo
-                ? "bg-wine-700 text-on-wine"
+                ? "bg-brand-700 text-on-brand"
                 : "border border-line-strong text-ink-muted hover:bg-sunken active:bg-sunken",
             )}
           >

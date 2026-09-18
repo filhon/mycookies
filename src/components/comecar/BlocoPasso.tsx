@@ -44,7 +44,7 @@ export function BlocoPasso({
         className={cn(
           "num flex size-8 shrink-0 items-center justify-center rounded-full text-label font-semibold",
           estado === "FEITO" && "bg-positive-soft text-positive",
-          agora && "bg-wine-700 text-on-wine",
+          agora && "bg-brand-700 text-on-brand",
           (estado === "DEPOIS" || estado === null) &&
             "border border-line-strong text-ink-muted",
         )}
@@ -67,12 +67,9 @@ export function BlocoPasso({
 
   return (
     <li
-      className={cn(
-        "overflow-hidden rounded-lg border border-line bg-surface",
-        // O filete dourado da embalagem marca o passo de agora, como marca o
-        // cartão da tela Hoje: é o mesmo "é este aqui" nas duas telas.
-        agora && "filete-dourado",
-      )}
+      // O passo de agora é dito pelo distintivo em tinta cheia e pelo selo, não
+      // por enfeite na borda: é o mesmo "é este aqui" do cartão da tela Hoje.
+      className="overflow-hidden rounded-lg border border-line bg-surface"
     >
       {dobravel ? (
         <button

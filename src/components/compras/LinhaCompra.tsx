@@ -76,14 +76,15 @@ export function LinhaCompra({
           className="flex min-h-16 flex-1 items-center gap-3 px-4 py-3 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:px-5"
         >
           {/* O círculo marcado carrega o traço do visto: a cor sozinha nunca
-              decide, e o vinho da marca é vizinho do vermelho de erro. */}
+              decide. Em tinta, e não em `brand-700`: no escuro o cromo some
+              sobre a superfície, e a tinta inverte. */}
           <span
             aria-hidden
             className={cn(
               "flex size-6 shrink-0 items-center justify-center rounded-full border-2",
               "transition-colors duration-150 ease-quart",
               comprado
-                ? "border-wine-700 bg-wine-700 text-on-wine"
+                ? "border-brand-ink bg-brand-ink text-surface"
                 : "border-line-strong",
             )}
           >

@@ -8,7 +8,7 @@ type Tom = TomSelo;
 
 const TONS: Record<Tom, string> = {
   neutro: "bg-sunken text-ink-muted",
-  marca: "bg-wine-100 text-wine-ink",
+  marca: "bg-brand-100 text-brand-ink",
   positivo: "bg-positive-soft text-positive",
   atencao: "bg-attention-soft text-attention",
   negativo: "bg-negative-soft text-negative",
@@ -17,7 +17,7 @@ const TONS: Record<Tom, string> = {
 
 /**
  * O ícone não é enfeite: é o que sustenta o significado quando a cor não pode
- * ser o único portador. Vinho da marca e vermelho de erro são vizinhos.
+ * ser o único portador. O âmbar da marca e o ocre de atenção dividem matiz.
  */
 export function Selo({
   tom = "neutro",

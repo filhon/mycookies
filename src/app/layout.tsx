@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Figtree, Fraunces } from "next/font/google";
+import { Archivo, Figtree } from "next/font/google";
 import { AuthProvider } from "@/providers/AuthProvider";
 import "./globals.css";
 
-const display = Fraunces({
+// Só 600 e 700: a marca não tem Archivo 400, e `font-display` sem peso
+// renderizaria no mais próximo carregado sem avisar.
+const display = Archivo({
   subsets: ["latin"],
+  weight: ["600", "700"],
   display: "swap",
   variable: "--fonte-display",
 });
@@ -40,10 +43,10 @@ export const viewport: Viewport = {
   // Sem trava de zoom: limitar escala quebra acessibilidade.
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
-  // O mesmo vinho do manifesto, de propósito: dois donos para o mesmo pixel
-  // dariam uma barra que combina com a marca no app instalado e com a
-  // superfície na aba do navegador. Ver `DECISOES.md#d76`.
-  themeColor: "#5e1725",
+  // O mesmo `brand-700` do manifesto, de propósito: dois donos para o mesmo
+  // pixel dariam uma barra que combina com a marca no app instalado e com a
+  // superfície na aba do navegador. Ver `DECISOES.md#d76` e `#d124`.
+  themeColor: "#2A2C3A",
 };
 
 export default function RootLayout({

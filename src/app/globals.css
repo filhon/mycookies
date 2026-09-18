@@ -1,145 +1,162 @@
 @import "tailwindcss";
 
 /* ============================================================
-   Tokens brutos. Marca fixa em cima, superfícies invertem no escuro.
+   Tokens brutos: os nomes de `docs/marca/rende/tokens.css`, para que o
+   pacote da marca e o código se comparem com `diff`. Marca fixa em cima,
+   superfícies invertem no escuro. Três tokens são do código e não do pacote
+   (`--on-accent`, `--on-brand-muted`, o valor escuro de `--brand-100`); os
+   blocos `[data-theme]` do pacote não entram, o app segue o sistema.
+   Ver `DECISOES.md#d123`.
    ============================================================ */
 
 :root {
   color-scheme: light dark;
 
-  /* --- Marca: constante nos dois temas --- */
-  --mc-wine-900: oklch(0.24 0.085 18);
-  --mc-wine-800: oklch(0.3 0.105 18);
-  --mc-wine-700: oklch(0.36 0.128 18);
-  --mc-wine-600: oklch(0.43 0.14 20);
-  --mc-wine-300: oklch(0.72 0.09 20);
-  --mc-wine-100: oklch(0.93 0.028 22);
+  /* ---------- marca ---------- */
+  --brand-900: oklch(0.19 0.03 272); /* #15171F */
+  --brand-800: oklch(0.22 0.03 272); /* #1C1E28 */
+  --brand-700: oklch(0.26 0.035 272); /* #2A2C3A  primária */
+  --brand-600: oklch(0.34 0.035 272); /* #3C3E4D */
+  --brand-500: oklch(0.44 0.033 272); /* #545768 */
+  --brand-400: oklch(0.56 0.028 272); /* #6E7183 */
+  --brand-300: oklch(0.7 0.022 272); /* #9B9DAC */
+  --brand-200: oklch(0.85 0.015 272); /* #CFD0D8 */
+  --brand-100: oklch(0.94 0.01 272); /* #EBECF1 */
 
-  --mc-gold-600: oklch(0.58 0.09 72);
-  --mc-gold-500: oklch(0.73 0.095 78);
-  --mc-gold-100: oklch(0.94 0.035 82);
+  /* ---------- acento (o ponto) ---------- */
+  --accent-600: oklch(0.62 0.13 75); /* #A9752A */
+  --accent-500: oklch(0.74 0.14 78); /* #D89B3C  acento */
+  --accent-300: oklch(0.85 0.09 80); /* #EFC384 */
+  --accent-100: oklch(0.93 0.05 82); /* #F7E7C8 */
+  --accent-ink: oklch(
+    0.45 0.1 70
+  ); /* #6E4A12  âmbar como tinta, AA sobre canvas */
+  /* A tinta do botão âmbar. O pacote cita o #231A08 e nunca o nomeia. */
+  --on-accent: oklch(0.2 0.03 75); /* #231A08 */
 
-  /* Tinta sobre superfície vinho. Creme, nunca branco puro. */
-  --mc-on-wine: oklch(0.96 0.012 85);
-  --mc-on-wine-muted: oklch(0.8 0.02 60);
+  /* ---------- superfícies · tema claro ---------- */
+  --canvas: oklch(0.972 0.008 85); /* #F7F4EE */
+  --surface: oklch(0.995 0.004 85); /* #FEFCF8 */
+  --surface-sunken: oklch(0.945 0.01 85); /* #EFEBE3 */
+  --border: oklch(0.885 0.01 85); /* #E1DCD3 */
+  --border-strong: oklch(0.78 0.012 85); /* #C3BDB2 */
+  --ink: oklch(0.24 0.02 272); /* #22242E */
+  --ink-muted: oklch(0.5 0.015 272); /* #6A6C78 */
+  --ink-subtle: oklch(0.63 0.012 272); /* #8E909B */
+  --on-brand: oklch(0.965 0.006 85); /* #F6F3ED  tinta sobre brand-700 */
+  /* Texto apagado sobre a barra lateral: #CFD0D8 sobre #1C1E28 ≈ 10:1. */
+  --on-brand-muted: var(--brand-200);
+  --brand-as-ink: oklch(
+    0.26 0.035 272
+  ); /* #2A2C3A  marca como tinta no claro */
 
-  /* --- Superfícies: tema claro --- */
-  --mc-canvas: oklch(0.955 0.014 88);
-  --mc-surface: oklch(0.985 0.008 88);
-  --mc-surface-sunken: oklch(0.925 0.016 86);
-  --mc-border: oklch(0.88 0.016 80);
-  --mc-border-strong: oklch(0.8 0.02 78);
-  --mc-ink: oklch(0.26 0.022 40);
-  --mc-ink-muted: oklch(0.52 0.02 50);
-  --mc-ink-subtle: oklch(0.64 0.018 55);
+  /* ---------- semânticos · tema claro ---------- */
+  --positive: oklch(0.5 0.12 152); /* #17724A */
+  --positive-bg: oklch(0.94 0.04 152); /* #DDF0E4 */
+  --attention: oklch(0.48 0.1 72); /* #7A5410 */
+  --attention-bg: oklch(0.93 0.05 82); /* #F7E7C8 */
+  --negative: oklch(0.5 0.17 27); /* #B02A1C */
+  --negative-bg: oklch(0.94 0.04 27); /* #FADFDA */
+  --info: oklch(0.48 0.12 250); /* #2A5C9E */
+  --info-bg: oklch(0.93 0.03 250); /* #DCE7F5 */
 
-  /* --- Semânticos --- */
-  --mc-positive: oklch(0.52 0.115 152);
-  --mc-positive-soft: oklch(0.94 0.03 152);
-  --mc-attention: oklch(0.66 0.15 55);
-  --mc-attention-soft: oklch(0.95 0.04 65);
-  --mc-negative: oklch(0.55 0.2 27);
-  --mc-negative-soft: oklch(0.95 0.03 27);
-  --mc-info: oklch(0.52 0.095 245);
-  --mc-info-soft: oklch(0.95 0.02 245);
+  /* O anel de foco é o âmbar do pacote. Sobre o botão primário âmbar ele é
+     da cor do fundo; os 2px de `outline-offset` deixam superfície entre os
+     dois, e é isso que o torna visível. */
+  --focus: var(--accent-500);
 
-  --mc-focus: var(--mc-wine-700);
-
-  /* Vinho e dourado como tinta sobre a superfície: link, ícone de seleção,
-     destino ativo, barra de progresso. Invertem no escuro como a papelaria
-     inverte, e são o que `text-wine-700 dark:text-wine-300` repetia em
-     trinta lugares antes de existir um nome. */
-  --mc-wine-ink: var(--mc-wine-700);
-  --mc-gold-ink: var(--mc-gold-600);
-
-  /* Tinta dos controles que o navegador desenha sozinho: caixa de marcar,
-     rádio e o dia escolhido no calendário nativo. Sem isto eles saem no azul
-     do sistema, que não é cor da marca. */
-  --mc-accent: var(--mc-wine-700);
-
-  /* Sombra de papel: baixa, quente, quase imperceptível. */
-  --mc-shadow-raised:
-    0 1px 2px oklch(0.3 0.03 40 / 0.06), 0 4px 12px oklch(0.3 0.03 40 / 0.05);
-  --mc-shadow-overlay:
-    0 -2px 8px oklch(0.3 0.03 40 / 0.06), 0 12px 32px oklch(0.3 0.03 40 / 0.14);
+  /* ---------- sombra (baixa ou nenhuma), na matiz da tinta ----------
+     `--shadow-*` é namespace do Tailwind; o valor bruto mora em `--elevation-*`
+     e o `@theme inline` o expõe como `shadow-raised` / `shadow-overlay`. */
+  --elevation-raised:
+    0 1px 2px oklch(0.24 0.02 272 / 0.06),
+    0 4px 12px oklch(0.24 0.02 272 / 0.05);
+  --elevation-overlay:
+    0 -2px 8px oklch(0.24 0.02 272 / 0.06),
+    0 12px 32px oklch(0.24 0.02 272 / 0.14);
 }
 
+/* ---------- tema escuro · a marca vira fundo, a superfície vira tinta ---------- */
 @media (prefers-color-scheme: dark) {
   :root {
-    --mc-canvas: oklch(0.19 0.014 20);
-    --mc-surface: oklch(0.235 0.016 20);
-    --mc-surface-sunken: oklch(0.165 0.012 20);
-    --mc-border: oklch(0.32 0.018 20);
-    --mc-border-strong: oklch(0.42 0.02 20);
-    --mc-ink: oklch(0.94 0.012 85);
-    --mc-ink-muted: oklch(0.7 0.014 80);
-    --mc-ink-subtle: oklch(0.56 0.014 75);
+    --canvas: oklch(0.19 0.025 272); /* #15171F */
+    --surface: oklch(0.235 0.028 272); /* #1E2029 */
+    --surface-sunken: oklch(0.165 0.022 272); /* #101219 */
+    --border: oklch(0.31 0.025 272); /* #343641 */
+    --border-strong: oklch(0.42 0.028 272); /* #4C4F5C */
+    --ink: oklch(0.955 0.006 85); /* #F4F1EB */
+    --ink-muted: oklch(0.74 0.012 272); /* #A8AAB5 */
+    --ink-subtle: oklch(0.6 0.015 272); /* #7F8290 */
+    --on-brand: oklch(0.965 0.006 85);
+    --brand-as-ink: oklch(
+      0.88 0.012 272
+    ); /* #DADCE4  marca como tinta no escuro */
 
-    --mc-wine-100: oklch(0.32 0.06 20);
-    --mc-gold-100: oklch(0.32 0.045 70);
+    /* Fundo de hover terciário e de opção escolhida. O claro do pacote é
+       quase branco e vira um flash sobre o tema escuro. */
+    --brand-100: oklch(0.3 0.03 272);
 
-    --mc-positive: oklch(0.72 0.13 152);
-    --mc-positive-soft: oklch(0.28 0.05 152);
-    --mc-attention: oklch(0.78 0.14 62);
-    --mc-attention-soft: oklch(0.3 0.06 55);
-    --mc-negative: oklch(0.68 0.18 27);
-    --mc-negative-soft: oklch(0.3 0.07 27);
-    --mc-info: oklch(0.72 0.1 245);
-    --mc-info-soft: oklch(0.28 0.04 245);
+    --positive: oklch(0.76 0.14 152); /* #5FD49A */
+    --positive-bg: oklch(0.27 0.05 152); /* #163021 */
+    --attention: oklch(0.8 0.12 80); /* #E3B267 */
+    --attention-bg: oklch(0.28 0.055 78); /* #34280F */
+    --negative: oklch(0.72 0.15 27); /* #F08070 */
+    --negative-bg: oklch(0.28 0.06 27); /* #3A1A16 */
+    --info: oklch(0.76 0.1 250); /* #8FB6E8 */
+    --info-bg: oklch(0.27 0.05 250); /* #14243A */
 
-    --mc-focus: var(--mc-wine-300);
-    --mc-accent: var(--mc-wine-300);
-    --mc-wine-ink: var(--mc-wine-300);
-    --mc-gold-ink: var(--mc-gold-500);
+    --accent-500: oklch(0.78 0.13 78); /* #E3A94F  âmbar sobe no escuro */
+    --accent-ink: oklch(0.82 0.12 80); /* #EDB863 */
 
-    --mc-shadow-raised:
+    --elevation-raised:
       0 1px 2px oklch(0 0 0 / 0.3), 0 4px 12px oklch(0 0 0 / 0.25);
-    --mc-shadow-overlay:
+    --elevation-overlay:
       0 -2px 8px oklch(0 0 0 / 0.3), 0 12px 32px oklch(0 0 0 / 0.5);
   }
 }
 
 /* ============================================================
-   Mapeamento para o tema do Tailwind
+   Mapeamento para o tema do Tailwind: o nome de uso.
    ============================================================ */
 
 @theme inline {
-  --color-wine-900: var(--mc-wine-900);
-  --color-wine-800: var(--mc-wine-800);
-  --color-wine-700: var(--mc-wine-700);
-  --color-wine-600: var(--mc-wine-600);
-  --color-wine-300: var(--mc-wine-300);
-  --color-wine-100: var(--mc-wine-100);
-  --color-wine-ink: var(--mc-wine-ink);
+  --color-brand-800: var(--brand-800);
+  --color-brand-700: var(--brand-700);
+  --color-brand-600: var(--brand-600);
+  --color-brand-100: var(--brand-100);
+  /* A marca como tinta sobre a superfície: link, ícone de seleção, barra
+     de progresso, borda da opção escolhida. Inverte no escuro. */
+  --color-brand-ink: var(--brand-as-ink);
 
-  --color-gold-600: var(--mc-gold-600);
-  --color-gold-500: var(--mc-gold-500);
-  --color-gold-100: var(--mc-gold-100);
-  --color-gold-ink: var(--mc-gold-ink);
+  --color-accent-600: var(--accent-600);
+  --color-accent-500: var(--accent-500);
+  --color-accent-100: var(--accent-100);
+  --color-accent-ink: var(--accent-ink);
+  --color-on-accent: var(--on-accent);
 
-  --color-on-wine: var(--mc-on-wine);
-  --color-on-wine-muted: var(--mc-on-wine-muted);
+  --color-on-brand: var(--on-brand);
+  --color-on-brand-muted: var(--on-brand-muted);
 
-  --color-canvas: var(--mc-canvas);
-  --color-surface: var(--mc-surface);
-  --color-sunken: var(--mc-surface-sunken);
-  --color-line: var(--mc-border);
-  --color-line-strong: var(--mc-border-strong);
-  --color-ink: var(--mc-ink);
-  --color-ink-muted: var(--mc-ink-muted);
-  --color-ink-subtle: var(--mc-ink-subtle);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-sunken: var(--surface-sunken);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
 
-  --color-positive: var(--mc-positive);
-  --color-positive-soft: var(--mc-positive-soft);
-  --color-attention: var(--mc-attention);
-  --color-attention-soft: var(--mc-attention-soft);
-  --color-negative: var(--mc-negative);
-  --color-negative-soft: var(--mc-negative-soft);
-  --color-info: var(--mc-info);
-  --color-info-soft: var(--mc-info-soft);
+  --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-bg);
+  --color-attention: var(--attention);
+  --color-attention-soft: var(--attention-bg);
+  --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-bg);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-bg);
 
   --font-sans: var(--fonte-interface), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--fonte-display), Georgia, "Times New Roman", serif;
+  --font-display: var(--fonte-display), system-ui, sans-serif;
 
   --text-display: 2rem;
   --text-display--line-height: 1.15;
@@ -163,8 +180,8 @@
   --radius-lg: 0.875rem;
   --radius-xl: 1.25rem;
 
-  --shadow-raised: var(--mc-shadow-raised);
-  --shadow-overlay: var(--mc-shadow-overlay);
+  --shadow-raised: var(--elevation-raised);
+  --shadow-overlay: var(--elevation-overlay);
 
   --ease-quart: cubic-bezier(0.25, 1, 0.5, 1);
 }
@@ -175,7 +192,7 @@
 
 @layer base {
   * {
-    border-color: var(--mc-border);
+    border-color: var(--border);
   }
 
   html {
@@ -183,9 +200,12 @@
   }
 
   body {
-    background-color: var(--mc-canvas);
-    color: var(--mc-ink);
-    accent-color: var(--mc-accent);
+    background-color: var(--canvas);
+    color: var(--ink);
+    /* Tinta dos controles que o navegador desenha sozinho: caixa de marcar,
+       rádio e o dia escolhido no calendário nativo. Sem isto eles saem no
+       azul do sistema, que não é cor da marca. */
+    accent-color: var(--brand-as-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -193,19 +213,19 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--mc-focus);
+    outline: 2px solid var(--focus);
     outline-offset: 2px;
     border-radius: 4px;
   }
 
   ::selection {
-    background-color: var(--mc-wine-700);
-    color: var(--mc-on-wine);
+    background-color: var(--brand-700);
+    color: var(--on-brand);
   }
 
   /**
    * O ícone do seletor de data é desenhado pelo navegador e só aceita peso, não
-   * cor. Baixar a opacidade o aproxima do `--mc-ink-muted` dos nossos ícones,
+   * cor. Baixar a opacidade o aproxima do `--ink-muted` dos nossos ícones,
    * nos dois temas. O calendário que ele abre é interface do navegador e não
    * tem superfície de CSS nenhuma.
    */
@@ -246,37 +266,13 @@
 }
 
 /* ============================================================
-   Utilitários de marca
+   Utilitários
    ============================================================ */
 
 /** Numerais tabulares: colunas de dinheiro precisam alinhar na vírgula. */
 @utility num {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
-}
-
-/**
- * Grão do papel creme da embalagem. Sobreposição fixa, sem custo de imagem
- * e sem interceptar toque.
- */
-@utility textura-papel {
-  position: relative;
-  isolation: isolate;
-
-  &::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    opacity: 0.035;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)'/%3E%3C/svg%3E");
-  }
-}
-
-/** Filete dourado da embalagem. Único uso de dourado em área. */
-@utility filete-dourado {
-  box-shadow: inset 0 2px 0 0 var(--mc-gold-500);
 }
 
 /**
@@ -329,7 +325,8 @@
  * Papel não tem modo noturno. Os tokens de superfície e tinta são redeclarados
  * aqui com o valor claro, e `color-scheme: light` acompanha, para que a prévia
  * no tema escuro seja o que vai sair da impressora. Nenhuma classe `dark:`
- * entra na folha: passaria por cima disto (spec 017).
+ * entra na folha: passaria por cima disto (spec 017). É a única lista de
+ * valores repetida neste arquivo (`#d106`, `#d120`).
  *
  * A margem do A4 é o `padding` da folha, e não a `margin` do `@page`: é o que
  * faz a prévia e o papel terem o mesmo desenho. `--folha-zoom` encolhe a prévia
@@ -337,24 +334,24 @@
  */
 @utility folha {
   color-scheme: light;
-  --mc-canvas: oklch(0.955 0.014 88);
-  --mc-surface: oklch(0.985 0.008 88);
-  --mc-surface-sunken: oklch(0.925 0.016 86);
-  --mc-border: oklch(0.88 0.016 80);
-  --mc-border-strong: oklch(0.8 0.02 78);
-  --mc-ink: oklch(0.26 0.022 40);
-  --mc-ink-muted: oklch(0.52 0.02 50);
-  --mc-ink-subtle: oklch(0.64 0.018 55);
-  --mc-wine-ink: var(--mc-wine-700);
-  --mc-gold-ink: var(--mc-gold-600);
+  --canvas: oklch(0.972 0.008 85);
+  --surface: oklch(0.995 0.004 85);
+  --surface-sunken: oklch(0.945 0.01 85);
+  --border: oklch(0.885 0.01 85);
+  --border-strong: oklch(0.78 0.012 85);
+  --ink: oklch(0.24 0.02 272);
+  --ink-muted: oklch(0.5 0.015 272);
+  --ink-subtle: oklch(0.63 0.012 272);
+  --brand-as-ink: oklch(0.26 0.035 272);
+  --accent-ink: oklch(0.45 0.1 70);
 
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
   width: 210mm;
   min-height: 297mm;
   padding: 16mm 16mm 18mm;
-  background-color: var(--mc-surface);
-  color: var(--mc-ink);
+  background-color: var(--surface);
+  color: var(--ink);
   zoom: var(--folha-zoom, 1);
 }
 
@@ -365,12 +362,8 @@
   }
 
   html,
-  body,
-  .textura-papel {
+  body {
     background: white;
-  }
-  .textura-papel::before {
-    display: none;
   }
   .folha {
     box-shadow: none;

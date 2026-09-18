@@ -57,7 +57,7 @@ export function SeletorMes({
           <button
             type="button"
             onClick={() => aoMudar(mesCorrente)}
-            className="toque rounded-md px-3 text-label font-medium text-wine-ink underline underline-offset-2 transition-colors duration-150 ease-quart hover:bg-wine-100"
+            className="toque rounded-md px-3 text-label font-medium text-brand-ink underline underline-offset-2 transition-colors duration-150 ease-quart hover:bg-brand-100"
           >
             Voltar para {rotuloCompetencia(mesCorrente)}
           </button>

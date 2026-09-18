@@ -8,7 +8,8 @@ Os três arquivos ficam como matéria-prima; **este é o que vale.**
 Quatro decisões de quem conduz o projeto moldam tudo abaixo (`DECISOES.md#d111`, `#d112`,
 `#d113`):
 
-- **MyCookie's continua sendo a marca do produto.** Não há spec de rebrand.
+- ~~**MyCookie's continua sendo a marca do produto.** Não há spec de rebrand.~~ Revertido em
+  2026-09-18: spec 033, `#d122`. O produto chama-se Rende; a MyCookie's é a primeira conta.
 - **Beta fechado antes de cadastro e cobrança.** As primeiras contas entram pelo script que
   já existe; cadastro self-serve e cobrança só nascem quando o beta disser o que generalizar.
 - **Stripe** é o provedor de cobrança, quando ela chegar.

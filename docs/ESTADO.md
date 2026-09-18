@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-18 (spec `033-a-marca-rende.md` escrita, por rodar; roteiros das 015, 016, 017, 018, 019, 020, 021 e 022 por rodar).
+Atualizado em 2026-09-18 (sessão 033-A entregue, **não publicada**: A e B saem juntas; roteiros das 015, 016, 017, 018, 019, 020, 021 e 022 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -22,10 +22,13 @@ DESIGN.md, tokens.css, logo/, pranchas), e a spec que o leva ao código é
 `specs/033-a-marca-rende.md`, em três sessões — **A** (a tinta: tokens, fontes, o que era da
 MyCookie's e sai do CSS), **B** (o nome e o símbolo: logotipo, ícones, manifesto, telas de
 marca) e **C** (o ponto, a faixa, a cópia e a passagem do `/impeccable`). **A e B saem no mesmo
-deploy.** Nada foi aplicado ainda: o app publicado continua vinho e creme, e o `DESIGN.md` da
-raiz ainda descreve a marca antiga — a sessão A o reescreve antes de qualquer código. A 033
-está fora da ordem do roadmap de propósito (023–032 são citados na 022 e nas decisões); a fase
-1 volta a ser o próximo passo depois dela.
+deploy.** **A A está entregue** (`#d122`, `#d123`): o repositório está na tinta do Rende nos
+dois temas, Archivo no lugar da Fraunces, `DESIGN.md` e `PRODUCT.md` da raiz reescritos, e
+nenhum `wine`, `gold`, `--mc-`, `textura-papel` ou `filete-dourado` sobrou em `src/`. **Não
+publicar antes da B**: o app ainda se chama MyCookie's e ainda tem o biscoito no logotipo, e é
+essa quimera que o deploy conjunto evita. O app publicado continua vinho e creme. A 033 está
+fora da ordem do roadmap de propósito (023–032 são citados na 022 e nas decisões); a fase 1
+volta a ser o próximo passo depois dela.
 
 **Todas as specs de módulo estão executadas.** Fora delas, a spec `005-prontidao.md` tem duas
 sessões — `5A` conserta o que impede o primeiro uso, `5B` faz a verificação em navegador. **As
@@ -215,33 +218,33 @@ os números digitados de ponta a ponta.
 
 ## Módulos
 
-| #   | Módulo                                      | Estado                              | Spec                                       |
-| --- | ------------------------------------------- | ----------------------------------- | ------------------------------------------ |
-| 0   | Fundação: design system, shell, acesso, PWA | pronto                              | —                                          |
-| 1   | Insumos e embalagens                        | pronto                              | —                                          |
-| —   | Contas e tenancy                            | pronto                              | `specs/000-contas.md`                      |
-| 2   | Custos operacionais e precificação          | pronto (2A e 2B)                    | `specs/002-precificacao.md`                |
-| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)                | `specs/003-pedidos.md`                     |
-| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                    | `specs/004-caixa.md`                       |
-| 5   | Prontidão: conserto e verificação           | pronto (5A e 5B)                    | `specs/005-prontidao.md`                   |
-| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)                    | `specs/006-nota-fiscal.md`                 |
-| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)                    | `specs/007-estoque.md`                     |
-| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)                    | `specs/008-onboarding.md`                  |
-| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros             | `specs/009-teclado-e-barra.md`             |
-| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro               | `specs/010-resumo-no-whatsapp.md`          |
-| —   | O caixa que não perde a conta               | pronto, sem o roteiro               | `specs/011-caixa-que-nao-perde-conta.md`   |
-| —   | O acerto das entregas                       | pronto, sem o roteiro               | `specs/012-entregas-a-pagar.md`            |
-| 13  | A fornada                                   | pronto (13A a 13D), sem os roteiros | `specs/013-a-fornada.md`                   |
-| 14  | O combo à escolha                           | pronto (14A e 14B)                  | `specs/014-combo-a-escolha.md`             |
-| 15  | Salvar no toque, no sistema inteiro         | pronto, sem o roteiro               | `specs/015-salvar-no-toque.md`             |
-| 16  | As listas que crescem                       | pronto, sem o roteiro               | `specs/016-listas-que-crescem.md`          |
-| 17  | O orçamento em papel                        | pronto (17A e 17B), sem o roteiro   | `specs/017-orcamento-em-papel.md`          |
-| 18  | O preço no primeiro minuto                  | pronto, sem o roteiro               | `specs/018-o-preco-no-primeiro-minuto.md`  |
-| 19  | O caminho começa pelo preço                 | pronto, sem o roteiro               | `specs/019-o-caminho-comeca-pelo-preco.md` |
-| 20  | Menos na frente                             | pronto, sem o roteiro               | `specs/020-menos-na-frente.md`             |
-| 21  | As palavras dela                            | pronto, sem o roteiro               | `specs/021-as-palavras-dela.md`            |
-| 22  | A segunda conta                             | pronto, sem o roteiro               | `specs/022-a-segunda-conta.md`             |
-| 33  | A marca Rende                               | spec escrita, por rodar (A, B e C)  | `specs/033-a-marca-rende.md`               |
+| #   | Módulo                                      | Estado                                   | Spec                                       |
+| --- | ------------------------------------------- | ---------------------------------------- | ------------------------------------------ |
+| 0   | Fundação: design system, shell, acesso, PWA | pronto                                   | —                                          |
+| 1   | Insumos e embalagens                        | pronto                                   | —                                          |
+| —   | Contas e tenancy                            | pronto                                   | `specs/000-contas.md`                      |
+| 2   | Custos operacionais e precificação          | pronto (2A e 2B)                         | `specs/002-precificacao.md`                |
+| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)                     | `specs/003-pedidos.md`                     |
+| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                         | `specs/004-caixa.md`                       |
+| 5   | Prontidão: conserto e verificação           | pronto (5A e 5B)                         | `specs/005-prontidao.md`                   |
+| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)                         | `specs/006-nota-fiscal.md`                 |
+| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)                         | `specs/007-estoque.md`                     |
+| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)                         | `specs/008-onboarding.md`                  |
+| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros                  | `specs/009-teclado-e-barra.md`             |
+| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro                    | `specs/010-resumo-no-whatsapp.md`          |
+| —   | O caixa que não perde a conta               | pronto, sem o roteiro                    | `specs/011-caixa-que-nao-perde-conta.md`   |
+| —   | O acerto das entregas                       | pronto, sem o roteiro                    | `specs/012-entregas-a-pagar.md`            |
+| 13  | A fornada                                   | pronto (13A a 13D), sem os roteiros      | `specs/013-a-fornada.md`                   |
+| 14  | O combo à escolha                           | pronto (14A e 14B)                       | `specs/014-combo-a-escolha.md`             |
+| 15  | Salvar no toque, no sistema inteiro         | pronto, sem o roteiro                    | `specs/015-salvar-no-toque.md`             |
+| 16  | As listas que crescem                       | pronto, sem o roteiro                    | `specs/016-listas-que-crescem.md`          |
+| 17  | O orçamento em papel                        | pronto (17A e 17B), sem o roteiro        | `specs/017-orcamento-em-papel.md`          |
+| 18  | O preço no primeiro minuto                  | pronto, sem o roteiro                    | `specs/018-o-preco-no-primeiro-minuto.md`  |
+| 19  | O caminho começa pelo preço                 | pronto, sem o roteiro                    | `specs/019-o-caminho-comeca-pelo-preco.md` |
+| 20  | Menos na frente                             | pronto, sem o roteiro                    | `specs/020-menos-na-frente.md`             |
+| 21  | As palavras dela                            | pronto, sem o roteiro                    | `specs/021-as-palavras-dela.md`            |
+| 22  | A segunda conta                             | pronto, sem o roteiro                    | `specs/022-a-segunda-conta.md`             |
+| 33  | A marca Rende                               | A pronta, não publicada; B e C por rodar | `specs/033-a-marca-rende.md`               |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -2168,7 +2171,82 @@ Portão de conclusão: lint limpo, typecheck limpo, **531 testes**, build com as
 **Nada disto foi visto em navegador nesta sessão**: o escuro com a borda da opção escolhida e a
 seta de "Mais detalhes" são os dois lugares onde vale olhar primeiro.
 
+## O que a sessão 033-A deixou pronto
+
+A tinta do Rende, sem o nome e sem o símbolo (`specs/033-a-marca-rende.md`, seção 3.A;
+`DECISOES.md#d122` e `#d123`). **A e B saem juntas**: este commit não vai para o Vercel
+sozinho. Nenhum campo, nenhuma rota, nenhuma regra, nenhum índice, nenhuma dependência;
+`git diff src/lib/domain/ src/lib/firebase/ firestore.rules firestore.indexes.json package.json`
+vazio.
+
+- **Primeiro ato, antes de qualquer código:** `DESIGN.md` e `PRODUCT.md` da raiz reescritos a
+  partir de `docs/marca/rende/`, com as correções da seção 1 da spec (escala e raios do código,
+  barra lateral sem faixa, navegação em `accent-ink`, `--on-accent` e `--on-brand-muted` na
+  tabela, a seção "Tokens no código"). `load-context.mjs` devolve os dois sem placeholder;
+  `/impeccable` foi carregado depois deles, e não antes. `CLAUDE.md` mudou o título, a
+  primeira linha e a justificativa da invariante de cor.
+- **`globals.css`:** `:root` e `@media dark` são os de `tokens.css` nome a nome (conferido por
+  script: só espaço em branco e as exceções declaradas na `#d123`). `--focus` é o âmbar,
+  `::selection` é `brand-700`/`on-brand`, `accent-color` é `--brand-as-ink`. `textura-papel` e
+  `filete-dourado` saíram, com o `@media print` que citava a textura. A `.folha` redeclara os
+  claros do pacote. Sombras na matiz 272, valor bruto em `--elevation-*` (o motivo está na
+  `#d123`). Escala e raios do `@theme inline`: byte a byte os de antes.
+- **Fontes:** `Archivo` 600/700 no lugar da `Fraunces`, mesma variável `--fonte-display`. A
+  tagline do login perdeu o `font-normal`. `rg "font-display" src/ | rg -v "font-semibold|font-bold"`
+  só devolve dois lugares onde o peso vem do pai (`Dinheiro` xl e o `Valor` da folha).
+- **As classes:** `sed` com a tabela da `#d123` em 34 arquivos, e depois os lugares em que o
+  papel mudou: botão primário e flutuante âmbar com `on-accent`; terciário `brand-ink` sobre
+  `brand-100`; navegação inferior ativa `accent-ink` com pílula `brand-100`; barra lateral
+  `brand-800`, hover `brand-600`, ativo `brand-700` cheio, sem filete; pílulas e selo "entregue"
+  em `brand-*`. **Dois lugares além dos quatro da spec:** os marcadores de seleção à mão de
+  `LinhaCompra` e `PainelEntregas` (`brand-ink` sobre `text-surface`, porque `brand-700` some
+  na superfície escura) e os dois `<input type="checkbox">` que tinham `accent-wine-700` (a
+  classe saiu; herdam o `accent-color` do `body`).
+- **Os 8 filetes:** todos fora. Nos três que marcavam estado, o estado continua dito: meta
+  batida tem "Meta batida" com o `Check` (`BlocoMeta`, `CartaoMetaHoje`); o passo atual tem o
+  distintivo em tinta cheia e o `SeloDoPasso` (`BlocoPasso`). Nenhum precisou de
+  `border-brand-ink`. O prop `dourado` de `CartaoMetaHoje.Cartao` morreu junto.
+- **Os 4 `textura-papel`:** fora, `bg-canvas` fica. `Marca.tsx:33` aponta para `--accent-500`
+  (provisório até a B). Dez comentários que justificavam o ícone com "vinho e vermelho são
+  vizinhos" foram reescritos: a regra fica, o motivo agora é a invariante em si (ou, no
+  `SeloStatus`, o âmbar dividindo matiz com o ocre de "em produção").
+- **Manifesto e viewport:** `theme_color` e `themeColor` `#2A2C3A`, `background_color`
+  `#F7F4EE`, comentários apontando para `#d124` (registrada na B). **Até reinstalar, o celular
+  abre o app novo com a barra vinho.**
+- `#d111` anotada como superada no primeiro item; `#d120` anotada com os nomes novos;
+  `ROADMAP.md:11` riscada.
+
+**Inventário do passo 3 da spec, antes → depois:** `wine-|gold-|on-wine` 112 ocorrências em 38
+arquivos → **0**; `filete-dourado|textura-papel|PadraoCookie|Marca` 8 + 4 + 1 + 7 → 0 + 0 + 1 +
+7 (o padrão e os sete importadores são da B); `Cookie` fora de `marca/`: três do Lucide
+(`EntradaContagemPronto`, `FraseDaCapacidade`, `OQueMaisTem`, a 3.B.7) mais quatro do
+componente de marca (B) e texto de produto; `MyCookie|Biscoitos artesanais|Feito com amor`
+em `src/`, `firestore.rules`: 16 linhas, todas da B, mais `CLAUDE.md` já reescrito;
+`variante="primaria"` 26 em 22 arquivos (lista da C). `npx impeccable --json src/` (4.1.0)
+**antes e depois: `[]`**, zero achados nos dois.
+
+**Deixado para a B e a C, de propósito:** o biscoito, o nome, `PadraoCookie` no login, a
+folha do orçamento (`border-accent-500`, total em `brand-700`, tudo provisório), `Marca.tsx`.
+Para a C: a barra de progresso da meta batida ficou em `bg-accent-500` pela troca literal
+`gold-500` → `accent-500`, e a 3.C.2 não a lista entre os sete lugares do âmbar em área; a C
+decide (`positive` é o candidato, pela tabela de semânticos do pacote). "Meta batida" em
+`text-accent-ink` está no mesmo caso.
+
+Portão de conclusão rodado de verdade: lint limpo, typecheck limpo (app e service worker),
+**531 testes**, build com as 18 rotas de antes e o service worker gerado. **Nada disto foi
+visto em navegador nesta sessão.** O roteiro "Depois da A" (spec, passos 1 a 5) é o que confere
+o que o `sed` não vê: um botão azul-preto onde deveria ser âmbar, o anel de foco sobre o botão
+âmbar, o hover da barra lateral mais claro que o ativo, e a meta batida e o passo atual ditos
+sem o filete.
+
 ## Próxima ação
+
+**Rodar a sessão B da 033** (`specs/033-a-marca-rende.md`, seção 3.B) **e só então publicar A e
+B juntas**. Depois do deploy, o passo 8 do roteiro: desinstalar e reinstalar o app no Android
+e no iPhone, porque `theme_color` e `background_color` são assados no WebAPK (`#d76`, `#d124`).
+Antes da B, vale o roteiro "Depois da A" (passos 1 a 5) no `npm run dev`, nos dois temas, a
+360px e a 1280px: é o único lugar onde uma troca de classe que acertou o nome e errou o papel
+aparece.
 
 **Rodar o roteiro de oito passos da spec 020** (duas contas, DevTools em Offline nos passos 1 a
 5): confirma que a ficha-modelo abre com "Mais detalhes" fechada, que insumos da conta real com

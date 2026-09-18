@@ -161,8 +161,8 @@ export function CartaoComprasHoje() {
         <span className="num block text-body font-medium text-ink">
           {titulo}
         </span>
-        {/* Abaixo do piso vem com ícone: vinho e vermelho são vizinhos, e a
-            cor nunca é o único portador de significado. */}
+        {/* Abaixo do piso vem com ícone: a cor nunca é o único portador de
+            significado. */}
         <span
           className={`num mt-0.5 flex items-start gap-1.5 text-label ${piso ? "text-attention" : "text-ink-muted"}`}
         >

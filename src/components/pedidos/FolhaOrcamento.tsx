@@ -30,7 +30,7 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
 
   return (
     <article className="folha mx-auto flex flex-col text-[10.5pt] leading-[1.45] shadow-raised">
-      <header className="flex items-start justify-between gap-6 border-b-2 border-gold-500 pb-4">
+      <header className="flex items-start justify-between gap-6 border-b-2 border-accent-500 pb-4">
         <Logotipo orientacao="horizontal" tamanho="lg" />
         <div className="text-right">
           <Rotulo>Orçamento</Rotulo>
@@ -159,14 +159,14 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
         )}
         {/* O único vinho cheio da folha, e o único trecho que precisa imprimir
             o fundo mesmo com "gráficos de fundo" desmarcado. */}
-        <div className="mt-[8pt] flex items-center justify-between gap-4 rounded-md bg-wine-700 px-4 py-4 text-on-wine [-webkit-print-color-adjust:exact] [print-color-adjust:exact]">
-          <span className="text-[8.5pt] font-medium uppercase tracking-[0.12em] text-on-wine-muted">
+        <div className="mt-[8pt] flex items-center justify-between gap-4 rounded-md bg-brand-700 px-4 py-4 text-on-brand [-webkit-print-color-adjust:exact] [print-color-adjust:exact]">
+          <span className="text-[8.5pt] font-medium uppercase tracking-[0.12em] text-on-brand-muted">
             Total
           </span>
           <Valor
             centavos={orcamento.total}
             className="font-display text-[22pt] leading-none"
-            classeDoSimbolo="text-on-wine-muted"
+            classeDoSimbolo="text-on-brand-muted"
           />
         </div>
       </section>

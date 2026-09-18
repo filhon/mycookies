@@ -1,10 +1,12 @@
-# MyCookie's
+# Rende
 
-Sistema de precificação, produção e fluxo de caixa da confeitaria artesanal MyCookie's.
+Sistema de precificação, produção e fluxo de caixa para confeiteiras artesanais. A MyCookie's
+é a primeira conta.
 Next.js 16 (App Router) · TypeScript · Tailwind v4 · Firebase (Auth + Firestore) · PWA offline-first.
 
 Uma única usuária hoje (Maynara). O projeto é preparado para virar SaaS depois, mas nada
-de multi-cliente é construído antes da hora. Ver `docs/DECISOES.md#d01`.
+de multi-cliente é construído antes da hora. Ver `docs/DECISOES.md#d01`. A marca é própria
+desde 2026-09-18 (`#d122`); o pacote está em `docs/marca/rende/`.
 
 ## Comandos
 
@@ -68,8 +70,8 @@ Quebrar qualquer um destes é regressão, não escolha de estilo.
 - **Toda escrita grava `v: VERSAO_SCHEMA`.** Sem isso a forma de um documento se adivinha
   pela presença de campos.
 - **Alvo de toque mínimo de 44×44px**, ação primária no celular com 52px.
-- **Cor nunca é o único portador de significado.** O vinho da marca e o vermelho de erro são
-  vizinhos de matiz: todo estado negativo carrega ícone ou texto.
+- **Cor nunca é o único portador de significado.** O âmbar da marca e o ocre de atenção dividem
+  matiz: todo estado negativo ou de atenção carrega ícone ou texto, e o âmbar nunca é texto.
 - **Painel lateral no desktop, folha inferior no celular.** Modal só para confirmação
   destrutiva.
 

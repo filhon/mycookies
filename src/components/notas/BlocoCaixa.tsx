@@ -74,7 +74,7 @@ export function BlocoCaixa({
           type="checkbox"
           checked={ligado}
           onChange={(evento) => aoAlternar(evento.target.checked)}
-          className="mt-0.5 size-5 shrink-0 accent-wine-700"
+          className="mt-0.5 size-5 shrink-0"
         />
         <label htmlFor={idLancar} className="text-label text-ink">
           <span className="font-medium">Lançar esta compra como saída</span>

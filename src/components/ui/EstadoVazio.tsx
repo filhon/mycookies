@@ -26,7 +26,7 @@ export function EstadoVazio({
     >
       <Cookie
         gotas={false}
-        className="pointer-events-none absolute top-6 h-28 w-28 text-wine-ink/8 dark:text-wine-ink/10"
+        className="pointer-events-none absolute top-6 h-28 w-28 text-brand-ink/8 dark:text-brand-ink/10"
       />
       <div className="relative flex flex-col items-center">
         <h3 className="font-display text-title font-semibold text-ink">

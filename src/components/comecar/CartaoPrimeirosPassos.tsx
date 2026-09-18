@@ -55,7 +55,7 @@ export function CartaoPrimeirosPassos() {
   return (
     <section
       aria-labelledby="primeiros-passos"
-      className="filete-dourado overflow-hidden rounded-lg border border-line bg-surface"
+      className="overflow-hidden rounded-lg border border-line bg-surface"
     >
       <div className="px-5 py-4">
         <div className="flex items-center justify-between gap-3">
@@ -90,7 +90,7 @@ export function CartaoPrimeirosPassos() {
             <div className="mt-4 flex items-start gap-3">
               <span
                 aria-hidden
-                className="num flex size-8 shrink-0 items-center justify-center rounded-full bg-wine-700 text-label font-semibold text-on-wine"
+                className="num flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-700 text-label font-semibold text-on-brand"
               >
                 {proximo.numero}
               </span>

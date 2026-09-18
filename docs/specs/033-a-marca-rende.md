@@ -541,21 +541,21 @@ Precisa da **conta real**, dos dois temas (DevTools → Rendering → `prefers-c
 
 **A**
 
-- [ ] `rg -n "wine|gold|--mc-|textura-papel|filete-dourado" src/` devolve **zero** linhas.
-- [ ] `globals.css` `:root` e `@media dark` batem com `docs/marca/rende/tokens.css` linha a
+- [x] `rg -n "wine|gold|--mc-|textura-papel|filete-dourado" src/` devolve **zero** linhas.
+- [x] `globals.css` `:root` e `@media dark` batem com `docs/marca/rende/tokens.css` linha a
       linha, exceto: sem `[data-theme]`, mais `--on-accent`, `--on-brand-muted`, e o valor escuro
       de `--brand-100`.
-- [ ] A escala de texto e os raios do `@theme inline` são os de antes, byte a byte.
-- [ ] Botão primário e flutuante âmbar; terciário `brand-ink`; navegação inferior `accent-ink`;
+- [x] A escala de texto e os raios do `@theme inline` são os de antes, byte a byte.
+- [x] Botão primário e flutuante âmbar; terciário `brand-ink`; navegação inferior `accent-ink`;
       barra lateral sem faixa lateral.
-- [ ] `DESIGN.md`, `PRODUCT.md` e `CLAUDE.md` da raiz reescritos; `load-context.mjs` devolve os
+- [x] `DESIGN.md`, `PRODUCT.md` e `CLAUDE.md` da raiz reescritos; `load-context.mjs` devolve os
       dois sem placeholder.
-- [ ] `#d122`, `#d123`; `#d111` e `#d120` anotados; `ROADMAP.md:11` riscada.
+- [x] `#d122`, `#d123`; `#d111` e `#d120` anotados; `ROADMAP.md:11` riscada.
 
 **B**
 
 - [ ] `rg -n "MyCookie|Biscoitos artesanais|Cookie\b" src/ --glob '!**/lib/domain/**' --glob
-    '!**/tests/**'` devolve só `types/conta.ts` (exemplos) e texto de produto (placeholders de
+  '!**/tests/**'` devolve só `types/conta.ts` (exemplos) e texto de produto (placeholders de
       ficha, biblioteca).
 - [ ] `Marca.tsx` exporta `Simbolo` e `Logotipo`, e nada mais.
 - [ ] Os três PNGs regenerados pelo script a partir do SVG novo, quadrados; a saída do script no

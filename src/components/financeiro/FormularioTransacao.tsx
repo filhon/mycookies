@@ -289,7 +289,7 @@ export function FormularioTransacao({
                     "flex flex-col items-start gap-0.5 rounded-md border px-3 py-2.5 text-left",
                     "transition-colors duration-150 ease-quart",
                     ativo
-                      ? "border-wine-ink bg-wine-100"
+                      ? "border-brand-ink bg-brand-100"
                       : "border-line-strong hover:bg-sunken",
                   )}
                 >
@@ -391,7 +391,7 @@ export function FormularioTransacao({
                 Você ainda não cadastrou formas de pagamento.{" "}
                 <Link
                   href="/configuracao"
-                  className="font-medium text-wine-ink underline underline-offset-2"
+                  className="font-medium text-brand-ink underline underline-offset-2"
                 >
                   Cadastrar agora
                 </Link>
@@ -406,7 +406,7 @@ export function FormularioTransacao({
             type="checkbox"
             checked={estado.recorrente}
             onChange={(evento) => definir("recorrente", evento.target.checked)}
-            className="mt-0.5 size-5 shrink-0 accent-wine-700"
+            className="mt-0.5 size-5 shrink-0"
           />
           <label htmlFor={idRecorrente} className="text-label text-ink">
             <span className="font-medium">Isso se repete todo mês</span>

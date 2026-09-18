@@ -10,16 +10,17 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    // A tela de abertura continua creme: o ícone precisa dela para ter contra
-    // o que aparecer.
-    background_color: "#f3eee3",
-    // O vinho do ladrilho de `src/app/icon.svg`, e não a superfície do tema.
-    // O Android assa este valor dentro do WebAPK na instalação, e a partir daí
-    // a barra de status é decoração de janela do sistema: nem media query nem
+    // A tela de abertura é o `canvas` claro: o ícone é `brand-700`, e precisa
+    // de um fundo claro para ter contra o que aparecer.
+    background_color: "#F7F4EE",
+    // O `brand-700` do ícone, e não a superfície do tema. O Android assa este
+    // valor dentro do WebAPK na instalação, e a partir daí a barra de status é
+    // decoração de janela do sistema: nem media query nem
     // `<meta name="theme-color">` alcançam lá dentro. Um valor só, que precisa
     // estar certo nos dois temas — escuro nos dois quer dizer ícone do sistema
-    // em branco nos dois. Trocar exige reinstalar o app. Ver `DECISOES.md#d76`.
-    theme_color: "#5e1725",
+    // em branco nos dois. Trocar exige reinstalar o app. Ver `DECISOES.md#d76`
+    // e `#d124`.
+    theme_color: "#2A2C3A",
     lang: "pt-BR",
     dir: "ltr",
     categories: ["business", "productivity", "food"],

@@ -55,12 +55,12 @@ export function CartaoMetaHoje() {
 
   if (ritmo.batida) {
     return (
-      <Cartao dourado>
+      <Cartao>
         <Cabecalho mes={mes} />
         <p className="mt-2 flex items-center gap-2 font-display text-title font-semibold text-ink">
           <Check
             aria-hidden
-            className="size-6 shrink-0 text-gold-ink"
+            className="size-6 shrink-0 text-accent-ink"
             strokeWidth={2.25}
           />
           Meta batida
@@ -105,20 +105,13 @@ export function CartaoMetaHoje() {
  * O cartão inteiro é o alvo de toque: um cartão com um link dentro faria a
  * usuária mirar em uma palavra, em pé e com uma mão só.
  */
-function Cartao({
-  children,
-  dourado = false,
-}: {
-  children: React.ReactNode;
-  dourado?: boolean;
-}) {
+function Cartao({ children }: { children: React.ReactNode }) {
   return (
     <Link
       href="/financeiro"
       className={cn(
         "group block rounded-lg border border-line bg-surface px-5 py-4",
         "transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken",
-        dourado && "filete-dourado",
       )}
     >
       {children}

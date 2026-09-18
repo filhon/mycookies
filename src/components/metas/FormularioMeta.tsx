@@ -190,7 +190,7 @@ export function FormularioMeta({
               sugerir.{" "}
               <Link
                 href="/fichas"
-                className="font-medium text-wine-ink underline underline-offset-2"
+                className="font-medium text-brand-ink underline underline-offset-2"
               >
                 Cadastrar um produto
               </Link>
@@ -202,7 +202,7 @@ export function FormularioMeta({
               <button
                 type="button"
                 onClick={() => setPrecoManual(false)}
-                className="toque -ml-2 mt-1 inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-wine-ink transition-colors duration-150 ease-quart hover:bg-wine-100"
+                className="toque -ml-2 mt-1 inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-brand-ink transition-colors duration-150 ease-quart hover:bg-brand-100"
               >
                 <Wand2 aria-hidden className="size-4" strokeWidth={1.75} />
                 Usar a média dos produtos, {formatarMoeda(sugerido)}

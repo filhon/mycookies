@@ -37,8 +37,7 @@ export function ResultadoDoMes({ parcelas }: { parcelas: ParcelasDoAgregado }) {
 
         <p className="mt-1 flex items-center gap-2">
           <Dinheiro centavos={lucro} tamanho="xl" comSinal />
-          {/* O sinal e a cor não bastam: vinho da marca e vermelho de erro são
-              vizinhos de matiz, então o prejuízo carrega ícone também. */}
+          {/* O sinal e a cor não bastam: o prejuízo carrega ícone também. */}
           {noPrejuizo && (
             <TriangleAlert
               aria-hidden
@@ -144,7 +143,7 @@ function MaquininhaComeu({
               produtos.{" "}
               <Link
                 href="/configuracao"
-                className="font-medium text-wine-ink underline underline-offset-2"
+                className="font-medium text-brand-ink underline underline-offset-2"
               >
                 Ver minhas taxas
               </Link>

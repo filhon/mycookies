@@ -79,8 +79,8 @@ export function LinhaFicha({
               noPrejuizo ? "text-negative" : "text-ink-muted",
             )}
           >
-            {/* No prejuízo o ícone acompanha a cor: vermelho de erro e vinho
-                da marca são vizinhos de matiz. */}
+            {/* No prejuízo o ícone acompanha a cor: a cor sozinha nunca
+                decide. */}
             {noPrejuizo && (
               <TriangleAlert aria-hidden className="size-3.5" strokeWidth={2} />
             )}

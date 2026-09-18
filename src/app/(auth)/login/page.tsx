@@ -87,16 +87,16 @@ export default function PaginaLogin() {
   }
 
   return (
-    <div className="textura-papel flex min-h-dvh bg-canvas">
+    <div className="flex min-h-dvh bg-canvas">
       {/* Painel de marca: o papel de embrulho da MyCookie's, só no desktop. */}
-      <aside className="relative hidden w-[42%] shrink-0 overflow-hidden bg-wine-900 lg:flex lg:flex-col lg:justify-between">
-        <PadraoCookie className="absolute inset-0 text-on-wine opacity-[0.07]" />
+      <aside className="relative hidden w-[42%] shrink-0 overflow-hidden bg-brand-800 lg:flex lg:flex-col lg:justify-between">
+        <PadraoCookie className="absolute inset-0 text-on-brand opacity-[0.07]" />
 
-        <div className="filete-dourado relative px-10 pt-12">
-          <Logotipo tamanho="lg" className="items-start text-on-wine" />
+        <div className="relative px-10 pt-12">
+          <Logotipo tamanho="lg" className="items-start text-on-brand" />
         </div>
 
-        <p className="relative max-w-[26ch] px-10 pb-14 font-display text-title font-normal leading-snug text-on-wine">
+        <p className="relative max-w-[26ch] px-10 pb-14 font-display text-title font-semibold leading-snug text-on-brand">
           O preço certo de cada doce, antes de mandar o orçamento.
         </p>
       </aside>
@@ -104,7 +104,7 @@ export default function PaginaLogin() {
       <main className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
           <div className="mb-10 lg:hidden">
-            <Logotipo tamanho="md" className="text-wine-ink" />
+            <Logotipo tamanho="md" className="text-brand-ink" />
           </div>
 
           <h1 className="font-display text-title font-semibold text-ink">

@@ -4,7 +4,7 @@ import { NavegacaoInferior } from "./NavegacaoInferior";
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="textura-papel min-h-dvh bg-canvas">
+    <div className="min-h-dvh bg-canvas">
       <BarraLateral />
 
       <div className="lg:pl-60 print:pl-0">
