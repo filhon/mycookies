@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-18 (spec 033 entregue nas três sessões, **A e B por publicar juntas, C junto**; roteiros das 015, 016, 017, 018, 019, 020, 021, 022 e 033 por rodar).
+Atualizado em 2026-09-19 (spec 034 entregue por cima da 033, mais o primeiro passe de navegador sobre as duas, `#d131`; **as duas por publicar juntas**; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 033 e 034 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -187,8 +187,8 @@ nunca visto rodando — **fechou com a 5B**. O que ficou dele é uma linha na ta
 releitura dos cinco textos de `src/lib/domain/onboarding.ts` contra o que a 5B viu, que a 8B
 não pôde fazer na época.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **526
-testes**, e build com 17 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **536
+testes** (526 até a 018; 535 com a 033-C; 536 com a 034), e build com 17 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
 `/insumos/contagem` na 7A, `/comecar` na 8A e `/fichas/contagem` na 13D — mais `/api/nota`,
 `/fichas/[id]`, `/pedidos/[id]` e `/pedidos/[id]/orcamento` (17A) dinâmicas e service worker
 gerado.
@@ -251,6 +251,7 @@ os números digitados de ponta a ponta.
 | 21  | As palavras dela                            | pronto, sem o roteiro               | `specs/021-as-palavras-dela.md`            |
 | 22  | A segunda conta                             | pronto, sem o roteiro               | `specs/022-a-segunda-conta.md`             |
 | 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`               |
+| 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`              |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -2546,11 +2547,82 @@ em navegador nesta sessão.** O roteiro "Depois da C" (passos 11 a 15) é o que 
 build não vê: a faixa alinhada com a linha "Seu trabalho", o ponto no painel e nos estados
 vazios, a frase no rodapé da folha, e o anel de foco sobre o botão âmbar.
 
+## O que a sessão 034 deixou pronto
+
+O desktop passou a ocupar a tela que tem (`specs/034-a-tela-inteira.md`; `DECISOES.md#d128` a
+`#d130`). Cromo e arranjo, fora da ordem do roadmap como a 033, e por cima dela: **publica
+junto com a 033**. Nenhum campo, nenhuma rota nova, nenhuma consulta, nenhuma regra, nenhum
+índice, nenhuma dependência; `git diff src/lib/firebase/ src/lib/types/ firestore.rules
+firestore.indexes.json package.json` vazio. Em `src/lib/domain/`, só `custoGravado`.
+
+- **A faixa em tinta em todo cabeçalho (`#d128`).** `CabecalhoPagina` são duas faixas no mesmo
+  `<header>` grudento: a de contexto em `brand-700` sangrando até a borda da área de conteúdo
+  (`@utility sangria`, `overflow-x-clip` no invólucro de `AppShell`), sem filete, com `voltar`
+  novo e `descricao` em `ReactNode`; a de ferramentas no papel, só com `children`. As ações
+  invertem por escopo de tokens (`@utility sobre-marca`, irmão da `folha`): nenhum componente
+  de ação aprendeu que está sobre a tinta. **Os cinco cabeçalhos próprios morreram**
+  (`FormularioFicha`, `FormularioPedido`, `TelaContagem`, `TelaContagemPronto`, `TelaNota`),
+  e as regras `apertado:` do editor foram para o componente. `LinkVoltar` só é importado por
+  `CabecalhoPagina` agora.
+- **A coluna de leitura é da tela (`#d129`).** `AppShell` sem `max-w-5xl`;
+  `src/app/(app)/(coluna)/layout.tsx` é a coluna, e **todas as páginas entraram nele, menos
+  `fichas/page.tsx`** (`git mv`, nenhum import mudou). O build sai com as mesmas 18 rotas.
+- **`/fichas` em tabela no desktop.** `LinhaFicha` tem os dois arranjos no mesmo `<li>`: a
+  linha do celular exatamente como estava (`lg:hidden`) e a grade de seis colunas
+  (`COLUNAS_FICHA`, exportada para o cabeçalho de colunas em `ListaFichas`). Rótulos em
+  `sr-only` por célula; sobra negativa com sinal (`aria-hidden`), `negative` e o triângulo.
+  Linha selecionada em `bg-sunken` com `aria-current="true"`.
+- **`PainelProduto` (`#d130`),** `hidden lg:flex`, 26rem, coluna acoplada ao lado da tabela e
+  não o `Painel`. Lê `custoGravado(ficha)`; a legenda são os segmentos de `composicaoDoLote`
+  em `Parcela`, que saiu de `FormularioFicha` para `FaixaDeComposicao.tsx`. Foco no painel ao
+  abrir e ao trocar; `Escape` e "×" fecham e devolvem o foco à linha; a seleção é derivada de
+  `dados`. Clique simples no `lg:` abre o painel (`matchMedia`, `preventDefault`); botão do
+  meio e Ctrl+clique abrem o editor.
+- `domain/custoFicha.ts`: `FichaComCusto` e `custoGravado`. Teste: o cookie clássico gravado
+  sem `custoEscolhas`, mapeado campo a campo, e a faixa saindo dele com as cinco parcelas do
+  caso de aceite. **535 → 536**, nenhum teste existente mudou.
+- `DESIGN.md`: "Cabeçalho de contexto" e "Tabela" na tabela de componentes; a coluna por tela
+  em "Estrutura responsiva".
+
+**Desvios da letra da spec, registrados:** as parcelas do painel são os segmentos da faixa
+(parcela zerada não aparece), e não as sete linhas condicionais do editor (`#d130`); o
+"Sugerido" da tabela e do painel é o `precoSugerido` gravado, antes do arredondamento, porque o
+arredondado não é gravado (`#d130`).
+
+Portão de conclusão rodado de verdade: lint limpo, typecheck limpo (app e service worker),
+**536 testes**, build com as 18 rotas de antes e o service worker gerado; `npx impeccable
+--json src/` continua `[]`. Os `.next/types`
+gerados por um `next dev` anterior apontavam para os caminhos velhos e derrubaram o primeiro
+`typecheck`; apagar `.next/types` e `.next/dev/types` e rodar o build de novo resolveu, e é o
+que quem abrir o projeto com um `.next` velho vai precisar fazer uma vez. **Nada disto foi
+visto em navegador nesta sessão.** O roteiro de aceite da spec (oito passos) é o que confere o
+que o build não vê: a sangria cortada no lugar certo nos dois tamanhos, o `sticky` preso com o
+`overflow-x: clip`, o anel de foco âmbar sobre a tinta, o Ctrl+clique abrindo o editor e o
+foco voltando à linha depois do `Escape`.
+
+## O primeiro passe de navegador sobre a 033 e a 034 (`#d131`)
+
+Seis prints de quem conduz o projeto, no desktop e no tema claro, e um conserto de raiz:
+o `tailwind-merge` lia a escala de texto do código como cor e descartava metade dos pares
+`text-<tamanho> text-<cor>` passados por `cn()`. `cn.ts` agora usa `extendTailwindMerge`
+com a escala do `@theme inline`; nenhum componente mudou por isso, mas **a tela muda**: os
+botões passam a ter cor própria (o secundário inverte sobre a faixa em tinta, o terciário é
+`brand-ink`, o destrutivo é `negative`, o primário no escuro é `on-accent`), e selo, pílula,
+`LinkVoltar`, rótulos da barra lateral, cabeçalho de colunas, o "R$" do `Dinheiro` e o preço
+em `display` do `PainelProduto` saem no tamanho e na cor que `DESIGN.md` diz. Junto:
+"O que comprar" e "O que está pronto" na altura do primário; `FaixaResumo` para "A receber"
+e "Entregas a pagar"; em `/comecar`, a nota da meta em faixa rebaixada com ícone e o offline
+com o recuo das listas; o ponto do logotipo com o vão do SVG do pacote (`0.31em`). Portão
+rodado: lint e typecheck limpos, 536 testes, build com as 18 rotas. As peças do parágrafo
+acima entram no roteiro da 034, nos dois temas.
+
 ## Próxima ação
 
-**Publicar a 033 inteira** (`docs/DEPLOY.md`). Antes, o roteiro da spec no `npm run dev`, nos
-dois temas, a 360px e a 1280px: "Depois da A" (passos 1 a 5), "Depois da B" (6, 7, 9 e 10) e
-"Depois da C" (11, 13, 14 e 15). É o único lugar onde uma troca de classe que acertou o nome e
+**Publicar a 033 e a 034 juntas** (`docs/DEPLOY.md`). Antes, os roteiros no `npm run dev`, nos
+dois temas, a 360px e a 1280px: o da 033, "Depois da A" (passos 1 a 5), "Depois da B" (6, 7, 9
+e 10) e "Depois da C" (11, 13, 14 e 15); e o da 034, os oito passos do fim da spec, com o 7
+(leitor de tela numa linha da tabela) sendo o que decide se os dois arranjos no mesmo `<li>`
+estavam certos. É o único lugar onde uma troca de classe que acertou o nome e
 errou o papel aparece, onde a geometria do ponto do logotipo é vista de verdade, onde o
 segmento âmbar da faixa se alinha (ou não) com a linha "Seu trabalho", e onde o anel de foco
 âmbar sobre o botão âmbar é julgado (3.C.5; se não bastar, `outline-color: var(--brand-700)`
@@ -2658,7 +2730,9 @@ A primeira rodada de capturas em navegador (desktop, tema escuro) achou três co
 - **Largura de coluna padronizada.** Havia três larguras de conteúdo em uso e nenhuma
   decidida: listas em 1024px centralizadas, editores e `/compras` em 768px encostados à
   esquerda, configuração em 672px. Agora toda tela usa a coluna do shell, e os campos que
-  ficariam largos demais foram pareados em grade de duas colunas. `DECISOES.md#d42`.
+  ficariam largos demais foram pareados em grade de duas colunas. `DECISOES.md#d42`. **Desde a
+  034 a coluna é do grupo de rota `(coluna)`, e não do shell** (`#d129`): a largura é a mesma,
+  e só `/fichas` fica fora dela.
 - **Rodapé de painel sem respiro no pé.** `area-segura-inferior` define `padding-bottom` e é
   emitida depois das utilidades do Tailwind, então apagava o `py-4` do rodapé do `Painel` em
   vez de somar: no desktop o `env()` vale zero e os botões encostavam na borda; no celular o

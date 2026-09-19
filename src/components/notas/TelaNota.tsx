@@ -15,10 +15,10 @@ import {
 } from "lucide-react";
 import { Simbolo } from "@/components/marca/Marca";
 import { Bloco } from "@/components/ui/Bloco";
+import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { Botao } from "@/components/ui/Botao";
 import { Campo } from "@/components/ui/Campo";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
-import { LinkVoltar } from "@/components/ui/LinkVoltar";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { BlocoCaixa } from "./BlocoCaixa";
 import {
@@ -348,27 +348,23 @@ export function TelaNota() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 -mx-4 border-b border-line bg-canvas px-4 pb-3 pt-3 lg:-mx-8 lg:px-8 lg:pb-4 lg:pt-6">
-        <LinkVoltar href="/insumos">Materiais</LinkVoltar>
-
-        <div className="mt-1 flex items-center justify-between gap-4">
-          <h1 className="min-w-0 truncate font-display text-title font-semibold text-ink lg:text-display">
-            {etapa === "conferindo" ? "Confira a leitura" : "Ler uma nota"}
-          </h1>
-          {etapa === "conferindo" && (
+      <CabecalhoPagina
+        titulo={etapa === "conferindo" ? "Confira a leitura" : "Ler uma nota"}
+        voltar={{ href: "/insumos", rotulo: "Materiais" }}
+        acao={
+          etapa === "conferindo" && (
             <Botao
               tamanho="sm"
               onClick={recomecar}
-              className="shrink-0"
               iconeInicial={
                 <RotateCcw aria-hidden className="size-4" strokeWidth={1.75} />
               }
             >
               Outra nota
             </Botao>
-          )}
-        </div>
-      </header>
+          )
+        }
+      />
 
       <input
         // Sem `capture`: o atributo forçaria a câmera e tiraria dela a galeria e

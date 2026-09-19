@@ -1,4 +1,5 @@
 import type { Segmento } from "@/lib/domain/custoFicha";
+import { formatarMoeda } from "@/lib/domain/money";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -43,6 +44,36 @@ export function FaixaDeComposicao({
           }
         />
       ))}
+    </div>
+  );
+}
+
+/**
+ * Uma linha da legenda da faixa (`#d126`): o rótulo e o valor de uma parcela,
+ * dentro de um `<dl>`. Mora aqui, e não no editor, porque a legenda é da faixa;
+ * o editor e o painel de produto só a listam.
+ */
+export function Parcela({
+  rotulo,
+  valor,
+  destaque = false,
+}: {
+  rotulo: string;
+  valor: number;
+  /** A linha que casa com o segmento âmbar da faixa. Uma só. */
+  destaque?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-baseline justify-between gap-4",
+        destaque && "font-semibold text-accent-ink",
+      )}
+    >
+      <dt className={cn(!destaque && "text-ink-muted")}>{rotulo}</dt>
+      <dd className={cn("num", !destaque && "font-medium text-ink")}>
+        {formatarMoeda(valor)}
+      </dd>
     </div>
   );
 }

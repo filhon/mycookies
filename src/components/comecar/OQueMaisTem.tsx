@@ -8,6 +8,7 @@ import {
   Clock,
   PackageOpen,
   ShoppingCart,
+  Target,
 } from "lucide-react";
 
 interface Funcionalidade {
@@ -114,22 +115,31 @@ export function OQueMaisTem() {
         ))}
       </ul>
 
-      {/* A meta ganha um parágrafo aqui e não um passo (`DECISOES.md#d66`): ela
-          é a única coisa do sistema que fica melhor depois, e não antes. */}
-      <p className="mt-4 max-w-[62ch] text-label text-ink-muted">
-        <span className="font-semibold text-ink">A meta do mês</span> não é um
-        passo do começo, e é de propósito. Ela mora no{" "}
-        <Link
-          href="/financeiro"
-          className="font-medium text-brand-ink underline decoration-line-strong underline-offset-4 hover:decoration-current"
-        >
-          Caixa
-        </Link>
-        , e fica bem melhor depois de algumas fichas e algumas encomendas: o
-        alvo em doces sai do preço médio das suas fichas, e o alvo em encomendas
-        sai do que as suas clientes de fato gastam. Definida na primeira semana,
-        seria um palpite; definida na segunda, é uma conta.
-      </p>
+      {/* A meta ganha uma nota aqui e não um passo (`DECISOES.md#d66`): ela é
+          a única coisa do sistema que fica melhor depois, e não antes. A faixa
+          rebaixada é a mesma do convite de instalar, e o ícone alinha com os
+          da lista acima: solta, a frase parecia sobra da seção. */}
+      <div className="mt-3 flex gap-3 rounded-lg bg-sunken px-4 py-4 lg:px-5">
+        <Target
+          aria-hidden
+          className="mt-0.5 size-5 shrink-0 text-ink-muted"
+          strokeWidth={1.75}
+        />
+        <p className="min-w-0 max-w-[62ch] text-label text-ink-muted">
+          <span className="font-semibold text-ink">A meta do mês</span> não é um
+          passo do começo, e é de propósito. Ela mora no{" "}
+          <Link
+            href="/financeiro"
+            className="font-medium text-brand-ink underline decoration-line-strong underline-offset-4 hover:decoration-current"
+          >
+            Caixa
+          </Link>
+          , e fica bem melhor depois de algumas fichas e algumas encomendas: o
+          alvo em doces sai do preço médio das suas fichas, e o alvo em
+          encomendas sai do que as suas clientes de fato gastam. Definida na
+          primeira semana, seria um palpite; definida na segunda, é uma conta.
+        </p>
+      </div>
     </>
   );
 }

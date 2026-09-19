@@ -31,7 +31,7 @@ import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
 import { AreaTexto, Campo, Seletor } from "@/components/ui/Campo";
 import { CampoImagem } from "@/components/ui/CampoImagem";
 import { Dinheiro } from "@/components/ui/Dinheiro";
-import { LinkVoltar } from "@/components/ui/LinkVoltar";
+import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { EntradaContagemPronto } from "@/components/producao/EntradaContagemPronto";
 import { FornadasRecentes } from "@/components/producao/FornadasRecentes";
@@ -42,7 +42,7 @@ import {
   LinhaEscolhaFicha,
   LinhaItemFicha,
 } from "./LinhaItemFicha";
-import { FaixaDeComposicao } from "./FaixaDeComposicao";
+import { FaixaDeComposicao, Parcela } from "./FaixaDeComposicao";
 import { PainelPreco } from "./PainelPreco";
 import { insumosComPrecoMedio } from "@/lib/domain/biblioteca";
 import {
@@ -690,19 +690,11 @@ export function FormularioFicha({
 
   return (
     <>
-      {/* Com o teclado aberto o cabeçalho encolhe e o link de voltar some: o
-          botão físico de voltar do Android existe e fecha o teclado antes de
-          sair. O título e o Salvar não mudam de tamanho. */}
-      <header className="sticky top-0 z-30 -mx-4 border-b border-line bg-canvas px-4 py-3 apertado:py-2 lg:-mx-8 lg:px-8 lg:pb-4 lg:pt-6">
-        <LinkVoltar href="/fichas" className="apertado:hidden">
-          Produtos
-        </LinkVoltar>
-
-        <div className="mt-1 flex items-center justify-between gap-4 apertado:mt-0">
-          <h1 className="min-w-0 truncate font-display text-title font-semibold text-ink lg:text-display">
-            {titulo}
-          </h1>
-          <div className="flex shrink-0 items-center gap-3">
+      <CabecalhoPagina
+        titulo={titulo}
+        voltar={{ href: "/fichas", rotulo: "Produtos" }}
+        acao={
+          <div className="flex items-center gap-3">
             <SeloSincronizacao pendente={pendente} />
             <Botao
               variante="primaria"
@@ -712,8 +704,8 @@ export function FormularioFicha({
               Salvar
             </Botao>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       {/* Logo abaixo do Salvar, que é onde ela está olhando quando o
           salvamento para: no pé de um formulário longo a falha ficava fora da
@@ -847,7 +839,7 @@ export function FormularioFicha({
                     unidade={ficha.unidadeRendimento}
                   />
                 )}
-                <EntradaContagemPronto />
+                <EntradaContagemPronto tamanho="sm" />
               </div>
             )}
 
@@ -1527,31 +1519,6 @@ function ListaDeLinhas({
           {erro}
         </p>
       )}
-    </div>
-  );
-}
-
-function Parcela({
-  rotulo,
-  valor,
-  destaque = false,
-}: {
-  rotulo: string;
-  valor: number;
-  /** A linha que casa com o segmento âmbar da faixa. Uma só. */
-  destaque?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex items-baseline justify-between gap-4",
-        destaque && "font-semibold text-accent-ink",
-      )}
-    >
-      <dt className={cn(!destaque && "text-ink-muted")}>{rotulo}</dt>
-      <dd className={cn("num", !destaque && "font-medium text-ink")}>
-        {formatarMoeda(valor)}
-      </dd>
     </div>
   );
 }

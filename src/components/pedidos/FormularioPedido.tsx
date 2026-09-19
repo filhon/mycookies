@@ -18,6 +18,7 @@ import {
   UserRound,
   type LucideIcon,
 } from "lucide-react";
+import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { FornadasRecentes } from "@/components/producao/FornadasRecentes";
 import { FraseCabeNoPedido } from "@/components/producao/FraseDaCapacidade";
@@ -30,7 +31,6 @@ import { Botao } from "@/components/ui/Botao";
 import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
 import { AreaTexto, Campo, Seletor } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
-import { LinkVoltar } from "@/components/ui/LinkVoltar";
 import { Selo } from "@/components/ui/Selo";
 import { EscolhaDoCombo } from "./EscolhaDoCombo";
 import { LinhaItemPedido } from "./LinhaItemPedido";
@@ -875,24 +875,12 @@ export function FormularioPedido({
 
   return (
     <>
-      {/* Mesmo encolhimento do editor de ficha, e pelo mesmo motivo. */}
-      <header className="sticky top-0 z-30 -mx-4 border-b border-line bg-canvas px-4 py-3 apertado:py-2 lg:-mx-8 lg:px-8 lg:pb-4 lg:pt-6">
-        <LinkVoltar href="/pedidos" className="apertado:hidden">
-          Pedidos
-        </LinkVoltar>
-
-        <div className="mt-1 flex items-center justify-between gap-4 apertado:mt-0">
-          <div className="min-w-0">
-            <h1 className="truncate font-display text-title font-semibold text-ink lg:text-display">
-              {titulo}
-            </h1>
-            {pedido && (
-              <p className="num mt-0.5 truncate text-label text-ink-muted">
-                {pedido.codigo}
-              </p>
-            )}
-          </div>
-          <div className="flex shrink-0 items-center gap-3">
+      <CabecalhoPagina
+        titulo={titulo}
+        descricao={pedido && <span className="num">{pedido.codigo}</span>}
+        voltar={{ href: "/pedidos", rotulo: "Pedidos" }}
+        acao={
+          <div className="flex items-center gap-3">
             <SeloSincronizacao pendente={pendente} />
             <Botao
               variante="primaria"
@@ -902,8 +890,8 @@ export function FormularioPedido({
               Salvar
             </Botao>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       {/* Espaço no pé para o rodapé de totais não cobrir o último bloco. */}
       <div className="mt-4 space-y-4 pb-48 apertado:pb-32 lg:pb-44">

@@ -325,6 +325,38 @@
 }
 
 /**
+ * A faixa que sangra até a borda da área de conteúdo a partir de dentro da
+ * coluna de leitura: margem negativa e padding iguais, e o que está dentro
+ * continua alinhado com a coluna. Quem corta o excesso é o `overflow-x: clip`
+ * do invólucro em `AppShell`: `clip` não cria contêiner de rolagem, e o
+ * `sticky` continua preso ao viewport (`DECISOES.md#d128`).
+ */
+@utility sangria {
+  margin-inline: -100vw;
+  padding-inline: 100vw;
+}
+
+/**
+ * O escopo sobre a tinta da marca: o cabeçalho de contexto. Irmão da `folha`,
+ * pelo mesmo mecanismo: redeclara os tokens, e os componentes que caem aqui
+ * (botão secundário, terciário, link de voltar, ícone) invertem sem saber que
+ * estão sobre `brand-700`. O primário âmbar e o selo de sincronização têm
+ * contraste próprio e não leem nenhum destes. O anel de foco volta ao
+ * `accent-500`: o `accent-600` sobre `brand-700` mede ~2,6:1 e reprova
+ * (`DECISOES.md#d128`).
+ */
+@utility sobre-marca {
+  --ink: var(--on-brand);
+  --ink-muted: var(--on-brand-muted);
+  --border: var(--brand-500);
+  --border-strong: var(--brand-500);
+  --surface-sunken: var(--brand-600);
+  --brand-100: var(--brand-600);
+  --brand-as-ink: var(--on-brand);
+  --focus: var(--accent-500);
+}
+
+/**
  * A folha do orçamento: um A4 que é a mesma coisa na tela e no papel.
  *
  * Papel não tem modo noturno. Os tokens de superfície e tinta são redeclarados

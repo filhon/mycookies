@@ -8,11 +8,13 @@ import { Selo } from "@/components/ui/Selo";
  *
  * Sem superfície de propósito: quatro caixas iguais depois de duas listas
  * emolduradas viraria grade de cartões, e esta seção é texto corrido com um
- * ícone por parágrafo. O respiro entre os quatro é o que os separa.
+ * ícone por parágrafo. O respiro entre os quatro é o que os separa. O recuo
+ * é o das listas emolduradas: os ícones caem na mesma coluna que os de cima
+ * e o da instalação, logo abaixo.
  */
 export function QuandoNaoTemInternet() {
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 px-4 lg:px-5">
       <Fala icone={Check} titulo="Quase tudo continua funcionando">
         Cadastrar material, montar produto, anotar encomenda, registrar a
         fornada, marcar como paga, lançar no caixa e marcar item no mercado

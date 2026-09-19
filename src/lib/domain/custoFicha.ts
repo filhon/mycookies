@@ -4,6 +4,7 @@ import type {
   CentavosFracionados,
   CustosOperacionais,
   EscolhaDoKit,
+  FichaTecnica,
   Percentual,
   TipoFicha,
   UnidadeRendimento,
@@ -318,6 +319,38 @@ export function composicaoDoLote(custo: CustoFichaCalculado): Segmento[] {
       fracao: custo[chave] / total,
       destaque: chave === "custoMaoDeObra",
     }));
+}
+
+/** O que uma ficha gravada carrega do custo do lote (`#d04`). `FichaTecnica` serve. */
+export type FichaComCusto = Pick<
+  FichaTecnica,
+  | "custoInsumos"
+  | "custoEmbalagem"
+  | "custoComponentes"
+  | "custoEscolhas"
+  | "custoTotalLote"
+  | "custoUnitario"
+  | "invisiveis"
+>;
+
+/**
+ * O custo do lote como a ficha o gravou, na forma que a faixa e as parcelas
+ * leem. É só leitura do gravado, nunca recálculo: o painel de produto mostra o
+ * mesmo número que o editor gravou, e `custoDesatualizado` é quem avisa que o
+ * gravado envelheceu. `custoEscolhas` ausente é ficha anterior à 014, e vale zero.
+ */
+export function custoGravado(ficha: FichaComCusto): CustoFichaCalculado {
+  return {
+    custoInsumos: ficha.custoInsumos,
+    custoEmbalagem: ficha.custoEmbalagem,
+    custoComponentes: ficha.custoComponentes,
+    custoEscolhas: ficha.custoEscolhas ?? 0,
+    custoMaoDeObra: ficha.invisiveis.custoMaoDeObra,
+    custoEnergiaGas: ficha.invisiveis.custoEnergiaGas,
+    custoIndireto: ficha.invisiveis.custoIndireto,
+    custoTotalLote: ficha.custoTotalLote,
+    custoUnitario: ficha.custoUnitario,
+  };
 }
 
 export interface EntradaFicha extends EntradaCustoFicha {

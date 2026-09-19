@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { orderBy, query, where } from "firebase/firestore";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { EntradaContagem } from "@/components/estoque/EntradaContagem";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
@@ -14,7 +14,8 @@ import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { Botao } from "@/components/ui/Botao";
 import { Pilulas, type OpcaoPilula } from "@/components/ui/Pilulas";
-import { LinhaFicha } from "./LinhaFicha";
+import { COLUNAS_FICHA, LinhaFicha } from "./LinhaFicha";
+import { PainelProduto } from "./PainelProduto";
 import { ID_FICHA_NOVA } from "./EditorFicha";
 import { BotaoBiblioteca } from "@/components/biblioteca/BotaoBiblioteca";
 import { EntradaContagemPronto } from "@/components/producao/EntradaContagemPronto";
@@ -28,6 +29,7 @@ import {
   useDespensaParaProduzir,
 } from "@/lib/hooks/useDespensaParaProduzir";
 import type { FichaTecnica, TipoFicha } from "@/lib/types";
+import { cn } from "@/lib/utils/cn";
 import { useContaId } from "@/providers/AuthProvider";
 
 const FILTROS: OpcaoPilula<TipoFicha | "TODAS">[] = [
@@ -40,6 +42,9 @@ export function ListaFichas() {
   const contaId = useContaId();
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<TipoFicha | "TODAS">("TODAS");
+  // O produto no painel ao lado, só no desktop (`DECISOES.md#d130`).
+  const [selecionadaId, setSelecionadaId] = useState<string | null>(null);
+  const lista = useRef<HTMLUListElement>(null);
 
   // Uma consulta ordenada, o resto filtrado em memória: são dezenas de
   // fichas, e o cache do Firestore já as tem.
@@ -100,6 +105,19 @@ export function ListaFichas() {
       return combinaTipo && combinaBusca;
     });
   }, [dados, busca, filtro]);
+
+  // Derivada, e não guardada: se a ficha sair de `dados` (arquivada em outra
+  // aba), o painel fecha sozinho.
+  const selecionada = dados.find((ficha) => ficha.id === selecionadaId) ?? null;
+
+  /** Fecha o painel e devolve o foco à linha que estava selecionada. */
+  function fecharPainel() {
+    const linha = lista.current?.querySelector<HTMLElement>(
+      'a[aria-current="true"]',
+    );
+    setSelecionadaId(null);
+    linha?.focus();
+  }
 
   const despensaPronta = !despensa.carregando;
   // O botão da biblioteca só existe em conta vazia (`DECISOES.md#d114`): sem
@@ -179,83 +197,113 @@ export function ListaFichas() {
         </div>
       )}
 
-      <div className="mt-2 overflow-hidden rounded-lg border border-line bg-surface">
-        {erro ? (
-          <EstadoVazio
-            titulo="Não deu para carregar seus produtos"
-            descricao="Verifique a conexão. O que já foi aberto antes continua disponível offline."
-          />
-        ) : carregando ? (
-          <EsqueletoLista />
-        ) : visiveis.length === 0 ? (
-          dados.length === 0 ? (
-            contaVazia ? (
-              <EstadoVazio
-                titulo="Nenhum produto com preço ainda."
-                descricao="Monte uma receita, diga quanto ela rende, e o Rende mostra quanto custa e quanto cobrar."
-                acao={
-                  <div className="flex flex-col items-center gap-3">
-                    <BotaoBiblioteca />
+      {/* No desktop a tabela e o painel do produto selecionado dividem a
+          largura: sem seleção, a tabela ocupa tudo (`DECISOES.md#d130`). */}
+      <div className="mt-2 lg:flex lg:items-start lg:gap-4">
+        <div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-line bg-surface">
+          {erro ? (
+            <EstadoVazio
+              titulo="Não deu para carregar seus produtos"
+              descricao="Verifique a conexão. O que já foi aberto antes continua disponível offline."
+            />
+          ) : carregando ? (
+            <EsqueletoLista />
+          ) : visiveis.length === 0 ? (
+            dados.length === 0 ? (
+              contaVazia ? (
+                <EstadoVazio
+                  titulo="Nenhum produto com preço ainda."
+                  descricao="Monte uma receita, diga quanto ela rende, e o Rende mostra quanto custa e quanto cobrar."
+                  acao={
+                    <div className="flex flex-col items-center gap-3">
+                      <BotaoBiblioteca />
+                      <Link
+                        href={`/fichas/${ID_FICHA_NOVA}`}
+                        className={classesBotao({ variante: "terciaria" })}
+                      >
+                        Criar primeiro produto
+                      </Link>
+                    </div>
+                  }
+                />
+              ) : (
+                <EstadoVazio
+                  titulo="Comece pelo que você mais vende"
+                  descricao="Monte o produto com os materiais que você já cadastrou. O sistema soma o seu tempo, o gás e a taxa da maquininha, e devolve o preço que fecha a margem que você quer."
+                  acao={
                     <Link
                       href={`/fichas/${ID_FICHA_NOVA}`}
-                      className={classesBotao({ variante: "terciaria" })}
+                      className={classesBotao({
+                        variante: "primaria",
+                        tamanho: "lg",
+                      })}
                     >
+                      <Plus aria-hidden className="size-5" strokeWidth={2} />
                       Criar primeiro produto
                     </Link>
-                  </div>
-                }
-              />
+                  }
+                />
+              )
             ) : (
               <EstadoVazio
-                titulo="Comece pelo que você mais vende"
-                descricao="Monte o produto com os materiais que você já cadastrou. O sistema soma o seu tempo, o gás e a taxa da maquininha, e devolve o preço que fecha a margem que você quer."
+                titulo="Nada com esse filtro"
+                descricao="Tente outro termo de busca ou volte para todos os produtos."
                 acao={
-                  <Link
-                    href={`/fichas/${ID_FICHA_NOVA}`}
-                    className={classesBotao({
-                      variante: "primaria",
-                      tamanho: "lg",
-                    })}
+                  <Botao
+                    onClick={() => {
+                      setBusca("");
+                      setFiltro("TODAS");
+                    }}
                   >
-                    <Plus aria-hidden className="size-5" strokeWidth={2} />
-                    Criar primeiro produto
-                  </Link>
+                    Limpar filtros
+                  </Botao>
                 }
               />
             )
           ) : (
-            <EstadoVazio
-              titulo="Nada com esse filtro"
-              descricao="Tente outro termo de busca ou volte para todos os produtos."
-              acao={
-                <Botao
-                  onClick={() => {
-                    setBusca("");
-                    setFiltro("TODAS");
-                  }}
-                >
-                  Limpar filtros
-                </Botao>
-              }
-            />
-          )
-        ) : (
-          <ul className="divide-y divide-line">
-            {visiveis.map((ficha) => (
-              <LinhaFicha
-                key={ficha.id}
-                ficha={ficha}
-                // Enquanto a despensa não chegou, a linha não diz nada: dizer
-                // "não dá para saber" por um instante seria mentir por pressa.
-                capacidade={
-                  despensaPronta
-                    ? capacidades.get(ficha.id)?.capacidade
-                    : undefined
-                }
-                pronto={despensaPronta ? capacidades.get(ficha.id) : undefined}
-              />
-            ))}
-          </ul>
+            <>
+              {/* O cabeçalho das colunas é para quem vê: cada célula da linha
+                  carrega o rótulo em `sr-only`, com as palavras do celular. */}
+              <div
+                aria-hidden
+                className={cn(
+                  "hidden gap-x-4 border-b border-line px-4 py-2 text-micro font-semibold uppercase tracking-wide text-ink-muted lg:grid",
+                  COLUNAS_FICHA,
+                )}
+              >
+                <span>Produto</span>
+                <span className="text-right">Rende</span>
+                <span className="text-right">Custo/un</span>
+                <span className="text-right">Sugerido</span>
+                <span className="text-right">Praticado</span>
+                <span className="text-right">Sobra</span>
+              </div>
+              <ul ref={lista} className="divide-y divide-line">
+                {visiveis.map((ficha) => (
+                  <LinhaFicha
+                    key={ficha.id}
+                    ficha={ficha}
+                    // Enquanto a despensa não chegou, a linha não diz nada: dizer
+                    // "não dá para saber" por um instante seria mentir por pressa.
+                    capacidade={
+                      despensaPronta
+                        ? capacidades.get(ficha.id)?.capacidade
+                        : undefined
+                    }
+                    pronto={
+                      despensaPronta ? capacidades.get(ficha.id) : undefined
+                    }
+                    selecionada={ficha.id === selecionada?.id}
+                    aoSelecionar={() => setSelecionadaId(ficha.id)}
+                  />
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+
+        {selecionada && (
+          <PainelProduto ficha={selecionada} aoFechar={fecharPainel} />
         )}
       </div>
 

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Truck } from "lucide-react";
 import { Botao } from "@/components/ui/Botao";
-import { Dinheiro } from "@/components/ui/Dinheiro";
+import { FaixaResumo } from "./FaixaResumo";
 import { PainelEntregas } from "./PainelEntregas";
 import {
   entregasAPagar,
@@ -22,9 +22,9 @@ import { useContaId } from "@/providers/AuthProvider";
  * sai, uma vez por semana, não passava por lugar nenhum — e o resultado do mês
  * ficava alto por causa disso (`DECISOES.md#d82`).
  *
- * Faixa rebaixada logo abaixo de "A receber", com o mesmo peso visual: a agenda
- * continua sendo o que ela veio ver. Tudo aqui é soma em memória sobre os
- * pedidos que a tela já carregou — nenhuma consulta nova (`#d84`).
+ * A mesma `FaixaResumo` de "A receber", logo abaixo dela: a agenda continua
+ * sendo o que ela veio ver. Tudo aqui é soma em memória sobre os pedidos que
+ * a tela já carregou — nenhuma consulta nova (`#d84`).
  */
 export function EntregasAPagar({
   pedidos,
@@ -50,30 +50,21 @@ export function EntregasAPagar({
 
   return (
     <>
-      <section
-        aria-labelledby="entregas-a-pagar"
-        className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-lg border border-line bg-sunken px-4 py-3"
+      <FaixaResumo
+        id="entregas-a-pagar"
+        icone={Truck}
+        titulo="Entregas a pagar"
+        valor={quantidade > 0 ? total : undefined}
+        acao={
+          <Botao tamanho="sm" onClick={() => setAberto(true)}>
+            {quantidade === 0 ? "Ver os últimos acertos" : "Acertar entregas"}
+          </Botao>
+        }
       >
-        <h2
-          id="entregas-a-pagar"
-          className="flex items-center gap-2 text-label font-medium text-ink-muted"
-        >
-          <Truck aria-hidden className="size-4 shrink-0" strokeWidth={1.75} />
-          <span>Entregas a pagar</span>
-        </h2>
-
-        {quantidade > 0 && <Dinheiro centavos={total} />}
-
-        <p className="w-full max-w-[64ch] text-label text-ink-muted">
-          {quantidade === 0
-            ? "Nenhuma entrega esperando acerto agora."
-            : `${quantidade} ${quantidade === 1 ? "entrega já feita" : "entregas já feitas"} que você ainda não acertou com o entregador. O que você cobrou é o que você paga.`}
-        </p>
-
-        <Botao tamanho="sm" onClick={() => setAberto(true)}>
-          {quantidade === 0 ? "Ver os últimos acertos" : "Acertar entregas"}
-        </Botao>
-      </section>
+        {quantidade === 0
+          ? "Nenhuma entrega esperando acerto agora."
+          : `${quantidade} ${quantidade === 1 ? "entrega já feita" : "entregas já feitas"} que você ainda não acertou com o entregador. O que você cobrou é o que você paga.`}
+      </FaixaResumo>
 
       <PainelEntregas
         aberto={aberto}

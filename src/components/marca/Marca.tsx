@@ -41,9 +41,10 @@ export function Simbolo({ className }: { className?: string }) {
  * `currentColor` — a negativa sai de graça.
  *
  * A geometria é a de `logo/rende-principal.svg` (círculo de raio 11 num corpo
- * de 76): diâmetro `0.29em`, base `0.04em` abaixo da linha de base, encostado
- * no "e". A margem do ponto cancela o `letter-spacing` que sobra depois da
- * última letra. `md` (28px) é o menor tamanho que passa dos 88px de largura
+ * de 76, centro em 232 com o texto acabando em ~197): diâmetro `0.29em`, base
+ * `0.04em` abaixo da linha de base, e um vão de `0.31em` depois do "e", medido
+ * no navegador contra o SVG. O ponto não encosta: é um ponto final, e não a
+ * cauda da letra. `md` (28px) é o menor tamanho que passa dos 88px de largura
  * que o manual exige; abaixo disso, só o símbolo.
  */
 export function Logotipo({
@@ -70,7 +71,7 @@ export function Logotipo({
       rende
       <span
         aria-hidden="true"
-        className="ml-[0.03em] inline-block size-[0.29em] rounded-full bg-accent-500 align-[-0.04em]"
+        className="ml-[0.31em] inline-block size-[0.29em] rounded-full bg-accent-500 align-[-0.04em]"
       />
     </span>
   );

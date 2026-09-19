@@ -7,7 +7,6 @@ import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { Botao } from "@/components/ui/Botao";
 import { BotaoFlutuante } from "@/components/ui/BotaoFlutuante";
-import { Dinheiro } from "@/components/ui/Dinheiro";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { Pilulas, type OpcaoPilula } from "@/components/ui/Pilulas";
@@ -15,6 +14,7 @@ import { Selo } from "@/components/ui/Selo";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { AtalhoParaCompras } from "@/components/compras/AtalhoParaCompras";
 import { EntregasAPagar } from "./EntregasAPagar";
+import { FaixaResumo } from "./FaixaResumo";
 import { LinhaPedido } from "./LinhaPedido";
 import { ID_PEDIDO_NOVO } from "./EditorPedido";
 import { dataISODe, rotuloAgenda } from "@/lib/domain/datas";
@@ -304,40 +304,24 @@ export function ListaPedidos() {
  * pago não aparece no resultado do mês, e sem esta linha ele não apareceria em
  * lugar nenhum — o painel mentiria por omissão (`DECISOES.md#d36`).
  *
- * Não é um cartão nem um KPI: é uma faixa rebaixada entre o cabeçalho e a
- * agenda, porque a agenda continua sendo o que ela veio ver.
+ * O desenho é o de `FaixaResumo`, dividido com "Entregas a pagar".
  */
 function AReceber({ pedidos }: { pedidos: Pedido[] }) {
   const { total, quantidade, entregues } = aReceber(pedidos);
   if (quantidade === 0) return null;
 
   return (
-    <section
-      aria-labelledby="a-receber"
-      className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-lg border border-line bg-sunken px-4 py-3"
-    >
-      <h2
-        id="a-receber"
-        className="flex items-center gap-2 text-label font-medium text-ink-muted"
-      >
-        <Wallet aria-hidden className="size-4 shrink-0" strokeWidth={1.75} />
-        <span>A receber</span>
-      </h2>
-
-      <Dinheiro centavos={total} />
-
-      <p className="w-full max-w-[64ch] text-label text-ink-muted">
-        {quantidade === 1
-          ? "1 pedido combinado que ainda não entrou no caixa"
-          : `${quantidade} pedidos combinados que ainda não entraram no caixa`}
-        {entregues > 0 &&
-          (entregues === 1
-            ? ", e um deles já foi entregue"
-            : `, e ${entregues} deles já foram entregues`)}
-        . Enquanto o pedido não estiver marcado como pago, esse dinheiro não
-        conta no resultado do mês.
-      </p>
-    </section>
+    <FaixaResumo id="a-receber" icone={Wallet} titulo="A receber" valor={total}>
+      {quantidade === 1
+        ? "1 pedido combinado que ainda não entrou no caixa"
+        : `${quantidade} pedidos combinados que ainda não entraram no caixa`}
+      {entregues > 0 &&
+        (entregues === 1
+          ? ", e um deles já foi entregue"
+          : `, e ${entregues} deles já foram entregues`)}
+      . Enquanto o pedido não estiver marcado como pago, esse dinheiro não conta
+      no resultado do mês.
+    </FaixaResumo>
   );
 }
 

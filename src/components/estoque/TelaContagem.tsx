@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { orderBy, query, where } from "firebase/firestore";
 import { Plus, ShoppingBasket } from "lucide-react";
+import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
-import { LinkVoltar } from "@/components/ui/LinkVoltar";
 import { Pilulas } from "@/components/ui/Pilulas";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { LinhaContagem } from "./LinhaContagem";
@@ -194,24 +194,18 @@ export function TelaContagem() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 -mx-4 border-b border-line bg-canvas px-4 pb-3 pt-3 lg:-mx-8 lg:px-8 lg:pb-4 lg:pt-6">
-        <LinkVoltar href="/compras">Compras</LinkVoltar>
-
-        <div className="mt-1 flex items-center justify-between gap-4">
-          <h1 className="min-w-0 truncate font-display text-title font-semibold text-ink lg:text-display">
-            Contar a despensa
-          </h1>
-          <SeloSincronizacao pendente={pendente} />
-        </div>
-
-        {/* Vinda da compra, "digite só o que você conferir" seria uma instrução
-            para campos que já nasceram cheios. */}
-        <p className="mt-1 max-w-[60ch] text-label text-ink-muted lg:text-body">
-          {semente
+      {/* Vinda da compra, "digite só o que você conferir" seria uma instrução
+          para campos que já nasceram cheios. */}
+      <CabecalhoPagina
+        titulo="Contar a despensa"
+        descricao={
+          semente
             ? "Confira na prateleira antes de salvar. Zero também é contagem: é você dizendo que acabou."
-            : "Digite só o que você conferir. Zero também é contagem: é você dizendo que acabou."}
-        </p>
-      </header>
+            : "Digite só o que você conferir. Zero também é contagem: é você dizendo que acabou."
+        }
+        voltar={{ href: "/compras", rotulo: "Compras" }}
+        acao={<SeloSincronizacao pendente={pendente} />}
+      />
 
       {/* A oferta da compra: os campos já vêm somados, e cada linha diz de onde
           o número saiu. A compra sabe quanto entrou e não sabe o que saiu desde

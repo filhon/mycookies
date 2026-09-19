@@ -3,6 +3,7 @@ import {
   calcularCustoFicha,
   composicaoDoLote,
   custoDasEscolhas,
+  custoGravado,
   custoLinhaItem,
   ehEmbalagem,
   opcoesDaEscolha,
@@ -425,5 +426,45 @@ describe("composicaoDoLote", () => {
     expect(segmentos.reduce((soma, s) => soma + s.centavos, 0)).toBe(
       custo.custoTotalLote,
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spec 034 · o painel de produto lê o custo gravado, e a faixa sai dele.
+// ---------------------------------------------------------------------------
+
+describe("custoGravado", () => {
+  it("lê o gravado da ficha, com as invisíveis e `custoEscolhas` ausente valendo zero", () => {
+    // O cookie clássico como está no documento: sem `custoEscolhas` (anterior
+    // à 014), e as três parcelas do tempo dentro de `invisiveis`.
+    const custo = custoGravado({
+      custoInsumos: 6240,
+      custoEmbalagem: 900,
+      custoComponentes: 0,
+      custoTotalLote: 8820,
+      custoUnitario: 441,
+      invisiveis: {
+        tempoProducaoMinutos: 27,
+        custoMaoDeObra: 1120,
+        custoEnergiaGas: 360,
+        custoIndireto: 200,
+      },
+    });
+
+    expect(custo).toEqual({
+      custoInsumos: 6240,
+      custoEmbalagem: 900,
+      custoComponentes: 0,
+      custoEscolhas: 0,
+      custoMaoDeObra: 1120,
+      custoEnergiaGas: 360,
+      custoIndireto: 200,
+      custoTotalLote: 8820,
+      custoUnitario: 441,
+    });
+    // O mesmo mapeado alimenta a faixa: as cinco parcelas do caso de aceite.
+    expect(composicaoDoLote(custo).map((s) => s.centavos)).toEqual([
+      6240, 900, 1120, 360, 200,
+    ]);
   });
 });

@@ -6,11 +6,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { orderBy, query, where } from "firebase/firestore";
 import { Check, CookingPot, Plus } from "lucide-react";
 import { RodapeContagem } from "@/components/estoque/RodapeContagem";
+import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { BASE_CONTROLE } from "@/components/ui/Campo";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
-import { LinkVoltar } from "@/components/ui/LinkVoltar";
 import { Pilulas } from "@/components/ui/Pilulas";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
@@ -151,23 +151,16 @@ export function TelaContagemPronto() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 -mx-4 border-b border-line bg-canvas px-4 pb-3 pt-3 lg:-mx-8 lg:px-8 lg:pb-4 lg:pt-6">
-        <LinkVoltar href="/fichas">Produtos</LinkVoltar>
-
-        <div className="mt-1 flex items-center justify-between gap-4">
-          <h1 className="min-w-0 truncate font-display text-title font-semibold text-ink lg:text-display">
-            Contar o que está pronto
-          </h1>
-          <SeloSincronizacao pendente={pendente} />
-        </div>
-
-        <p className="mt-1 max-w-[60ch] text-label text-ink-muted lg:text-body">
-          A massa no congelador e o que já assou, por produto.{" "}
-          {semente
+      <CabecalhoPagina
+        titulo="Contar o que está pronto"
+        descricao={`A massa no congelador e o que já assou, por produto. ${
+          semente
             ? "Confira no pote antes de salvar. Zero também é contagem: é você dizendo que acabou."
-            : "Digite só o que você conferir. Zero também é contagem: é você dizendo que acabou."}
-        </p>
-      </header>
+            : "Digite só o que você conferir. Zero também é contagem: é você dizendo que acabou."
+        }`}
+        voltar={{ href: "/fichas", rotulo: "Produtos" }}
+        acao={<SeloSincronizacao pendente={pendente} />}
+      />
 
       {semente && (
         <p className="mt-4 flex items-start gap-2.5 rounded-lg border border-line bg-sunken px-4 py-3 text-label text-ink">

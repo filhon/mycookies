@@ -4097,3 +4097,157 @@ uma linha fixa, e a 028 recebe a nota no `ROADMAP.md`.
 **Consequência.** `Orcamento.negocio.frase?`, `esquemaConfiguracao.frase`,
 `salvarConfiguracao` gravando com `deleteField()` no vazio (como o contato), e a constante
 `FRASE_RODAPE` da B morta. Resumo de WhatsApp, etiqueta e embalagem continuam sem marca Rende.
+
+---
+
+## D128 · O cabeçalho de contexto é a faixa em tinta, e as ações invertem por escopo
+
+**Status:** vigente · decidida em 2026-09-19, na spec 034
+
+**Contexto.** Depois da 033, barra lateral, pílula ativa e item ativo estavam em `brand-700`;
+`CabecalhoPagina` e os cinco cabeçalhos próprios (editor de produto, de pedido, as duas
+contagens e a nota) continuavam `bg-canvas` com filete. O `DESIGN.md` já chamava o cabeçalho
+de cromo em tinta; o código não. E o conteúdo das ações vem de fora (`EntradaContagemPronto`,
+`AtalhoParaCompras`, `EntradaLeitura`, a engrenagem da Hoje, o Salvar dos editores,
+`LinkVoltar`): restilar cada um para a tinta seria ensinar a oito componentes onde eles estão.
+
+**Decisão.** `CabecalhoPagina` vira duas faixas no mesmo `<header>` grudento: a de contexto em
+`bg-brand-700`, sangrando até a borda da área de conteúdo, com `voltar` (novo, opcional),
+título em `on-brand`, descrição em `on-brand-muted` (agora `ReactNode`, pelo código do pedido)
+e as ações à direita, **sem filete**; e a de ferramentas, `bg-canvas` com filete, só quando há
+`children`. A faixa é um **escopo de tokens**, `@utility sobre-marca`, irmão da `folha`: dentro
+dele `--ink` vale `--on-brand`, `--ink-muted` vale `--on-brand-muted`, `--border` e
+`--border-strong` valem `--brand-500`, `--surface-sunken` e `--brand-100` valem `--brand-600`,
+`--brand-as-ink` vale `--on-brand` e `--focus` vale `--accent-500` (o `accent-600` sobre
+`brand-700` mede ~2,6:1 e reprova o anel). Botão secundário, terciário, link de voltar e ícone
+invertem de graça; o primário âmbar e o selo de sincronização não leem nenhum destes tokens e
+não mudam. **Os cinco cabeçalhos próprios passaram a usar `CabecalhoPagina`** com `voltar`, e
+as regras `apertado:` do editor (o voltar some, o respiro encolhe) foram junto para o
+componente: em tela de lista, com a busca focada, encolher é ganho.
+
+A sangria é `margin-inline: -100vw; padding-inline: 100vw` (`@utility sangria`) com
+`overflow-x: clip` no invólucro de `AppShell`. `clip` não cria contêiner de rolagem, e o
+`sticky` continua preso ao viewport. Sem pseudo-elemento, sem `z-index` negativo. No desktop a
+sangria passa por baixo da barra lateral, que é `fixed` e está acima (`z-40` sobre `z-30`).
+
+**Consequência.** Cinco cópias do mesmo `<header>` morreram, e toda tela ganhou a faixa de
+uma vez. Um componente que um dia cair na faixa com `ink-subtle` como texto vai medir ~3:1
+sobre a tinta: `ink-subtle` continua sendo ícone e metadado, como o `#d123` já dizia. O escopo
+não remapeia `--surface`: nada na faixa tem fundo de superfície, e um dia que tenha, é uma
+linha aqui. A escala tipográfica não mudou (`#d123`): `text-title lg:text-display`, e não os
+26px/700 da prancha.
+
+---
+
+## D129 · A coluna de leitura é da tela, não do shell
+
+**Status:** vigente · decidida em 2026-09-19, na spec 034
+
+**Contexto.** `AppShell` travava `main` em `max-w-5xl` (`#d42`). Certo para formulário e
+prosa, errado para a tabela com o painel ao lado: em 1024px sobrariam 580px para seis colunas.
+
+**Decisão.** `AppShell` deixa de limitar `main`. A largura de leitura vira um grupo de rota,
+`src/app/(app)/(coluna)/layout.tsx`, um `<div className="mx-auto w-full max-w-5xl">`, e **toda
+página entra nele, menos `fichas/page.tsx`**. Mover arquivo foi a única mudança nas páginas;
+nenhum import mudou, e o build sai com as mesmas rotas. `RodapeFixo` já media `max-w-5xl` por
+dentro, então os editores continuam alinhados com o rodapé de preço. Quando `/insumos` e
+`/pedidos` virarem tabela, saem do grupo.
+
+`/fichas` no desktop é tabela: no `lg:` a linha vira grade de seis colunas na proporção da
+prancha (`2.4fr · 1fr · 1.2fr · 1.2fr · 1.2fr · 1.4fr`): Produto · Rende · Custo/un · Sugerido
+· Praticado · Sobra. São os seis números gravados na ficha que respondem "qual produto rende
+mais?", e que não apareciam lado a lado em lugar nenhum. Cabeçalho de colunas em `micro` 600
+caixa alta `ink-muted`, `aria-hidden`; cada célula carrega o rótulo em `sr-only` com as
+palavras do celular ("rende", "custa", "sugerido", "praticado", "sobram"; "perde" no
+prejuízo, com o sinal visível em `aria-hidden`). Os dois arranjos moram no mesmo `<li>`
+(`lg:hidden` e `hidden lg:grid`), e o `display: none` tira o oculto da árvore de
+acessibilidade: o leitor de tela ouve um só. Sem seta verde (`#d125`); sem ordenar por coluna
+(busca e pílulas já recortam, e dezenas de produtos não pedem ordenação).
+
+**Consequência.** A linha do celular não mudou um pixel. O `(coluna)` tem um `page.tsx` a mais
+que o `(app)` e um `fichas/` em cada grupo, o que o Next aceita porque nenhuma URL se repete.
+`/insumos` e `/pedidos` continuam sendo a linha do celular esticada: é outra sessão, no mesmo
+padrão.
+
+---
+
+## D130 · O painel de produto é coluna acoplada, e não o `Painel`; não leva o ponto
+
+**Status:** vigente · decidida em 2026-09-19, na spec 034
+
+**Contexto.** No desktop há espaço para ver o custo do lote de um produto sem perder os
+outros de vista; até aqui era ida e volta pelo editor. O `Painel` que já existe é sobreposição
+com fundo escurecido, foco preso e `inert` no resto.
+
+**Decisão.** `PainelProduto` é uma coluna de 26rem acoplada à direita da tabela, **só no
+desktop** (`hidden lg:flex`), e **não o `Painel`**: a lista precisa continuar clicável para
+trocar de produto sem fechar nada. Sem `position: sticky`: o cabeçalho grudento já ocupa a
+altura que ocupa, e a lista tem dezenas de linhas. Só leitura, do que a ficha já tem gravado:
+`custoGravado(ficha): CustoFichaCalculado` é o mapeador puro novo em `domain/custoFicha.ts`
+(`custoEscolhas ?? 0`, as três parcelas de `invisiveis.*`), com teste, e é o que alimenta
+`composicaoDoLote`. A legenda são os segmentos da faixa (`Parcela` saiu de `FormularioFicha`
+para `FaixaDeComposicao.tsx`, que é onde a legenda mora, `#d126`), e não a lista fixa de sete
+linhas do editor: parcela zerada não aparece, porque o painel mostra o gravado e não pede que
+ela preencha nada. Custo/un · Sugerido · Praticado em três `Dinheiro` com rótulo `micro`, como
+no `PainelPreco`; a sobra em `display` ("Sobram R$ 3,19", "por unidade, depois da maquininha
+(4,99%)"; no prejuízo "Perde R$ 0,38" com `trending-down` e `negative`). `custoDesatualizado`
+traz o selo de atenção e "Abra o produto e salve para recalcular com os preços de hoje".
+Rodapé "Abrir produto", secundário; o primário da tela continua sendo "Novo produto".
+
+**Sem o ponto âmbar**: ele marca dado num lugar só, o painel de preço do editor, e a faixa já
+é a assinatura desta peça (uma por peça, `MARCA.md` § 2.4). Sem a faixa lateral âmbar da
+prancha (`#d125`, `/impeccable`).
+
+**Interação.** No `lg:`, o clique simples na linha abre o painel em vez de navegar
+(`matchMedia('(min-width: 64rem)')` no `onClick` do `Link`, com `preventDefault`; botão do
+meio, Ctrl+clique e menu de contexto continuam abrindo o editor). Clicar outra linha troca. Ao
+abrir e ao trocar, o foco vai para o painel (`tabIndex={-1}`, `aria-label` com o nome);
+`Escape` e o "×" fecham e devolvem o foco à linha selecionada (`a[aria-current="true"]` dentro
+da lista). A seleção é derivada de `dados`: se a ficha for arquivada em outra aba, o painel
+fecha sozinho. Sem seleção, o painel não é renderizado e a tabela ocupa a largura toda. No
+celular nada disso existe: a linha vai ao editor.
+
+**Consequência.** O que o painel mostra é o que o editor gravou, por construção: nenhum
+segundo cálculo, e o selo de custo desatualizado é quem avisa que o gravado envelheceu. O
+"Sugerido" é `precificacao.precoSugerido` gravado, antes do arredondamento (o arredondado não
+é gravado); se a diferença incomodar, é campo novo, não conta na tela. O painel no celular
+(folha inferior) e o editor em duas colunas ficam para outra spec.
+
+## D131 · O `cn` conhece a escala de texto do código
+
+**Status:** vigente · decidida em 2026-09-19, nos ajustes de navegador depois da 034
+
+**Contexto.** O primeiro olhar no navegador depois da 034 mostrou "Ler uma nota", "O que
+comprar" e "O que está pronto" com ícone e texto em tinta escura sobre a faixa `brand-700`,
+só no tema claro. O `sobre-marca` estava certo (a borda invertia); o que faltava era o
+`text-ink` do botão secundário. O `tailwind-merge` só conhece a escala de texto padrão do
+Tailwind (`text-sm`, `text-lg`…): `text-body`, `text-label` e irmãos são lidos como **cor**,
+`text-ink text-body` vira conflito, e o primeiro cai. `classesBotao` passava a cor antes do
+tamanho, então **nenhum botão tinha cor própria**: o secundário herdava a tinta (certa sobre o
+papel, errada sobre a faixa), o terciário nunca foi `brand-ink`, o destrutivo nunca foi
+`negative`, o primário no escuro era creme sobre âmbar. No sentido inverso, todo `cn()` que
+punha o tamanho antes da cor (`text-label text-ink-muted`, `text-micro`) perdia o tamanho:
+selo, pílula, `LinkVoltar`, os rótulos da barra lateral, o cabeçalho de colunas da tabela, o
+"R$" do `Dinheiro` (perdia o `ink-muted`) e o preço em `display` do `PainelProduto` saíam no
+tamanho herdado. Nada disso era visível como erro: cada peça saía um degrau maior ou na cor
+do pai, e foi assim que a 033 e a 034 foram julgadas.
+
+**Decisão.** `src/lib/utils/cn.ts` usa `extendTailwindMerge` com a escala de texto do
+`@theme inline` (`display`, `title`, `heading`, `subheading`, `body`, `label`, `micro`). É o
+único lugar fora do `globals.css` que conhece esses nomes; um tamanho novo entra nos dois. Não
+se mexe em nenhum `cn()` de componente: o conserto é no dono do conflito, e o `git diff` dos
+componentes continua zero para isso. **Consequência visível:** a interface fica com os
+tamanhos e as cores que `DESIGN.md` sempre disse; o que ela mostra a partir daqui é o que os
+dois temas passam a exibir de verdade, e o `/impeccable` da 033-C foi medido sobre uma tela
+que não era esta. O roteiro em navegador da 034 confere as peças listadas acima.
+
+**O que foi junto, no mesmo passe:** "O que comprar" e "O que está pronto" no cabeçalho
+passaram de `sm` para o `md` do primário ao lado (`EntradaContagemPronto` ganhou `tamanho`, e
+é `sm` só na ficha, ao lado de "Fiz a massa"); "A receber" e "Entregas a pagar" dividem
+`FaixaResumo` (nome e valor numa linha, frase embaixo, ação à direita no desktop), porque o
+`w-full` do parágrafo com `max-w` deixava de quebrar linha no desktop e a frase subia para o
+lado do valor; em `/comecar`, a nota da meta do mês virou faixa rebaixada com ícone, a mesma
+do convite de instalar, e a seção do offline ganhou o recuo das listas emolduradas para os
+ícones caírem na mesma coluna; e o ponto do logotipo ganhou o vão de `0.31em` depois do "e",
+medido no navegador contra `rende-principal.svg` (o centro em 232 num texto que acaba em ~197),
+em vez de encostar na letra.
