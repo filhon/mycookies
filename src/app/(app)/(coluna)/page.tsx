@@ -35,6 +35,7 @@ export default function PaginaHoje() {
       <CabecalhoPagina
         titulo={conta ? `${saudacao}, ${conta.proprietaria}` : saudacao}
         descricao={data.charAt(0).toUpperCase() + data.slice(1)}
+        descricaoSempreVisivel
         acao={
           // No desktop a configuração mora na barra lateral. No celular não há
           // barra lateral, e ela não cabe entre os cinco destinos da navegação

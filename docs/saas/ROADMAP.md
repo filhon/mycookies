@@ -248,14 +248,21 @@ roadmap previu e um pouco mais:
   índice, nenhuma dependência.
 - **O roteiro de dez passos, com conta real e rede, ainda não rodou.**
 
-**025 · Quem mais compra de mim.** Tela de clientes (dívida da tabela).
+**025 · Quem mais compra de mim.** Entregue em 2026-09-19 (`specs/025-quem-mais-compra-de-
+mim.md`, `DECISOES.md#d137` e `#d138`), o que o roadmap não dizia:
 
-- `/clientes` lê `totalPedidos`, `totalGasto`, `ticketMedio` e `ultimoPedidoEm`, que são
-  escritos e ninguém lê (`#d35`). Arquivar cliente. Fora do menu de baixo (teto de cinco),
-  alcançada pelo cabeçalho de `/pedidos`. Índice já publicado.
-- É uma tela nova: pela regra do `#d113`, a spec diz o que ela tira da frente. Se não tirar
-  nada e ninguém do beta pedir, espera.
-- Aprovações: nenhuma.
+- `/clientes` lê `totalPedidos`, `totalGasto`, `ticketMedio` e `ultimoPedidoEm` — escritos desde
+  a 3B, sem leitor até aqui (`#d35`) — e **não cadastra**: sem "Nova cliente" em lugar nenhum,
+  porque uma cliente sem pedido é CRM, e o produto não é (`#d137`). Ordenada por `totalGasto`
+  decrescente, sem pílula de ordenação: a busca por nome já cobre "cadê a Ana?".
+- Arquivar cliente decrementa `agregados/global.totalClientes` e não desfaz vínculo nenhum: o
+  `clienteId` continua nos pedidos antigos, e não há restaurar na tela (`#d138`).
+- Fora do menu de baixo (teto de cinco): alcançada pelo cabeçalho de `/pedidos` — o atalho só
+  aparece com pedido gravado, pela regra do `#d113` — e por `/comecar`, quinta entrada de "O
+  que mais tem aqui".
+- Índice já publicado, nenhum novo. Nenhum campo, nenhuma rota além de `/clientes`, nenhuma
+  regra, nenhuma dependência.
+- **O roteiro de dez passos, com conta real, ainda não rodou.**
 
 **026 · A fornada que quebrou.** Só se as entrevistas pedirem.
 

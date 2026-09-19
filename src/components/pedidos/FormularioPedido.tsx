@@ -25,6 +25,7 @@ import {
   PainelFornada,
   type OpcaoDeFornada,
 } from "@/components/producao/PainelFornada";
+import { PainelCliente } from "@/components/clientes/PainelCliente";
 import { Bloco } from "@/components/ui/Bloco";
 import { Botao } from "@/components/ui/Botao";
 import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
@@ -39,7 +40,6 @@ import { Selo } from "@/components/ui/Selo";
 import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
 import { EscolhaDoCombo } from "./EscolhaDoCombo";
 import { LinhaItemPedido } from "./LinhaItemPedido";
-import { PainelCliente } from "./PainelCliente";
 import { PainelPedido } from "./PainelPedido";
 import { SeloStatus } from "./SeloStatus";
 import { podeSerComponente, temEscolhas } from "@/lib/domain/custoFicha";

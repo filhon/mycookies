@@ -8,12 +8,8 @@ import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { FormularioPedido } from "./FormularioPedido";
 import { dataISODe } from "@/lib/domain/datas";
-import {
-  colClientes,
-  colFichas,
-  docConfiguracao,
-  docPedido,
-} from "@/lib/firebase/colecoes";
+import { colFichas, docConfiguracao, docPedido } from "@/lib/firebase/colecoes";
+import { consultaClientes } from "@/lib/firebase/mutations/clientes";
 import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
 import { useDespensaParaProduzir } from "@/lib/hooks/useDespensaParaProduzir";
 import type {
@@ -72,13 +68,8 @@ export function EditorPedido({ id }: { id: string }) {
     [contaId],
   );
 
-  const consultaClientes = useMemo(
-    () =>
-      query(
-        colClientes(contaId),
-        where("arquivado", "==", false),
-        orderBy("nomeBusca"),
-      ),
+  const consultaDeClientes = useMemo(
+    () => consultaClientes(contaId),
     [contaId],
   );
 
@@ -93,7 +84,7 @@ export function EditorPedido({ id }: { id: string }) {
   );
 
   const fichas = useColecao<FichaTecnica>(consultaFichas);
-  const clientes = useColecao<Cliente>(consultaClientes);
+  const clientes = useColecao<Cliente>(consultaDeClientes);
   // A despensa, as fornadas e os outros pedidos: é o que responde, na linha
   // de cada item, se dá para fazer. O pedido novo é onde a pergunta mais
   // importa, então as três chegam aqui sempre, sem travar o formulário.

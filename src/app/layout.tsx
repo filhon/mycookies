@@ -30,7 +30,12 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "Rende",
-    statusBarStyle: "default",
+    // "default" pinta a barra de branco com ícone escuro: quebra a faixa
+    // única com o cabeçalho `brand-700`. Translúcida deixa o conteúdo
+    // aparecer por trás dela — é o cabeçalho, sticky no topo, que vira a cor
+    // da barra; o respiro de `safe-area-inset-top` em `CabecalhoPagina`
+    // evita que título e ações fiquem atrás do relógio/entalhe.
+    statusBarStyle: "black-translucent",
   },
   // O app é área logada; a página de venda, quando existir, é outra rota e é
   // indexável.

@@ -1,9 +1,9 @@
 # Estado do projeto
 
-Atualizado em 2026-09-19 (spec 023 entregue, primeira da fase 1 do roadmap; a 024 entregue
-depois dela, a segunda da fase 1; mais a 034 entregue por cima da 033, o primeiro passe de
-navegador sobre as duas, `#d131`; **033 e 034 por publicar juntas**; roteiros das 015, 016, 017,
-018, 019, 020, 021, 022, 023, 024, 033 e 034 por rodar).
+Atualizado em 2026-09-19 (spec 023 entregue, primeira da fase 1 do roadmap; a 024 e a 025
+entregues depois dela, a segunda e a terceira da fase 1; mais a 034 entregue por cima da 033, o
+primeiro passe de navegador sobre as duas, `#d131`; **033 e 034 por publicar juntas**; roteiros
+das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 033 e 034 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -190,11 +190,11 @@ nunca visto rodando — **fechou com a 5B**. O que ficou dele é uma linha na ta
 releitura dos cinco textos de `src/lib/domain/onboarding.ts` contra o que a 5B viu, que a 8B
 não pôde fazer na época.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **547
-testes** (526 até a 018; 535 com a 033-C; 536 com a 034; 547 com a 024), e build com 17 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
-`/insumos/contagem` na 7A, `/comecar` na 8A e `/fichas/contagem` na 13D — mais `/api/nota`,
-`/fichas/[id]`, `/pedidos/[id]` e `/pedidos/[id]/orcamento` (17A) dinâmicas e service worker
-gerado.
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **552
+testes** (526 até a 018; 535 com a 033-C; 536 com a 034; 547 com a 024; 552 com a 025), e build com 18 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
+`/insumos/contagem` na 7A, `/comecar` na 8A, `/fichas/contagem` na 13D e `/clientes` na 025 —
+mais `/api/nota`, `/fichas/[id]`, `/pedidos/[id]` e `/pedidos/[id]/orcamento` (17A) dinâmicas e
+service worker gerado.
 
 **O app está de pé.** Projeto `mycookies-mrc`, `.env.local` preenchido, regras publicadas,
 chave de conta de serviço no disco (fora do git, coberta por `*firebase-adminsdk*.json`).
@@ -255,6 +255,7 @@ os números digitados de ponta a ponta.
 | 22  | A segunda conta                             | pronto, sem o roteiro               | `specs/022-a-segunda-conta.md`             |
 | 23  | Sair sem salvar                             | pronto, sem o roteiro               | `specs/023-sair-sem-salvar.md`             |
 | 24  | Fichas no vermelho                          | pronto, sem o roteiro               | `specs/024-fichas-no-vermelho.md`          |
+| 25  | Quem mais compra de mim                     | pronto, sem o roteiro               | `specs/025-quem-mais-compra-de-mim.md`     |
 | 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`               |
 | 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`              |
 
@@ -2686,6 +2687,44 @@ não rodou nesta sessão** — o passo 1 (sem mudança, nenhuma seta em lugar ne
 número que a lista mostra bate com o que o editor recalcula) são os dois que provam que o
 `#d135` está certo, e os dois dependem de conta real com rede.
 
+## A spec 025 · Quem mais compra de mim
+
+**Entregue**, a terceira spec da fase 1 do roadmap, fora da ordem das entrevistas — como a 024,
+não dependia delas. Paga a dívida mais antiga da tabela: os quatro agregados de `Cliente`
+(`totalPedidos`, `totalGasto`, `ticketMedio`, `ultimoPedidoEm`), escritos por
+`aplicarPedidoNoCliente` desde a 3B, ganharam leitor.
+
+- `domain/clientes.ts` (novo): `ordenarPorGasto` (gasto decrescente, empate por pedidos pagos e
+  depois por nome, zero por último) e `resumoDaCliente` ("3 pedidos pagos · R$ 40,00 em média ·
+  último em 12 de ago.", ou "ainda sem pedido pago"). Puro, sem Firebase.
+- `mutations/clientes.ts`: `consultaClientes` (a mesma consulta que já vivia inline em
+  `EditorPedido.tsx`, agora em um lugar só, `#d105`) e `arquivarCliente`, espelho exato de
+  `criarCliente` e do mesmo par de `arquivarInsumo` — decrementa
+  `agregados/global.totalClientes`, não apaga `clienteId` de nenhum pedido antigo.
+- `PainelCliente.tsx` mudou de `components/pedidos/` para `components/clientes/` (`git mv`);
+  ganhou a prop opcional `podeArquivar` e o bloco de arquivar com confirmação em dois passos no
+  lugar, como `FormularioInsumo`. `FormularioPedido.tsx` importa do novo caminho e não passa
+  `podeArquivar` — de dentro do pedido, arquivar a cliente que acabou de vincular não faz
+  sentido.
+- `components/clientes/`: `LinhaCliente.tsx` (três andares: nome e gasto, o resumo, o contato
+  quando há algum) e `ListaClientes.tsx` (a tela — busca, ordenação pelo gasto, os dois estados
+  vazios, sem botão de criar).
+- Rota `/clientes`, `metadata.title: "Clientes"`. Fora do menu de baixo: alcançada por
+  `AtalhoParaClientes.tsx` (gêmeo de `AtalhoParaCompras`) no cabeçalho de `/pedidos` — só quando
+  há pedido gravado, a mesma regra de "Novo pedido" (`#d113`) — e pela quinta entrada de "O que
+  mais tem aqui" em `/comecar`.
+
+Decisões novas em `DECISOES.md#d137` e `#d138`; `#d35` ganhou a nota de que a primeira metade
+caiu aqui. Testes: os quatro casos de `resumoDaCliente` e o de `ordenarPorGasto` (com a entrada
+não mutada), em `tests/domain/clientes.test.ts` — **547 → 552**. Portão rodado de verdade: lint
+e typecheck limpos (com `npx next typegen` para a rota nova entrar nas rotas tipadas), os 552
+testes, build com `/clientes` entre as 18 rotas estáticas; `npx impeccable --json src/` continua
+`[]`; `rg "colClientes\(" src/components/` vazio; `git diff` de `src/lib/types/`,
+`firestore.rules`, `firestore.indexes.json` e `package.json` vazio — nenhum campo, nenhuma
+regra, nenhum índice novo, nenhuma dependência. **O roteiro de dez passos não rodou nesta
+sessão** — o passo 1 é quem prova que os agregados escritos desde a 3B estavam certos o tempo
+todo, e o passo 7 (360px, os dois atalhos no cabeçalho de `/pedidos`) é o risco nomeado na spec.
+
 ## Próxima ação
 
 **Publicar a 033 e a 034 juntas** (`docs/DEPLOY.md`). Antes, os roteiros no `npm run dev`, nos
@@ -2702,11 +2741,17 @@ desinstalar e reinstalar o app no Android e no iPhone, porque `theme_color` e
 a meio metro, e o teste da desassociação: `/fichas/[id]` ao lado da caixa da MyCookie's; e
 **a frase**: "Frase do orçamento" em `/configuracao`, uma vez (`#d127`).
 
-**Com a 033 fechada, a 023 e a 024 entregues, o que falta da fase 1 do roadmap são as cinco a
-oito entrevistas com confeiteiras que não são a Maynara** (`docs/saas/ROADMAP.md`). A 024 rodou
-antes delas, por decisão de quem conduz o projeto: a spec não dependia de código nenhum, e o
-roadmap não exigia a ordem. Depois das entrevistas: a 025 se pedirem clientes, a 026 se falarem
-da fornada que quebrou.
+**Com a 033 fechada, a 023, a 024 e a 025 entregues, o que falta da fase 1 do roadmap são as
+cinco a oito entrevistas com confeiteiras que não são a Maynara** (`docs/saas/ROADMAP.md`). A
+024 e a 025 rodaram antes delas, por decisão de quem conduz o projeto: nenhuma das duas
+dependia de código nenhum, e o roadmap não exigia a ordem. Depois das entrevistas, só a 026
+fica — e só se falarem da fornada que quebrou.
+
+**Rodar o roteiro de dez passos da spec 025**, com conta real. O passo 1 é o que mais importa:
+abrir os pedidos pagos da cliente do topo em `/pedidos` e conferir que a soma bate com
+`totalGasto` da linha — é ele que prova que os agregados escritos desde a 3B estavam certos o
+tempo todo. O passo 7 (360px, "O que comprar" e "Clientes" na mesma linha do cabeçalho de
+`/pedidos`) é o risco nomeado na spec: se quebrarem, o de clientes fica só com o ícone.
 
 **Rodar o roteiro de oito passos da spec 020** (duas contas, DevTools em Offline nos passos 1 a
 5): confirma que a ficha-modelo abre com "Mais detalhes" fechada, que insumos da conta real com
@@ -2774,11 +2819,9 @@ além dos dois.
 
 1. **Guarda de "sair sem salvar"** nos quatro editores que descartam em silêncio (ficha, pedido,
    configuração, contagem). Quatro telas, um hook.
-2. **Tela de clientes**: `totalPedidos`, `totalGasto` e `ticketMedio` já são escritos e ninguém
-   os lê (`#d35`). Traz junto arquivar cliente.
-3. **O aviso de divergência cobrindo `produtos` e `porDia[].pedidos`**: exige a `/financeiro`
+2. **O aviso de divergência cobrindo `produtos` e `porDia[].pedidos`**: exige a `/financeiro`
    assinar os pedidos pagos do mês (`#d81`).
-4. **Spec de limpeza**: `pedidosAbertos`, `proximaEntrega`, `ultimoNumeroPedido` e
+3. **Spec de limpeza**: `pedidosAbertos`, `proximaEntrega`, `ultimoNumeroPedido` e
    `agregados/global` — escritos por três mutações, lidos por ninguém (`#d31`, `#d67`).
 
 **8C e 13E continuam reservadas** para o que a Maynara devolver operando. Com o app publicado,
@@ -2828,12 +2871,10 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | Mudar um lançamento de mês não move o espelho da meta do mês destino                                                                  | `mutations/transacoes.ts`                      | Mesmo escape e mesma troca: `DECISOES.md#d29`                                                                    |
 | Produto revertido sobra zerado no agregado até recalcular                                                                             | `mutations/agregado.ts`                        | `produtosOrdenados` o esconde na leitura; recalcular limpa (`#d37`)                                              |
 | `ultimoPedidoEm` do cliente não volta atrás ao desfazer um pagamento                                                                  | `mutations/clientes.ts`                        | Só com histórico de pagamentos, que não existe (`#d37`)                                                          |
-| Cliente ainda não tem tela: os agregados dele andam e ninguém os lê                                                                   | `mutations/clientes.ts`                        | Spec 025, fase 1 do roadmap (`#d35`)                                                                             |
 | Meta não guarda histórico: reescrever o alvo apaga o anterior                                                                         | `mutations/metas.ts`                           | Se "que meta eu tinha antes" virar pergunta real (`DECISOES.md#d27`)                                             |
 | `FichaTecnica.ativo` é sempre `true`, sem tela que o desligue                                                                         | `src/lib/types/fichas.ts`                      | Se "produto fora de linha" virar diferente de "arquivado"                                                        |
 | Quantidade volta em unidade base: 0,5 kg reabre como 500 g                                                                            | `FormularioFicha.tsx`                          | Se ela reclamar; exigiria gravar a unidade digitada, e não só o valor                                            |
 | `Bloco` e `BlocoConfiguracao` continuam primos                                                                                        | `src/components/`                              | Se a configuração precisar do mesmo bloco; hoje ela tem rodapé próprio                                           |
-| Não dá para arquivar uma cliente: só cadastrar e editar, de dentro do pedido                                                          | `mutations/clientes.ts`                        | Junto da tela de clientes, quando ela existir (`DECISOES.md#d35`)                                                |
 | `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`                                                                      | `src/lib/types/configuracao.ts`                | **Ganhou leitor na 010**: o resumo da cliente. Espelho velho agora sai na mensagem                               |
 | Dois toques no mesmo quadro na lista de compras podem perder uma marca                                                                | `ListaDoMercado.tsx`                           | Se acontecer: `comprado` sai do array e vira mapa por `insumoId` (`#d40`)                                        |
 | A contagem existe e depende de ela contar: sem contar, a lista compra o cheio                                                         | `/insumos/contagem`                            | Não tem conserto em código: as defesas são o erro barato e a semeadura pela compra                               |
@@ -2891,3 +2932,4 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | O roteiro de nove passos da 022 nunca rodou: sair com pendência offline, o convite de ponta a ponta e `npm run metricas` sem prova    | `AuthProvider.tsx`, `scripts/`                 | Próxima ação, com DevTools em Offline e um e-mail sem login; `npm test` não abre navegador nem chama o Admin SDK |
 | O roteiro de dezesseis passos da 023 nunca rodou: a sentinela, o `<dialog>` e o gesto de voltar do Android sem prova                  | `useGuardaDeSaida.tsx`, `Confirmacao.tsx`      | Próxima ação; os passos 3, 12 e 15 exigem Android de verdade, `npm test` não abre navegador                      |
 | O roteiro de dez passos da 024 nunca rodou: a seta, o cartão e o painel sem prova em conta real com rede                              | `LinhaFicha.tsx`, `CartaoNoVermelhoHoje.tsx`   | Próxima ação; o passo 1 (sem mudança) e o passo 3 (lista bate com o editor) são os que provam o `#d135`          |
+| O roteiro de dez passos da 025 nunca rodou: os números batendo, o atalho escondido, o pagamento e o arquivar ao vivo sem prova        | `ListaClientes.tsx`, `PainelCliente.tsx`       | Próxima ação; o passo 1 (os pedidos pagos batem com `totalGasto`) é o que prova os agregados da 3B               |

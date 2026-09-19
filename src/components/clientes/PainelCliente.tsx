@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { Archive } from "lucide-react";
 import { Botao } from "@/components/ui/Botao";
 import { AreaTexto, Campo } from "@/components/ui/Campo";
 import { Painel } from "@/components/ui/Painel";
 import { errosPorCampo, esquemaCliente } from "@/lib/domain/schemas";
 import {
+  arquivarCliente,
   atualizarCliente,
   criarCliente,
   type DadosCliente,
@@ -49,6 +51,7 @@ export function PainelCliente({
   nomeSugerido,
   aoSalvar,
   chave: chaveAtual,
+  podeArquivar,
 }: {
   aberto: boolean;
   aoFechar: () => void;
@@ -60,6 +63,8 @@ export function PainelCliente({
   aoSalvar: (vinculo: { id: string; nome: string; telefone: string }) => void;
   /** Muda a cada abertura, para o painel não reabrir com o que ficou. */
   chave: string;
+  /** Só a tela de clientes passa: de dentro do pedido, arquivar não faz sentido. */
+  podeArquivar?: boolean;
 }) {
   const [estado, setEstado] = useState<EstadoCliente>(() =>
     inicial(cliente, nomeSugerido),
@@ -67,6 +72,7 @@ export function PainelCliente({
   const [erros, setErros] = useState<Record<string, string>>({});
   const [falha, setFalha] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [confirmandoArquivo, setConfirmandoArquivo] = useState(false);
 
   const [chave, setChave] = useState(chaveAtual);
   if (chave !== chaveAtual) {
@@ -74,6 +80,7 @@ export function PainelCliente({
     setEstado(inicial(cliente, nomeSugerido));
     setErros({});
     setFalha(null);
+    setConfirmandoArquivo(false);
   }
 
   const definir = <C extends keyof EstadoCliente>(
@@ -115,6 +122,20 @@ export function PainelCliente({
         nome: dados.nome.trim(),
         telefone: dados.telefone?.trim() ?? "",
       });
+      setSalvando(false);
+      aoFechar();
+    } catch {
+      setFalha("Não foi possível salvar agora. Tente de novo em instantes.");
+      setSalvando(false);
+    }
+  }
+
+  async function arquivar() {
+    if (!cliente) return;
+    setFalha(null);
+    setSalvando(true);
+    try {
+      await arquivarCliente(contaId, cliente.id);
       setSalvando(false);
       aoFechar();
     } catch {
@@ -200,6 +221,52 @@ export function PainelCliente({
             {falha}
           </p>
         )}
+
+        {podeArquivar &&
+          cliente &&
+          (confirmandoArquivo ? (
+            // Confirmação de dois passos no lugar de um modal: no celular, uma
+            // caixa de diálogo empilhada sobre a folha inferior é pior de ler
+            // e pior de tocar do que a pergunta feita onde a ação está.
+            <div className="rounded-lg border border-negative/30 bg-negative-soft p-4">
+              <p className="text-label text-ink">
+                Arquivar{" "}
+                <strong className="font-semibold">{cliente.nome}</strong>? Ela
+                sai da lista e das sugestões do pedido. Os pedidos antigos
+                continuam com o nome dela, e o que ela já gastou fica guardado.
+              </p>
+              <div className="mt-3 flex gap-2">
+                <Botao
+                  tamanho="sm"
+                  onClick={() => setConfirmandoArquivo(false)}
+                  disabled={salvando}
+                >
+                  Cancelar
+                </Botao>
+                <Botao
+                  tamanho="sm"
+                  variante="perigo"
+                  carregando={salvando}
+                  onClick={() => void arquivar()}
+                >
+                  Arquivar mesmo assim
+                </Botao>
+              </div>
+            </div>
+          ) : (
+            <div className="border-t border-line pt-5">
+              <Botao
+                variante="perigo"
+                tamanho="sm"
+                onClick={() => setConfirmandoArquivo(true)}
+                iconeInicial={
+                  <Archive aria-hidden className="size-4" strokeWidth={1.75} />
+                }
+              >
+                Arquivar cliente
+              </Botao>
+            </div>
+          ))}
       </div>
     </Painel>
   );

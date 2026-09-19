@@ -1,9 +1,12 @@
 import {
   doc,
   increment,
+  orderBy,
+  query,
   setDoc,
   Timestamp,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import { colClientes, docCliente, docResumoGlobal } from "../colecoes";
 import { despachar } from "./despachar";
@@ -32,6 +35,15 @@ export interface DadosCliente {
 
 function agora() {
   return Timestamp.now();
+}
+
+/** Toda cliente viva, por nome: o recorte é o arquivo (`#d105`). */
+export function consultaClientes(contaId: string) {
+  return query(
+    colClientes(contaId),
+    where("arquivado", "==", false),
+    orderBy("nomeBusca"),
+  );
 }
 
 /** Campo vazio não vira string vazia no documento: ele simplesmente não entra. */
@@ -142,5 +154,30 @@ export async function aplicarPedidoNoCliente(
       ...(pagoEm ? { ultimoPedidoEm: pagoEm } : {}),
       atualizadoEm: agora(),
     }),
+  );
+}
+
+/**
+ * Arquiva em vez de apagar: os pedidos dela apontam para este id, e o que ela
+ * gastou fica guardado. O que muda depois está em `DECISOES.md#d138`.
+ */
+export async function arquivarCliente(
+  contaId: string,
+  clienteId: string,
+): Promise<void> {
+  const momento = agora();
+  despachar(
+    updateDoc(docCliente(contaId, clienteId), {
+      v: VERSAO_SCHEMA,
+      arquivado: true,
+      atualizadoEm: momento,
+    }),
+  );
+  despachar(
+    setDoc(
+      docResumoGlobal(contaId),
+      { v: VERSAO_SCHEMA, totalClientes: increment(-1), atualizadoEm: momento },
+      { merge: true },
+    ),
   );
 }

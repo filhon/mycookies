@@ -9,6 +9,7 @@ import {
   PackageOpen,
   ShoppingCart,
   Target,
+  Users,
 } from "lucide-react";
 
 interface Funcionalidade {
@@ -22,10 +23,11 @@ interface Funcionalidade {
 }
 
 /**
- * As quatro que não estão na navegação inferior. Cada uma tem a porta na
+ * As cinco que não estão na navegação inferior. Cada uma tem a porta na
  * tela do menu de que é consequência (13B, 13D, 3C, 6A); o que só esta
  * página sabe dizer é o momento. A quarta nasceu na 13D
- * (`DECISOES.md#d97`): o pote é a irmã da despensa, um nível acima.
+ * (`DECISOES.md#d97`): o pote é a irmã da despensa, um nível acima. A
+ * quinta, clientes, tem a porta em `/pedidos` (025).
  */
 const FUNCIONALIDADES: readonly Funcionalidade[] = [
   {
@@ -62,6 +64,14 @@ const FUNCIONALIDADES: readonly Funcionalidade[] = [
     momento:
       "No fim do dia de fornada, ou antes de dizer sim a uma encomenda grande.",
     href: "/fichas/contagem",
+  },
+  {
+    icone: Users,
+    nome: "Clientes",
+    frase:
+      "Quem compra de você, ordenada por quem mais deixou dinheiro no caixa: quantos pedidos pagou, a média por pedido e quando foi o último. É de lá que se corrige o telefone e se arquiva quem parou de comprar.",
+    momento: "Quando for mandar a novidade do mês, ou quiser saber quem sumiu.",
+    href: "/clientes",
   },
 ];
 

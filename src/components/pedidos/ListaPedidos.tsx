@@ -13,6 +13,7 @@ import { Pilulas, type OpcaoPilula } from "@/components/ui/Pilulas";
 import { Selo } from "@/components/ui/Selo";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { AtalhoParaCompras } from "@/components/compras/AtalhoParaCompras";
+import { AtalhoParaClientes } from "@/components/clientes/AtalhoParaClientes";
 import { EntregasAPagar } from "./EntregasAPagar";
 import { FaixaResumo } from "./FaixaResumo";
 import { LinhaPedido } from "./LinhaPedido";
@@ -157,6 +158,9 @@ export function ListaPedidos() {
                 destinos é o teto —, e é daqui que ela nasce: o que comprar é
                 consequência do que foi combinado. */}
             <AtalhoParaCompras />
+            {/* Mesma regra de "Novo pedido": sem pedido gravado não há
+                cliente que a tela pudesse mostrar (`#d113`). */}
+            {!estadoVazioNaTela && <AtalhoParaClientes />}
             {!estadoVazioNaTela && (
               <Link
                 href={`/pedidos/${ID_PEDIDO_NOVO}`}

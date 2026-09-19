@@ -19,6 +19,11 @@ import { cn } from "@/lib/utils/cn";
  * Com o teclado aberto (`apertado:`) o voltar some e o respiro encolhe: o botão
  * físico de voltar do Android existe e fecha o teclado antes de sair, e numa
  * lista com a busca focada cada pixel a menos de cabeçalho é lista a mais.
+ *
+ * `pt` soma `env(safe-area-inset-top)` ao respiro de sempre: no iPhone
+ * instalado, a barra de status é translúcida (`appleWebApp.statusBarStyle`
+ * em `layout.tsx`) e mostra esta faixa por trás dela — sem o respiro extra,
+ * o título ficaria atrás do relógio.
  */
 export function CabecalhoPagina({
   titulo,
@@ -27,6 +32,7 @@ export function CabecalhoPagina({
   acao,
   children,
   className,
+  descricaoSempreVisivel = false,
 }: {
   titulo: string;
   /** Nó, e não texto: o código do pedido vai em `num`. */
@@ -37,10 +43,16 @@ export function CabecalhoPagina({
   /** Filtros, busca ou resumo que acompanham o título. */
   children?: ReactNode;
   className?: string;
+  /**
+   * No celular a descrição some por padrão — o título já cabe numa linha só
+   * sem ela, e o espaço é curto. A tela Hoje é a exceção: ali a descrição é a
+   * data do dia, não uma explicação da tela, e vale a linha também lá.
+   */
+  descricaoSempreVisivel?: boolean;
 }) {
   return (
     <header className={cn("sticky top-0 z-30", className)}>
-      <div className="sangria sobre-marca bg-brand-700 pb-3 pt-4 apertado:py-2 lg:pb-5 lg:pt-8">
+      <div className="sangria sobre-marca bg-brand-700 pb-3 pt-[calc(1rem+env(safe-area-inset-top))] apertado:pb-2 apertado:pt-[calc(0.5rem+env(safe-area-inset-top))] lg:pb-5 lg:pt-[calc(2rem+env(safe-area-inset-top))]">
         {voltar && (
           <LinkVoltar href={voltar.href} className="apertado:hidden">
             {voltar.rotulo}
@@ -49,7 +61,7 @@ export function CabecalhoPagina({
 
         <div
           className={cn(
-            "flex items-start justify-between gap-4",
+            "flex items-center justify-between gap-4",
             voltar && "mt-1 apertado:mt-0",
           )}
         >
@@ -58,7 +70,12 @@ export function CabecalhoPagina({
               {titulo}
             </h1>
             {descricao && (
-              <p className="mt-1 max-w-[52ch] text-label text-on-brand-muted lg:text-body">
+              <p
+                className={cn(
+                  "mt-1 max-w-[52ch] text-label text-on-brand-muted lg:text-body",
+                  !descricaoSempreVisivel && "hidden lg:block",
+                )}
+              >
                 {descricao}
               </p>
             )}

@@ -410,7 +410,7 @@ Conta real, `npm run dev`, desktop a 1280px e celular a 360px, os dois temas.
 - [x] Salvar tira a seta e o cartão (passo 4). Offline funciona (passo 7).
 - [x] Palavra, ícone e cor seguem a sobra de hoje; a cor nunca sozinha (passos 8 a 10).
 - [x] `git diff src/lib/types/ src/lib/firebase/ firestore.rules firestore.indexes.json
-    package.json` vazio.
+  package.json` vazio.
 - [x] `npx impeccable --json src/` continua `[]`.
 - [x] `lint`, `typecheck`, `test` e `build` passam.
 - [x] `#d135` e `#d136` escritos; `ESTADO.md` (seção, linha 24, próxima ação) e `ROADMAP.md`

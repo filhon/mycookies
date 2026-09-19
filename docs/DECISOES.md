@@ -805,6 +805,10 @@ de ficha:
   a condição que o próprio `BlocoFicha` registrava — promover no terceiro caso —, e o editor
   de pedido é o terceiro. Nada mudou no comportamento dos dois.
 
+**Nota (025).** A primeira metade — "não há tela de clientes" — caiu na spec `025-quem-mais-
+compra-de-mim.md` (`D137`): a tela existe, lê e ordena pelo dinheiro. A segunda metade —
+a cliente nasce do pedido, e `/clientes` não cadastra — continua inteira.
+
 ---
 
 ## D36 · O agregado usa a data do pagamento; a agenda, a da entrega
@@ -4372,3 +4376,52 @@ hoje, e uma lista que esconde um centavo é uma lista em que ela não confia.
 (`LinhaFicha`, `PainelProduto`), `caiu` decide se o cartão existe. Se um dia a Maynara quiser
 ver toda queda no cartão, é trocar `caiu` por um limiar em centavos — e esta decisão ganha a
 nota.
+
+---
+
+## D137 · A tela de clientes lê e ordena pelo dinheiro; a cliente continua nascendo do pedido
+
+**Status:** vigente · decidida em 2026-09-19, na spec `025-quem-mais-compra-de-mim.md`
+
+**Contexto.** `D35` tinha duas metades: "não há tela de clientes" e "a cliente é cadastro
+opcional, aberto de dentro do pedido". Os quatro agregados de `Cliente` (`totalPedidos`,
+`totalGasto`, `ticketMedio`, `ultimoPedidoEm`) são escritos desde a 3B e nenhuma tela os lia.
+
+**Decisão.** `/clientes` existe, e a primeira metade do `D35` cai: a segunda fica inteira.
+A tela **não cadastra** — sem "Nova cliente" em lugar nenhum, porque uma cliente sem pedido é
+uma linha de CRM, e o produto não é CRM. A ordem é `totalGasto` decrescente, em memória, sobre
+a mesma consulta por `nomeBusca` que o editor de pedido usa (`consultaClientes`, um lugar só
+pelo `D105`); empate por `totalPedidos`, depois por nome, e quem nunca pagou vai para o fim.
+Sem pílula de ordenação: a pergunta da tela é uma só, e a busca por nome cobre "cadê a Ana?".
+Os números contam o que **entrou no caixa** — `totalPedidos` só anda no pagamento (`D36`) —, e
+a tela diz isso na descrição do cabeçalho.
+
+**Consequência.** Uma cliente com encomendas confirmadas e nenhuma paga aparece como "ainda
+sem pedido pago". Uma venda anotada só com o nome, sem vínculo, não entra na conta de ninguém —
+risco nomeado na spec, medido pelo passo 1 do roteiro. Editar o cadastro deixa de exigir achar
+um pedido dela: `PainelCliente` mudou de `components/pedidos/` para `components/clientes/`, e
+ganhou a prop `podeArquivar` (`D138`) para o painel aberto de dentro do pedido não oferecer a
+ação.
+
+---
+
+## D138 · Arquivar uma cliente congela os agregados dela e não desfaz vínculo nenhum
+
+**Status:** vigente · decidida em 2026-09-19, na spec `025-quem-mais-compra-de-mim.md`
+
+**Contexto.** Sem tela de clientes não havia onde arquivar uma: quem mudou de cidade ou parou
+de comprar continuava para sempre nas sugestões do editor de pedido. `D137` abriu a tela; faltava
+dizer o que "arquivar uma cliente" significa.
+
+**Decisão.** `arquivarCliente` grava `arquivado: true` e decrementa
+`agregados/global.totalClientes` — o espelho exato de `criarCliente` e o mesmo par de
+`arquivarInsumo`. Nada mais muda: o `clienteId` **não é apagado** dos pedidos antigos, porque
+`clienteNome` é snapshot e a leitura deles não depende do cadastro; um pagamento num pedido
+dela feito depois de arquivada não move os agregados, porque a consulta que os alimenta não a
+encontra mais. Não existe restaurar na tela — o documento fica, `arquivado: true`, para o
+script resolver o engano.
+
+**Consequência.** Uma cliente arquivada por engano e restaurada à mão terá `totalGasto` sem os
+pagamentos do intervalo: é a mesma troca que `D37` já aceitou para `ultimoPedidoEm` no desfazer
+— sem histórico de pagamentos, o agregado não se reconstrói sozinho. "Recalcular" para clientes
+fica reservado para quando alguém pedir.
