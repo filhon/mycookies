@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   Archive,
@@ -29,9 +28,15 @@ import {
 import { Bloco } from "@/components/ui/Bloco";
 import { Botao } from "@/components/ui/Botao";
 import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
-import { AreaTexto, Campo, Seletor } from "@/components/ui/Campo";
+import {
+  AreaTexto,
+  Campo,
+  focarPrimeiroErro,
+  Seletor,
+} from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Selo } from "@/components/ui/Selo";
+import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
 import { EscolhaDoCombo } from "./EscolhaDoCombo";
 import { LinhaItemPedido } from "./LinhaItemPedido";
 import { PainelCliente } from "./PainelCliente";
@@ -288,11 +293,12 @@ export function FormularioPedido({
   configuracao: ConfiguracaoGeral | null;
   pendente: boolean;
 }) {
-  const router = useRouter();
-
   const [valores, setValores] = useState<ValoresPedido>(() =>
     valoresIniciais(pedido, configuracao, hoje),
   );
+  const [inicial] = useState(() => JSON.stringify(valores));
+  const sujo = JSON.stringify(valores) !== inicial;
+  const guarda = useGuardaDeSaida(sujo);
   const [status, setStatus] = useState<StatusPedido>(
     pedido?.status ?? "ORCAMENTO",
   );
@@ -748,6 +754,7 @@ export function FormularioPedido({
         ...(resultado.success ? {} : errosDeLinha(resultado.error, "itens")),
         ...errosEscolha,
       });
+      focarPrimeiroErro();
       return;
     }
 
@@ -771,7 +778,7 @@ export function FormularioPedido({
       } else {
         await criarPedido(contaId, dadosDoPedido());
       }
-      router.push("/pedidos");
+      void guarda.navegar("/pedidos");
     } catch {
       setFalha("Não foi possível salvar agora. Tente de novo em instantes.");
       setSalvando(false);
@@ -862,7 +869,7 @@ export function FormularioPedido({
     setSalvando(true);
     try {
       await arquivarPedido(contaId, pedido.id);
-      router.push("/pedidos");
+      void guarda.navegar("/pedidos");
     } catch {
       setFalha("Não foi possível arquivar agora. Tente de novo em instantes.");
       setSalvando(false);
@@ -1463,6 +1470,8 @@ export function FormularioPedido({
           pedido={{ id: pedido.id, clienteNome: pedido.clienteNome }}
         />
       )}
+
+      {guarda.dialogo}
     </>
   );
 }

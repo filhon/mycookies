@@ -4251,3 +4251,69 @@ do convite de instalar, e a seção do offline ganhou o recuo das listas emoldur
 ícones caírem na mesma coluna; e o ponto do logotipo ganhou o vão de `0.31em` depois do "e",
 medido no navegador contra `rende-principal.svg` (o centro em 232 num texto que acaba em ~197),
 em vez de encostar na letra.
+
+## D132 · O voltar do navegador entra pela sentinela
+
+**Status:** vigente · decidida em 2026-09-19, na spec `023-sair-sem-salvar.md`
+
+**Contexto.** O App Router não cancela navegação de histórico: `popstate` chega, o Next
+despacha o `ACTION_RESTORE` e o segmento desmonta. Não existe `useBlocker` como no React
+Router, e a Navigation API (`navigate` com `preventDefault`) resolveria em uma linha, mas não
+existe no Safari — sem ela não há como interceptar o gesto de voltar do Android, que é a saída
+mais comum no aparelho da Maynara.
+
+**Decisão.** Enquanto a tela está suja, `useGuardaDeSaida` empurra uma entrada a mais no
+histórico com a mesma URL (`history.pushState(null, "", location.href)`): o Next copia o
+estado interno dele para a entrada nova e trata o `RESTORE` da mesma URL como nada, então o
+formulário não desmonta. Quando ela aperta voltar, o navegador consome a sentinela sem mudar
+de tela, e o `popstate` é o sinal para abrir o diálogo. "Continuar aqui" rearma a sentinela;
+"Sair sem salvar" faz `history.back()` de novo, agora para a página de antes.
+
+O preço é uma entrada a mais no histórico enquanto a tela está suja. Para não deixá-la
+sobreviver ao salvar ou arquivar, toda saída voluntária (`navegar(href)`) desarma a sentinela
+— `history.back()`, espera o `popstate` correspondente — antes de fazer `router.push`. Sem
+isso o editor ficaria duas vezes no histórico e "voltar" da lista exigiria dois toques. Sair
+por outra aba com a sentinela armada deixa a entrada duplicada até a próxima sessão: aceito,
+sem conserto possível sem navegar durante o desmonte.
+
+## D133 · A modal de confirmação destrutiva é o `<dialog>` nativo
+
+**Status:** vigente · decidida em 2026-09-19, na spec `023-sair-sem-salvar.md`
+
+**Contexto.** O `DESIGN.md` já reservava a modal centralizada para confirmação destrutiva
+("título com a consequência, dois botões, sem X"), mas nunca houve uma: as quatro confirmações
+de arquivar do sistema são caixas inline. A guarda de saída precisava da primeira.
+
+**Decisão.** `Confirmacao` (`src/components/ui/Confirmacao.tsx`) é um `<dialog>` aberto por
+`showModal()`, e não uma extensão do `Painel`. O navegador dá de graça o foco preso, o
+`Escape`, o fundo, o `inert` do resto da página e, no Android, o gesto de voltar fechando o
+diálogo em vez de sair da tela (um `CloseWatcher`) — as sessenta linhas que o `Painel` teria
+que escrever à mão. O `Painel` continua sendo a folha inferior do formulário; uma pergunta de
+duas frases dentro dele pareceria um formulário que não é. O foco inicial é "Continuar aqui"
+(`autoFocus`), o botão destrutivo é `variante="perigo"`, e `onClose` é o único caminho de
+cancelar — `Escape`, o voltar do Android e o clique no `::backdrop` passam todos por ele.
+
+## D134 · Sujo é "salvar gravaria algo diferente do que abriu"
+
+**Status:** vigente · decidida em 2026-09-19, na spec `023-sair-sem-salvar.md`
+
+**Contexto.** As cinco telas que a guarda de saída cobre (produto, pedido, configuração,
+contagem da despensa, contagem do pronto) precisavam de uma definição só de "há o que
+perder", cada uma com a assinatura possível: `isDirty` do react-hook-form não serve para o
+editor de produto, porque `form.setValue` sem `shouldDirty` não marca sujo — e é assim que o
+preço manual (`aoMudarPreco`), a troca de tipo e a limpeza de itens escrevem. A confeiteira
+digitaria um preço no painel de preço, sairia, e o `isDirty` diria "limpo".
+
+**Decisão.** Sujo é "salvar gravaria algo diferente do que abriu", medido por assinatura JSON
+sobre o estado inteiro da tela contra o estado da abertura: `JSON.stringify(valores) !==
+JSON.stringify(iniciais)` no produto e no pedido, `assinatura(estado) !== base` na
+configuração (já existente, agora ligada à guarda), e "algum número digitado" nas duas
+contagens (`Object.values(valores).some((q) => q !== null)`). No pedido, `status` e
+`pagoEmISO` ficam fora da assinatura de propósito: mudar o status e marcar como pago gravam
+na hora, e não são "o que sair perderia". A contagem semeada pela compra ou pela fornada nasce
+suja: a semente é consumida ao semear, sair sem salvar perde a proposta que a nota ou a massa
+acabaram de calcular, e voltar não a refaz — é perda de trabalho, mesmo que o trabalho tenha
+sido do sistema. O custo é um toque a mais para quem abriu a contagem por engano.
+
+Não é sujo, de propósito: mandar no WhatsApp (abre outra aba, não é sair) e salvar a
+configuração (o hook desarma sozinho quando `base` volta a bater com o estado).

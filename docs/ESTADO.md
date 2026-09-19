@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-19 (spec 034 entregue por cima da 033, mais o primeiro passe de navegador sobre as duas, `#d131`; **as duas por publicar juntas**; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 033 e 034 por rodar).
+Atualizado em 2026-09-19 (spec 023 entregue, primeira da fase 1 do roadmap; mais a 034 entregue por cima da 033, o primeiro passe de navegador sobre as duas, `#d131`; **033 e 034 por publicar juntas**; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 033 e 034 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -250,6 +250,7 @@ os números digitados de ponta a ponta.
 | 20  | Menos na frente                             | pronto, sem o roteiro               | `specs/020-menos-na-frente.md`             |
 | 21  | As palavras dela                            | pronto, sem o roteiro               | `specs/021-as-palavras-dela.md`            |
 | 22  | A segunda conta                             | pronto, sem o roteiro               | `specs/022-a-segunda-conta.md`             |
+| 23  | Sair sem salvar                             | pronto, sem o roteiro               | `specs/023-sair-sem-salvar.md`             |
 | 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`               |
 | 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`              |
 
@@ -2616,6 +2617,35 @@ com o recuo das listas; o ponto do logotipo com o vão do SVG do pacote (`0.31em
 rodado: lint e typecheck limpos, 536 testes, build com as 18 rotas. As peças do parágrafo
 acima entram no roteiro da 034, nos dois temas.
 
+## A spec 023 · Sair sem salvar
+
+**Entregue**, primeira spec da fase 1 do roadmap. Um hook, um primitivo, e cinco telas que
+descartavam trabalho em silêncio param de fazer isso:
+
+- `src/components/ui/useGuardaDeSaida.tsx`: enquanto a tela está suja, guarda as três portas
+  de saída — o link (captura do clique, sem `stopPropagation`), o voltar do navegador (a
+  sentinela no histórico, `#d132`) e recarregar ou fechar a aba (`beforeunload`). `navegar(href)`
+  é a saída de quem já salvou; `pedir(acao)` é para um botão que não é link.
+- `src/components/ui/Confirmacao.tsx`: a primeira modal do sistema, o `<dialog>` nativo que o
+  `DESIGN.md` já reservava para confirmação destrutiva (`#d133`).
+- `focarPrimeiroErro` em `src/components/ui/Campo.tsx`: depois de o Salvar recusar, o foco vai
+  ao primeiro campo com `aria-invalid`, inclusive dentro da dobra "Mais detalhes" (de carona da
+  033-C).
+- As cinco telas — `FormularioFicha`, `FormularioPedido`, `TelaConfiguracao`, `TelaContagem`,
+  `TelaContagemPronto` — ganharam a assinatura própria de "sujo" (`#d134`) e o hook; os
+  `router.push` de salvar/arquivar viraram `guarda.navegar`. `PainelFornada`: "Contar o pote"
+  virou `Link` para que a captura do clique o veja (3.5).
+- `BlocoOrcamento`: o comentário "o formulário não sabe se está sujo" saiu — o link agora
+  pergunta, pela guarda do editor de pedido.
+
+Decisões novas em `DECISOES.md#d132` a `#d134`. Nenhum campo, nenhuma rota, nenhuma regra,
+nenhum índice, nenhuma dependência, nenhuma linha em `src/lib/domain/`: `git diff` dessas
+pastas mais `firestore.rules`, `firestore.indexes.json` e `package.json` está vazio. Portão
+rodado de verdade: lint e typecheck limpos, os mesmos 536 testes, build com as 18 rotas
+estáticas de sempre. **O roteiro de dezesseis passos não rodou nesta sessão** — os passos 3,
+12 e 15 exigem Android de verdade, porque é o único lugar onde a sentinela, o `<dialog>` e o
+gesto de voltar do sistema operacional são vistos juntos.
+
 ## Próxima ação
 
 **Publicar a 033 e a 034 juntas** (`docs/DEPLOY.md`). Antes, os roteiros no `npm run dev`, nos
@@ -2632,8 +2662,9 @@ desinstalar e reinstalar o app no Android e no iPhone, porque `theme_color` e
 a meio metro, e o teste da desassociação: `/fichas/[id]` ao lado da caixa da MyCookie's; e
 **a frase**: "Frase do orçamento" em `/configuracao`, uma vez (`#d127`).
 
-**Com a 033 fechada, o próximo passo volta a ser o que era antes dela:** a fase 1 do roadmap,
-com a 023 e as entrevistas antes dela (`docs/saas/ROADMAP.md`).
+**Com a 033 fechada e a 023 entregue, o próximo passo é o resto da fase 1 do roadmap**: as
+cinco a oito entrevistas com confeiteiras que não são a Maynara, e a 024 depois delas
+(`docs/saas/ROADMAP.md`).
 
 **Rodar o roteiro de oito passos da spec 020** (duas contas, DevTools em Offline nos passos 1 a
 5): confirma que a ficha-modelo abre com "Mais detalhes" fechada, que insumos da conta real com
@@ -2761,14 +2792,11 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | Quantidade volta em unidade base: 0,5 kg reabre como 500 g                                                                            | `FormularioFicha.tsx`                          | Se ela reclamar; exigiria gravar a unidade digitada, e não só o valor                                            |
 | `Bloco` e `BlocoConfiguracao` continuam primos                                                                                        | `src/components/`                              | Se a configuração precisar do mesmo bloco; hoje ela tem rodapé próprio                                           |
 | Não dá para arquivar uma cliente: só cadastrar e editar, de dentro do pedido                                                          | `mutations/clientes.ts`                        | Junto da tela de clientes, quando ela existir (`DECISOES.md#d35`)                                                |
-| Editar um pedido e sair sem salvar descarta em silêncio                                                                               | `FormularioPedido.tsx`                         | Mesma dívida do editor de ficha e da configuração; se acontecer de verdade                                       |
 | `nomeNegocio` em `configuracao/geral` duplica `contas/{id}.nome`                                                                      | `src/lib/types/configuracao.ts`                | **Ganhou leitor na 010**: o resumo da cliente. Espelho velho agora sai na mensagem                               |
-| Sair da configuração com alteração pendente descarta em silêncio                                                                      | `TelaConfiguracao.tsx`                         | Se acontecer de verdade; a barra fixa de "não salvas" é a defesa atual                                           |
 | Dois toques no mesmo quadro na lista de compras podem perder uma marca                                                                | `ListaDoMercado.tsx`                           | Se acontecer: `comprado` sai do array e vira mapa por `insumoId` (`#d40`)                                        |
 | A contagem existe e depende de ela contar: sem contar, a lista compra o cheio                                                         | `/insumos/contagem`                            | Não tem conserto em código: as defesas são o erro barato e a semeadura pela compra                               |
 | A tela de contagem, o lote, as frases de `/compras` e a semente sem teste                                                             | `components/estoque/`, `compras/`              | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                                        |
 | A frase da lista desatualizada não sabe **o que** mudou, só que mudou                                                                 | `ListaDoMercado.tsx`                           | Exigiria guardar quando a lista foi montada e comparar com cada contagem (`#d63`)                                |
-| Sair da contagem sem salvar descarta em silêncio                                                                                      | `TelaContagem.tsx`                             | Mesma dívida do editor de ficha, do de pedido e da configuração                                                  |
 | A rota, a tela da nota, a gravação em lote e a guarda do caixa sem teste                                                              | `api/nota/`, `components/notas/`               | `npm test` cobre só `domain/`; o que fecha isso é a passagem em navegador                                        |
 | Cadastrar a nota espera o servidor: sem rede o botão fica preso em carregando                                                         | `TelaNota.tsx`                                 | Não incomoda hoje — a tela já exigiu rede para ler (`#d50`); se incomodar, `#d40`                                |
 | O cache de CNPJ vive na memória do processo e morre no reinício                                                                       | `api/nota/route.ts`                            | Só se a cota de 3/min por IP apertar, que é o dia do segundo cliente (`#d52`)                                    |
@@ -2819,3 +2847,4 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | O roteiro de sete passos da 021 nunca rodou: "Materiais"/"Produtos" em 360px e a caixa de "Fechar e ler a nota" sem prova em aparelho | `navegacao.ts`, `ListaDoMercado.tsx`           | Próxima ação, no celular dela, app instalado; `npm test` não abre navegador                                      |
 | "O que está pronto" segue sem nome: 3b não fechou                                                                                     | `docs/DECISOES.md#d117`                        | Fecha só com a gravação; "pronta entrega" e "estoque" são as duas candidatas dela, as duas com problema          |
 | O roteiro de nove passos da 022 nunca rodou: sair com pendência offline, o convite de ponta a ponta e `npm run metricas` sem prova    | `AuthProvider.tsx`, `scripts/`                 | Próxima ação, com DevTools em Offline e um e-mail sem login; `npm test` não abre navegador nem chama o Admin SDK |
+| O roteiro de dezesseis passos da 023 nunca rodou: a sentinela, o `<dialog>` e o gesto de voltar do Android sem prova                  | `useGuardaDeSaida.tsx`, `Confirmacao.tsx`      | Próxima ação; os passos 3, 12 e 15 exigem Android de verdade, `npm test` não abre navegador                      |

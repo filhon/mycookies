@@ -13,7 +13,7 @@ import type { DataISO } from "@/lib/types";
  * A ação é um `Link` para a prévia, e não abre em nova aba: a prévia é uma
  * tela do app, e "Voltar ao pedido" é o caminho de volta. A folha lê o que
  * está gravado (`DECISOES.md#d107`), e a linha embaixo diz isso em vez de
- * travar: o formulário não sabe se está sujo.
+ * travar.
  */
 export function BlocoOrcamento({
   pedidoId,

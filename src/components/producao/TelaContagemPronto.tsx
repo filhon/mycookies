@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { orderBy, query, where } from "firebase/firestore";
 import { Check, CookingPot, Plus } from "lucide-react";
@@ -13,6 +12,7 @@ import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { Pilulas } from "@/components/ui/Pilulas";
 import { classesBotao } from "@/components/ui/estilosBotao";
+import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
 import {
   ROTULO_UNIDADE_RENDIMENTO,
   SUFIXO_UNIDADE_RENDIMENTO,
@@ -58,7 +58,6 @@ function quanto(valor: number, unidade: UnidadeRendimento): string {
  */
 export function TelaContagemPronto() {
   const contaId = useContaId();
-  const router = useRouter();
 
   const [hoje] = useState(() => dataISODe(new Date()));
   const [digitados, setDigitados] = useState<Record<string, string>>({});
@@ -127,6 +126,11 @@ export function TelaContagemPronto() {
     return mapa;
   }, [fichas, digitados]);
 
+  // Inclusive o que a fornada semeou: a proposta que sai da contagem é
+  // trabalho perdido também (`DECISOES.md#d134`).
+  const sujo = Object.values(valores).some((quantidade) => quantidade !== null);
+  const guarda = useGuardaDeSaida(sujo);
+
   const resumo = resumoDaContagem(
     linhas.map((ficha) => ficha.id),
     valores,
@@ -146,7 +150,7 @@ export function TelaContagemPronto() {
     salvarContagemDoPronto(contaId, contagens, hoje).catch(() =>
       setFalha("Não deu para salvar a contagem agora."),
     );
-    router.push("/fichas");
+    void guarda.navegar("/fichas");
   }
 
   return (
@@ -255,6 +259,8 @@ export function TelaContagemPronto() {
           </p>
         )}
       </div>
+
+      {guarda.dialogo}
 
       {linhas.length > 0 && (
         <RodapeContagem

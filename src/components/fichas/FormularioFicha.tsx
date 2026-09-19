@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
 import {
   useFieldArray,
@@ -28,9 +27,15 @@ import {
 import { Bloco } from "@/components/ui/Bloco";
 import { Botao } from "@/components/ui/Botao";
 import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
-import { AreaTexto, Campo, Seletor } from "@/components/ui/Campo";
+import {
+  AreaTexto,
+  Campo,
+  focarPrimeiroErro,
+  Seletor,
+} from "@/components/ui/Campo";
 import { CampoImagem } from "@/components/ui/CampoImagem";
 import { Dinheiro } from "@/components/ui/Dinheiro";
+import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { EntradaContagemPronto } from "@/components/producao/EntradaContagemPronto";
@@ -263,10 +268,8 @@ export function FormularioFicha({
   configuracao: ConfiguracaoGeral | null;
   pendente: boolean;
 }) {
-  const router = useRouter();
-  const form = useForm<ValoresFicha>({
-    defaultValues: valoresIniciais(ficha, configuracao),
-  });
+  const [iniciais] = useState(() => valoresIniciais(ficha, configuracao));
+  const form = useForm<ValoresFicha>({ defaultValues: iniciais });
 
   const listaItens = useFieldArray({ control: form.control, name: "itens" });
   const listaComponentes = useFieldArray({
@@ -315,6 +318,8 @@ export function FormularioFicha({
    * nasce com valor — e todos nascem, em `valoresIniciais`.
    */
   const valores = useWatch({ control: form.control }) as ValoresFicha;
+  const sujo = JSON.stringify(valores) !== JSON.stringify(iniciais);
+  const guarda = useGuardaDeSaida(sujo);
 
   const mapaInsumos = useMemo(
     () => new Map(insumos.map((insumo) => [insumo.id, insumo])),
@@ -587,6 +592,7 @@ export function FormularioFicha({
         message: problema.message,
       });
     }
+    focarPrimeiroErro();
   }
 
   async function salvar() {
@@ -666,7 +672,7 @@ export function FormularioFicha({
     try {
       if (ficha) await atualizarFicha(contaId, ficha.id, dados);
       else await criarFicha(contaId, dados);
-      router.push("/fichas");
+      void guarda.navegar("/fichas");
     } catch {
       setFalha("Não foi possível salvar agora. Tente de novo em instantes.");
       setSalvando(false);
@@ -679,7 +685,7 @@ export function FormularioFicha({
     setSalvando(true);
     try {
       await arquivarFicha(contaId, ficha.id);
-      router.push("/fichas");
+      void guarda.navegar("/fichas");
     } catch {
       setFalha("Não foi possível arquivar agora. Tente de novo em instantes.");
       setSalvando(false);
@@ -1459,6 +1465,8 @@ export function FormularioFicha({
           hoje={hoje}
         />
       )}
+
+      {guarda.dialogo}
     </>
   );
 }

@@ -24,6 +24,7 @@ import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { Realce } from "@/components/ui/Realce";
 import { RodapeFixo } from "@/components/ui/RodapeFixo";
+import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
 import { BlocoConfiguracao } from "./BlocoConfiguracao";
 import { CustoPorHora } from "./CustoPorHora";
 import { FormularioFormaPagamento } from "./FormularioFormaPagamento";
@@ -206,9 +207,12 @@ export function TelaConfiguracao() {
     useDocumento<ConfiguracaoGeral>(referencia);
 
   const [estado, setEstado] = useState<EstadoConfiguracao | null>(null);
-  // `null` é "esta conta nunca salvou": não existe assinatura que se compare a
-  // ausência, e é o que separa "salvo e igual à sugestão" de "nunca salvo".
+  // `base` é a assinatura do semeado ou do gravado; continua `null` só até
+  // semear. `nuncaSalvou` é o que separa "salvo e igual à sugestão" de "nunca
+  // salvo" — não dá para usar `base === null` para isso porque `base` deixa de
+  // ser nulo assim que a tela semeia, mesmo sem gravação nenhuma ainda.
   const [base, setBase] = useState<string | null>(null);
+  const [nuncaSalvou, setNuncaSalvou] = useState(false);
   const [erros, setErros] = useState<Record<string, string>>({});
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
@@ -222,8 +226,15 @@ export function TelaConfiguracao() {
   if (estado === null && !carregando && !erro) {
     const inicial = estadoInicial(dado, conta?.nome);
     setEstado(inicial);
-    setBase(dado ? assinatura(inicial) : null);
+    setBase(assinatura(inicial));
+    setNuncaSalvou(!dado);
   }
+
+  // A guarda de saída chamada sempre, antes de qualquer retorno condicional:
+  // hook não pode nascer só depois que `estado` existir.
+  const sujo = estado !== null && base !== null && assinatura(estado) !== base;
+  const alterado = nuncaSalvou || sujo;
+  const guarda = useGuardaDeSaida(sujo);
 
   // Só bloqueia a tela se a falha veio antes de haver o que editar. Um erro
   // que chega depois não pode desmontar um formulário já preenchido.
@@ -273,12 +284,6 @@ export function TelaConfiguracao() {
     horas,
   );
   const energiaGas = operacional.custoEnergiaHora + operacional.custoGasHora;
-
-  // Quem nunca salvou tem sempre o que salvar: o que está na tela é sugestão,
-  // e sugestão só vira dado no primeiro Salvar (`DECISOES.md#d17`). Sem isto o
-  // botão nasce desabilitado e a conta nova não tem como aceitar a sugestão.
-  const nuncaSalvou = base === null;
-  const alterado = nuncaSalvou || assinatura(estado) !== base;
 
   function trocarForma(forma: FormaPagamento) {
     setSalvo(false);
@@ -337,6 +342,7 @@ export function TelaConfiguracao() {
           : anterior,
       );
       setBase(assinatura(paraGravar));
+      setNuncaSalvou(false);
       setSalvo(true);
     } catch {
       setFalha("Não foi possível salvar agora. Tente de novo em instantes.");
@@ -736,7 +742,7 @@ export function TelaConfiguracao() {
             destino nem um lugar visível na tela Hoje. */}
         <button
           type="button"
-          onClick={() => void aoSair()}
+          onClick={() => guarda.pedir(aoSair)}
           disabled={saindo}
           aria-busy={saindo}
           className="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-4 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken disabled:opacity-60 lg:px-5"
@@ -791,6 +797,8 @@ export function TelaConfiguracao() {
         aoConfirmar={trocarForma}
         forma={formaEmEdicao}
       />
+
+      {guarda.dialogo}
     </>
   );
 }

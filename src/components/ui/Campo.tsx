@@ -246,3 +246,14 @@ export function AreaTexto({
 }
 
 export { BASE_CONTROLE };
+
+/**
+ * Depois de o Salvar recusar: leva o foco ao primeiro campo com erro. No quadro
+ * seguinte, porque a dobra "Mais detalhes" abre no mesmo render que pinta o
+ * erro (020), e `focus()` em elemento oculto falha em silêncio.
+ */
+export function focarPrimeiroErro() {
+  requestAnimationFrame(() => {
+    document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  });
+}

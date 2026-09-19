@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { orderBy, query, where } from "firebase/firestore";
 import { Plus, ShoppingBasket } from "lucide-react";
@@ -11,6 +10,7 @@ import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { Pilulas } from "@/components/ui/Pilulas";
 import { classesBotao } from "@/components/ui/estilosBotao";
+import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
 import { LinhaContagem } from "./LinhaContagem";
 import { RodapeContagem } from "./RodapeContagem";
 import { agruparPorCorredor, ROTULO_CORREDOR } from "@/lib/domain/corredores";
@@ -54,7 +54,6 @@ const SEM_ENTRADAS = new Map<string, number>();
  */
 export function TelaContagem() {
   const contaId = useContaId();
-  const router = useRouter();
 
   // O dia congela na abertura: a contagem começada às 23h50 é datada no dia em
   // que ela a começou, e não em dois dias diferentes conforme a linha.
@@ -151,6 +150,11 @@ export function TelaContagem() {
     return mapa;
   }, [todas, digitados]);
 
+  // Inclusive o que a compra semeou: a proposta que sai da contagem é trabalho
+  // perdido também (`DECISOES.md#d134`).
+  const sujo = Object.values(valores).some((quantidade) => quantidade !== null);
+  const guarda = useGuardaDeSaida(sujo);
+
   // O rodapé conta o que está na tela; salvar grava tudo o que foi tocado,
   // inclusive o que o recorte esconde.
   const resumo = resumoDaContagem(
@@ -189,7 +193,7 @@ export function TelaContagem() {
     );
 
     // Volta para onde ela veio: o efeito que ela quer ver está na outra tela.
-    router.push("/compras");
+    void guarda.navegar("/compras");
   }
 
   return (
@@ -318,6 +322,8 @@ export function TelaContagem() {
           </p>
         )}
       </div>
+
+      {guarda.dialogo}
 
       {linhas.length > 0 && (
         <RodapeContagem resumo={resumo} aoSalvar={salvar} />

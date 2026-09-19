@@ -1,10 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Check, TriangleAlert } from "lucide-react";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, Seletor } from "@/components/ui/Campo";
+import { classesBotao } from "@/components/ui/estilosBotao";
 import { Painel } from "@/components/ui/Painel";
 import {
   ROTULO_UNIDADE_RENDIMENTO,
@@ -86,7 +87,6 @@ export function PainelFornada({
   /** Quando a fornada é para um pedido específico (`#d91`). */
   pedido?: { id: string; clienteNome: string };
 }) {
-  const router = useRouter();
   const inicial = () => ({
     fichaId: opcoes[0]?.ficha.id ?? "",
     unidades: texto(opcoes[0]?.unidades ?? 0),
@@ -204,7 +204,6 @@ export function PainelFornada({
       unidades: registrada.unidades,
     });
     aoFechar();
-    router.push("/fichas/contagem");
   }
 
   if (registrada) {
@@ -222,14 +221,21 @@ export function PainelFornada({
             <Botao onClick={aoFechar} className="flex-1">
               Agora não
             </Botao>
-            <Botao
-              variante="primaria"
-              tamanho="lg"
+            {/* Link, e não botão: a captura do clique da guarda de saída
+                (`#d132`) precisa ver um `<a>` para interceptar, e o próprio
+                `onClick` já guardou a semente antes de o Next desistir da
+                navegação. "Um link continua sendo um link" (`estilosBotao.ts`). */}
+            <Link
+              href="/fichas/contagem"
               onClick={contarOPronto}
-              className="flex-[1.6]"
+              className={classesBotao({
+                variante: "primaria",
+                tamanho: "lg",
+                className: "flex-[1.6]",
+              })}
             >
               Contar o que está pronto
-            </Botao>
+            </Link>
           </div>
         }
       >

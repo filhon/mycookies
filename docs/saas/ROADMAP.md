@@ -222,8 +222,13 @@ falta?"
 As specs entram na ordem em que o beta pedir, com uma exceção: a 023 vem primeiro, porque
 perder trabalho em silêncio é o que mais mina a confiança de quem está operando sozinha.
 
-**023 · Sair sem salvar.** Um hook, quatro editores (ficha, pedido, configuração, contagem).
-Dívida da tabela; com mais gente usando, deixa de ser "se acontecer".
+**023 · Sair sem salvar.** Entregue em 2026-09-19 (`specs/023-sair-sem-salvar.md`,
+`DECISOES.md#d132` a `#d134`). Um hook (`useGuardaDeSaida`) e um primitivo novo (`Confirmacao`,
+a primeira modal do sistema) cobrindo **cinco** telas, e não quatro: a previsão original não
+contava a contagem do que está pronto, irmã da contagem da despensa. De carona, "Contar o
+pote" em `PainelFornada` virou `Link` (a única saída programática dentro de um editor), e o
+foco vai ao primeiro campo com erro quando o Salvar recusa. O roteiro de dezesseis passos, com
+Android de verdade, ainda não rodou.
 
 **024 · Fichas no vermelho.** O alerta de custo.
 
