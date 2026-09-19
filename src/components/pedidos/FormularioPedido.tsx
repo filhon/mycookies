@@ -76,6 +76,7 @@ import {
   capacidadeDaFicha,
   projecaoDoPronto,
   prontosLivres,
+  vendaveis,
 } from "@/lib/domain/producao";
 import { docMeta, docResumoMensal } from "@/lib/firebase/colecoes";
 import { useDocumento } from "@/lib/hooks/useColecao";
@@ -408,7 +409,7 @@ export function FormularioPedido({
       if (fornada.arquivado) continue;
       total.set(
         fornada.fichaId,
-        (total.get(fornada.fichaId) ?? 0) + fornada.unidadesProduzidas,
+        (total.get(fornada.fichaId) ?? 0) + vendaveis(fornada),
       );
     }
     return total;

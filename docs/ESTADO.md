@@ -1,9 +1,11 @@
 # Estado do projeto
 
 Atualizado em 2026-09-19 (spec 023 entregue, primeira da fase 1 do roadmap; a 024 e a 025
-entregues depois dela, a segunda e a terceira da fase 1; mais a 034 entregue por cima da 033, o
-primeiro passe de navegador sobre as duas, `#d131`; **033 e 034 por publicar juntas**; roteiros
-das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 033 e 034 por rodar).
+entregues depois dela, a segunda e a terceira da fase 1; a 026 entregue fora da ordem das
+entrevistas, a quarta e última parcela do custo honesto do `docs/saas/CLAUDE.md` §1; mais a 034
+entregue por cima da 033, o primeiro passe de navegador sobre as duas, `#d131`; **033 e 034 por
+publicar juntas**; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 033 e
+034 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -190,8 +192,9 @@ nunca visto rodando — **fechou com a 5B**. O que ficou dele é uma linha na ta
 releitura dos cinco textos de `src/lib/domain/onboarding.ts` contra o que a 5B viu, que a 8B
 não pôde fazer na época.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **552
-testes** (526 até a 018; 535 com a 033-C; 536 com a 034; 547 com a 024; 552 com a 025), e build com 18 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **563
+testes** (526 até a 018; 535 com a 033-C; 536 com a 034; 547 com a 024; 552 com a 025; 563 com a
+026), e build com 18 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
 `/insumos/contagem` na 7A, `/comecar` na 8A, `/fichas/contagem` na 13D e `/clientes` na 025 —
 mais `/api/nota`, `/fichas/[id]`, `/pedidos/[id]` e `/pedidos/[id]/orcamento` (17A) dinâmicas e
 service worker gerado.
@@ -256,6 +259,7 @@ os números digitados de ponta a ponta.
 | 23  | Sair sem salvar                             | pronto, sem o roteiro               | `specs/023-sair-sem-salvar.md`             |
 | 24  | Fichas no vermelho                          | pronto, sem o roteiro               | `specs/024-fichas-no-vermelho.md`          |
 | 25  | Quem mais compra de mim                     | pronto, sem o roteiro               | `specs/025-quem-mais-compra-de-mim.md`     |
+| 26  | A fornada que quebrou                       | pronto, sem o roteiro               | `specs/026-a-fornada-que-quebrou.md`       |
 | 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`               |
 | 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`              |
 
@@ -2725,6 +2729,43 @@ regra, nenhum índice novo, nenhuma dependência. **O roteiro de dez passos não
 sessão** — o passo 1 é quem prova que os agregados escritos desde a 3B estavam certos o tempo
 todo, e o passo 7 (360px, os dois atalhos no cabeçalho de `/pedidos`) é o risco nomeado na spec.
 
+## A spec 026 · A fornada que quebrou
+
+**Entregue**, fora da ordem das entrevistas — como a 024 e a 025, não dependia delas. A última
+parcela do custo honesto que o `docs/saas/CLAUDE.md` §1 lista: "nas últimas massas, 6% quebrou; o
+custo real é R$ X".
+
+- `domain/producao.ts`: `vendaveis` (o que a massa rendeu, menos `perdidas`, nunca negativo),
+  `aproveitamento` (a fração vendável, 1 sem anotação), `quebraDaFicha` (a taxa das fornadas
+  anotadas dentro da janela de trinta dias, `null` sem o que dizer — ausência não é zero, `#d139`)
+  e `custoPorVendavel` (`quantidadeFisica` — a mesma conta da perda do material — um nível acima).
+  `vendaveis` substitui `unidadesProduzidas` em `projecaoDoPronto` e `reservadoNoPronto`; a linha
+  do pedido (`FormularioPedido.tsx`) segue o mesmo caminho. `aproveitamento` encolhe o abate de
+  `produzidoParaPedidos`: o que quebrou volta a pesar em `prometidoParaPedidos` e
+  `capacidadeDaFicha`, por consequência. `consumoDesdeAContagem` não mudou uma linha — a farinha
+  foi gasta, quebrando ou não (`#d140`).
+- `mutations/fornadas.ts`: `anotarQuebra`, uma escrita que não espera o servidor, como
+  `registrarFornada`. De carona, `arquivarFornada` passou a gravar `v: VERSAO_SCHEMA`.
+- `FornadasRecentes.tsx`: a linha ganhou o botão "Quebrou" (vira "Quebrou: N" com o número
+  anotado) e um terceiro estado, `anotando`, ao lado de `confirmando` — os dois nunca abertos
+  juntos. O rodapé ganhou a segunda frase: a quebra sai do pote e volta para a lista de compras,
+  a despensa não muda.
+- `FraseDaQuebra.tsx` (novo, irmão de `FraseDaCapacidade`/`FraseDoPronto`): o custo real e a sobra
+  real, com `custoPorVendavel` e `verificarPreco` sobre o gravado — leitura, nunca gravação.
+  Entra em `FormularioFicha.tsx`, entre a linha do que está pronto e `FornadasRecentes`, só
+  quando há fornada anotada; nada muda para quem nunca tocar no botão.
+- `Fornada.perdidas?: number`, campo aditivo opcional — o único em `src/lib/types/`. Nenhuma rota,
+  nenhum índice, nenhuma regra, nenhuma dependência.
+
+Decisões novas em `DECISOES.md#d139` e `#d140`; `#d87` ganhou a nota de que a quebra segue a
+mesma régua (não escreve estoque). Testes: os onze casos de aceite do domínio, em
+`tests/domain/producao.test.ts`, bloco `quebra` — **552 → 563**. Portão rodado de verdade: lint e
+typecheck limpos, os 563 testes, build com as mesmas 18 rotas estáticas de sempre (nenhuma nova);
+`npx impeccable --json src/` continua `[]`; `git diff` de `firestore.rules`,
+`firestore.indexes.json` e `package.json` vazio; `git diff src/lib/types/` mostra só o campo
+aditivo. **O roteiro de dez passos não rodou nesta sessão** — o passo 1 (sem `perdidas` em
+nenhuma fornada, nada muda) é o único que não dá para refazer depois de anotar a primeira quebra.
+
 ## Próxima ação
 
 **Publicar a 033 e a 034 juntas** (`docs/DEPLOY.md`). Antes, os roteiros no `npm run dev`, nos
@@ -2741,11 +2782,15 @@ desinstalar e reinstalar o app no Android e no iPhone, porque `theme_color` e
 a meio metro, e o teste da desassociação: `/fichas/[id]` ao lado da caixa da MyCookie's; e
 **a frase**: "Frase do orçamento" em `/configuracao`, uma vez (`#d127`).
 
-**Com a 033 fechada, a 023, a 024 e a 025 entregues, o que falta da fase 1 do roadmap são as
-cinco a oito entrevistas com confeiteiras que não são a Maynara** (`docs/saas/ROADMAP.md`). A
-024 e a 025 rodaram antes delas, por decisão de quem conduz o projeto: nenhuma das duas
-dependia de código nenhum, e o roadmap não exigia a ordem. Depois das entrevistas, só a 026
-fica — e só se falarem da fornada que quebrou.
+**Com a 033 fechada e a 023, a 024, a 025 e a 026 entregues, o que falta da fase 1 do roadmap são
+as cinco a oito entrevistas com confeiteiras que não são a Maynara** (`docs/saas/ROADMAP.md`). As
+quatro rodaram antes delas, por decisão de quem conduz o projeto: nenhuma dependia de código
+nenhum, e o roadmap não exigia a ordem — a 026 era a única condicionada a "só se as entrevistas
+pedirem", e quem conduz decidiu escrevê-la e rodá-la mesmo assim, como as duas anteriores.
+
+**Rodar o roteiro de dez passos da spec 026**, com conta real. O passo 1 é o único que não dá
+para refazer depois — antes de tocar no botão "Quebrou", conferir que o pote, a capacidade em
+`/fichas`, a lista de compras e a linha do pedido dizem exatamente o que diziam antes da spec.
 
 **Rodar o roteiro de dez passos da spec 025**, com conta real. O passo 1 é o que mais importa:
 abrir os pedidos pagos da cliente do topo em `/pedidos` e conferir que a soma bate com

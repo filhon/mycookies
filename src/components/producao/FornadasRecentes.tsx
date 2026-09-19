@@ -3,9 +3,14 @@
 import { useState } from "react";
 import { CookingPot } from "lucide-react";
 import { Botao } from "@/components/ui/Botao";
+import { Campo } from "@/components/ui/Campo";
 import { SUFIXO_UNIDADE_RENDIMENTO } from "@/lib/domain/custoFicha";
 import { rotuloDia } from "@/lib/domain/datas";
-import { arquivarFornada } from "@/lib/firebase/mutations/fornadas";
+import { parseParaNumero } from "@/lib/domain/money";
+import {
+  anotarQuebra,
+  arquivarFornada,
+} from "@/lib/firebase/mutations/fornadas";
 import type { Fornada } from "@/lib/types";
 
 function texto(numero: number): string {
@@ -32,12 +37,34 @@ export function FornadasRecentes({
   fornadas: Fornada[];
 }) {
   const [confirmando, setConfirmando] = useState<string | null>(null);
+  const [anotando, setAnotando] = useState<string | null>(null);
+  const [valorQuebra, setValorQuebra] = useState("");
+  const [erroQuebra, setErroQuebra] = useState<string | null>(null);
 
   if (fornadas.length === 0) return null;
 
   function desfazer(id: string) {
     arquivarFornada(contaId, id);
     setConfirmando(null);
+  }
+
+  function abrirQuebra(fornada: Fornada) {
+    setAnotando(fornada.id);
+    setConfirmando(null);
+    setValorQuebra(
+      fornada.perdidas !== undefined ? texto(fornada.perdidas) : "",
+    );
+    setErroQuebra(null);
+  }
+
+  function confirmarQuebra(fornada: Fornada) {
+    const perdidas = parseParaNumero(valorQuebra);
+    if (perdidas < 0 || perdidas > fornada.unidadesProduzidas) {
+      setErroQuebra("Não dá para quebrar mais do que a massa rendeu.");
+      return;
+    }
+    anotarQuebra(contaId, fornada.id, perdidas);
+    setAnotando(null);
   }
 
   return (
@@ -48,6 +75,7 @@ export function FornadasRecentes({
       <ul className="mt-1.5 divide-y divide-line border-y border-line">
         {fornadas.map((fornada) => {
           const pedindo = confirmando === fornada.id;
+          const anotandoEsta = anotando === fornada.id;
           return (
             <li
               key={fornada.id}
@@ -70,10 +98,46 @@ export function FornadasRecentes({
                     {texto(fornada.lotes)}{" "}
                     {fornada.lotes === 1 ? "lote" : "lotes"}
                   </span>
+                  {fornada.perdidas !== undefined && (
+                    <>
+                      <span className="mx-1.5 text-ink-subtle">·</span>
+                      <span className="text-ink-muted">
+                        {texto(fornada.perdidas)}{" "}
+                        {fornada.perdidas === 1 ? "quebrou" : "quebraram"}
+                      </span>
+                    </>
+                  )}
                 </span>
               </span>
 
-              {pedindo ? (
+              {anotandoEsta ? (
+                <div className="flex w-full flex-wrap items-end gap-3">
+                  <Campo
+                    rotulo="Quantas não deram para vender?"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    sufixo={
+                      SUFIXO_UNIDADE_RENDIMENTO[fornada.unidadeRendimento]
+                    }
+                    value={valorQuebra}
+                    onChange={(evento) => setValorQuebra(evento.target.value)}
+                    erro={erroQuebra ?? undefined}
+                    className="w-40"
+                  />
+                  <span className="flex shrink-0 gap-2">
+                    <Botao tamanho="sm" onClick={() => setAnotando(null)}>
+                      Cancelar
+                    </Botao>
+                    <Botao
+                      tamanho="sm"
+                      variante="primaria"
+                      onClick={() => confirmarQuebra(fornada)}
+                    >
+                      Anotar
+                    </Botao>
+                  </span>
+                </div>
+              ) : pedindo ? (
                 <span className="flex shrink-0 gap-2">
                   <Botao tamanho="sm" onClick={() => setConfirmando(null)}>
                     Manter
@@ -87,14 +151,20 @@ export function FornadasRecentes({
                   </Botao>
                 </span>
               ) : (
-                <Botao
-                  tamanho="sm"
-                  variante="terciaria"
-                  className="shrink-0"
-                  onClick={() => setConfirmando(fornada.id)}
-                >
-                  Desfazer
-                </Botao>
+                <span className="flex shrink-0 gap-2">
+                  <Botao tamanho="sm" onClick={() => abrirQuebra(fornada)}>
+                    {fornada.perdidas !== undefined
+                      ? `Quebrou: ${texto(fornada.perdidas)}`
+                      : "Quebrou"}
+                  </Botao>
+                  <Botao
+                    tamanho="sm"
+                    variante="terciaria"
+                    onClick={() => setConfirmando(fornada.id)}
+                  >
+                    Desfazer
+                  </Botao>
+                </span>
               )}
             </li>
           );
@@ -102,7 +172,9 @@ export function FornadasRecentes({
       </ul>
       <p className="mt-2 px-4 text-label text-ink-muted lg:px-5">
         Desfazer tira a massa da projeção da despensa e da lista de compras. O
-        registro fica guardado, arquivado.
+        registro fica guardado, arquivado. O que quebrou sai do que está pronto
+        e volta para a lista de compras. A despensa não muda: o material já foi
+        gasto.
       </p>
     </div>
   );

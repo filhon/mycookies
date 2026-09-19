@@ -264,11 +264,28 @@ mim.md`, `DECISOES.md#d137` e `#d138`), o que o roadmap não dizia:
   regra, nenhuma dependência.
 - **O roteiro de dez passos, com conta real, ainda não rodou.**
 
-**026 · A fornada que quebrou.** Só se as entrevistas pedirem.
+**026 · A fornada que quebrou.** Entregue em 2026-09-19 (`specs/026-a-fornada-que-quebrou.md`,
+`DECISOES.md#d139` e `#d140`), fora da ordem das entrevistas — como a 024 e a 025, não dependia
+delas. A última parcela do custo honesto que o `docs/saas/CLAUDE.md` §1 lista, o que o roadmap
+não dizia:
 
-- `Fornada.perdidas` (unidades descartadas) → custo real por unidade vendável na ficha: "nas
-  últimas fornadas, 6% quebrou; o custo real é R$ X". Campo aditivo opcional.
-- Aprovações: um campo em `Fornada`.
+- **O campo não entra no formulário de registrar a fornada.** A fornada grava o dia da massa
+  (`#d93`); a quebra é do forno, e só se sabe dias depois. `Fornada.perdidas?: number` entra em
+  `FornadasRecentes` — o botão "Quebrou" na linha de "Massas registradas", nas duas telas onde
+  a quebra se descobre (o produto e o pedido).
+- **Ausência não é zero.** Fornada sem `perdidas` não é fornada sem quebra: é fornada sobre a
+  qual ela não disse nada. A taxa (`quebraDaFicha`) sai só das fornadas anotadas, e `0` é
+  anotação legítima.
+- **A quebra também mexe no pote e na lista de compras.** `vendaveis` substitui
+  `unidadesProduzidas` no pote (`projecaoDoPronto`), no dono do pote (`reservadoNoPronto`) e na
+  linha do pedido; `aproveitamento` encolhe o abate de `produzidoParaPedidos`, e o que quebrou
+  volta a pesar em `prometidoParaPedidos`. A despensa não muda: `consumoDesdeAContagem` continua
+  igual, porque a farinha foi gasta, quebrando ou não.
+- **O custo real é leitura, e não preço gravado.** `custoPorVendavel` (a mesma conta da perda do
+  material, um nível acima) e a frase no editor do produto (`FraseDaQuebra`) calculam na tela;
+  `precoSugerido` não anda sozinho a cada fornada anotada.
+- Um campo aditivo em `Fornada`, nenhuma rota, nenhum índice, nenhuma regra, nenhuma dependência.
+- **O roteiro de dez passos não rodou nesta sessão.**
 
 ### Fase 2 · Cadastro e cobrança — a porta com algo atrás
 

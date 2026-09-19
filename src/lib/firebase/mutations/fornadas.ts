@@ -87,7 +87,27 @@ export function registrarFornada(contaId: string, dados: DadosFornada): string {
 export function arquivarFornada(contaId: string, id: string): void {
   despachar(
     updateDoc(docFornada(contaId, id), {
+      v: VERSAO_SCHEMA,
       arquivado: true,
+      atualizadoEm: Timestamp.now(),
+    }),
+  );
+}
+
+/**
+ * A quebra é dita depois: a massa é do dia em que ela foi feita (`#d93`), e o
+ * que não deu para vender só se sabe no forno (`DECISOES.md#d139`). Uma escrita,
+ * um campo, e não espera o servidor — é a mesma cozinha do `registrarFornada`.
+ */
+export function anotarQuebra(
+  contaId: string,
+  id: string,
+  perdidas: number,
+): void {
+  despachar(
+    updateDoc(docFornada(contaId, id), {
+      v: VERSAO_SCHEMA,
+      perdidas,
       atualizadoEm: Timestamp.now(),
     }),
   );

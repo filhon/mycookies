@@ -41,6 +41,7 @@ import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { EntradaContagemPronto } from "@/components/producao/EntradaContagemPronto";
 import { FornadasRecentes } from "@/components/producao/FornadasRecentes";
 import { FraseDoPronto } from "@/components/producao/FraseDaCapacidade";
+import { FraseDaQuebra } from "@/components/producao/FraseDaQuebra";
 import { PainelFornada } from "@/components/producao/PainelFornada";
 import {
   LinhaComponenteFicha,
@@ -74,7 +75,11 @@ import {
   FOTO_MAX_BYTES,
 } from "@/lib/domain/orcamento";
 import type { ParametrosPreco } from "@/lib/domain/precificacao";
-import { projecaoDoPronto, temPronto } from "@/lib/domain/producao";
+import {
+  projecaoDoPronto,
+  quebraDaFicha,
+  temPronto,
+} from "@/lib/domain/producao";
 import { DESCRICAO_MAX, esquemaFicha } from "@/lib/domain/schemas";
 import { paraBase, unidadesCompativeis } from "@/lib/domain/unidades";
 import {
@@ -309,6 +314,10 @@ export function FormularioFicha({
         ? projecaoDoPronto(fornadas, ficha, hoje)
         : null,
     [fornadas, ficha, hoje],
+  );
+  const quebra = useMemo(
+    () => (ficha ? quebraDaFicha(fornadas, ficha.id) : null),
+    [fornadas, ficha],
   );
 
   /**
@@ -846,6 +855,15 @@ export function FormularioFicha({
                   />
                 )}
                 <EntradaContagemPronto tamanho="sm" />
+              </div>
+            )}
+
+            {/* O custo real por unidade vendável, com a quebra das últimas
+                massas anotadas (026). Some sem nenhuma anotação: nada muda
+                para quem nunca tocar no botão "Quebrou". */}
+            {ficha && quebra && (
+              <div className="mt-3 border-t border-line pt-3">
+                <FraseDaQuebra quebra={quebra} ficha={ficha} />
               </div>
             )}
 

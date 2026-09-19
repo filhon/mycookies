@@ -2674,6 +2674,11 @@ sei", e nenhuma fornada anterior a ela desconta nada. O preço é uma fornada co
 velha que trinta dias sair do abate do pedido, o que exigiria encomenda assada com mais de um mês
 de antecedência.
 
+**Nota (026, `D139`/`D140`):** a quebra segue a mesma régua. `Fornada.perdidas` também não
+escreve estoque — o que quebrou sai da projeção do pote (`projecaoDoPronto`) e devolve promessa à
+lista de compras (`produzidoParaPedidos`), nunca insumo à despensa. `consumoDesdeAContagem`
+continua intacto: a farinha foi gasta, quebrando ou não.
+
 ---
 
 ## D88 · O que a fornada consumiu fica congelado dentro dela
@@ -4425,3 +4430,56 @@ script resolver o engano.
 pagamentos do intervalo: é a mesma troca que `D37` já aceitou para `ultimoPedidoEm` no desfazer
 — sem histórico de pagamentos, o agregado não se reconstrói sozinho. "Recalcular" para clientes
 fica reservado para quando alguém pedir.
+
+---
+
+## D139 · A quebra é dita depois, e ausência não é zero
+
+**Status:** vigente · decidida em 2026-09-19, na spec `026-a-fornada-que-quebrou.md`
+
+**Contexto.** O roadmap pedia `Fornada.perdidas`, mas a fornada grava o dia da massa (`D93`): ela
+mistura, congela e assa sob demanda, e o que não dá para vender só se sabe no forno, na bancada
+ou na caixa — dias depois. Um campo "quantas quebraram?" no formulário de registrar a fornada
+seria sempre zero, porque nada quebrou ainda.
+
+**Decisão.** `Fornada.perdidas?: number` não entra em `PainelFornada`; entra em
+`FornadasRecentes`, o único lugar que lista fornada registrada e já está nas duas telas onde a
+quebra se descobre (o produto e o pedido). **Ausente não é zero**: é "ela não disse". A mesma
+régua do `D63` (contagem vencida vale "não sei") — quem anota a assadeira que caiu e nunca mais
+toca no botão não tem uma taxa diluída por fornadas sobre as quais não falou; tem uma taxa alta
+sobre as poucas que anotou, e `quebraDaFicha` diz quantas são. `perdidas: 0` é anotação legítima
+— "nesta não quebrou nada" — e entra no denominador. Não existe desanotar: corrigir é reabrir e
+digitar outro número.
+
+**Consequência.** Uma fornada anotada só uma vez, com quebra alta, deixa a taxa alta no editor
+pelos trinta dias da janela de `consultaFornadas` (`IDADE_VENCE_DIAS`) — é o preço de não
+inventar uma medição que ninguém fez, e a frase nomeia quantas massas entraram na conta. Se as
+entrevistas disserem que a operação assa e embala no mesmo ato, o campo desce para o formulário
+de registrar, opcional, e esta decisão ganha a nota.
+
+## D140 · A quebra tira do pote e devolve a promessa, nunca a farinha; o custo real é leitura
+
+**Status:** vigente · decidida em 2026-09-19, na spec `026-a-fornada-que-quebrou.md`
+
+**Contexto.** Com `perdidas` gravado, era preciso decidir o que cada leitor da fornada faz com
+ele. A farinha dos cookies que caíram já saiu da despensa e não volta; o que volta é a obrigação
+de fazer os mesmos de novo — e confundir as duas coisas faria a quebra do forno mexer na perda do
+material (`perdaPercentual`), que já divide o custo por grama e é conta separada.
+
+**Decisão.** O que quebrou não devolve insumo, devolve trabalho. `vendaveis` (o que a massa
+rendeu, menos `perdidas`, nunca negativo) substitui `unidadesProduzidas` em `projecaoDoPronto` (o
+pote) e `reservadoNoPronto` (o dono no pote) e na linha do pedido (`jaFeitasPorFicha`).
+`aproveitamento` (a fração vendável, 1 sem anotação) encolhe o abate de `produzidoParaPedidos`: o
+que quebrou volta a ser promessa, e `prometidoParaPedidos`/`capacidadeDaFicha` voltam a pedir o
+material como consequência. `consumoDesdeAContagem` **não muda**: a farinha foi gasta, quebrando
+ou não. O custo real por unidade vendável (`custoPorVendavel`, a mesma conta de `quantidadeFisica`
+— `custo ÷ (1 − taxa)`, com o teto de `PERDA_MAXIMA` — um nível acima) é **leitura**, como a sobra
+de hoje da 024 (`D135`): calculado na tela a partir do gravado e da taxa das fornadas anotadas
+(`quebraDaFicha`), nunca escrito em `FichaTecnica`. Gravá-lo faria `precoSugerido` andar sozinho a
+cada fornada anotada, sem ela ter mudado nada na ficha.
+
+**Consequência.** A lista de compras passa a pedir de novo o material que uma massa quebrada não
+aproveitou — comportamento correto (a encomenda ficou curta), mas visível o bastante para levar
+nota no rodapé de `FornadasRecentes`. Se um dia a quebra precisar entrar no preço, a forma é um
+campo `quebraEsperada` digitado por ela em `derivarFicha`, como a perda do material — não esta
+leitura.

@@ -1,4 +1,5 @@
 import type {
+  Centavos,
   ConsumoDaFornada,
   DataISO,
   EscolhaDoKit,
@@ -64,6 +65,9 @@ export interface FornadaRegistrada {
   dataISO: DataISO;
   consumo: ConsumoDaFornada[];
   pedidoId?: string;
+  /** Ausente é "ela não disse" (`#d139`); `aproveitamento` devolve 1 sem eles. */
+  unidadesProduzidas?: number;
+  perdidas?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -133,6 +137,104 @@ export function fornadaGravavel(
       quantidade: linha.quantidade * lotes,
     })),
   };
+}
+
+// ---------------------------------------------------------------------------
+// A quebra: o que a massa rendeu, menos o que não deu para vender (`#d139`, `#d140`)
+// ---------------------------------------------------------------------------
+
+/** O que a quebra precisa saber de uma fornada. `Fornada` serve. */
+export interface FornadaComQuebra {
+  /** Ausente é "sem massa a considerar"; `aproveitamento` devolve 1. */
+  unidadesProduzidas?: number;
+  /** Ausente é "ela não disse", e não zero (`#d139`). */
+  perdidas?: number;
+}
+
+/**
+ * O que sobrou para vender: o que a massa rendeu, menos o que quebrou. Nunca
+ * negativo — anotar mais quebra do que unidades é dedo errado, e zero é a
+ * leitura honesta disso.
+ *
+ * É por aqui que passam os três leitores do que a massa **produziu**: o pote,
+ * o dono no pote e a linha do pedido. Quem lê o que a massa **consumiu** não
+ * passa por aqui, e é de propósito (`#d140`).
+ */
+export function vendaveis(fornada: FornadaComQuebra): number {
+  const produzidas = fornada.unidadesProduzidas ?? 0;
+  return Math.max(0, produzidas - (fornada.perdidas ?? 0));
+}
+
+/**
+ * A fração daquela massa que virou produto vendável: 1 quando ela não anotou
+ * nada, porque não saber não é perder.
+ */
+export function aproveitamento(fornada: FornadaComQuebra): number {
+  const produzidas = fornada.unidadesProduzidas ?? 0;
+  if (fornada.perdidas === undefined || !(produzidas > 0)) {
+    return 1;
+  }
+  return vendaveis(fornada) / produzidas;
+}
+
+export interface QuebraDaFicha {
+  /** Quantas fornadas têm quebra anotada. É o "nas últimas N" da frase. */
+  fornadas: number;
+  produzidas: number;
+  perdidas: number;
+  /** perdidas ÷ produzidas, na escala humana: 6 = 6%. */
+  taxa: Percentual;
+}
+
+/**
+ * A quebra de um produto nas fornadas que ela anotou, dentro da janela que a
+ * consulta já traz (trinta dias, `IDADE_VENCE_DIAS`).
+ *
+ * `null` quando não há o que dizer: nenhuma fornada anotada, ou nenhuma delas
+ * rendeu nada. Ausência não vira zero por cento (`#d139`) — a tela que
+ * dissesse "0% quebrou" estaria inventando uma medição que ninguém fez.
+ */
+export function quebraDaFicha(
+  fornadas: (FornadaDaFicha & FornadaComQuebra)[],
+  fichaId: string,
+): QuebraDaFicha | null {
+  const anotadas = fornadas.filter(
+    (fornada) =>
+      !fornada.arquivado &&
+      fornada.fichaId === fichaId &&
+      fornada.perdidas !== undefined,
+  );
+  const produzidas = anotadas.reduce(
+    (soma, fornada) => soma + fornada.unidadesProduzidas,
+    0,
+  );
+  if (anotadas.length === 0 || !(produzidas > 0)) return null;
+
+  const perdidas = anotadas.reduce(
+    (soma, fornada) => soma + (fornada.perdidas ?? 0),
+    0,
+  );
+  return {
+    fornadas: anotadas.length,
+    produzidas,
+    perdidas,
+    taxa: (perdidas / produzidas) * 100,
+  };
+}
+
+/**
+ * O custo de uma unidade que dá para vender: o custo do lote dividido pelo que
+ * sai vendável dele, e não pelo que ele rende.
+ *
+ * É `quantidadeFisica` — a mesma conta da perda do material, um nível acima
+ * (`#d140`), com o mesmo teto de `PERDA_MAXIMA` que impede a divisão por zero.
+ * Uma divide o que entra na tigela, a outra o que sai do forno.
+ */
+export function custoPorVendavel(
+  custoUnitario: Centavos,
+  taxa: Percentual,
+): Centavos {
+  return Math.round(quantidadeFisica(custoUnitario, taxa));
 }
 
 // ---------------------------------------------------------------------------
@@ -257,10 +359,13 @@ export function produzidoParaPedidos(
     if (fornada.arquivado || !fornada.pedidoId) continue;
     if (!naLista.has(fornada.pedidoId)) continue;
 
+    // O que quebrou volta a ser promessa: o abate encolhe na fração
+    // aproveitada, e a lista volta a comprar o que precisa refazer (`#d140`).
+    const fator = aproveitamento(fornada);
     for (const linha of fornada.consumo) {
       produzido.set(
         linha.insumoId,
-        (produzido.get(linha.insumoId) ?? 0) + linha.quantidade,
+        (produzido.get(linha.insumoId) ?? 0) + linha.quantidade * fator,
       );
     }
   }
@@ -572,6 +677,8 @@ export interface FornadaDaFicha {
   fichaId: string;
   unidadesProduzidas: number;
   pedidoId?: string;
+  /** Ausente é "ela não disse", e não zero (`#d139`). */
+  perdidas?: number;
 }
 
 /** O que a contagem do pronto precisa saber de uma ficha. `FichaTecnica` serve. */
@@ -642,10 +749,7 @@ export function projecaoDoPronto(
             fornada.fichaId === ficha.id &&
             fornada.dataISO > contadoEm,
         );
-  const feitas = desde.reduce(
-    (soma, fornada) => soma + fornada.unidadesProduzidas,
-    0,
-  );
+  const feitas = desde.reduce((soma, fornada) => soma + vendaveis(fornada), 0);
 
   return {
     contagem,
@@ -696,7 +800,7 @@ export function reservadoNoPronto(
     if (!naLista.has(fornada.pedidoId)) continue;
     feito.set(
       fornada.fichaId,
-      (feito.get(fornada.fichaId) ?? 0) + fornada.unidadesProduzidas,
+      (feito.get(fornada.fichaId) ?? 0) + vendaveis(fornada),
     );
   }
 

@@ -7,10 +7,12 @@ import {
   type InsumoParaLista,
 } from "@/lib/domain/listaCompras";
 import {
+  aproveitamento,
   capacidadeDaFicha,
   consumoDesdeAContagem,
   consumoPorLote,
   contagemDoPronto,
+  custoPorVendavel,
   disponivelParaProducao,
   faltaPara,
   fichasAbaixoDoPiso,
@@ -19,10 +21,12 @@ import {
   produzidoParaPedidos,
   projecaoDoInsumo,
   prometidoParaPedidos,
+  quebraDaFicha,
   reservaDeProducao,
   projecaoDoPronto,
   prontosLivres,
   reservadoNoPronto,
+  vendaveis,
   type FichaParaProduzir,
   type FornadaDaFicha,
   type FornadaRegistrada,
@@ -1269,6 +1273,296 @@ describe("o que está pronto", () => {
     expect(livres).toBe(13);
     // prontos + despensa − prometido: 25 + 41 − 12 = 54, e 13 + 41 = 54.
     expect((livres ?? 0) + (capacidade?.unidades ?? 0)).toBe(54);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A quebra (026): o que quebrou não devolve insumo, devolve trabalho — sai do
+// pote e volta à lista de compras, nunca à despensa (`#d140`). Ausência não é
+// zero (`#d139`).
+// ---------------------------------------------------------------------------
+
+describe("quebra", () => {
+  it("1. sem `perdidas` anotada, o comportamento é exatamente o de antes", () => {
+    const semQuebra = {
+      arquivado: false,
+      fichaId: "cookie",
+      dataISO: "2026-09-09",
+      unidadesProduzidas: 25,
+    };
+    const pronto = projecaoDoPronto(
+      [semQuebra],
+      {
+        id: "cookie",
+        estoqueProntoAtual: 10,
+        estoqueProntoContadoEmISO: "2026-09-08",
+      },
+      HOJE,
+    );
+    expect(pronto.feitas).toBe(25);
+    expect(pronto.prontos).toBe(35);
+
+    const reservado = reservadoNoPronto(
+      [
+        {
+          id: "p1",
+          itens: [
+            {
+              fichaTecnicaId: "cookie",
+              nomeSnapshot: "Cookie",
+              quantidade: 25,
+            },
+          ],
+        },
+      ],
+      [{ ...semQuebra, pedidoId: "p1" }],
+    );
+    expect(reservado.get("cookie")).toBe(25);
+
+    const produzido = produzidoParaPedidos(
+      [fornada({ dataISO: "2026-09-08", pedidoId: "p1" })],
+      ["p1"],
+    );
+    expect(produzido.get("farinha")).toBeCloseTo(526.32, 6);
+  });
+
+  it("2. vendaveis: o que a massa rendeu, menos o que quebrou, nunca negativo", () => {
+    expect(vendaveis({ unidadesProduzidas: 25 })).toBe(25);
+    expect(vendaveis({ unidadesProduzidas: 25, perdidas: 3 })).toBe(22);
+    expect(vendaveis({ unidadesProduzidas: 25, perdidas: 40 })).toBe(0);
+    expect(vendaveis({ unidadesProduzidas: 25, perdidas: 0 })).toBe(25);
+  });
+
+  it("3. aproveitamento: 1 sem anotação, a fração com ela, 1 sem rendimento", () => {
+    expect(aproveitamento({ unidadesProduzidas: 25 })).toBe(1);
+    expect(aproveitamento({ unidadesProduzidas: 25, perdidas: 5 })).toBe(0.8);
+    expect(aproveitamento({ unidadesProduzidas: 0, perdidas: 5 })).toBe(1);
+  });
+
+  it("4. quebraDaFicha: o caso do roadmap — 6 de 100, 6%", () => {
+    const quatro = [3, 2, 1, 0].map((perdidas, indice) => ({
+      arquivado: false,
+      fichaId: "cookie",
+      dataISO: `2026-09-0${indice + 1}`,
+      unidadesProduzidas: 25,
+      perdidas,
+    }));
+    expect(quebraDaFicha(quatro, "cookie")).toEqual({
+      fornadas: 4,
+      produzidas: 100,
+      perdidas: 6,
+      taxa: 6,
+    });
+  });
+
+  it("5. ausência não é zero: só as anotadas entram na taxa, e `0` é anotação", () => {
+    const naoAnotadas = [1, 2, 3].map((dia) => ({
+      arquivado: false,
+      fichaId: "cookie",
+      dataISO: `2026-09-0${dia}`,
+      unidadesProduzidas: 25,
+    }));
+    const umaAnotada = [
+      ...naoAnotadas,
+      {
+        arquivado: false,
+        fichaId: "cookie",
+        dataISO: "2026-09-04",
+        unidadesProduzidas: 25,
+        perdidas: 6,
+      },
+    ];
+    expect(quebraDaFicha(umaAnotada, "cookie")).toEqual({
+      fornadas: 1,
+      produzidas: 25,
+      perdidas: 6,
+      taxa: 24,
+    });
+
+    const duasAnotadas = [
+      ...umaAnotada,
+      {
+        arquivado: false,
+        fichaId: "cookie",
+        dataISO: "2026-09-05",
+        unidadesProduzidas: 25,
+        perdidas: 0,
+      },
+    ];
+    expect(quebraDaFicha(duasAnotadas, "cookie")).toEqual({
+      fornadas: 2,
+      produzidas: 50,
+      perdidas: 6,
+      taxa: 12,
+    });
+  });
+
+  it("6. quebraDaFicha é null sem o que dizer", () => {
+    const base = {
+      arquivado: false,
+      fichaId: "cookie",
+      dataISO: "2026-09-09",
+      unidadesProduzidas: 25,
+    };
+    expect(quebraDaFicha([base], "cookie")).toBeNull();
+    expect(
+      quebraDaFicha([{ ...base, perdidas: 3, arquivado: true }], "cookie"),
+    ).toBeNull();
+    expect(
+      quebraDaFicha([{ ...base, perdidas: 3, fichaId: "caixa6" }], "cookie"),
+    ).toBeNull();
+    expect(
+      quebraDaFicha(
+        [{ ...base, perdidas: 3, unidadesProduzidas: 0 }],
+        "cookie",
+      ),
+    ).toBeNull();
+  });
+
+  it("7. custoPorVendavel: a mesma conta da perda do material, um nível acima", () => {
+    expect(custoPorVendavel(243, 6)).toBe(259);
+    expect(custoPorVendavel(243, 0)).toBe(243);
+    // O teto de PERDA_MAXIMA (99%) impede a divisão por zero.
+    expect(custoPorVendavel(243, 100)).toBe(24300);
+  });
+
+  it("8. a perda do material não dobra: consumoPorLote e quebraDaFicha são contas separadas", () => {
+    const semQuebra = consumoPorLote(COOKIE, FICHAS, PERDAS);
+    const quebra = quebraDaFicha(
+      [
+        {
+          arquivado: false,
+          fichaId: "cookie",
+          dataISO: "2026-09-09",
+          unidadesProduzidas: 25,
+          perdidas: 3,
+        },
+      ],
+      "cookie",
+    );
+    // A perda da farinha (5%, em PERDAS) não muda com a quebra do forno.
+    expect(consumoDe(semQuebra, "farinha")).toBeCloseTo(526.315789, 5);
+    expect(quebra).toEqual({
+      fornadas: 1,
+      produzidas: 25,
+      perdidas: 3,
+      taxa: 12,
+    });
+  });
+
+  it("9. o pote soma o vendável, e não o produzido", () => {
+    const pronto = projecaoDoPronto(
+      [
+        {
+          arquivado: false,
+          fichaId: "cookie",
+          dataISO: "2026-09-02",
+          unidadesProduzidas: 25,
+          perdidas: 3,
+        },
+      ],
+      {
+        id: "cookie",
+        estoqueProntoAtual: 10,
+        estoqueProntoContadoEmISO: "2026-09-01",
+      },
+      HOJE,
+    );
+    expect(pronto.fornadas).toBe(1);
+    expect(pronto.feitas).toBe(22);
+    expect(pronto.prontos).toBe(32);
+  });
+
+  it("10. o dono no pote é só o vendável, e prontosLivres desconta ele", () => {
+    const massaDoPedido = {
+      arquivado: false,
+      fichaId: "cookie",
+      dataISO: "2026-09-02",
+      unidadesProduzidas: 25,
+      perdidas: 3,
+      pedidoId: "p1",
+    };
+    const pronto = projecaoDoPronto(
+      [massaDoPedido],
+      {
+        id: "cookie",
+        estoqueProntoAtual: 10,
+        estoqueProntoContadoEmISO: "2026-09-01",
+      },
+      HOJE,
+    );
+    const reservado = reservadoNoPronto(
+      [
+        {
+          id: "p1",
+          itens: [
+            {
+              fichaTecnicaId: "cookie",
+              nomeSnapshot: "Cookie",
+              quantidade: 25,
+            },
+          ],
+        },
+      ],
+      [massaDoPedido],
+    );
+    expect(reservado.get("cookie")).toBe(22);
+    expect(prontosLivres(pronto, reservado.get("cookie") ?? 0)).toBe(10);
+  });
+
+  it("11. a promessa volta: o que quebrou sai do abate e some do prometido, sem tocar a despensa", () => {
+    const ficha25: FichaParaProduzir = {
+      id: "cookie25",
+      nome: "Cookie",
+      arquivado: false,
+      rendimento: 25,
+      unidadeRendimento: "un",
+      itens: [
+        { insumoId: "farinha", nomeSnapshot: "Farinha", quantidade: 500 },
+      ],
+      componentes: [],
+    };
+    const insumos = [{ id: "farinha", perdaPercentual: 0 }];
+    const pedido = {
+      id: "p1",
+      itens: [
+        { fichaTecnicaId: "cookie25", nomeSnapshot: "Cookie", quantidade: 25 },
+      ],
+    };
+    const consumo = [
+      { insumoId: "farinha", nomeSnapshot: "Farinha", quantidade: 500 },
+    ];
+
+    const semQuebra = {
+      arquivado: false,
+      dataISO: "2026-09-09",
+      pedidoId: "p1",
+      unidadesProduzidas: 25,
+      consumo,
+    };
+    expect(produzidoParaPedidos([semQuebra], ["p1"]).get("farinha")).toBe(500);
+    expect(
+      prometidoParaPedidos([pedido], [ficha25], insumos, [semQuebra]).get(
+        "farinha",
+      ),
+    ).toBeUndefined();
+
+    const comQuebra = { ...semQuebra, perdidas: 5 };
+    expect(produzidoParaPedidos([comQuebra], ["p1"]).get("farinha")).toBe(400);
+    expect(
+      prometidoParaPedidos([pedido], [ficha25], insumos, [comQuebra]).get(
+        "farinha",
+      ),
+    ).toBeCloseTo(100, 6);
+
+    // A despensa não muda: o que a massa gastou é o consumo congelado,
+    // quebrando ou não (`#d140`).
+    expect(
+      consumoDesdeAContagem(
+        [comQuebra],
+        [{ id: "farinha", estoqueContadoEmISO: "2026-09-08" }],
+      ).get("farinha"),
+    ).toBe(500);
   });
 });
 

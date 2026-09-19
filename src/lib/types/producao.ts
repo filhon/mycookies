@@ -33,4 +33,17 @@ export interface Fornada extends DocumentoBase {
   /** Quando ela fez a massa para um pedido específico (`#d91`). */
   pedidoId?: string;
   observacao?: string;
+  /**
+   * Quantas unidades desta massa não deram para vender: quebrou, queimou,
+   * grudou, saiu torta. Na unidade de rendimento, como `unidadesProduzidas`.
+   *
+   * **Ausente não é zero** (`DECISOES.md#d139`): é "ela não disse". Só as
+   * fornadas anotadas entram na taxa de quebra do produto, e `0` é uma
+   * anotação legítima — "nesta não quebrou nada".
+   *
+   * Dita depois do registro, porque a fornada é o dia da massa (`#d93`) e a
+   * quebra é do forno. O que quebrou não devolve insumo, devolve trabalho:
+   * sai do pote e volta à lista de compras, nunca à despensa (`#d140`).
+   */
+  perdidas?: number;
 }
