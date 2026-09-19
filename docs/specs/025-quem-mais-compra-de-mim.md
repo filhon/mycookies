@@ -101,13 +101,13 @@ combinado como dinheiro mentiria do mesmo jeito que o `#d36` proibiu.
 `arquivarCliente` grava `arquivado: true` e decrementa `agregados/global.totalClientes`, o espelho
 exato de `criarCliente` e o mesmo par de `arquivarInsumo`. Nada mais muda:
 
-| O que                             | Depois de arquivar                                                           |
-| --------------------------------- | ---------------------------------------------------------------------------- |
-| Pedidos antigos com o `clienteId` | Ficam como estão: `clienteNome` é snapshot, e a folha e a lista leem ele     |
-| Editor de um pedido dela          | Mostra o nome sem "Cadastro de …": a consulta não a traz, o vínculo não acha |
-| Pagamento de um pedido dela       | Os agregados **não andam**: `clienteDoPedido` é `null` sem cadastro na lista |
-| Sugestões ao digitar o nome       | Some                                                                         |
-| Restaurar                         | Não há na tela. O documento continua lá, `arquivado: true`, para o script    |
+| O que                                | Depois de arquivar                                                           |
+| ------------------------------------ | ---------------------------------------------------------------------------- |
+| Pedidos antigos com o `clienteId`    | Ficam como estão: `clienteNome` é snapshot, e a folha e a lista leem ele     |
+| Editor de um pedido dela             | Mostra o nome sem "Cadastro de …": a consulta não a traz, o vínculo não acha |
+| Pagamento de um pedido dela          | Os agregados **não andam**: `clienteDoPedido` é `null` sem cadastro na lista |
+| Sugestões ao digitar o nome          | Some                                                                         |
+| Restaurar                            | Não há na tela. O documento continua lá, `arquivado: true`, para o script    |
 
 O `clienteId` **não é apagado** do pedido: mexer em `pedidos` para arquivar uma cliente seria
 uma escrita por pedido, e o snapshot já resolve toda leitura. O custo é o da terceira linha —
@@ -150,9 +150,7 @@ export type ClienteOrdenavel = Pick<
  * Quem mais deixou dinheiro no caixa primeiro. Empate por pedidos pagos, depois
  * por nome; quem nunca pagou um pedido vai para o fim, por nome (`#d137`).
  */
-export function ordenarPorGasto<C extends ClienteOrdenavel>(
-  clientes: C[],
-): C[] {
+export function ordenarPorGasto<C extends ClienteOrdenavel>(clientes: C[]): C[] {
   return [...clientes].sort(
     (a, b) =>
       b.totalGasto - a.totalGasto ||
@@ -276,7 +274,7 @@ Ana Beatriz                                      R$ 486,00  ›
 ```
 
 - Em cima: nome (`text-body font-medium`, `truncate`) e `formatarMoeda(totalGasto)` (`num
-font-semibold`, `shrink-0`), chevron.
+  font-semibold`, `shrink-0`), chevron.
 - No meio: `resumoDaCliente(cliente, ultimoISO)` em `num text-label text-ink-muted`, `pr-8`.
 - Embaixo, só quando há algum: telefone e Instagram em `text-label text-ink-subtle`, separados
   por `·`. Texto, não link (ver fora de escopo).
@@ -295,7 +293,7 @@ Leitor de tela: o botão lê os três andares em ordem; nada escondido, nada `sr
 - Abaixo, a linha de contagem (`N clientes`, "Carregando") e `SeloSincronizacao`, como em
   `/insumos`.
 - `useColecao<Cliente>(consultaClientes(contaId))`; `visiveis = ordenarPorGasto(dados.filter(por
-nomeBusca))` num `useMemo`.
+  nomeBusca))` num `useMemo`.
 - Estado vazio sem cadastro — título **"Suas clientes nascem dos pedidos."**, descrição "Ao anotar
   uma encomenda, toque em Cadastrar esta cliente para guardar telefone e endereço. Ela aparece
   aqui com o que já comprou." Ação: `Link` para `/pedidos`, "Ver pedidos" (`primaria`, `lg`).
