@@ -5,6 +5,7 @@ import type {
   CustosOperacionais,
   EscolhaDoKit,
   FichaTecnica,
+  Insumo,
   Percentual,
   TipoFicha,
   UnidadeRendimento,
@@ -399,4 +400,130 @@ export function derivarFicha(entrada: EntradaFicha): DerivadosFicha {
     precoVenda,
     verificacao: verificarPreco(precoVenda, custo.custoUnitario, taxas),
   };
+}
+
+/** O que a conta de hoje precisa de um material vivo. `Insumo` serve. */
+export type MaterialDeHoje = Pick<
+  Insumo,
+  "id" | "nome" | "custoUnidadeBaseCorrigido"
+>;
+
+export interface CustoDeHoje {
+  custoUnitario: Centavos;
+  /** O que sobra por unidade, ao preço praticado, com os materiais de hoje. */
+  sobra: Centavos;
+  /** A linha que mais subiu desde o gravado. `null` quando nada subiu. */
+  culpado: { nome: string; subiu: Centavos } | null;
+  /** Cruzou o zero ou a margem pedida desde o último Salvar (`#d136`). */
+  caiu: boolean;
+}
+
+/**
+ * O custo da ficha se ela salvasse agora: o gravado mais o que mudou, linha a
+ * linha, com as mesmas funções que gravaram (`#d135`). Material arquivado fica
+ * na linha gravada; invisíveis ficam, porque configuração não é material.
+ */
+export function custoDeHoje(
+  ficha: FichaTecnica,
+  materiais: Map<string, MaterialDeHoje>,
+  /** O custo unitário de hoje das receitas, para o kit. Vazio numa receita. */
+  receitasHoje: Map<string, Centavos> = new Map(),
+  /** As fichas com o custo de hoje, para a escolha do combo. */
+  fichasHoje: FichaParaEscolha[] = [],
+): CustoDeHoje {
+  let total = ficha.custoTotalLote;
+  let culpado: CustoDeHoje["culpado"] = null;
+
+  for (const item of ficha.itens) {
+    const material = materiais.get(item.insumoId);
+    if (!material) continue;
+    const delta =
+      custoLinhaItem({
+        ...item,
+        custoUnidadeBaseCorrigido: material.custoUnidadeBaseCorrigido,
+      }) - item.custoLinha;
+    total += delta;
+    if (delta > (culpado?.subiu ?? 0)) {
+      culpado = { nome: material.nome, subiu: delta };
+    }
+  }
+
+  for (const componente of ficha.componentes) {
+    const hoje = receitasHoje.get(componente.fichaId);
+    if (hoje === undefined) continue;
+    const delta =
+      custoLinhaComponente({ ...componente, custoUnitarioSnapshot: hoje }) -
+      componente.custoLinha;
+    total += delta;
+    if (delta > (culpado?.subiu ?? 0)) {
+      culpado = { nome: componente.nomeSnapshot, subiu: delta };
+    }
+  }
+
+  if (temEscolhas(ficha)) {
+    total +=
+      custoDasEscolhas(ficha.escolhas ?? [], fichasHoje, ficha.id).referencia -
+      (ficha.custoEscolhas ?? 0);
+  }
+
+  const custoUnitario =
+    ficha.rendimento > 0 ? Math.round(total / ficha.rendimento) : 0;
+  const p = ficha.precificacao;
+  const sobra = verificarPreco(
+    p.precoVenda,
+    custoUnitario,
+    somaTaxas(p),
+  ).lucroUnitario;
+
+  // `arredondamento` não muda `precoSugerido`, só o de vitrine; qualquer um serve.
+  const sugerido = calcularPrecoSugerido(custoUnitario, {
+    metodo: p.metodo,
+    markup: p.markup ?? 0,
+    margemDesejada: p.margemDesejada ?? 0,
+    taxaCartaoConsiderada: p.taxaCartaoConsiderada,
+    outrasTaxas: p.outrasTaxas,
+    arredondamento: "NENHUM",
+  });
+  const abaixoHoje = sugerido.ok && p.precoVenda < sugerido.precoSugerido;
+  const abaixoGravado = p.precoVenda < p.precoSugerido;
+
+  return {
+    custoUnitario,
+    sobra,
+    culpado,
+    caiu: (sobra < 0 && p.lucroUnitario >= 0) || (abaixoHoje && !abaixoGravado),
+  };
+}
+
+/**
+ * Toda ficha viva, de uma vez: as receitas primeiro, os kits com o custo de
+ * hoje delas. Um nível, porque kit não contém kit (`#d11`).
+ */
+export function custosDeHoje(
+  fichas: FichaTecnica[],
+  materiais: MaterialDeHoje[],
+): Map<string, CustoDeHoje> {
+  const porId = new Map(materiais.map((m) => [m.id, m]));
+  const resultado = new Map<string, CustoDeHoje>();
+
+  for (const ficha of fichas) {
+    if (ficha.tipo === "SIMPLES")
+      resultado.set(ficha.id, custoDeHoje(ficha, porId));
+  }
+  const receitasHoje = new Map(
+    [...resultado].map(([id, hoje]) => [id, hoje.custoUnitario]),
+  );
+  const fichasHoje = fichas.map((ficha) => ({
+    ...ficha,
+    custoUnitario: receitasHoje.get(ficha.id) ?? ficha.custoUnitario,
+  }));
+  for (const ficha of fichas) {
+    if (ficha.tipo === "KIT") {
+      resultado.set(
+        ficha.id,
+        custoDeHoje(ficha, porId, receitasHoje, fichasHoje),
+      );
+    }
+  }
+  return resultado;
 }

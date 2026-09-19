@@ -11,8 +11,10 @@ import {
   custoGravado,
   ROTULO_TIPO_FICHA,
   SUFIXO_UNIDADE_RENDIMENTO,
+  type CustoDeHoje,
 } from "@/lib/domain/custoFicha";
-import { formatarPercentual } from "@/lib/domain/money";
+import { formatarMoeda, formatarPercentual } from "@/lib/domain/money";
+import { palavraSobra } from "./LinhaFicha";
 import { somaTaxas } from "@/lib/domain/precificacao";
 import type { Centavos, FichaTecnica } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
@@ -45,9 +47,12 @@ function Metrica({ rotulo, valor }: { rotulo: string; valor: Centavos }) {
  */
 export function PainelProduto({
   ficha,
+  hoje,
   aoFechar,
 }: {
   ficha: FichaTecnica;
+  /** O custo e a sobra se ela salvasse agora, com os materiais de hoje (`#d135`). */
+  hoje?: CustoDeHoje;
   aoFechar: () => void;
 }) {
   const ref = useRef<HTMLElement>(null);
@@ -109,9 +114,27 @@ export function PainelProduto({
             >
               Custo desatualizado
             </Selo>
-            <p className="text-label text-ink-muted">
-              Abra o produto e salve para recalcular com os preços de hoje.
-            </p>
+            {/* Com o número igual (a marca mudou, o preço não), a frase às
+                cegas fica: não há o que dizer que o selo já não diga. */}
+            {hoje && hoje.sobra !== lucro ? (
+              <p className="text-label text-ink-muted">
+                Com os materiais de hoje custa{" "}
+                <span className="font-medium text-ink">
+                  {formatarMoeda(hoje.custoUnitario)}
+                </span>{" "}
+                e {palavraSobra(hoje.sobra)}{" "}
+                <span className="font-medium text-ink">
+                  {formatarMoeda(Math.abs(hoje.sobra))}
+                </span>{" "}
+                por unidade.{" "}
+                {hoje.culpado && `${hoje.culpado.nome} foi o que mais subiu. `}
+                Abra e salve para gravar.
+              </p>
+            ) : (
+              <p className="text-label text-ink-muted">
+                Abra o produto e salve para recalcular com os preços de hoje.
+              </p>
+            )}
           </div>
         )}
 

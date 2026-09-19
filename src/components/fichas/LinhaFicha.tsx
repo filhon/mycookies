@@ -12,13 +12,14 @@ import { Selo } from "@/components/ui/Selo";
 import {
   ROTULO_UNIDADE_RENDIMENTO,
   SUFIXO_UNIDADE_RENDIMENTO,
+  type CustoDeHoje,
 } from "@/lib/domain/custoFicha";
 import { formatarMoeda } from "@/lib/domain/money";
 import type {
   CapacidadeDaFicha,
   ProjecaoDoPronto,
 } from "@/lib/domain/producao";
-import type { FichaTecnica } from "@/lib/types";
+import type { Centavos, FichaTecnica } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
 /** As seis colunas da tabela, na proporção da prancha (`#d129`). */
@@ -26,6 +27,33 @@ export const COLUNAS_FICHA = "lg:grid-cols-[2.4fr_1fr_1.2fr_1.2fr_1.2fr_1.4fr]";
 
 /** O `lg:` do Tailwind, para o clique decidir entre o painel e o editor. */
 const DESKTOP = "(min-width: 64rem)";
+
+/** "sobram" ou "perde", conforme o sinal (`#d136`). */
+export function palavraSobra(centavos: Centavos): "sobram" | "perde" {
+  return centavos < 0 ? "perde" : "sobram";
+}
+
+const PASSADO: Record<ReturnType<typeof palavraSobra>, string> = {
+  sobram: "sobravam",
+  perde: "perdia",
+};
+
+/**
+ * "sobram R$ 1,80 → R$ 0,90" quando o gravado e o de hoje ficam do mesmo lado
+ * do zero; "sobram R$ 0,07 → perde R$ 0,43" quando cruza — a segunda palavra
+ * só aparece quando o sinal muda.
+ */
+export function fraseSetaSobra(gravado: Centavos, hoje: Centavos): string {
+  const palavraHoje = palavraSobra(hoje);
+  const segunda =
+    palavraHoje === palavraSobra(gravado) ? "" : `${palavraHoje} `;
+  return `${palavraSobra(gravado)} ${formatarMoeda(Math.abs(gravado))} → ${segunda}${formatarMoeda(Math.abs(hoje))}`;
+}
+
+/** A mesma frase, para quem ouve: o gravado no passado, o de hoje no presente. */
+function fraseSetaSobraLeitorDeTela(gravado: Centavos, hoje: Centavos): string {
+  return `${PASSADO[palavraSobra(gravado)]} ${formatarMoeda(Math.abs(gravado))}, hoje ${palavraSobra(hoje)} ${formatarMoeda(Math.abs(hoje))}`;
+}
 
 /**
  * Uma ficha na lista: nome, o que ela custa, o que ela deixa e quantas
@@ -52,6 +80,7 @@ export function LinhaFicha({
   ficha,
   capacidade,
   pronto,
+  hoje,
   selecionada = false,
   aoSelecionar,
 }: {
@@ -60,13 +89,18 @@ export function LinhaFicha({
   capacidade?: CapacidadeDaFicha | null;
   /** O que está pronto, e quanto disso já é de pedido aberto (13D). */
   pronto?: { pronto: ProjecaoDoPronto; reservado: number };
+  /** O custo e a sobra se ela salvasse agora, com os materiais de hoje (`#d135`). */
+  hoje?: CustoDeHoje;
   /** A linha cujo produto está no painel ao lado. Só no desktop. */
   selecionada?: boolean;
   /** No desktop, o clique simples abre o painel em vez de navegar. */
   aoSelecionar?: () => void;
 }) {
   const lucro = ficha.precificacao.lucroUnitario;
-  const noPrejuizo = lucro < 0;
+  const sobraAtual = hoje?.sobra ?? lucro;
+  const noPrejuizo = sobraAtual < 0;
+  // A seta só existe quando o número de hoje realmente difere do gravado.
+  const mudouHoje = hoje !== undefined && hoje.sobra !== lucro;
   const temProducao =
     !!pronto ||
     !!capacidade ||
@@ -120,6 +154,10 @@ export function LinhaFicha({
   const icone = noPrejuizo && (
     <TriangleAlert aria-hidden className="size-3.5 shrink-0" strokeWidth={2} />
   );
+  // Só existe quando a seta existe: sem mudança, o texto visível já se lê sozinho.
+  const leitorDeTela = mudouHoje
+    ? fraseSetaSobraLeitorDeTela(lucro, sobraAtual)
+    : null;
 
   return (
     <li>
@@ -161,9 +199,14 @@ export function LinhaFicha({
               )}
             >
               {icone}
-              {noPrejuizo
-                ? `perde ${formatarMoeda(Math.abs(lucro))}`
-                : `sobram ${formatarMoeda(lucro)}`}
+              {mudouHoje ? (
+                <>
+                  <span className="sr-only">{leitorDeTela}</span>
+                  <span aria-hidden>{fraseSetaSobra(lucro, sobraAtual)}</span>
+                </>
+              ) : (
+                `${palavraSobra(sobraAtual)} ${formatarMoeda(Math.abs(sobraAtual))}`
+              )}
             </p>
           </div>
 
@@ -214,15 +257,29 @@ export function LinhaFicha({
           </p>
           <p
             className={cn(
-              "num flex items-center justify-end gap-1 text-body font-semibold",
+              "num flex flex-wrap items-center justify-end gap-1 text-body font-semibold",
               noPrejuizo ? "text-negative" : "text-ink",
             )}
           >
-            <span className="sr-only">{noPrejuizo ? "perde " : "sobram "}</span>
+            <span className="sr-only">
+              {leitorDeTela ?? `${palavraSobra(sobraAtual)} `}
+            </span>
+            {/* O gravado, só quando difere: número menor, sem peso, antes da seta. */}
+            {mudouHoje && (
+              <>
+                <span aria-hidden className="font-normal text-ink-muted">
+                  {lucro < 0 && "−"}
+                  {formatarMoeda(Math.abs(lucro))}
+                </span>
+                <span aria-hidden className="text-ink-subtle">
+                  →
+                </span>
+              </>
+            )}
             {icone}
             {/* O sinal é para quem vê: o leitor de tela já ouviu "perde". */}
             {noPrejuizo && <span aria-hidden>−</span>}
-            {formatarMoeda(Math.abs(lucro))}
+            {formatarMoeda(Math.abs(sobraAtual))}
           </p>
         </div>
       </Link>

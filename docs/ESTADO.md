@@ -1,6 +1,9 @@
 # Estado do projeto
 
-Atualizado em 2026-09-19 (spec 023 entregue, primeira da fase 1 do roadmap; mais a 034 entregue por cima da 033, o primeiro passe de navegador sobre as duas, `#d131`; **033 e 034 por publicar juntas**; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 033 e 034 por rodar).
+Atualizado em 2026-09-19 (spec 023 entregue, primeira da fase 1 do roadmap; a 024 entregue
+depois dela, a segunda da fase 1; mais a 034 entregue por cima da 033, o primeiro passe de
+navegador sobre as duas, `#d131`; **033 e 034 por publicar juntas**; roteiros das 015, 016, 017,
+018, 019, 020, 021, 022, 023, 024, 033 e 034 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -187,8 +190,8 @@ nunca visto rodando — **fechou com a 5B**. O que ficou dele é uma linha na ta
 releitura dos cinco textos de `src/lib/domain/onboarding.ts` contra o que a 5B viu, que a 8B
 não pôde fazer na época.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **536
-testes** (526 até a 018; 535 com a 033-C; 536 com a 034), e build com 17 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **547
+testes** (526 até a 018; 535 com a 033-C; 536 com a 034; 547 com a 024), e build com 17 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
 `/insumos/contagem` na 7A, `/comecar` na 8A e `/fichas/contagem` na 13D — mais `/api/nota`,
 `/fichas/[id]`, `/pedidos/[id]` e `/pedidos/[id]/orcamento` (17A) dinâmicas e service worker
 gerado.
@@ -251,6 +254,7 @@ os números digitados de ponta a ponta.
 | 21  | As palavras dela                            | pronto, sem o roteiro               | `specs/021-as-palavras-dela.md`            |
 | 22  | A segunda conta                             | pronto, sem o roteiro               | `specs/022-a-segunda-conta.md`             |
 | 23  | Sair sem salvar                             | pronto, sem o roteiro               | `specs/023-sair-sem-salvar.md`             |
+| 24  | Fichas no vermelho                          | pronto, sem o roteiro               | `specs/024-fichas-no-vermelho.md`          |
 | 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`               |
 | 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`              |
 
@@ -2646,6 +2650,42 @@ estáticas de sempre. **O roteiro de dezesseis passos não rodou nesta sessão**
 12 e 15 exigem Android de verdade, porque é o único lugar onde a sentinela, o `<dialog>` e o
 gesto de voltar do sistema operacional são vistos juntos.
 
+## A spec 024 · Fichas no vermelho
+
+**Entregue**, a segunda spec da fase 1 do roadmap, e a frase que o `docs/saas/CLAUDE.md` chama
+de "a notificação que salva assinatura": "o chocolate subiu, três produtos ficaram no vermelho".
+Só leitura — nenhum campo, nenhuma mutação, nenhuma rota, nenhuma regra, nenhum índice, nenhuma
+dependência, nenhuma linha em `src/lib/firebase/`:
+
+- `domain/custoFicha.ts`: `custoDeHoje` e `custosDeHoje`, ao lado de `custoGravado`. A sobra de
+  hoje é o gravado mais o que mudou, linha a linha, com as mesmas funções que gravaram
+  (`custoLinhaItem`, `custoLinhaComponente`, `custoDasEscolhas`); sem mudança, o resultado é o
+  gravado centavo por centavo, por construção (`#d135`). `CustoDeHoje.caiu` só fica `true`
+  quando o produto cruza uma linha desde o último Salvar — o zero, ou a margem pedida (`#d136`).
+- `LinhaFicha.tsx`: a seta "sobram R$ 1,80 → R$ 0,90" na coluna Sobra, em toda diferença
+  (inclusive kit, inclusive para cima), só quando `hoje.sobra !== lucroUnitario`; a palavra, a
+  cor e o ícone passam a seguir a sobra de hoje. `palavraSobra` e `fraseSetaSobra` nasceram
+  aqui e são reusadas pelo cartão da Hoje.
+- `PainelProduto.tsx`: com o selo de custo desatualizado ligado e o número mudado, a frase às
+  cegas ("Abra o produto e salve para recalcular") vira "Com os materiais de hoje custa R$ 2,93
+  e sobram R$ 3,97 por unidade. Chocolate foi o que mais subiu."; com o número igual (a marca
+  mudou, o preço não), a frase antiga fica.
+- `CartaoNoVermelhoHoje.tsx`, na tela Hoje entre a meta e a agenda: só existe quando alguma
+  ficha viva cruzou uma linha; título e ícone seguem se a pior perde ou só fica abaixo da
+  margem; "e mais N" no plural, sem `listarNomes` — o nome que importa é o pior, os outros
+  estão a um toque.
+- `ListaFichas.tsx`: `custosDeHoje(dados, insumos)` num `useMemo`, passado à linha e ao painel
+  só quando a despensa chegou — a mesma regra da capacidade.
+
+Decisões novas em `DECISOES.md#d135` e `#d136`. Testes: os nove casos de aceite do domínio, em
+`tests/domain/custoFicha.test.ts` — **536 → 547**. Portão rodado de verdade: lint e typecheck
+limpos, os 547 testes, build com as mesmas rotas de sempre (nenhuma nova); `npx impeccable
+--json src/` continua `[]`; `git diff` de `src/lib/types/`, `src/lib/firebase/`,
+`firestore.rules`, `firestore.indexes.json` e `package.json` vazio. **O roteiro de dez passos
+não rodou nesta sessão** — o passo 1 (sem mudança, nenhuma seta em lugar nenhum) e o passo 3 (o
+número que a lista mostra bate com o que o editor recalcula) são os dois que provam que o
+`#d135` está certo, e os dois dependem de conta real com rede.
+
 ## Próxima ação
 
 **Publicar a 033 e a 034 juntas** (`docs/DEPLOY.md`). Antes, os roteiros no `npm run dev`, nos
@@ -2662,9 +2702,11 @@ desinstalar e reinstalar o app no Android e no iPhone, porque `theme_color` e
 a meio metro, e o teste da desassociação: `/fichas/[id]` ao lado da caixa da MyCookie's; e
 **a frase**: "Frase do orçamento" em `/configuracao`, uma vez (`#d127`).
 
-**Com a 033 fechada e a 023 entregue, o próximo passo é o resto da fase 1 do roadmap**: as
-cinco a oito entrevistas com confeiteiras que não são a Maynara, e a 024 depois delas
-(`docs/saas/ROADMAP.md`).
+**Com a 033 fechada, a 023 e a 024 entregues, o que falta da fase 1 do roadmap são as cinco a
+oito entrevistas com confeiteiras que não são a Maynara** (`docs/saas/ROADMAP.md`). A 024 rodou
+antes delas, por decisão de quem conduz o projeto: a spec não dependia de código nenhum, e o
+roadmap não exigia a ordem. Depois das entrevistas: a 025 se pedirem clientes, a 026 se falarem
+da fornada que quebrou.
 
 **Rodar o roteiro de oito passos da spec 020** (duas contas, DevTools em Offline nos passos 1 a
 5): confirma que a ficha-modelo abre com "Mais detalhes" fechada, que insumos da conta real com
@@ -2848,3 +2890,4 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | "O que está pronto" segue sem nome: 3b não fechou                                                                                     | `docs/DECISOES.md#d117`                        | Fecha só com a gravação; "pronta entrega" e "estoque" são as duas candidatas dela, as duas com problema          |
 | O roteiro de nove passos da 022 nunca rodou: sair com pendência offline, o convite de ponta a ponta e `npm run metricas` sem prova    | `AuthProvider.tsx`, `scripts/`                 | Próxima ação, com DevTools em Offline e um e-mail sem login; `npm test` não abre navegador nem chama o Admin SDK |
 | O roteiro de dezesseis passos da 023 nunca rodou: a sentinela, o `<dialog>` e o gesto de voltar do Android sem prova                  | `useGuardaDeSaida.tsx`, `Confirmacao.tsx`      | Próxima ação; os passos 3, 12 e 15 exigem Android de verdade, `npm test` não abre navegador                      |
+| O roteiro de dez passos da 024 nunca rodou: a seta, o cartão e o painel sem prova em conta real com rede                              | `LinhaFicha.tsx`, `CartaoNoVermelhoHoje.tsx`   | Próxima ação; o passo 1 (sem mudança) e o passo 3 (lista bate com o editor) são os que provam o `#d135`          |

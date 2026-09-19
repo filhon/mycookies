@@ -4317,3 +4317,58 @@ sido do sistema. O custo é um toque a mais para quem abriu a contagem por engan
 
 Não é sujo, de propósito: mandar no WhatsApp (abre outra aba, não é sair) e salvar a
 configuração (o hook desarma sozinho quando `base` volta a bater com o estado).
+
+## D135 · A sobra de hoje é o gravado mais o que mudou, linha a linha
+
+**Status:** vigente · decidida em 2026-09-19, na spec `024-fichas-no-vermelho.md`
+
+**Contexto.** Quando um material sobe de preço, `marcarFichasDesatualizadas` marca
+`custoDesatualizado: true`, mas o sistema nunca diz **o que** mudou — só que o número
+envelheceu. O roadmap nomeia `derivarFicha` como a resposta, mas reconstruir a `EntradaFicha` a
+partir do documento gravado exigiria a configuração inteira (`rateioDaConta`,
+`arredondamento`) em cada leitor, e misturaria duas perguntas diferentes: "o que você compra
+ficou mais caro?" (desta spec) e "você mudou o valor da sua hora?" (já é da faixa do editor,
+que recalcula tudo ao salvar).
+
+**Decisão.** `custoDeHoje` (fim de `domain/custoFicha.ts`, ao lado de `custoGravado`) parte do
+gravado e soma só o delta de cada linha, com as mesmas funções que gravaram —
+`custoLinhaItem` e `custoLinhaComponente`. Material arquivado (fora do mapa de materiais vivos)
+fica na linha gravada; componente de kit usa o custo unitário de hoje da receita, um nível
+(`#d11`); escolha de combo usa `custoDasEscolhas` sobre as fichas com custo de hoje (`#d101`);
+invisíveis (hora, energia, fixas) ficam gravados, porque configuração não é material; rendimento
+e preço praticado ficam gravados, porque são decisão tomada. Sem mudança nenhuma, o resultado é
+o gravado centavo por centavo, **por construção**: cada delta é a mesma função aplicada duas
+vezes, subtraída dela mesma. `custosDeHoje` faz a conta pra toda ficha viva de uma vez: as
+receitas primeiro, os kits depois, com o custo de hoje das receitas na mão.
+
+**Consequência.** Nenhuma leitura nova de configuração, nenhum campo novo. Se um dia a pergunta
+virar "quanto custaria salvar agora, com tudo" (inclusive hora e energia), aí sim é
+`derivarFicha` com a configuração — e esta decisão ganha a nota.
+
+## D136 · O cartão conta cruzamento; a lista mostra toda diferença
+
+**Status:** vigente · decidida em 2026-09-19, na spec `024-fichas-no-vermelho.md`
+
+**Contexto.** Com `custoDeHoje` em mãos, faltava decidir o que a tela Hoje e a lista de
+`/fichas` fazem com o número. Um cartão que mostrasse toda diferença — a farinha sobe dois
+centavos, a sobra de todo produto muda um centavo — seria permanente, e cartão permanente é
+paisagem. A lista, ao contrário, já é o lugar onde ela confere centavo por centavo.
+
+**Decisão.** `CustoDeHoje.caiu` só fica `true` quando o produto **cruzou uma linha** desde o
+último Salvar: passou a perder dinheiro (`sobra < 0` com `lucroUnitario` gravado `≥ 0`), ou
+passou a cobrar menos do que a própria conta pede (`precoVenda < precoSugeridoHoje` quando
+`precoVenda ≥ precoSugerido` gravado). Quem já cobrava abaixo do sugerido de propósito não vira
+notícia por continuar abaixo — só quando o preço praticado cruza para debaixo do sugerido de
+hoje **e** não estava debaixo do gravado. A comparação é entre preços, nunca entre percentuais
+(`margemReal`/`markupReal` têm duas casas, e um produto de R$ 0,60 cruzaria a margem só por
+arredondamento), e usa `arredondamento: "NENHUM"` para calcular o sugerido de hoje — o
+arredondamento de vitrine não muda `precoSugerido`, só o preço que vai na etiqueta.
+`CartaoNoVermelhoHoje` (tela Hoje) só existe quando alguma ficha viva tem `caiu: true`; some ao
+salvar. A linha de `/fichas` e o painel do produto, ao contrário, mostram **toda** diferença
+entre a sobra gravada e a de hoje, inclusive o centavo e inclusive para cima: é a verdade de
+hoje, e uma lista que esconde um centavo é uma lista em que ela não confia.
+
+**Consequência.** Duas leituras do mesmo `CustoDeHoje`: `sobra` alimenta a seta em toda ficha
+(`LinhaFicha`, `PainelProduto`), `caiu` decide se o cartão existe. Se um dia a Maynara quiser
+ver toda queda no cartão, é trocar `caiu` por um limiar em centavos — e esta decisão ganha a
+nota.

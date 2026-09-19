@@ -19,6 +19,7 @@ import { PainelProduto } from "./PainelProduto";
 import { ID_FICHA_NOVA } from "./EditorFicha";
 import { BotaoBiblioteca } from "@/components/biblioteca/BotaoBiblioteca";
 import { EntradaContagemPronto } from "@/components/producao/EntradaContagemPronto";
+import { custosDeHoje } from "@/lib/domain/custoFicha";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { dataISODe } from "@/lib/domain/datas";
 import { capacidadeDaFicha, projecaoDoPronto } from "@/lib/domain/producao";
@@ -96,6 +97,11 @@ export function ListaFichas() {
       ]),
     );
   }, [pedidos, dados, insumos, fornadas, hoje]);
+
+  // O custo e a sobra se cada ficha salvasse agora, com os materiais de hoje
+  // (`#d135`). Só passado adiante quando a despensa chegou: enquanto isso, a
+  // linha não diz nada, em vez de dizer "igual" por um instante e trocar.
+  const hojes = useMemo(() => custosDeHoje(dados, insumos), [dados, insumos]);
 
   const visiveis = useMemo(() => {
     const termo = chaveDeBusca(busca);
@@ -293,6 +299,7 @@ export function ListaFichas() {
                     pronto={
                       despensaPronta ? capacidades.get(ficha.id) : undefined
                     }
+                    hoje={despensaPronta ? hojes.get(ficha.id) : undefined}
                     selecionada={ficha.id === selecionada?.id}
                     aoSelecionar={() => setSelecionadaId(ficha.id)}
                   />
@@ -303,7 +310,11 @@ export function ListaFichas() {
         </div>
 
         {selecionada && (
-          <PainelProduto ficha={selecionada} aoFechar={fecharPainel} />
+          <PainelProduto
+            ficha={selecionada}
+            hoje={despensaPronta ? hojes.get(selecionada.id) : undefined}
+            aoFechar={fecharPainel}
+          />
         )}
       </div>
 

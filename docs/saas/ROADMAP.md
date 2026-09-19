@@ -230,12 +230,23 @@ pote" em `PainelFornada` virou `Link` (a única saída programática dentro de u
 foco vai ao primeiro campo com erro quando o Salvar recusa. O roteiro de dezesseis passos, com
 Android de verdade, ainda não rodou.
 
-**024 · Fichas no vermelho.** O alerta de custo.
+**024 · Fichas no vermelho.** Entregue em 2026-09-19 (`specs/024-fichas-no-vermelho.md`,
+`DECISOES.md#d135` e `#d136`), fora da ordem: rodou antes das entrevistas, porque a spec não
+dependia de código nenhum e o roadmap não exigia a sequência. O alerta de custo, do jeito que o
+roadmap previu e um pouco mais:
 
-- `derivarFicha` já recalcula uma ficha com os insumos de hoje. Um cartão na tela Hoje — "3
-  fichas ficaram abaixo da margem depois da última compra" — e a linha em `/fichas` dizendo
-  "sobra R$ 1,80 → R$ 0,90". Só leitura: `custoDesatualizado` e `historicoPrecos` já existem.
-- Aprovações: nenhuma.
+- `custoDeHoje`/`custosDeHoje` (`domain/custoFicha.ts`), e não `derivarFicha`: o delta linha a
+  linha sobre o gravado, com as mesmas funções que gravaram, é quarenta linhas contra a
+  configuração inteira que reconstruir a `EntradaFicha` exigiria (`#d135`).
+- A seta "sobram R$ 1,80 → R$ 0,90" entrou na linha de `/fichas`, em toda diferença — não só na
+  previsão original. O cartão da tela Hoje entrou como o roadmap descreveu, mas conta
+  **cruzamento** (o produto que passou a perder ou a ficar abaixo da margem desde o último
+  Salvar), e não a diferença que o exemplo do roadmap sugeria: cartão permanente é paisagem
+  (`#d136`). O painel do produto, que o roadmap não citava, ganhou o número no lugar do convite
+  às cegas para abrir e salvar.
+- Só leitura, como previsto: nenhum campo, nenhuma mutação, nenhuma rota, nenhuma regra, nenhum
+  índice, nenhuma dependência.
+- **O roteiro de dez passos, com conta real e rede, ainda não rodou.**
 
 **025 · Quem mais compra de mim.** Tela de clientes (dívida da tabela).
 

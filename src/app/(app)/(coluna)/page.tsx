@@ -5,6 +5,7 @@ import { Settings } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { CartaoPrimeirosPassos } from "@/components/comecar/CartaoPrimeirosPassos";
 import { CartaoComprasHoje } from "@/components/compras/CartaoComprasHoje";
+import { CartaoNoVermelhoHoje } from "@/components/fichas/CartaoNoVermelhoHoje";
 import { CartaoMetaHoje } from "@/components/metas/CartaoMetaHoje";
 import { AgendaHoje } from "@/components/pedidos/AgendaHoje";
 import { useAuth } from "@/providers/AuthProvider";
@@ -57,6 +58,10 @@ export default function PaginaHoje() {
         {/* O número que ela persegue vem antes da agenda: é o que decide o que
             vai para o forno hoje. */}
         <CartaoMetaHoje />
+
+        {/* Raro, e a consequência direta da compra que ela acabou de lançar:
+            "o que eu faço agora" vem antes de "o que vem depois". */}
+        <CartaoNoVermelhoHoje />
       </div>
 
       <AgendaHoje />

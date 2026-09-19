@@ -3,16 +3,20 @@ import {
   calcularCustoFicha,
   composicaoDoLote,
   custoDasEscolhas,
+  custoDeHoje,
   custoGravado,
   custoLinhaItem,
+  custosDeHoje,
   ehEmbalagem,
   opcoesDaEscolha,
   podeSerComponente,
   temEscolhas,
   type EntradaCustoFicha,
   type FichaParaEscolha,
+  type MaterialDeHoje,
   type RateioOperacional,
 } from "@/lib/domain/custoFicha";
+import type { FichaTecnica } from "@/lib/types";
 
 const RATEIO_ZERO: RateioOperacional = {
   valorHoraTrabalho: 0,
@@ -466,5 +470,390 @@ describe("custoGravado", () => {
     expect(composicaoDoLote(custo).map((s) => s.centavos)).toEqual([
       6240, 900, 1120, 360, 200,
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spec 024 · fichas no vermelho: o gravado mais o que mudou, linha a linha.
+// Caso de aceite: farinha 500 g a 1,25 c/g (625), chocolate 200 g a 4,00 c/g
+// (800), invisíveis 1000, rendimento 10 → lote 2425, unitário 243; markup
+// 2,5, taxas 0, sugerido 608, praticado 690, sobra gravada 447 (`#d135`).
+// ---------------------------------------------------------------------------
+
+function fichaHoje(parcial: Partial<FichaTecnica> = {}): FichaTecnica {
+  return {
+    id: "cookie",
+    v: 1,
+    criadoEm: null,
+    atualizadoEm: null,
+    arquivado: false,
+    nome: "Cookie recheado",
+    nomeBusca: "cookie recheado",
+    categoria: "Cookie",
+    tipo: "SIMPLES",
+    rendimento: 10,
+    unidadeRendimento: "un",
+    itens: [
+      {
+        insumoId: "farinha",
+        nomeSnapshot: "Farinha",
+        categoria: "INGREDIENTE",
+        quantidade: 500,
+        unidadeBase: "g",
+        custoLinha: 625,
+      },
+      {
+        insumoId: "chocolate",
+        nomeSnapshot: "Chocolate",
+        categoria: "INGREDIENTE",
+        quantidade: 200,
+        unidadeBase: "g",
+        custoLinha: 800,
+      },
+    ],
+    componentes: [],
+    insumoIds: ["farinha", "chocolate"],
+    componenteIds: [],
+    invisiveis: {
+      tempoProducaoMinutos: 20,
+      custoMaoDeObra: 400,
+      custoEnergiaGas: 100,
+      custoIndireto: 500,
+    },
+    custoInsumos: 1425,
+    custoEmbalagem: 0,
+    custoComponentes: 0,
+    custoTotalLote: 2425,
+    custoUnitario: 243,
+    precificacao: {
+      metodo: "MARKUP",
+      markup: 2.5,
+      taxaCartaoConsiderada: 0,
+      outrasTaxas: 0,
+      precoSugerido: 608,
+      precoVenda: 690,
+      lucroUnitario: 447,
+      margemReal: 64.78,
+      markupReal: 2.84,
+    },
+    custoCalculadoEm: null,
+    custoDesatualizado: false,
+    ativo: true,
+    ...parcial,
+  } as unknown as FichaTecnica;
+}
+
+const FARINHA: MaterialDeHoje = {
+  id: "farinha",
+  nome: "Farinha",
+  custoUnidadeBaseCorrigido: 1.25,
+};
+
+function mapaMateriais(
+  chocolate = 4,
+  extras: MaterialDeHoje[] = [],
+): Map<string, MaterialDeHoje> {
+  return new Map(
+    [
+      FARINHA,
+      {
+        id: "chocolate",
+        nome: "Chocolate",
+        custoUnidadeBaseCorrigido: chocolate,
+      },
+      ...extras,
+    ].map((material) => [material.id, material]),
+  );
+}
+
+describe("custoDeHoje", () => {
+  const COOKIE = fichaHoje();
+
+  it("sem mudança, devolve o gravado centavo por centavo (`#d135`)", () => {
+    expect(custoDeHoje(COOKIE, mapaMateriais())).toEqual({
+      custoUnitario: 243,
+      sobra: 447,
+      culpado: null,
+      caiu: false,
+    });
+  });
+
+  it("chocolate a 6,50 c/g: unitário 293, sobra 397, culpado Chocolate, caiu", () => {
+    expect(custoDeHoje(COOKIE, mapaMateriais(6.5))).toEqual({
+      custoUnitario: 293,
+      sobra: 397,
+      culpado: { nome: "Chocolate", subiu: 500 },
+      caiu: true,
+    });
+  });
+
+  it("chocolate a 3,00 c/g: sobra sobe, sem culpado e sem cartão", () => {
+    expect(custoDeHoje(COOKIE, mapaMateriais(3))).toEqual({
+      custoUnitario: 223,
+      sobra: 467,
+      culpado: null,
+      caiu: false,
+    });
+  });
+
+  it("material arquivado fica fora do mapa: tudo igual ao gravado", () => {
+    const semChocolate = new Map([["farinha", FARINHA]]);
+    expect(custoDeHoje(COOKIE, semChocolate)).toEqual({
+      custoUnitario: 243,
+      sobra: 447,
+      culpado: null,
+      caiu: false,
+    });
+  });
+
+  it("já no vermelho não é notícia; cruzar o zero é (`#d136`)", () => {
+    const jaNoVermelho = fichaHoje({
+      precificacao: {
+        ...COOKIE.precificacao,
+        precoVenda: 200,
+        lucroUnitario: -43,
+      },
+    });
+    expect(custoDeHoje(jaNoVermelho, mapaMateriais(6.5)).caiu).toBe(false);
+
+    const cruzouOZero = fichaHoje({
+      precificacao: {
+        ...COOKIE.precificacao,
+        precoVenda: 250,
+        lucroUnitario: 7,
+      },
+    });
+    const hoje = custoDeHoje(cruzouOZero, mapaMateriais(6.5));
+    expect(hoje.sobra).toBe(-43);
+    expect(hoje.caiu).toBe(true);
+  });
+
+  it("abaixo do sugerido de propósito não é notícia; só cruza pelo zero", () => {
+    const deProposito = fichaHoje({
+      precificacao: {
+        ...COOKIE.precificacao,
+        precoVenda: 600,
+        lucroUnitario: 357,
+      },
+    });
+    expect(custoDeHoje(deProposito, mapaMateriais(6.5)).caiu).toBe(false);
+
+    const hoje20 = custoDeHoje(deProposito, mapaMateriais(20));
+    expect(hoje20.custoUnitario).toBe(563);
+    expect(hoje20.sobra).toBe(37);
+    expect(hoje20.caiu).toBe(false);
+  });
+
+  it("rendimento zero: custo unitário zero, sem NaN", () => {
+    const semRendimento = fichaHoje({ rendimento: 0 });
+    const hoje = custoDeHoje(semRendimento, mapaMateriais(6.5));
+    expect(hoje.custoUnitario).toBe(0);
+    expect(Number.isFinite(hoje.custoUnitario)).toBe(true);
+  });
+
+  it("MARGEM_IMPOSSIVEL: nunca 'abaixo', mas a sobra ainda muda", () => {
+    const margemImpossivel = fichaHoje({
+      precificacao: {
+        metodo: "MARGEM",
+        margemDesejada: 100,
+        taxaCartaoConsiderada: 0,
+        outrasTaxas: 0,
+        precoSugerido: 0,
+        precoVenda: 250,
+        lucroUnitario: 7,
+        margemReal: 2.8,
+        markupReal: 1.03,
+      },
+    });
+    const hoje = custoDeHoje(margemImpossivel, mapaMateriais(6.5));
+    expect(hoje.sobra).toBe(-43);
+    expect(hoje.caiu).toBe(true);
+  });
+});
+
+describe("custosDeHoje", () => {
+  it("kit: componente sobe com a receita, culpado é a receita (um nível, `#d11`)", () => {
+    const cookie = fichaHoje();
+    const kit = fichaHoje({
+      id: "caixa-6",
+      nome: "Caixa de 6",
+      tipo: "KIT",
+      rendimento: 1,
+      itens: [
+        {
+          insumoId: "caixa",
+          nomeSnapshot: "Caixa",
+          categoria: "EMBALAGEM",
+          quantidade: 1,
+          unidadeBase: "un",
+          custoLinha: 200,
+        },
+      ],
+      componentes: [
+        {
+          fichaId: "cookie",
+          nomeSnapshot: "Cookie",
+          quantidade: 6,
+          custoUnitarioSnapshot: 243,
+          custoLinha: 1458,
+        },
+      ],
+      insumoIds: ["caixa"],
+      componenteIds: ["cookie"],
+      invisiveis: {
+        tempoProducaoMinutos: 0,
+        custoMaoDeObra: 0,
+        custoEnergiaGas: 0,
+        custoIndireto: 0,
+      },
+      custoInsumos: 0,
+      custoEmbalagem: 200,
+      custoComponentes: 1458,
+      custoTotalLote: 1658,
+      custoUnitario: 1658,
+      precificacao: {
+        metodo: "MARKUP",
+        markup: 1.5,
+        taxaCartaoConsiderada: 0,
+        outrasTaxas: 0,
+        precoSugerido: 2487,
+        precoVenda: 2487,
+        lucroUnitario: 829,
+        margemReal: 33.33,
+        markupReal: 1.5,
+      },
+    });
+
+    const materiais: MaterialDeHoje[] = [
+      FARINHA,
+      { id: "chocolate", nome: "Chocolate", custoUnidadeBaseCorrigido: 6.5 },
+      { id: "caixa", nome: "Caixa", custoUnidadeBaseCorrigido: 200 },
+    ];
+    const resultado = custosDeHoje([cookie, kit], materiais);
+
+    expect(resultado.get("cookie")?.custoUnitario).toBe(293);
+    expect(resultado.get("caixa-6")?.custoUnitario).toBe(1958);
+    expect(resultado.get("caixa-6")?.culpado).toEqual({
+      nome: "Cookie",
+      subiu: 300,
+    });
+  });
+
+  it("combo com escolha: a opção mais cara de hoje entra no custo (`#d101`)", () => {
+    const cookie = fichaHoje({ categoria: "Cookie" });
+    const combo = fichaHoje({
+      id: "combo",
+      nome: "Combo dupla",
+      categoria: "Combo",
+      tipo: "KIT",
+      rendimento: 1,
+      itens: [
+        {
+          insumoId: "saquinho",
+          nomeSnapshot: "Saquinho",
+          categoria: "EMBALAGEM",
+          quantidade: 1,
+          unidadeBase: "un",
+          custoLinha: 50,
+        },
+      ],
+      componentes: [],
+      escolhas: [{ quantidade: 2, categoria: "Cookie" }],
+      insumoIds: ["saquinho"],
+      componenteIds: [],
+      invisiveis: {
+        tempoProducaoMinutos: 0,
+        custoMaoDeObra: 0,
+        custoEnergiaGas: 0,
+        custoIndireto: 0,
+      },
+      custoInsumos: 0,
+      custoEmbalagem: 50,
+      custoComponentes: 0,
+      custoEscolhas: 486,
+      custoTotalLote: 536,
+      custoUnitario: 536,
+      precificacao: {
+        metodo: "MARKUP",
+        markup: 1.5,
+        taxaCartaoConsiderada: 0,
+        outrasTaxas: 0,
+        precoSugerido: 804,
+        precoVenda: 804,
+        lucroUnitario: 268,
+        margemReal: 33.33,
+        markupReal: 1.5,
+      },
+    });
+
+    const materiais: MaterialDeHoje[] = [
+      FARINHA,
+      { id: "chocolate", nome: "Chocolate", custoUnidadeBaseCorrigido: 6.5 },
+    ];
+    const resultado = custosDeHoje([cookie, combo], materiais);
+
+    // Cookie a 293: 2 × 293 = 586, contra 486 gravado → +100.
+    expect(resultado.get("combo")?.custoUnitario).toBe(636);
+  });
+
+  it("categoria sem receita viva: parcela zera, sem Infinity nem NaN", () => {
+    const cookie = fichaHoje({ categoria: "Cookie" });
+    const comboSemTorta = fichaHoje({
+      id: "combo-torta",
+      categoria: "Combo",
+      tipo: "KIT",
+      rendimento: 1,
+      itens: [
+        {
+          insumoId: "saquinho",
+          nomeSnapshot: "Saquinho",
+          categoria: "EMBALAGEM",
+          quantidade: 1,
+          unidadeBase: "un",
+          custoLinha: 50,
+        },
+      ],
+      componentes: [],
+      escolhas: [{ quantidade: 1, categoria: "Torta" }],
+      insumoIds: ["saquinho"],
+      componenteIds: [],
+      invisiveis: {
+        tempoProducaoMinutos: 0,
+        custoMaoDeObra: 0,
+        custoEnergiaGas: 0,
+        custoIndireto: 0,
+      },
+      custoInsumos: 0,
+      custoEmbalagem: 50,
+      custoComponentes: 0,
+      custoEscolhas: 300,
+      custoTotalLote: 350,
+      custoUnitario: 350,
+      precificacao: {
+        metodo: "MARKUP",
+        markup: 1.5,
+        taxaCartaoConsiderada: 0,
+        outrasTaxas: 0,
+        precoSugerido: 525,
+        precoVenda: 525,
+        lucroUnitario: 175,
+        margemReal: 33.33,
+        markupReal: 1.5,
+      },
+    });
+
+    const resultado = custosDeHoje(
+      [cookie, comboSemTorta],
+      [
+        FARINHA,
+        { id: "chocolate", nome: "Chocolate", custoUnidadeBaseCorrigido: 6.5 },
+      ],
+    );
+    const hoje = resultado.get("combo-torta");
+
+    // Sem receita de Torta viva, a parcela some (0 contra 300 gravado): não
+    // vira `Infinity` nem `NaN`, e a sobra apenas sobe.
+    expect(hoje?.custoUnitario).toBe(50);
+    expect(Number.isFinite(hoje?.custoUnitario)).toBe(true);
   });
 });
