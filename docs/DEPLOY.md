@@ -111,6 +111,11 @@ Entrar com e-mail e senha **não** depende disso — funciona de qualquer origem
 o link de recuperação de senha quando ele um dia levar uma URL de continuação, e qualquer
 login por provedor externo. É um clique agora contra um mistério depois.
 
+**Authentication → Settings → User actions.** Antes de publicar `/cadastro` (spec 027), confira
+que "Enable create (sign-up)" está ligado. Desligado, `createUserWithEmailAndPassword` devolve
+`auth/admin-restricted-operation` e nenhuma linha de código conserta. `/api/conta` usa as mesmas
+duas variáveis de servidor da seção 2; nenhuma nova.
+
 ---
 
 ## 4 · Depois do primeiro deploy

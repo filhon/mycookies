@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Simbolo } from "@/components/marca/Marca";
 import { Botao } from "@/components/ui/Botao";
+import { classesBotao } from "@/components/ui/estilosBotao";
 import { AVISO_SAIR_PENDENTE, useAuth } from "@/providers/AuthProvider";
 
 /** Resultado da última reconferência. `null` = ainda não tentou. */
@@ -95,6 +97,18 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
               "Ainda não. Assim que liberarem, é só conferir de novo."}
             {tentativa === "sem-conexao" &&
               "Não deu para conferir agora. Verifique a internet e tente de novo."}
+          </p>
+
+          {/* A terceira porta do segundo estado de `/cadastro` (spec 027):
+              o login nasceu, o POST caiu, e ela voltou dias depois. */}
+          <p className="flex flex-wrap items-center justify-center gap-x-1 text-label text-ink-muted">
+            Acabou de se cadastrar?
+            <Link
+              href="/cadastro"
+              className={classesBotao({ variante: "terciaria", tamanho: "sm" })}
+            >
+              Terminar o cadastro
+            </Link>
           </p>
 
           <Botao

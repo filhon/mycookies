@@ -6,13 +6,18 @@ import {
   type App,
   type Credential,
 } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
+import { getAuth, type Auth } from "firebase-admin/auth";
+import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
 /**
  * O Admin SDK do lado do servidor, e o único lugar que confere um token.
  *
  * Nada aqui entra no pacote do cliente: só `src/app/api/` importa este arquivo,
  * e uma rota não é importada por componente nenhum.
+ *
+ * **Só `/api/conta` escreve no Firestore daqui, só no documento da conta e na
+ * claim, e nunca em dado de negócio.** O motivo é o mesmo de `/api/nota` não
+ * gravar insumo: escrever do servidor é escrever por fora das regras.
  *
  * Verificar a assinatura do JWT à mão, para não mexer no `package.json`, está
  * descartado. O projeto desenha gráfico à mão para não pegar dependência
@@ -113,6 +118,14 @@ function aplicativo(): App {
   });
 }
 
+export function adminAuth(): Auth {
+  return getAuth(aplicativo());
+}
+
+export function adminDb(): Firestore {
+  return getFirestore(aplicativo());
+}
+
 export interface Autenticado {
   uid: string;
   /** O mapa `{ contaId: papel }` da claim. Vazio quando o login não abre nada. */
@@ -129,7 +142,7 @@ export async function conferirToken(
   if (!token) return null;
 
   try {
-    const decodificado = await getAuth(aplicativo()).verifyIdToken(token);
+    const decodificado = await adminAuth().verifyIdToken(token);
     const contas = decodificado.contas;
 
     return {

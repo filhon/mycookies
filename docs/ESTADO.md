@@ -2,10 +2,11 @@
 
 Atualizado em 2026-09-19 (spec 023 entregue, primeira da fase 1 do roadmap; a 024 e a 025
 entregues depois dela, a segunda e a terceira da fase 1; a 026 entregue fora da ordem das
-entrevistas, a quarta e última parcela do custo honesto do `docs/saas/CLAUDE.md` §1; mais a 034
-entregue por cima da 033, o primeiro passe de navegador sobre as duas, `#d131`; **033 e 034 por
-publicar juntas**; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 033 e
-034 por rodar).
+entrevistas, a quarta e última parcela do custo honesto do `docs/saas/CLAUDE.md` §1; a **027
+codificada antes do gatilho da fase 2**, a porta, com o texto dos termos como portão do deploy;
+mais a 034 entregue por cima da 033, o primeiro passe de navegador sobre as duas, `#d131`; **033 e
+034 por publicar juntas**; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025,
+026, 027, 033 e 034 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -192,12 +193,13 @@ nunca visto rodando — **fechou com a 5B**. O que ficou dele é uma linha na ta
 releitura dos cinco textos de `src/lib/domain/onboarding.ts` contra o que a 5B viu, que a 8B
 não pôde fazer na época.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **563
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **569
 testes** (526 até a 018; 535 com a 033-C; 536 com a 034; 547 com a 024; 552 com a 025; 563 com a
-026), e build com 18 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
-`/insumos/contagem` na 7A, `/comecar` na 8A, `/fichas/contagem` na 13D e `/clientes` na 025 —
-mais `/api/nota`, `/fichas/[id]`, `/pedidos/[id]` e `/pedidos/[id]/orcamento` (17A) dinâmicas e
-service worker gerado.
+026; 569 com a 027), e build com 21 rotas estáticas — `/insumos/nota` entrou na lista na 6A,
+`/insumos/contagem` na 7A, `/comecar` na 8A, `/fichas/contagem` na 13D, `/clientes` na 025 e
+`/cadastro`, `/termos` e `/privacidade` na 027 — mais `/api/nota`, `/api/conta` (027),
+`/fichas/[id]`, `/pedidos/[id]` e `/pedidos/[id]/orcamento` (17A) dinâmicas e service worker
+gerado.
 
 **O app está de pé.** Projeto `mycookies-mrc`, `.env.local` preenchido, regras publicadas,
 chave de conta de serviço no disco (fora do git, coberta por `*firebase-adminsdk*.json`).
@@ -260,6 +262,7 @@ os números digitados de ponta a ponta.
 | 24  | Fichas no vermelho                          | pronto, sem o roteiro               | `specs/024-fichas-no-vermelho.md`          |
 | 25  | Quem mais compra de mim                     | pronto, sem o roteiro               | `specs/025-quem-mais-compra-de-mim.md`     |
 | 26  | A fornada que quebrou                       | pronto, sem o roteiro               | `specs/026-a-fornada-que-quebrou.md`       |
+| 27  | Criar a conta sozinha                       | codificada; deploy espera os termos | `specs/027-criar-a-conta-sozinha.md`       |
 | 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`               |
 | 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`              |
 
@@ -2766,9 +2769,69 @@ typecheck limpos, os 563 testes, build com as mesmas 18 rotas estáticas de semp
 aditivo. **O roteiro de dez passos não rodou nesta sessão** — o passo 1 (sem `perdidas` em
 nenhuma fornada, nada muda) é o único que não dá para refazer depois de anotar a primeira quebra.
 
+## A spec 027 · Criar a conta sozinha
+
+**Codificada antes do gatilho da fase 2** (a fase 1 fechada com três contas ativas e a frase do
+preço confirmada nas entrevistas; em 2026-09-19 nem as entrevistas rodaram), por pedido de quem
+conduz o projeto, como a 024, a 025 e a 026. A porta existe no código; **não publica** enquanto
+`/termos` e `/privacidade` estiverem com `[texto de quem conduz o projeto]` e a fase 0 não
+passar no teste (roadmap, decisão quatro).
+
+- `src/lib/domain/cadastro.ts`: `DIAS_DE_TESTE`, `TAMANHO_MAXIMO_NOME`, `fimDoTeste`,
+  `esquemaCadastro` (`termos: z.literal(true)`), `nomeDoNegocio`, `FalhaCadastro` e
+  `MENSAGEM_FALHA_CADASTRO`. Puro; seis testes em `tests/domain/cadastro.test.ts`
+  (**563 → 569**).
+- `src/lib/types/conta.ts`: `PlanoDaConta = "TRIAL"`, `StatusDaConta = "ATIVA"`, e os quatro
+  opcionais `plano`, `status`, `trialAte`, `termosAceitosEm`. Ausência é "liberada à mão" e
+  "não vence" (`#d141`). Nenhum outro arquivo de `src/lib/types/` mudou.
+- `src/lib/server/firebaseAdmin.ts` exporta `adminAuth()` e `adminDb()`; o cabeçalho ganhou a
+  regra de que só `/api/conta` escreve, só no documento da conta e na claim.
+- `src/app/api/conta/route.ts`: `POST` na ordem de `/api/nota` (credencial → token → corpo),
+  `garantirConta` com os três `if`s do `#d141`, `Timestamp.now()` do Admin SDK, id por
+  `randomUUID()` sem hífens, caminho por `caminhos.conta`. 500 `sem-configuracao`, 401
+  `sem-acesso`, 400 `fora-de-forma`, 200 `{ contaId }`.
+- `src/components/auth/MolduraDeEntrada.tsx`: a moldura do login extraída (painel de marca no
+  desktop, logotipo em cima no celular), usada por `/login` e `/cadastro`.
+  `src/components/auth/PaginaDeTexto.tsx`: a página de leitura de `/termos` e `/privacidade`
+  (server component, `max-w-[64ch]`, "Voltar" para `/login`).
+- `src/app/(auth)/cadastro/page.tsx`: os dois estados (`#d142`): formulário inteiro sem
+  `usuario`; sem e-mail e senha, com "Você entrou como {email}. Falta só dizer o seu nome." e o
+  botão "Tentar de novo" quando há `usuario` e não há `contaId`; `replace("/")` com `contaId`.
+  Depois do `POST`, `reconferirAcesso()` e `replace("/fichas")`. Erros do Firebase por
+  `traduzirErroAuth` (com `auth/email-already-in-use`, `#d143`, e `auth/weak-password` novos em
+  `MENSAGENS`); erros do `POST` por `MENSAGEM_FALHA_CADASTRO`, com `codigoDaFalha` no padrão de
+  `TelaNota`.
+- `src/app/(auth)/termos/page.tsx` e `privacidade/page.tsx`: as seções da spec (3.5), cada
+  parágrafo como `[texto de quem conduz o projeto]`. **`rg -n "\[texto" src/app` é a lista do
+  que falta escrever, e vazio é o portão do deploy.**
+- `/login`: "Só entra quem foi convidada…" saiu; a descrição virou "O seu preço, os seus
+  pedidos e o seu caixa, no mesmo lugar."; "Ainda não tem conta? Criar minha conta" abaixo de
+  "Esqueci minha senha". A tela "sem conta" do `(app)/layout.tsx` ganhou "Acabou de se
+  cadastrar? Terminar o cadastro". `rg -n "convidad" src/` não devolve nada (a tela "sem
+  conta" diz "quem te convidou", e continua servindo à convidada).
+- Nenhuma regra, nenhum índice, nenhuma dependência; `conceder-acesso.mjs` não mudou uma linha
+  (`git diff firestore.rules firestore.indexes.json scripts/ package.json` vazio).
+
+Decisões novas em `DECISOES.md#d141`, `#d142` e `#d143`; `#d16` ganhou a nota "cumprida na
+027". Portão rodado de verdade: lint e typecheck limpos, os 569 testes, build com `/cadastro`,
+`/termos` e `/privacidade` estáticas e `/api/conta` dinâmica.
+
+**O que não rodou nesta sessão**, e é o que decide se a spec está de pé:
+
+- **O passo 2 da seção 2: "Enable create (sign-up)" no console do Firebase.** Não foi
+  conferido. Se estiver desligado, `createUserWithEmailAndPassword` devolve
+  `auth/admin-restricted-operation` e nenhuma linha de código conserta. Conferir e anotar aqui.
+- **O roteiro de treze passos**, com projeto de verdade, dois e-mails sem login e cronômetro.
+  Os passos 7 e 8 (a rota bloqueada, o segundo estado, **uma** conta por uid) e o 9
+  (idempotência à força) são os que provam o `#d141`; o 4 é o número da fase 0 medido pela
+  primeira vez a partir da porta: **o tempo do "Criar conta" ao preço ainda não está aqui.**
+
 ## Próxima ação
 
-**Publicar a 033 e a 034 juntas** (`docs/DEPLOY.md`). Antes, os roteiros no `npm run dev`, nos
+**Publicar a 033 e a 034 juntas** (`docs/DEPLOY.md`). A 027 **não vai junto**: a porta espera
+o texto dos termos e da privacidade (`rg -n "\[texto" src/app` vazio), o console com "Enable
+create (sign-up)" conferido, e a fase 0 passando no teste. Até lá ela fica no branch, e o `Link`
+do login é o que abre a porta. Antes, os roteiros no `npm run dev`, nos
 dois temas, a 360px e a 1280px: o da 033, "Depois da A" (passos 1 a 5), "Depois da B" (6, 7, 9
 e 10) e "Depois da C" (11, 13, 14 e 15); e o da 034, os oito passos do fim da spec, com o 7
 (leitor de tela numa linha da tabela) sendo o que decide se os dois arranjos no mesmo `<li>`

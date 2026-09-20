@@ -62,6 +62,11 @@ const MENSAGENS: Record<string, string> = {
   "auth/network-request-failed":
     "Sem conexão para entrar. Verifique a internet.",
   "auth/missing-email": "Escreva o seu e-mail no campo acima.",
+  // O cadastro diz que o e-mail já existe; a recuperação de senha não
+  // (`DECISOES.md#d143`): o Firebase já cede a resposta ao recusar a criação.
+  "auth/email-already-in-use":
+    "Esse e-mail já tem conta. Entre com ele, ou toque em 'Esqueci minha senha' na tela de entrar.",
+  "auth/weak-password": "A senha precisa ter pelo menos 6 caracteres.",
 };
 
 /** Mostrada nos três lugares que chamam `sair()` quando ele devolve `false`. */

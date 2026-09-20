@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { Logotipo } from "@/components/marca/Marca";
+import { MolduraDeEntrada } from "@/components/auth/MolduraDeEntrada";
 import { Botao } from "@/components/ui/Botao";
 import { Campo } from "@/components/ui/Campo";
+import { classesBotao } from "@/components/ui/estilosBotao";
 import { obterAuth } from "@/lib/firebase/client";
 import { traduzirErroAuth, useAuth } from "@/providers/AuthProvider";
 
@@ -87,97 +89,84 @@ export default function PaginaLogin() {
   }
 
   return (
-    <div className="flex min-h-dvh bg-canvas">
-      {/* Painel de marca: tinta lisa, o logotipo em negativa e a tagline. Só
-          no desktop, e sem enfeite: o ponto do logotipo é a única peça âmbar. */}
-      <aside className="hidden w-[42%] shrink-0 bg-brand-800 lg:flex lg:flex-col lg:justify-between">
-        <div className="px-10 pt-12">
-          <Logotipo tamanho="lg" tom="negativa" />
-        </div>
+    <MolduraDeEntrada
+      titulo="Entrar"
+      descricao="O seu preço, os seus pedidos e o seu caixa, no mesmo lugar."
+    >
+      <form onSubmit={aoEnviar} className="mt-8 space-y-5" noValidate>
+        <Campo
+          rotulo="E-mail"
+          type="email"
+          inputMode="email"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          required
+          value={email}
+          onChange={(evento) => setEmail(evento.target.value)}
+        />
 
-        <p className="max-w-[26ch] px-10 pb-14 font-display text-title font-semibold leading-snug text-on-brand">
-          O preço certo de cada doce, antes de mandar o orçamento.
-        </p>
-      </aside>
+        <Campo
+          rotulo="Senha"
+          type="password"
+          autoComplete="current-password"
+          required
+          value={senha}
+          onChange={(evento) => setSenha(evento.target.value)}
+        />
 
-      <main className="flex flex-1 items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">
-          <div className="mb-10 lg:hidden">
-            <Logotipo tamanho="md" />
-          </div>
-
-          <h1 className="font-display text-title font-semibold text-ink">
-            Entrar
-          </h1>
-          <p className="mt-1.5 text-body text-ink-muted">
-            Só entra quem foi convidada. Na primeira vez, toque em
-            &ldquo;Esqueci minha senha&rdquo; para criar a sua.
+        {erro && (
+          <p role="alert" className="text-label text-negative">
+            {erro}
           </p>
+        )}
 
-          <form onSubmit={aoEnviar} className="mt-8 space-y-5" noValidate>
-            <Campo
-              rotulo="E-mail"
-              type="email"
-              inputMode="email"
-              autoComplete="username"
-              autoCapitalize="none"
-              spellCheck={false}
-              required
-              value={email}
-              onChange={(evento) => setEmail(evento.target.value)}
-            />
+        <Botao
+          type="submit"
+          variante="primaria"
+          tamanho="lg"
+          larguraTotal
+          carregando={enviando}
+          disabled={!email || !senha}
+        >
+          Entrar
+        </Botao>
 
-            <Campo
-              rotulo="Senha"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={senha}
-              onChange={(evento) => setSenha(evento.target.value)}
-            />
+        <div className="flex flex-col items-center gap-2">
+          <Botao
+            variante="terciaria"
+            tamanho="sm"
+            onClick={() => void recuperarSenha()}
+            carregando={recuperando}
+            disabled={enviando}
+          >
+            Esqueci minha senha
+          </Botao>
 
-            {erro && (
-              <p role="alert" className="text-label text-negative">
-                {erro}
-              </p>
-            )}
-
-            <Botao
-              type="submit"
-              variante="primaria"
-              tamanho="lg"
-              larguraTotal
-              carregando={enviando}
-              disabled={!email || !senha}
+          {/* A resposta é a mesma existindo ou não o cadastro, e nenhum
+              código do Firebase chega até aqui. */}
+          {avisoSenha && (
+            <p
+              aria-live="polite"
+              className="max-w-[42ch] text-center text-label text-ink-muted"
             >
-              Entrar
-            </Botao>
-
-            <div className="flex flex-col items-center gap-2">
-              <Botao
-                variante="terciaria"
-                tamanho="sm"
-                onClick={() => void recuperarSenha()}
-                carregando={recuperando}
-                disabled={enviando}
-              >
-                Esqueci minha senha
-              </Botao>
-
-              {/* A resposta é a mesma existindo ou não o cadastro, e nenhum
-                  código do Firebase chega até aqui. */}
-              {avisoSenha && (
-                <p
-                  aria-live="polite"
-                  className="max-w-[42ch] text-center text-label text-ink-muted"
-                >
-                  {avisoSenha}
-                </p>
-              )}
-            </div>
-          </form>
+              {avisoSenha}
+            </p>
+          )}
         </div>
-      </main>
-    </div>
+      </form>
+
+      {/* A porta nova (spec 027). Quem entra pelo script continua sendo
+          instruída pelo script; a tela deixa de repetir a instrução. */}
+      <p className="mt-8 flex flex-wrap items-center justify-center gap-x-1 text-label text-ink-muted">
+        Ainda não tem conta?
+        <Link
+          href="/cadastro"
+          className={classesBotao({ variante: "terciaria", tamanho: "sm" })}
+        >
+          Criar minha conta
+        </Link>
+      </p>
+    </MolduraDeEntrada>
   );
 }

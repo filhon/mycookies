@@ -264,7 +264,8 @@ documento e um alias a manter.
 
 ## D16 · Acesso concedido por script até existir servidor
 
-**Status:** provisória
+**Status:** cumprida na 027 (2026-09-19): o handler existe (`POST /api/conta`, `D141`), e o
+script continua para liberar à mão.
 
 **Contexto.** Um sistema que pretende ser comercial não pode depender de alguém rodar
 `node` para liberar cliente. A pergunta é legítima e reaparece toda vez que alguém abre
@@ -4483,3 +4484,74 @@ aproveitou — comportamento correto (a encomenda ficou curta), mas visível o b
 nota no rodapé de `FornadasRecentes`. Se um dia a quebra precisar entrar no preço, a forma é um
 campo `quebraEsperada` digitado por ela em `derivarFicha`, como a perda do material — não esta
 leitura.
+
+## D141 · A conta nasce no servidor, uma por login, e o handler garante em vez de criar
+
+**Status:** vigente · decidida em 2026-09-19, na spec `027-criar-a-conta-sozinha.md`
+
+**Contexto.** `D16` dizia desde o Módulo 0 que "tela de cadastro" não é uma tela: é código de
+servidor que emite a claim, porque custom claim só se escreve com o Admin SDK, e é isso que faz
+a regra custar zero leitura (`D07`). O servidor existe desde a 6A; faltava o handler.
+
+**Decisão.** `POST /api/conta` é `conceder-acesso.mjs` na forma de rota, **copiado e não
+importado** (o script roda com `node` fora do app e não resolve `@/`; quando o Node do projeto
+rodar `.ts` sem loader, as vinte linhas de `garantirConta` podem ser importadas do script).
+Para o `uid` do token, a rota **garante** que existe uma conta e uma claim, em três `if`s: que
+conta é a dela (a primeira chave de `customClaims.contas` lida no servidor com `auth.getUser`,
+e não do token, que pode ter sido cunhado antes da claim; sem chave, `randomUUID()` sem hífens,
+que passa na validação do script); o documento existe (se não, `set`); a claim aponta (se não,
+`setCustomUserClaims` preservando o que havia). **Documento antes da claim**, na ordem do
+script: a claim é o que põe ela dentro do app, e só pode existir quando o documento já existe.
+Se o handler cair entre os dois, a próxima chamada gera outro id e o primeiro documento fica
+órfão, visível em `metricas.mjs` e inofensivo; a ordem inversa poria ela dentro do app com
+`conta` nulo. Entre lixo e conta quebrada, lixo. Duas chamadas produzem uma conta e a mesma
+resposta `{ contaId }`. Sem `abreAConta`: é a única rota em que quem chama, por definição, ainda
+não abre conta nenhuma; o `uid` verificado é a autorização inteira.
+
+**Os quatro campos são opcionais, e ausência tem significado.** `plano`, `status`, `trialAte` e
+`termosAceitosEm` são gravados só pelo cadastro. Conta sem `plano` é conta liberada à mão —
+`contas/mycookies`, as do beta, qualquer uma que o script criar — e não tem prazo. O script
+não passa a escrever `plano: "CORTESIA"`: seria inventar um valor para o que a ausência já diz,
+e a 028 lê `trialAte` ausente como "nunca vence", que é o que essas contas precisam ser.
+
+**Consequência.** Uma conta por login é o que a rota sabe fazer; a pessoa com dois negócios é
+a 030, no ponto único que `contaAtivaDaClaim` já nomeia. Se os órfãos incomodarem, o id passa a
+ser derivado do `uid`. `D16` deixa de ser provisória.
+
+## D142 · O cadastro pede o mínimo e cai em `/fichas`
+
+**Status:** vigente · decidida em 2026-09-19, na spec `027-criar-a-conta-sozinha.md`
+
+**Contexto.** `/cadastro` é a primeira tela que uma desconhecida vê, e o relógio da fase 0 (dez
+minutos até o preço) passa a contar dela. Cada campo a mais é um formulário a mais.
+
+**Decisão.** E-mail, senha, seu nome (obrigatórios) e nome do negócio (opcional, "Se ainda não
+tem, deixe em branco": vira o nome dela). Sem confirmar senha (o navegador mostra o que ela
+digita, e "Esqueci minha senha" existe), sem telefone, sem documento, sem e-mail de verificação
+(o trial é o portão). A caixa dos termos é obrigatória e não "ao criar a conta você aceita":
+é o que faz `termosAceitosEm` ser um ato dela, o mínimo que a LGPD pede para consentimento que
+se prova. Depois do `POST`, `reconferirAcesso()` e `router.replace("/fichas")`, não `/`: a tela
+Hoje de uma conta vazia é um painel em branco apontando para `/fichas`, e `/fichas` vazio é o
+botão da biblioteca, que é o passo 1 da 019. Um formulário com dois estados, e não duas telas:
+com login e sem conta (o `POST` caiu no meio), o mesmo formulário sem e-mail e senha, com
+"Tentar de novo" no lugar de "Criar conta".
+
+**Consequência.** Se a gravação da fase 0 mostrar que ela procura "onde estou" antes de "quanto
+custa", o destino volta a `/` e o cartão do caminho faz o resto: é uma string. Se mostrar
+hesitação no nome do negócio, o campo sai e `nome` vira o nome dela sempre.
+
+## D143 · O cadastro diz que o e-mail já existe; a recuperação de senha não
+
+**Status:** vigente · decidida em 2026-09-19, na spec `027-criar-a-conta-sozinha.md`
+
+**Contexto.** "Esqueci minha senha" responde a mesma frase existindo ou não o cadastro
+(`AVISO_ENVIO`): quem pergunta pelo e-mail de outra pessoa não sai sabendo mais.
+
+**Decisão.** O cadastro não faz o mesmo. `auth/email-already-in-use` é a única resposta útil
+para quem já tem conta e esqueceu, e escondê-la a deixaria presa num formulário que nunca
+conclui. A frase é "Esse e-mail já tem conta. Entre com ele, ou toque em 'Esqueci minha senha'
+na tela de entrar." A assimetria é deliberada: o que a recuperação protege, o cadastro cede,
+porque o Firebase Auth já cede (a criação falha de qualquer jeito, e o código é público no SDK).
+
+**Consequência.** A frase mora em `MENSAGENS` do `AuthProvider`, ao lado de
+`auth/weak-password`; nenhuma outra tela a usa.

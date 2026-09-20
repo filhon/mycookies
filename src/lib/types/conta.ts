@@ -8,11 +8,12 @@ import type { VersaoSchema } from "./common";
  * a mesma coisa, nada muda na prática — a diferença aparece no dia em que
  * houver uma ajudante, um contador com acesso de leitura, ou uma pessoa com
  * dois negócios.
- *
- * O documento é propositalmente magro: `plano`, `status` e `trialAte` entram
- * quando existir cobrança. O valor dele hoje é ser o gancho onde esses campos
- * cabem sem tocar em mais nada.
  */
+
+/** A 028 acrescenta a assinatura; a 029, o encerramento. */
+export type PlanoDaConta = "TRIAL";
+export type StatusDaConta = "ATIVA";
+
 export interface Conta {
   id: string;
   /** Nome do negócio. Ex.: "MyCookie's". */
@@ -32,6 +33,16 @@ export interface Conta {
    * (`DECISOES.md#d68`).
    */
   primeirosPassosEm?: Timestamp;
+  /**
+   * Os quatro são gravados pelo cadastro (`/api/conta`, spec 027) e **ausentes
+   * numa conta liberada à mão** pelo script — que não tem prazo nem cobrança.
+   * Ausência é significado, não dado velho (`DECISOES.md#d141`).
+   */
+  plano?: PlanoDaConta;
+  status?: StatusDaConta;
+  /** Fim do teste grátis. Ausente = não vence. */
+  trialAte?: Timestamp;
+  termosAceitosEm?: Timestamp;
   v: VersaoSchema;
 }
 

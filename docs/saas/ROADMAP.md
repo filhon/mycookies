@@ -307,6 +307,18 @@ como defensável nas entrevistas. É o "segundo cliente pagante" de `#d16`.
 - O script continua valendo para liberar à mão.
 - Aprovações: schema aditivo em `Conta`. Regras não mudam.
 
+**Entregue em 2026-09-19, antes do gatilho** (`docs/specs/027-criar-a-conta-sozinha.md`,
+`#d141` a `#d143`), com três diferenças do que está acima:
+
+- O script **não vira** handler: o corpo é copiado para `POST /api/conta`, porque o script roda
+  com `node` fora do app e não resolve `@/`. E a rota **garante** em vez de criar: o login nasce
+  no aparelho antes do `POST`, o `POST` pode cair, e toda volta bate na mesma rota.
+- Os quatro campos de `Conta` são **opcionais**, e ausência é "liberada à mão, sem prazo":
+  `contas/mycookies` e as do beta não são migradas, e o script não escreve `plano`.
+- A conta nova cai em `/fichas` (o botão da biblioteca), e não na tela Hoje.
+- **Não publicada**: `/termos` e `/privacidade` estão com `[texto de quem conduz o projeto]`, e
+  esse é o portão do deploy, junto da fase 0.
+
 **028 · O teste acaba, e a assinatura.** Stripe, um plano.
 
 - Um plano, mensal e anual (anual com dois meses grátis). Sem gating: um plano é zero código
