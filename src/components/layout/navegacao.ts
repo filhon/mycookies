@@ -11,8 +11,6 @@ import {
 export interface Destino {
   href: Route;
   rotulo: string;
-  /** Rótulo curto para a navegação inferior, onde cabem poucos caracteres. */
-  curto: string;
   icone: LucideIcon;
 }
 
@@ -21,29 +19,27 @@ export interface Destino {
  * pequeno demais. Configuração não é um destino: é ajuste, e mora no cabeçalho.
  */
 export const DESTINOS: Destino[] = [
-  { href: "/", rotulo: "Hoje", curto: "Hoje", icone: Home },
-  {
-    href: "/insumos",
-    rotulo: "Materiais",
-    curto: "Materiais",
-    icone: ShoppingBasket,
-  },
-  {
-    href: "/fichas",
-    rotulo: "Produtos",
-    curto: "Produtos",
-    icone: BookOpen,
-  },
-  {
-    href: "/pedidos",
-    rotulo: "Pedidos",
-    curto: "Pedidos",
-    icone: ClipboardList,
-  },
-  { href: "/financeiro", rotulo: "Caixa", curto: "Caixa", icone: Wallet },
+  { href: "/", rotulo: "Hoje", icone: Home },
+  { href: "/insumos", rotulo: "Materiais", icone: ShoppingBasket },
+  { href: "/fichas", rotulo: "Produtos", icone: BookOpen },
+  { href: "/pedidos", rotulo: "Pedidos", icone: ClipboardList },
+  { href: "/financeiro", rotulo: "Caixa", icone: Wallet },
 ];
 
 export function destinoAtivo(caminho: string, href: string): boolean {
   if (href === "/") return caminho === "/";
   return caminho === href || caminho.startsWith(`${href}/`);
+}
+
+/**
+ * Os dois editores não têm navegação inferior no celular: o cabeçalho tem o
+ * voltar e o aparelho volta por gesto (`DECISOES.md#d152`). `/fichas/contagem`
+ * e a folha do orçamento ficam de fora — a contagem tem a navegação, e a folha
+ * é impressão.
+ */
+export function semNavegacaoInferior(caminho: string): boolean {
+  return (
+    /^\/fichas\/(?!contagem$)[^/]+$/.test(caminho) ||
+    /^\/pedidos\/[^/]+$/.test(caminho)
+  );
 }

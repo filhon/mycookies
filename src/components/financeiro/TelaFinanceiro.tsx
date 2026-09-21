@@ -7,7 +7,7 @@ import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { BlocoMeta } from "@/components/metas/BlocoMeta";
 import { FormularioMeta } from "@/components/metas/FormularioMeta";
 import { Botao } from "@/components/ui/Botao";
-import { BotaoFlutuante } from "@/components/ui/BotaoFlutuante";
+import { BotaoMais } from "@/components/ui/BotaoMais";
 import { EsqueletoLista, Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import {
@@ -116,7 +116,7 @@ export function TelaFinanceiro() {
   // existe: um mês em que tudo foi arquivado não tem resultado a mostrar.
   const temMovimento = lancamentos.dados.length > 0;
   // Um botão primário por tela: enquanto o estado vazio ensina a tela, a ação
-  // é dele, e o botão do cabeçalho e a pílula flutuante saem.
+  // é dele, e o botão do cabeçalho e o "+" saem.
   const estadoVazioNaTela = !carregando && !lancamentos.erro && !temMovimento;
 
   /**
@@ -177,16 +177,29 @@ export function TelaFinanceiro() {
         descricao="O que entrou, o que saiu, e o que sobrou de verdade."
         acao={
           !estadoVazioNaTela && (
-            <Botao
-              variante="primaria"
-              onClick={() => abrirPainel()}
-              className="hidden lg:inline-flex"
-              iconeInicial={
-                <Plus aria-hidden className="size-5" strokeWidth={2} />
-              }
-            >
-              Lançar
-            </Botao>
+            <>
+              <Botao
+                variante="primaria"
+                onClick={() => abrirPainel()}
+                className="hidden lg:inline-flex"
+                iconeInicial={
+                  <Plus aria-hidden className="size-5" strokeWidth={2} />
+                }
+              >
+                Lançar
+              </Botao>
+              {/* Uma ação só: o "+" lança direto, sem bandeja (`#d151`). */}
+              <BotaoMais
+                rotulo="Lançar"
+                opcoes={[
+                  {
+                    rotulo: "Lançar",
+                    icone: Plus,
+                    onClick: () => abrirPainel(),
+                  },
+                ]}
+              />
+            </>
           )
         }
       >
@@ -339,10 +352,6 @@ export function TelaFinanceiro() {
             </p>
           </div>
         </div>
-      )}
-
-      {!estadoVazioNaTela && (
-        <BotaoFlutuante rotulo="Lançar" onClick={() => abrirPainel()} />
       )}
 
       <FormularioTransacao

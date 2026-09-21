@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, TriangleAlert, Wallet } from "lucide-react";
+import { Plus, ShoppingCart, TriangleAlert, Users, Wallet } from "lucide-react";
 import { useMemo, useState } from "react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { Botao } from "@/components/ui/Botao";
-import { BotaoFlutuante } from "@/components/ui/BotaoFlutuante";
+import { BotaoMais } from "@/components/ui/BotaoMais";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { Pilulas, type OpcaoPilula } from "@/components/ui/Pilulas";
@@ -144,7 +144,7 @@ export function ListaPedidos() {
     entreguesEmAberto.dados.length === 0 &&
     historico.dados.length === 0;
   // Um botão primário por tela: enquanto o estado vazio ensina a tela, a ação
-  // é dele, e o botão do cabeçalho e a pílula flutuante saem.
+  // é dele, e o botão do cabeçalho e o "+" saem.
   const estadoVazioNaTela = !carregando && !erro && nadaGravado;
 
   return (
@@ -157,21 +157,43 @@ export function ListaPedidos() {
             {/* A lista de compras não cabe na navegação inferior — cinco
                 destinos é o teto —, e é daqui que ela nasce: o que comprar é
                 consequência do que foi combinado. */}
-            <AtalhoParaCompras />
+            <AtalhoParaCompras className="hidden lg:inline-flex" />
             {/* Mesma regra de "Novo pedido": sem pedido gravado não há
                 cliente que a tela pudesse mostrar (`#d113`). */}
-            {!estadoVazioNaTela && <AtalhoParaClientes />}
             {!estadoVazioNaTela && (
-              <Link
-                href={`/pedidos/${ID_PEDIDO_NOVO}`}
-                className={classesBotao({
-                  variante: "primaria",
-                  className: "hidden lg:inline-flex",
-                })}
-              >
-                <Plus aria-hidden className="size-5" strokeWidth={2} />
-                Novo pedido
-              </Link>
+              <AtalhoParaClientes className="hidden lg:inline-flex" />
+            )}
+            {!estadoVazioNaTela && (
+              <>
+                <Link
+                  href={`/pedidos/${ID_PEDIDO_NOVO}`}
+                  className={classesBotao({
+                    variante: "primaria",
+                    className: "hidden lg:inline-flex",
+                  })}
+                >
+                  <Plus aria-hidden className="size-5" strokeWidth={2} />
+                  Novo pedido
+                </Link>
+                {/* No celular o cabeçalho tem só o título e o "+"; as três
+                    ações moram na bandeja (`DECISOES.md#d151`). */}
+                <BotaoMais
+                  rotulo="Mais ações"
+                  opcoes={[
+                    {
+                      rotulo: "Novo pedido",
+                      icone: Plus,
+                      href: `/pedidos/${ID_PEDIDO_NOVO}`,
+                    },
+                    {
+                      rotulo: "O que comprar",
+                      icone: ShoppingCart,
+                      href: "/compras",
+                    },
+                    { rotulo: "Clientes", icone: Users, href: "/clientes" },
+                  ]}
+                />
+              </>
             )}
           </div>
         }
@@ -289,13 +311,6 @@ export function ListaPedidos() {
             </div>
           )}
         </div>
-      )}
-
-      {!estadoVazioNaTela && (
-        <BotaoFlutuante
-          rotulo="Novo pedido"
-          href={`/pedidos/${ID_PEDIDO_NOVO}`}
-        />
       )}
     </>
   );

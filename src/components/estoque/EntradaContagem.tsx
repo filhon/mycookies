@@ -7,8 +7,8 @@ import { classesBotao, type TamanhoBotao } from "@/components/ui/estilosBotao";
  *
  * Mora em `/compras`, e não em `/insumos`: contar é ato de compra — o número
  * existe para a lista, e é contado antes de sair de casa ou depois de guardar as
- * sacolas. O cabeçalho de `/insumos` já tem duas ações e um botão flutuante no
- * celular; uma terceira ali seria empilhar por arrumação, e não por uso.
+ * sacolas. O cabeçalho de `/insumos` já tem duas ações; uma terceira ali seria
+ * empilhar por arrumação, e não por uso.
  *
  * O rótulo encolhe para "Contar" em 360px, onde ele divide a linha com o título
  * e com "Refazer". O nome inteiro continua sendo dito pelo `aria-label` e pelo

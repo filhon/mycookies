@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { PackageOpen, Plus } from "lucide-react";
 import { orderBy, query, where } from "firebase/firestore";
 import { useMemo, useRef, useState } from "react";
 import { EntradaContagem } from "@/components/estoque/EntradaContagem";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
-import { BotaoFlutuante } from "@/components/ui/BotaoFlutuante";
+import { BotaoMais } from "@/components/ui/BotaoMais";
 import { CampoBusca } from "@/components/ui/CampoBusca";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
@@ -130,7 +130,7 @@ export function ListaFichas() {
   // isso o estado vazio de hoje trocaria de texto para quem já tem insumo.
   const contaVazia = despensaPronta && insumos.length === 0;
   // Um botão primário por tela: enquanto o estado vazio ensina a tela, a ação
-  // é dele, e o botão do cabeçalho e a pílula flutuante saem.
+  // é dele, e o botão do cabeçalho e o "+" saem.
   const estadoVazioNaTela = !carregando && !erro && dados.length === 0;
   const semContagem =
     despensaPronta &&
@@ -149,18 +149,37 @@ export function ListaFichas() {
             {/* No mesmo lugar em que `/pedidos` leva a "o que comprar": o que
                 está pronto é consequência do que foi feito, e é daqui que se
                 responde "tem cookie?". */}
-            <EntradaContagemPronto />
+            <EntradaContagemPronto className="hidden lg:inline-flex" />
             {!estadoVazioNaTela && (
-              <Link
-                href={`/fichas/${ID_FICHA_NOVA}`}
-                className={classesBotao({
-                  variante: "primaria",
-                  className: "hidden lg:inline-flex",
-                })}
-              >
-                <Plus aria-hidden className="size-5" strokeWidth={2} />
-                Novo produto
-              </Link>
+              <>
+                <Link
+                  href={`/fichas/${ID_FICHA_NOVA}`}
+                  className={classesBotao({
+                    variante: "primaria",
+                    className: "hidden lg:inline-flex",
+                  })}
+                >
+                  <Plus aria-hidden className="size-5" strokeWidth={2} />
+                  Novo produto
+                </Link>
+                {/* No celular, o "+" e a bandeja são o único lugar das duas
+                    ações (`DECISOES.md#d151`). */}
+                <BotaoMais
+                  rotulo="Adicionar"
+                  opcoes={[
+                    {
+                      rotulo: "Novo produto",
+                      icone: Plus,
+                      href: `/fichas/${ID_FICHA_NOVA}`,
+                    },
+                    {
+                      rotulo: "Contar o que está pronto",
+                      icone: PackageOpen,
+                      href: "/fichas/contagem",
+                    },
+                  ]}
+                />
+              </>
             )}
           </div>
         }
@@ -317,13 +336,6 @@ export function ListaFichas() {
           />
         )}
       </div>
-
-      {!estadoVazioNaTela && (
-        <BotaoFlutuante
-          rotulo="Novo produto"
-          href={`/fichas/${ID_FICHA_NOVA}`}
-        />
-      )}
     </>
   );
 }

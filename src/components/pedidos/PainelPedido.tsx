@@ -128,7 +128,8 @@ export function PainelPedido({ derivado }: { derivado: DerivadosPedido }) {
   const { tom, icone, mensagem } = explicar();
 
   return (
-    <RodapeFixo>
+    // `noPe`: o editor não tem navegação inferior no celular (`#d152`).
+    <RodapeFixo noPe>
       <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 px-4 py-3 lg:px-5">
         <div className="flex flex-wrap gap-x-5 gap-y-2">
           <Parcela rotulo="Subtotal" valor={derivado.subtotal} />

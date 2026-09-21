@@ -4719,3 +4719,76 @@ importador.
 sem ninguém lembrar de acrescentá-la a uma lista — é o invariante "todo dado mora em
 `contas/{contaId}/…`" pagando dividendo. `src/lib/domain/meusDados.ts` fica puro
 (`paraExportavel`, `nomeDoArquivoDeExportacao`): a rota só monta o fluxo.
+
+## D150 · A navegação inferior só com ícones
+
+**Status:** vigente · decidida em 2026-09-21, na spec `035-o-celular-por-gesto.md`
+
+**Contexto.** Cinco palavras embaixo de cinco ícones gastavam 20px de altura em toda tela do
+celular, e depois da primeira semana ninguém as lia: "Hoje", "Materiais", "Produtos",
+"Pedidos", "Caixa" são o que os ícones já dizem. Em 360×640 eram 20px de lista a menos.
+
+**Decisão.** `NavegacaoInferior` não renderiza texto visível. Cada `<Link>` leva o rótulo em
+`aria-label` e `title`, o ícone vai a 24px, a pílula `brand-100` atrás do ativo cresce para
+32×56 e é o que diz "você está aqui". O alvo continua com 56px de altura. `Destino.curto` saiu
+de `navegacao.ts`: sem leitor, não fica.
+
+**Consequência.** A regra do `DESIGN.md` de que o rótulo de navegação é texto `ink-muted` deixa
+de ter objeto; o contraste que resta conferir é o do ícone. O leitor de tela continua lendo os
+cinco nomes.
+
+## D151 · O "+" no cabeçalho e a bandeja, no lugar da pílula flutuante
+
+**Status:** vigente · decidida em 2026-09-21, na spec `035-o-celular-por-gesto.md`. Reverte a
+linha "nunca círculo com +" do `DESIGN.md`.
+
+**Contexto.** A pílula flutuante cobria a última linha da lista e disputava o polegar com a
+navegação. Em `/insumos` ela ainda dividia o cabeçalho com "Ler uma nota", que espremia o
+título em 360px; em `/pedidos` o cabeçalho tinha três botões e o título. O que a regra antiga
+protegia — "um + sozinho obriga a adivinhar o que nasce dele" — era verdade para um "+" que
+age no toque.
+
+**Decisão.** Nasce `src/components/ui/BotaoMais.tsx`, só no celular: o "+" com alvo de 44px, só
+o traço em `accent-500` sobre a tinta do cabeçalho — sem círculo, é o único ponto de acento na
+faixa —, `aria-label` dado pela tela, `aria-haspopup="dialog"`, em `acao` do
+`CabecalhoPagina`. Abre o `Painel` que já existe — no celular a folha inferior, com foco preso,
+`Escape` e `inert` — com uma linha por ação: ícone, nome, alvo de 52px, lista com divisórias. A
+primeira linha é a de criar. Opção sem rede fica `aria-disabled` com a razão embaixo do nome
+(`MENSAGEM_FALHA["sem-rede"]` em "Ler uma nota"). Escolher fecha a bandeja; o `Link` navega, o
+`onClick` roda depois de fechar. As três listas (`/insumos`, `/fichas`, `/pedidos`) e `/financeiro` usam o
+"+"; com uma opção só (`/financeiro`, "Lançar") não há o que escolher, e o "+" age no toque com
+o nome dela em `aria-label`. `BotaoFlutuante` morre, e os atalhos do cabeçalho (`EntradaLeitura`,
+`EntradaContagemPronto`, `AtalhoParaCompras`, `AtalhoParaClientes`) ficam `hidden
+lg:inline-flex`. O "+" some com o estado vazio, como a pílula sumia: um botão primário por
+tela. Nem Popover API nem `<details>`: a invariante é folha inferior no celular, e o `Painel`
+já é ela.
+
+**Consequência.** A linha do `DESIGN.md` vira: no celular a ação primária da tela é o "+"
+no cabeçalho, com bandeja quando há mais de uma ação e direto quando há uma só; a pílula
+flutuante não existe mais (a spec a deixava em `/financeiro`; quem conduz o projeto pediu que
+saísse na mesma sessão). No celular, com a lista vazia, `/pedidos` não tem mais o atalho para
+`/compras` no cabeçalho (o cartão da tela Hoje continua levando lá).
+
+## D152 · O editor sem navegação inferior: o gesto do sistema é o voltar
+
+**Status:** vigente · decidida em 2026-09-21, na spec `035-o-celular-por-gesto.md`
+
+**Contexto.** `/fichas/[id]` e `/pedidos/[id]` carregavam três faixas fixas no celular —
+cabeçalho grudento, resumo de custo preso ao pé e, embaixo dele, a navegação inferior — e só
+uma trabalhava. Ninguém troca de módulo no meio de um formulário (o `#d74` já a escondia com o
+teclado aberto), e os 72px entre o resumo e o pé eram vão. O aparelho de hoje volta por gesto
+de borda, e o cabeçalho já tem o voltar.
+
+**Decisão.** `semNavegacaoInferior(caminho)` em `navegacao.ts` — `/^\/fichas\/(?!contagem$)[^/]+$/`
+ou `/^\/pedidos\/[^/]+$/` — e `NavegacaoInferior` devolve `null` nessas rotas. `/fichas/contagem`
+e `/pedidos/[id]/orcamento` ficam de fora: a contagem tem a navegação, a folha do orçamento é
+impressão. `RodapeFixo` ganha `noPe`: no celular vai a `bottom-0`, ocupa a largura toda, e o
+cartão perde o raio e as bordas de fora, com `area-segura-inferior` por dentro — a superfície
+continua até embaixo do indicador do iPhone. `PainelPreco` e `PainelPedido` passam `noPe`; o
+respiro dos dois formulários encolhe junto (`pb-32` na ficha, `pb-36` no pedido). `AppShell`
+não muda: o `pb-24` do `main` continua reservando o rodapé, que agora ocupa a faixa que era da
+navegação.
+
+**Consequência.** A saída do editor é o `LinkVoltar` e o gesto do sistema, os dois pela guarda
+de "sair sem salvar" (`#d132`; o gesto é `popstate`, que a sentinela já intercepta). Outras
+telas de formulário não seguem: `/configuracao` tem barra própria e é destino do menu Hoje.

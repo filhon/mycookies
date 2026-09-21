@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DESTINOS, destinoAtivo } from "./navegacao";
+import { DESTINOS, destinoAtivo, semNavegacaoInferior } from "./navegacao";
 import { cn } from "@/lib/utils/cn";
 
 export function NavegacaoInferior() {
   const caminho = usePathname();
+
+  if (semNavegacaoInferior(caminho)) return null;
 
   return (
     /* `apertado:hidden`: com o teclado aberto ninguém troca de módulo no meio
@@ -23,38 +25,33 @@ export function NavegacaoInferior() {
 
           return (
             <li key={destino.href} className="flex-1">
+              {/* Só o ícone (`DECISOES.md#d150`): o rótulo fica para o leitor
+                  de tela e para o `title`, e a pílula atrás do ícone é o que
+                  diz "você está aqui". */}
               <Link
                 href={destino.href}
+                aria-label={destino.rotulo}
+                title={destino.rotulo}
                 aria-current={ativo ? "page" : undefined}
                 className={cn(
-                  "flex min-h-14 flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2",
+                  "flex min-h-14 items-center justify-center px-1",
                   "transition-colors duration-150 ease-quart",
-                  // `accent-ink`, e não `accent-500`: o âmbar como texto sobre
-                  // a superfície reprova AA (~2,3:1). Inativo em `ink-muted`,
-                  // e não `ink-subtle` (3,45:1): rótulo de navegação é texto,
-                  // e 12px não tem exceção no piso de 4,5.
+                  // `accent-ink`, e não `accent-500`: o âmbar sobre a
+                  // superfície reprova AA (~2,3:1). Inativo em `ink-muted`.
                   ativo ? "text-accent-ink" : "text-ink-muted",
                 )}
               >
                 <span
                   className={cn(
-                    "flex h-7 w-12 items-center justify-center rounded-full transition-colors duration-150 ease-quart",
+                    "flex h-8 w-14 items-center justify-center rounded-full transition-colors duration-150 ease-quart",
                     ativo && "bg-brand-100",
                   )}
                 >
                   <Icone
                     aria-hidden
-                    className="size-5.5"
+                    className="size-6"
                     strokeWidth={ativo ? 2 : 1.75}
                   />
-                </span>
-                <span
-                  className={cn(
-                    "text-micro leading-none",
-                    ativo ? "font-semibold" : "font-medium",
-                  )}
-                >
-                  {destino.curto}
                 </span>
               </Link>
             </li>

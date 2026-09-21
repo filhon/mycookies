@@ -186,7 +186,8 @@ export function PainelPreco({
   const { tom, correcao, icone, mensagem } = explicar();
 
   return (
-    <RodapeFixo>
+    // `noPe`: o editor não tem navegação inferior no celular (`#d152`).
+    <RodapeFixo noPe>
       {/* Em espaço apertado os três cabem numa linha só: o rótulo encurta, os
           vãos fecham e o campo estreita. O `flex-wrap` fica de rede — num
           aparelho estreito com preço de três dígitos ele quebra em duas linhas

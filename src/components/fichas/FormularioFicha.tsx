@@ -732,7 +732,7 @@ export function FormularioFicha({
       )}
 
       {/* Espaço no pé para o painel de preço não cobrir o último bloco. */}
-      <div className="mt-4 space-y-4 pb-44 apertado:pb-32 lg:pb-40">
+      <div className="mt-4 space-y-4 pb-32 lg:pb-40">
         {/* Sem configuração salva, a ficha calcula com a sugerida inteira e
             diz isso (`DECISOES.md#d114`): zero também é um número inventado,
             e o pior deles. */}

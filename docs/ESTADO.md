@@ -7,8 +7,9 @@ entrevistas, a quarta e última parcela do custo honesto do `docs/saas/CLAUDE.md
 texto dos termos e da privacidade (agora com os três parágrafos que a 029 acrescenta) e os
 roteiros das três como portão do deploy —, e com elas **a fase 2 do roadmap fecha em código**;
 mais a 034 entregue por cima da 033, o primeiro passe de navegador sobre as duas, `#d131`; **033
-e 034 por publicar juntas**; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025,
-026, 027, 028, 029, 033 e 034 por rodar).
+e 034 por publicar juntas**; a **035 entregue** por cima delas, o celular por gesto, `#d150` a
+`#d152`; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 027, 028, 029,
+033, 034 e 035 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -271,6 +272,7 @@ os números digitados de ponta a ponta.
 | 29  | Meus dados são meus                         | codificada; deploy espera os termos | `specs/029-meus-dados-sao-meus.md`          |
 | 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`                |
 | 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`               |
+| 35  | O celular por gesto                         | pronto, sem o roteiro               | `specs/035-o-celular-por-gesto.md`          |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -2618,6 +2620,44 @@ visto em navegador nesta sessão.** O roteiro de aceite da spec (oito passos) é
 que o build não vê: a sangria cortada no lugar certo nos dois tamanhos, o `sticky` preso com o
 `overflow-x: clip`, o anel de foco âmbar sobre a tinta, o Ctrl+clique abrindo o editor e o
 foco voltando à linha depois do `Escape`.
+
+## O que a sessão 035 deixou pronto
+
+O celular por gesto (`specs/035-o-celular-por-gesto.md`; `DECISOES.md#d150` a `#d152`), do uso
+real no aparelho da Maynara em 2026-09-21. Cromo e arranjo, só no celular: o desktop não mudou
+uma linha. Nenhum campo, nenhuma rota, nenhuma consulta, nenhuma regra, nenhuma dependência,
+nada em `src/lib/domain/`.
+
+- **A navegação inferior só com ícones (`#d150`).** `NavegacaoInferior` sem texto; `aria-label`
+  e `title` com o rótulo, ícone `size-6`, pílula `h-8 w-14`, `min-h-14`. `Destino.curto` saiu.
+- **`BotaoMais` (`#d151`)**, novo em `src/components/ui/`: o "+" no cabeçalho, só o traço
+  âmbar sobre a tinta, alvo de 44px, `lg:hidden`, `aria-haspopup="dialog"`, com a bandeja sobre
+  o `Painel`; com uma opção só age no toque, sem bandeja. Opção `{ rotulo, icone,
+href | onClick, desabilitada?, dica? }`, genérico em `Route<T>` como a `BotaoFlutuante`. Em
+  `/insumos` ("Adicionar": Novo material · Ler uma nota, desabilitada sem rede com a frase de
+  `MENSAGEM_FALHA`), `/fichas` ("Adicionar": Novo produto · Contar o que está pronto) e
+  `/pedidos` ("Mais ações": Novo pedido · O que comprar · Clientes) e `/financeiro` ("Lançar",
+  direto). **`BotaoFlutuante.tsx` foi apagado** — a spec a deixava em `/financeiro`, e quem
+  conduz o projeto pediu que saísse na mesma sessão; `EntradaLeitura`, `EntradaContagemPronto`, `AtalhoParaCompras` e
+  `AtalhoParaClientes` ficaram `hidden lg:inline-flex` (os três atalhos e o aviso ganharam
+  `className`). `AvisoLeituraSemRede` da faixa de ferramentas é `hidden lg:flex`.
+- **O editor sem navegação inferior (`#d152`).** `semNavegacaoInferior` em `navegacao.ts`, o
+  `if` em `NavegacaoInferior`; `RodapeFixo` com `noPe` (`bottom-0`, largura toda, sem raio nem
+  bordas de fora, `area-segura-inferior` por dentro; `lg:` inalterado), passado por
+  `PainelPreco` e `PainelPedido`; `pb-32` na ficha e `pb-36` no pedido.
+- `DESIGN.md`: "Botão flutuante" saiu da tabela, "Botão mais e bandeja" entrou, "Navegação
+  inferior" só ícone, e o editor sem navegação em "Estrutura responsiva".
+
+**Desvio da letra da spec, registrado:** com `noPe` o rodapé também perde o `px-4` e as bordas
+laterais no celular, e não só o raio e a borda de baixo — um cartão encostado no pé com 16px de
+canvas de cada lado do último pixel seria a tira que a spec quis tirar, só que vertical.
+
+Portão de conclusão rodado de verdade: lint limpo, typecheck limpo (app e service worker), **599
+testes** (nenhum novo: nada em `src/lib/domain/`), build com as mesmas rotas de antes. **Nada
+disto foi visto em navegador nesta sessão**: o roteiro de aceite da spec (onze passos, 360×640 e
+um iPhone com indicador) é o que confere a bandeja subindo, a opção desabilitada em modo avião,
+a superfície do resumo por baixo do indicador e o diálogo de "sair sem salvar" no gesto de
+voltar.
 
 ## O primeiro passe de navegador sobre a 033 e a 034 (`#d131`)
 

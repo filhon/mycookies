@@ -902,7 +902,7 @@ export function FormularioPedido({
       />
 
       {/* Espaço no pé para o rodapé de totais não cobrir o último bloco. */}
-      <div className="mt-4 space-y-4 pb-48 apertado:pb-32 lg:pb-44">
+      <div className="mt-4 space-y-4 pb-36 apertado:pb-32 lg:pb-44">
         {pedido ? (
           <Bloco
             icone={ClipboardList}

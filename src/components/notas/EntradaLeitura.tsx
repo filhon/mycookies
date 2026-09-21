@@ -20,10 +20,17 @@ import { cn } from "@/lib/utils/cn";
  * embaixo do botão: em 360px uma frase de trinta caracteres ao lado do título
  * espremeria os dois. Ele vai onde há largura, e o botão fica onde a ação está.
  *
- * Não nasce um segundo botão flutuante no celular: um já existe, e dois
- * disputam o mesmo polegar.
+ * No celular a entrada do cabeçalho de `/insumos` mora na bandeja do "+"
+ * (`DECISOES.md#d151`), com a frase ao lado da opção; o botão e o aviso ficam
+ * `lg:` lá, por `className`.
  */
-export function EntradaLeitura({ tamanho = "md" }: { tamanho?: TamanhoBotao }) {
+export function EntradaLeitura({
+  tamanho = "md",
+  className,
+}: {
+  tamanho?: TamanhoBotao;
+  className?: string;
+}) {
   const online = useConexao();
 
   if (!online) {
@@ -33,7 +40,7 @@ export function EntradaLeitura({ tamanho = "md" }: { tamanho?: TamanhoBotao }) {
         title={MENSAGEM_FALHA["sem-rede"]}
         className={classesBotao({
           tamanho,
-          className: "cursor-not-allowed opacity-45",
+          className: cn("cursor-not-allowed opacity-45", className),
         })}
       >
         <ScanLine aria-hidden className="size-5" strokeWidth={1.75} />
@@ -43,7 +50,7 @@ export function EntradaLeitura({ tamanho = "md" }: { tamanho?: TamanhoBotao }) {
   }
 
   return (
-    <Link href="/insumos/nota" className={classesBotao({ tamanho })}>
+    <Link href="/insumos/nota" className={classesBotao({ tamanho, className })}>
       <ScanLine aria-hidden className="size-5" strokeWidth={1.75} />
       Ler uma nota
     </Link>
@@ -53,8 +60,10 @@ export function EntradaLeitura({ tamanho = "md" }: { tamanho?: TamanhoBotao }) {
 /** A frase que acompanha a entrada desabilitada. Nada, quando há rede. */
 export function AvisoLeituraSemRede({
   centralizado = false,
+  className,
 }: {
   centralizado?: boolean;
+  className?: string;
 }) {
   const online = useConexao();
   if (online) return null;
@@ -64,6 +73,7 @@ export function AvisoLeituraSemRede({
       className={cn(
         "flex items-start gap-2 text-label text-ink-muted",
         centralizado && "max-w-[38ch] justify-center text-center",
+        className,
       )}
     >
       <CloudOff

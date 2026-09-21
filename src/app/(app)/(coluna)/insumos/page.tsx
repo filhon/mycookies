@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Plus, ScanLine } from "lucide-react";
 import { orderBy, query, where } from "firebase/firestore";
 import { useMemo, useState } from "react";
 import { BotaoBiblioteca } from "@/components/biblioteca/BotaoBiblioteca";
@@ -13,16 +13,18 @@ import {
   EntradaLeitura,
 } from "@/components/notas/EntradaLeitura";
 import { Botao } from "@/components/ui/Botao";
-import { BotaoFlutuante } from "@/components/ui/BotaoFlutuante";
+import { BotaoMais } from "@/components/ui/BotaoMais";
 import { CampoBusca } from "@/components/ui/CampoBusca";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { Pilulas, type OpcaoPilula } from "@/components/ui/Pilulas";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { dataISODe } from "@/lib/domain/datas";
+import { MENSAGEM_FALHA } from "@/lib/domain/notaFiscal";
 import { colInsumos } from "@/lib/firebase/colecoes";
 import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
 import { useColecao } from "@/lib/hooks/useColecao";
+import { useConexao } from "@/lib/hooks/useDispositivo";
 import type { CategoriaInsumo, Fornada, Insumo } from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
 
@@ -44,6 +46,9 @@ export default function PaginaInsumos() {
   const [filtro, setFiltro] = useState<CategoriaInsumo | "TODOS">("TODOS");
   const [emEdicao, setEmEdicao] = useState<Insumo | undefined>();
   const [painelAberto, setPainelAberto] = useState(false);
+  // O mesmo sinal de `EntradaLeitura`: sem rede, "Ler uma nota" na bandeja
+  // nasce desabilitada e diz por quê.
+  const online = useConexao();
 
   /**
    * Uma consulta só, ordenada, e todo o resto filtrado em memória.
@@ -91,7 +96,7 @@ export default function PaginaInsumos() {
   }
 
   // Um botão primário por tela: enquanto o estado vazio ensina a tela, a ação
-  // é dele (a biblioteca), e o botão do cabeçalho e a pílula flutuante saem.
+  // é dele (a biblioteca), e o botão do cabeçalho e o "+" saem.
   const estadoVazioNaTela = !carregando && !erro && dados.length === 0;
 
   return (
@@ -100,30 +105,49 @@ export default function PaginaInsumos() {
         titulo="Materiais"
         descricao="Ingredientes e embalagens. É daqui que sai o custo de todo produto."
         acao={
-          // "Ler uma nota" aparece nos dois tamanhos de tela, e "Novo insumo"
-          // só no desktop: no celular a ação primária é o botão flutuante, e
-          // dois flutuantes disputariam o mesmo polegar.
+          // No desktop as duas ações moram no cabeçalho; no celular só o "+",
+          // e a bandeja é o único lugar delas (`DECISOES.md#d151`).
           <div className="flex items-start gap-2">
-            <EntradaLeitura />
+            <EntradaLeitura className="hidden lg:inline-flex" />
             {!estadoVazioNaTela && (
-              <Botao
-                variante="primaria"
-                onClick={abrirNovo}
-                iconeInicial={
-                  <Plus aria-hidden className="size-5" strokeWidth={2} />
-                }
-                className="hidden lg:inline-flex"
-              >
-                Novo material
-              </Botao>
+              <>
+                <Botao
+                  variante="primaria"
+                  onClick={abrirNovo}
+                  iconeInicial={
+                    <Plus aria-hidden className="size-5" strokeWidth={2} />
+                  }
+                  className="hidden lg:inline-flex"
+                >
+                  Novo material
+                </Botao>
+                <BotaoMais
+                  rotulo="Adicionar"
+                  opcoes={[
+                    {
+                      rotulo: "Novo material",
+                      icone: Plus,
+                      onClick: abrirNovo,
+                    },
+                    {
+                      rotulo: "Ler uma nota",
+                      icone: ScanLine,
+                      href: "/insumos/nota",
+                      desabilitada: !online,
+                      dica: MENSAGEM_FALHA["sem-rede"],
+                    },
+                  ]}
+                />
+              </>
             )}
           </div>
         }
       >
         <div className="space-y-3">
           {/* A frase da entrada desabilitada vai aqui, e não embaixo do botão:
-              é a faixa que tem a largura da página. */}
-          <AvisoLeituraSemRede />
+              é a faixa que tem a largura da página. No celular ela mora ao
+              lado da opção que explica, na bandeja. */}
+          <AvisoLeituraSemRede className="hidden lg:flex" />
 
           <CampoBusca
             rotulo="Buscar material"
@@ -206,10 +230,6 @@ export default function PaginaInsumos() {
           </ul>
         )}
       </div>
-
-      {!estadoVazioNaTela && (
-        <BotaoFlutuante rotulo="Novo material" onClick={abrirNovo} />
-      )}
 
       <FormularioInsumo
         aberto={painelAberto}
