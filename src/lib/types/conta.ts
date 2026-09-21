@@ -10,9 +10,9 @@ import type { VersaoSchema } from "./common";
  * dois negócios.
  */
 
-/** A 029 acrescenta o encerramento em `StatusDaConta`. */
 export type PlanoDaConta = "TRIAL" | "ASSINATURA";
-export type StatusDaConta = "ATIVA";
+/** `"ENCERRADA"` é escrita por `/api/conta/encerrar` (spec 029) e lida pelo `AuthProvider` e pela purga. */
+export type StatusDaConta = "ATIVA" | "ENCERRADA";
 
 export interface Conta {
   id: string;
@@ -53,6 +53,13 @@ export interface Conta {
   stripeSubscriptionId?: string;
   /** Até quando a assinatura deixa escrever: fim do período mais a folga. */
   assinaturaAte?: Timestamp;
+  /**
+   * Quando ela encerrou a conta, e o login que pediu. `encerradaPor` é o
+   * único lugar do dado que aponta para um `uid`, e existe para a purga saber
+   * qual login apagar depois que a claim já saiu (`DECISOES.md#d148`).
+   */
+  encerradaEm?: Timestamp;
+  encerradaPor?: string;
   v: VersaoSchema;
 }
 

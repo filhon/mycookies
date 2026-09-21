@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
+import { MeusDados } from "@/components/conta/MeusDados";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, Seletor } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -436,13 +437,7 @@ export function TelaConfiguracao() {
 
       {/* Mesma coluna de todas as telas: quem estreita é o campo dentro do
           bloco, nunca a página, senão o cabeçalho fica mais largo que o corpo. */}
-      <div
-        className={cn(
-          "mt-2 space-y-4",
-          // Espaço para a barra de salvar não cobrir o último bloco.
-          alterado && "pb-20 lg:pb-0",
-        )}
-      >
+      <div className="mt-2 space-y-4">
         <BlocoConfiguracao
           icone={Clock}
           titulo="Seu trabalho"
@@ -811,13 +806,27 @@ export function TelaConfiguracao() {
             </Seletor>
           </div>
         </BlocoConfiguracao>
+      </div>
 
-        {falha && (
-          <p role="alert" className="text-label text-negative">
-            {falha}
-          </p>
+      {falha && (
+        <p role="alert" className="mt-4 text-label text-negative">
+          {falha}
+        </p>
+      )}
+
+      {/* A prateleira do que se usa uma vez ou raramente: o guia, os dois
+          direitos da LGPD e sair. Um respiro maior a separa das configurações
+          acima — não é mais um campo para editar, é outra categoria de coisa —
+          e no desktop ela é um menu compacto, não uma fileira de campos: por
+          isso a coluna encolhe e as linhas ficam mais próximas umas das
+          outras do que os blocos de configuração ficam entre si. */}
+      <div
+        className={cn(
+          "mt-8 flex flex-col gap-2 lg:mt-12 lg:max-w-md",
+          // Espaço para a barra de salvar não cobrir o último bloco.
+          alterado && "pb-20 lg:pb-0",
         )}
-
+      >
         {/* A entrada do guia no celular, onde não há barra lateral. É para cá
             que a engrenagem do cabeçalho da tela Hoje já leva: são três toques
             para uma coisa que se consulta raramente, e é o preço de não gastar
@@ -846,6 +855,11 @@ export function TelaConfiguracao() {
             strokeWidth={1.75}
           />
         </Link>
+
+        {/* Os dois direitos da LGPD (spec 029): baixar e encerrar. Depois do
+            guia e antes de sair, porque "Encerrar" não pode ser vizinha de
+            baixo de nada que se toque sem pensar. */}
+        <MeusDados />
 
         {/* Onde o celular já busca o que não cabe no menu de baixo — a mesma
             prateleira do guia acima. No desktop duplica a barra lateral, e é

@@ -36,6 +36,12 @@ interface ContextoAuth {
   carregando: boolean;
   entrar: (email: string, senha: string) => Promise<void>;
   /**
+   * `true` quando a fila de escrita do Firestore subiu (ou já estava vazia)
+   * dentro de `ESPERA_PENDENTES_MS`. Usado por `sair()` e por `MeusDados` antes
+   * de encerrar a conta (`DECISOES.md#d118`).
+   */
+  escritasSubiram: () => Promise<boolean>;
+  /**
    * Resolve `false` — e não sai — quando há escrita que ainda não subiu: o
    * cache local que vai ser apagado é onde ela mora (`DECISOES.md#d118`).
    */
@@ -69,7 +75,11 @@ const MENSAGENS: Record<string, string> = {
   "auth/weak-password": "A senha precisa ter pelo menos 6 caracteres.",
 };
 
-/** Mostrada nos três lugares que chamam `sair()` quando ele devolve `false`. */
+/**
+ * Mostrada nos lugares que chamam `sair()` (ou `escritasSubiram()`, o mesmo
+ * relógio) e recebem `false`: `TelaConfiguracao`, `(app)/layout.tsx`,
+ * `/assinatura` e `MeusDados` antes de encerrar a conta.
+ */
 export const AVISO_SAIR_PENDENTE =
   "O que você salvou ainda não subiu. Conecte à internet e tente sair de novo.";
 
@@ -147,6 +157,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signInWithEmailAndPassword(obterAuth(), email.trim(), senha);
   }, []);
 
+  const escritasSubiram = useCallback((): Promise<boolean> => {
+    const db = obterDb();
+    return Promise.race([
+      waitForPendingWrites(db).then(() => true),
+      new Promise<boolean>((r) =>
+        setTimeout(() => r(false), ESPERA_PENDENTES_MS),
+      ),
+    ]);
+  }, []);
+
   /**
    * Sai e apaga o cache local. Resolve `false` — e não sai — quando há escrita
    * que ainda não subiu: o cache que vai ser apagado é onde ela mora
@@ -154,15 +174,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * `/login`.
    */
   const sair = useCallback(async (): Promise<boolean> => {
-    const db = obterDb();
-    const subiu = await Promise.race([
-      waitForPendingWrites(db).then(() => true),
-      new Promise<boolean>((r) =>
-        setTimeout(() => r(false), ESPERA_PENDENTES_MS),
-      ),
-    ]);
-    if (!subiu) return false;
+    if (!(await escritasSubiram())) return false;
 
+    const db = obterDb();
     try {
       await signOut(obterAuth());
       await terminate(db);
@@ -173,7 +187,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.location.replace("/login");
     }
     return true;
-  }, []);
+  }, [escritasSubiram]);
+
+  /**
+   * Conta encerrada (`DECISOES.md#d148`): fora, neste aparelho e em qualquer
+   * outro que ainda carregue o token. `sair()` limpa o cache, que é o que
+   * precisa sumir. Mesmo desenho do redirecionamento de vencida em
+   * `(app)/layout.tsx`: o documento é o gatilho.
+   */
+  useEffect(() => {
+    if (conta?.status === "ENCERRADA") void sair();
+  }, [conta?.status, sair]);
 
   /**
    * Claim recém-concedida não aparece sozinha: o token em cache vale uma hora,
@@ -197,10 +221,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       conta,
       carregando,
       entrar,
+      escritasSubiram,
       sair,
       reconferirAcesso,
     }),
-    [usuario, contaId, conta, carregando, entrar, sair, reconferirAcesso],
+    [
+      usuario,
+      contaId,
+      conta,
+      carregando,
+      entrar,
+      escritasSubiram,
+      sair,
+      reconferirAcesso,
+    ],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

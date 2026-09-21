@@ -4587,6 +4587,10 @@ tem `acessoAte` ainda, então a regra nova é idêntica à antiga até `/api/con
 começarem a escrevê-la. Se a regra precisar de uma segunda dimensão um dia (bloqueio manual,
 por exemplo), o booleano volta **ao lado** da data, não no lugar dela.
 
+**Cumprido na 029.** A leitura sem prazo (`allow read: if temAcesso()`) é o que
+`GET /api/conta/exportar` e a própria tela de vencida usam — a 029 é quem tinha ficado com o
+prazo em aberto, e ele não existe: ler continua sempre permitido (`#d149`).
+
 ---
 
 ## D145 · O estado da cobrança é derivado das datas; o webhook relê o Stripe e escreve a claim antes do documento
@@ -4614,6 +4618,9 @@ token cedo demais e ainda pegaria o prazo velho.
 número da claim, em `Timestamp`) só existem depois da primeira assinatura, escritos só pelo
 webhook. Uma chamada a mais por evento ao Stripe, contra um campo de "último evento visto" — os
 eventos são poucos (uma dúzia por conta por ano), e a chamada é barata.
+
+**Cumprido na 029.** `StatusDaConta` ganha `"ENCERRADA"`, escrita por `/api/conta/encerrar` e
+lida pelo `AuthProvider` — continua sendo do ciclo de vida da conta, nunca da cobrança (`#d148`).
 
 ---
 
@@ -4659,3 +4666,56 @@ limitá-la a `assinante`, mas a conta liberada à mão é cortesia, e cortesia �
 assinatura dá. `FolhaOrcamento.tsx` lê `orcamento.negocio.feitoCom` em vez de desenhar a linha
 sempre; sem a frase e sem o "feito com", o rodapé fecha sem buraco, como já acontecia sem a
 frase (`#d127`).
+
+---
+
+## D148 · Encerrar é `status` mais claim fora, hoje; apagar é script, à mão, dias depois
+
+**Status:** vigente · decidida em 2026-09-21, na spec `029-meus-dados-sao-meus.md`
+
+**Contexto.** A LGPD dá direito à eliminação (art. 18, VI), e uma conta que fecha quer parar de
+pagar sem depender de alguém ler uma mensagem. Mas "nunca apagar documento" é regra para dado de
+negócio vivo — fichas e pedidos que outra coisa referencia —, e uma conta encerrada não tem
+negócio vivo: o que sobra é o dado pessoal de quem pediu para sair.
+
+**Decisão.** `POST /api/conta/encerrar` faz três coisas no servidor, **nesta ordem**: (1) cancela
+a assinatura no Stripe, se houver — primeiro porque é o passo que pode falhar por motivo de fora,
+e se falhar nada foi encerrado; (2) marca `status: "ENCERRADA"`, `encerradaEm: Timestamp.now()`,
+`encerradaPor: uid` no documento; (3) tira a conta da claim (`contas` e `acessoAte` sem a chave).
+Idempotente como `#d141`: toda volta bate na mesma rota e faz só o que faltou. **Nenhum documento
+é apagado no toque.** A purga é `scripts/encerrar-conta.mjs`, rodado à mão dentro de
+`DIAS_ATE_A_PURGA` (30) dias — o prazo que `/privacidade` passa a prometer — e é a única exceção
+nomeada ao invariante "nunca apagar documento" do `CLAUDE.md`. O script apaga o login do Firebase
+Auth junto com o documento; até lá, o login existe sem conta, e entrar nesse intervalo cai em
+"Este login ainda não abre nenhuma conta", com `POST /api/conta` livre para abrir uma conta nova
+(teste novo) se ela recadastrar — efeito colateral aceito, não consertado (ver Riscos da spec).
+
+**Consequência.** `StatusDaConta` ganha `"ENCERRADA"` (reservado pelo `#d145`); `Conta` ganha
+`encerradaEm?` e `encerradaPor?`. `firestore.rules` não muda: quem já não está no mapa `contas`
+já não lê nem escreve, pelo mesmo mecanismo do `#d07`. `encerradaPor` é o único campo do sistema
+que guarda um `uid` dentro do dado — existe só para o script achar o login a apagar depois que a
+claim já saiu.
+
+---
+
+## D149 · A exportação sai do servidor por `listCollections()`, porque uma exportação do cache é silenciosamente incompleta
+
+**Status:** vigente · decidida em 2026-09-21, na spec `029-meus-dados-sao-meus.md`
+
+**Contexto.** O cliente já lê tudo — a regra permite, vencida ou não —, e um `getDocs` por
+coleção mais `JSON.stringify` seria uma exportação sem rota nenhuma. Dois motivos recusam isso:
+offline, o cliente devolve o cache do IndexedDB sem avisar, e um arquivo "meus dados" com metade
+dos pedidos é pior que uma falha explícita; e `listCollections()` não existe no cliente — só o
+servidor pode listar as subcoleções do documento sem que alguém mantenha uma lista à mão.
+
+**Decisão.** `GET /api/conta/exportar` lê o documento e `listCollections()` no Admin SDK, e
+transmite a resposta por `ReadableStream`, um `enqueue` por coleção — não monta em memória, porque
+uma conta com fotos de produto gravadas como `data:` URL (`#d109`) passa dos 4,5 MB que a
+hospedagem corta em resposta não transmitida. O arquivo é dado, não tela: dinheiro em centavos
+inteiros, `Timestamp` vira ISO 8601, `formato: "rende-exportacao/1"` na frente para um futuro
+importador.
+
+**Consequência.** Toda spec futura que criar uma coleção sob `contas/{id}` entra na exportação
+sem ninguém lembrar de acrescentá-la a uma lista — é o invariante "todo dado mora em
+`contas/{contaId}/…`" pagando dividendo. `src/lib/domain/meusDados.ts` fica puro
+(`paraExportavel`, `nomeDoArquivoDeExportacao`): a rota só monta o fluxo.

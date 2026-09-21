@@ -2,11 +2,13 @@
 
 Atualizado em 2026-09-21 (spec 023 entregue, primeira da fase 1 do roadmap; a 024 e a 025
 entregues depois dela, a segunda e a terceira da fase 1; a 026 entregue fora da ordem das
-entrevistas, a quarta e última parcela do custo honesto do `docs/saas/CLAUDE.md` §1; a **027 e
-a 028 codificadas antes do gatilho da fase 2**, a porta e a assinatura, com o texto dos termos e
-o passo 1 do roteiro da 028 como portão do deploy; mais a 034 entregue por cima da 033, o
-primeiro passe de navegador sobre as duas, `#d131`; **033 e 034 por publicar juntas**; roteiros
-das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 027, 028, 033 e 034 por rodar).
+entrevistas, a quarta e última parcela do custo honesto do `docs/saas/CLAUDE.md` §1; a **027, a
+028 e a 029 codificadas antes do gatilho da fase 2**, a porta, a assinatura e a saída — com o
+texto dos termos e da privacidade (agora com os três parágrafos que a 029 acrescenta) e os
+roteiros das três como portão do deploy —, e com elas **a fase 2 do roadmap fecha em código**;
+mais a 034 entregue por cima da 033, o primeiro passe de navegador sobre as duas, `#d131`; **033
+e 034 por publicar juntas**; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025,
+026, 027, 028, 029, 033 e 034 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
 ## Onde estamos
@@ -193,14 +195,15 @@ nunca visto rodando — **fechou com a 5B**. O que ficou dele é uma linha na ta
 releitura dos cinco textos de `src/lib/domain/onboarding.ts` contra o que a 5B viu, que a 8B
 não pôde fazer na época.
 
-Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **592
+Portão de conclusão passando: lint limpo, typecheck limpo (app e service worker), **599
 testes** (526 até a 018; 535 com a 033-C; 536 com a 034; 547 com a 024; 552 com a 025; 563 com a
-026; 569 com a 027; 592 com a 028), e build com 23 rotas estáticas — `/insumos/nota` entrou na
-lista na 6A, `/insumos/contagem` na 7A, `/comecar` na 8A, `/fichas/contagem` na 13D, `/clientes`
-na 025, `/cadastro`, `/termos` e `/privacidade` na 027, e `/assinatura` e
+026; 569 com a 027; 592 com a 028; 599 com a 029), e build com 23 rotas estáticas — `/insumos/nota`
+entrou na lista na 6A, `/insumos/contagem` na 7A, `/comecar` na 8A, `/fichas/contagem` na 13D,
+`/clientes` na 025, `/cadastro`, `/termos` e `/privacidade` na 027, e `/assinatura` e
 `/assinatura/confirmando` na 028 — mais `/api/nota`, `/api/conta` (027), `/api/assinatura/checkout`,
-`/api/assinatura/portal`, `/api/assinatura/precos`, `/api/stripe/webhook` (028), `/fichas/[id]`,
-`/pedidos/[id]` e `/pedidos/[id]/orcamento` (17A) dinâmicas e service worker gerado.
+`/api/assinatura/portal`, `/api/assinatura/precos`, `/api/stripe/webhook` (028),
+`/api/conta/exportar` e `/api/conta/encerrar` (029), `/fichas/[id]`, `/pedidos/[id]` e
+`/pedidos/[id]/orcamento` (17A) dinâmicas e service worker gerado.
 
 **O app está de pé.** Projeto `mycookies-mrc`, `.env.local` preenchido, regras publicadas,
 chave de conta de serviço no disco (fora do git, coberta por `*firebase-adminsdk*.json`).
@@ -265,6 +268,7 @@ os números digitados de ponta a ponta.
 | 26  | A fornada que quebrou                       | pronto, sem o roteiro               | `specs/026-a-fornada-que-quebrou.md`        |
 | 27  | Criar a conta sozinha                       | codificada; deploy espera os termos | `specs/027-criar-a-conta-sozinha.md`        |
 | 28  | O teste acaba, e a assinatura               | codificada; deploy espera o roteiro | `specs/028-o-teste-acaba-e-a-assinatura.md` |
+| 29  | Meus dados são meus                         | codificada; deploy espera os termos | `specs/029-meus-dados-sao-meus.md`          |
 | 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`                |
 | 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`               |
 
@@ -2892,15 +2896,71 @@ webhook), do Stripe CLI local e de um e-mail sem login. O passo 1 (a regra publi
 11 são os que provam a assinatura de verdade, o cancelamento e a releitura contra evento fora
 de ordem.
 
+## A spec 029 · Meus dados são meus
+
+**Codificada por pedido de quem conduz o projeto**, como a 024 a 028, no mesmo branch da 027 e
+da 028: a última das três fecha a fase 2 do roadmap em código (a porta, a cobrança e a saída), e
+publica junto com elas.
+
+- `src/lib/domain/meusDados.ts`: `DIAS_ATE_A_PURGA` (30), `FORMATO_EXPORTACAO`
+  (`"rende-exportacao/1"`), `paraExportavel` (`Timestamp`, por duck-typing, vira ISO 8601 em
+  qualquer profundidade), `nomeDoArquivoDeExportacao`, `FalhaMeusDados` e
+  `MENSAGEM_FALHA_MEUS_DADOS`. Puro; sete testes em `tests/domain/meusDados.test.ts`
+  (**592 → 599**).
+- `src/lib/types/conta.ts`: `StatusDaConta` ganha `"ENCERRADA"`; `Conta` ganha `encerradaEm?` e
+  `encerradaPor?` — o único campo do sistema que guarda um `uid` dentro do dado, para a purga
+  achar o login depois que a claim já saiu.
+- `GET /api/conta/exportar`: token → `abreAConta` → `listCollections()` no Admin SDK, com a
+  resposta transmitida por `ReadableStream`, um `enqueue` por coleção (`#d149`). `content-
+disposition: attachment` com o nome de `nomeDoArquivoDeExportacao`.
+- `POST /api/conta/encerrar`: os três passos do `#d148`, nesta ordem — Stripe
+  (`subscriptions.cancel`, recusando `sem-configuracao` se houver assinatura e faltar Stripe),
+  `status: "ENCERRADA"` no documento, e a conta fora de `contas`/`acessoAte` na claim.
+  Idempotente como `/api/conta` (`#d141`).
+- `src/lib/server/firebaseAdmin.ts`: o cabeçalho ganhou as duas rotas novas — `encerrar` escreve
+  (documento e claim), `exportar` só lê.
+- `src/providers/AuthProvider.tsx`: `escritasSubiram()` extraída de `sair()` e exportada no
+  contexto; um `useEffect` ao lado do `useDocumento` da conta chama `sair()` sozinho quando
+  `conta.status === "ENCERRADA"` — tira do app este aparelho e qualquer outro que ainda carregue
+  o token, sem o componente precisar saber disso.
+- `src/components/conta/MeusDados.tsx`: as duas linhas ("Baixar meus dados", ícone `Download`;
+  "Encerrar minha conta", ícone `UserX` — a única linha do sistema em `text-negative` com
+  ícone), no padrão exato de "Sair". Encerrar abre a `Confirmacao`, que ganhou um
+  `carregandoConfirmar?` opcional (retrocompatível com `useGuardaDeSaida`) para o botão de
+  confirmar não fechar cedo enquanto o `POST` está no ar. Entra em `/configuracao` (entre "Como
+  funciona" e "Sair") e nos dois estados `vencida` de `/assinatura`.
+- `scripts/encerrar-conta.mjs`: a purga, irmã de `conceder-acesso.mjs` e `metricas.mjs`. Recusa
+  qualquer conta cujo `status` não seja `"ENCERRADA"`; sem `--confirmo` só imprime (nome,
+  `encerradaEm`, dias, coleções com contagem, login); com ele, `recursiveDelete` mais
+  `deleteUser` (ou só a claim sem a chave, se sobrar outra conta). Não toca no Stripe.
+  `package.json` ganhou a linha `"encerrar-conta"`.
+- `CLAUDE.md`: a exceção nomeada ao invariante "nunca apagar documento" e a linha do script na
+  tabela de comandos.
+- Nenhuma regra, nenhum índice, nenhuma dependência: `git diff firestore.rules
+firestore.indexes.json package.json` é só a linha do script.
+
+Decisões novas em `DECISOES.md#d148` e `#d149`; `#d144` e `#d145` ganharam a nota "cumprido na
+029". Portão rodado de verdade: lint e typecheck limpos, os **599 testes**, e `npm run build`
+com `/api/conta/exportar` e `/api/conta/encerrar` dinâmicas, junto das que já existiam.
+
+**O que não rodou nesta sessão** — o roteiro de treze passos inteiro, do fim da spec. Precisa do
+projeto de verdade, do `stripe listen` rodando e de uma conta de cadastro assinante (a que o
+passo 5 do roteiro da 028 deixa). Os passos 5 a 9 são os que provam a ordem do `#d148` (o
+Stripe cancelado, o documento marcado, a claim fora, o outro aparelho saindo sozinho, o meio do
+caminho sem rede) e os passos 11 e 12 são os que provam o script — o ensaio recusando
+`contas/mycookies` e a purga de verdade apagando documento, subcoleções e login.
+
 ## Próxima ação
 
-**Publicar a 033 e a 034 juntas** (`docs/DEPLOY.md`). A 027 e a 028 **não vão junto**: a porta
-espera o texto dos termos e da privacidade (`rg -n "\[texto" src/app` vazio), o console com
-"Enable create (sign-up)" conferido, e a fase 0 passando no teste; a assinatura espera o passo 2
-da sua seção 2 no painel do Stripe (produto, dois preços, portal, endpoint do webhook) e o
-passo 1 do seu roteiro — a regra nova publicada e confirmada contra `contas/mycookies` — que
+**Publicar a 033 e a 034 juntas** (`docs/DEPLOY.md`). A 027, a 028 e a 029 **não vão junto**: a
+porta espera o texto dos termos e da privacidade — agora com os três parágrafos que a 029
+acrescenta (3.8: o que baixar e encerrar afirmam) — (`rg -n "\[texto" src/app` vazio), o console
+com "Enable create (sign-up)" conferido, e a fase 0 passando no teste; a assinatura espera o
+passo 2 da sua seção 2 no painel do Stripe (produto, dois preços, portal, endpoint do webhook) e
+o passo 1 do seu roteiro — a regra nova publicada e confirmada contra `contas/mycookies` — que
 pode rodar **antes** de tudo, sozinho, porque sem `acessoAte` em nenhuma claim ele não muda
-nada hoje. Até lá as duas ficam no branch, e o `Link` do login é o que abre a porta. Antes, os
+nada hoje; a saída espera o próprio roteiro de treze passos. Até lá as três ficam no branch, e o
+`Link` do login é o que abre a porta. Antes, os
 roteiros no `npm run dev`, nos
 dois temas, a 360px e a 1280px: o da 033, "Depois da A" (passos 1 a 5), "Depois da B" (6, 7, 9
 e 10) e "Depois da C" (11, 13, 14 e 15); e o da 034, os oito passos do fim da spec, com o 7

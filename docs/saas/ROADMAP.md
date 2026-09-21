@@ -350,13 +350,25 @@ a conta real.
   campos aditivos em `Conta` e `ConfiguracaoGeral`; a linha em `conceder-acesso.mjs`. Nenhum
   cron, nenhum `vercel.json`, nenhum índice.
 
-**029 · Meus dados são meus.** LGPD, o mínimo que não é jurídico.
+**029 · Meus dados são meus. Entregue** (`specs/029-meus-dados-sao-meus.md`), no mesmo branch
+da 027 e da 028 — as três fecham a fase 2 em código.
 
-- `GET /api/conta/exportar`: JSON com todas as coleções da conta. Botão em `/configuracao`.
-- "Encerrar minha conta" em `/configuracao`: `status: "ENCERRADA"`, claim removida, assinatura
-  cancelada no Stripe. A purga física é `scripts/encerrar-conta.mjs`, rodado à mão dentro do
-  prazo — exceção nomeada ao "nunca apagar documento", que é regra para dado de negócio vivo.
-- Aprovações: nenhuma além das rotas.
+- `GET /api/conta/exportar`: JSON com todas as coleções da conta, transmitido por
+  `ReadableStream` (**o que mudou do previsto**: por coleção via `listCollections()`, e não
+  montado em memória — uma conta com fotos de produto como `data:` URL passa dos 4,5 MB que a
+  hospedagem corta em resposta não transmitida). Botão "Baixar meus dados" em `/configuracao` e
+  na tela de vencida de `/assinatura`.
+- "Encerrar minha conta" em `/configuracao` e na vencida: `POST /api/conta/encerrar` cancela a
+  assinatura no Stripe, marca `status: "ENCERRADA"` e tira a conta da claim, nesta ordem
+  (`#d148`). Quem tira do app é o `AuthProvider`, observando o documento — não o componente, para
+  que o outro aparelho também saia sozinho.
+- A purga física é `scripts/encerrar-conta.mjs`, rodado à mão dentro de `DIAS_ATE_A_PURGA` (30)
+  dias — exceção nomeada ao "nunca apagar documento" no `CLAUDE.md`, que é regra para dado de
+  negócio vivo. `encerradaPor` (**o que mudou do previsto**: um `uid` gravado no documento) é
+  como o script acha o login a apagar, porque quem conduz o projeto não tem o e-mail à mão.
+- Aprovações usadas: schema aditivo (`"ENCERRADA"`, `encerradaEm`, `encerradaPor`); a exceção ao
+  invariante; a linha do script em `package.json`. Nenhuma regra, nenhum índice, nenhuma
+  dependência.
 
 ### Fase 3 · Crescimento — só com cliente pagante pedindo
 

@@ -172,6 +172,25 @@ Firestore e voltou, e agora isso vale também para o servidor publicado.
 
 ---
 
+## 5 · Encerrar uma conta
+
+Quando ela toca em "Encerrar minha conta" (spec 029), o app cancela a assinatura no Stripe,
+marca `status: "ENCERRADA"` e tira a conta da claim — na hora, sem intervenção. **Nada é
+apagado nesse toque.** A purga é manual, e a única exceção nomeada ao invariante "nunca apagar
+documento" (`CLAUDE.md`, `DECISOES.md#d148`):
+
+```bash
+npm run encerrar-conta -- <contaId>              # ensaio: imprime o que apagaria
+npm run encerrar-conta -- <contaId> --confirmo   # apaga o documento, as subcoleções e o login
+```
+
+Exige `GOOGLE_APPLICATION_CREDENTIALS`, como `conceder-acesso` e `metricas`. O script **recusa**
+qualquer conta cujo `status` não seja `"ENCERRADA"` — não há como apagar `contas/mycookies` por
+engano. Rode dentro de `DIAS_ATE_A_PURGA` (30 dias) depois de `encerradaEm`, que é o prazo que
+`/privacidade` promete; o ensaio (sem `--confirmo`) avisa se o prazo já venceu. Não toca no
+Stripe: a assinatura já foi cancelada no toque dela, e o `Customer` fica lá pela retenção fiscal
+deles.
+
 ## Limites conhecidos
 
 **O arquivo da nota tem dois tetos, e o menor não é o nosso.** `LIMITE_ARQUIVO_BYTES` é 8 MB

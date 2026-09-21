@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { MolduraDeEntrada } from "@/components/auth/MolduraDeEntrada";
+import { MeusDados } from "@/components/conta/MeusDados";
 import { Simbolo } from "@/components/marca/Marca";
 import { Botao } from "@/components/ui/Botao";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -209,16 +210,20 @@ export default function PaginaAssinatura() {
     acoes = (
       <>
         {cartoesDePreco}
-        <Botao
-          tamanho="lg"
-          larguraTotal
-          className="mt-4"
-          onClick={() => void aoSair()}
-          disabled={saindo}
-          carregando={saindo}
-        >
-          Sair
-        </Botao>
+        <div className="mt-4 space-y-3">
+          {/* A vencida que não vai assinar tem os dois direitos da LGPD sem
+              assinar (spec 029): levar o dado e encerrar. */}
+          <MeusDados />
+          <Botao
+            tamanho="lg"
+            larguraTotal
+            onClick={() => void aoSair()}
+            disabled={saindo}
+            carregando={saindo}
+          >
+            Sair
+          </Botao>
+        </div>
       </>
     );
   } else if (situacao.tipo === "vencida" && situacao.foi === "assinatura") {
@@ -236,6 +241,7 @@ export default function PaginaAssinatura() {
         >
           Atualizar pagamento
         </Botao>
+        <MeusDados />
         <Botao
           tamanho="lg"
           larguraTotal

@@ -15,7 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "conceder-acesso": "node scripts/conceder-acesso.mjs",
-    "metricas": "node scripts/metricas.mjs"
+    "metricas": "node scripts/metricas.mjs",
+    "encerrar-conta": "node scripts/encerrar-conta.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",

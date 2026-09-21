@@ -17,6 +17,7 @@ export function Confirmacao({
   rotuloCancelar,
   aoConfirmar,
   aoCancelar,
+  carregandoConfirmar = false,
 }: {
   aberto: boolean;
   titulo: string;
@@ -25,6 +26,8 @@ export function Confirmacao({
   rotuloCancelar: string;
   aoConfirmar: () => void;
   aoCancelar: () => void;
+  /** A confirmação chama um servidor que ainda não respondeu: carrega o botão em vez de fechar cedo. */
+  carregandoConfirmar?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
 
@@ -53,10 +56,20 @@ export function Confirmacao({
         {descricao}
       </p>
       <div className="mt-5 flex gap-3">
-        <Botao autoFocus onClick={aoCancelar} className="flex-1">
+        <Botao
+          autoFocus
+          onClick={aoCancelar}
+          disabled={carregandoConfirmar}
+          className="flex-1"
+        >
           {rotuloCancelar}
         </Botao>
-        <Botao variante="perigo" onClick={aoConfirmar} className="flex-1">
+        <Botao
+          variante="perigo"
+          onClick={aoConfirmar}
+          carregando={carregandoConfirmar}
+          className="flex-1"
+        >
           {rotuloConfirmar}
         </Botao>
       </div>

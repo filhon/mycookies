@@ -15,9 +15,11 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
  * Nada aqui entra no pacote do cliente: só `src/app/api/` importa este arquivo,
  * e uma rota não é importada por componente nenhum.
  *
- * **Só `/api/conta` escreve no Firestore daqui, só no documento da conta e na
- * claim, e nunca em dado de negócio.** O motivo é o mesmo de `/api/nota` não
- * gravar insumo: escrever do servidor é escrever por fora das regras.
+ * **Só `/api/conta`, o webhook do Stripe e `/api/conta/encerrar` escrevem no
+ * Firestore daqui, só no documento da conta e na claim, nunca em dado de
+ * negócio.** `/api/conta/exportar` **lê** dado de negócio — para devolvê-lo a
+ * ela, e por mais nada. O motivo é o mesmo de `/api/nota` não gravar insumo:
+ * escrever do servidor é escrever por fora das regras.
  *
  * Verificar a assinatura do JWT à mão, para não mexer no `package.json`, está
  * descartado. O projeto desenha gráfico à mão para não pegar dependência
