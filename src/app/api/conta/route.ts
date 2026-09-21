@@ -29,6 +29,10 @@ import { caminhos, VERSAO_SCHEMA } from "@/lib/types";
  * Sem `abreAConta`: é a única rota em que quem chama, por definição, ainda não
  * abre conta nenhuma. O `uid` verificado é a autorização inteira, e o que ele
  * autoriza é a própria conta.
+ *
+ * Desde a spec 028, a mesma `setCustomUserClaims` também escreve
+ * `acessoAte[contaId] = trialAte` (`DECISOES.md#d144`): é o relógio que
+ * `firestore.rules` lê para recusar escrita de conta vencida.
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -78,24 +82,38 @@ async function garantirConta(uid: string, cadastro: Cadastro): Promise<string> {
   // 2. O documento existe? Antes da claim, na ordem do script: a claim é o que
   //    põe ela dentro do app, e só pode existir quando o documento já existe.
   const referencia = adminDb().doc(caminhos.conta(contaId));
-  if (!(await referencia.get()).exists) {
+  const existente = await referencia.get();
+  let trialAte: Timestamp;
+  if (!existente.exists) {
     const agora = Timestamp.now();
+    trialAte = Timestamp.fromDate(fimDoTeste(agora.toDate()));
     await referencia.set({
       nome: nomeDoNegocio(cadastro),
       proprietaria: cadastro.nome,
       criadaEm: agora,
       plano: "TRIAL",
       status: "ATIVA",
-      trialAte: Timestamp.fromDate(fimDoTeste(agora.toDate())),
+      trialAte,
       termosAceitosEm: agora,
       v: VERSAO_SCHEMA,
     });
+  } else {
+    trialAte = existente.get("trialAte") as Timestamp;
   }
 
-  // 3. A claim aponta? Preservando o que já havia, como o script.
+  // 3. A claim aponta? Preservando o que já havia, como o script — e junto
+  //    dela, `acessoAte[contaId]` com o `trialAte` do documento, nunca
+  //    recalculado, para que a claim e o documento nunca discordem por um
+  //    segundo de diferença (`#d144`, `#d145`).
   if (anteriores[contaId] == null) {
     await auth.setCustomUserClaims(uid, {
+      ...usuario.customClaims,
       contas: { ...anteriores, [contaId]: PAPEL },
+      acessoAte: {
+        ...(usuario.customClaims?.acessoAte as
+          Record<string, number> | undefined),
+        [contaId]: trialAte.toMillis(),
+      },
     });
   }
 

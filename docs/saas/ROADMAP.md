@@ -319,25 +319,36 @@ como defensável nas entrevistas. É o "segundo cliente pagante" de `#d16`.
 - **Não publicada**: `/termos` e `/privacidade` estão com `[texto de quem conduz o projeto]`, e
   esse é o portão do deploy, junto da fase 0.
 
-**028 · O teste acaba, e a assinatura.** Stripe, um plano.
+**028 · O teste acaba, e a assinatura.** Stripe, um plano. **Codificada em 2026-09-21**
+(`DECISOES.md#d144` a `#d147`), fica no branch com a 027 até o passo 1 do roteiro rodar contra
+a conta real.
 
-- Um plano, mensal e anual (anual com dois meses grátis). Sem gating: um plano é zero código
-  de permissão por tela.
-- Desligar o "feito com Rende" na folha do orçamento é da assinatura (`#d127`): hoje é uma
-  linha fixa; o toggle em `/configuracao` nasce aqui, e é o que uma assinatura paga compra.
+- Um plano, mensal e anual, no Stripe. Sem gating: um plano é zero código de permissão por
+  tela.
+- Desligar o "feito com Rende" na folha do orçamento é da assinatura (`#d127`, `#d147`): o
+  toggle em `/configuracao` só aparece para quem paga ou foi liberada à mão.
 - `POST /api/assinatura/checkout` (Checkout Session com `client_reference_id = contaId`),
-  `POST /api/assinatura/portal` (Customer Portal), `POST /api/stripe/webhook` (assinatura
-  verificada) gravando `plano`, `status`, `stripeCustomerId`, `stripeSubscriptionId` e
-  reemitindo a claim com `ativas: { [contaId]: true | false }`.
-- Regras: **escrever** em `contas/{contaId}/**` passa a exigir `token.ativas[contaId] == true`;
-  **ler** continua pela presença no mapa `contas`. Conta vencida lê tudo e não escreve nada —
-  o dado dela continua dela. Zero leitura na regra, como `#d07`.
-- Trial vencido sem assinatura: cron diário do Vercel (`vercel.json`, `CRON_SECRET`) em
-  `/api/assinatura/vencidas` derruba `ativas`. Sem dependência.
-- Tela: faixa "Seu teste acaba em N dias" na tela Hoje; vencido, uma tela cheia com o botão de
-  assinar. Preço mora nos `Price` do Stripe, em variável de ambiente, não no código.
-- Aprovações: dependência `stripe` (ou `fetch` cru com HMAC via `crypto` — a spec decide);
-  **mudança de regra de segurança**; campos em `Conta`; cron no Vercel.
+  `POST /api/assinatura/portal` (Customer Portal), `GET /api/assinatura/precos` e
+  `POST /api/stripe/webhook` (assinatura verificada, relendo o estado no Stripe em vez de
+  confiar no evento) gravando `plano`, `stripeCustomerId`, `stripeSubscriptionId` e
+  `assinaturaAte` — **`status` não muda**: ele é do ciclo de vida da conta, não da cobrança.
+- Regras: **o que mudou do previsto** — a claim não carrega `ativas: true | false`, carrega
+  `acessoAte: { [contaId]: msDaÉpoca }`. `podeEscrever()` nega quando
+  `request.time.toMillis() > acessoAte[contaId]`; **ler** continua pela presença no mapa
+  `contas`, sem prazo. Zero leitura na regra, como `#d07`.
+- **Sem cron.** O `#d112` previa um cron diário do Vercel (`vercel.json`, `CRON_SECRET`) em
+  `/api/assinatura/vencidas` derrubando `ativas`. A claim ser uma data dispensou os dois: o
+  teste acaba sozinho quando `request.time` passa da data, sem nenhum processo rodando à
+  meia-noite (`#d144`).
+- Tela: faixa "Seu teste acaba em N dias" na tela Hoje durante o teste inteiro; vencido, uma
+  **rota fora do shell** (`/assinatura`, alcançada por redirecionamento do `(app)/layout.tsx`),
+  não um modo só-leitura inline. Preço mora nos `Price` do Stripe, servido por
+  `GET /api/assinatura/precos` — nenhuma variável pública, nenhum número no código.
+- `scripts/conceder-acesso.mjs` mudou uma linha: `setCustomUserClaims` preserva as claims que
+  não são `contas`, para não apagar o `acessoAte` que o webhook já tiver escrito.
+- Aprovações usadas: dependência `stripe` (`#d146`); mudança de regra de segurança (`#d144`);
+  campos aditivos em `Conta` e `ConfiguracaoGeral`; a linha em `conceder-acesso.mjs`. Nenhum
+  cron, nenhum `vercel.json`, nenhum índice.
 
 **029 · Meus dados são meus.** LGPD, o mínimo que não é jurídico.
 

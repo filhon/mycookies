@@ -3,8 +3,8 @@ import { Logotipo } from "@/components/marca/Marca";
 
 /**
  * A moldura das telas de acesso: painel de marca à esquerda no desktop,
- * logotipo em cima no celular. É o que o login e o cadastro têm em comum, e
- * a tela de conta vencida da 028 será a terceira.
+ * logotipo em cima no celular. É o que o login, o cadastro e `/assinatura`
+ * (spec 028) têm em comum.
  */
 export function MolduraDeEntrada({
   titulo,

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import {
   Check,
   ChevronRight,
@@ -18,6 +18,7 @@ import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, Seletor } from "@/components/ui/Campo";
+import { classesBotao } from "@/components/ui/estilosBotao";
 import { CampoImagem } from "@/components/ui/CampoImagem";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Esqueleto } from "@/components/ui/Esqueleto";
@@ -40,6 +41,11 @@ import {
   formatarMoeda,
   parseParaNumero,
 } from "@/lib/domain/money";
+import {
+  fraseDoTeste,
+  MENSAGEM_FALHA_ASSINATURA,
+  situacaoDaConta,
+} from "@/lib/domain/assinatura";
 import {
   ASSINATURA_LADO_PX,
   ASSINATURA_MAX_BYTES,
@@ -101,6 +107,8 @@ interface EstadoConfiguracao {
   instagram: string;
   assinaturaDataUrl: string | null;
   frase: string;
+  /** Tira o "feito com Rende" da folha (spec 028, `#d147`). */
+  ocultarFeitoCom: boolean;
 }
 
 function texto(numero: number): string {
@@ -133,6 +141,7 @@ function estadoInicial(
     instagram: dado?.contato?.instagram ?? "",
     assinaturaDataUrl: dado?.assinaturaDataUrl ?? null,
     frase: dado?.frase ?? "",
+    ocultarFeitoCom: dado?.ocultarFeitoCom ?? false,
   };
 }
 
@@ -144,6 +153,7 @@ function paraDados(estado: EstadoConfiguracao): DadosConfiguracao {
     ...(estado.assinaturaDataUrl && {
       assinaturaDataUrl: estado.assinaturaDataUrl,
     }),
+    ...(estado.ocultarFeitoCom && { ocultarFeitoCom: true as const }),
     operacional: {
       valorHoraTrabalho: estado.valorHoraTrabalho,
       horasProdutivasMes: parseParaNumero(estado.horasProdutivasMes),
@@ -192,6 +202,20 @@ export function TelaConfiguracao() {
   const { conta, usuario, sair } = useAuth();
   const [saindo, setSaindo] = useState(false);
   const [sairPendente, setSairPendente] = useState(false);
+  const [portalEnviando, setPortalEnviando] = useState(false);
+  const [portalErro, setPortalErro] = useState<string | null>(null);
+  const idOcultarFeitoCom = useId();
+
+  const situacao = conta
+    ? situacaoDaConta(
+        {
+          plano: conta.plano,
+          trialAteMs: conta.trialAte?.toMillis(),
+          assinaturaAteMs: conta.assinaturaAte?.toMillis(),
+        },
+        new Date().getTime(),
+      )
+    : null;
 
   async function aoSair() {
     setSairPendente(false);
@@ -199,6 +223,32 @@ export function TelaConfiguracao() {
     if (!(await sair())) {
       setSairPendente(true);
       setSaindo(false);
+    }
+  }
+
+  async function abrirPortalAssinatura() {
+    setPortalErro(null);
+    setPortalEnviando(true);
+    try {
+      const token = await usuario!.getIdToken();
+      const resposta = await fetch("/api/assinatura/portal", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ contaId }),
+      });
+      if (!resposta.ok) {
+        setPortalErro(MENSAGEM_FALHA_ASSINATURA["sem-resposta"]);
+        setPortalEnviando(false);
+        return;
+      }
+      const { url } = (await resposta.json()) as { url: string };
+      window.location.assign(url);
+    } catch {
+      setPortalErro(MENSAGEM_FALHA_ASSINATURA["sem-rede"]);
+      setPortalEnviando(false);
     }
   }
 
@@ -529,6 +579,40 @@ export function TelaConfiguracao() {
           />
         </BlocoConfiguracao>
 
+        {/* Só em teste e assinante: `livre` não tem o que ver aqui (spec 028). */}
+        {(situacao?.tipo === "teste" || situacao?.tipo === "assinante") && (
+          <BlocoConfiguracao icone={CreditCard} titulo="Assinatura">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-label text-ink-muted">
+                {situacao.tipo === "teste"
+                  ? fraseDoTeste(situacao.diasRestantes)
+                  : "Sua assinatura está ativa."}
+              </p>
+              {situacao.tipo === "teste" ? (
+                <Link
+                  href="/assinatura"
+                  className={classesBotao({ variante: "primaria" })}
+                >
+                  Assinar
+                </Link>
+              ) : (
+                <Botao
+                  variante="primaria"
+                  onClick={() => void abrirPortalAssinatura()}
+                  carregando={portalEnviando}
+                >
+                  Gerenciar assinatura
+                </Botao>
+              )}
+            </div>
+            {portalErro && (
+              <p role="alert" className="text-label text-negative">
+                {portalErro}
+              </p>
+            )}
+          </BlocoConfiguracao>
+        )}
+
         <BlocoConfiguracao
           icone={FileText}
           titulo="Na folha do orçamento"
@@ -563,6 +647,33 @@ export function TelaConfiguracao() {
             onChange={(evento) => definir("frase", evento.target.value)}
             erro={erros.frase}
           />
+
+          {/* Assinantes podem tirar a linha do Rende do rodapé; em teste, só a
+              explicação — o bloco de assinatura já está duas dobras acima
+              (spec 028, `#d147`). */}
+          {situacao?.tipo === "teste" ? (
+            <p className="text-label text-ink-muted">
+              Assinantes podem tirar esta linha da folha.
+            </p>
+          ) : (
+            <div className="flex min-h-11 items-start gap-3 rounded-md border border-line-strong px-3 py-3">
+              <input
+                id={idOcultarFeitoCom}
+                type="checkbox"
+                checked={estado.ocultarFeitoCom}
+                onChange={(evento) =>
+                  definir("ocultarFeitoCom", evento.target.checked)
+                }
+                className="mt-0.5 size-5 shrink-0"
+              />
+              <label
+                htmlFor={idOcultarFeitoCom}
+                className="text-label text-ink"
+              >
+                Tirar a linha &ldquo;feito com Rende&rdquo; do rodapé da folha
+              </label>
+            </div>
+          )}
 
           <CampoImagem
             rotulo="Assinatura"

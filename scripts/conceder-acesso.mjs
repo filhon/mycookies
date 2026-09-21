@@ -90,11 +90,14 @@ try {
     console.log(`Conta ${contaId} já existia.`);
   }
 
-  // O token passa a carregar só `contas`: a claim `admin` do modelo anterior
-  // não significa mais nada e some aqui. Vínculos com outras contas são
-  // preservados — conceder um acesso não revoga outro.
+  // Vínculos com outras contas são preservados — conceder um acesso não
+  // revoga outro. A 028 escreve `acessoAte` ao lado de `contas`; liberar
+  // acesso não pode apagá-lo, por isso as claims que não são `contas`
+  // atravessam intactas (`DECISOES.md#d144`). O script não escreve
+  // `acessoAte` nunca: quem ele libera não tem prazo.
   const anteriores = usuario.customClaims?.contas ?? {};
   await auth.setCustomUserClaims(usuario.uid, {
+    ...usuario.customClaims,
     contas: { ...anteriores, [contaId]: PAPEL },
   });
 

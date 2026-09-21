@@ -80,6 +80,8 @@ export interface ConfiguracaoGeral {
   contato?: { telefone?: string; instagram?: string };
   /** Uma frase sua, para o rodapé do orçamento (spec 033, `DECISOES.md#d127`). */
   frase?: string;
+  /** Tira a linha "feito com Rende" da folha (spec 028, `DECISOES.md#d147`). Só `true`. */
+  ocultarFeitoCom?: true;
   /**
    * A assinatura dela, PNG com fundo transparente ou foto da assinatura em papel,
    * até 720 px de lado e 200 KB, como `data:` URL (`DECISOES.md#d109`). Vai

@@ -3543,6 +3543,9 @@ regras bloquearem escrita de conta vencida sem custar uma leitura (`#d07`). Um p
 também é zero código de permissão por tela; o preço disso é não ter o que vender a mais até a
 fase 3, que é quando haverá o que vender.
 
+**Cumprida na 028.** A claim que a regra lê é `acessoAte`, uma data em milissegundos, e não
+`ativas: true | false` — sem cron nenhum (`#d144`).
+
 ---
 
 ## D113 · Nenhuma conta de beta antes de a usuária 0 chegar ao preço sozinha — e toda spec diz o que tira da frente
@@ -4104,6 +4107,9 @@ o campo uma vez**, senão a frase que as clientes dela leem há meses some da fo
 configurações. Hoje ninguém paga; quando pagar, desligar é o que a assinatura compra. Até lá é
 uma linha fixa, e a 028 recebe a nota no `ROADMAP.md`.
 
+**Desligável na 028** (`#d147`): `ConfiguracaoGeral.ocultarFeitoCom`, a caixa em
+`/configuracao`, para quem paga ou foi liberada à mão.
+
 **Consequência.** `Orcamento.negocio.frase?`, `esquemaConfiguracao.frase`,
 `salvarConfiguracao` gravando com `deleteField()` no vazio (como o contato), e a constante
 `FRASE_RODAPE` da B morta. Resumo de WhatsApp, etiqueta e embalagem continuam sem marca Rende.
@@ -4555,3 +4561,101 @@ porque o Firebase Auth já cede (a criação falha de qualquer jeito, e o códig
 
 **Consequência.** A frase mora em `MENSAGENS` do `AuthProvider`, ao lado de
 `auth/weak-password`; nenhuma outra tela a usa.
+
+---
+
+## D144 · A regra é o relógio: uma claim com a data, `request.time`, e nenhum cron
+
+**Status:** vigente · decidida em 2026-09-21, na spec `028-o-teste-acaba-e-a-assinatura.md`
+
+**Contexto.** O `#d112` previa `ativas: { [contaId]: true | false }` na claim, reemitida por
+um webhook, e um cron diário do Vercel derrubando `ativas` de quem venceu o teste — com
+`vercel.json`, um segredo de cron e uma rota que varre todas as contas.
+
+**Decisão.** A claim carrega uma data, não um booleano: `acessoAte: { [contaId]: msDaÉpoca }`.
+A regra nega escrita quando `request.time.toMillis() > acessoAte[contaId]`, e não nega nada
+quando a chave está ausente — ausência é "sem prazo", o mesmo "ausência tem significado" do
+`#d141`. `/api/conta` escreve `acessoAte[contaId] = trialAte` na mesma `setCustomUserClaims`
+que escreve `contas`; o webhook do Stripe escreve a data de novo a cada renovação. Nenhum
+processo roda à meia-noite, nenhuma lista de contas é varrida, nenhum segredo de cron existe.
+**Ler não tem prazo** (`allow read: if temAcesso()` continua como estava): conta vencida lê
+tudo, o que a 029 (exportar) e a própria tela de vencida (que abre do cache) precisam.
+
+**Consequência.** `firestore.rules` ganha `podeEscrever()` ao lado de `temAcesso()`, com o
+mesmo custo de zero leitura do `#d07`. A publicação é segura **antes** do app: nenhuma claim
+tem `acessoAte` ainda, então a regra nova é idêntica à antiga até `/api/conta` e o webhook
+começarem a escrevê-la. Se a regra precisar de uma segunda dimensão um dia (bloqueio manual,
+por exemplo), o booleano volta **ao lado** da data, não no lugar dela.
+
+---
+
+## D145 · O estado da cobrança é derivado das datas; o webhook relê o Stripe e escreve a claim antes do documento
+
+**Status:** vigente · decidida em 2026-09-21, na spec `028-o-teste-acaba-e-a-assinatura.md`
+
+**Contexto.** O documento da conta precisa espelhar o que o Stripe diz, para a tela poder
+avisar "não conseguimos renovar" antes de a escrita falhar de verdade — a claim não é
+observável pelo Firestore, só o documento é. Mas gravar um campo `status: "VENCIDA"` exigiria
+alguém para gravá-lo no dia certo, que é exatamente o cron que o `#d144` recusou.
+
+**Decisão.** `status` (`"ATIVA"` hoje, `"ENCERRADA"` na 029) continua sendo do ciclo de vida da
+conta, não da cobrança. "Vencida" não é escrito em lugar nenhum: é `agora > trialAte` ou
+`agora > assinaturaAte`, calculado na leitura por `situacaoDaConta` (`src/lib/domain/assinatura.ts`),
+como `ritmoDoEspelho` (`#d30`) já faz com tudo que depende do dia de hoje. O webhook **não
+confia no evento**: os três eventos de assinatura podem chegar fora de ordem, e um `updated`
+velho depois de um `deleted` reabriria uma conta cancelada — por isso ele pega só o id do
+evento, chama `stripe.subscriptions.retrieve(id)` e decide sobre o estado atual. **A claim é
+escrita antes do documento**, o inverso da ordem da 027 (`#d141`) pelo motivo oposto: lá o
+documento vem primeiro porque a claim é o que abre o app; aqui o documento é o que a tela
+observa (`useAuth().conta`), e se ele mudasse primeiro, `/assinatura/confirmando` forçaria o
+token cedo demais e ainda pegaria o prazo velho.
+
+**Consequência.** `Conta.stripeCustomerId`, `stripeSubscriptionId` e `assinaturaAte` (o mesmo
+número da claim, em `Timestamp`) só existem depois da primeira assinatura, escritos só pelo
+webhook. Uma chamada a mais por evento ao Stripe, contra um campo de "último evento visto" — os
+eventos são poucos (uma dúzia por conta por ano), e a chamada é barata.
+
+---
+
+## D146 · O `stripe` entra pelo mesmo motivo do Admin SDK
+
+**Status:** vigente · decidida em 2026-09-21, na spec `028-o-teste-acaba-e-a-assinatura.md`
+
+**Contexto.** Criar uma Checkout Session e uma sessão do portal é um `POST` que `fetch` faria;
+conferir a assinatura do webhook é HMAC-SHA256 com carimbo de tempo, que `node:crypto` faria em
+poucas linhas. `firebaseAdmin.ts` já respondeu a essa pergunta para o JWT: criptografia é outra
+classe de risco, e um erro ali não aparece como um pixel torto.
+
+**Decisão.** `stripe` é a dependência de produção nova — a única desde o Módulo 0. Aqui o
+estranho que um erro deixaria passar não gasta cota: **abre a conta de outra pessoa**, porque é
+o webhook quem escreve `acessoAte`. Só `src/lib/server/stripe.ts` e as quatro rotas de
+`src/app/api/assinatura/` e `src/app/api/stripe/` a importam; nada dela chega ao navegador —
+nem `Stripe.js`, porque o checkout e o portal são uma URL para onde o navegador vai.
+
+**Consequência.** `rg -n "from \"stripe\"" src/` devolve só `src/lib/server/` e
+`src/app/api/`. Se o peso do pacote no build do servidor incomodar algum dia, a troca fica
+contida nesses arquivos.
+
+---
+
+## D147 · O "feito com Rende" sai por uma caixa, para quem paga ou foi liberada à mão
+
+**Status:** vigente · decidida em 2026-09-21, na spec `028-o-teste-acaba-e-a-assinatura.md`
+
+**Contexto.** O `#d127` deixou o "feito com Rende" como linha fixa da folha, anotando que
+desligá-la é o que uma assinatura paga compra — "até lá é uma linha fixa, e a 028 recebe a
+nota".
+
+**Decisão.** `ConfiguracaoGeral.ocultarFeitoCom?: true`, gravado só quando marcado e apagado
+com `deleteField()` no contrário, como `frase` e o contato (`#d127`). A caixa mora no bloco "Na
+folha do orçamento" de `/configuracao` e só aparece para `assinante` e `livre` — no teste, no
+lugar dela, a frase "Assinantes podem tirar esta linha da folha." `montarOrcamento` copia o
+campo para `Orcamento.negocio.feitoCom: boolean`, e a folha desenha a linha condicionalmente. A
+folha **não consulta a situação da conta**: quem decide é a tela de configuração, e uma
+assinante que deixou de pagar não abre a folha — está em `/assinatura`.
+
+**Consequência.** A conta liberada à mão (`livre`) também ganha a caixa — foi considerado
+limitá-la a `assinante`, mas a conta liberada à mão é cortesia, e cortesia é tudo o que a
+assinatura dá. `FolhaOrcamento.tsx` lê `orcamento.negocio.feitoCom` em vez de desenhar a linha
+sempre; sem a frase e sem o "feito com", o rodapé fecha sem buraco, como já acontecia sem a
+frase (`#d127`).

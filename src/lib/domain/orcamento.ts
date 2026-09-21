@@ -96,6 +96,8 @@ export interface Orcamento {
     assinaturaDataUrl?: string;
     /** A frase dela no rodapé (`#d127`). */
     frase?: string;
+    /** Some quando `ocultarFeitoCom` (spec 028, `#d147`). */
+    feitoCom: boolean;
   };
   codigo: string;
   /** O dia da impressão, e não um campo gravado (`#d110`). */
@@ -142,7 +144,12 @@ export type FichaParaOrcar = Pick<
 
 export type ConfiguracaoParaOrcar = Pick<
   ConfiguracaoGeral,
-  "nomeNegocio" | "formasPagamento" | "contato" | "assinaturaDataUrl" | "frase"
+  | "nomeNegocio"
+  | "formasPagamento"
+  | "contato"
+  | "assinaturaDataUrl"
+  | "frase"
+  | "ocultarFeitoCom"
 >;
 
 /** Só entra no objeto o que tem valor: ausência é ausência, e não `undefined`. */
@@ -200,6 +207,7 @@ export function montarOrcamento(entrada: {
       ),
       ...opcional("assinaturaDataUrl", configuracao?.assinaturaDataUrl),
       ...opcional("frase", configuracao?.frase),
+      feitoCom: !configuracao?.ocultarFeitoCom,
     },
     codigo: pedido.codigo,
     emitidoEmISO: hojeISO,

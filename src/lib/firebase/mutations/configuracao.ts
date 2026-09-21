@@ -35,6 +35,8 @@ export interface DadosConfiguracao {
   assinaturaDataUrl?: string;
   /** A frase dela no rodapé (`#d127`). */
   frase?: string;
+  /** Tira o "feito com Rende" da folha (spec 028, `#d147`). */
+  ocultarFeitoCom?: true;
 }
 
 /**
@@ -180,6 +182,7 @@ export async function salvarConfiguracao(
         }),
         assinaturaDataUrl: dados.assinaturaDataUrl || deleteField(),
         frase: dados.frase?.trim() || deleteField(),
+        ocultarFeitoCom: dados.ocultarFeitoCom || deleteField(),
         atualizadoEm: Timestamp.now(),
       },
       { merge: true },

@@ -13,7 +13,8 @@ service cloud.firestore {
 
     match /contas/{contaId} {
       // A claim `contas` é um mapa { contaId: papel }, emitida via Admin SDK
-      // por scripts/conceder-acesso.mjs. Checar claim custa ZERO leitura — um
+      // por /api/conta, pelo webhook do Stripe e pelo script
+      // scripts/conceder-acesso.mjs. Checar claim custa ZERO leitura — um
       // allowlist em documento (`get(/membros/$(uid))`) seria cobrado a cada
       // avaliação de regra, inclusive nas negadas.
       //
@@ -25,10 +26,24 @@ service cloud.firestore {
             && request.auth.token.contas[contaId] != null;
       }
 
-      allow read, write: if temAcesso();
+      // Escrever tem prazo; ler não. `acessoAte` traz, por conta, até quando (ms de
+      // época) esta conta pode escrever — escrito por /api/conta (o teste) e pelo
+      // webhook do Stripe (a assinatura). Sem a chave, não há prazo: é a conta
+      // liberada à mão (DECISOES.md#d141, #d144). Zero leitura, como #d07: o
+      // relógio é request.time.
+      function podeEscrever() {
+        return temAcesso()
+            && !('acessoAte' in request.auth.token
+                 && contaId in request.auth.token.acessoAte
+                 && request.time.toMillis() > request.auth.token.acessoAte[contaId]);
+      }
+
+      allow read: if temAcesso();
+      allow write: if podeEscrever();
 
       match /{documento=**} {
-        allow read, write: if temAcesso();
+        allow read: if temAcesso();
+        allow write: if podeEscrever();
       }
     }
   }

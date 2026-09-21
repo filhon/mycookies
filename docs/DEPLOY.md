@@ -39,10 +39,10 @@ o que o `@serwist/next` precisa para emitir o service worker (`next.config.ts`).
 a versão é o painel. Se o build reclamar da faixa, o conserto é uma linha —
 `"node": "24.x"` em `engines`, que é a versão em uso no desenvolvimento.
 
-**Região.** Só `/api/nota` roda no servidor; todo o resto é estático e sai do CDN, perto de
-quem abre. Mas essa rota é a que carrega a foto de uma nota fiscal a partir de um celular no
-Brasil, e ela é a única do sistema em que a espera é sentida. No plano gratuito dá para
-escolher **uma** região: `gru1`.
+**Região.** `/api/nota`, `/api/conta`, as três rotas de `/api/assinatura/` e o webhook do
+Stripe rodam no servidor; todo o resto é estático e sai do CDN, perto de quem abre. `gru1`
+(São Paulo) continua sendo a escolha certa: é onde está quem paga e quem fotografa a nota.
+No plano gratuito dá para escolher **uma** região.
 
 ---
 
@@ -71,12 +71,16 @@ o valor no painel não muda o que já foi publicado: é preciso **redeploy**. Fa
 uma delas, o app compila e quebra ao abrir, com a frase de `client.ts` ("Configuração do
 Firebase incompleta. Faltam: …").
 
-### As duas do servidor — privadas, lidas a cada chamada
+### As do servidor — privadas, lidas a cada chamada
 
 ```
 FIREBASE_SERVICE_ACCOUNT
 GEMINI_API_KEY
 GEMINI_MODELO          (opcional; vazio usa gemini-3.5-flash-lite)
+STRIPE_SECRET_KEY
+STRIPE_WEBHOOK_SECRET
+STRIPE_PRICE_MENSAL
+STRIPE_PRICE_ANUAL
 ```
 
 Nenhuma delas leva `NEXT_PUBLIC_`, e é isso que as mantém fora do navegador. Só
@@ -98,7 +102,36 @@ node -e "console.log(Buffer.from(require('fs').readFileSync('./chave-servico.jso
 Sem `FIREBASE_SERVICE_ACCOUNT`, o app inteiro funciona e **só** a leitura de nota não: a tela
 diz "A leitura de nota ainda não está configurada neste servidor", que é a frase certa. Foi
 para isso que a rota passou a distinguir os dois erros (`DECISOES.md#d72`) — antes ela dizia
-que o login dela não abria a conta.
+que o login dela não abria a conta. Sem `STRIPE_SECRET_KEY` ou os dois preços,
+`/assinatura` diz o mesmo tipo de frase ("A assinatura ainda não está configurada neste
+servidor") e o resto do app continua de pé.
+
+### Stripe, uma vez no painel (spec 028)
+
+Nada disto é código — é o que `docs/saas/CLAUDE.md` e a spec 028 pedem feito à mão, em modo
+de **teste** primeiro:
+
+1. **Um produto** ("Rende") com **dois preços recorrentes** em BRL: mensal e anual, o anual
+   valendo dez mensais. Anotar os dois ids `price_…` → `STRIPE_PRICE_MENSAL` e
+   `STRIPE_PRICE_ANUAL`.
+2. **Customer Portal ativado** — Settings → Billing → Customer portal: trocar cartão, mudar
+   de preço entre os dois, cancelar ao fim do período. Sem isto, `POST /api/assinatura/portal`
+   falha na criação da sessão, com erro do próprio Stripe.
+3. **Um endpoint de webhook** apontando para `https://<host>/api/stripe/webhook`, com os três
+   eventos `customer.subscription.created`, `customer.subscription.updated` e
+   `customer.subscription.deleted`. Anotar o `whsec_…` → `STRIPE_WEBHOOK_SECRET`.
+4. **Para o `npm run dev`**, o Stripe CLI substitui o passo 3:
+   `stripe listen --forward-to localhost:3000/api/stripe/webhook` imprime um segredo local,
+   diferente do de produção.
+5. **Ao ir ao ar de verdade** (modo ao vivo, e não mais teste): os quatro valores trocam pelos
+   equivalentes de produção, inclusive um segundo endpoint de webhook — o do painel de teste
+   não recebe eventos do modo ao vivo.
+
+**Ordem de publicação, sempre**: regra → app → endpoint do webhook no painel. A regra nova de
+`firestore.rules` é compatível com qualquer claim sem `acessoAte` (nenhuma conta liberada à
+mão perde acesso), mas o webhook só deve apontar para uma URL que já responde 200 a um evento
+de teste — publicar o endpoint antes do app faria o Stripe achar o servidor fora do ar e
+começar a tentar de novo. Ver `DECISOES.md#d144` a `#d147`.
 
 ---
 

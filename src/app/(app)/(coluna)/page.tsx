@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Settings } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
+import { FaixaDoTeste } from "@/components/assinatura/FaixaDoTeste";
 import { CartaoPrimeirosPassos } from "@/components/comecar/CartaoPrimeirosPassos";
 import { CartaoComprasHoje } from "@/components/compras/CartaoComprasHoje";
 import { CartaoNoVermelhoHoje } from "@/components/fichas/CartaoNoVermelhoHoje";
@@ -54,6 +55,8 @@ export default function PaginaHoje() {
           antes de "como estou indo". Quando ele termina, o cartão some e esta
           tela volta a ser exatamente o que era. */}
       <div className="mt-6 space-y-4">
+        <FaixaDoTeste />
+
         <CartaoPrimeirosPassos />
 
         {/* O número que ela persegue vem antes da agenda: é o que decide o que

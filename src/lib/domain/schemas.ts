@@ -104,6 +104,8 @@ export const esquemaConfiguracao = z.object({
     .trim()
     .max(80, "A frase precisa caber numa linha: até 80 letras.")
     .optional(),
+  // Tira o "feito com Rende" da folha (spec 028, `#d147`).
+  ocultarFeitoCom: z.literal(true).optional(),
 });
 
 export type EntradaConfiguracao = z.infer<typeof esquemaConfiguracao>;

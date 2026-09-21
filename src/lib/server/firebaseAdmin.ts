@@ -130,6 +130,8 @@ export interface Autenticado {
   uid: string;
   /** O mapa `{ contaId: papel }` da claim. Vazio quando o login não abre nada. */
   contas: Record<string, unknown>;
+  /** Do token, para o checkout do Stripe (`customer_email` sem cliente ainda). */
+  email?: string;
 }
 
 /** `Authorization: Bearer <ID token>` → quem é, ou `null`. */
@@ -151,6 +153,7 @@ export async function conferirToken(
         typeof contas === "object" && contas !== null
           ? (contas as Record<string, unknown>)
           : {},
+      email: decodificado.email,
     };
   } catch {
     // Token expirado, adulterado ou de outro projeto. Todos são o mesmo 401.

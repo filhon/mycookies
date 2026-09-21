@@ -8,13 +8,15 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Simbolo } from "@/components/marca/Marca";
 import { Botao } from "@/components/ui/Botao";
 import { classesBotao } from "@/components/ui/estilosBotao";
+import { situacaoDaConta } from "@/lib/domain/assinatura";
 import { AVISO_SAIR_PENDENTE, useAuth } from "@/providers/AuthProvider";
 
 /** Resultado da última reconferência. `null` = ainda não tentou. */
 type Tentativa = null | "sem-acesso" | "sem-conexao";
 
 export default function LayoutApp({ children }: { children: ReactNode }) {
-  const { usuario, carregando, contaId, sair, reconferirAcesso } = useAuth();
+  const { usuario, carregando, contaId, conta, sair, reconferirAcesso } =
+    useAuth();
   const router = useRouter();
   const [conferindo, setConferindo] = useState(false);
   const [tentativa, setTentativa] = useState<Tentativa>(null);
@@ -33,6 +35,24 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!carregando && !usuario) router.replace("/login");
   }, [carregando, usuario, router]);
+
+  // O relógio aqui é o do aparelho; o que vale é o da regra (`DECISOES.md#d144`).
+  // Um relógio atrasado engana a tela e não a escrita: a escrita recusada
+  // aparece como `permission-denied` no `SeloSincronizacao`.
+  const situacao = conta
+    ? situacaoDaConta(
+        {
+          plano: conta.plano,
+          trialAteMs: conta.trialAte?.toMillis(),
+          assinaturaAteMs: conta.assinaturaAte?.toMillis(),
+        },
+        new Date().getTime(),
+      )
+    : null;
+
+  useEffect(() => {
+    if (situacao?.tipo === "vencida") router.replace("/assinatura");
+  }, [situacao?.tipo, router]);
 
   async function conferir() {
     setTentativa(null);
@@ -132,6 +152,11 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
       </div>
     );
   }
+
+  // Vencida, o app é uma tela cheia, não um modo só-leitura (`#d144`): o
+  // `useEffect` acima já mandou para `/assinatura`, e este `return` só evita
+  // desenhar o shell por baixo dela por um instante.
+  if (situacao?.tipo === "vencida") return null;
 
   return <AppShell>{children}</AppShell>;
 }

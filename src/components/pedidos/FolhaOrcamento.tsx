@@ -234,7 +234,9 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
         {negocio.frase && (
           <p className="max-w-[70mm] text-center">{negocio.frase}</p>
         )}
-        <p className="shrink-0 text-ink-subtle">feito com Rende</p>
+        {negocio.feitoCom && (
+          <p className="shrink-0 text-ink-subtle">feito com Rende</p>
+        )}
       </footer>
     </article>
   );

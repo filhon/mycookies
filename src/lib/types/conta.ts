@@ -10,8 +10,8 @@ import type { VersaoSchema } from "./common";
  * dois negócios.
  */
 
-/** A 028 acrescenta a assinatura; a 029, o encerramento. */
-export type PlanoDaConta = "TRIAL";
+/** A 029 acrescenta o encerramento em `StatusDaConta`. */
+export type PlanoDaConta = "TRIAL" | "ASSINATURA";
 export type StatusDaConta = "ATIVA";
 
 export interface Conta {
@@ -43,6 +43,16 @@ export interface Conta {
   /** Fim do teste grátis. Ausente = não vence. */
   trialAte?: Timestamp;
   termosAceitosEm?: Timestamp;
+  /**
+   * Escritos pelo webhook do Stripe (`/api/stripe/webhook`, spec 028) e por
+   * mais ninguém. `assinaturaAte` é o espelho de `acessoAte[contaId]` na
+   * claim: a claim é para a regra, o campo é para a tela (`DECISOES.md#d145`).
+   * Ausentes até a primeira assinatura.
+   */
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  /** Até quando a assinatura deixa escrever: fim do período mais a folga. */
+  assinaturaAte?: Timestamp;
   v: VersaoSchema;
 }
 
@@ -55,3 +65,13 @@ export interface Conta {
  * um segundo tipo de acesso é regra escrita para caso que não existe.
  */
 export type ContasDaClaim = Record<string, string>;
+
+/**
+ * A forma da claim inteira, para quem a escreve: `/api/conta`, o webhook do
+ * Stripe e `scripts/conceder-acesso.mjs`.
+ */
+export interface ClaimDaConta {
+  contas: ContasDaClaim;
+  /** Milissegundos de época, por conta. Sem a chave, sem prazo (`DECISOES.md#d144`). */
+  acessoAte?: Record<string, number>;
+}

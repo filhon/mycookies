@@ -114,6 +114,7 @@ describe("montarOrcamento", () => {
     expect(orcamento.negocio).toEqual({
       nome: "MyCookie's",
       proprietaria: "Maynara",
+      feitoCom: true,
     });
 
     expect(orcamento.linhas).toEqual([
@@ -413,6 +414,17 @@ describe("montarOrcamento", () => {
     expect(com.negocio.frase).toBe("Feito com amor em cada mordida.");
     expect(branco.negocio).not.toHaveProperty("frase");
     expect(montar().negocio).not.toHaveProperty("frase");
+  });
+
+  it("tira o 'feito com Rende' só quando a caixa está marcada (spec 028, #d147)", () => {
+    const oculto = montar(PEDIDO, {
+      configuracao: { ...CONFIGURACAO, ocultarFeitoCom: true },
+    });
+    const semConfiguracao = montar(PEDIDO, { configuracao: null });
+
+    expect(oculto.negocio.feitoCom).toBe(false);
+    expect(montar().negocio.feitoCom).toBe(true);
+    expect(semConfiguracao.negocio.feitoCom).toBe(true);
   });
 });
 
