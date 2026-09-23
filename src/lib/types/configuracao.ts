@@ -88,5 +88,11 @@ export interface ConfiguracaoGeral {
    * sobre a linha da folha; sem ela, o nome sobre a linha é a assinatura.
    */
   assinaturaDataUrl?: string;
+  /**
+   * O cardápio público (spec 031, `DECISOES.md#d159`). Ausente = fechado, que é
+   * como toda conta nasce. `fichaIds` na ordem em que ela marcou; a página
+   * ordena por categoria e nome. Escrito só por `salvarCardapio`.
+   */
+  cardapio?: { aberto: boolean; fichaIds: string[] };
   atualizadoEm: Timestamp;
 }

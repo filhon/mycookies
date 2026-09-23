@@ -22,6 +22,11 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
  * ela, e por mais nada. O motivo é o mesmo de `/api/nota` não gravar insumo:
  * escrever do servidor é escrever por fora das regras.
  *
+ * **Sem login, só leem** `/c/[contaId]` e `/c/[contaId]/foto/[fichaId]`
+ * (spec 031, `src/lib/server/cardapio.ts`): só a conta, a configuração e as
+ * fichas da lista do cardápio, e só devolvem o que `montarCardapio` deixa
+ * passar (`DECISOES.md#d158`).
+ *
  * Verificar a assinatura do JWT à mão, para não mexer no `package.json`, está
  * descartado. O projeto desenha gráfico à mão para não pegar dependência
  * (`DECISOES.md#d25`) e tirou o `date-fns` porque `Intl` bastava (`#d26`);

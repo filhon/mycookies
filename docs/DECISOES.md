@@ -4950,3 +4950,70 @@ pedido escolhe a cliente nela); some só `/clientes`, que é faturamento por pes
 **Consequência.** A ajudante vê o custo e o preço de cada produto: é dívida anotada, a reabrir se
 alguém pedir, e não esquecimento. A régua vale para a próxima tela: o que escreve em dinheiro
 nasce com `usePapel()` na condição.
+
+---
+
+## D158 · O cardápio é lido pelo servidor, e a regra continua sem nada público
+
+**Status:** vigente · decidida em 2026-09-23, na spec `031-cardapio-publico.md` (sessão A).
+Diverge do roadmap, que previa um espelho `contas/{id}/publico/cardapio` e a primeira
+`allow read: if true` do arquivo.
+
+**Contexto.** O cardápio é a primeira tela do Rende que alguém sem login abre. O roadmap
+desenhava um espelho das fichas escrito pelo aparelho dela e lido direto do Firestore pelo
+navegador da cliente, com uma regra pública só nesse documento.
+
+**Decisão.** `/c/[contaId]` é componente de servidor: `src/lib/server/cardapio.ts` lê a conta, a
+configuração e as fichas da lista (`getAll`, até `LIMITE_DO_CARDAPIO`, 40) com o Admin SDK, e
+`montarCardapio` (`src/lib/domain/cardapio.ts`, puro) devolve só o que é público: da conta,
+`nome` e o primeiro nome de `proprietaria`; da configuração, `frase`, o telefone já como número
+de WhatsApp e o Instagram sem `@`; da ficha, `nome`, `descricao`, `categoria`, `precoVenda`, o
+rótulo da unidade e a versão da foto. O teste confere as **chaves** do objeto devolvido com uma
+ficha que tem custo, margem, itens e modo de preparo. `firestore.rules` não muda uma linha.
+Quatro motivos: o espelho envelheceria a cada caminho de escrita esquecido (a ajudante mudando
+um preço, a biblioteca em lote); não caberia (foto de até 200 KB por produto, documento de
+1 MiB); a regra pública seria a primeira exceção do arquivo; e o pedido (sessão B) já passa pelo
+servidor. A página guarda por 60 s (`revalidate`, com `generateStaticParams` vazio: o build a
+lista como ● ISR). Os cinco "não está aberto" — sem configuração, `aberto` falso, conta
+encerrada, conta vencida, nenhum produto que entre — e a conta que não existe dão a mesma página
+de não encontrado. O id da URL passa por `/^[A-Za-z0-9_-]{1,64}$/` antes de virar caminho.
+
+**Consequência.** A página depende do servidor e da credencial (`FIREBASE_SERVICE_ACCOUNT`); sem
+ela, não encontrado. O preço novo aparece em até um minuto. O link é o `contaId`: um endereço
+bonito exigiria um índice global fora de `contas/`, que a regra de ouro proíbe. Na primeira
+renderização a frio, o não encontrado saiu com status 200 (o conteúdo certo, `noindex`); depois
+da revalidação o cache serve 404. Não vale conserto: quem abre vê a mesma página.
+
+---
+
+## D159 · O cardápio é escolha dela, e mora na configuração
+
+**Status:** vigente · decidida em 2026-09-23, na spec `031-cardapio-publico.md` (sessão A).
+Diverge do roadmap ("espelho das fichas ativas com preço").
+
+**Contexto.** Toda ficha ativa com preço inclui as fichas-modelo da biblioteca, o recheio
+cadastrado como produto para calcular e o produto que ela parou de fazer e não arquivou.
+
+**Decisão.** `ConfiguracaoGeral.cardapio?: { aberto, fichaIds }`, ausente = fechado, escrito só
+por `salvarCardapio` (`mutations/configuracao.ts`, `setDoc` com `merge`, despachado) a cada toque
+do painel "Seu cardápio" em `/configuracao`. Não é um `noCardapio` na ficha: seria mais um campo
+no editor de produto, a tela que a 020 esvaziou. Entra (`entraNoCardapio`): não arquivada,
+`ativo`, `precoVenda > 0`, unidade `un` ou `porcao`, e não é combo à escolha. Ficha que deixa de
+entrar some da página sem sair da lista, e volta sem ela remarcar. É da dona por construção: a
+ajudante não escreve `configuracao` (`#d154`) e não vê a prateleira.
+
+**O que a spec não previu, e esta sessão fechou:**
+
+- **Conta que nunca salvou a configuração.** `salvarCardapio` criaria `configuracao/geral` só
+  com `cardapio`, e `rateioDaConta` passaria a confiar num documento sem `operacional`. O painel,
+  sem documento, pede para salvar a configuração uma vez antes de abrir.
+- **WebP na foto.** A rota da foto (`#d162`, a registrar na sessão B) aceita `image/webp` além
+  dos dois tipos da spec: é o que o `CampoImagem` grava para foto transparente onde o navegador
+  codifica WebP. Sem isso, essas fotos dariam 404 na vitrine. `tipoDaFoto` decide para a página
+  e para a rota.
+- **A frase do interruptor** diz "quem tem o link vê os produtos e fala com você", e não "vê e
+  pede": na sessão A a página ainda não recebe pedido. A B troca a frase.
+
+**Consequência.** A página lê um documento para saber quais fichas buscar, e busca só essas, sem
+consulta nem índice. O limite de 40 conta os ids da lista, inclusive os que deixaram de entrar,
+porque é sobre a lista que o servidor corta.

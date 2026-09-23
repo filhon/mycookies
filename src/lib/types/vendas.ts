@@ -151,6 +151,13 @@ export interface Pedido extends DocumentoBase {
   validoAteISO?: DataISO;
 
   observacoes?: string;
+
+  /**
+   * Quem fez o pedido nascer. Ausente é ela, no app; `"CARDAPIO"` é a cliente,
+   * pelo link (spec 031, `DECISOES.md#d160`). Escrito só por
+   * `/api/cardapio/pedido`.
+   */
+  origem?: "CARDAPIO";
 }
 
 export interface ItemListaCompras {

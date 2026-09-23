@@ -26,6 +26,7 @@ export function BlocoConfiguracao({
   consequencia,
   tom = "neutro",
   recuado = true,
+  id,
 }: {
   icone: LucideIcon;
   titulo: string;
@@ -35,9 +36,14 @@ export function BlocoConfiguracao({
   tom?: TomConsequencia;
   /** Falso quando o conteúdo é uma lista que precisa sangrar até a borda. */
   recuado?: boolean;
+  /** Âncora, para outra parte da tela mandar para cá. */
+  id?: string;
 }) {
   return (
-    <section className="overflow-hidden rounded-lg border border-line bg-surface">
+    <section
+      id={id}
+      className="scroll-mt-24 overflow-hidden rounded-lg border border-line bg-surface"
+    >
       <div className="px-4 py-5 lg:px-5">
         <div className="flex items-start gap-3">
           <Icone

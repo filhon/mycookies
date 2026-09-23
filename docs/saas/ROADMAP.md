@@ -397,6 +397,12 @@ sessões da spec; **não publicada**, e A e B saem no mesmo deploy, com a regra 
 `/c/{contaId}`, pedido nascendo como `ORCAMENTO` por handler. Aprovação: a primeira regra
 pública do sistema.
 
+**Spec escrita em 2026-09-23, antes do gatilho** (`specs/031-cardapio-publico.md`, `#d158` a
+`#d162` por registrar), em duas sessões. O que muda do previsto: **sem espelho e sem regra
+pública** — a página é renderizada no servidor com o Admin SDK, e `firestore.rules` não muda
+(`#d158`); a lista do cardápio é escolha dela, em `ConfiguracaoGeral.cardapio`, e não "todas as
+fichas ativas" (`#d159`). A aprovação pedida passa a ser a primeira rota que escreve sem login.
+
 **032 · O segundo plano.** Só quando 030 e 031 existirem: são os upsells naturais. É aqui, e
 não antes, que gating de funcionalidade entra no código.
 

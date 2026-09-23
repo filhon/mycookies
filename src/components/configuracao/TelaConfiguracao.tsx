@@ -18,6 +18,7 @@ import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { MeusDados } from "@/components/conta/MeusDados";
 import { QuemTeAjuda } from "@/components/conta/QuemTeAjuda";
+import { ANCORA_DO_CONTATO, SeuCardapio } from "@/components/conta/SeuCardapio";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, Seletor } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -683,6 +684,7 @@ function ConfiguracaoDaDona() {
         )}
 
         <BlocoConfiguracao
+          id={ANCORA_DO_CONTATO}
           icone={FileText}
           titulo="Na folha do orçamento"
           descricao="O que a empresa vê no rodapé e na assinatura da folha."
@@ -929,6 +931,10 @@ function ConfiguracaoDaDona() {
             strokeWidth={1.75}
           />
         </Link>
+
+        {/* O cardápio público (spec 031): acima de "Quem te ajuda", fechado até
+            ela abrir. Lê a configuração que a tela já assina. */}
+        <SeuCardapio configuracao={dado} carregando={carregando} />
 
         {/* O que se usa uma vez por ano, como o guia (spec 030): a legenda é o
             estado, "Só você" até alguém ser convidada. */}

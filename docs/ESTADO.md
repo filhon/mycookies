@@ -9,7 +9,8 @@ roteiros das três como portão do deploy —, e com elas **a fase 2 do roadmap 
 mais a 034 entregue por cima da 033, o primeiro passe de navegador sobre as duas, `#d131`; **033
 e 034 por publicar juntas**; a **035 entregue** por cima delas, o celular por gesto, `#d150` a
 `#d152`; a **030 codificada inteira** em 2026-09-23 — a A, a chave da ajudante, e a B, o app
-dela —, por publicar num deploy só, a regra antes do app; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 027, 028, 029,
+dela —, por publicar num deploy só, a regra antes do app; a **031 escrita** e a **sessão A codificada**
+em 2026-09-23 (a vitrine, `specs/031-cardapio-publico.md`, antes do gatilho), a B por fazer; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 027, 028, 029,
 033, 034 e 035 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
@@ -272,6 +273,7 @@ os números digitados de ponta a ponta.
 | 28  | O teste acaba, e a assinatura               | codificada; deploy espera o roteiro | `specs/028-o-teste-acaba-e-a-assinatura.md` |
 | 29  | Meus dados são meus                         | codificada; deploy espera os termos | `specs/029-meus-dados-sao-meus.md`          |
 | 30  | A ajudante                                  | A e B codificadas; não publicada    | `specs/030-a-ajudante.md`                   |
+| 31  | Cardápio público com link de pedido         | A codificada; B por fazer           | `specs/031-cardapio-publico.md`             |
 | 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`                |
 | 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`               |
 | 35  | O celular por gesto                         | pronto, sem o roteiro               | `specs/035-o-celular-por-gesto.md`          |
@@ -3067,6 +3069,52 @@ spec: a ajudante percorrendo, a 360px, todas as telas que alcança com o **conso
 mas nenhuma das telas (painel vazio, com uma e com cinco ajudantes, erro, carregando;
 `/configuracao` e `/assinatura` no modo ajudante) foi vista em 360px.
 
+## A spec 031 · Cardápio público — sessão A, a vitrine
+
+**Codificada por pedido de quem conduz o projeto, antes do gatilho da fase 3** (nenhuma
+cliente pagante pediu; a spec diz para conferir isso antes, como a 030). A A pode sair
+sozinha: a vitrine com "Falar no WhatsApp" já é um cardápio. Nenhum pedido é gravado por fora.
+
+- Tipos: `ConfiguracaoGeral.cardapio?: { aberto, fichaIds }` e `Pedido.origem?: "CARDAPIO"`
+  (nasce aqui para o domínio da B; nenhuma escrita da A o grava). Aditivos, opcionais.
+- `src/lib/domain/cardapio.ts`: `LIMITE_DO_CARDAPIO` (40), `entraNoCardapio`,
+  `montarCardapio`, `mensagemDeContato`, e dois que a spec não listava — `porCategoria` (a
+  ordem das seções, dividida entre a página e o painel) e `tipoDaFoto` (jpeg, png **e webp**,
+  `#d159`). 22 testes em `tests/domain/cardapio.test.ts`, com o das chaves (`#d158`).
+- `src/lib/server/cardapio.ts`: `lerCardapio` e `lerFotoDoCardapio`, as duas leituras sem
+  login, com o id da URL conferido antes de virar caminho.
+- `/c/[contaId]` (componente de servidor, `revalidate = 60`, `generateStaticParams` vazio,
+  `generateMetadata` com o nome e a frase) e `not-found.tsx`. Topo com o nome em `display`, a
+  frase e os botões "Falar no WhatsApp" (primário, "WhatsApp" a 360px com o `aria-label`
+  inteiro) e "Instagram" (secundário, `AtSign`: o `lucide-react` do projeto não tem o ícone da
+  marca). Produto em lista com divisória, foto de 88px por `<img loading="lazy">` da rota, nome,
+  descrição em duas linhas e o preço **na linha de baixo**, e não à direita: a 360px, ao lado
+  do nome, espremeria o nome, e é ali que a B põe a quantidade.
+- `/c/[contaId]/foto/[fichaId]`: os bytes do `data:` URL com `Cache-Control` imutável; 404 fora
+  do cardápio.
+- `src/components/conta/SeuCardapio.tsx`: a linha "Seu cardápio" acima de "Quem te ajuda"
+  ("Fechado" / "Aberto · N produtos") e o `Painel` com o interruptor com texto, o link com
+  Copiar, Compartilhar (só com `navigator.share`) e "Ver como a cliente vê", o aviso sem
+  telefone (triângulo e texto, com âncora para "Na folha do orçamento", que ganhou `id` em
+  `BlocoConfiguracao`), um `checkbox` por produto que entra, agrupado por categoria, o limite e
+  a linha sobre combo e peso. **Fora da spec:** sem configuração salva, o painel pede para
+  salvar antes (`#d159`). Cada toque grava por `salvarCardapio`, despachado.
+- `firebaseAdmin.ts`: o cabeçalho lista as duas leituras públicas. `firestore.rules` e
+  `firestore.indexes.json` intocados.
+- Docs: `#d158` e `#d159`. `#d160` a `#d162` ficam para a B, como a spec divide.
+
+Portão: lint e typecheck limpos, os **630 testes** (608 + 22), `npm run build` com
+`/c/[contaId]` como ● (ISR) e `/c/[contaId]/foto/[fichaId]` dinâmica. Com `next start` local:
+`/c/mycookies` (fechado), `/c/nao-existe` e `/c/a..b` dão a página de não encontrado; a foto
+de fora do cardápio dá 404. A primeira renderização a frio de `/c/mycookies` saiu com 200 e o
+mesmo conteúdo, e passou a 404 depois da revalidação (`#d158`).
+
+**O que não rodou** — os passos 1 a 4 e 13 do roteiro, com o painel aberto de verdade: pedem
+login de dona, produtos com e sem foto, um celular deslogado a 360px e o DevTools medindo que
+o HTML não carrega `data:image`. `/impeccable` aplicado na escrita, com a spec como brief;
+nenhuma das telas (vitrine com e sem foto, frase e WhatsApp; o painel fechado, aberto, sem
+produto e sem telefone) foi vista em navegador, nos dois temas.
+
 ## Próxima ação
 
 **Publicar a 033 e a 034 juntas** (`docs/DEPLOY.md`). A 027, a 028 e a 029 **não vão junto**: a
@@ -3290,4 +3338,5 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | O roteiro de dez passos da 025 nunca rodou: os números batendo, o atalho escondido, o pagamento e o arquivar ao vivo sem prova        | `ListaClientes.tsx`, `PainelCliente.tsx`       | Próxima ação; o passo 1 (os pedidos pagos batem com `totalGasto`) é o que prova os agregados da 3B                                          |
 | O roteiro de doze passos da 030 nunca rodou: o console limpo da ajudante (passo 4) e a regra pela porta dos fundos sem prova          | `firestore.rules`, `QuemTeAjuda.tsx`           | Antes de publicar a 030; o passo 1 (a conta real intacta com a regra nova) libera a regra, o 4 libera o app                                 |
 | A ajudante vê o custo e o preço de cada produto                                                                                       | `components/fichas/`                           | Se alguém pedir "ajudante sem ver preço": é a segunda versão do editor de produto que o `#d157` recusou                                     |
+| O roteiro da 031-A nunca rodou: a vitrine a 360px, o painel e o HTML sem `data:image` sem prova                                       | `app/c/[contaId]/`, `SeuCardapio.tsx`          | Antes de publicar a A; o passo 3 (celular deslogado, DevTools → Rede) é o que prova o `#d162`                                               |
 | O roteiro de treze passos da 028 nunca rodou: a regra publicada, o checkout, o cancelamento e o evento fora de ordem sem prova        | `firestore.rules`, `api/stripe/webhook/`       | Próxima ação, com o painel do Stripe em modo de teste e o Stripe CLI local; o passo 1 é o único que não se refaz depois de publicar a regra |

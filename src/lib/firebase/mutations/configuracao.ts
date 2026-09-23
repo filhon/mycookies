@@ -189,3 +189,25 @@ export async function salvarConfiguracao(
     ),
   );
 }
+
+/**
+ * O cardápio público (spec 031, `DECISOES.md#d159`), gravado no toque (a 015)
+ * pelo painel "Seu cardápio". Só a chave dele: o formulário da configuração
+ * não o conhece, e o `merge` de `salvarConfiguracao` não o apaga.
+ *
+ * Pressupõe o documento existindo: numa conta que nunca salvou a
+ * configuração, isto criaria um `configuracao/geral` sem `operacional`, e
+ * `rateioDaConta` confiaria nele. O painel não oferece o toque nesse caso.
+ */
+export function salvarCardapio(
+  contaId: string,
+  cardapio: NonNullable<ConfiguracaoGeral["cardapio"]>,
+): void {
+  despachar(
+    setDoc(
+      docConfiguracao(contaId),
+      { cardapio, v: VERSAO_SCHEMA, atualizadoEm: Timestamp.now() },
+      { merge: true },
+    ),
+  );
+}
