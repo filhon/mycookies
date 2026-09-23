@@ -28,6 +28,8 @@ import {
   LIMITE_DO_CARDAPIO,
   porCategoria,
 } from "@/lib/domain/cardapio";
+import { dataISODe } from "@/lib/domain/datas";
+import { contagemDoPronto, temPronto } from "@/lib/domain/producao";
 import { colFichas } from "@/lib/firebase/colecoes";
 import { salvarCardapio } from "@/lib/firebase/mutations/configuracao";
 import { useColecao } from "@/lib/hooks/useColecao";
@@ -36,6 +38,13 @@ import { useAuth, useContaId } from "@/providers/AuthProvider";
 
 /** O endereço e o `share` não mudam enquanto a tela está aberta. */
 const SEM_MUDANCA = () => () => {};
+
+/** "contado hoje", "contado ontem", "contado há 3 dias". */
+function contadoHa(dias: number): string {
+  if (dias === 0) return "contado hoje";
+  if (dias === 1) return "contado ontem";
+  return `contado há ${dias} dias`;
+}
 
 /** Onde o telefone mora: o bloco "Na folha do orçamento" desta mesma tela. */
 export const ANCORA_DO_CONTATO = "folha-do-orcamento";
@@ -87,6 +96,21 @@ export function SeuCardapio({
     [podem, configuracao],
   );
   const naPagina = podem.filter((ficha) => marcadas.has(ficha.id)).length;
+
+  // Quantidade limitada (sessão D, `#d164`): só o marcado que tem pote.
+  const [hoje] = useState(() => dataISODe(new Date()));
+  const limitados = useMemo(
+    () => configuracao?.cardapio?.limitados ?? [],
+    [configuracao],
+  );
+  const comPote = podem.filter(
+    (ficha) => marcadas.has(ficha.id) && temPronto(ficha),
+  );
+  const limitadoSemContagem = comPote.some(
+    (ficha) =>
+      limitados.includes(ficha.id) &&
+      contagemDoPronto(ficha, hoje).quantidade === null,
+  );
   const noLimite = fichaIds.length >= LIMITE_DO_CARDAPIO;
 
   const [painelAberto, setPainelAberto] = useState(false);
@@ -112,18 +136,35 @@ export function SeuCardapio({
   const endereco = `${origem}/c/${contaId}`;
   const semTelefone = !configuracao?.contato?.telefone?.trim();
 
-  function gravar(mudanca: { aberto?: boolean; fichaIds?: string[] }) {
+  function gravar(mudanca: {
+    aberto?: boolean;
+    fichaIds?: string[];
+    limitados?: string[];
+  }) {
     salvarCardapio(contaId, {
       aberto: mudanca.aberto ?? aberto,
       fichaIds: mudanca.fichaIds ?? fichaIds,
+      limitados: mudanca.limitados ?? limitados,
     });
   }
 
   function marcar(fichaId: string, marcada: boolean) {
+    gravar(
+      marcada
+        ? { fichaIds: [...fichaIds, fichaId] }
+        : {
+            // Saiu do cardápio, sai dos limitados: `limitados` ⊆ `fichaIds`.
+            fichaIds: fichaIds.filter((id) => id !== fichaId),
+            limitados: limitados.filter((id) => id !== fichaId),
+          },
+    );
+  }
+
+  function limitar(fichaId: string, limitada: boolean) {
     gravar({
-      fichaIds: marcada
-        ? [...fichaIds, fichaId]
-        : fichaIds.filter((id) => id !== fichaId),
+      limitados: limitada
+        ? [...limitados, fichaId]
+        : limitados.filter((id) => id !== fichaId),
     });
   }
 
@@ -360,6 +401,73 @@ export function SeuCardapio({
                 Produtos vendidos por peso ainda não entram no cardápio.
               </p>
             </fieldset>
+
+            {comPote.length > 0 && (
+              <fieldset>
+                <legend className="text-label font-medium text-ink">
+                  Quantidade limitada
+                </legend>
+                <p className="mt-0.5 text-label text-ink-muted">
+                  Mostre quantas restam e pare de receber pedido quando acabar.
+                </p>
+                <ul className="mt-2 divide-y divide-line border-y border-line">
+                  {comPote.map((ficha) => {
+                    const limitada = limitados.includes(ficha.id);
+                    const contagem = contagemDoPronto(ficha, hoje);
+                    return (
+                      <li key={ficha.id}>
+                        <label className="flex min-h-11 cursor-pointer items-start gap-3 py-2">
+                          <input
+                            type="checkbox"
+                            checked={limitada}
+                            onChange={(evento) =>
+                              limitar(ficha.id, evento.target.checked)
+                            }
+                            className="mt-0.5 size-5 shrink-0"
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="block wrap-break-word text-body text-ink">
+                              {ficha.nome}
+                            </span>
+                            {contagem.quantidade !== null ? (
+                              <span className="num block text-label text-ink-muted">
+                                No pote: {contagem.quantidade},{" "}
+                                {contadoHa(contagem.idadeEmDias ?? 0)}
+                              </span>
+                            ) : limitada ? (
+                              <span className="flex items-start gap-1.5 text-label text-ink">
+                                <TriangleAlert
+                                  aria-hidden
+                                  className="mt-0.5 size-3.5 shrink-0 text-attention"
+                                  strokeWidth={1.75}
+                                />
+                                Sem contagem: o cardápio não mostra quantas
+                                restam
+                              </span>
+                            ) : (
+                              <span className="block text-label text-ink-muted">
+                                Sem contagem
+                              </span>
+                            )}
+                          </span>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {limitadoSemContagem && (
+                  <Link
+                    href="/fichas/contagem"
+                    className={classesBotao({
+                      variante: "secundaria",
+                      className: "mt-3",
+                    })}
+                  >
+                    Contar o que está pronto
+                  </Link>
+                )}
+              </fieldset>
+            )}
           </div>
         )}
       </Painel>

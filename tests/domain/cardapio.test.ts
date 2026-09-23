@@ -6,14 +6,23 @@ import {
   mensagemDeContato,
   montarCardapio,
   economiaDoCombo,
+  limitadasComContagem,
+  passaDoQueResta,
   pedidoDoCardapio,
+  restamNoPote,
   tipoDaFoto,
+  unidadesPorFicha,
   type PedidoDoCardapio,
   type ProdutoDoCardapio,
 } from "@/lib/domain/cardapio";
 import { hojeEmBrasilia, meiaNoiteEmBrasilia } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
-import type { ConfiguracaoGeral, Conta, FichaTecnica } from "@/lib/types";
+import type {
+  ConfiguracaoGeral,
+  Conta,
+  FichaTecnica,
+  Pedido,
+} from "@/lib/types";
 
 // Spec 031, sessão A. O caso de aceite: `mycookies`, cardápio aberto com
 // tradicional, red velvet e o recheio (preço zero), hoje 23/09/2026.
@@ -394,8 +403,22 @@ describe("montarCardapio", () => {
       "avulso",
       "escolhas",
       "economiaMinima",
+      "restam",
     ];
-    const cardapio = montarComCombos();
+    const cardapio = montarCardapio({
+      conta: CONTA,
+      configuracao: configuracao({
+        cardapio: {
+          aberto: true,
+          fichaIds: LISTA_C,
+          limitados: ["tradicional"],
+        },
+      }),
+      fichas: [TRADICIONAL, RED_VELVET, CAIXA, DUPLA],
+      opcoes: OPCOES,
+      restam: new Map([["tradicional", 8]]),
+      agoraMs: AGORA,
+    });
     for (const secao of cardapio!.secoes) {
       expect(Object.keys(secao).sort()).toEqual(["categoria", "produtos"]);
       for (const produto of secao.produtos) {
@@ -410,7 +433,7 @@ describe("montarCardapio", () => {
           ]);
           for (const opcao of escolha.opcoes) {
             for (const chave of Object.keys(opcao)) {
-              expect(["id", "nome", "preco"]).toContain(chave);
+              expect(["id", "nome", "preco", "restam"]).toContain(chave);
             }
           }
         }
@@ -420,6 +443,7 @@ describe("montarCardapio", () => {
     const produtos = cardapio!.secoes.flatMap((s) => s.produtos);
     expect(produtos.some((p) => p.avulso)).toBe(true);
     expect(produtos.some((p) => p.escolhas && p.economiaMinima)).toBe(true);
+    expect(produtos.some((p) => p.restam === 8)).toBe(true);
     expect(Object.keys(cardapio!).sort()).toEqual(["negocio", "secoes"]);
     for (const chave of Object.keys(cardapio!.negocio)) {
       expect([
@@ -934,6 +958,173 @@ describe("mensagemDeAviso com combo", () => {
       }),
     ).toBe(
       `Oi, MyCookie's! Acabei de fazer o pedido P-260923-K3F pelo cardápio: 2 Dupla (1 Cookie Tradicional + 1 Cookie Red Velvet). Total ${formatarMoeda(3800)}, para retirar na sexta-feira, 25 de setembro. Meu nome é Ana.`,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sessão D: quantidade limitada. O Tradicional limitado, 30 no pote contados
+// em 22/09, uma fornada de 12 em 23/09 (projeção 42).
+// ---------------------------------------------------------------------------
+
+const TRADICIONAL_CONTADO = ficha({
+  id: "tradicional",
+  estoqueProntoAtual: 30,
+  estoqueProntoContadoEmISO: "2026-09-22",
+});
+const FORNADA = {
+  arquivado: false,
+  dataISO: "2026-09-23",
+  fichaId: "tradicional",
+  unidadesProduzidas: 12,
+};
+const linha = (
+  fichaTecnicaId: string,
+  quantidade: number,
+  escolhas?: string[],
+) => ({
+  fichaTecnicaId,
+  nomeSnapshot: fichaTecnicaId,
+  quantidade,
+  precoUnitario: 0,
+  custoUnitarioSnapshot: 0,
+  subtotal: 0,
+  ...(escolhas
+    ? {
+        escolhas: escolhas.map((id) => ({
+          fichaTecnicaId: id,
+          nomeSnapshot: id,
+          quantidade: 1,
+          custoUnitarioSnapshot: 0,
+        })),
+      }
+    : {}),
+});
+const pedidoD = (
+  status: Pedido["status"],
+  dataEntregaISO: string,
+  itens: ReturnType<typeof linha>[],
+) => ({ status, arquivado: false, dataEntregaISO, itens });
+const PEDIDOS_D = [
+  pedidoD("CONFIRMADO", "2026-09-24", [linha("tradicional", 29)]),
+  pedidoD("ORCAMENTO", "2026-09-25", [
+    linha("dupla", 2, ["tradicional", "redvelvet"]),
+  ]),
+  pedidoD("ORCAMENTO", "2026-09-25", [linha("caixa", 1)]),
+  pedidoD("CANCELADO", "2026-09-25", [linha("tradicional", 10)]),
+  pedidoD("ENTREGUE", "2026-09-22", [linha("tradicional", 4)]),
+];
+
+function restamD(limitada: FichaTecnica = TRADICIONAL_CONTADO) {
+  return restamNoPote({
+    limitadas: [limitada],
+    kits: [CAIXA],
+    fornadas: [FORNADA],
+    pedidos: PEDIDOS_D,
+    hojeISO: HOJE,
+  });
+}
+
+describe("quantidade limitada", () => {
+  it("unidadesPorFicha: a linha, as escolhas e os componentes", () => {
+    const leva = unidadesPorFicha(
+      [linha("dupla", 2, ["tradicional", "redvelvet"]), linha("caixa", 1)],
+      [CAIXA],
+    );
+    expect(leva.get("tradicional")).toBe(5);
+    expect(leva.get("redvelvet")).toBe(5);
+    expect(leva.get("dupla")).toBe(2);
+  });
+
+  it("restam 42 − 34 = 8: sem o cancelado e sem o entregue antes da contagem", () => {
+    expect(restamD()).toEqual(new Map([["tradicional", 8]]));
+  });
+
+  it("pedido de 10 passa do que resta; de 8, não", () => {
+    const restam = restamD();
+    expect(passaDoQueResta([linha("tradicional", 10)], [CAIXA], restam)).toBe(
+      "tradicional",
+    );
+    expect(passaDoQueResta([linha("tradicional", 8)], [CAIXA], restam)).toBe(
+      null,
+    );
+    // As escolhas e os componentes do próprio pedido contam.
+    expect(
+      passaDoQueResta(
+        [linha("caixa", 2), linha("dupla", 3, ["tradicional", "tradicional"])],
+        [CAIXA],
+        restam,
+      ),
+    ).toBe("tradicional");
+  });
+
+  it("depois do pedido de 8, a página diz esgotado", () => {
+    const restam = restamNoPote({
+      limitadas: [TRADICIONAL_CONTADO],
+      kits: [CAIXA],
+      fornadas: [FORNADA],
+      pedidos: [
+        ...PEDIDOS_D,
+        pedidoD("ORCAMENTO", "2026-09-26", [linha("tradicional", 8)]),
+      ],
+      hojeISO: HOJE,
+    });
+    expect(restam.get("tradicional")).toBe(0);
+  });
+
+  it("contagem vencida: sem número, e o pedido de 100 passa", () => {
+    const vencida = ficha({
+      id: "tradicional",
+      estoqueProntoAtual: 30,
+      estoqueProntoContadoEmISO: "2026-08-01",
+    });
+    const cardapio = {
+      aberto: true,
+      fichaIds: ["tradicional"],
+      limitados: ["tradicional"],
+    };
+    expect(limitadasComContagem([vencida], cardapio, HOJE)).toEqual([]);
+    const restam = restamD(vencida);
+    expect(restam.has("tradicional")).toBe(false);
+    expect(passaDoQueResta([linha("tradicional", 100)], [], restam)).toBe(null);
+  });
+
+  it("limitadasComContagem: só a limitada da lista, com pote e contagem", () => {
+    const cardapio = {
+      aberto: true,
+      fichaIds: ["tradicional", "redvelvet", "caixa"],
+      limitados: ["tradicional", "caixa", "fora"],
+    };
+    expect(
+      limitadasComContagem(
+        [TRADICIONAL_CONTADO, RED_VELVET, CAIXA],
+        cardapio,
+        HOJE,
+      ).map((f) => f.id),
+    ).toEqual(["tradicional"]);
+  });
+
+  it("a página: Restam 8 no Tradicional e na opção da Dupla; Red Velvet sem número", () => {
+    const cardapio = montarCardapio({
+      conta: CONTA,
+      configuracao: configuracao({
+        cardapio: {
+          aberto: true,
+          fichaIds: LISTA_C,
+          limitados: ["tradicional"],
+        },
+      }),
+      fichas: [TRADICIONAL_CONTADO, RED_VELVET, CAIXA, DUPLA],
+      opcoes: OPCOES,
+      restam: restamD(),
+      agoraMs: AGORA,
+    });
+    expect(produtoDe(cardapio, "tradicional")!.restam).toBe(8);
+    expect(produtoDe(cardapio, "redvelvet")).not.toHaveProperty("restam");
+    const opcoes = produtoDe(cardapio, "dupla")!.escolhas![0]!.opcoes;
+    expect(opcoes.find((o) => o.id === "tradicional")!.restam).toBe(8);
+    expect(opcoes.find((o) => o.id === "redvelvet")).not.toHaveProperty(
+      "restam",
     );
   });
 });

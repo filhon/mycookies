@@ -25,13 +25,13 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
  * **Sem login, só leem** `/c/[contaId]` e `/c/[contaId]/foto/[fichaId]`
  * (spec 031, `src/lib/server/cardapio.ts`): só a conta, a configuração e as
  * fichas da lista do cardápio, mais as fichas das categorias dos combos (C,
- * `#d163`), e só devolvem o que `montarCardapio` deixa passar
- * (`DECISOES.md#d158`).
+ * `#d163`), mais fornadas e pedidos desde a contagem do pote, só para contar
+ * quantas restam dos limitados (D, `#d164`), e só devolvem o que
+ * `montarCardapio` deixa passar (`DECISOES.md#d158`).
  *
  * **Sem login, escreve** `/api/cardapio/pedido` (spec 031, `#d160`): só em
- * `pedidos`, e só um documento novo por chamada; nunca atualiza, nunca lê o que
- * a cliente não mandou. Um segundo `set` ali muda a fronteira de confiança do
- * sistema.
+ * `pedidos`, e só um documento novo por chamada; nunca atualiza, e só lê o que
+ * a página lê. Um segundo `set` ali muda a fronteira de confiança do sistema.
  *
  * Verificar a assinatura do JWT à mão, para não mexer no `package.json`, está
  * descartado. O projeto desenha gráfico à mão para não pegar dependência

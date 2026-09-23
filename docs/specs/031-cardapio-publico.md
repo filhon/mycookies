@@ -1099,8 +1099,8 @@ logado no Rende e de rede. Aparelho em 360 px nos passos 3, 5 e 7.
 
 **D**
 
-- [ ] `cardapio.limitados` escolhido no painel, com a contagem ao lado e o aviso sem contagem.
-- [ ] `restamNoPote` pelo caso de aceite; "Restam N" e "Esgotado" na página; `acabou` no
+- [x] `cardapio.limitados` escolhido no painel, com a contagem ao lado e o aviso sem contagem.
+- [x] `restamNoPote` pelo caso de aceite; "Restam N" e "Esgotado" na página; `acabou` no
       handler, contando linhas, escolhas e componentes.
 
 **E**

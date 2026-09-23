@@ -1,16 +1,22 @@
 import {
   entraNoCardapio,
   LIMITE_DO_CARDAPIO,
+  limitadasComContagem,
   montarCardapio,
+  restamNoPote,
   tipoDaFoto,
   type Cardapio,
 } from "@/lib/domain/cardapio";
 import { temEscolhas } from "@/lib/domain/custoFicha";
+import { hojeEmBrasilia } from "@/lib/domain/datas";
 import {
   caminhos,
   type ConfiguracaoGeral,
   type Conta,
+  type DataISO,
   type FichaTecnica,
+  type Fornada,
+  type Pedido,
 } from "@/lib/types";
 import { adminDb, credencialDisponivel } from "./firebaseAdmin";
 
@@ -33,7 +39,51 @@ const ID = /^[A-Za-z0-9_-]{1,64}$/;
 /** O cardápio pronto para a página, ou `null` para qualquer "não está aberto". */
 export async function lerCardapio(contaId: string): Promise<Cardapio | null> {
   const lido = await lerContaDoCardapio(contaId);
-  return lido && montarCardapio({ ...lido, agoraMs: Date.now() });
+  if (!lido) return null;
+  const restam = await lerRestam(contaId, lido, hojeEmBrasilia(new Date()));
+  return montarCardapio({ ...lido, restam, agoraMs: Date.now() });
+}
+
+/**
+ * Quantas restam dos limitados (`#d164`). Sem limitado com contagem que vale,
+ * nenhuma leitura. Com, duas consultas de intervalo em campo único desde a
+ * contagem mais antiga, sem índice composto; o resto filtra em memória.
+ */
+export async function lerRestam(
+  contaId: string,
+  lido: { configuracao: ConfiguracaoGeral | null; fichas: FichaTecnica[] },
+  hojeISO: DataISO,
+): Promise<Map<string, number>> {
+  const limitadas = limitadasComContagem(
+    lido.fichas,
+    lido.configuracao?.cardapio,
+    hojeISO,
+  );
+  if (limitadas.length === 0) return new Map();
+
+  const desde = limitadas
+    .map((ficha) => ficha.estoqueProntoContadoEmISO!)
+    .sort()[0]!;
+  const db = adminDb();
+  const [fornadas, pedidos] = await Promise.all([
+    db
+      .collection(caminhos.fornadas(contaId))
+      .where("dataISO", ">", desde)
+      .get(),
+    db
+      .collection(caminhos.pedidos(contaId))
+      .where("dataEntregaISO", ">", desde)
+      .get(),
+  ]);
+
+  return restamNoPote({
+    limitadas,
+    // Os kits que a página conhece: os da lista (`ponytail:` em `restamNoPote`).
+    kits: lido.fichas.filter((ficha) => ficha.tipo === "KIT"),
+    fornadas: fornadas.docs.map((doc) => doc.data() as Fornada),
+    pedidos: pedidos.docs.map((doc) => doc.data() as Pedido),
+    hojeISO,
+  });
 }
 
 /**

@@ -14,6 +14,12 @@ import {
 import { situacaoDaConta } from "./assinatura";
 import { opcoesDaEscolha, temEscolhas } from "./custoFicha";
 import {
+  contagemDoPronto,
+  projecaoDoPronto,
+  temPronto,
+  type FornadaDaFicha,
+} from "./producao";
+import {
   competenciaDeISO,
   dataDeISO,
   dataISODe,
@@ -63,6 +69,8 @@ export interface ProdutoDoCardapio {
   }[];
   /** Combo à escolha: a economia da combinação mais barata, quando é positiva. */
   economiaMinima?: Centavos;
+  /** Produto limitado com contagem que vale (`#d164`): 0 é esgotado; ausente é "sem número". */
+  restam?: number;
 }
 
 export interface OpcaoDoCombo {
@@ -70,6 +78,8 @@ export interface OpcaoDoCombo {
   nome: string;
   /** Só quando a opção está na página; sem ele, a combinação não mostra economia. */
   preco?: Centavos;
+  /** Como em `ProdutoDoCardapio.restam`. */
+  restam?: number;
 }
 
 export interface Cardapio {
@@ -151,8 +161,12 @@ export function porCategoria<T extends { categoria: string; nome: string }>(
     );
 }
 
-function produtoDoCardapio(ficha: FichaTecnica): ProdutoDoCardapio {
+function produtoDoCardapio(
+  ficha: FichaTecnica,
+  restam: Map<string, number>,
+): ProdutoDoCardapio {
   const descricao = ficha.descricao?.trim();
+  const sobra = restam.get(ficha.id);
   return {
     id: ficha.id,
     nome: ficha.nome,
@@ -163,6 +177,7 @@ function produtoDoCardapio(ficha: FichaTecnica): ProdutoDoCardapio {
     ...(tipoDaFoto(ficha.fotoUrl)
       ? { fotoVersao: ficha.atualizadoEm?.toMillis() ?? 0 }
       : {}),
+    ...(sobra !== undefined ? { restam: sobra } : {}),
   };
 }
 
@@ -176,8 +191,9 @@ function comboDoCardapio(
   ficha: FichaTecnica,
   precoNaPagina: Map<string, Centavos>,
   opcoes: FichaTecnica[],
+  restam: Map<string, number>,
 ): ProdutoDoCardapio | null {
-  const produto = produtoDoCardapio(ficha);
+  const produto = produtoDoCardapio(ficha, restam);
   if (ficha.tipo !== "KIT") return produto;
 
   // A parte fixa, pelo preço da página; `null` quando algo de dentro não está nela.
@@ -204,10 +220,12 @@ function comboDoCardapio(
     opcoes: opcoesVivas(escolha, opcoes, ficha.id)
       .map((opcao): OpcaoDoCombo => {
         const preco = comPreco ? precoNaPagina.get(opcao.id) : undefined;
+        const sobra = restam.get(opcao.id);
         return {
           id: opcao.id,
           nome: opcao.nome,
           ...(preco !== undefined ? { preco } : {}),
+          ...(sobra !== undefined ? { restam: sobra } : {}),
         };
       })
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
@@ -265,6 +283,8 @@ export function montarCardapio(entrada: {
   fichas: FichaTecnica[];
   /** As fichas das categorias de escolha dos combos da lista; a função filtra. */
   opcoes: FichaTecnica[];
+  /** `restamNoPote`, pronto (`#d164`); ausente = nenhum produto com número. */
+  restam?: Map<string, number>;
   agoraMs: number;
 }): Cardapio | null {
   const { conta, configuracao, fichas, agoraMs } = entrada;
@@ -292,7 +312,14 @@ export function montarCardapio(entrada: {
     naPagina.map((ficha) => [ficha.id, ficha.precificacao.precoVenda]),
   );
   const produtos = naPagina
-    .map((ficha) => comboDoCardapio(ficha, precoNaPagina, entrada.opcoes))
+    .map((ficha) =>
+      comboDoCardapio(
+        ficha,
+        precoNaPagina,
+        entrada.opcoes,
+        entrada.restam ?? new Map(),
+      ),
+    )
     .filter((produto) => produto !== null);
   if (produtos.length === 0) return null;
 
@@ -320,6 +347,112 @@ export function montarCardapio(entrada: {
 /** O texto do botão "Falar no WhatsApp" da vitrine. */
 export function mensagemDeContato(negocio: Cardapio["negocio"]): string {
   return `Oi, ${negocio.nome}! Vi o cardápio e queria fazer um pedido.`;
+}
+
+// ---------------------------------------------------------------------------
+// Quantidade limitada (sessão D, `#d164`)
+// ---------------------------------------------------------------------------
+
+type ItemQueLeva = Pick<ItemPedido, "fichaTecnicaId" | "quantidade"> & {
+  escolhas?: Pick<EscolhaFeita, "fichaTecnicaId" | "quantidade">[];
+};
+
+/**
+ * Unidades de cada receita que as linhas levam: a linha, as escolhas e os
+ * componentes dos kits dados. Kit que não está em `kits` conta só como ele.
+ */
+export function unidadesPorFicha(
+  itens: ItemQueLeva[],
+  kits: Pick<FichaTecnica, "id" | "componentes">[],
+): Map<string, number> {
+  const leva = new Map<string, number>();
+  const somar = (fichaId: string, quantidade: number) =>
+    leva.set(fichaId, (leva.get(fichaId) ?? 0) + quantidade);
+
+  for (const item of itens) {
+    somar(item.fichaTecnicaId, item.quantidade);
+    for (const escolha of item.escolhas ?? []) {
+      somar(escolha.fichaTecnicaId, escolha.quantidade * item.quantidade);
+    }
+    const kit = kits.find((k) => k.id === item.fichaTecnicaId);
+    for (const componente of kit?.componentes ?? []) {
+      somar(componente.fichaId, componente.quantidade * item.quantidade);
+    }
+  }
+  return leva;
+}
+
+/**
+ * As fichas de `cardapio.limitados` que mostram número: na lista, na página,
+ * com pote (receita, e não kit) e com contagem que vale pela régua da 013.
+ * Sem nenhuma, o servidor não lê fornada nem pedido.
+ */
+export function limitadasComContagem(
+  fichas: FichaTecnica[],
+  cardapio: ConfiguracaoGeral["cardapio"],
+  hojeISO: DataISO,
+): FichaTecnica[] {
+  const limitados = new Set(cardapio?.limitados ?? []);
+  const naLista = new Set(cardapio?.fichaIds ?? []);
+  return fichas.filter(
+    (ficha) =>
+      limitados.has(ficha.id) &&
+      naLista.has(ficha.id) &&
+      entraNoCardapio(ficha) &&
+      temPronto(ficha) &&
+      contagemDoPronto(ficha, hojeISO).quantidade !== null,
+  );
+}
+
+/**
+ * Quantas restam de cada ficha limitada (`#d164`): a projeção do pote da 013
+ * menos o que os pedidos não cancelados levam com entrega depois da contagem.
+ * Orçamento desconta: a página nunca vende o que já foi pedido. Ausente no
+ * mapa = sem contagem que valha, e a página não inventa número.
+ */
+// ponytail: componente de kit que não está em `kits` (o kit vendido só pelo
+// app) não desconta. Ler as fichas de todo kit citado em pedido quando uma
+// caixa vendida por fora esvaziar um pote limitado sem a página ver.
+export function restamNoPote(entrada: {
+  limitadas: FichaTecnica[];
+  kits: Pick<FichaTecnica, "id" | "componentes">[];
+  fornadas: FornadaDaFicha[];
+  pedidos: Pick<Pedido, "status" | "arquivado" | "dataEntregaISO" | "itens">[];
+  hojeISO: DataISO;
+}): Map<string, number> {
+  const { limitadas, kits, fornadas, hojeISO } = entrada;
+  const pedidos = entrada.pedidos.filter(
+    (pedido) => !pedido.arquivado && pedido.status !== "CANCELADO",
+  );
+
+  const restam = new Map<string, number>();
+  for (const ficha of limitadas) {
+    const { prontos } = projecaoDoPronto(fornadas, ficha, hojeISO);
+    const contadoEm = ficha.estoqueProntoContadoEmISO;
+    if (prontos === null || !contadoEm) continue;
+    // Entregue antes da contagem já estava fora do pote quando ela contou.
+    const depois = pedidos.filter((p) => p.dataEntregaISO > contadoEm);
+    const levam =
+      unidadesPorFicha(
+        depois.flatMap((p) => p.itens),
+        kits,
+      ).get(ficha.id) ?? 0;
+    restam.set(ficha.id, Math.max(0, Math.floor(prontos - levam)));
+  }
+  return restam;
+}
+
+/** A ficha limitada que o pedido leva além do que resta, ou `null`. */
+export function passaDoQueResta(
+  itens: ItemQueLeva[],
+  kits: Pick<FichaTecnica, "id" | "componentes">[],
+  restam: Map<string, number>,
+): string | null {
+  for (const [fichaId, leva] of unidadesPorFicha(itens, kits)) {
+    const sobra = restam.get(fichaId);
+    if (sobra !== undefined && leva > sobra) return fichaId;
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -381,6 +514,7 @@ export type FalhaPedidoCardapio =
   | "mudou" // item que saiu do cardápio desde que a página abriu
   | "data" // antes de amanhã ou depois de DIAS_A_FRENTE
   | "cheio" // LIMITE_DE_ORCAMENTOS_EM_ABERTO
+  | "acabou" // leva mais do que resta de um produto limitado (`#d164`)
   | "sem-configuracao"
   | "sem-resposta"
   | "sem-rede";
@@ -397,6 +531,8 @@ export const MENSAGEM_FALHA_PEDIDO_CARDAPIO: Record<
   data: `Escolha um dia entre amanhã e os próximos ${DIAS_A_FRENTE} dias.`,
   cheio:
     "Chegaram muitos pedidos de uma vez. Para não se perder, mande o seu pelo WhatsApp.",
+  acabou:
+    "Um dos produtos acabou, ou restam menos do que você escolheu. Confira e mande de novo.",
   "sem-configuracao":
     "Não deu para enviar agora. Tente de novo daqui a pouco, ou mande pelo WhatsApp.",
   "sem-resposta":

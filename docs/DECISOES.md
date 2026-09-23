@@ -5150,3 +5150,47 @@ em `corpoDoPedido`.
 **Consequência.** A página lê, além das fichas da lista, uma consulta de igualdade por categoria
 de escolha, sem índice, dentro dos 60 s do `revalidate`. Um sabor novo entra no combo no dia em
 que nasce, sem ela remarcar; se não estiver na lista, entra sem preço e sem conta.
+
+## D164 · "Restam" é o pote menos o que os pedidos levam, e o servidor trava
+
+**Status:** vigente · decidida em 2026-09-23, na spec `031-cardapio-publico.md` (sessão D).
+
+**Contexto.** A A pôs "esgotado" fora de escopo: o cardápio de encomenda vende o que ainda vai ser
+feito. Continua certo para quase tudo, mas há o produto que ela faz uma vez e vende até acabar. O
+pote da 013 (`estoqueProntoAtual`) é uma medição com data, e não um saldo (`#d97`): a fornada soma
+na projeção, e o que sai do pote o sistema não vê. Lido direto, "Restam 8" nunca desceria.
+
+**Decisão.** Exceção **por produto, escolhida por ela**: `cardapio.limitados`, subconjunto de
+`fichaIds`, marcado na seção "Quantidade limitada" do painel. `restamNoPote` =
+`projecaoDoPronto(...).prontos` − as unidades da ficha nos pedidos não cancelados e não
+arquivados com `dataEntregaISO >` a contagem — a linha, as escolhas × quantidade e os componentes
+dos kits da lista (`unidadesPorFicha`). Orçamento desconta: a página nunca vende o que já foi
+pedido, e o teto do `#d161` limita o estrago do lixo. Sem contagem que valha (nunca contou, ou
+venceu pela régua da 013), o produto não mostra número e não trava; o painel avisa ela com
+triângulo e texto. A página diz "Restam N" e, no zero, "Esgotado" no lugar do "Adicionar"; o "+"
+da vitrine, do carrinho e da tela de montar para no que resta **menos o que o carrinho já leva**.
+O handler relê tudo e recusa `acabou` (409) quando o pedido passa do que resta
+(`passaDoQueResta`); a página trata como `mudou`. O que sai para fora a mais: `restam` no produto
+e na opção de combo, e só nos limitados.
+
+**Fora da spec, e por quê.**
+
+- **`limitadasComContagem`**, no domínio: a mesma régua (na lista, `entraNoCardapio`, `temPronto`,
+  contagem que vale) decide na página se há leitura a mais e no handler se o pedido leva algum
+  limitado. Sem nenhum, zero leituras novas.
+- **O handler só lê fornada e pedido quando o pedido leva um limitado com contagem**, e a página
+  sempre que há um. As duas consultas são de intervalo em campo único (`dataISO >`,
+  `dataEntregaISO >`) desde a contagem mais antiga, e o resto filtra em memória: nenhum índice
+  composto.
+- **Desmarcar um produto do cardápio o tira dos limitados**, para `limitados ⊆ fichaIds` valer
+  no documento, e não só na leitura.
+- **Kit fixo não ganha `restam`.** A página não sabe o que tem dentro do kit (os componentes não
+  saem, `#d158`), então a Caixa com 6 não para no "+" quando o Tradicional acaba; o handler recusa
+  com `acabou`, e a página recarrega. Um `restam` derivado no kit quando isso aparecer.
+- **"No pote: 30, contado ontem"** mostra a contagem, e não a projeção: o painel não assina as
+  fornadas, e "contado" diz de onde o número vem.
+
+**Consequência.** `ponytail:` componente de kit que não está na lista não desconta, e duas
+clientes no mesmo segundo podem levar as últimas unidades duas vezes (o número é derivado de
+consultas, não um contador; o que escapa é um orçamento que ela recusa). Contador gravado quando
+isso acontecer com cliente de verdade.

@@ -3,12 +3,15 @@ import { Timestamp } from "firebase-admin/firestore";
 import {
   esquemaPedidoDoCardapio,
   LIMITE_DE_ORCAMENTOS_EM_ABERTO,
+  limitadasComContagem,
   montarCardapio,
+  passaDoQueResta,
   pedidoDoCardapio,
+  unidadesPorFicha,
   type FalhaPedidoCardapio,
 } from "@/lib/domain/cardapio";
 import { hojeEmBrasilia, meiaNoiteEmBrasilia } from "@/lib/domain/datas";
-import { lerContaDoCardapio } from "@/lib/server/cardapio";
+import { lerContaDoCardapio, lerRestam } from "@/lib/server/cardapio";
 import { adminDb, credencialDisponivel } from "@/lib/server/firebaseAdmin";
 import { caminhos, type Pedido } from "@/lib/types";
 
@@ -69,6 +72,7 @@ export async function POST(requisicao: Request) {
     return falha("cheio", 429);
   }
 
+  const hojeISO = hojeEmBrasilia(new Date());
   const montado = pedidoDoCardapio({
     pedido,
     fichas: lido.fichas,
@@ -76,10 +80,29 @@ export async function POST(requisicao: Request) {
     // é a mesma `montarCardapio` acima (`#d163`).
     opcoes: lido.opcoes,
     fichaIds: lido.configuracao?.cardapio?.fichaIds ?? [],
-    hojeISO: hojeEmBrasilia(new Date()),
+    hojeISO,
   });
   if (!montado.ok) {
     return falha(montado.falha, montado.falha === "mudou" ? 409 : 400);
+  }
+
+  // A trava do limitado (`#d164`): quem decide é o servidor, como no preço.
+  // Só lê fornada e pedido quando o pedido leva algum limitado com contagem.
+  // ponytail: duas clientes no mesmo segundo levam as últimas duas vezes; o
+  // número vem de consultas, e uma transação não resolve. Contador gravado
+  // quando isso acontecer com cliente de verdade.
+  const kits = lido.fichas.filter((ficha) => ficha.tipo === "KIT");
+  const leva = unidadesPorFicha(montado.corpo.itens, kits);
+  const limitadas = limitadasComContagem(
+    lido.fichas,
+    lido.configuracao?.cardapio,
+    hojeISO,
+  );
+  if (limitadas.some((ficha) => leva.has(ficha.id))) {
+    const restam = await lerRestam(pedido.contaId, lido, hojeISO);
+    if (passaDoQueResta(montado.corpo.itens, kits, restam)) {
+      return falha("acabou", 409);
+    }
   }
 
   const agora = Timestamp.now();

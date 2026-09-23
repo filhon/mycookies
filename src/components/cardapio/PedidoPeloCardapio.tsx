@@ -16,6 +16,7 @@ import {
   type Cardapio,
   type FalhaPedidoCardapio,
   type ProdutoDoCardapio,
+  unidadesPorFicha,
 } from "@/lib/domain/cardapio";
 import { diaVizinho } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
@@ -53,6 +54,18 @@ function chaveDa(produtoId: string, escolhas?: Linha["escolhas"]): string {
     .sort()
     .join(",");
   return `${produtoId}|${sabores}`;
+}
+
+/** A linha do carrinho na forma que `unidadesPorFicha` conta. */
+function comoItem(linha: Linha) {
+  return {
+    fichaTecnicaId: linha.produto.id,
+    quantidade: linha.quantidade,
+    escolhas: linha.escolhas?.map((e) => ({
+      fichaTecnicaId: e.fichaId,
+      quantidade: e.quantidade,
+    })),
+  };
 }
 
 function nomeDa(linha: LinhaSemQuantidade): string {
@@ -121,6 +134,29 @@ export function PedidoPeloCardapio({
 
   const quantidadeDe = (chave: string) =>
     carrinho.find((l) => l.chave === chave)?.quantidade ?? 0;
+
+  // O que resta dos limitados, menos o que o carrinho já leva (`#d164`). A
+  // página só desabilita o "+"; quem trava é o servidor.
+  const restamPorId = new Map<string, number>();
+  for (const produto of cardapio.secoes.flatMap((s) => s.produtos)) {
+    if (produto.restam !== undefined)
+      restamPorId.set(produto.id, produto.restam);
+    for (const opcao of (produto.escolhas ?? []).flatMap((e) => e.opcoes)) {
+      if (opcao.restam !== undefined) restamPorId.set(opcao.id, opcao.restam);
+    }
+  }
+  const levados = unidadesPorFicha(carrinho.map(comoItem), []);
+  const livre = (fichaId: string) => {
+    const restam = restamPorId.get(fichaId);
+    return restam === undefined
+      ? Infinity
+      : restam - (levados.get(fichaId) ?? 0);
+  };
+  /** Mais uma unidade desta linha ainda cabe no que resta? */
+  const cabeMaisUm = (linha: LinhaSemQuantidade) =>
+    [...unidadesPorFicha([comoItem({ ...linha, quantidade: 1 })], [])].every(
+      ([fichaId, leva]) => leva <= livre(fichaId),
+    );
 
   function mudar(linha: LinhaSemQuantidade, passo: number) {
     const atual = quantidadeDe(linha.chave);
@@ -191,7 +227,10 @@ export function PedidoPeloCardapio({
       if (!resposta.ok) {
         const codigo = await falhaDa(resposta);
         setFalha(codigo);
-        if (codigo === "mudou") setTimeout(() => location.reload(), 3000);
+        // `acabou` é um `mudou`: a página renovada traz o que resta.
+        if (codigo === "mudou" || codigo === "acabou") {
+          setTimeout(() => location.reload(), 3000);
+        }
         return;
       }
 
@@ -245,6 +284,11 @@ export function PedidoPeloCardapio({
                           .filter((l) => l.produto.id === produto.id)
                           .reduce((s, l) => s + l.quantidade, 0)
                       : quantidadeDe(produto.id)
+                  }
+                  podeMais={
+                    produto.escolhas
+                      ? true
+                      : cabeMaisUm({ chave: produto.id, produto })
                   }
                   aoMudar={(passo) =>
                     produto.escolhas
@@ -412,6 +456,7 @@ export function PedidoPeloCardapio({
                   <Passo
                     nome={linha.produto.nome}
                     quantidade={linha.quantidade}
+                    podeMais={linha.quantidade < 500 && cabeMaisUm(linha)}
                     aoMudar={(passo) => mudar(linha, passo)}
                   />
                 </li>
@@ -534,6 +579,7 @@ export function PedidoPeloCardapio({
 
       <MonteOCombo
         produto={montando}
+        livre={livre}
         aoFechar={() => setMontando(null)}
         aoPor={(escolhas) => {
           const produto = montando!;
@@ -552,10 +598,13 @@ export function PedidoPeloCardapio({
  */
 function MonteOCombo({
   produto,
+  livre,
   aoFechar,
   aoPor,
 }: {
   produto: ProdutoDoCardapio | null;
+  /** Quantas desta receita o carrinho ainda pode levar; `Infinity` sem limite. */
+  livre: (fichaId: string) => number;
   aoFechar: () => void;
   aoPor: (escolhas: NonNullable<Linha["escolhas"]>) => void;
 }) {
@@ -636,27 +685,40 @@ function MonteOCombo({
               )}
             </p>
             <ul className="mt-2 divide-y divide-line border-y border-line">
-              {escolha.opcoes.map((opcao) => (
-                <li key={opcao.id} className="flex items-center gap-3 py-3">
-                  <p className="min-w-0 flex-1 wrap-break-word text-body font-medium text-ink">
-                    {opcao.nome}
-                  </p>
-                  <Passo
-                    nome={opcao.nome}
-                    quantidade={sabores[opcao.id] ?? 0}
-                    podeMais={faltam[i]! > 0}
-                    aoMudar={(passo) =>
-                      setSabores({
-                        ...sabores,
-                        [opcao.id]: Math.max(
-                          0,
-                          (sabores[opcao.id] ?? 0) + passo,
-                        ),
-                      })
-                    }
-                  />
-                </li>
-              ))}
+              {escolha.opcoes.map((opcao) => {
+                const escolhidas = sabores[opcao.id] ?? 0;
+                return (
+                  <li key={opcao.id} className="flex items-center gap-3 py-3">
+                    <p
+                      className={cn(
+                        "min-w-0 flex-1 wrap-break-word text-body font-medium",
+                        opcao.restam === 0 ? "text-ink-muted" : "text-ink",
+                      )}
+                    >
+                      {opcao.nome}
+                    </p>
+                    {opcao.restam === 0 ? (
+                      <span className="text-label font-medium text-ink-muted">
+                        Esgotado
+                      </span>
+                    ) : (
+                      <Passo
+                        nome={opcao.nome}
+                        quantidade={escolhidas}
+                        podeMais={
+                          faltam[i]! > 0 && escolhidas + 1 <= livre(opcao.id)
+                        }
+                        aoMudar={(passo) =>
+                          setSabores({
+                            ...sabores,
+                            [opcao.id]: Math.max(0, escolhidas + passo),
+                          })
+                        }
+                      />
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </fieldset>
         ))}
@@ -687,13 +749,17 @@ function Produto({
   contaId,
   produto,
   quantidade,
+  podeMais,
   aoMudar,
 }: {
   contaId: string;
   produto: ProdutoDoCardapio;
   quantidade: number;
+  /** Falso quando o carrinho já leva tudo o que resta (`#d164`). */
+  podeMais: boolean;
   aoMudar: (passo: number) => void;
 }) {
+  const esgotado = produto.restam === 0;
   return (
     <li className="flex gap-4 py-4">
       {produto.fotoVersao !== undefined && (
@@ -734,15 +800,27 @@ function Produto({
           </p>
         )}
         <div className="mt-auto flex items-center justify-between gap-3 pt-2">
-          <p className="flex items-baseline gap-1.5">
-            <Dinheiro centavos={produto.preco} />
-            <span className="text-label text-ink-muted">
-              · {produto.unidade}
-            </span>
-          </p>
+          <div>
+            <p className="flex items-baseline gap-1.5">
+              <Dinheiro centavos={produto.preco} />
+              <span className="text-label text-ink-muted">
+                · {produto.unidade}
+              </span>
+            </p>
+            {/* Contado do pote, e só do que ela marcou como limitado (`#d164`). */}
+            {produto.restam !== undefined && !esgotado && (
+              <p className="num text-label text-ink-muted">
+                Restam {produto.restam}
+              </p>
+            )}
+          </div>
           {/* O combo à escolha sempre abre "Monte a sua": cada unidade pode ter
               outros sabores, e a quantidade dele mora no pedido. */}
-          {quantidade === 0 || produto.escolhas ? (
+          {esgotado ? (
+            <span className="text-label font-medium text-ink-muted">
+              Esgotado
+            </span>
+          ) : quantidade === 0 || produto.escolhas ? (
             <div className="flex items-center gap-2">
               {quantidade > 0 && (
                 <span className="num text-label text-ink-muted">
@@ -751,6 +829,7 @@ function Produto({
               )}
               <Botao
                 tamanho="sm"
+                disabled={!podeMais}
                 onClick={() => aoMudar(1)}
                 aria-haspopup={produto.escolhas ? "dialog" : undefined}
                 aria-label={`Adicionar ${produto.nome}`}
@@ -765,6 +844,7 @@ function Produto({
             <Passo
               nome={produto.nome}
               quantidade={quantidade}
+              podeMais={quantidade < 500 && podeMais}
               aoMudar={aoMudar}
             />
           )}

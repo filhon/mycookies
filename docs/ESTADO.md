@@ -11,8 +11,8 @@ e 034 por publicar juntas**; a **035 entregue** por cima delas, o celular por ge
 `#d152`; a **030 codificada inteira** em 2026-09-23 — a A, a chave da ajudante, e a B, o app
 dela —, por publicar num deploy só, a regra antes do app; a **031 codificada inteira** em
 2026-09-23 (a A, a vitrine, e a B, o pedido, `specs/031-cardapio-publico.md`, antes do gatilho),
-por publicar depois do parágrafo de `/privacidade` e do roteiro; a **031-C, os combos**,
-codificada no mesmo dia, com a D e a E por fazer; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 027, 028, 029,
+por publicar depois do parágrafo de `/privacidade` e do roteiro; a **031-C, os combos**, e a
+**031-D, a quantidade limitada**, codificadas no mesmo dia, com a E por fazer; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 027, 028, 029,
 033, 034 e 035 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
@@ -275,7 +275,7 @@ os números digitados de ponta a ponta.
 | 28  | O teste acaba, e a assinatura               | codificada; deploy espera o roteiro | `specs/028-o-teste-acaba-e-a-assinatura.md` |
 | 29  | Meus dados são meus                         | codificada; deploy espera os termos | `specs/029-meus-dados-sao-meus.md`          |
 | 30  | A ajudante                                  | A e B codificadas; não publicada    | `specs/030-a-ajudante.md`                   |
-| 31  | Cardápio público com link de pedido         | A, B e C codificadas; não publicada | `specs/031-cardapio-publico.md`             |
+| 31  | Cardápio público com link de pedido         | A a D codificadas; não publicada    | `specs/031-cardapio-publico.md`             |
 | 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`                |
 | 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`               |
 | 35  | O celular por gesto                         | pronto, sem o roteiro               | `specs/035-o-celular-por-gesto.md`          |
@@ -3191,6 +3191,42 @@ Portão: lint e typecheck limpos, os **662 testes** (648 + 14), `npm run build` 
 **O que não rodou** — os passos 14 e 15 do roteiro (o combo fixo e a tela de montar a 360px, e
 o pedido de combo chegando com as escolhas e o custo do combo montado). Nenhuma tela nova foi
 vista em navegador, nos dois temas.
+
+## A spec 031 · Cardápio público — sessão D, a quantidade limitada
+
+"Restam 8" e "Esgotado" nos produtos que ela marca como limitados, contados do pote menos o que
+os pedidos levam, e o servidor trava (`#d164`).
+
+- Tipo: `cardapio.limitados?: string[]`, aditivo e opcional.
+- Domínio (`src/lib/domain/cardapio.ts`): `unidadesPorFicha` (linha, escolhas e componentes dos
+  kits dados), `restamNoPote` (sobre `projecaoDoPronto` da 013), e dois que a spec não listava —
+  `limitadasComContagem` (a régua de quem mostra número, dividida entre a página e o handler) e
+  `passaDoQueResta` (a trava). `ProdutoDoCardapio` e `OpcaoDoCombo` ganham `restam`;
+  `montarCardapio` recebe o mapa pronto; `FalhaPedidoCardapio` ganha `acabou`. 7 testes a mais,
+  com o caso de aceite da D número por número e o teste das chaves com `restam`.
+- `src/lib/server/cardapio.ts`: `lerRestam` — sem limitado com contagem, nenhuma leitura; com,
+  `fornadas` com `dataISO >` e `pedidos` com `dataEntregaISO >` a contagem mais antiga, campo
+  único, sem índice composto. `lerCardapio` o chama; o handler, só quando o pedido leva um
+  limitado, e recusa `acabou` (409). `firebaseAdmin.ts` diz isso no cabeçalho.
+- `PedidoPeloCardapio.tsx`: "Restam N" abaixo do preço, "Esgotado" no lugar do "Adicionar"; o
+  "+" da vitrine, do carrinho e da tela de montar para no que resta menos o que o carrinho já
+  leva; opção de combo esgotada aparece com "Esgotado", sem passo. `acabou` recarrega como
+  `mudou`.
+- `SeuCardapio.tsx`: a seção "Quantidade limitada" abaixo dos produtos, um `checkbox` por
+  marcado que tem pote, com "No pote: 30, contado ontem", ou, limitado sem contagem, triângulo e
+  "Sem contagem: o cardápio não mostra quantas restam", e o botão "Contar o que está pronto".
+  Desmarcar do cardápio tira dos limitados.
+- Fora da spec, no `#d164`: kit fixo não ganha `restam` (a página não conhece os componentes; o
+  handler recusa), e o painel mostra a contagem, e não a projeção.
+
+Portão: lint e typecheck limpos, os **669 testes** (662 + 7), `npm run build` com
+`/c/[contaId]` ● (ISR), a foto e `/api/cardapio/pedido` ƒ. `firestore.rules` e
+`firestore.indexes.json` intocados.
+
+**O que não rodou** — os passos 16 e 17 do roteiro (contar o pote, marcar limitado, "Restam N"
+com o N da conta, o pedido que leva tudo virando "Esgotado", `acabou` na página velha; a contagem
+vencida sem número e com o aviso no painel). Nenhuma tela nova foi vista em navegador, nos dois
+temas.
 
 ## Próxima ação
 
