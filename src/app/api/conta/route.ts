@@ -14,7 +14,7 @@ import {
   conferirToken,
   credencialDisponivel,
 } from "@/lib/server/firebaseAdmin";
-import { caminhos, VERSAO_SCHEMA } from "@/lib/types";
+import { caminhos, VERSAO_SCHEMA, type PapelNaConta } from "@/lib/types";
 
 /**
  * O handler que `DECISOES.md#d16` prometeu: `scripts/conceder-acesso.mjs` na
@@ -37,8 +37,8 @@ import { caminhos, VERSAO_SCHEMA } from "@/lib/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Único papel emitido hoje. Ver `ContasDaClaim` em src/lib/types/conta.ts. */
-const PAPEL = "DONA";
+/** Quem se cadastra é dona. A ajudante entra por `/api/conta/membros`. */
+const PAPEL: PapelNaConta = "DONA";
 
 function falha(codigo: FalhaCadastro, status: number) {
   return NextResponse.json({ erro: codigo }, { status });

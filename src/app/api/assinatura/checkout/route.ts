@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { esquemaCheckout, type FalhaAssinatura } from "@/lib/domain/assinatura";
 import {
-  abreAConta,
+  ehDona,
   adminDb,
   conferirToken,
   credencialDisponivel,
@@ -38,7 +38,7 @@ export async function POST(requisicao: Request) {
   if (!quem) return falha("sem-acesso", 401);
 
   const corpo = esquemaCheckout.safeParse(await comoJson(requisicao));
-  if (!corpo.success || !abreAConta(quem, corpo.data.contaId)) {
+  if (!corpo.success || !ehDona(quem, corpo.data.contaId)) {
     return falha("fora-de-forma", 400);
   }
   if (!stripeDisponivel()) return falha("sem-configuracao", 500);

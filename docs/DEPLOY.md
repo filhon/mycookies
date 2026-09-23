@@ -191,6 +191,24 @@ engano. Rode dentro de `DIAS_ATE_A_PURGA` (30 dias) depois de `encerradaEm`, que
 Stripe: a assinatura já foi cancelada no toque dela, e o `Customer` fica lá pela retenção fiscal
 deles.
 
+## 6 · Ao publicar a 030: as regras mudam
+
+A spec 030 (a ajudante) reescreve `firestore.rules`: a regra passa a conferir o papel na claim
+(`DECISOES.md#d153`, `#d154`). **Publique a regra antes do app:**
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+A regra nova é compatível com o app velho — numa conta só de donas, nada muda —, e o contrário
+não é: o app novo antes da regra deixa a ajudante com a tela escondida e a permissão de dona.
+Depois de publicar, repita o passo 1 do roteiro da spec contra `contas/mycookies` (as cinco
+telas, um lançamento no caixa, salvar a configuração) antes de publicar o app.
+
+As sessões A e B da 030 saem **no mesmo deploy do app**: entre elas existe papel que a regra
+recusa e tela que não sabe disso (escrita negada em silêncio, `#d80`). `firestore.indexes.json`
+não muda.
+
 ## Limites conhecidos
 
 **O arquivo da nota tem dois tetos, e o menor não é o nosso.** `LIMITE_ARQUIVO_BYTES` é 8 MB

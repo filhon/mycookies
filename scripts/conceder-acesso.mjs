@@ -20,7 +20,10 @@
 import { Timestamp } from "firebase-admin/firestore";
 import { auth, db, semCredencial } from "./admin.mjs";
 
-/** Único papel emitido hoje. Ver `ContasDaClaim` em src/lib/types/conta.ts. */
+/**
+ * O script libera dona. A ajudante entra por `/api/conta/membros` (spec 030).
+ * Ver `PapelNaConta` em src/lib/types/conta.ts.
+ */
 const PAPEL = "DONA";
 
 const USO =

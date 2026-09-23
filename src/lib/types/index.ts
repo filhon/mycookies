@@ -32,4 +32,6 @@ export const caminhos = {
   resumoMensal: (contaId: string, competencia: string) =>
     `contas/${contaId}/agregados/${competencia}`,
   resumoGlobal: (contaId: string) => `contas/${contaId}/agregados/global`,
+  membros: (contaId: string) => `contas/${contaId}/membros`,
+  membro: (contaId: string, uid: string) => `contas/${contaId}/membros/${uid}`,
 } as const;

@@ -8,7 +8,8 @@ texto dos termos e da privacidade (agora com os três parágrafos que a 029 acre
 roteiros das três como portão do deploy —, e com elas **a fase 2 do roadmap fecha em código**;
 mais a 034 entregue por cima da 033, o primeiro passe de navegador sobre as duas, `#d131`; **033
 e 034 por publicar juntas**; a **035 entregue** por cima delas, o celular por gesto, `#d150` a
-`#d152`; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 027, 028, 029,
+`#d152`; a **030-A codificada** em 2026-09-23, a chave da ajudante, sem tela e sem publicar até a
+B; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 027, 028, 029,
 033, 034 e 035 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
@@ -270,6 +271,7 @@ os números digitados de ponta a ponta.
 | 27  | Criar a conta sozinha                       | codificada; deploy espera os termos | `specs/027-criar-a-conta-sozinha.md`        |
 | 28  | O teste acaba, e a assinatura               | codificada; deploy espera o roteiro | `specs/028-o-teste-acaba-e-a-assinatura.md` |
 | 29  | Meus dados são meus                         | codificada; deploy espera os termos | `specs/029-meus-dados-sao-meus.md`          |
+| 30  | A ajudante                                  | sessão A codificada; B por fazer    | `specs/030-a-ajudante.md`                   |
 | 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`                |
 | 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`               |
 | 35  | O celular por gesto                         | pronto, sem o roteiro               | `specs/035-o-celular-por-gesto.md`          |
@@ -2989,6 +2991,45 @@ passo 5 do roteiro da 028 deixa). Os passos 5 a 9 são os que provam a ordem do 
 Stripe cancelado, o documento marcado, a claim fora, o outro aparelho saindo sozinho, o meio do
 caminho sem rede) e os passos 11 e 12 são os que provam o script — o ensaio recusando
 `contas/mycookies` e a purga de verdade apagando documento, subcoleções e login.
+
+## A spec 030 · A ajudante — sessão A, a chave e o convite
+
+**Codificada por pedido de quem conduz o projeto, antes do gatilho da fase 3** (nenhuma
+cliente pagante pediu ainda; a spec mesma diz para conferir isso antes). **A e B saem no mesmo
+deploy**: sem a B, a ajudante recebe a tela da dona e escrita negada em silêncio. Nada da A
+aparece na tela.
+
+- `src/lib/types/conta.ts`: `PapelNaConta` (`"DONA" | "AJUDANTE"`), `ContasDaClaim` tipada por
+  ele, `Membro`. `caminhos.membros`/`membro`; `colMembros` em `colecoes.ts`, para a B ler.
+- `src/lib/domain/ajudante.ts`: `LIMITE_DE_AJUDANTES` (5), `esquemaConvite`, `FalhaConvite`,
+  `MENSAGEM_FALHA_CONVITE`, `papelDaClaim` (desconhecido → `"AJUDANTE"`), `ROTAS_SO_DA_DONA` e
+  `rotaSoDaDona`, `apelidoDoEmail`. Puro; nove testes em `tests/domain/ajudante.test.ts`.
+- `firestore.rules`: `{colecao}/{documento=**}` com `ehDona()`, `doDinheiro()` e
+  `soDoServidor()` (`#d154`). **Não publicada.** A regra usa `ehDona()` e não o `ehAjudante()`
+  do esboço da spec — o esboço deixava papel desconhecido com poder de dona (`#d153`).
+- `POST`/`DELETE /api/conta/membros`: convidar (cria o login sem senha, claim `AJUDANTE` com o
+  `acessoAte` copiado do documento, espelho) e tirar (claim sem a chave, `removidaEm`).
+  Idempotente.
+- `firebaseAdmin.ts`: `ehDona` e `tirarContaDaClaim`. **Fora da lista da spec:** `encerrar`,
+  `exportar`, `checkout` e `portal` passaram de `abreAConta` para `ehDona` — senão uma ajudante
+  encerraria a conta ou exportaria o caixa por `curl` (`#d153`).
+- Webhook do Stripe: renova `acessoAte` da dona e de cada membro ativo. `/api/conta/encerrar`:
+  tira a claim de cada membro ativo (com `removidaEm`) antes da dona.
+- `AuthProvider`: `papel` no contexto, `usePapel()`. Inerte para conta de dona.
+- Docs: `#d153` a `#d155`; `#d14`, `#d144` e `#d148` anotados; `DEPLOY.md` seção 6 (regra antes
+  do app).
+
+Portão: lint e typecheck limpos, os **608 testes** passando, `npm run build` com
+`/api/conta/membros` dinâmica.
+
+**O que não rodou** — os passos do roteiro que a spec põe no fim da A (1, 2, 3, 7 e 12): pedem
+o projeto de verdade com a regra publicada, `curl` com token de dona e de ajudante, e o
+`stripe listen`. O passo 1 (a conta real intacta com a regra nova) é o que libera publicar a
+regra.
+
+**Próximo passo da 030:** a sessão B — `QuemTeAjuda` em `/configuracao`, o que some da tela da
+ajudante (oito lugares), `/configuracao` reduzida, `/assinatura` sem checkout, `#d156` e
+`#d157`, `ROADMAP.md`.
 
 ## Próxima ação
 

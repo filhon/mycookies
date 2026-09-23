@@ -40,9 +40,9 @@ export function stripe(): Stripe {
 /**
  * Grava a claim inteira preservando o que não é desta conta.
  *
- * A única função que escreve `acessoAte` depois do cadastro: `/api/conta` e o
- * webhook do Stripe, só no documento da conta e na claim, nunca em dado de
- * negócio (`DECISOES.md#d144`, `#d145`).
+ * A única função que renova `acessoAte` depois do cadastro e do convite: o
+ * webhook do Stripe a chama para a dona e para cada ajudante ativa
+ * (`DECISOES.md#d144`, `#d145`, `#d155`).
  */
 export async function escreverAcessoAte(
   uid: string,

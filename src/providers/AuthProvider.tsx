@@ -24,13 +24,16 @@ import {
 import { obterAuth, obterDb } from "@/lib/firebase/client";
 import { docConta } from "@/lib/firebase/colecoes";
 import { useDocumento } from "@/lib/hooks/useColecao";
-import type { Conta, ContasDaClaim } from "@/lib/types";
+import { papelDaClaim } from "@/lib/domain/ajudante";
+import type { Conta, ContasDaClaim, PapelNaConta } from "@/lib/types";
 
 interface ContextoAuth {
   /** Quem entrou. */
   usuario: User | null;
   /** De quem é o dado. `null` = login sem vínculo com conta alguma. */
   contaId: string | null;
+  /** O papel na conta ativa. `null` junto com `contaId` (`DECISOES.md#d153`). */
+  papel: PapelNaConta | null;
   /** O documento da conta. `null` enquanto a primeira leitura não chega. */
   conta: Conta | null;
   carregando: boolean;
@@ -102,22 +105,32 @@ export function traduzirErroAuth(
   return MENSAGENS[codigo] ?? padrao;
 }
 
+interface Vinculo {
+  contaId: string | null;
+  papel: PapelNaConta | null;
+}
+
+const SEM_VINCULO: Vinculo = { contaId: null, papel: null };
+
 /**
  * Lê o vínculo de conta da claim `{ contas: { [contaId]: papel } }`.
  *
  * A primeira chave é a conta ativa, e não há seletor de conta na interface:
  * com uma conta, escolher é ruído. Quando existir a segunda, este é o ponto
  * único que passa a consultar uma preferência em vez de decidir sozinho.
+ * Papel desconhecido vira `"AJUDANTE"` (`DECISOES.md#d153`).
  */
-function contaAtivaDaClaim(claims: ParsedToken): string | null {
+function contaAtivaDaClaim(claims: ParsedToken): Vinculo {
   const contas = claims.contas as ContasDaClaim | undefined;
-  if (typeof contas !== "object" || contas === null) return null;
-  return Object.keys(contas)[0] ?? null;
+  if (typeof contas !== "object" || contas === null) return SEM_VINCULO;
+  const contaId = Object.keys(contas)[0];
+  if (!contaId) return SEM_VINCULO;
+  return { contaId, papel: papelDaClaim(contas[contaId]) };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<User | null>(null);
-  const [contaId, setContaId] = useState<string | null>(null);
+  const [{ contaId, papel }, setVinculo] = useState<Vinculo>(SEM_VINCULO);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
@@ -129,13 +142,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (proximoUsuario) {
         try {
           const token = await proximoUsuario.getIdTokenResult();
-          setContaId(contaAtivaDaClaim(token.claims));
+          setVinculo(contaAtivaDaClaim(token.claims));
         } catch {
           // Offline, o token em cache ainda vale. Não derruba a sessão.
-          setContaId((anterior) => anterior);
         }
       } else {
-        setContaId(null);
+        setVinculo(SEM_VINCULO);
       }
 
       setCarregando(false);
@@ -209,15 +221,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!atual) return false;
 
     const token = await atual.getIdTokenResult(true);
-    const proximaConta = contaAtivaDaClaim(token.claims);
-    setContaId(proximaConta);
-    return proximaConta !== null;
+    const proximo = contaAtivaDaClaim(token.claims);
+    setVinculo(proximo);
+    return proximo.contaId !== null;
   }, []);
 
   const valor = useMemo<ContextoAuth>(
     () => ({
       usuario,
       contaId,
+      papel,
       conta,
       carregando,
       entrar,
@@ -228,6 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [
       usuario,
       contaId,
+      papel,
       conta,
       carregando,
       entrar,
@@ -256,4 +270,11 @@ export function useContaId(): string {
   const { contaId } = useAuth();
   if (!contaId) throw new Error("Tela autenticada renderizada sem conta.");
   return contaId;
+}
+
+/** O irmão de `useContaId`: o papel de quem entrou na conta ativa (spec 030). */
+export function usePapel(): PapelNaConta {
+  const { papel } = useAuth();
+  if (!papel) throw new Error("Tela autenticada renderizada sem conta.");
+  return papel;
 }

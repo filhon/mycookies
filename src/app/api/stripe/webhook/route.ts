@@ -62,7 +62,18 @@ export async function POST(requisicao: Request) {
     agoraMs: Date.now(),
   });
 
-  await escreverAcessoAte(uid, contaId, ateMs); // claim antes do documento (#d145)
+  // A dona (metadata) e as ajudantes: renovar a assinatura renova a claim de
+  // todo mundo que escreve na conta (`DECISOES.md#d155`). Sem laço, a ajudante
+  // para de salvar no dia em que o teste original venceria, numa conta em dia.
+  // Sem `where`: campo ausente não casa com `== null`, e são até cinco
+  // documentos. Sequencial: o Stripe repete o webhook se ele cair.
+  const membros = await adminDb().collection(caminhos.membros(contaId)).get();
+  const uids = [
+    uid,
+    ...membros.docs.filter((d) => !d.get("removidaEm")).map((d) => d.id),
+  ];
+  // Claim antes do documento (#d145).
+  for (const cada of uids) await escreverAcessoAte(cada, contaId, ateMs);
   await documento.set(
     {
       plano: "ASSINATURA",

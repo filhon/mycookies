@@ -17,6 +17,7 @@ import type {
   Fornada,
   Insumo,
   ListaCompras,
+  Membro,
   Meta,
   Pedido,
   ResumoGlobal,
@@ -70,6 +71,9 @@ export const colTransacoes = (contaId: string) =>
 export const colMetas = (contaId: string) => col<Meta>(caminhos.metas(contaId));
 export const colFornadas = (contaId: string) =>
   col<Fornada>(caminhos.fornadas(contaId));
+/** Só leitura do cliente: quem escreve é `/api/conta/membros` (`DECISOES.md#d155`). */
+export const colMembros = (contaId: string) =>
+  col<Membro>(caminhos.membros(contaId));
 
 export const docInsumo = (
   contaId: string,

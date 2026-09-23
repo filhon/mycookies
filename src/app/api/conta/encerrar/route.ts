@@ -3,18 +3,19 @@ import { Timestamp } from "firebase-admin/firestore";
 import { z } from "zod";
 import type { FalhaMeusDados } from "@/lib/domain/meusDados";
 import {
-  abreAConta,
-  adminAuth,
   adminDb,
   conferirToken,
   credencialDisponivel,
+  ehDona,
+  tirarContaDaClaim,
 } from "@/lib/server/firebaseAdmin";
 import { stripe, stripeDisponivel } from "@/lib/server/stripe";
 import { caminhos, VERSAO_SCHEMA, type Conta } from "@/lib/types";
 
 /**
  * Encerra a conta em três passos, nesta ordem (`DECISOES.md#d148`): cancela a
- * assinatura no Stripe, marca `status: "ENCERRADA"` e tira a conta da claim.
+ * assinatura no Stripe, marca `status: "ENCERRADA"` e tira a conta da claim —
+ * da dona e de cada ajudante ativa (spec 030).
  * Idempotente como `/api/conta` (`#d141`): toda volta bate na mesma rota e faz
  * só o que faltou. Não apaga documento nenhum — a purga é
  * `scripts/encerrar-conta.mjs`, à mão.
@@ -43,7 +44,8 @@ export async function POST(requisicao: Request) {
   if (!quem) return falha("sem-acesso", 401);
 
   const corpo = esquemaEncerrar.safeParse(await comoJson(requisicao));
-  if (!corpo.success || !abreAConta(quem, corpo.data.contaId)) {
+  // Só a dona encerra: não é a conta da ajudante (spec 030).
+  if (!corpo.success || !ehDona(quem, corpo.data.contaId)) {
     return falha("fora-de-forma", 400);
   }
   const { contaId } = corpo.data;
@@ -77,17 +79,20 @@ export async function POST(requisicao: Request) {
     );
   }
 
-  // 3. A claim: fora do mapa, ela não lê nem escreve a partir do próximo token.
-  const auth = adminAuth();
-  const usuario = await auth.getUser(quem.uid);
-  const claims = usuario.customClaims ?? {};
-  const contas = { ...(claims.contas as Record<string, string> | undefined) };
-  delete contas[contaId];
-  const acessoAte = {
-    ...(claims.acessoAte as Record<string, number> | undefined),
-  };
-  delete acessoAte[contaId];
-  await auth.setCustomUserClaims(quem.uid, { ...claims, contas, acessoAte });
+  // 3. A claim: fora do mapa, ninguém lê nem escreve a partir do próximo token.
+  //    A 030 estendeu o passo a cada ajudante ativa, com `removidaEm` no
+  //    espelho (`#d155`) — senão ela ficaria com a chave de uma conta que a
+  //    purga vai apagar. As ajudantes antes da dona: se a volta cair no meio,
+  //    a dona ainda abre a conta e a próxima volta termina o laço.
+  const membros = await adminDb().collection(caminhos.membros(contaId)).get();
+  for (const membro of membros.docs.filter((d) => !d.get("removidaEm"))) {
+    await tirarContaDaClaim(membro.id, contaId);
+    await membro.ref.set(
+      { removidaEm: Timestamp.now(), v: VERSAO_SCHEMA },
+      { merge: true },
+    );
+  }
+  await tirarContaDaClaim(quem.uid, contaId);
 
   return NextResponse.json({});
 }

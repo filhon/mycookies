@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import type { FalhaAssinatura } from "@/lib/domain/assinatura";
 import {
-  abreAConta,
+  ehDona,
   adminDb,
   conferirToken,
   credencialDisponivel,
@@ -35,7 +35,7 @@ export async function POST(requisicao: Request) {
   if (!quem) return falha("sem-acesso", 401);
 
   const corpo = esquemaPortal.safeParse(await comoJson(requisicao));
-  if (!corpo.success || !abreAConta(quem, corpo.data.contaId)) {
+  if (!corpo.success || !ehDona(quem, corpo.data.contaId)) {
     return falha("fora-de-forma", 400);
   }
   if (!stripeDisponivel()) return falha("sem-configuracao", 500);

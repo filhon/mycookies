@@ -64,14 +64,36 @@ export interface Conta {
 }
 
 /**
+ * Dois papéis, e só. Ver `DECISOES.md#d153`. Valor desconhecido na claim é
+ * tratado como `"AJUDANTE"` pela tela e pela regra: errar para menos acesso.
+ */
+export type PapelNaConta = "DONA" | "AJUDANTE";
+
+/**
  * Vínculo login → conta, como vem na custom claim do token:
  * `{ contas: { 'mycookies': 'DONA' } }`.
- *
- * O papel é string livre por ora, com `'DONA'` como único valor emitido. O que
- * importa é a forma do mapa; vocabulário de papéis inventado antes de existir
- * um segundo tipo de acesso é regra escrita para caso que não existe.
  */
-export type ContasDaClaim = Record<string, string>;
+export type ContasDaClaim = Record<string, PapelNaConta>;
+
+/**
+ * `contas/{contaId}/membros/{uid}`, uma por ajudante convidada. Espelho escrito
+ * só por `/api/conta/membros` (Admin SDK): a claim é a verdade, e este documento
+ * existe para a tela listar e para o webhook e o encerrar percorrerem
+ * (`DECISOES.md#d155`). A dona não tem documento aqui.
+ */
+export interface Membro {
+  /** O `uid` é o id do documento. */
+  id: string;
+  /** O e-mail é o que a tela mostra. */
+  email: string;
+  papel: PapelNaConta;
+  convidadaEm: Timestamp;
+  /** O `uid` da dona que convidou. */
+  convidadaPor: string;
+  /** Presente = acesso tirado. O documento fica; a claim é que some. */
+  removidaEm?: Timestamp;
+  v: VersaoSchema;
+}
 
 /**
  * A forma da claim inteira, para quem a escreve: `/api/conta`, o webhook do

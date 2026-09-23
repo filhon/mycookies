@@ -241,6 +241,9 @@ O que ficou de fora, e por quê: cadastro, convite, seleção de conta, tela de 
 cobrança viram código morto se a hipótese do SaaS não se confirmar. O gancho existe; o
 resto espera o segundo usuário real.
 
+**A primeira ressalva caiu na 030: a regra confere o papel** (`#d153`, `#d154`). As outras
+duas continuam: a primeira chave é a conta ativa, sem seletor.
+
 ---
 
 ## D15 · Versão de schema gravada em todo documento
@@ -4591,6 +4594,9 @@ por exemplo), o booleano volta **ao lado** da data, não no lugar dela.
 `GET /api/conta/exportar` e a própria tela de vencida usam — a 029 é quem tinha ficado com o
 prazo em aberto, e ele não existe: ler continua sempre permitido (`#d149`).
 
+**Na 030, a claim da ajudante entra no mesmo mapa**, com o `acessoAte` copiado do documento da
+conta no convite e renovado pelo webhook junto com o da dona (`#d155`).
+
 ---
 
 ## D145 · O estado da cobrança é derivado das datas; o webhook relê o Stripe e escreve a claim antes do documento
@@ -4696,6 +4702,9 @@ já não lê nem escreve, pelo mesmo mecanismo do `#d07`. `encerradaPor` é o ú
 que guarda um `uid` dentro do dado — existe só para o script achar o login a apagar depois que a
 claim já saiu.
 
+**A 030 estendeu o passo 3 a todos os membros**: cada ajudante sem `removidaEm` perde a chave
+e ganha `removidaEm` no espelho, antes da dona (`#d155`). E só a dona encerra (`#d153`).
+
 ---
 
 ## D149 · A exportação sai do servidor por `listCollections()`, porque uma exportação do cache é silenciosamente incompleta
@@ -4792,3 +4801,80 @@ navegação.
 **Consequência.** A saída do editor é o `LinkVoltar` e o gesto do sistema, os dois pela guarda
 de "sair sem salvar" (`#d132`; o gesto é `popstate`, que a sentinela já intercepta). Outras
 telas de formulário não seguem: `/configuracao` tem barra própria e é destino do menu Hoje.
+
+## D153 · O papel vira vocabulário, e a regra o confere
+
+**Status:** vigente · decidida em 2026-09-23, na spec `030-a-ajudante.md` (sessão A). Supera
+a primeira das três ressalvas do `#d14`.
+
+**Contexto.** O `#d14` deixou o papel como string livre e a regra conferindo só a presença da
+chave, "até existir o segundo tipo de acesso". A ajudante é esse segundo tipo: sem papel na
+regra, o segundo login numa conta é outra dona — abre o caixa, muda a margem, encerra a conta.
+
+**Decisão.** `PapelNaConta = "DONA" | "AJUDANTE"` em `src/lib/types/conta.ts`, e
+`ContasDaClaim = Record<string, PapelNaConta>`. Dois valores: o contador de leitura do `#d14`
+continua fora, sem caso. **Valor desconhecido é ajudante, nunca dona** — `papelDaClaim`
+(`src/lib/domain/ajudante.ts`) no `AuthProvider`, `ehDona` (`=== "DONA"`) no servidor, e na
+regra só `== 'DONA'` concede o que é da dona. A spec esboçava a regra com
+`ehAjudante() = contas[contaId] == 'AJUDANTE'` e `!ehAjudante()` para conceder; isso deixaria
+um valor desconhecido com poder de dona, o contrário do que o próprio parágrafo pedia. A regra
+escrita confere `ehDona()` e nega pela ausência dele.
+
+**Consequência.** `ehDona` mora em `firebaseAdmin.ts`, ao lado de `abreAConta`, e passou a ser
+a porta de `/api/conta/membros`, **e também** de `/api/conta/encerrar`, `/api/conta/exportar`,
+`/api/assinatura/checkout` e `/api/assinatura/portal`. Não estava na lista da spec, e é a
+metade servidor da mesma chave: com `abreAConta`, uma ajudante encerraria a conta, exportaria o
+caixa que a regra lhe nega, abriria o portal da assinatura da dona ou criaria um checkout com o
+próprio `uid` na metadata — tudo por `curl`, sem tela nenhuma. `/api/nota` continua em
+`abreAConta`: ler nota é cadastrar material, que é trabalho. `AuthProvider` expõe `papel` e
+`usePapel()`; com uma conta só de dona, nada muda na tela.
+
+---
+
+## D154 · A regra fecha por coleção, porque regra se soma por OU
+
+**Status:** vigente · decidida em 2026-09-23, na spec `030-a-ajudante.md` (sessão A)
+
+**Contexto.** A leitura ingênua seria acrescentar `match /configuracao/{doc}` negando a
+ajudante ao lado do `match /{documento=**}` que já existia. No Firestore, quando duas regras
+casam com o mesmo caminho, o acesso é concedido se **qualquer uma** permitir: a regra
+restritiva ao lado da permissiva não nega nada.
+
+**Decisão.** A recursiva vira `match /{colecao}/{documento=**}`, que casa com o mesmo que
+antes e sabe o nome da coleção, e a restrição mora dentro dela: a ajudante não lê nem escreve
+`transacoes`, `metas` e `agregados` (o dinheiro); lê e não escreve `configuracao` (a ficha
+precisa dela para calcular); ninguém escreve `membros` do cliente (`#d155`); o documento da
+conta só a dona escreve. Zero leitura, como o `#d07`: o que a regra usa é o token e o caminho.
+
+**Consequência.** Quem "simplificar" a regra para uma lista de `match` por coleção reabre o
+caixa para a ajudante — o comentário no arquivo diz isso. `clientes` continua legível para a
+ajudante (o editor de pedido escolhe a cliente nela); o que a esconde é a tela, e está escrito
+assim na spec. A regra é compatível com o app velho: numa conta só de donas, `ehDona()` é
+verdadeiro em todo lugar e nada muda. Publica **antes** do app (`DEPLOY.md`).
+
+---
+
+## D155 · `membros` é espelho escrito só pelo servidor; a claim continua sendo a verdade
+
+**Status:** vigente · decidida em 2026-09-23, na spec `030-a-ajudante.md` (sessão A)
+
+**Contexto.** A claim diz quem abre a conta, mas não é consultável: responder "quem tem acesso
+ao meu negócio?" exigiria `listUsers` varrendo todos os logins do projeto. E o webhook do
+Stripe renovava `acessoAte` só no `uid` da metadata — a dona —, então a ajudante pararia de
+salvar no dia em que o teste original venceria, numa conta paga em dia.
+
+**Decisão.** `contas/{contaId}/membros/{uid}` (`Membro`: `email`, `papel`, `convidadaEm`,
+`convidadaPor`, `removidaEm?`, `v`), um por ajudante, escrito só por `/api/conta/membros` com o
+Admin SDK. A dona não tem documento: ela é o `uid` da metadata e o `encerradaPor`. Tirar o
+acesso grava `removidaEm` e tira a chave da claim; o documento fica — o invariante "nunca
+apagar" segue sem exceção nova, e fica o registro de quem teve acesso e até quando. O convite
+copia `acessoAte` do documento da conta (`assinaturaAte ?? trialAte`), sem chave quando a conta
+não tem prazo. O webhook percorre a dona e cada membro sem `removidaEm`, sequencial;
+`/api/conta/encerrar` tira a claim de cada membro ativo **antes** da dona, para que uma volta
+que caia no meio ainda encontre a dona com acesso e termine o laço na repetição.
+`tirarContaDaClaim` (`firebaseAdmin.ts`) é o único código que tira uma conta de uma claim.
+
+**Consequência.** O espelho não autoriza nada: o dia em que discordar da claim, a claim ganha.
+Leitura sem `where` (campo ausente não casa com `== null`) e sem índice — são até
+`LIMITE_DE_AJUDANTES` (5) documentos. `scripts/encerrar-conta.mjs` não mudou: a varredura de
+`listUsers` já acha a ajudante, e o ramo "sobrou outra conta, só tira a chave" era este caso.

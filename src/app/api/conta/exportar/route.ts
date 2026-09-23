@@ -6,7 +6,7 @@ import {
   type FalhaMeusDados,
 } from "@/lib/domain/meusDados";
 import {
-  abreAConta,
+  ehDona,
   adminDb,
   conferirToken,
   credencialDisponivel,
@@ -32,7 +32,7 @@ export async function GET(requisicao: Request) {
   if (!quem) return falha("sem-acesso", 401);
 
   const contaId = new URL(requisicao.url).searchParams.get("contaId") ?? "";
-  if (!abreAConta(quem, contaId)) return falha("fora-de-forma", 400);
+  if (!ehDona(quem, contaId)) return falha("fora-de-forma", 400);
 
   const documento = adminDb().doc(caminhos.conta(contaId));
   const conta = (await documento.get()).data() as Conta | undefined;

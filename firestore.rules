@@ -13,13 +13,10 @@ service cloud.firestore {
 
     match /contas/{contaId} {
       // A claim `contas` é um mapa { contaId: papel }, emitida via Admin SDK
-      // por /api/conta, pelo webhook do Stripe e pelo script
+      // por /api/conta, /api/conta/membros, pelo webhook do Stripe e pelo script
       // scripts/conceder-acesso.mjs. Checar claim custa ZERO leitura — um
       // allowlist em documento (`get(/membros/$(uid))`) seria cobrado a cada
       // avaliação de regra, inclusive nas negadas.
-      //
-      // O papel não é conferido: hoje só existe 'DONA', e regra escrita para
-      // papel que não existe é regra que ninguém testou. Basta estar no mapa.
       function temAcesso() {
         return request.auth != null
             && 'contas' in request.auth.token
@@ -27,10 +24,10 @@ service cloud.firestore {
       }
 
       // Escrever tem prazo; ler não. `acessoAte` traz, por conta, até quando (ms de
-      // época) esta conta pode escrever — escrito por /api/conta (o teste) e pelo
-      // webhook do Stripe (a assinatura). Sem a chave, não há prazo: é a conta
-      // liberada à mão (DECISOES.md#d141, #d144). Zero leitura, como #d07: o
-      // relógio é request.time.
+      // época) esta conta pode escrever — escrito por /api/conta (o teste), pelo
+      // convite da ajudante e pelo webhook do Stripe (a assinatura). Sem a chave,
+      // não há prazo: é a conta liberada à mão (DECISOES.md#d141, #d144). Zero
+      // leitura, como #d07: o relógio é request.time.
       function podeEscrever() {
         return temAcesso()
             && !('acessoAte' in request.auth.token
@@ -38,12 +35,36 @@ service cloud.firestore {
                  && request.time.toMillis() > request.auth.token.acessoAte[contaId]);
       }
 
-      allow read: if temAcesso();
-      allow write: if podeEscrever();
+      // Dois papéis: 'DONA' e 'AJUDANTE' (DECISOES.md#d153). Só 'DONA' é dona;
+      // qualquer outro valor cai no lado restrito — errar para menos acesso.
+      function ehDona() {
+        return temAcesso() && request.auth.token.contas[contaId] == 'DONA';
+      }
 
-      match /{documento=**} {
-        allow read: if temAcesso();
-        allow write: if podeEscrever();
+      // O dinheiro não é da ajudante: ela não lê nem escreve estas três.
+      function doDinheiro(colecao) {
+        return colecao in ['transacoes', 'metas', 'agregados'];
+      }
+
+      // Espelho dos acessos: a claim é a verdade, e quem escreve é o Admin SDK
+      // (DECISOES.md#d155). Nem a dona escreve daqui.
+      function soDoServidor(colecao) {
+        return colecao == 'membros';
+      }
+
+      allow read: if temAcesso();
+      allow write: if podeEscrever() && ehDona(); // o documento da conta é da dona
+
+      // IMPORTANTE: a restrição mora DENTRO desta regra, e não numa regra ao
+      // lado. No Firestore, regras que casam com o mesmo caminho se somam por
+      // OU: um `match /configuracao/{doc}` negando ao lado deste não negaria
+      // nada (DECISOES.md#d154). Por isso o nome da coleção é capturado aqui.
+      match /{colecao}/{documento=**} {
+        allow read: if temAcesso() && (ehDona() || !doDinheiro(colecao));
+        allow write: if podeEscrever()
+                     && !soDoServidor(colecao)
+                     && (ehDona()
+                         || !(doDinheiro(colecao) || colecao == 'configuracao'));
       }
     }
   }

@@ -15,9 +15,10 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
  * Nada aqui entra no pacote do cliente: só `src/app/api/` importa este arquivo,
  * e uma rota não é importada por componente nenhum.
  *
- * **Só `/api/conta`, o webhook do Stripe e `/api/conta/encerrar` escrevem no
- * Firestore daqui, só no documento da conta e na claim, nunca em dado de
- * negócio.** `/api/conta/exportar` **lê** dado de negócio — para devolvê-lo a
+ * **Só `/api/conta`, o webhook do Stripe, `/api/conta/encerrar` e
+ * `/api/conta/membros` escrevem no Firestore daqui, só no documento da conta,
+ * na claim e no espelho de membros, nunca em dado de negócio.**
+ * `/api/conta/exportar` **lê** dado de negócio — para devolvê-lo a
  * ela, e por mais nada. O motivo é o mesmo de `/api/nota` não gravar insumo:
  * escrever do servidor é escrever por fora das regras.
  *
@@ -164,12 +165,47 @@ export async function conferirToken(
 }
 
 /**
- * A mesma regra de `firestore.rules`, escrita uma segunda vez porque esta é uma
- * segunda porta para a mesma conta: basta a chave estar no mapa, e o papel não
- * é conferido — hoje só existe `'DONA'`, e regra escrita para papel que não
- * existe é regra que ninguém testou (`DECISOES.md#d14`).
+ * O `temAcesso()` de `firestore.rules`, escrito uma segunda vez porque esta é
+ * uma segunda porta para a mesma conta: basta a chave estar no mapa, qualquer
+ * papel. Onde o papel importa, é `ehDona` (`DECISOES.md#d153`).
  */
 export function abreAConta(quem: Autenticado, contaId: string): boolean {
   if (!contaId) return false;
   return quem.contas[contaId] != null;
+}
+
+/**
+ * Só a dona convida, tira, encerra, exporta e paga. Papel desconhecido não é
+ * dona (`#d153`).
+ */
+export function ehDona(quem: Autenticado, contaId: string): boolean {
+  return !!contaId && quem.contas[contaId] === "DONA";
+}
+
+/**
+ * Tira `contas[contaId]` e `acessoAte[contaId]` da claim de um login,
+ * preservando as outras contas — uma ajudante pode ajudar em dois negócios.
+ * Idempotente: sem a chave, não escreve; login que já não existe não tem o que
+ * tirar. Usada por `/api/conta/encerrar` e por `/api/conta/membros`.
+ */
+export async function tirarContaDaClaim(
+  uid: string,
+  contaId: string,
+): Promise<void> {
+  const auth = adminAuth();
+  let claims: Record<string, unknown>;
+  try {
+    claims = (await auth.getUser(uid)).customClaims ?? {};
+  } catch (erro) {
+    if ((erro as { code?: string }).code === "auth/user-not-found") return;
+    throw erro;
+  }
+  const contas = { ...(claims.contas as Record<string, string> | undefined) };
+  const acessoAte = {
+    ...(claims.acessoAte as Record<string, number> | undefined),
+  };
+  if (!(contaId in contas) && !(contaId in acessoAte)) return;
+  delete contas[contaId];
+  delete acessoAte[contaId];
+  await auth.setCustomUserClaims(uid, { ...claims, contas, acessoAte });
 }
