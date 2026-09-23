@@ -1092,10 +1092,10 @@ logado no Rende e de rede. Aparelho em 360 px nos passos 3, 5 e 7.
 
 **C**
 
-- [ ] Kit fixo com `avulso` só quando todos os de dentro estão na página e custam mais juntos.
-- [ ] Combo à escolha na página, com a tela de montar, `economiaMinima` e `economiaDoCombo`; o
+- [x] Kit fixo com `avulso` só quando todos os de dentro estão na página e custam mais juntos.
+- [x] Combo à escolha na página, com a tela de montar, `economiaMinima` e `economiaDoCombo`; o
       handler confere as escolhas e grava o custo por `custoDoComboMontado`.
-- [ ] Linhas com escolhas diferentes não se juntam; `mensagemDeAviso` com `nomeComEscolhas`.
+- [x] Linhas com escolhas diferentes não se juntam; `mensagemDeAviso` com `nomeComEscolhas`.
 
 **D**
 

@@ -11,7 +11,8 @@ e 034 por publicar juntas**; a **035 entregue** por cima delas, o celular por ge
 `#d152`; a **030 codificada inteira** em 2026-09-23 — a A, a chave da ajudante, e a B, o app
 dela —, por publicar num deploy só, a regra antes do app; a **031 codificada inteira** em
 2026-09-23 (a A, a vitrine, e a B, o pedido, `specs/031-cardapio-publico.md`, antes do gatilho),
-por publicar depois do parágrafo de `/privacidade` e do roteiro; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 027, 028, 029,
+por publicar depois do parágrafo de `/privacidade` e do roteiro; a **031-C, os combos**,
+codificada no mesmo dia, com a D e a E por fazer; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 027, 028, 029,
 033, 034 e 035 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
@@ -274,7 +275,7 @@ os números digitados de ponta a ponta.
 | 28  | O teste acaba, e a assinatura               | codificada; deploy espera o roteiro | `specs/028-o-teste-acaba-e-a-assinatura.md` |
 | 29  | Meus dados são meus                         | codificada; deploy espera os termos | `specs/029-meus-dados-sao-meus.md`          |
 | 30  | A ajudante                                  | A e B codificadas; não publicada    | `specs/030-a-ajudante.md`                   |
-| 31  | Cardápio público com link de pedido         | A e B codificadas; não publicada    | `specs/031-cardapio-publico.md`             |
+| 31  | Cardápio público com link de pedido         | A, B e C codificadas; não publicada | `specs/031-cardapio-publico.md`             |
 | 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`                |
 | 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`               |
 | 35  | O celular por gesto                         | pronto, sem o roteiro               | `specs/035-o-celular-por-gesto.md`          |
@@ -3158,6 +3159,38 @@ chegando em `/pedidos` no dia certo) é o critério da spec inteira e prova a me
 Brasília; o 6 prova o preço. Nenhuma tela do pedido (painel vazio, cheio, com erro, enviando,
 enviado) foi vista em navegador, nos dois temas. **Portão do deploy:** o parágrafo de
 `/privacidade` sobre os dados da cliente da cliente, texto de quem conduz o projeto (`#d143`).
+
+## A spec 031 · Cardápio público — sessão C, os combos
+
+O combo entra na página com a economia à vista, contra o preço que a própria página cobra
+(`#d163`). Primeira das três sessões acrescentadas em 2026-09-23 (C, D, E).
+
+- Domínio (`src/lib/domain/cardapio.ts`): `entraNoCardapio` deixa o combo à escolha entrar;
+  `ProdutoDoCardapio` ganha `avulso` (kit fixo), `escolhas` e `economiaMinima` (combo à escolha);
+  `OpcaoDoCombo`; `economiaDoCombo`; `montarCardapio` recebe `opcoes`. O esquema do pedido aceita
+  `escolhas` por item (até 12, 1 a 50 cada); `pedidoDoCardapio` recebe `opcoes`, confere as
+  escolhas (`fora-de-forma` / `mudou`), grava `custoDoComboMontado` e junta por ficha e escolhas;
+  `mensagemDeAviso` usa `nomeComEscolhas`. 14 testes a mais, com o caso de aceite da C número
+  por número e o teste das chaves com as três novas (e as da opção).
+- `lerContaDoCardapio` devolve `opcoes`: uma consulta `categoria ==` por categoria de escolha dos
+  combos da lista. O handler usa a mesma leitura, e não um `getAll` das citadas (`#d163`).
+  `firebaseAdmin.ts` diz isso no cabeçalho.
+- `PedidoPeloCardapio.tsx`: o carrinho virou lista de linhas (produto + sabores); "Separados
+  sairiam… · você economiza…" no kit fixo; "Você escolhe os sabores · economize pelo menos…" no
+  combo, cujo "Adicionar" abre o `Painel` "Monte a sua {nome}" (uma seção por escolha, "Falta
+  escolher N" / "Escolhido" com ícone, o "+" travado quando a categoria enche, a economia da
+  combinação, "Pôr no pedido" desabilitado até completar). No carrinho, `nomeComEscolhas` e o
+  passo do combo inteiro. O "−" do passo fica desabilitado no zero.
+- Painel da dona: "Produtos vendidos por peso ainda não entram no cardápio."
+- Fora da spec, no `#d163`: combo à escolha com parte fixa não mostra economia (`ponytail:`).
+
+Portão: lint e typecheck limpos, os **662 testes** (648 + 14), `npm run build` com
+`/c/[contaId]` ● (ISR), a foto e `/api/cardapio/pedido` ƒ. `firestore.rules` e
+`firestore.indexes.json` intocados.
+
+**O que não rodou** — os passos 14 e 15 do roteiro (o combo fixo e a tela de montar a 360px, e
+o pedido de combo chegando com as escolhas e o custo do combo montado). Nenhuma tela nova foi
+vista em navegador, nos dois temas.
 
 ## Próxima ação
 

@@ -24,8 +24,9 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
  *
  * **Sem login, só leem** `/c/[contaId]` e `/c/[contaId]/foto/[fichaId]`
  * (spec 031, `src/lib/server/cardapio.ts`): só a conta, a configuração e as
- * fichas da lista do cardápio, e só devolvem o que `montarCardapio` deixa
- * passar (`DECISOES.md#d158`).
+ * fichas da lista do cardápio, mais as fichas das categorias dos combos (C,
+ * `#d163`), e só devolvem o que `montarCardapio` deixa passar
+ * (`DECISOES.md#d158`).
  *
  * **Sem login, escreve** `/api/cardapio/pedido` (spec 031, `#d160`): só em
  * `pedidos`, e só um documento novo por chamada; nunca atualiza, nunca lê o que

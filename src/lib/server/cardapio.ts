@@ -5,6 +5,7 @@ import {
   tipoDaFoto,
   type Cardapio,
 } from "@/lib/domain/cardapio";
+import { temEscolhas } from "@/lib/domain/custoFicha";
 import {
   caminhos,
   type ConfiguracaoGeral,
@@ -44,6 +45,7 @@ export async function lerContaDoCardapio(contaId: string): Promise<{
   conta: Conta;
   configuracao: ConfiguracaoGeral | null;
   fichas: FichaTecnica[];
+  opcoes: FichaTecnica[];
 } | null> {
   if (!credencialDisponivel() || !ID.test(contaId)) return null;
 
@@ -63,18 +65,36 @@ export async function lerContaDoCardapio(contaId: string): Promise<{
     .filter((id) => ID.test(id))
     .slice(0, LIMITE_DO_CARDAPIO);
 
+  const colecao = db.collection(caminhos.fichas(contaId));
   const fichasSnap = ids.length
-    ? await db.getAll(
-        ...ids.map((id) => db.collection(caminhos.fichas(contaId)).doc(id)),
-      )
+    ? await db.getAll(...ids.map((id) => colecao.doc(id)))
     : [];
+  const fichas = fichasSnap
+    .filter((snap) => snap.exists)
+    .map((snap) => ({ id: snap.id, ...snap.data() }) as FichaTecnica);
+
+  // As opções dos combos à escolha (`#d163`): uma igualdade por categoria,
+  // sem índice; `montarCardapio` filtra as que servem.
+  const categorias = new Set(
+    fichas
+      .filter((ficha) => !ficha.arquivado && temEscolhas(ficha))
+      .flatMap((ficha) => (ficha.escolhas ?? []).map((e) => e.categoria)),
+  );
+  const opcoes = (
+    await Promise.all(
+      [...categorias].map((categoria) =>
+        colecao.where("categoria", "==", categoria).get(),
+      ),
+    )
+  ).flatMap((consulta) =>
+    consulta.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as FichaTecnica),
+  );
 
   return {
     conta: { id: contaId, ...contaSnap.data() } as Conta,
     configuracao,
-    fichas: fichasSnap
-      .filter((snap) => snap.exists)
-      .map((snap) => ({ id: snap.id, ...snap.data() }) as FichaTecnica),
+    fichas,
+    opcoes,
   };
 }
 

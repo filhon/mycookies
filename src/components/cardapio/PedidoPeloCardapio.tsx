@@ -9,6 +9,7 @@ import { Painel } from "@/components/ui/Painel";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
   DIAS_A_FRENTE,
+  economiaDoCombo,
   MENSAGEM_FALHA_PEDIDO_CARDAPIO,
   mensagemDeAviso,
   mensagemDeContato,
@@ -18,7 +19,7 @@ import {
 } from "@/lib/domain/cardapio";
 import { diaVizinho } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
-import { subtotalDoItem } from "@/lib/domain/pedido";
+import { nomeComEscolhas, subtotalDoItem } from "@/lib/domain/pedido";
 import { linkDoWhatsApp, telefoneParaWhatsApp } from "@/lib/domain/whatsapp";
 import type { Centavos } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
@@ -34,10 +35,44 @@ import { cn } from "@/lib/utils/cn";
 
 type Tipo = "RETIRADA" | "ENTREGA";
 
+/** Uma linha do carrinho: o produto e, no combo à escolha, os sabores de UMA unidade. */
+interface Linha {
+  chave: string;
+  produto: ProdutoDoCardapio;
+  escolhas?: { fichaId: string; nome: string; quantidade: number }[];
+  quantidade: number;
+}
+
+type LinhaSemQuantidade = Omit<Linha, "quantidade">;
+
+/** Duas Duplas com os mesmos sabores são a mesma linha; com sabores diferentes, duas. */
+function chaveDa(produtoId: string, escolhas?: Linha["escolhas"]): string {
+  if (!escolhas) return produtoId;
+  const sabores = escolhas
+    .map((e) => `${e.fichaId}:${e.quantidade}`)
+    .sort()
+    .join(",");
+  return `${produtoId}|${sabores}`;
+}
+
+function nomeDa(linha: LinhaSemQuantidade): string {
+  return nomeComEscolhas({
+    nomeSnapshot: linha.produto.nome,
+    escolhas: linha.escolhas?.map((e) => ({
+      quantidade: e.quantidade,
+      nomeSnapshot: e.nome,
+    })),
+  });
+}
+
 interface Enviado {
   codigo: string | null;
   total: Centavos;
-  itens: { nome: string; quantidade: number }[];
+  itens: {
+    nome: string;
+    quantidade: number;
+    escolhas?: { quantidade: number; nomeSnapshot: string }[];
+  }[];
   dataEntregaISO: string;
   entrega: Tipo;
 }
@@ -53,10 +88,10 @@ export function PedidoPeloCardapio({
 }) {
   const { negocio } = cardapio;
   const quem = negocio.quem || negocio.nome;
-  const produtos = cardapio.secoes.flatMap((secao) => secao.produtos);
 
-  const [carrinho, setCarrinho] = useState<Record<string, number>>({});
+  const [carrinho, setCarrinho] = useState<Linha[]>([]);
   const [aberto, setAberto] = useState(false);
+  const [montando, setMontando] = useState<ProdutoDoCardapio | null>(null);
 
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -73,27 +108,34 @@ export function PedidoPeloCardapio({
 
   const idFormulario = useId();
 
-  const escolhidos = produtos
-    .filter((produto) => (carrinho[produto.id] ?? 0) > 0)
-    .map((produto) => ({ produto, quantidade: carrinho[produto.id]! }));
-  const quantidadeTotal = escolhidos.reduce((s, e) => s + e.quantidade, 0);
-  const total = escolhidos.reduce(
-    (s, e) =>
+  const quantidadeTotal = carrinho.reduce((s, l) => s + l.quantidade, 0);
+  const total = carrinho.reduce(
+    (s, l) =>
       s +
       subtotalDoItem({
-        quantidade: e.quantidade,
-        precoUnitario: e.produto.preco,
+        quantidade: l.quantidade,
+        precoUnitario: l.produto.preco,
       }),
     0,
   );
 
-  function mudar(id: string, passo: number) {
-    const quantidade = Math.max(0, Math.min(500, (carrinho[id] ?? 0) + passo));
-    const proximo = { ...carrinho, [id]: quantidade };
-    if (quantidade === 0) delete proximo[id];
+  const quantidadeDe = (chave: string) =>
+    carrinho.find((l) => l.chave === chave)?.quantidade ?? 0;
+
+  function mudar(linha: LinhaSemQuantidade, passo: number) {
+    const atual = quantidadeDe(linha.chave);
+    const quantidade = Math.max(0, Math.min(500, atual + passo));
+    const proximo =
+      quantidade === 0
+        ? carrinho.filter((l) => l.chave !== linha.chave)
+        : atual === 0
+          ? [...carrinho, { ...linha, quantidade }]
+          : carrinho.map((l) =>
+              l.chave === linha.chave ? { ...l, quantidade } : l,
+            );
     setCarrinho(proximo);
     // Esvaziou dentro do painel: não há o que mandar.
-    if (Object.keys(proximo).length === 0) setAberto(false);
+    if (proximo.length === 0) setAberto(false);
   }
 
   function fechar() {
@@ -101,7 +143,7 @@ export function PedidoPeloCardapio({
     // Depois de enviar, fechar zera o carrinho. O nome e o WhatsApp ficam,
     // para um segundo pedido.
     if (enviado) {
-      setCarrinho({});
+      setCarrinho([]);
       setEnviado(null);
       setFalha(null);
     }
@@ -126,9 +168,17 @@ export function PedidoPeloCardapio({
           contaId,
           nome,
           telefone,
-          itens: escolhidos.map((e) => ({
-            fichaId: e.produto.id,
-            quantidade: e.quantidade,
+          itens: carrinho.map((l) => ({
+            fichaId: l.produto.id,
+            quantidade: l.quantidade,
+            ...(l.escolhas
+              ? {
+                  escolhas: l.escolhas.map(({ fichaId, quantidade }) => ({
+                    fichaId,
+                    quantidade,
+                  })),
+                }
+              : {}),
           })),
           dataEntregaISO: data,
           entrega:
@@ -152,9 +202,13 @@ export function PedidoPeloCardapio({
       setEnviado({
         codigo: corpo.codigo,
         total: corpo.total ?? total,
-        itens: escolhidos.map((e) => ({
-          nome: e.produto.nome,
-          quantidade: e.quantidade,
+        itens: carrinho.map((l) => ({
+          nome: l.produto.nome,
+          quantidade: l.quantidade,
+          escolhas: l.escolhas?.map((e) => ({
+            quantidade: e.quantidade,
+            nomeSnapshot: e.nome,
+          })),
         })),
         dataEntregaISO: data,
         entrega: tipo,
@@ -185,8 +239,18 @@ export function PedidoPeloCardapio({
                   key={produto.id}
                   contaId={contaId}
                   produto={produto}
-                  quantidade={carrinho[produto.id] ?? 0}
-                  aoMudar={(passo) => mudar(produto.id, passo)}
+                  quantidade={
+                    produto.escolhas
+                      ? carrinho
+                          .filter((l) => l.produto.id === produto.id)
+                          .reduce((s, l) => s + l.quantidade, 0)
+                      : quantidadeDe(produto.id)
+                  }
+                  aoMudar={(passo) =>
+                    produto.escolhas
+                      ? setMontando(produto)
+                      : mudar({ chave: produto.id, produto }, passo)
+                  }
                 />
               ))}
             </ul>
@@ -329,24 +393,26 @@ export function PedidoPeloCardapio({
             className="space-y-6"
           >
             <ul className="divide-y divide-line border-y border-line">
-              {escolhidos.map(({ produto, quantidade }) => (
-                <li key={produto.id} className="flex items-center gap-3 py-3">
+              {/* Trocar o sabor é tirar e montar de novo: um editor de
+                  escolha aqui seria um painel dentro de outro. */}
+              {carrinho.map((linha) => (
+                <li key={linha.chave} className="flex items-center gap-3 py-3">
                   <div className="min-w-0 flex-1">
                     <p className="wrap-break-word text-body font-medium text-ink">
-                      {produto.nome}
+                      {nomeDa(linha)}
                     </p>
                     <Dinheiro
                       centavos={subtotalDoItem({
-                        quantidade,
-                        precoUnitario: produto.preco,
+                        quantidade: linha.quantidade,
+                        precoUnitario: linha.produto.preco,
                       })}
                       tamanho="sm"
                     />
                   </div>
                   <Passo
-                    nome={produto.nome}
-                    quantidade={quantidade}
-                    aoMudar={(passo) => mudar(produto.id, passo)}
+                    nome={linha.produto.nome}
+                    quantidade={linha.quantidade}
+                    aoMudar={(passo) => mudar(linha, passo)}
                   />
                 </li>
               ))}
@@ -465,7 +531,137 @@ export function PedidoPeloCardapio({
           </form>
         )}
       </Painel>
+
+      <MonteOCombo
+        produto={montando}
+        aoFechar={() => setMontando(null)}
+        aoPor={(escolhas) => {
+          const produto = montando!;
+          mudar({ chave: chaveDa(produto.id, escolhas), produto, escolhas }, 1);
+          setMontando(null);
+        }}
+      />
     </>
+  );
+}
+
+/**
+ * "Monte a sua Dupla" (spec 031, 4.C.3): uma seção por escolha, o "+" travado
+ * quando a categoria enche (a regra de `escolhasCompletas`), o que falta em
+ * texto e a economia da combinação escolhida, quando a página sabe a conta.
+ */
+function MonteOCombo({
+  produto,
+  aoFechar,
+  aoPor,
+}: {
+  produto: ProdutoDoCardapio | null;
+  aoFechar: () => void;
+  aoPor: (escolhas: NonNullable<Linha["escolhas"]>) => void;
+}) {
+  const [sabores, setSabores] = useState<Record<string, number>>({});
+  // Um combo novo começa do zero; o mesmo reaberto também.
+  const [de, setDe] = useState<ProdutoDoCardapio | null>(null);
+  if (produto !== de) {
+    setDe(produto);
+    setSabores({});
+  }
+
+  const escolhas = produto?.escolhas ?? [];
+  const faltam = escolhas.map(
+    (escolha) =>
+      escolha.quantidade -
+      escolha.opcoes.reduce((s, o) => s + (sabores[o.id] ?? 0), 0),
+  );
+  const completo = faltam.every((f) => f === 0);
+
+  const montadas = escolhas.flatMap((escolha) =>
+    escolha.opcoes
+      .filter((o) => (sabores[o.id] ?? 0) > 0)
+      .map((o) => ({
+        fichaId: o.id,
+        nome: o.nome,
+        quantidade: sabores[o.id]!,
+      })),
+  );
+  const economia =
+    produto && completo ? economiaDoCombo(produto, montadas) : null;
+
+  return (
+    <Painel
+      aberto={produto !== null}
+      aoFechar={aoFechar}
+      titulo={produto ? `Monte a sua ${produto.nome}` : ""}
+      rodape={
+        <div className="pb-4">
+          {economia !== null && economia > 0 && produto && (
+            <p className="num mb-3 text-label text-ink-muted">
+              Separados sairiam {formatarMoeda(produto.preco + economia)} · você
+              economiza {formatarMoeda(economia)}
+            </p>
+          )}
+          <Botao
+            variante="primaria"
+            tamanho="lg"
+            larguraTotal
+            disabled={!completo}
+            onClick={() => aoPor(montadas)}
+          >
+            Pôr no pedido
+          </Botao>
+        </div>
+      }
+    >
+      <div className="space-y-8">
+        {escolhas.map((escolha, i) => (
+          <fieldset key={escolha.categoria}>
+            <legend className="text-label font-semibold uppercase tracking-[0.08em] text-ink-muted">
+              Escolha {escolha.quantidade} · {escolha.categoria}
+            </legend>
+            <p
+              aria-live="polite"
+              className="mt-1 flex items-center gap-1.5 text-label text-ink-muted"
+            >
+              {faltam[i]! > 0 ? (
+                `Falta escolher ${faltam[i]}`
+              ) : (
+                <>
+                  <Check
+                    aria-hidden
+                    className="size-4 text-positive"
+                    strokeWidth={2}
+                  />
+                  Escolhido
+                </>
+              )}
+            </p>
+            <ul className="mt-2 divide-y divide-line border-y border-line">
+              {escolha.opcoes.map((opcao) => (
+                <li key={opcao.id} className="flex items-center gap-3 py-3">
+                  <p className="min-w-0 flex-1 wrap-break-word text-body font-medium text-ink">
+                    {opcao.nome}
+                  </p>
+                  <Passo
+                    nome={opcao.nome}
+                    quantidade={sabores[opcao.id] ?? 0}
+                    podeMais={faltam[i]! > 0}
+                    aoMudar={(passo) =>
+                      setSabores({
+                        ...sabores,
+                        [opcao.id]: Math.max(
+                          0,
+                          (sabores[opcao.id] ?? 0) + passo,
+                        ),
+                      })
+                    }
+                  />
+                </li>
+              ))}
+            </ul>
+          </fieldset>
+        ))}
+      </div>
+    </Painel>
   );
 }
 
@@ -522,6 +718,21 @@ function Produto({
             {produto.descricao}
           </p>
         )}
+        {/* A economia é contra o preço que a própria página cobra (`#d163`):
+            texto, sem selo colorido. */}
+        {produto.avulso !== undefined && (
+          <p className="num mt-1 text-label text-ink-muted">
+            Separados sairiam {formatarMoeda(produto.avulso)} · você economiza{" "}
+            {formatarMoeda(produto.avulso - produto.preco)}
+          </p>
+        )}
+        {produto.escolhas && (
+          <p className="num mt-1 text-label text-ink-muted">
+            Você escolhe os sabores
+            {produto.economiaMinima !== undefined &&
+              ` · economize pelo menos ${formatarMoeda(produto.economiaMinima)}`}
+          </p>
+        )}
         <div className="mt-auto flex items-center justify-between gap-3 pt-2">
           <p className="flex items-baseline gap-1.5">
             <Dinheiro centavos={produto.preco} />
@@ -529,17 +740,27 @@ function Produto({
               · {produto.unidade}
             </span>
           </p>
-          {quantidade === 0 ? (
-            <Botao
-              tamanho="sm"
-              onClick={() => aoMudar(1)}
-              aria-label={`Adicionar ${produto.nome}`}
-              iconeInicial={
-                <Plus aria-hidden className="size-4" strokeWidth={1.75} />
-              }
-            >
-              Adicionar
-            </Botao>
+          {/* O combo à escolha sempre abre "Monte a sua": cada unidade pode ter
+              outros sabores, e a quantidade dele mora no pedido. */}
+          {quantidade === 0 || produto.escolhas ? (
+            <div className="flex items-center gap-2">
+              {quantidade > 0 && (
+                <span className="num text-label text-ink-muted">
+                  {quantidade} no pedido
+                </span>
+              )}
+              <Botao
+                tamanho="sm"
+                onClick={() => aoMudar(1)}
+                aria-haspopup={produto.escolhas ? "dialog" : undefined}
+                aria-label={`Adicionar ${produto.nome}`}
+                iconeInicial={
+                  <Plus aria-hidden className="size-4" strokeWidth={1.75} />
+                }
+              >
+                Adicionar
+              </Botao>
+            </div>
           ) : (
             <Passo
               nome={produto.nome}
@@ -557,10 +778,12 @@ function Produto({
 function Passo({
   nome,
   quantidade,
+  podeMais = quantidade < 500,
   aoMudar,
 }: {
   nome: string;
   quantidade: number;
+  podeMais?: boolean;
   aoMudar: (passo: number) => void;
 }) {
   const botao =
@@ -570,6 +793,7 @@ function Passo({
       <button
         type="button"
         onClick={() => aoMudar(-1)}
+        disabled={quantidade === 0}
         aria-label={`Tirar um ${nome}`}
         className={botao}
       >
@@ -584,7 +808,7 @@ function Passo({
       <button
         type="button"
         onClick={() => aoMudar(1)}
-        disabled={quantidade >= 500}
+        disabled={!podeMais}
         aria-label={`Mais um ${nome}`}
         className={botao}
       >

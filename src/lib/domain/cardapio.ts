@@ -5,11 +5,14 @@ import {
   type ConfiguracaoGeral,
   type Conta,
   type DataISO,
+  type EscolhaDoKit,
+  type EscolhaFeita,
   type FichaTecnica,
   type ItemPedido,
   type Pedido,
 } from "@/lib/types";
 import { situacaoDaConta } from "./assinatura";
+import { opcoesDaEscolha, temEscolhas } from "./custoFicha";
 import {
   competenciaDeISO,
   dataDeISO,
@@ -18,7 +21,14 @@ import {
   rotuloDiaPorExtenso,
 } from "./datas";
 import { formatarMoeda } from "./money";
-import { codigoDoPedido, derivarPedido, quantidadeEmTexto } from "./pedido";
+import {
+  codigoDoPedido,
+  custoDoComboMontado,
+  derivarPedido,
+  escolhasCompletas,
+  nomeComEscolhas,
+  quantidadeEmTexto,
+} from "./pedido";
 import { telefoneParaWhatsApp } from "./whatsapp";
 
 /**
@@ -43,6 +53,23 @@ export interface ProdutoDoCardapio {
   unidade: string;
   /** `atualizadoEm` em ms, para o `?v=` da foto; ausente = sem foto. */
   fotoVersao?: number;
+  /** Kit fixo: a soma dos de dentro pelo preço de hoje, quando passa do preço do kit (`#d163`). */
+  avulso?: Centavos;
+  /** Combo à escolha: o que a cliente monta. */
+  escolhas?: {
+    categoria: string;
+    quantidade: number;
+    opcoes: OpcaoDoCombo[];
+  }[];
+  /** Combo à escolha: a economia da combinação mais barata, quando é positiva. */
+  economiaMinima?: Centavos;
+}
+
+export interface OpcaoDoCombo {
+  id: string;
+  nome: string;
+  /** Só quando a opção está na página; sem ele, a combinação não mostra economia. */
+  preco?: Centavos;
 }
 
 export interface Cardapio {
@@ -77,15 +104,23 @@ export function tipoDaFoto(fotoUrl?: string): string | null {
   return achado ? achado[1]! : null;
 }
 
-/** Arquivada, inativa, sem preço, por peso ou combo à escolha: fora. */
+/** Arquivada, inativa, sem preço ou por peso: fora. O combo à escolha entra desde a sessão C. */
 export function entraNoCardapio(ficha: FichaTecnica): boolean {
   return (
     !ficha.arquivado &&
     ficha.ativo &&
     ficha.precificacao.precoVenda > 0 &&
-    UNIDADE[ficha.unidadeRendimento] !== undefined &&
-    !(ficha.tipo === "KIT" && (ficha.escolhas?.length ?? 0) > 0)
+    UNIDADE[ficha.unidadeRendimento] !== undefined
   );
+}
+
+/** As receitas que servem a uma escolha do combo na página: as da 014, e só as ativas. */
+function opcoesVivas<F extends FichaTecnica>(
+  escolha: Pick<EscolhaDoKit, "categoria">,
+  opcoes: F[],
+  kitId: string,
+): F[] {
+  return opcoesDaEscolha(escolha, opcoes, kitId).filter((f) => f.ativo);
 }
 
 /**
@@ -132,6 +167,92 @@ function produtoDoCardapio(ficha: FichaTecnica): ProdutoDoCardapio {
 }
 
 /**
+ * O produto, mais a conta do combo (`#d163`). Kit fixo: `avulso` só quando
+ * todo o de dentro está na página e junto sai mais caro. Combo à escolha: as
+ * opções vivas de cada escolha, e `null` (some da página) quando uma escolha
+ * não tem nenhuma.
+ */
+function comboDoCardapio(
+  ficha: FichaTecnica,
+  precoNaPagina: Map<string, Centavos>,
+  opcoes: FichaTecnica[],
+): ProdutoDoCardapio | null {
+  const produto = produtoDoCardapio(ficha);
+  if (ficha.tipo !== "KIT") return produto;
+
+  // A parte fixa, pelo preço da página; `null` quando algo de dentro não está nela.
+  let fixo: Centavos | null = 0;
+  for (const componente of ficha.componentes) {
+    const preco = precoNaPagina.get(componente.fichaId);
+    if (preco === undefined || fixo === null) fixo = null;
+    else fixo += Math.round(preco * componente.quantidade);
+  }
+
+  if (!temEscolhas(ficha)) {
+    return fixo !== null && ficha.componentes.length > 0 && fixo > produto.preco
+      ? { ...produto, avulso: fixo }
+      : produto;
+  }
+
+  // ponytail: combo à escolha com parte fixa não mostra economia (as opções
+  // saem sem preço), porque a página não carrega o preço da parte fixa. Um
+  // campo com essa soma quando existir um combo assim no cardápio.
+  const comPreco = ficha.componentes.length === 0;
+  const escolhas = (ficha.escolhas ?? []).map((escolha) => ({
+    categoria: escolha.categoria,
+    quantidade: escolha.quantidade,
+    opcoes: opcoesVivas(escolha, opcoes, ficha.id)
+      .map((opcao): OpcaoDoCombo => {
+        const preco = comPreco ? precoNaPagina.get(opcao.id) : undefined;
+        return {
+          id: opcao.id,
+          nome: opcao.nome,
+          ...(preco !== undefined ? { preco } : {}),
+        };
+      })
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+  }));
+  if (escolhas.some((escolha) => escolha.opcoes.length === 0)) return null;
+
+  // A combinação mais barata entre as opções com preço; sem nenhuma numa
+  // escolha, nenhuma combinação mostra economia, e a linha também não.
+  let maisBarata: Centavos | null = 0;
+  for (const escolha of escolhas) {
+    const precos = escolha.opcoes.flatMap((o) =>
+      o.preco === undefined ? [] : [o.preco],
+    );
+    if (precos.length === 0 || maisBarata === null) maisBarata = null;
+    else maisBarata += Math.min(...precos) * escolha.quantidade;
+  }
+  const economiaMinima = maisBarata === null ? 0 : maisBarata - produto.preco;
+
+  return {
+    ...produto,
+    escolhas,
+    ...(economiaMinima > 0 ? { economiaMinima } : {}),
+  };
+}
+
+/**
+ * A economia de uma combinação montada, ou `null` quando alguma opção não tem
+ * preço na página. Da tela de montar e do teste: o servidor não a usa, porque
+ * a economia não é gravada.
+ */
+export function economiaDoCombo(
+  produto: ProdutoDoCardapio,
+  escolhas: { fichaId: string; quantidade: number }[],
+): Centavos | null {
+  const opcoes = (produto.escolhas ?? []).flatMap((e) => e.opcoes);
+  let avulso = 0;
+  for (const escolha of escolhas) {
+    const preco = opcoes.find((o) => o.id === escolha.fichaId)?.preco;
+    if (preco === undefined) return null;
+    avulso += preco * escolha.quantidade;
+  }
+  return avulso - produto.preco;
+}
+
+/**
  * Tudo o que a página desenha, ou `null` para "este cardápio não está aberto":
  * sem configuração, `aberto` falso, conta encerrada, conta vencida
  * (`situacaoDaConta`), ou nenhum produto que entre. Os cinco casos dão a
@@ -142,6 +263,8 @@ export function montarCardapio(entrada: {
   configuracao: ConfiguracaoGeral | null;
   /** As fichas de `cardapio.fichaIds` que existem; a função filtra o resto. */
   fichas: FichaTecnica[];
+  /** As fichas das categorias de escolha dos combos da lista; a função filtra. */
+  opcoes: FichaTecnica[];
   agoraMs: number;
 }): Cardapio | null {
   const { conta, configuracao, fichas, agoraMs } = entrada;
@@ -161,9 +284,16 @@ export function montarCardapio(entrada: {
   if (situacao.tipo === "vencida") return null;
 
   const naLista = new Set(cardapio.fichaIds);
-  const produtos = fichas
-    .filter((ficha) => naLista.has(ficha.id) && entraNoCardapio(ficha))
-    .map(produtoDoCardapio);
+  const naPagina = fichas.filter(
+    (ficha) => naLista.has(ficha.id) && entraNoCardapio(ficha),
+  );
+  // O preço que a própria página cobra: é contra ele que o combo economiza (`#d163`).
+  const precoNaPagina = new Map(
+    naPagina.map((ficha) => [ficha.id, ficha.precificacao.precoVenda]),
+  );
+  const produtos = naPagina
+    .map((ficha) => comboDoCardapio(ficha, precoNaPagina, entrada.opcoes))
+    .filter((produto) => produto !== null);
   if (produtos.length === 0) return null;
 
   const secoes = porCategoria(produtos, configuracao.categoriasProduto).map(
@@ -215,6 +345,17 @@ export const esquemaPedidoDoCardapio = z.object({
       z.object({
         fichaId: z.string().min(1),
         quantidade: z.number().int().min(1).max(QUANTIDADE_MAXIMA),
+        /** O combo à escolha, por UMA unidade dele (como `EscolhaFeita`). */
+        escolhas: z
+          .array(
+            z.object({
+              fichaId: z.string().min(1),
+              quantidade: z.number().int().min(1).max(50),
+            }),
+          )
+          .min(1)
+          .max(12)
+          .optional(),
       }),
     )
     .min(1)
@@ -278,29 +419,50 @@ function diaValido(iso: DataISO): boolean {
   return dataISODe(dataDeISO(iso)) === iso;
 }
 
+type EscolhaPedida = { fichaId: string; quantidade: number };
+
+/** A mesma receita duas vezes numa escolha vira uma, na ordem em que apareceu. */
+function somarPorFicha(escolhas: EscolhaPedida[]): EscolhaPedida[] {
+  const soma = new Map<string, number>();
+  for (const e of escolhas) {
+    soma.set(e.fichaId, (soma.get(e.fichaId) ?? 0) + e.quantidade);
+  }
+  return [...soma].map(([fichaId, quantidade]) => ({ fichaId, quantidade }));
+}
+
 /**
  * O pedido que o handler grava, com o preço e o custo de AGORA, lidos da ficha
- * (`#d160`). A mesma ficha em duas linhas vira uma linha só. Falha `mudou`
- * quando um item não está mais na lista ou deixou de entrar no cardápio.
+ * (`#d160`). A mesma ficha com as mesmas escolhas em duas linhas vira uma
+ * linha só; duas Duplas com sabores diferentes são duas. Falha `mudou`
+ * quando um item ou um sabor não está mais na lista ou deixou de servir.
  */
 export function pedidoDoCardapio(entrada: {
   pedido: PedidoDoCardapio;
   fichas: FichaTecnica[];
+  /** As fichas das opções dos combos; a função confere se ainda servem. */
+  opcoes: FichaTecnica[];
   fichaIds: string[];
   hojeISO: DataISO;
 }):
   | { ok: true; corpo: CorpoDoPedidoDoCardapio }
   | { ok: false; falha: FalhaPedidoCardapio } {
-  const { pedido, fichas, fichaIds, hojeISO } = entrada;
+  const { pedido, fichas, opcoes, fichaIds, hojeISO } = entrada;
 
-  const quantidades = new Map<string, number>();
+  const linhas = new Map<
+    string,
+    { fichaId: string; quantidade: number; escolhas: EscolhaPedida[] }
+  >();
   for (const item of pedido.itens) {
-    quantidades.set(
+    const escolhas = somarPorFicha(item.escolhas ?? []);
+    const chave = JSON.stringify([
       item.fichaId,
-      (quantidades.get(item.fichaId) ?? 0) + item.quantidade,
-    );
+      [...escolhas].sort((a, b) => a.fichaId.localeCompare(b.fichaId)),
+    ]);
+    const linha = linhas.get(chave);
+    if (linha) linha.quantidade += item.quantidade;
+    else linhas.set(chave, { ...item, escolhas });
   }
-  if ([...quantidades.values()].some((q) => q > QUANTIDADE_MAXIMA)) {
+  if ([...linhas.values()].some((l) => l.quantidade > QUANTIDADE_MAXIMA)) {
     return { ok: false, falha: "fora-de-forma" };
   }
 
@@ -315,18 +477,54 @@ export function pedidoDoCardapio(entrada: {
 
   const naLista = new Set(fichaIds);
   const itens: ItemPedido[] = [];
-  for (const [fichaId, quantidade] of quantidades) {
+  for (const { fichaId, quantidade, escolhas } of linhas.values()) {
     const ficha = fichas.find((f) => f.id === fichaId);
     if (!ficha || !naLista.has(fichaId) || !entraNoCardapio(ficha)) {
       return { ok: false, falha: "mudou" };
     }
+    const combo = temEscolhas(ficha);
+    if (combo !== escolhas.length > 0) {
+      return { ok: false, falha: "fora-de-forma" };
+    }
+
+    const feitas: EscolhaFeita[] = [];
+    for (const escolha of escolhas) {
+      const opcao = opcoes.find((o) => o.id === escolha.fichaId);
+      const serve =
+        opcao &&
+        (ficha.escolhas ?? []).some(
+          (e) => opcoesVivas(e, [opcao], ficha.id).length > 0,
+        );
+      if (!serve) return { ok: false, falha: "mudou" };
+      feitas.push({
+        fichaTecnicaId: opcao.id,
+        nomeSnapshot: opcao.nome,
+        quantidade: escolha.quantidade,
+        custoUnitarioSnapshot: opcao.custoUnitario,
+      });
+    }
+    if (
+      combo &&
+      !escolhasCompletas(
+        ficha,
+        feitas,
+        (id) => opcoes.find((o) => o.id === id)?.categoria,
+      ).completas
+    ) {
+      return { ok: false, falha: "fora-de-forma" };
+    }
+
     itens.push({
       fichaTecnicaId: fichaId,
       nomeSnapshot: ficha.nome,
       quantidade,
       precoUnitario: ficha.precificacao.precoVenda,
-      custoUnitarioSnapshot: ficha.custoUnitario,
+      // O combo montado, como no editor de pedido (`#d100`).
+      custoUnitarioSnapshot: combo
+        ? custoDoComboMontado(ficha, feitas)
+        : ficha.custoUnitario,
       subtotal: 0,
+      ...(combo ? { escolhas: feitas } : {}),
     });
   }
 
@@ -347,7 +545,15 @@ export function pedidoDoCardapio(entrada: {
       clienteNome: pedido.nome,
       clienteTelefone: pedido.telefone,
       itens,
-      fichaIds: itens.map((item) => item.fichaTecnicaId),
+      // As escolhidas entram, como em `corpoDoPedido`: a Dupla com Red Velvet contém Red Velvet.
+      fichaIds: [
+        ...new Set(
+          itens.flatMap((item) => [
+            item.fichaTecnicaId,
+            ...(item.escolhas ?? []).map((e) => e.fichaTecnicaId),
+          ]),
+        ),
+      ],
       status: "ORCAMENTO",
       dataEntregaISO: dia,
       competencia: competenciaDeISO(dia),
@@ -383,13 +589,20 @@ export function mensagemDeAviso(entrada: {
   negocio: string;
   codigo: string;
   nome: string;
-  itens: { nome: string; quantidade: number }[];
+  itens: {
+    nome: string;
+    quantidade: number;
+    escolhas?: { quantidade: number; nomeSnapshot: string }[];
+  }[];
   total: Centavos;
   dataEntregaISO: DataISO;
   entrega: "RETIRADA" | "ENTREGA";
 }): string {
   const itens = entrada.itens
-    .map((item) => `${quantidadeEmTexto(item.quantidade)} ${item.nome}`)
+    .map(
+      (item) =>
+        `${quantidadeEmTexto(item.quantidade)} ${nomeComEscolhas({ nomeSnapshot: item.nome, escolhas: item.escolhas })}`,
+    )
     .join(", ");
   const total =
     entrada.entrega === "ENTREGA"

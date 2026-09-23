@@ -72,6 +72,9 @@ export async function POST(requisicao: Request) {
   const montado = pedidoDoCardapio({
     pedido,
     fichas: lido.fichas,
+    // As mesmas da página, e não um `getAll` só das citadas: a mesma leitura
+    // é a mesma `montarCardapio` acima (`#d163`).
+    opcoes: lido.opcoes,
     fichaIds: lido.configuracao?.cardapio?.fichaIds ?? [],
     hojeISO: hojeEmBrasilia(new Date()),
   });

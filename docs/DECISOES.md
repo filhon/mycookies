@@ -5106,3 +5106,47 @@ as linhas de produto passaram para o componente de cliente (`PedidoPeloCardapio`
 **Consequência.** A rota lê a configuração e a ficha a cada foto não cacheada; com a URL imutável,
 é uma vez por versão por borda. Se pesar, é a foto que migra para o Storage, e a URL da página
 continua a mesma.
+
+---
+
+## D163 · A economia do combo é contra o preço que a própria página cobra
+
+**Status:** vigente · decidida em 2026-09-23, na spec `031-cardapio-publico.md` (sessão C).
+
+**Contexto.** Kit sem escolhas já entrava no cardápio desde a A, mas como um produto qualquer:
+"Caixa com 6 · R$ 60,00", sem dizer que sai mais barato que seis avulsos. O combo à escolha
+ficava fora (`#d159`), porque pede a tela de escolha da 014 do lado da cliente.
+
+**Decisão.** Todo número de economia na página é uma conta que a cliente confere rolando a tela.
+**Kit fixo:** `avulso` = soma de `quantidade × preço` de cada ficha de dentro, só quando **toda**
+ficha de dentro está na página (na lista e `entraNoCardapio`) e `avulso > preco`; a página diz
+"Separados sairiam R$ 69,00 · você economiza R$ 9,00", em texto, sem selo. **Combo à escolha:**
+`entraNoCardapio` perde a exclusão; as opções de cada escolha são `opcoesDaEscolha` (`#d99`) mais
+`ativo`, ordenadas por nome; opção fora da lista entra no combo **sem `preco`** e fica fora da
+conta. `economiaMinima` é a combinação mais barata entre as opções com preço, só quando positiva:
+"economize pelo menos", e não "até", porque "pelo menos" é verdade para toda combinação.
+`economiaDoCombo` dá a conta exata na tela "Monte a sua…" e devolve `null` quando alguma opção
+escolhida não tem preço. Combo com uma escolha sem opção viva some da página. O que sai para fora
+a mais: o nome das opções. `pedidoDoCardapio` confere as escolhas (combo sem elas ou kit fixo com
+elas → `fora-de-forma`; opção que não serve mais → `mudou`; `escolhasCompletas` falso →
+`fora-de-forma`), grava `EscolhaFeita` com o custo de agora e `custoDoComboMontado` na linha
+(`#d100`), e junta linhas por ficha **e** escolhas. `Pedido.fichaIds` ganha as escolhidas, como
+em `corpoDoPedido`.
+
+**Fora da spec, e por quê.**
+
+- **O handler lê as opções como a página**, por categoria, e não um `getAll` só das citadas. É a
+  mesma `lerContaDoCardapio`, e por isso a mesma `montarCardapio` decide `fechado` nos dois
+  lugares: com só as citadas, um combo cujas opções o pedido não cita sumiria da montagem do
+  handler e mudaria a resposta dele. Custa uma consulta por categoria de combo por pedido, que é
+  raro.
+- **Combo à escolha com parte fixa** (`componentes` e `escolhas` no mesmo kit) não mostra economia:
+  as opções saem sem preço. A página não carrega o preço da parte fixa, e mostrar a economia sem
+  ela seria número inventado. `ponytail:` em `comboDoCardapio`; um campo com essa soma quando um
+  combo assim entrar num cardápio.
+- **O "Adicionar" do combo continua "Adicionar"** mesmo com unidades no pedido, com "2 no pedido"
+  ao lado: cada unidade pode ter outros sabores, e o passo de quantidade dela mora no carrinho.
+
+**Consequência.** A página lê, além das fichas da lista, uma consulta de igualdade por categoria
+de escolha, sem índice, dentro dos 60 s do `revalidate`. Um sabor novo entra no combo no dia em
+que nasce, sem ela remarcar; se não estiver na lista, entra sem preço e sem conta.

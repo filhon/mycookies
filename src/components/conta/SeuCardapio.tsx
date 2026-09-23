@@ -357,8 +357,7 @@ export function SeuCardapio({
                 </p>
               )}
               <p className="mt-3 text-label text-ink-muted">
-                Combos à escolha e produtos vendidos por peso ainda não entram
-                no cardápio.
+                Produtos vendidos por peso ainda não entram no cardápio.
               </p>
             </fieldset>
           </div>

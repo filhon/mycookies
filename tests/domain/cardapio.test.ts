@@ -5,9 +5,11 @@ import {
   mensagemDeAviso,
   mensagemDeContato,
   montarCardapio,
+  economiaDoCombo,
   pedidoDoCardapio,
   tipoDaFoto,
   type PedidoDoCardapio,
+  type ProdutoDoCardapio,
 } from "@/lib/domain/cardapio";
 import { hojeEmBrasilia, meiaNoiteEmBrasilia } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
@@ -121,11 +123,71 @@ function configuracao(
   } as unknown as ConfiguracaoGeral;
 }
 
+// Sessão C: a "Caixa com 6" (fixa, 3 + 3) e a "Dupla" (2 de Cookie, à escolha),
+// com o "Cookie teste" inativo na categoria.
+const CAIXA = ficha({
+  id: "caixa",
+  nome: "Caixa com 6",
+  categoria: "Combo",
+  tipo: "KIT",
+  rendimento: 1,
+  componentes: [
+    {
+      fichaId: "tradicional",
+      nomeSnapshot: "Cookie Tradicional",
+      quantidade: 3,
+      custoUnitarioSnapshot: 341,
+      custoLinha: 1023,
+    },
+    {
+      fichaId: "redvelvet",
+      nomeSnapshot: "Cookie Red Velvet",
+      quantidade: 3,
+      custoUnitarioSnapshot: 420,
+      custoLinha: 1260,
+    },
+  ],
+  precificacao: { ...TRADICIONAL.precificacao, precoVenda: 6000 },
+});
+const DUPLA = ficha({
+  id: "dupla",
+  nome: "Dupla",
+  categoria: "Combo",
+  tipo: "KIT",
+  rendimento: 1,
+  escolhas: [{ quantidade: 2, categoria: "Cookie" }],
+  custoEscolhas: 840,
+  custoUnitario: 940,
+  precificacao: { ...TRADICIONAL.precificacao, precoVenda: 1900 },
+});
+const TESTE = ficha({ id: "teste", nome: "Cookie teste", ativo: false });
+const LISTA_C = ["tradicional", "redvelvet", "recheio", "caixa", "dupla"];
+const OPCOES = [TRADICIONAL, RED_VELVET, TESTE];
+
+function montarComCombos(
+  fichas: FichaTecnica[] = [TRADICIONAL, RED_VELVET, CAIXA, DUPLA],
+  fichaIds: string[] = LISTA_C,
+) {
+  return montar({
+    configuracao: configuracao({ cardapio: { aberto: true, fichaIds } }),
+    fichas,
+    opcoes: OPCOES,
+  });
+}
+
+function produtoDe(
+  cardapio: ReturnType<typeof montar>,
+  id: string,
+): ProdutoDoCardapio | undefined {
+  return cardapio?.secoes.flatMap((s) => s.produtos).find((p) => p.id === id);
+}
+
 function montar(
   parcial: {
     conta?: Conta;
     configuracao?: ConfiguracaoGeral | null;
     fichas?: FichaTecnica[];
+    opcoes?: FichaTecnica[];
   } = {},
 ) {
   return montarCardapio({
@@ -135,6 +197,7 @@ function montar(
         ? configuracao()
         : parcial.configuracao,
     fichas: parcial.fichas ?? [TRADICIONAL, RED_VELVET, RECHEIO],
+    opcoes: parcial.opcoes ?? [],
     agoraMs: AGORA,
   });
 }
@@ -154,7 +217,7 @@ describe("entraNoCardapio", () => {
       false,
     );
   });
-  it("fica fora o combo à escolha", () => {
+  it("entra o combo à escolha (sessão C)", () => {
     expect(
       entraNoCardapio(
         ficha({
@@ -163,7 +226,7 @@ describe("entraNoCardapio", () => {
           escolhas: [{ quantidade: 2, categoria: "Cookie" }],
         }),
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
   it("entra a simples em unidade", () => {
     expect(entraNoCardapio(TRADICIONAL)).toBe(true);
@@ -328,16 +391,35 @@ describe("montarCardapio", () => {
       "preco",
       "unidade",
       "fotoVersao",
+      "avulso",
+      "escolhas",
+      "economiaMinima",
     ];
-    const cardapio = montar();
+    const cardapio = montarComCombos();
     for (const secao of cardapio!.secoes) {
       expect(Object.keys(secao).sort()).toEqual(["categoria", "produtos"]);
       for (const produto of secao.produtos) {
         for (const chave of Object.keys(produto)) {
           expect(permitidas).toContain(chave);
         }
+        for (const escolha of produto.escolhas ?? []) {
+          expect(Object.keys(escolha).sort()).toEqual([
+            "categoria",
+            "opcoes",
+            "quantidade",
+          ]);
+          for (const opcao of escolha.opcoes) {
+            for (const chave of Object.keys(opcao)) {
+              expect(["id", "nome", "preco"]).toContain(chave);
+            }
+          }
+        }
       }
     }
+    // A caixa e a dupla estão lá: o teste não passa por ausência.
+    const produtos = cardapio!.secoes.flatMap((s) => s.produtos);
+    expect(produtos.some((p) => p.avulso)).toBe(true);
+    expect(produtos.some((p) => p.escolhas && p.economiaMinima)).toBe(true);
     expect(Object.keys(cardapio!).sort()).toEqual(["negocio", "secoes"]);
     for (const chave of Object.keys(cardapio!.negocio)) {
       expect([
@@ -403,6 +485,7 @@ function gravar(
   return pedidoDoCardapio({
     pedido,
     fichas,
+    opcoes: [],
     fichaIds: ["tradicional", "redvelvet", "recheio"],
     hojeISO: HOJE,
   });
@@ -482,6 +565,7 @@ describe("pedidoDoCardapio", () => {
     const r = pedidoDoCardapio({
       pedido: pedidoDaAna(),
       fichas: [TRADICIONAL, RED_VELVET],
+      opcoes: [],
       fichaIds: ["tradicional"],
       hojeISO: HOJE,
     });
@@ -620,6 +704,236 @@ describe("mensagemDeAviso", () => {
       }),
     ).toBe(
       `Oi, MyCookie's! Acabei de fazer o pedido P-260923-K3F pelo cardápio: 6 Cookie Tradicional, 4 Cookie Red Velvet. Total ${formatarMoeda(11200)} sem a entrega, para receber no sábado, 26 de setembro. Meu nome é Ana.`,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sessão C: os combos (`#d163`). A caixa fixa e a Dupla à escolha, sobre o
+// caso de aceite da B.
+// ---------------------------------------------------------------------------
+
+describe("montarCardapio com combos", () => {
+  it("kit fixo: avulso é 3 × 10 + 3 × 13", () => {
+    expect(produtoDe(montarComCombos(), "caixa")!.avulso).toBe(6900);
+  });
+
+  it("kit fixo sem o Red Velvet na lista: sem avulso", () => {
+    const caixa = produtoDe(
+      montarComCombos(undefined, ["tradicional", "caixa"]),
+      "caixa",
+    );
+    expect(caixa).toBeDefined();
+    expect(caixa).not.toHaveProperty("avulso");
+  });
+
+  it("kit fixo que custa mais que os de dentro: sem avulso", () => {
+    const cara = {
+      ...CAIXA,
+      precificacao: { ...CAIXA.precificacao, precoVenda: 7000 },
+    };
+    expect(
+      produtoDe(montarComCombos([TRADICIONAL, RED_VELVET, cara]), "caixa"),
+    ).not.toHaveProperty("avulso");
+  });
+
+  it("dupla: as opções vivas, sem o inativo, e economia mínima de R$ 1,00", () => {
+    const dupla = produtoDe(montarComCombos(), "dupla")!;
+    expect(dupla.escolhas).toEqual([
+      {
+        categoria: "Cookie",
+        quantidade: 2,
+        opcoes: [
+          { id: "redvelvet", nome: "Cookie Red Velvet", preco: 1300 },
+          { id: "tradicional", nome: "Cookie Tradicional", preco: 1000 },
+        ],
+      },
+    ]);
+    expect(dupla.economiaMinima).toBe(100);
+    expect(dupla).not.toHaveProperty("avulso");
+  });
+
+  it("economiaDoCombo: 1 + 1 é R$ 4,00; 2 Red Velvet é R$ 7,00", () => {
+    const dupla = produtoDe(montarComCombos(), "dupla")!;
+    expect(
+      economiaDoCombo(dupla, [
+        { fichaId: "tradicional", quantidade: 1 },
+        { fichaId: "redvelvet", quantidade: 1 },
+      ]),
+    ).toBe(400);
+    expect(
+      economiaDoCombo(dupla, [{ fichaId: "redvelvet", quantidade: 2 }]),
+    ).toBe(700);
+  });
+
+  it("opção fora da lista entra no combo, sem preço e sem economia", () => {
+    const dupla = produtoDe(
+      montarComCombos(undefined, ["tradicional", "dupla"]),
+      "dupla",
+    )!;
+    expect(dupla.escolhas![0]!.opcoes.map((o) => o.id)).toEqual([
+      "redvelvet",
+      "tradicional",
+    ]);
+    expect(dupla.escolhas![0]!.opcoes[0]).not.toHaveProperty("preco");
+    expect(
+      economiaDoCombo(dupla, [
+        { fichaId: "tradicional", quantidade: 1 },
+        { fichaId: "redvelvet", quantidade: 1 },
+      ]),
+    ).toBeNull();
+    // A mais barata (2 Tradicional) ainda economiza.
+    expect(dupla.economiaMinima).toBe(100);
+  });
+
+  it("combo sem opção viva numa escolha some da página", () => {
+    const cardapio = montar({
+      configuracao: configuracao({
+        cardapio: { aberto: true, fichaIds: LISTA_C },
+      }),
+      fichas: [TRADICIONAL, DUPLA],
+      opcoes: [TESTE],
+    });
+    expect(produtoDe(cardapio, "dupla")).toBeUndefined();
+  });
+});
+
+function pedidoDeDuplas(
+  itens: PedidoDoCardapio["itens"],
+): ReturnType<typeof pedidoDoCardapio> {
+  return pedidoDoCardapio({
+    pedido: pedidoDaAna({ itens }),
+    fichas: [TRADICIONAL, RED_VELVET, CAIXA, DUPLA],
+    opcoes: OPCOES,
+    fichaIds: LISTA_C,
+    hojeISO: HOJE,
+  });
+}
+
+const UM_E_UM = [
+  { fichaId: "tradicional", quantidade: 1 },
+  { fichaId: "redvelvet", quantidade: 1 },
+];
+
+describe("pedidoDoCardapio com combos", () => {
+  it("2 Duplas de 1 + 1: uma linha, custo do combo montado", () => {
+    const r = pedidoDeDuplas([
+      { fichaId: "dupla", quantidade: 1, escolhas: UM_E_UM },
+      { fichaId: "dupla", quantidade: 1, escolhas: [...UM_E_UM].reverse() },
+    ]);
+    if (!r.ok) throw new Error(r.falha);
+    expect(r.corpo.itens).toEqual([
+      {
+        fichaTecnicaId: "dupla",
+        nomeSnapshot: "Dupla",
+        quantidade: 2,
+        precoUnitario: 1900,
+        // 1,00 de base + 3,41 + 4,20.
+        custoUnitarioSnapshot: 861,
+        subtotal: 3800,
+        escolhas: [
+          {
+            fichaTecnicaId: "tradicional",
+            nomeSnapshot: "Cookie Tradicional",
+            quantidade: 1,
+            custoUnitarioSnapshot: 341,
+          },
+          {
+            fichaTecnicaId: "redvelvet",
+            nomeSnapshot: "Cookie Red Velvet",
+            quantidade: 1,
+            custoUnitarioSnapshot: 420,
+          },
+        ],
+      },
+    ]);
+    expect(r.corpo.fichaIds).toEqual(["dupla", "tradicional", "redvelvet"]);
+  });
+
+  it("com o Cookie teste numa escolha é `mudou`", () => {
+    expect(
+      pedidoDeDuplas([
+        {
+          fichaId: "dupla",
+          quantidade: 1,
+          escolhas: [
+            { fichaId: "tradicional", quantidade: 1 },
+            { fichaId: "teste", quantidade: 1 },
+          ],
+        },
+      ]),
+    ).toEqual({ ok: false, falha: "mudou" });
+  });
+
+  it("com um sabor só é `fora-de-forma`", () => {
+    expect(
+      pedidoDeDuplas([
+        {
+          fichaId: "dupla",
+          quantidade: 1,
+          escolhas: [{ fichaId: "tradicional", quantidade: 1 }],
+        },
+      ]),
+    ).toEqual({ ok: false, falha: "fora-de-forma" });
+  });
+
+  it("combo sem escolhas, ou kit fixo com elas, é `fora-de-forma`", () => {
+    expect(pedidoDeDuplas([{ fichaId: "dupla", quantidade: 1 }])).toEqual({
+      ok: false,
+      falha: "fora-de-forma",
+    });
+    expect(
+      pedidoDeDuplas([{ fichaId: "caixa", quantidade: 1, escolhas: UM_E_UM }]),
+    ).toEqual({ ok: false, falha: "fora-de-forma" });
+  });
+
+  it("1 Dupla de 2 Tradicional e 1 de 1 + 1 são duas linhas", () => {
+    const r = pedidoDeDuplas([
+      {
+        fichaId: "dupla",
+        quantidade: 1,
+        escolhas: [{ fichaId: "tradicional", quantidade: 2 }],
+      },
+      { fichaId: "dupla", quantidade: 1, escolhas: UM_E_UM },
+    ]);
+    if (!r.ok) throw new Error(r.falha);
+    expect(r.corpo.itens.map((i) => i.custoUnitarioSnapshot)).toEqual([
+      782, 861,
+    ]);
+    expect(r.corpo.total).toBe(3800);
+  });
+
+  it("a caixa fixa grava como produto, sem escolhas", () => {
+    const r = pedidoDeDuplas([{ fichaId: "caixa", quantidade: 1 }]);
+    if (!r.ok) throw new Error(r.falha);
+    expect(r.corpo.itens[0]).not.toHaveProperty("escolhas");
+    expect(r.corpo.itens[0]!.precoUnitario).toBe(6000);
+  });
+});
+
+describe("mensagemDeAviso com combo", () => {
+  it("o nome com as escolhas", () => {
+    expect(
+      mensagemDeAviso({
+        negocio: "MyCookie's",
+        codigo: "P-260923-K3F",
+        nome: "Ana",
+        itens: [
+          {
+            nome: "Dupla",
+            quantidade: 2,
+            escolhas: [
+              { quantidade: 1, nomeSnapshot: "Cookie Tradicional" },
+              { quantidade: 1, nomeSnapshot: "Cookie Red Velvet" },
+            ],
+          },
+        ],
+        total: 3800,
+        dataEntregaISO: "2026-09-25",
+        entrega: "RETIRADA",
+      }),
+    ).toBe(
+      `Oi, MyCookie's! Acabei de fazer o pedido P-260923-K3F pelo cardápio: 2 Dupla (1 Cookie Tradicional + 1 Cookie Red Velvet). Total ${formatarMoeda(3800)}, para retirar na sexta-feira, 25 de setembro. Meu nome é Ana.`,
     );
   });
 });
