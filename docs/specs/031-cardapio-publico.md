@@ -1105,9 +1105,9 @@ logado no Rende e de rede. Aparelho em 360 px nos passos 3, 5 e 7.
 
 **E**
 
-- [ ] `cardapio.promocoes` pelo painel, com "Sobra pra você", o aviso abaixo do custo e as
+- [x] `cardapio.promocoes` pelo painel, com "Sobra pra você", o aviso abaixo do custo e as
       recusas de `problemaDaPromocao`.
-- [ ] `precoVigente` na página, no `avulso` e no pedido; a promoção acaba sozinha no dia seguinte
+- [x] `precoVigente` na página, no `avulso` e no pedido; a promoção acaba sozinha no dia seguinte
       ao `ateISO`; o percentual arredondado para baixo.
 
 **Todas**

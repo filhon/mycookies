@@ -12,7 +12,7 @@ e 034 por publicar juntas**; a **035 entregue** por cima delas, o celular por ge
 dela —, por publicar num deploy só, a regra antes do app; a **031 codificada inteira** em
 2026-09-23 (a A, a vitrine, e a B, o pedido, `specs/031-cardapio-publico.md`, antes do gatilho),
 por publicar depois do parágrafo de `/privacidade` e do roteiro; a **031-C, os combos**, e a
-**031-D, a quantidade limitada**, codificadas no mesmo dia, com a E por fazer; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 027, 028, 029,
+**031-D, a quantidade limitada**, e a **031-E, a promoção**, codificadas no mesmo dia; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 027, 028, 029,
 033, 034 e 035 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
@@ -275,7 +275,7 @@ os números digitados de ponta a ponta.
 | 28  | O teste acaba, e a assinatura               | codificada; deploy espera o roteiro | `specs/028-o-teste-acaba-e-a-assinatura.md` |
 | 29  | Meus dados são meus                         | codificada; deploy espera os termos | `specs/029-meus-dados-sao-meus.md`          |
 | 30  | A ajudante                                  | A e B codificadas; não publicada    | `specs/030-a-ajudante.md`                   |
-| 31  | Cardápio público com link de pedido         | A a D codificadas; não publicada    | `specs/031-cardapio-publico.md`             |
+| 31  | Cardápio público com link de pedido         | A a E codificadas; não publicada    | `specs/031-cardapio-publico.md`             |
 | 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`                |
 | 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`               |
 | 35  | O celular por gesto                         | pronto, sem o roteiro               | `specs/035-o-celular-por-gesto.md`          |
@@ -3227,6 +3227,40 @@ Portão: lint e typecheck limpos, os **669 testes** (662 + 7), `npm run build` c
 com o N da conta, o pedido que leva tudo virando "Esgotado", `acabou` na página velha; a contagem
 vencida sem número e com o aviso no painel). Nenhuma tela nova foi vista em navegador, nos dois
 temas.
+
+## A spec 031 · Cardápio público — sessão E, a promoção
+
+O preço de promoção riscando o de sempre, com o dia em que acaba; nada de preço "de" inflado
+(`#d165`). Fecha as três sessões acrescentadas em 2026-09-23.
+
+- Tipo: `cardapio.promocoes?: PromocaoDoCardapio[]` (`fichaId`, `preco`, `ateISO`), aditivo e
+  opcional, uma por ficha.
+- Domínio (`src/lib/domain/cardapio.ts`): `DIAS_DE_PROMOCAO` (30), `precoVigente`,
+  `problemaDaPromocao` e um que a spec não listava, `seloDaPromocao` (o texto "−15% até…" /
+  "termina hoje", percentual para baixo). `ProdutoDoCardapio` ganha `precoCheio` e
+  `promocaoAteISO`; `montarCardapio` tira o `hojeISO` de `agoraMs` por `hojeEmBrasilia`, e o
+  `avulso`, a opção do combo e a `economiaMinima` usam o preço de hoje; `pedidoDoCardapio` recebe
+  `promocoes` e grava `precoUnitario` pelo `precoVigente`. O handler passa
+  `cardapio.promocoes`. 7 testes a mais, com o caso de aceite da E número por número, o último dia
+  pelo relógio de Brasília e o teste das chaves com as duas novas.
+- `PedidoPeloCardapio.tsx`: o preço cheio em `<s>` (com "antes" só para leitor de tela), o da
+  promoção, e um `Selo` com `Tag` e o texto de `seloDaPromocao`.
+- `SeuCardapio.tsx`: a seção "Promoções" abaixo da quantidade limitada — a linha fixa sobre o
+  riscado, as que valem com "Encerrar", e "Nova promoção" com produto, "Preço na promoção", "Até
+  quando" (hoje a hoje + 30), "Sobra pra você R$ X por unidade" ao vivo, o triângulo "Nesse preço
+  você paga para vender." abaixo do custo, e o erro de `problemaDaPromocao` preso ao campo.
+  Todo toque regrava só as promoções que valem e cujo produto está marcado.
+- Passagem do `/impeccable` só por leitura do código contra o `DESIGN.md` (o detector não achou
+  nada nas duas telas); o conserto foi o erro sair da linha solta para o campo.
+
+Portão: lint e typecheck limpos, os **676 testes** (669 + 7), `npm run build` com
+`/c/[contaId]` ● (ISR), a foto e `/api/cardapio/pedido` ƒ. `firestore.rules` e
+`firestore.indexes.json` intocados.
+
+**O que não rodou** — os passos 18 a 20 do roteiro (criar uma promoção até amanhã e ver o
+riscado, o percentual e o pedido com o preço dela; o dia seguinte voltando sozinho ao preço de
+sempre; promoção, combo e limitado juntos, cada número conferido). Nenhuma tela nova foi vista em
+navegador, nos dois temas.
 
 ## Próxima ação
 

@@ -16,24 +16,35 @@ import {
   ExternalLink,
   Share2,
   Store,
+  Tag,
   TriangleAlert,
 } from "lucide-react";
 import { Botao } from "@/components/ui/Botao";
+import { Campo, Seletor } from "@/components/ui/Campo";
+import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { Painel } from "@/components/ui/Painel";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
+  DIAS_DE_PROMOCAO,
   entraNoCardapio,
   LIMITE_DO_CARDAPIO,
   porCategoria,
+  precoVigente,
+  problemaDaPromocao,
 } from "@/lib/domain/cardapio";
-import { dataISODe } from "@/lib/domain/datas";
+import { dataISODe, diaVizinho, rotuloDiaPorExtenso } from "@/lib/domain/datas";
+import { formatarMoeda } from "@/lib/domain/money";
 import { contagemDoPronto, temPronto } from "@/lib/domain/producao";
 import { colFichas } from "@/lib/firebase/colecoes";
 import { salvarCardapio } from "@/lib/firebase/mutations/configuracao";
 import { useColecao } from "@/lib/hooks/useColecao";
-import type { ConfiguracaoGeral, FichaTecnica } from "@/lib/types";
+import type {
+  ConfiguracaoGeral,
+  FichaTecnica,
+  PromocaoDoCardapio,
+} from "@/lib/types";
 import { useAuth, useContaId } from "@/providers/AuthProvider";
 
 /** O endereço e o `share` não mudam enquanto a tela está aberta. */
@@ -68,6 +79,7 @@ export function SeuCardapio({
   const contaId = useContaId();
   const { conta } = useAuth();
   const idInterruptor = useId();
+  const idPromocoes = useId();
 
   // A mesma consulta de `/compras` e do editor de produto: o índice existe.
   const consulta = useMemo(
@@ -113,6 +125,22 @@ export function SeuCardapio({
   );
   const noLimite = fichaIds.length >= LIMITE_DO_CARDAPIO;
 
+  // Promoções (sessão E, `#d165`): só as que valem hoje; a vencida, a de
+  // produto desmarcado e a que ficou maior que o preço saem no próximo toque.
+  const naLista = podem.filter((ficha) => marcadas.has(ficha.id));
+  const promocoes = (configuracao?.cardapio?.promocoes ?? []).flatMap(
+    (promocao) => {
+      const ficha = naLista.find((f) => f.id === promocao.fichaId);
+      return ficha && precoVigente(ficha, [promocao], hoje).cheio !== undefined
+        ? [{ promocao, ficha }]
+        : [];
+    },
+  );
+  const [nova, setNova] = useState<PromocaoDoCardapio | null>(null);
+  const [erroNova, setErroNova] =
+    useState<ReturnType<typeof problemaDaPromocao>>(null);
+  const fichaDaNova = naLista.find((f) => f.id === nova?.fichaId);
+
   const [painelAberto, setPainelAberto] = useState(false);
   // Só no navegador: o servidor não sabe o endereço nem se há `share`.
   const origem = useSyncExternalStore(
@@ -140,11 +168,43 @@ export function SeuCardapio({
     aberto?: boolean;
     fichaIds?: string[];
     limitados?: string[];
+    promocoes?: PromocaoDoCardapio[];
   }) {
+    const ids = mudanca.fichaIds ?? fichaIds;
     salvarCardapio(contaId, {
       aberto: mudanca.aberto ?? aberto,
-      fichaIds: mudanca.fichaIds ?? fichaIds,
+      fichaIds: ids,
       limitados: mudanca.limitados ?? limitados,
+      promocoes: (
+        mudanca.promocoes ?? promocoes.map(({ promocao }) => promocao)
+      ).filter((promocao) => ids.includes(promocao.fichaId)),
+    });
+  }
+
+  function porEmPromocao() {
+    if (!nova || !fichaDaNova) return;
+    const problema = problemaDaPromocao(nova, fichaDaNova, hoje);
+    if (problema) {
+      setErroNova(problema);
+      return;
+    }
+    // Uma por produto: a nova toma o lugar da que havia.
+    gravar({
+      promocoes: [
+        ...promocoes
+          .map(({ promocao }) => promocao)
+          .filter((p) => p.fichaId !== nova.fichaId),
+        nova,
+      ],
+    });
+    setNova(null);
+  }
+
+  function encerrar(fichaId: string) {
+    gravar({
+      promocoes: promocoes
+        .map(({ promocao }) => promocao)
+        .filter((p) => p.fichaId !== fichaId),
     });
   }
 
@@ -467,6 +527,157 @@ export function SeuCardapio({
                   </Link>
                 )}
               </fieldset>
+            )}
+
+            {naLista.length > 0 && (
+              <section aria-labelledby={idPromocoes}>
+                <h3
+                  id={idPromocoes}
+                  className="text-label font-medium text-ink"
+                >
+                  Promoções
+                </h3>
+                <p className="mt-0.5 text-label text-ink-muted">
+                  O preço riscado é o da ficha. Ele precisa ser o que você cobra
+                  fora da promoção.
+                </p>
+                {promocoes.length > 0 && (
+                  <ul className="mt-2 divide-y divide-line border-y border-line">
+                    {promocoes.map(({ promocao, ficha }) => (
+                      <li
+                        key={promocao.fichaId}
+                        className="flex min-h-11 items-center gap-3 py-2"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block wrap-break-word text-body text-ink">
+                            {ficha.nome}
+                          </span>
+                          <span className="num block text-label text-ink-muted">
+                            {formatarMoeda(promocao.preco)}{" "}
+                            {promocao.ateISO === hoje
+                              ? "até hoje"
+                              : `até ${rotuloDiaPorExtenso(promocao.ateISO)}`}
+                          </span>
+                        </span>
+                        <Botao
+                          tamanho="sm"
+                          variante="terciaria"
+                          onClick={() => encerrar(promocao.fichaId)}
+                          aria-label={`Encerrar a promoção de ${ficha.nome}`}
+                        >
+                          Encerrar
+                        </Botao>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {nova ? (
+                  <div className="mt-3 space-y-4 rounded-md border border-line p-4">
+                    <Seletor
+                      rotulo="Produto"
+                      value={nova.fichaId}
+                      onChange={(evento) => {
+                        setErroNova(null);
+                        setNova({ ...nova, fichaId: evento.target.value });
+                      }}
+                    >
+                      {naLista.map((ficha) => (
+                        <option key={ficha.id} value={ficha.id}>
+                          {ficha.nome} ·{" "}
+                          {formatarMoeda(ficha.precificacao.precoVenda)}
+                        </option>
+                      ))}
+                    </Seletor>
+                    {/* O erro mora no campo que o causa: `aria-invalid` e a
+                        frase ligada a ele, como no resto dos formulários. */}
+                    <CampoMoeda
+                      rotulo="Preço na promoção"
+                      valor={nova.preco}
+                      erro={
+                        erroNova === "sem-preco"
+                          ? "Diga o preço na promoção."
+                          : erroNova === "maior-que-o-preco" && fichaDaNova
+                            ? `A promoção precisa ser menor que o preço de sempre, ${formatarMoeda(fichaDaNova.precificacao.precoVenda)}.`
+                            : undefined
+                      }
+                      aoMudar={(preco) => {
+                        setErroNova(null);
+                        setNova({ ...nova, preco });
+                      }}
+                    />
+                    <Campo
+                      rotulo="Até quando"
+                      type="date"
+                      min={hoje}
+                      max={diaVizinho(hoje, DIAS_DE_PROMOCAO)}
+                      erro={
+                        erroNova === "data"
+                          ? `Escolha um dia entre hoje e ${rotuloDiaPorExtenso(diaVizinho(hoje, DIAS_DE_PROMOCAO))}.`
+                          : undefined
+                      }
+                      value={nova.ateISO}
+                      onChange={(evento) => {
+                        setErroNova(null);
+                        setNova({ ...nova, ateISO: evento.target.value });
+                      }}
+                    />
+                    {fichaDaNova && nova.preco > 0 && (
+                      <p aria-live="polite" className="num text-label">
+                        {nova.preco >= fichaDaNova.custoUnitario ? (
+                          <span className="text-ink">
+                            Sobra pra você{" "}
+                            {formatarMoeda(
+                              nova.preco - fichaDaNova.custoUnitario,
+                            )}{" "}
+                            por unidade
+                          </span>
+                        ) : (
+                          // Avisa e deixa gravar: pode ser a queima do fim do dia.
+                          <span className="flex items-start gap-1.5 text-ink">
+                            <TriangleAlert
+                              aria-hidden
+                              className="mt-0.5 size-3.5 shrink-0 text-attention"
+                              strokeWidth={1.75}
+                            />
+                            Nesse preço você paga para vender.
+                          </span>
+                        )}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      <Botao variante="primaria" onClick={porEmPromocao}>
+                        Pôr em promoção
+                      </Botao>
+                      <Botao
+                        variante="terciaria"
+                        onClick={() => {
+                          setNova(null);
+                          setErroNova(null);
+                        }}
+                      >
+                        Cancelar
+                      </Botao>
+                    </div>
+                  </div>
+                ) : (
+                  <Botao
+                    className="mt-3"
+                    iconeInicial={
+                      <Tag aria-hidden className="size-4" strokeWidth={1.75} />
+                    }
+                    onClick={() =>
+                      setNova({
+                        fichaId: naLista[0]!.id,
+                        preco: 0,
+                        ateISO: diaVizinho(hoje, 7),
+                      })
+                    }
+                  >
+                    Nova promoção
+                  </Botao>
+                )}
+              </section>
             )}
           </div>
         )}

@@ -1,5 +1,5 @@
 import type { Timestamp } from "firebase/firestore";
-import type { Centavos, Percentual, VersaoSchema } from "./common";
+import type { Centavos, DataISO, Percentual, VersaoSchema } from "./common";
 
 /** Método de precificação escolhido na ficha técnica. */
 export type MetodoPrecificacao = "MARKUP" | "MARGEM";
@@ -95,7 +95,23 @@ export interface ConfiguracaoGeral {
    *
    * `limitados` (sessão D, `#d164`): as de `fichaIds` que mostram quantas
    * restam no pote e param de receber pedido quando acabam. Ausente = nenhuma.
+   *
+   * `promocoes` (sessão E, `#d165`): uma por ficha, contra o preço de sempre.
    */
-  cardapio?: { aberto: boolean; fichaIds: string[]; limitados?: string[] };
+  cardapio?: {
+    aberto: boolean;
+    fichaIds: string[];
+    limitados?: string[];
+    promocoes?: PromocaoDoCardapio[];
+  };
   atualizadoEm: Timestamp;
+}
+
+/** Uma promoção do cardápio (spec 031, sessão E, `DECISOES.md#d165`). */
+export interface PromocaoDoCardapio {
+  fichaId: string;
+  /** O preço na promoção. Vale só se `0 < preco < precoVenda` na hora de ler. */
+  preco: Centavos;
+  /** O último dia, inclusive, pelo dia de Brasília. Até 30 dias depois de criada. */
+  ateISO: DataISO;
 }

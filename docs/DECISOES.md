@@ -5194,3 +5194,41 @@ e na opção de combo, e só nos limitados.
 clientes no mesmo segundo podem levar as últimas unidades duas vezes (o número é derivado de
 consultas, não um contador; o que escapa é um orçamento que ela recusa). Contador gravado quando
 isso acontecer com cliente de verdade.
+
+## D165 · A promoção desconta do preço de sempre, e tem dia para acabar
+
+**Status:** vigente · decidida em 2026-09-23, na spec `031-cardapio-publico.md` (sessão E).
+
+**Contexto.** O pedido de origem era subir o preço mostrado em 20% acima do praticado e anunciar
+a promoção contra esse número. **Não foi feito.** Preço "de" que nunca foi cobrado é publicidade
+enganosa (CDC, art. 37, §1º), quem responde é a confeiteira, e a cliente que compra toda semana
+sabe quanto custa o cookie.
+
+**Decisão.** `cardapio.promocoes?: PromocaoDoCardapio[]` (`fichaId`, `preco` em centavos,
+`ateISO`), aditivo e opcional, uma por ficha. O preço riscado é o `precoVenda` da ficha;
+`precoVigente` devolve o da promoção só enquanto `0 < preco < precoVenda` e `hoje <= ateISO`
+(dia de Brasília), e o de sempre no resto — a promoção acaba sozinha no dia seguinte e deixa de
+valer quando ela baixa a ficha até o preço da promoção. A página (`preco`, `precoCheio`,
+`promocaoAteISO`), o `avulso` e a opção do combo (`#d163`) e o `precoUnitario` do pedido passam
+pela mesma função. O percentual é arredondado para baixo (2/13 = 15,4% → −15%), e o selo diz
+"até sexta-feira, 25 de setembro" ou "termina hoje", sem contador. O painel recusa por
+`problemaDaPromocao` (sem preço, igual ou acima do de sempre, fora de hoje a hoje + 30), mostra
+"Sobra pra você" (preço − `custoUnitario`) e avisa abaixo do custo sem impedir. Nenhum campo
+novo em `Pedido`: o lucro estimado já mostra o que a promoção custou.
+
+**Fora da spec, e por quê.**
+
+- **`seloDaPromocao`**, no domínio: o texto do selo com o percentual e o prazo, testado; com
+  percentual que arredonda para 0 (um centavo de desconto), diz "Promoção" em vez de "−0%".
+- **A limpeza vai além da vencida.** Todo toque no painel regrava só as promoções que valem hoje
+  e cujo produto está marcado. Uma promoção escondida (a ficha baixou de preço) voltaria sozinha
+  se ela subisse o preço de novo, e isso seria uma promoção que ela não vê no painel.
+- **O dia do painel é o do aparelho** (`dataISODe`), como a contagem da D; a página e o handler
+  usam o de Brasília. Só diverge fora do fuso, e o pior caso é o `min` do campo um dia fora.
+- **O erro mora no campo que o causa** (`aria-invalid` no preço ou na data), e não numa linha
+  solta abaixo do formulário.
+
+**Consequência.** `ponytail:` o sistema não confere se o preço de sempre é praticado há tempo —
+a ficha não guarda histórico de preço. Subir a ficha na véspera é o mesmo truque, feito à mão; o
+painel diz em uma linha que o riscado precisa ser o que ela cobra fora da promoção. Um
+`precoVendaDesdeISO` na ficha, se um dia o Rende precisar provar isso.

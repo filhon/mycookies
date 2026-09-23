@@ -9,7 +9,10 @@ import {
   limitadasComContagem,
   passaDoQueResta,
   pedidoDoCardapio,
+  precoVigente,
+  problemaDaPromocao,
   restamNoPote,
+  seloDaPromocao,
   tipoDaFoto,
   unidadesPorFicha,
   type PedidoDoCardapio,
@@ -170,6 +173,8 @@ const DUPLA = ficha({
   precificacao: { ...TRADICIONAL.precificacao, precoVenda: 1900 },
 });
 const TESTE = ficha({ id: "teste", nome: "Cookie teste", ativo: false });
+// Sessão E: o Red Velvet a R$ 11,00 até sexta, 25/09.
+const PROMOCAO_RV = { fichaId: "redvelvet", preco: 1100, ateISO: "2026-09-25" };
 const LISTA_C = ["tradicional", "redvelvet", "recheio", "caixa", "dupla"];
 const OPCOES = [TRADICIONAL, RED_VELVET, TESTE];
 
@@ -404,6 +409,8 @@ describe("montarCardapio", () => {
       "escolhas",
       "economiaMinima",
       "restam",
+      "precoCheio",
+      "promocaoAteISO",
     ];
     const cardapio = montarCardapio({
       conta: CONTA,
@@ -412,6 +419,7 @@ describe("montarCardapio", () => {
           aberto: true,
           fichaIds: LISTA_C,
           limitados: ["tradicional"],
+          promocoes: [PROMOCAO_RV],
         },
       }),
       fichas: [TRADICIONAL, RED_VELVET, CAIXA, DUPLA],
@@ -444,6 +452,7 @@ describe("montarCardapio", () => {
     expect(produtos.some((p) => p.avulso)).toBe(true);
     expect(produtos.some((p) => p.escolhas && p.economiaMinima)).toBe(true);
     expect(produtos.some((p) => p.restam === 8)).toBe(true);
+    expect(produtos.some((p) => p.precoCheio && p.promocaoAteISO)).toBe(true);
     expect(Object.keys(cardapio!).sort()).toEqual(["negocio", "secoes"]);
     for (const chave of Object.keys(cardapio!.negocio)) {
       expect([
@@ -1126,5 +1135,131 @@ describe("quantidade limitada", () => {
     expect(opcoes.find((o) => o.id === "redvelvet")).not.toHaveProperty(
       "restam",
     );
+  });
+});
+
+// Sessão E: hoje é 23/09/2026, e o Red Velvet está a R$ 11,00 até 25/09.
+function montarComPromocao(agoraMs = AGORA) {
+  return montarCardapio({
+    conta: CONTA,
+    configuracao: configuracao({
+      cardapio: { aberto: true, fichaIds: LISTA_C, promocoes: [PROMOCAO_RV] },
+    }),
+    fichas: [TRADICIONAL, RED_VELVET, CAIXA, DUPLA],
+    opcoes: OPCOES,
+    agoraMs,
+  });
+}
+
+function gravarComPromocao(hojeISO: string, dataEntregaISO: string) {
+  return pedidoDoCardapio({
+    pedido: pedidoDaAna({
+      itens: [{ fichaId: "redvelvet", quantidade: 4 }],
+      dataEntregaISO,
+    }),
+    fichas: [TRADICIONAL, RED_VELVET],
+    opcoes: [],
+    fichaIds: ["tradicional", "redvelvet"],
+    promocoes: [PROMOCAO_RV],
+    hojeISO,
+  });
+}
+
+describe("a promoção", () => {
+  it("a página: R$ 13,00 riscado, R$ 11,00 e −15% até sexta", () => {
+    const rv = produtoDe(montarComPromocao(), "redvelvet")!;
+    expect(rv.preco).toBe(1100);
+    expect(rv.precoCheio).toBe(1300);
+    expect(rv.promocaoAteISO).toBe("2026-09-25");
+    // 2/13 = 15,4%, para baixo.
+    expect(seloDaPromocao(rv, HOJE)).toBe(
+      "−15% até sexta-feira, 25 de setembro",
+    );
+    expect(seloDaPromocao(rv, "2026-09-25")).toBe("−15% · termina hoje");
+    expect(produtoDe(montarComPromocao(), "tradicional")).not.toHaveProperty(
+      "precoCheio",
+    );
+  });
+
+  it("o pedido de 4 Red Velvet grava o preço da promoção", () => {
+    const r = gravarComPromocao(HOJE, "2026-09-25");
+    if (!r.ok) throw new Error(r.falha);
+    const [item] = r.corpo.itens;
+    expect(item!.precoUnitario).toBe(1100);
+    expect(item!.subtotal).toBe(4400);
+    expect(r.corpo.custoTotalEstimado).toBe(1680);
+    expect(r.corpo.lucroEstimado).toBe(2720);
+  });
+
+  it("a Caixa com 6, durante a promoção: avulso R$ 63,00", () => {
+    const caixa = produtoDe(montarComPromocao(), "caixa")!;
+    expect(caixa.avulso).toBe(6300);
+    expect(caixa.avulso! - caixa.preco).toBe(300);
+    // A opção da Dupla também sai pelo preço de hoje.
+    const opcoes = produtoDe(montarComPromocao(), "dupla")!.escolhas![0]!
+      .opcoes;
+    expect(opcoes.find((o) => o.id === "redvelvet")!.preco).toBe(1100);
+  });
+
+  it("em 26/09 acaba sozinha, na página e no pedido", () => {
+    const rv = produtoDe(
+      montarComPromocao(Date.parse("2026-09-26T15:00:00Z")),
+      "redvelvet",
+    )!;
+    expect(rv.preco).toBe(1300);
+    expect(rv).not.toHaveProperty("precoCheio");
+    expect(seloDaPromocao(rv, "2026-09-26")).toBeNull();
+    const r = gravarComPromocao("2026-09-26", "2026-09-28");
+    if (!r.ok) throw new Error(r.falha);
+    expect(r.corpo.itens[0]!.precoUnitario).toBe(1300);
+  });
+
+  it("o último dia é o de Brasília: 25/09 às 23h30 ainda vale", () => {
+    const rv = produtoDe(
+      montarComPromocao(Date.parse("2026-09-26T02:30:00Z")),
+      "redvelvet",
+    )!;
+    expect(rv.preco).toBe(1100);
+  });
+
+  it("problemaDaPromocao: igual ao preço, sem preço e depois de 30 dias", () => {
+    expect(problemaDaPromocao(PROMOCAO_RV, RED_VELVET, HOJE)).toBeNull();
+    expect(
+      problemaDaPromocao({ ...PROMOCAO_RV, preco: 1300 }, RED_VELVET, HOJE),
+    ).toBe("maior-que-o-preco");
+    expect(
+      problemaDaPromocao({ ...PROMOCAO_RV, preco: 0 }, RED_VELVET, HOJE),
+    ).toBe("sem-preco");
+    expect(
+      problemaDaPromocao(
+        { ...PROMOCAO_RV, ateISO: "2026-10-23" },
+        RED_VELVET,
+        HOJE,
+      ),
+    ).toBeNull();
+    expect(
+      problemaDaPromocao(
+        { ...PROMOCAO_RV, ateISO: "2026-10-24" },
+        RED_VELVET,
+        HOJE,
+      ),
+    ).toBe("data");
+    expect(
+      problemaDaPromocao(
+        { ...PROMOCAO_RV, ateISO: "2026-09-22" },
+        RED_VELVET,
+        HOJE,
+      ),
+    ).toBe("data");
+  });
+
+  it("a ficha baixada para R$ 11,00: sem promoção, sem riscado", () => {
+    const baixada = {
+      ...RED_VELVET,
+      precificacao: { ...RED_VELVET.precificacao, precoVenda: 1100 },
+    };
+    expect(precoVigente(baixada, [PROMOCAO_RV], HOJE)).toEqual({
+      preco: 1100,
+    });
   });
 });

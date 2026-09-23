@@ -1,11 +1,12 @@
 "use client";
 
 import { useId, useState, type FormEvent } from "react";
-import { Check, MessageCircle, Minus, Plus } from "lucide-react";
+import { Check, MessageCircle, Minus, Plus, Tag } from "lucide-react";
 import { AreaTexto, Campo } from "@/components/ui/Campo";
 import { Botao } from "@/components/ui/Botao";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Painel } from "@/components/ui/Painel";
+import { Selo } from "@/components/ui/Selo";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
   DIAS_A_FRENTE,
@@ -16,6 +17,7 @@ import {
   type Cardapio,
   type FalhaPedidoCardapio,
   type ProdutoDoCardapio,
+  seloDaPromocao,
   unidadesPorFicha,
 } from "@/lib/domain/cardapio";
 import { diaVizinho } from "@/lib/domain/datas";
@@ -278,6 +280,7 @@ export function PedidoPeloCardapio({
                   key={produto.id}
                   contaId={contaId}
                   produto={produto}
+                  hoje={diaVizinho(amanha, -1)}
                   quantidade={
                     produto.escolhas
                       ? carrinho
@@ -748,18 +751,22 @@ async function falhaDa(resposta: Response): Promise<FalhaPedidoCardapio> {
 function Produto({
   contaId,
   produto,
+  hoje,
   quantidade,
   podeMais,
   aoMudar,
 }: {
   contaId: string;
   produto: ProdutoDoCardapio;
+  /** O dia de Brasília, para "termina hoje". */
+  hoje: string;
   quantidade: number;
   /** Falso quando o carrinho já leva tudo o que resta (`#d164`). */
   podeMais: boolean;
   aoMudar: (passo: number) => void;
 }) {
   const esgotado = produto.restam === 0;
+  const selo = seloDaPromocao(produto, hoje);
   return (
     <li className="flex gap-4 py-4">
       {produto.fotoVersao !== undefined && (
@@ -801,12 +808,28 @@ function Produto({
         )}
         <div className="mt-auto flex items-center justify-between gap-3 pt-2">
           <div>
-            <p className="flex items-baseline gap-1.5">
+            <p className="flex flex-wrap items-baseline gap-x-1.5">
+              {/* O riscado é o preço de sempre da ficha, e nunca um "de"
+                  inventado (`#d165`). */}
+              {produto.precoCheio !== undefined && (
+                <s className="num text-label text-ink-muted">
+                  <span className="sr-only">antes </span>
+                  {formatarMoeda(produto.precoCheio)}
+                </s>
+              )}
               <Dinheiro centavos={produto.preco} />
               <span className="text-label text-ink-muted">
                 · {produto.unidade}
               </span>
             </p>
+            {selo && (
+              <Selo
+                icone={<Tag aria-hidden className="size-3.5" strokeWidth={2} />}
+                className="num mt-1"
+              >
+                {selo}
+              </Selo>
+            )}
             {/* Contado do pote, e só do que ela marcou como limitado (`#d164`). */}
             {produto.restam !== undefined && !esgotado && (
               <p className="num text-label text-ink-muted">

@@ -80,6 +80,7 @@ export async function POST(requisicao: Request) {
     // é a mesma `montarCardapio` acima (`#d163`).
     opcoes: lido.opcoes,
     fichaIds: lido.configuracao?.cardapio?.fichaIds ?? [],
+    promocoes: lido.configuracao?.cardapio?.promocoes,
     hojeISO,
   });
   if (!montado.ok) {

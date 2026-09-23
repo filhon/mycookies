@@ -10,6 +10,7 @@ import {
   type FichaTecnica,
   type ItemPedido,
   type Pedido,
+  type PromocaoDoCardapio,
 } from "@/lib/types";
 import { situacaoDaConta } from "./assinatura";
 import { opcoesDaEscolha, temEscolhas } from "./custoFicha";
@@ -24,6 +25,7 @@ import {
   dataDeISO,
   dataISODe,
   diaVizinho,
+  hojeEmBrasilia,
   rotuloDiaPorExtenso,
 } from "./datas";
 import { formatarMoeda } from "./money";
@@ -71,6 +73,10 @@ export interface ProdutoDoCardapio {
   economiaMinima?: Centavos;
   /** Produto limitado com contagem que vale (`#d164`): 0 é esgotado; ausente é "sem número". */
   restam?: number;
+  /** Em promoção (`#d165`): o preço de sempre, riscado; `preco` é o da promoção. */
+  precoCheio?: Centavos;
+  /** Em promoção: o último dia, inclusive. */
+  promocaoAteISO?: DataISO;
 }
 
 export interface OpcaoDoCombo {
@@ -161,8 +167,81 @@ export function porCategoria<T extends { categoria: string; nome: string }>(
     );
 }
 
+// ---------------------------------------------------------------------------
+// A promoção (sessão E, `#d165`)
+// ---------------------------------------------------------------------------
+
+/** Até quantos dias depois de hoje uma promoção pode ir. Não se renova. */
+export const DIAS_DE_PROMOCAO = 30;
+
+type PrecoVigente = { preco: Centavos; cheio?: Centavos; ateISO?: DataISO };
+
+/**
+ * O preço de hoje, e o de sempre quando é promoção (`#d165`). A promoção vale
+ * até `ateISO`, inclusive, e só enquanto é menor que o preço da ficha: "de
+ * R$ 11,00 por R$ 11,00" não é promoção. A página, o `avulso` e o pedido
+ * passam por aqui.
+ */
+// ponytail: não confere se o preço de sempre é praticado há tempo (a ficha não
+// guarda histórico de preço). Um `precoVendaDesdeISO` se o Rende precisar provar.
+export function precoVigente(
+  ficha: Pick<FichaTecnica, "id" | "precificacao">,
+  promocoes: PromocaoDoCardapio[] | undefined,
+  hojeISO: DataISO,
+): PrecoVigente {
+  const precoVenda = ficha.precificacao.precoVenda;
+  const promocao = promocoes?.find((p) => p.fichaId === ficha.id);
+  if (
+    !promocao ||
+    promocao.ateISO < hojeISO ||
+    !(promocao.preco > 0 && promocao.preco < precoVenda)
+  ) {
+    return { preco: precoVenda };
+  }
+  return { preco: promocao.preco, cheio: precoVenda, ateISO: promocao.ateISO };
+}
+
+/** O que o painel recusa antes de gravar. */
+export function problemaDaPromocao(
+  promocao: PromocaoDoCardapio,
+  ficha: Pick<FichaTecnica, "precificacao">,
+  hojeISO: DataISO,
+): "maior-que-o-preco" | "sem-preco" | "data" | null {
+  if (!(promocao.preco > 0)) return "sem-preco";
+  if (promocao.preco >= ficha.precificacao.precoVenda) {
+    return "maior-que-o-preco";
+  }
+  const ate = promocao.ateISO;
+  if (
+    !diaValido(ate) ||
+    ate < hojeISO ||
+    ate > diaVizinho(hojeISO, DIAS_DE_PROMOCAO)
+  ) {
+    return "data";
+  }
+  return null;
+}
+
+/**
+ * "−15% até sexta-feira, 25 de setembro", ou "−15% · termina hoje". O
+ * percentual é arredondado para baixo: nunca anuncia mais desconto do que dá.
+ */
+export function seloDaPromocao(
+  produto: Pick<ProdutoDoCardapio, "preco" | "precoCheio" | "promocaoAteISO">,
+  hojeISO: DataISO,
+): string | null {
+  const { preco, precoCheio, promocaoAteISO } = produto;
+  if (precoCheio === undefined || !promocaoAteISO) return null;
+  const percentual = Math.floor(((precoCheio - preco) * 100) / precoCheio);
+  const quanto = percentual > 0 ? `−${percentual}%` : "Promoção";
+  return promocaoAteISO === hojeISO
+    ? `${quanto} · termina hoje`
+    : `${quanto} até ${rotuloDiaPorExtenso(promocaoAteISO)}`;
+}
+
 function produtoDoCardapio(
   ficha: FichaTecnica,
+  vigente: PrecoVigente,
   restam: Map<string, number>,
 ): ProdutoDoCardapio {
   const descricao = ficha.descricao?.trim();
@@ -172,12 +251,15 @@ function produtoDoCardapio(
     nome: ficha.nome,
     ...(descricao ? { descricao } : {}),
     categoria: ficha.categoria,
-    preco: ficha.precificacao.precoVenda,
+    preco: vigente.preco,
     unidade: UNIDADE[ficha.unidadeRendimento]!,
     ...(tipoDaFoto(ficha.fotoUrl)
       ? { fotoVersao: ficha.atualizadoEm?.toMillis() ?? 0 }
       : {}),
     ...(sobra !== undefined ? { restam: sobra } : {}),
+    ...(vigente.cheio !== undefined
+      ? { precoCheio: vigente.cheio, promocaoAteISO: vigente.ateISO }
+      : {}),
   };
 }
 
@@ -189,17 +271,18 @@ function produtoDoCardapio(
  */
 function comboDoCardapio(
   ficha: FichaTecnica,
-  precoNaPagina: Map<string, Centavos>,
+  naPagina: Map<string, PrecoVigente>,
   opcoes: FichaTecnica[],
   restam: Map<string, number>,
 ): ProdutoDoCardapio | null {
-  const produto = produtoDoCardapio(ficha, restam);
+  const produto = produtoDoCardapio(ficha, naPagina.get(ficha.id)!, restam);
   if (ficha.tipo !== "KIT") return produto;
 
-  // A parte fixa, pelo preço da página; `null` quando algo de dentro não está nela.
+  // A parte fixa, pelo preço de hoje da página (`#d165`); `null` quando algo
+  // de dentro não está nela.
   let fixo: Centavos | null = 0;
   for (const componente of ficha.componentes) {
-    const preco = precoNaPagina.get(componente.fichaId);
+    const preco = naPagina.get(componente.fichaId)?.preco;
     if (preco === undefined || fixo === null) fixo = null;
     else fixo += Math.round(preco * componente.quantidade);
   }
@@ -219,7 +302,7 @@ function comboDoCardapio(
     quantidade: escolha.quantidade,
     opcoes: opcoesVivas(escolha, opcoes, ficha.id)
       .map((opcao): OpcaoDoCombo => {
-        const preco = comPreco ? precoNaPagina.get(opcao.id) : undefined;
+        const preco = comPreco ? naPagina.get(opcao.id)?.preco : undefined;
         const sobra = restam.get(opcao.id);
         return {
           id: opcao.id,
@@ -307,15 +390,20 @@ export function montarCardapio(entrada: {
   const naPagina = fichas.filter(
     (ficha) => naLista.has(ficha.id) && entraNoCardapio(ficha),
   );
-  // O preço que a própria página cobra: é contra ele que o combo economiza (`#d163`).
-  const precoNaPagina = new Map(
-    naPagina.map((ficha) => [ficha.id, ficha.precificacao.precoVenda]),
+  // O preço que a própria página cobra hoje, com a promoção (`#d165`): é
+  // contra ele que o combo economiza (`#d163`).
+  const hojeISO = hojeEmBrasilia(new Date(agoraMs));
+  const vigentes = new Map(
+    naPagina.map((ficha) => [
+      ficha.id,
+      precoVigente(ficha, cardapio.promocoes, hojeISO),
+    ]),
   );
   const produtos = naPagina
     .map((ficha) =>
       comboDoCardapio(
         ficha,
-        precoNaPagina,
+        vigentes,
         entrada.opcoes,
         entrada.restam ?? new Map(),
       ),
@@ -578,11 +666,13 @@ export function pedidoDoCardapio(entrada: {
   /** As fichas das opções dos combos; a função confere se ainda servem. */
   opcoes: FichaTecnica[];
   fichaIds: string[];
+  /** `cardapio.promocoes`: o preço gravado é o de hoje, como na página (`#d165`). */
+  promocoes?: PromocaoDoCardapio[];
   hojeISO: DataISO;
 }):
   | { ok: true; corpo: CorpoDoPedidoDoCardapio }
   | { ok: false; falha: FalhaPedidoCardapio } {
-  const { pedido, fichas, opcoes, fichaIds, hojeISO } = entrada;
+  const { pedido, fichas, opcoes, fichaIds, promocoes, hojeISO } = entrada;
 
   const linhas = new Map<
     string,
@@ -654,7 +744,7 @@ export function pedidoDoCardapio(entrada: {
       fichaTecnicaId: fichaId,
       nomeSnapshot: ficha.nome,
       quantidade,
-      precoUnitario: ficha.precificacao.precoVenda,
+      precoUnitario: precoVigente(ficha, promocoes, hojeISO).preco,
       // O combo montado, como no editor de pedido (`#d100`).
       custoUnitarioSnapshot: combo
         ? custoDoComboMontado(ficha, feitas)
