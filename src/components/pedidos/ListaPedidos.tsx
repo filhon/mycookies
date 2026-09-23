@@ -34,7 +34,7 @@ import {
 } from "@/lib/firebase/mutations/pedidos";
 import { useColecao } from "@/lib/hooks/useColecao";
 import type { DataISO, Pedido, StatusPedido } from "@/lib/types";
-import { useContaId } from "@/providers/AuthProvider";
+import { useContaId, usePapel } from "@/providers/AuthProvider";
 
 const FILTROS: OpcaoPilula<StatusPedido | "TODOS">[] = [
   { valor: "TODOS", rotulo: "Todos" },
@@ -62,6 +62,9 @@ const PAGINA_DO_HISTORICO = 30;
  */
 export function ListaPedidos() {
   const contaId = useContaId();
+  // Clientes é faturamento por pessoa e o acerto das entregas é saída no
+  // caixa: os dois são da dona (spec 030, `DECISOES.md#d157`).
+  const dona = usePapel() === "DONA";
   const [filtro, setFiltro] = useState<StatusPedido | "TODOS">("TODOS");
   const [hoje] = useState(() => dataISODe(new Date()));
   const [limite, setLimite] = useState(PAGINA_DO_HISTORICO);
@@ -160,7 +163,7 @@ export function ListaPedidos() {
             <AtalhoParaCompras className="hidden lg:inline-flex" />
             {/* Mesma regra de "Novo pedido": sem pedido gravado não há
                 cliente que a tela pudesse mostrar (`#d113`). */}
-            {!estadoVazioNaTela && (
+            {!estadoVazioNaTela && dona && (
               <AtalhoParaClientes className="hidden lg:inline-flex" />
             )}
             {!estadoVazioNaTela && (
@@ -190,7 +193,15 @@ export function ListaPedidos() {
                       icone: ShoppingCart,
                       href: "/compras",
                     },
-                    { rotulo: "Clientes", icone: Users, href: "/clientes" },
+                    ...(dona
+                      ? [
+                          {
+                            rotulo: "Clientes",
+                            icone: Users,
+                            href: "/clientes" as const,
+                          },
+                        ]
+                      : []),
                   ]}
                 />
               </>
@@ -224,7 +235,9 @@ export function ListaPedidos() {
       {!carregando && <AReceber pedidos={paraReceber} />}
 
       {/* O outro lado da entrega, sobre tudo o que a tela tem na mão. */}
-      {!carregando && <EntregasAPagar pedidos={paraEntregas} hoje={hoje} />}
+      {!carregando && dona && (
+        <EntregasAPagar pedidos={paraEntregas} hoje={hoje} />
+      )}
 
       {erro ? (
         <Caixa>

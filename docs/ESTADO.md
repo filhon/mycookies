@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-09-21 (spec 023 entregue, primeira da fase 1 do roadmap; a 024 e a 025
+Atualizado em 2026-09-23 (spec 023 entregue, primeira da fase 1 do roadmap; a 024 e a 025
 entregues depois dela, a segunda e a terceira da fase 1; a 026 entregue fora da ordem das
 entrevistas, a quarta e última parcela do custo honesto do `docs/saas/CLAUDE.md` §1; a **027, a
 028 e a 029 codificadas antes do gatilho da fase 2**, a porta, a assinatura e a saída — com o
@@ -8,8 +8,8 @@ texto dos termos e da privacidade (agora com os três parágrafos que a 029 acre
 roteiros das três como portão do deploy —, e com elas **a fase 2 do roadmap fecha em código**;
 mais a 034 entregue por cima da 033, o primeiro passe de navegador sobre as duas, `#d131`; **033
 e 034 por publicar juntas**; a **035 entregue** por cima delas, o celular por gesto, `#d150` a
-`#d152`; a **030-A codificada** em 2026-09-23, a chave da ajudante, sem tela e sem publicar até a
-B; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 027, 028, 029,
+`#d152`; a **030 codificada inteira** em 2026-09-23 — a A, a chave da ajudante, e a B, o app
+dela —, por publicar num deploy só, a regra antes do app; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 027, 028, 029,
 033, 034 e 035 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
@@ -271,7 +271,7 @@ os números digitados de ponta a ponta.
 | 27  | Criar a conta sozinha                       | codificada; deploy espera os termos | `specs/027-criar-a-conta-sozinha.md`        |
 | 28  | O teste acaba, e a assinatura               | codificada; deploy espera o roteiro | `specs/028-o-teste-acaba-e-a-assinatura.md` |
 | 29  | Meus dados são meus                         | codificada; deploy espera os termos | `specs/029-meus-dados-sao-meus.md`          |
-| 30  | A ajudante                                  | sessão A codificada; B por fazer    | `specs/030-a-ajudante.md`                   |
+| 30  | A ajudante                                  | A e B codificadas; não publicada    | `specs/030-a-ajudante.md`                   |
 | 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`                |
 | 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`               |
 | 35  | O celular por gesto                         | pronto, sem o roteiro               | `specs/035-o-celular-por-gesto.md`          |
@@ -3027,9 +3027,45 @@ o projeto de verdade com a regra publicada, `curl` com token de dona e de ajudan
 `stripe listen`. O passo 1 (a conta real intacta com a regra nova) é o que libera publicar a
 regra.
 
-**Próximo passo da 030:** a sessão B — `QuemTeAjuda` em `/configuracao`, o que some da tela da
-ajudante (oito lugares), `/configuracao` reduzida, `/assinatura` sem checkout, `#d156` e
-`#d157`, `ROADMAP.md`.
+## A spec 030 · A ajudante — sessão B, o app da ajudante
+
+Mesmo pedido e mesmo branch da A. Com ela, a 030 fecha em código; **publica num deploy só**, a
+regra antes do app (`DEPLOY.md` seção 6).
+
+- `src/components/conta/QuemTeAjuda.tsx`: a linha na prateleira de `/configuracao` (entre "Como
+  funciona" e `MeusDados`), com a legenda como estado ("Só você", "Você e Ana", "Você e mais
+  2"), e o `Painel` com a lista de `colMembros` pelo `useColecao` (ativas, por `convidadaEm`), o
+  estado vazio com o que a ajudante vê e não vê, o campo de e-mail e "Convidar" (52px), o
+  recado para o WhatsApp no lugar do campo depois do convite (as duas frases, por
+  `criouLogin`, com o e-mail dentro), "Tirar o acesso" (44px, ícone e texto) pela
+  `Confirmacao`, e os erros de `MENSAGEM_FALHA_CONVITE` em `role="alert"`.
+- O que some para a ajudante, por `usePapel()`: "Caixa" na navegação (`destinosDo` em
+  `navegacao.ts`, nas duas navegações) e "Como funciona" na barra lateral; `(app)/layout.tsx`
+  devolve `rotaSoDaDona` para `/`; na tela Hoje, `FaixaDoTeste`, `CartaoPrimeirosPassos` e
+  `CartaoMetaHoje` não montam; em `/pedidos`, o atalho de clientes (cabeçalho e bandeja) e
+  "Entregas a pagar"; no pedido, `BlocoPagamento`, com `docResumoMensal`/`docMeta` em `null`.
+- `/configuracao` para a ajudante: `TelaConfiguracao` despacha por papel; o ramo dela é o
+  cabeçalho, "O preço e os custos são de quem é dona do negócio." e `LinhaSair` (extraída para
+  as duas), sem guarda de saída. `/assinatura` para a ajudante: só vencida, sem preço, sem
+  portal, sem `MeusDados`, com "Sair" (`#d156`).
+- **Fora da lista da spec, decidido com quem conduz** (`#d157`): a regra ganhou a concessão
+  `match /agregados/global` (criar material, produto ou cliente incrementa o contador, e a
+  ajudante tomava `permission-denied`); `/insumos/nota` entrou em `ROTAS_SO_DA_DONA` e as
+  entradas da nota somem (ela lê `transacoes` e lança no caixa); o pedido **pago** abre para a
+  ajudante sem "Salvar" e sem "Cancelar" (os dois reescreveriam o caixa); e "Como funciona" sai
+  também de `/configuracao`, porque leva a `/comecar`, rota da dona.
+- Docs: `#d156` e `#d157`; `#d154` anotado com a concessão; `ROADMAP.md` com a 030 e o que
+  mudou do previsto (sem seletor de conta); `DEPLOY.md` seção 6.
+
+Portão: lint e typecheck limpos, os **608 testes** (o `rotaSoDaDona` ganhou `/insumos/nota` e
+dois casos de `/insumos` aberto), `npm run build` com `/api/conta/membros` dinâmica.
+
+**O que não rodou** — o roteiro de navegador inteiro (doze passos). O passo 4 é o critério da
+spec: a ajudante percorrendo, a 360px, todas as telas que alcança com o **console sem nenhum
+`permission-denied`**. Sem ele a 030 não está pronta, por mais verde que o portão esteja: é o
+único lugar onde uma assinatura esquecida aparece. `/impeccable` aplicado na escrita do painel,
+mas nenhuma das telas (painel vazio, com uma e com cinco ajudantes, erro, carregando;
+`/configuracao` e `/assinatura` no modo ajudante) foi vista em 360px.
 
 ## Próxima ação
 
@@ -3252,4 +3288,6 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | O roteiro de dezesseis passos da 023 nunca rodou: a sentinela, o `<dialog>` e o gesto de voltar do Android sem prova                  | `useGuardaDeSaida.tsx`, `Confirmacao.tsx`      | Próxima ação; os passos 3, 12 e 15 exigem Android de verdade, `npm test` não abre navegador                                                 |
 | O roteiro de dez passos da 024 nunca rodou: a seta, o cartão e o painel sem prova em conta real com rede                              | `LinhaFicha.tsx`, `CartaoNoVermelhoHoje.tsx`   | Próxima ação; o passo 1 (sem mudança) e o passo 3 (lista bate com o editor) são os que provam o `#d135`                                     |
 | O roteiro de dez passos da 025 nunca rodou: os números batendo, o atalho escondido, o pagamento e o arquivar ao vivo sem prova        | `ListaClientes.tsx`, `PainelCliente.tsx`       | Próxima ação; o passo 1 (os pedidos pagos batem com `totalGasto`) é o que prova os agregados da 3B                                          |
+| O roteiro de doze passos da 030 nunca rodou: o console limpo da ajudante (passo 4) e a regra pela porta dos fundos sem prova          | `firestore.rules`, `QuemTeAjuda.tsx`           | Antes de publicar a 030; o passo 1 (a conta real intacta com a regra nova) libera a regra, o 4 libera o app                                 |
+| A ajudante vê o custo e o preço de cada produto                                                                                       | `components/fichas/`                           | Se alguém pedir "ajudante sem ver preço": é a segunda versão do editor de produto que o `#d157` recusou                                     |
 | O roteiro de treze passos da 028 nunca rodou: a regra publicada, o checkout, o cancelamento e o evento fora de ordem sem prova        | `firestore.rules`, `api/stripe/webhook/`       | Próxima ação, com o painel do Stripe em modo de teste e o Stripe CLI local; o passo 1 é o único que não se refaz depois de publicar a regra |

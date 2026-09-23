@@ -5,8 +5,12 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Compass, LogOut, Settings } from "lucide-react";
 import { Logotipo } from "@/components/marca/Marca";
-import { AVISO_SAIR_PENDENTE, useAuth } from "@/providers/AuthProvider";
-import { DESTINOS, destinoAtivo } from "./navegacao";
+import {
+  AVISO_SAIR_PENDENTE,
+  useAuth,
+  usePapel,
+} from "@/providers/AuthProvider";
+import { destinoAtivo, destinosDo } from "./navegacao";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -17,6 +21,7 @@ import { cn } from "@/lib/utils/cn";
 export function BarraLateral() {
   const caminho = usePathname();
   const { usuario, sair } = useAuth();
+  const papel = usePapel();
   const [saindo, setSaindo] = useState(false);
   const [pendente, setPendente] = useState(false);
 
@@ -39,7 +44,7 @@ export function BarraLateral() {
 
       <nav aria-label="Navegação principal" className="flex-1 px-3">
         <ul className="space-y-0.5">
-          {DESTINOS.map((destino) => {
+          {destinosDo(papel).map((destino) => {
             const ativo = destinoAtivo(caminho, destino.href);
             const Icone = destino.icone;
 
@@ -72,20 +77,27 @@ export function BarraLateral() {
       <div className="space-y-0.5 border-t border-brand-500 px-3 py-3">
         {/* Acima da configuração, no mesmo bloco do pé: o guia é consultado
             raramente e não gasta o sexto destino de uma navegação que tem
-            cinco. No celular a entrada é o pé de `/configuracao`. */}
-        <Link
-          href="/comecar"
-          className={cn(
-            "toque flex items-center gap-3 rounded-md px-3 py-2.5 text-label font-medium",
-            "transition-colors duration-150 ease-quart",
-            destinoAtivo(caminho, "/comecar")
-              ? "bg-brand-700 text-on-brand"
-              : "text-on-brand-muted hover:bg-brand-600 hover:text-on-brand",
-          )}
-        >
-          <Compass aria-hidden className="size-5 shrink-0" strokeWidth={1.75} />
-          Como funciona
-        </Link>
+            cinco. No celular a entrada é o pé de `/configuracao`. O guia é o
+            caminho dos primeiros passos, que é da dona (spec 030). */}
+        {papel === "DONA" && (
+          <Link
+            href="/comecar"
+            className={cn(
+              "toque flex items-center gap-3 rounded-md px-3 py-2.5 text-label font-medium",
+              "transition-colors duration-150 ease-quart",
+              destinoAtivo(caminho, "/comecar")
+                ? "bg-brand-700 text-on-brand"
+                : "text-on-brand-muted hover:bg-brand-600 hover:text-on-brand",
+            )}
+          >
+            <Compass
+              aria-hidden
+              className="size-5 shrink-0"
+              strokeWidth={1.75}
+            />
+            Como funciona
+          </Link>
+        )}
 
         <Link
           href="/configuracao"

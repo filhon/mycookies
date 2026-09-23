@@ -44,6 +44,7 @@ import {
   reservaDeProducao,
 } from "@/lib/domain/producao";
 import { guardarSemente } from "@/lib/estado/sementeDaContagem";
+import { usePapel } from "@/providers/AuthProvider";
 import {
   arquivarListaCompras,
   corrigirPrecoNaLista,
@@ -103,6 +104,8 @@ export function ListaDoMercado({
 }) {
   const router = useRouter();
   const online = useConexao();
+  // A nota é da dona: lança a compra no caixa (spec 030).
+  const dona = usePapel() === "DONA";
 
   // O período nasce do que está gravado, e não de um padrão que ignoraria a
   // lista já montada: reabrir a tela no mercado precisa devolver o mesmo
@@ -528,25 +531,27 @@ export function ListaDoMercado({
                 >
                   Fechar a lista
                 </Botao>
-                <Botao
-                  tamanho="sm"
-                  variante={online ? "primaria" : "secundaria"}
-                  disabled={!online}
-                  onClick={fecharELerANota}
-                  iconeInicial={
-                    <ScanLine
-                      aria-hidden
-                      className="size-4"
-                      strokeWidth={1.75}
-                    />
-                  }
-                >
-                  Fechar e ler a nota
-                </Botao>
+                {dona && (
+                  <Botao
+                    tamanho="sm"
+                    variante={online ? "primaria" : "secundaria"}
+                    disabled={!online}
+                    onClick={fecharELerANota}
+                    iconeInicial={
+                      <ScanLine
+                        aria-hidden
+                        className="size-4"
+                        strokeWidth={1.75}
+                      />
+                    }
+                  >
+                    Fechar e ler a nota
+                  </Botao>
+                )}
                 {entradasDaCompra.size > 0 && (
                   <Botao
                     tamanho="sm"
-                    variante={online ? "secundaria" : "primaria"}
+                    variante={online && dona ? "secundaria" : "primaria"}
                     onClick={guardarNaDespensa}
                     iconeInicial={
                       <ClipboardList

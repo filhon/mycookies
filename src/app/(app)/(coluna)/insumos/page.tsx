@@ -26,7 +26,7 @@ import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
 import { useColecao } from "@/lib/hooks/useColecao";
 import { useConexao } from "@/lib/hooks/useDispositivo";
 import type { CategoriaInsumo, Fornada, Insumo } from "@/lib/types";
-import { useContaId } from "@/providers/AuthProvider";
+import { useContaId, usePapel } from "@/providers/AuthProvider";
 
 const FILTROS: OpcaoPilula<CategoriaInsumo | "TODOS">[] = [
   { valor: "TODOS", rotulo: "Todos" },
@@ -49,6 +49,7 @@ export default function PaginaInsumos() {
   // O mesmo sinal de `EntradaLeitura`: sem rede, "Ler uma nota" na bandeja
   // nasce desabilitada e diz por quê.
   const online = useConexao();
+  const dona = usePapel() === "DONA";
 
   /**
    * Uma consulta só, ordenada, e todo o resto filtrado em memória.
@@ -129,13 +130,18 @@ export default function PaginaInsumos() {
                       icone: Plus,
                       onClick: abrirNovo,
                     },
-                    {
-                      rotulo: "Ler uma nota",
-                      icone: ScanLine,
-                      href: "/insumos/nota",
-                      desabilitada: !online,
-                      dica: MENSAGEM_FALHA["sem-rede"],
-                    },
+                    // A nota é da dona (spec 030): lança a compra no caixa.
+                    ...(dona
+                      ? [
+                          {
+                            rotulo: "Ler uma nota",
+                            icone: ScanLine,
+                            href: "/insumos/nota" as const,
+                            desabilitada: !online,
+                            dica: MENSAGEM_FALHA["sem-rede"],
+                          },
+                        ]
+                      : []),
                   ]}
                 />
               </>

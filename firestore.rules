@@ -66,6 +66,15 @@ service cloud.firestore {
                      && (ehDona()
                          || !(doDinheiro(colecao) || colecao == 'configuracao'));
       }
+
+      // A única concessão ao lado, e é concessão, não restrição (a soma por OU
+      // só abre): o contador de cadastros (`totalInsumos`, `totalFichas`,
+      // `totalClientes`), que criar material, produto ou cliente incrementa e
+      // que ninguém lê (DECISOES.md#d67). A ajudante escreve e continua sem ler
+      // nada de `agregados` (DECISOES.md#d157).
+      match /agregados/global {
+        allow write: if podeEscrever();
+      }
     }
   }
 }

@@ -376,6 +376,22 @@ da 027 e da 028 — as três fecham a fase 2 em código.
 conferindo papel em `configuracao` e `financeiro`, seletor de conta no `AuthProvider` — o
 ponto único que `#d14` já nomeou. Vocabulário de papel nasce aqui, com o caso.
 
+**Codificada em 2026-09-23, antes do gatilho** (nenhuma cliente pagante pediu), nas duas
+sessões da spec; **não publicada**, e A e B saem no mesmo deploy, com a regra antes do app
+(`DEPLOY.md` seção 6). O que mudou do previsto:
+
+- **O seletor de conta não nasceu.** Um login com duas contas continua abrindo a primeira chave
+  da claim, porque ninguém tem duas. O que nasceu foi `papel` no contexto e `usePapel()`.
+- A regra fecha por coleção (`#d154`) e não "em `configuracao` e `financeiro`": a ajudante não
+  lê nem escreve `transacoes`, `metas` e `agregados`, lê e não escreve `configuracao`, e
+  ninguém escreve `membros` do cliente. Mais uma concessão: `agregados/global`, o contador que
+  ninguém lê, é escrito por ela (`#d157`).
+- `membros` como espelho escrito só pelo servidor (`#d155`), para a tela listar e para o webhook
+  e o encerrar percorrerem; `encerrar`, `exportar`, `checkout` e `portal` passaram a exigir dona.
+- O app da ajudante é o da dona menos o que diz quanto o negócio ganha (`#d157`): sem caixa,
+  meta, clientes, nota fiscal, receber, configuração e cobrança (`#d156`). A dona convida e
+  tira em `/configuracao` → "Quem te ajuda".
+
 **031 · Cardápio público com link de pedido.** `contas/{id}/publico/cardapio` escrito por ela
 (espelho das fichas ativas com preço), regra de leitura pública só nesse documento, página
 `/c/{contaId}`, pedido nascendo como `ORCAMENTO` por handler. Aprovação: a primeira regra

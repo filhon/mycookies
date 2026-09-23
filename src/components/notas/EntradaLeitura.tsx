@@ -6,6 +6,7 @@ import { classesBotao, type TamanhoBotao } from "@/components/ui/estilosBotao";
 import { MENSAGEM_FALHA } from "@/lib/domain/notaFiscal";
 import { useConexao } from "@/lib/hooks/useDispositivo";
 import { cn } from "@/lib/utils/cn";
+import { useAuth } from "@/providers/AuthProvider";
 
 /**
  * A entrada para a leitura de nota.
@@ -23,6 +24,9 @@ import { cn } from "@/lib/utils/cn";
  * No celular a entrada do cabeçalho de `/insumos` mora na bandeja do "+"
  * (`DECISOES.md#d151`), com a frase ao lado da opção; o botão e o aviso ficam
  * `lg:` lá, por `className`.
+ *
+ * A nota é da dona (spec 030): lança a compra no caixa. Para a ajudante a
+ * entrada e o aviso não existem.
  */
 export function EntradaLeitura({
   tamanho = "md",
@@ -32,6 +36,9 @@ export function EntradaLeitura({
   className?: string;
 }) {
   const online = useConexao();
+  const { papel } = useAuth();
+
+  if (papel !== "DONA") return null;
 
   if (!online) {
     return (
@@ -66,7 +73,8 @@ export function AvisoLeituraSemRede({
   className?: string;
 }) {
   const online = useConexao();
-  if (online) return null;
+  const { papel } = useAuth();
+  if (online || papel !== "DONA") return null;
 
   return (
     <p

@@ -194,7 +194,8 @@ deles.
 ## 6 · Ao publicar a 030: as regras mudam
 
 A spec 030 (a ajudante) reescreve `firestore.rules`: a regra passa a conferir o papel na claim
-(`DECISOES.md#d153`, `#d154`). **Publique a regra antes do app:**
+(`DECISOES.md#d153`, `#d154`), e a sessão B acrescentou a concessão de `agregados/global`
+(`#d157`). **Publique a regra antes do app:**
 
 ```bash
 firebase deploy --only firestore:rules

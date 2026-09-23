@@ -30,9 +30,13 @@ interface Precos {
  *
  * Fora do shell, em `(auth)`, com `MolduraDeEntrada`: a terceira tela que o
  * comentário dela esperava.
+ *
+ * A ajudante não paga (`DECISOES.md#d156`): para ela a tela só existe vencida,
+ * sem preço, sem portal e sem `MeusDados`. Antes de vencer, volta para `/`.
  */
 export default function PaginaAssinatura() {
-  const { usuario, contaId, conta, carregando, sair } = useAuth();
+  const { usuario, contaId, papel, conta, carregando, sair } = useAuth();
+  const ajudante = papel === "AJUDANTE";
   const router = useRouter();
 
   const [precos, setPrecos] = useState<Precos | null>(null);
@@ -51,7 +55,7 @@ export default function PaginaAssinatura() {
   }, [carregando, usuario, contaId, router]);
 
   useEffect(() => {
-    if (!usuario) return;
+    if (!usuario || ajudante) return;
     let cancelado = false;
 
     async function carregar() {
@@ -72,7 +76,7 @@ export default function PaginaAssinatura() {
     return () => {
       cancelado = true;
     };
-  }, [usuario]);
+  }, [usuario, ajudante]);
 
   const situacao = conta
     ? situacaoDaConta(
@@ -87,9 +91,13 @@ export default function PaginaAssinatura() {
       )
     : null;
 
+  // Para a ajudante, prazo de cobrança não é assunto até vencer (spec 030, 3.B.4).
+  const semNadaAVer =
+    situacao?.tipo === "livre" || (ajudante && situacao?.tipo !== "vencida");
+
   useEffect(() => {
-    if (situacao?.tipo === "livre") router.replace("/");
-  }, [situacao?.tipo, router]);
+    if (semNadaAVer) router.replace("/");
+  }, [semNadaAVer, router]);
 
   async function aoSair() {
     setSairPendente(false);
@@ -137,13 +145,7 @@ export default function PaginaAssinatura() {
   const gerenciar = () =>
     abrirUrl("/api/assinatura/portal", { contaId }, "portal");
 
-  if (
-    carregando ||
-    !usuario ||
-    !contaId ||
-    !situacao ||
-    situacao.tipo === "livre"
-  ) {
+  if (carregando || !usuario || !contaId || !situacao || semNadaAVer) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-canvas">
         <Simbolo className="size-12 animate-pulse" />
@@ -186,7 +188,25 @@ export default function PaginaAssinatura() {
   let descricao: string;
   let acoes: ReactNode;
 
-  if (situacao.tipo === "teste") {
+  if (ajudante) {
+    // A conta é da dona; a conversa é entre as duas (`#d156`).
+    titulo = "O acesso a este negócio está suspenso";
+    descricao =
+      "Fale com quem é dona do Rende aqui: a assinatura precisa ser renovada para vocês duas voltarem a usar.";
+    acoes = (
+      <div className="mt-8">
+        <Botao
+          tamanho="lg"
+          larguraTotal
+          onClick={() => void aoSair()}
+          disabled={saindo}
+          carregando={saindo}
+        >
+          Sair
+        </Botao>
+      </div>
+    );
+  } else if (situacao.tipo === "teste") {
     titulo = `Seu teste grátis acaba em ${situacao.diasRestantes} dias`;
     if (situacao.diasRestantes === 0) titulo = "Seu teste grátis acaba hoje";
     if (situacao.diasRestantes === 1) titulo = "Seu teste grátis acaba amanhã";
@@ -282,7 +302,7 @@ export default function PaginaAssinatura() {
 
   return (
     <MolduraDeEntrada titulo={titulo} descricao={descricao}>
-      {falhaPrecos && !precos && (
+      {falhaPrecos && !precos && !ajudante && (
         <p className="mt-4 text-label text-ink-muted">
           Não deu para carregar os preços agora, mas dá para continuar.
         </p>

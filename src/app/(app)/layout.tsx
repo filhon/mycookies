@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Simbolo } from "@/components/marca/Marca";
 import { Botao } from "@/components/ui/Botao";
 import { classesBotao } from "@/components/ui/estilosBotao";
+import { rotaSoDaDona } from "@/lib/domain/ajudante";
 import { situacaoDaConta } from "@/lib/domain/assinatura";
 import { AVISO_SAIR_PENDENTE, useAuth } from "@/providers/AuthProvider";
 
@@ -15,9 +16,10 @@ import { AVISO_SAIR_PENDENTE, useAuth } from "@/providers/AuthProvider";
 type Tentativa = null | "sem-acesso" | "sem-conexao";
 
 export default function LayoutApp({ children }: { children: ReactNode }) {
-  const { usuario, carregando, contaId, conta, sair, reconferirAcesso } =
+  const { usuario, carregando, contaId, papel, conta, sair, reconferirAcesso } =
     useAuth();
   const router = useRouter();
+  const caminho = usePathname();
   const [conferindo, setConferindo] = useState(false);
   const [tentativa, setTentativa] = useState<Tentativa>(null);
   const [saindo, setSaindo] = useState(false);
@@ -53,6 +55,14 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (situacao?.tipo === "vencida") router.replace("/assinatura");
   }, [situacao?.tipo, router]);
+
+  // A rota da dona digitada na barra pela ajudante volta para Hoje, em
+  // silêncio: tela que explica por que não abre é pior que tela que não abre
+  // (spec 030, 3.B.2). A regra já nega o dado; isto evita a tela vazia.
+  const rotaFechada = papel === "AJUDANTE" && rotaSoDaDona(caminho);
+  useEffect(() => {
+    if (rotaFechada) router.replace("/");
+  }, [rotaFechada, router]);
 
   async function conferir() {
     setTentativa(null);
@@ -156,7 +166,7 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
   // Vencida, o app é uma tela cheia, não um modo só-leitura (`#d144`): o
   // `useEffect` acima já mandou para `/assinatura`, e este `return` só evita
   // desenhar o shell por baixo dela por um instante.
-  if (situacao?.tipo === "vencida") return null;
+  if (situacao?.tipo === "vencida" || rotaFechada) return null;
 
   return <AppShell>{children}</AppShell>;
 }

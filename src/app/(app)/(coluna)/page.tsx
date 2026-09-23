@@ -9,7 +9,7 @@ import { CartaoComprasHoje } from "@/components/compras/CartaoComprasHoje";
 import { CartaoNoVermelhoHoje } from "@/components/fichas/CartaoNoVermelhoHoje";
 import { CartaoMetaHoje } from "@/components/metas/CartaoMetaHoje";
 import { AgendaHoje } from "@/components/pedidos/AgendaHoje";
-import { useAuth } from "@/providers/AuthProvider";
+import { useAuth, usePapel } from "@/providers/AuthProvider";
 
 const SAUDACAO_POR_HORA = (hora: number) => {
   if (hora < 12) return "Bom dia";
@@ -19,6 +19,7 @@ const SAUDACAO_POR_HORA = (hora: number) => {
 
 export default function PaginaHoje() {
   const { conta } = useAuth();
+  const dona = usePapel() === "DONA";
   const agora = new Date();
   const data = new Intl.DateTimeFormat("pt-BR", {
     weekday: "long",
@@ -55,13 +56,20 @@ export default function PaginaHoje() {
           antes de "como estou indo". Quando ele termina, o cartão some e esta
           tela volta a ser exatamente o que era. */}
       <div className="mt-6 space-y-4">
-        <FaixaDoTeste />
+        {/* Os três são da dona (spec 030): a cobrança, o caminho do começo e a
+            meta, que lê `agregados`. Para a ajudante não montam, e por isso
+            não assinam nada que a regra negaria. */}
+        {dona && (
+          <>
+            <FaixaDoTeste />
 
-        <CartaoPrimeirosPassos />
+            <CartaoPrimeirosPassos />
 
-        {/* O número que ela persegue vem antes da agenda: é o que decide o que
-            vai para o forno hoje. */}
-        <CartaoMetaHoje />
+            {/* O número que ela persegue vem antes da agenda: é o que decide o
+                que vai para o forno hoje. */}
+            <CartaoMetaHoje />
+          </>
+        )}
 
         {/* Raro, e a consequência direta da compra que ela acabou de lançar:
             "o que eu faço agora" vem antes de "o que vem depois". */}

@@ -17,6 +17,7 @@ import {
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { MeusDados } from "@/components/conta/MeusDados";
+import { QuemTeAjuda } from "@/components/conta/QuemTeAjuda";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, Seletor } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -69,6 +70,7 @@ import {
   AVISO_SAIR_PENDENTE,
   useAuth,
   useContaId,
+  usePapel,
 } from "@/providers/AuthProvider";
 import { cn } from "@/lib/utils/cn";
 
@@ -198,11 +200,92 @@ const METODOS: {
   },
 ];
 
+/**
+ * A tela inteira é da dona: a ajudante lê a configuração (a ficha precisa dela
+ * para calcular) e não a grava (`DECISOES.md#d154`). Mas é aqui que mora
+ * "Sair", a única saída do app no celular (`#d118`), e por isso a rota não
+ * fecha para ela: abre reduzida (spec 030, 3.B.3).
+ */
 export function TelaConfiguracao() {
-  const contaId = useContaId();
-  const { conta, usuario, sair } = useAuth();
+  return usePapel() === "AJUDANTE" ? (
+    <ConfiguracaoDaAjudante />
+  ) : (
+    <ConfiguracaoDaDona />
+  );
+}
+
+/**
+ * O cabeçalho, de quem é a configuração, e a prateleira só com "Sair". Sem
+ * "Como funciona" (é o caminho dos primeiros passos, rota da dona), sem "Quem
+ * te ajuda" e sem `MeusDados` — os dados não são dela para exportar nem a conta
+ * dela para encerrar. Sem `useGuardaDeSaida`: não há formulário para sujar.
+ */
+function ConfiguracaoDaAjudante() {
+  return (
+    <>
+      <CabecalhoPagina titulo="Configuração" />
+      <p className="mt-4 max-w-[60ch] text-body text-ink-muted">
+        O preço e os custos são de quem é dona do negócio.
+      </p>
+      <div className="mt-8 flex flex-col gap-2 lg:mt-12 lg:max-w-md">
+        <LinhaSair />
+      </div>
+    </>
+  );
+}
+
+/**
+ * "Sair", na prateleira. `pedir` é a guarda de saída da tela que tem
+ * formulário; sem ela, sai direto.
+ */
+function LinhaSair({ pedir }: { pedir?: (acao: () => void) => void }) {
+  const { usuario, sair } = useAuth();
   const [saindo, setSaindo] = useState(false);
   const [sairPendente, setSairPendente] = useState(false);
+
+  async function aoSair() {
+    setSairPendente(false);
+    setSaindo(true);
+    if (!(await sair())) {
+      setSairPendente(true);
+      setSaindo(false);
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => (pedir ? pedir(aoSair) : void aoSair())}
+        disabled={saindo}
+        aria-busy={saindo}
+        className="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-4 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken disabled:opacity-60 lg:px-5"
+      >
+        <LogOut
+          aria-hidden
+          className="size-5 shrink-0 text-ink-muted"
+          strokeWidth={1.75}
+        />
+        <span className="min-w-0 flex-1">
+          <span className="block text-body font-medium text-ink">Sair</span>
+          <span className="mt-0.5 block truncate text-label text-ink-muted">
+            Você entrou como {usuario?.email}.
+          </span>
+        </span>
+      </button>
+
+      {sairPendente && (
+        <p aria-live="polite" className="text-label text-ink-muted">
+          {AVISO_SAIR_PENDENTE}
+        </p>
+      )}
+    </>
+  );
+}
+
+function ConfiguracaoDaDona() {
+  const contaId = useContaId();
+  const { conta, usuario } = useAuth();
   const [portalEnviando, setPortalEnviando] = useState(false);
   const [portalErro, setPortalErro] = useState<string | null>(null);
   const idOcultarFeitoCom = useId();
@@ -217,15 +300,6 @@ export function TelaConfiguracao() {
         new Date().getTime(),
       )
     : null;
-
-  async function aoSair() {
-    setSairPendente(false);
-    setSaindo(true);
-    if (!(await sair())) {
-      setSairPendente(true);
-      setSaindo(false);
-    }
-  }
 
   async function abrirPortalAssinatura() {
     setPortalErro(null);
@@ -856,6 +930,10 @@ export function TelaConfiguracao() {
           />
         </Link>
 
+        {/* O que se usa uma vez por ano, como o guia (spec 030): a legenda é o
+            estado, "Só você" até alguém ser convidada. */}
+        <QuemTeAjuda />
+
         {/* Os dois direitos da LGPD (spec 029): baixar e encerrar. Depois do
             guia e antes de sair, porque "Encerrar" não pode ser vizinha de
             baixo de nada que se toque sem pensar. */}
@@ -865,31 +943,7 @@ export function TelaConfiguracao() {
             prateleira do guia acima. No desktop duplica a barra lateral, e é
             assim que "Como funciona" já é: sair é raro, e não merece o sexto
             destino nem um lugar visível na tela Hoje. */}
-        <button
-          type="button"
-          onClick={() => guarda.pedir(aoSair)}
-          disabled={saindo}
-          aria-busy={saindo}
-          className="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-4 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken disabled:opacity-60 lg:px-5"
-        >
-          <LogOut
-            aria-hidden
-            className="size-5 shrink-0 text-ink-muted"
-            strokeWidth={1.75}
-          />
-          <span className="min-w-0 flex-1">
-            <span className="block text-body font-medium text-ink">Sair</span>
-            <span className="mt-0.5 block text-label text-ink-muted">
-              Você entrou como {usuario?.email}.
-            </span>
-          </span>
-        </button>
-
-        {sairPendente && (
-          <p aria-live="polite" className="text-label text-ink-muted">
-            {AVISO_SAIR_PENDENTE}
-          </p>
-        )}
+        <LinhaSair pedir={guarda.pedir} />
       </div>
 
       {/* Barra de salvar acima da navegação inferior: no celular a ação

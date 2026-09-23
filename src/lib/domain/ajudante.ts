@@ -49,11 +49,16 @@ export function papelDaClaim(valor: unknown): PapelNaConta {
   return valor === "DONA" ? "DONA" : "AJUDANTE";
 }
 
-/** Rotas que só a dona abre. Lida pela navegação e pelo guarda de rota (sessão B). */
+/**
+ * Rotas que só a dona abre. Lida pela navegação e pelo guarda de rota (sessão B).
+ * `/insumos/nota` entrou na B: ler a nota consulta `transacoes` (a guarda de
+ * duplicidade) e lança a compra no caixa (`DECISOES.md#d157`).
+ */
 export const ROTAS_SO_DA_DONA = [
   "/financeiro",
   "/clientes",
   "/comecar",
+  "/insumos/nota",
 ] as const;
 
 /** A rota ou uma filha dela; prefixo solto (`/comecarX`) não é rota. */

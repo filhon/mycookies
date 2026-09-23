@@ -591,31 +591,31 @@ Aparelho em 360px nos passos 4, 6 e 9.
 
 ## Critérios de aceite
 
-- [ ] `PapelNaConta` com dois valores; `ContasDaClaim` tipada por ele; `Membro`,
+- [x] `PapelNaConta` com dois valores; `ContasDaClaim` tipada por ele; `Membro`,
       `caminhos.membros`/`membro` e `colMembros` existem; nenhum documento gravado muda de forma.
-- [ ] `firestore.rules`: a recursiva é `{colecao}/{documento=**}`; ajudante não lê `transacoes`,
+- [x] `firestore.rules`: a recursiva é `{colecao}/{documento=**}`; ajudante não lê `transacoes`,
       `metas` nem `agregados`; lê e não escreve `configuracao`; ninguém escreve `membros` do
       cliente; o documento da conta só a dona escreve (passo 5).
-- [ ] `POST /api/conta/membros`: só dona (401 para ajudante); e-mail da própria dona recusado;
+- [x] `POST /api/conta/membros`: só dona (401 para ajudante); e-mail da própria dona recusado;
       `LIMITE_DE_AJUDANTES`; cria o login sem senha quando não existe; claim com `AJUDANTE` e
       `acessoAte` copiado do documento da conta — **sem chave** quando a conta não tem prazo;
       espelho gravado; repetir o `POST` não duplica nada.
-- [ ] `DELETE /api/conta/membros`: só dona; recusa `uid` que não é `AJUDANTE` no espelho; tira as
+- [x] `DELETE /api/conta/membros`: só dona; recusa `uid` que não é `AJUDANTE` no espelho; tira as
       duas chaves da claim preservando outras contas; grava `removidaEm`; idempotente.
-- [ ] O webhook do Stripe renova `acessoAte` da dona **e** de cada membro ativo (passo 7);
+- [x] O webhook do Stripe renova `acessoAte` da dona **e** de cada membro ativo (passo 7);
       `/api/conta/encerrar` tira a claim de todos (passo 10).
-- [ ] `AuthProvider` expõe `papel`; papel desconhecido cai em `"AJUDANTE"`; `usePapel()` existe.
-- [ ] Com papel de ajudante: quatro destinos, `rotaSoDaDona` redirecionando, os três cartões e o
+- [x] `AuthProvider` expõe `papel`; papel desconhecido cai em `"AJUDANTE"`; `usePapel()` existe.
+- [x] Com papel de ajudante: quatro destinos, `rotaSoDaDona` redirecionando, os três cartões e o
       bloco de receber ausentes, `/configuracao` reduzida com "Sair", `/assinatura` sem checkout.
-- [ ] **Nenhum `permission-denied` no console** ao percorrer todas as telas que a ajudante
+- [x] **Nenhum `permission-denied` no console** ao percorrer todas as telas que a ajudante
       alcança (passo 4). É o critério que diz se a sessão B ficou completa.
-- [ ] `QuemTeAjuda` em `/configuracao` só para a dona: lista, convite, as duas frases de recado,
+- [x] `QuemTeAjuda` em `/configuracao` só para a dona: lista, convite, as duas frases de recado,
       a `Confirmacao` de tirar, os erros em `role="alert"`.
-- [ ] `tests/domain/ajudante.test.ts` cobre 3.A.2; `src/lib/domain/ajudante.ts` não importa
+- [x] `tests/domain/ajudante.test.ts` cobre 3.A.2; `src/lib/domain/ajudante.ts` não importa
       Firebase nem React.
-- [ ] Alvo de 44px nas linhas da lista, 52px em "Convidar"; nada depende só de cor.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `build` lista `/api/conta/membros` dinâmica.
-- [ ] `#d153` a `#d157` escritos; `#d14`, `#d144` e `#d148` anotados; `ESTADO.md`, `ROADMAP.md` e
+- [x] Alvo de 44px nas linhas da lista, 52px em "Convidar"; nada depende só de cor.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `build` lista `/api/conta/membros` dinâmica.
+- [x] `#d153` a `#d157` escritos; `#d14`, `#d144` e `#d148` anotados; `ESTADO.md`, `ROADMAP.md` e
       `DEPLOY.md` (a ordem de publicar a regra) atualizados.
 
 ---

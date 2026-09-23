@@ -12,10 +12,13 @@ describe("rotaSoDaDona", () => {
     expect(rotaSoDaDona("/financeiro/qualquer")).toBe(true);
     expect(rotaSoDaDona("/clientes")).toBe(true);
     expect(rotaSoDaDona("/comecar")).toBe(true);
+    expect(rotaSoDaDona("/insumos/nota")).toBe(true);
   });
 
   it("deixa o trabalho aberto", () => {
     expect(rotaSoDaDona("/fichas")).toBe(false);
+    expect(rotaSoDaDona("/insumos")).toBe(false);
+    expect(rotaSoDaDona("/insumos/contagem")).toBe(false);
     expect(rotaSoDaDona("/")).toBe(false);
   });
 

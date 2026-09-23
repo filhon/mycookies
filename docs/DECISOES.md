@@ -4845,6 +4845,9 @@ antes e sabe o nome da coleção, e a restrição mora dentro dela: a ajudante n
 `transacoes`, `metas` e `agregados` (o dinheiro); lê e não escreve `configuracao` (a ficha
 precisa dela para calcular); ninguém escreve `membros` do cliente (`#d155`); o documento da
 conta só a dona escreve. Zero leitura, como o `#d07`: o que a regra usa é o token e o caminho.
+**Na sessão B**, uma concessão ao lado: `agregados/global` (o contador que ninguém lê) é
+escrito por quem pode escrever, ajudante inclusive (`#d157`). Concessão ao lado soma; é
+restrição ao lado que não nega.
 
 **Consequência.** Quem "simplificar" a regra para uma lista de `match` por coleção reabre o
 caixa para a ajudante — o comentário no arquivo diz isso. `clientes` continua legível para a
@@ -4878,3 +4881,72 @@ que caia no meio ainda encontre a dona com acesso e termine o laço na repetiç�
 Leitura sem `where` (campo ausente não casa com `== null`) e sem índice — são até
 `LIMITE_DE_AJUDANTES` (5) documentos. `scripts/encerrar-conta.mjs` não mudou: a varredura de
 `listUsers` já acha a ajudante, e o ramo "sobrou outra conta, só tira a chave" era este caso.
+
+---
+
+## D156 · A ajudante não paga: conta vencida com login de ajudante é uma tela sem checkout
+
+**Status:** vigente · decidida em 2026-09-23, na spec `030-a-ajudante.md` (sessão B)
+
+**Contexto.** A claim da ajudante vence junto com a da dona — é o mesmo `acessoAte`, copiado no
+convite e renovado pelo webhook (`#d155`). O `(app)/layout.tsx` manda toda conta vencida para
+`/assinatura`, que oferece dois cartões de preço e o portal: oferecer isso a quem não é dona é
+pedir que a ajudante pague a assinatura do negócio de outra pessoa.
+
+**Decisão.** `/assinatura`, com `papel === "AJUDANTE"`, tem um ramo antes dos estados de
+`situacaoDaConta`: título "O acesso a este negócio está suspenso", uma linha mandando falar com
+a dona, e "Sair". Sem cartão de preço (e sem buscar os preços), sem portal, sem `MeusDados`.
+Antes de vencer a tela não existe para ela: qualquer estado que não seja `vencida` volta para
+`/`, e a `FaixaDoTeste` não monta na tela Hoje — prazo de cobrança não é assunto de quem ajuda
+até virar bloqueio. As rotas de checkout e portal já recusavam a ajudante no servidor (`ehDona`,
+`#d153`); a tela só deixa de oferecer o que o servidor negaria.
+
+**Consequência.** A conversa sobre pagar é entre as duas, fora do app. Se a dona demora, a
+ajudante fica parada numa tela que diz exatamente isso, e não numa que finge que ela resolve.
+
+---
+
+## D157 · O que a ajudante continua vendo, e por quê: o custo do produto é dela também; o caixa não
+
+**Status:** vigente · decidida em 2026-09-23, na spec `030-a-ajudante.md` (sessão B)
+
+**Contexto.** A regra da sessão A (`#d154`) nega à ajudante `transacoes`, `metas` e `agregados`,
+e a escrita em `configuracao`. Escrita recusada pela regra falha calada (`#d80`): toda tela que
+oferecer à ajudante algo que escreva ali é um botão que parece funcionar e não grava.
+
+**Decisão.** A régua: **o que ajuda a produzir e entregar é das duas; o que diz quanto o negócio
+ganha é da dona.** Some da tela dela, por ausência e nunca por aviso: "Caixa" na navegação (quatro
+destinos), `/financeiro`, `/clientes`, `/comecar` e `/insumos/nota` (`ROTAS_SO_DA_DONA`, com o
+`(app)/layout.tsx` devolvendo para `/`), os cartões de primeiros passos, meta e teste na tela
+Hoje, o atalho de clientes e a faixa "Entregas a pagar" em `/pedidos`, o bloco de receber no
+pedido (com as assinaturas de `agregados` e `metas` passando `null`), e `/configuracao` reduzida
+ao cabeçalho, uma linha e "Sair". **Continua**: a ficha inteira com custo e preço, o pedido
+inteiro com valor e itens, "A receber" em `/pedidos`, materiais, lista de compras, contagem e
+fornada. Esconder o custo custaria uma segunda versão do editor de produto para proteger um
+número que quem pesa a farinha estima sozinha. `clientes` continua legível na regra (o editor de
+pedido escolhe a cliente nela); some só `/clientes`, que é faturamento por pessoa.
+
+**O que a spec não previu, e esta sessão fechou** (decidido com quem conduz o projeto):
+
+- **O contador `agregados/global`.** Criar material, produto ou cliente incrementa
+  `totalInsumos`/`totalFichas`/`totalClientes` — lidos por ninguém (`#d67`). Negado à ajudante,
+  o material gravava e o contador saía como `permission-denied`; na biblioteca o incremento vai
+  no mesmo `writeBatch`, e o lote inteiro falharia. A regra ganhou uma concessão ao lado da
+  recursiva, `match /agregados/global { allow write: if podeEscrever(); }`. Ao lado, e não
+  dentro, porque é concessão: a soma por OU só abre, e o que o `#d154` proíbe é restrição ao
+  lado. A ajudante escreve o contador e continua sem ler nada de `agregados`.
+- **A nota fiscal é da dona.** Ler a nota consulta `transacoes` (a guarda de duplicidade) e lança
+  a compra no caixa. `/insumos/nota` entrou em `ROTAS_SO_DA_DONA`; `EntradaLeitura`, o aviso
+  de sem rede, a opção da bandeja de `/insumos` e "Fechar e ler a nota" em `/compras` somem.
+- **O pedido pago abre sem "Salvar" e sem "Cancelar".** Salvar um pedido pago corrige o
+  lançamento e o agregado do mês (`atualizarPedido`); cancelar desfaz o pagamento. Os dois
+  seriam negados, e o pedido gravaria com o caixa divergindo. Para a ajudante, o pedido pago
+  continua andando de estado (pronto, entregue), com WhatsApp e fornada; a guarda de saída não
+  monta, porque não há o que salvar. O pedido não pago segue igual para as duas.
+- **"Como funciona" some da barra lateral e de `/configuracao`.** A spec deixava "Como
+  funciona" na configuração da ajudante, mas ele leva a `/comecar`, que ela mesma põe entre as
+  rotas da dona (e que lê `transacoes`). Sobra "Sair".
+
+**Consequência.** A ajudante vê o custo e o preço de cada produto: é dívida anotada, a reabrir se
+alguém pedir, e não esquecimento. A régua vale para a próxima tela: o que escreve em dinheiro
+nasce com `usePapel()` na condição.

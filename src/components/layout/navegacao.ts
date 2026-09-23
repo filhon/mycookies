@@ -7,6 +7,8 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
+import { rotaSoDaDona } from "@/lib/domain/ajudante";
+import type { PapelNaConta } from "@/lib/types";
 
 export interface Destino {
   href: Route;
@@ -25,6 +27,13 @@ export const DESTINOS: Destino[] = [
   { href: "/pedidos", rotulo: "Pedidos", icone: ClipboardList },
   { href: "/financeiro", rotulo: "Caixa", icone: Wallet },
 ];
+
+/** Os destinos de quem entrou: a ajudante fica sem "Caixa" (`DECISOES.md#d157`). */
+export function destinosDo(papel: PapelNaConta): Destino[] {
+  return papel === "DONA"
+    ? DESTINOS
+    : DESTINOS.filter((destino) => !rotaSoDaDona(destino.href));
+}
 
 export function destinoAtivo(caminho: string, href: string): boolean {
   if (href === "/") return caminho === "/";

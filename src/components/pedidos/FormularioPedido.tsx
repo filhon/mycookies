@@ -101,6 +101,7 @@ import type {
   StatusPedido,
 } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
+import { usePapel } from "@/providers/AuthProvider";
 import { novoId } from "@/lib/utils/id";
 
 type TipoEntrega = "RETIRADA" | "ENTREGA";
@@ -299,7 +300,15 @@ export function FormularioPedido({
   );
   const [inicial] = useState(() => JSON.stringify(valores));
   const sujo = JSON.stringify(valores) !== inicial;
-  const guarda = useGuardaDeSaida(sujo);
+
+  // Receber é da dona: marcar pago escreve em `transacoes` e `agregados`, que a
+  // regra nega à ajudante (spec 030, `DECISOES.md#d157`). Pelo mesmo motivo,
+  // salvar ou cancelar um pedido **pago** — corrigir ou desfazer o lançamento —
+  // também é: o pedido pago abre para ela sem "Salvar" e sem "Cancelar", e
+  // sem a guarda, porque não há o que salvar.
+  const ajudante = usePapel() === "AJUDANTE";
+  const soLeitura = ajudante && !!pedido?.pago;
+  const guarda = useGuardaDeSaida(sujo && !soLeitura);
   const [status, setStatus] = useState<StatusPedido>(
     pedido?.status ?? "ORCAMENTO",
   );
@@ -438,13 +447,15 @@ export function FormularioPedido({
   // A tela assina os dois documentos para que a mutação não leia nada: o
   // espelho da meta e o ticket médio são escritos por valor, e lançar precisa
   // funcionar sem rede (`DECISOES.md#d29`).
+  // Para a ajudante, `null`: a assinatura nem nasce, e o `permission-denied`
+  // também não — é o arranjo do `AuthProvider` com a conta.
   const referenciaResumo = useMemo(
-    () => docResumoMensal(contaId, competenciaPagamento),
-    [contaId, competenciaPagamento],
+    () => (ajudante ? null : docResumoMensal(contaId, competenciaPagamento)),
+    [ajudante, contaId, competenciaPagamento],
   );
   const referenciaMeta = useMemo(
-    () => docMeta(contaId, competenciaPagamento),
-    [contaId, competenciaPagamento],
+    () => (ajudante ? null : docMeta(contaId, competenciaPagamento)),
+    [ajudante, contaId, competenciaPagamento],
   );
 
   const resumoDoPagamento = useDocumento<ResumoMensal>(referenciaResumo);
@@ -890,13 +901,15 @@ export function FormularioPedido({
         acao={
           <div className="flex items-center gap-3">
             <SeloSincronizacao pendente={pendente} />
-            <Botao
-              variante="primaria"
-              onClick={() => void salvar()}
-              carregando={salvando}
-            >
-              Salvar
-            </Botao>
+            {!soLeitura && (
+              <Botao
+                variante="primaria"
+                onClick={() => void salvar()}
+                carregando={salvando}
+              >
+                Salvar
+              </Botao>
+            )}
           </div>
         }
       />
@@ -914,19 +927,21 @@ export function FormularioPedido({
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {transicoesPermitidas(status).map((proximo) => (
-                <Botao
-                  key={proximo}
-                  tamanho="sm"
-                  variante={proximo === "CANCELADO" ? "perigo" : "secundaria"}
-                  disabled={salvando}
-                  onClick={() => void mover(proximo)}
-                >
-                  {status === "CANCELADO" && proximo === "ORCAMENTO"
-                    ? "Reabrir como orçamento"
-                    : ACAO_STATUS_PEDIDO[proximo]}
-                </Botao>
-              ))}
+              {transicoesPermitidas(status)
+                .filter((proximo) => !(soLeitura && proximo === "CANCELADO"))
+                .map((proximo) => (
+                  <Botao
+                    key={proximo}
+                    tamanho="sm"
+                    variante={proximo === "CANCELADO" ? "perigo" : "secundaria"}
+                    disabled={salvando}
+                    onClick={() => void mover(proximo)}
+                  >
+                    {status === "CANCELADO" && proximo === "ORCAMENTO"
+                      ? "Reabrir como orçamento"
+                      : ACAO_STATUS_PEDIDO[proximo]}
+                  </Botao>
+                ))}
             </div>
 
             {/* A fornada não é o status (`DECISOES.md#d92`): registrar não
@@ -1371,15 +1386,17 @@ export function FormularioPedido({
               telefone={valores.clienteTelefone}
             />
 
-            <BlocoPagamento
-              pedido={pedido}
-              pagoEmISO={pagoEmISO}
-              aoMudarData={setPagoEmISO}
-              aoPagar={() => void pagar()}
-              aoDesfazer={() => void desfazer()}
-              ocupado={salvando}
-              semAgregado={resumoDoPagamento.carregando}
-            />
+            {!ajudante && (
+              <BlocoPagamento
+                pedido={pedido}
+                pagoEmISO={pagoEmISO}
+                aoMudarData={setPagoEmISO}
+                aoPagar={() => void pagar()}
+                aoDesfazer={() => void desfazer()}
+                ocupado={salvando}
+                semAgregado={resumoDoPagamento.carregando}
+              />
+            )}
           </>
         )}
 

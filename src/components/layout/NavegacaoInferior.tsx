@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DESTINOS, destinoAtivo, semNavegacaoInferior } from "./navegacao";
+import { usePapel } from "@/providers/AuthProvider";
+import { destinoAtivo, destinosDo, semNavegacaoInferior } from "./navegacao";
 import { cn } from "@/lib/utils/cn";
 
 export function NavegacaoInferior() {
   const caminho = usePathname();
+  const papel = usePapel();
 
   if (semNavegacaoInferior(caminho)) return null;
 
@@ -19,7 +21,7 @@ export function NavegacaoInferior() {
       className="area-segura-inferior fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface apertado:hidden lg:hidden print:hidden"
     >
       <ul className="flex">
-        {DESTINOS.map((destino) => {
+        {destinosDo(papel).map((destino) => {
           const ativo = destinoAtivo(caminho, destino.href);
           const Icone = destino.icone;
 
