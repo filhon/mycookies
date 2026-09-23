@@ -14,8 +14,8 @@ import {
 import { adminDb, credencialDisponivel } from "./firebaseAdmin";
 
 /**
- * As duas leituras do cardápio público (spec 031, `DECISOES.md#d158`): a
- * página e a foto. Sem login: quem decide o que sai é `montarCardapio` e
+ * As leituras do cardápio público (spec 031, `DECISOES.md#d158`): a página, o
+ * pedido e a foto. Sem login: quem decide o que sai é `montarCardapio` e
  * `entraNoCardapio`, e nada daqui escreve.
  *
  * O `Timestamp` do Admin SDK tem o mesmo `toMillis()` do cliente, que é tudo o
@@ -31,6 +31,20 @@ const ID = /^[A-Za-z0-9_-]{1,64}$/;
 
 /** O cardápio pronto para a página, ou `null` para qualquer "não está aberto". */
 export async function lerCardapio(contaId: string): Promise<Cardapio | null> {
+  const lido = await lerContaDoCardapio(contaId);
+  return lido && montarCardapio({ ...lido, agoraMs: Date.now() });
+}
+
+/**
+ * O que `montarCardapio` recebe, cru: a página monta com isso, e o handler do
+ * pedido também, porque precisa das fichas inteiras para o preço e o custo.
+ * `null` para conta que não existe ou id que não é id.
+ */
+export async function lerContaDoCardapio(contaId: string): Promise<{
+  conta: Conta;
+  configuracao: ConfiguracaoGeral | null;
+  fichas: FichaTecnica[];
+} | null> {
   if (!credencialDisponivel() || !ID.test(contaId)) return null;
 
   const db = adminDb();
@@ -55,14 +69,13 @@ export async function lerCardapio(contaId: string): Promise<Cardapio | null> {
       )
     : [];
 
-  return montarCardapio({
+  return {
     conta: { id: contaId, ...contaSnap.data() } as Conta,
     configuracao,
     fichas: fichasSnap
       .filter((snap) => snap.exists)
       .map((snap) => ({ id: snap.id, ...snap.data() }) as FichaTecnica),
-    agoraMs: Date.now(),
-  });
+  };
 }
 
 /** Os bytes da foto de um produto do cardápio aberto, ou `null` (404). */

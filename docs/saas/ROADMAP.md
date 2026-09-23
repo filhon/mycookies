@@ -397,11 +397,15 @@ sessões da spec; **não publicada**, e A e B saem no mesmo deploy, com a regra 
 `/c/{contaId}`, pedido nascendo como `ORCAMENTO` por handler. Aprovação: a primeira regra
 pública do sistema.
 
-**Spec escrita em 2026-09-23, antes do gatilho** (`specs/031-cardapio-publico.md`, `#d158` a
-`#d162` por registrar), em duas sessões. O que muda do previsto: **sem espelho e sem regra
-pública** — a página é renderizada no servidor com o Admin SDK, e `firestore.rules` não muda
-(`#d158`); a lista do cardápio é escolha dela, em `ConfiguracaoGeral.cardapio`, e não "todas as
-fichas ativas" (`#d159`). A aprovação pedida passa a ser a primeira rota que escreve sem login.
+**✔ Codificada inteira em 2026-09-23, antes do gatilho** (`specs/031-cardapio-publico.md`,
+`#d158` a `#d162`), em duas sessões: a A, a vitrine, e a B, o pedido. O que muda do previsto:
+**sem espelho e sem regra pública** — a página é renderizada no servidor com o Admin SDK, e
+`firestore.rules` não muda (`#d158`); a lista do cardápio é escolha dela, em
+`ConfiguracaoGeral.cardapio`, e não "todas as fichas ativas" (`#d159`); o pedido é
+`POST /api/cardapio/pedido`, a primeira rota que escreve sem login, com o preço relido da ficha
+(`#d160`) e um teto de orçamentos em aberto no lugar de captcha (`#d161`). A aprovação pedida
+passou a ser essa rota, e não uma regra pública. Por publicar: o roteiro de treze passos e o
+parágrafo de `/privacidade` sobre os dados da cliente da cliente.
 
 **032 · O segundo plano.** Só quando 030 e 031 existirem: são os upsells naturais. É aqui, e
 não antes, que gating de funcionalidade entra no código.

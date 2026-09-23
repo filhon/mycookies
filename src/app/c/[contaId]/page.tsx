@@ -2,19 +2,16 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { AtSign, MessageCircle } from "lucide-react";
+import { PedidoPeloCardapio } from "@/components/cardapio/PedidoPeloCardapio";
 import { classesBotao } from "@/components/ui/estilosBotao";
-import { Dinheiro } from "@/components/ui/Dinheiro";
-import {
-  mensagemDeContato,
-  type Cardapio,
-  type ProdutoDoCardapio,
-} from "@/lib/domain/cardapio";
+import { mensagemDeContato, type Cardapio } from "@/lib/domain/cardapio";
+import { diaVizinho, hojeEmBrasilia } from "@/lib/domain/datas";
 import { linkDoWhatsApp } from "@/lib/domain/whatsapp";
 import { lerCardapio } from "@/lib/server/cardapio";
 
 /**
- * O cardápio público (spec 031, sessão A): a vitrine que a confeiteira manda
- * no WhatsApp e põe na bio. Fora de `(app)` e de `(auth)`: sem shell e sem
+ * O cardápio público (spec 031): a vitrine que a confeiteira manda no WhatsApp
+ * e põe na bio, com o pedido (`PedidoPeloCardapio`, sessão B). Fora de `(app)` e de `(auth)`: sem shell e sem
  * guarda de login. Renderizada no servidor com o Admin SDK, e a regra do
  * Firestore continua sem nada público (`DECISOES.md#d158`).
  *
@@ -58,20 +55,13 @@ export default async function PaginaCardapio({ params }: Props) {
     <main className="mx-auto w-full max-w-xl px-4 pb-12 pt-10 sm:pt-16">
       <Topo negocio={cardapio.negocio} />
 
-      <div className="mt-10 space-y-10">
-        {cardapio.secoes.map((secao) => (
-          <section key={secao.categoria} aria-label={secao.categoria}>
-            <h2 className="text-label font-semibold uppercase tracking-[0.08em] text-ink-muted">
-              {secao.categoria}
-            </h2>
-            <ul className="mt-2 divide-y divide-line border-y border-line">
-              {secao.produtos.map((produto) => (
-                <Produto key={produto.id} contaId={contaId} produto={produto} />
-              ))}
-            </ul>
-          </section>
-        ))}
-      </div>
+      {/* Amanhã em Brasília, no servidor: o relógio do celular da cliente não
+          decide o mínimo. Guardado com a página por até 60 s. */}
+      <PedidoPeloCardapio
+        contaId={contaId}
+        cardapio={cardapio}
+        amanha={diaVizinho(hojeEmBrasilia(new Date()), 1)}
+      />
 
       {cardapio.negocio.feitoComRende && (
         <p className="mt-12 text-center text-micro text-ink-subtle">
@@ -141,52 +131,5 @@ function Topo({ negocio }: { negocio: Cardapio["negocio"] }) {
         </div>
       )}
     </header>
-  );
-}
-
-/**
- * Uma linha de lista, como a folha do orçamento, e não um cartão. Sem foto, o
- * quadrado some e o texto começa na margem. O preço fica na linha de baixo:
- * a 360px, ao lado do nome, ele espremeria o nome em duas palavras por linha,
- * e é ali que a sessão B põe a quantidade.
- */
-function Produto({
-  contaId,
-  produto,
-}: {
-  contaId: string;
-  produto: ProdutoDoCardapio;
-}) {
-  return (
-    <li className="flex gap-4 py-4">
-      {produto.fotoVersao !== undefined && (
-        // Sem `next/image`: a foto já tem 320px, e a otimização a passaria
-        // por um segundo serviço para nada (`#d162`).
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={`/c/${encodeURIComponent(contaId)}/foto/${encodeURIComponent(produto.id)}?v=${produto.fotoVersao}`}
-          alt={produto.nome}
-          width={88}
-          height={88}
-          loading="lazy"
-          decoding="async"
-          className="size-22 shrink-0 rounded-md bg-sunken object-cover"
-        />
-      )}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <h3 className="wrap-break-word text-body font-semibold text-ink">
-          {produto.nome}
-        </h3>
-        {produto.descricao && (
-          <p className="mt-0.5 line-clamp-2 text-label text-ink-muted">
-            {produto.descricao}
-          </p>
-        )}
-        <p className="mt-auto flex items-baseline gap-1.5 pt-2">
-          <Dinheiro centavos={produto.preco} />
-          <span className="text-label text-ink-muted">· {produto.unidade}</span>
-        </p>
-      </div>
-    </li>
   );
 }

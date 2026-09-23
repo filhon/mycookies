@@ -27,6 +27,11 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
  * fichas da lista do cardápio, e só devolvem o que `montarCardapio` deixa
  * passar (`DECISOES.md#d158`).
  *
+ * **Sem login, escreve** `/api/cardapio/pedido` (spec 031, `#d160`): só em
+ * `pedidos`, e só um documento novo por chamada; nunca atualiza, nunca lê o que
+ * a cliente não mandou. Um segundo `set` ali muda a fronteira de confiança do
+ * sistema.
+ *
  * Verificar a assinatura do JWT à mão, para não mexer no `package.json`, está
  * descartado. O projeto desenha gráfico à mão para não pegar dependência
  * (`DECISOES.md#d25`) e tirou o `date-fns` porque `Intl` bastava (`#d26`);

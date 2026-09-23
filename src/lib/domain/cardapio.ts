@@ -1,10 +1,24 @@
-import type {
-  Centavos,
-  ConfiguracaoGeral,
-  Conta,
-  FichaTecnica,
+import { z } from "zod";
+import {
+  VERSAO_SCHEMA,
+  type Centavos,
+  type ConfiguracaoGeral,
+  type Conta,
+  type DataISO,
+  type FichaTecnica,
+  type ItemPedido,
+  type Pedido,
 } from "@/lib/types";
 import { situacaoDaConta } from "./assinatura";
+import {
+  competenciaDeISO,
+  dataDeISO,
+  dataISODe,
+  diaVizinho,
+  rotuloDiaPorExtenso,
+} from "./datas";
+import { formatarMoeda } from "./money";
+import { codigoDoPedido, derivarPedido, quantidadeEmTexto } from "./pedido";
 import { telefoneParaWhatsApp } from "./whatsapp";
 
 /**
@@ -176,4 +190,215 @@ export function montarCardapio(entrada: {
 /** O texto do botão "Falar no WhatsApp" da vitrine. */
 export function mensagemDeContato(negocio: Cardapio["negocio"]): string {
   return `Oi, ${negocio.nome}! Vi o cardápio e queria fazer um pedido.`;
+}
+
+// ---------------------------------------------------------------------------
+// O pedido pelo cardápio (sessão B)
+// ---------------------------------------------------------------------------
+
+/** O teto do estrago de uma rota que escreve sem login (`#d161`). */
+export const LIMITE_DE_ORCAMENTOS_EM_ABERTO = 20;
+/** O dia mais distante que a cliente escolhe, contando de hoje. */
+export const DIAS_A_FRENTE = 90;
+const QUANTIDADE_MAXIMA = 500;
+
+/** O que a página manda: ids e quantidades, nunca preço (`#d160`). */
+export const esquemaPedidoDoCardapio = z.object({
+  contaId: z.string().trim().min(1),
+  nome: z.string().trim().min(2).max(80),
+  telefone: z
+    .string()
+    .trim()
+    .refine((t) => telefoneParaWhatsApp(t) != null),
+  itens: z
+    .array(
+      z.object({
+        fichaId: z.string().min(1),
+        quantidade: z.number().int().min(1).max(QUANTIDADE_MAXIMA),
+      }),
+    )
+    .min(1)
+    .max(30),
+  dataEntregaISO: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  entrega: z.discriminatedUnion("tipo", [
+    z.object({ tipo: z.literal("RETIRADA") }),
+    z.object({
+      tipo: z.literal("ENTREGA"),
+      endereco: z.string().trim().min(5).max(200),
+    }),
+  ]),
+  observacoes: z.string().trim().max(500).optional(),
+  /** O pote de mel (`#d161`). Qualquer coisa aqui é robô. */
+  site: z.string().optional(),
+});
+
+export type PedidoDoCardapio = z.infer<typeof esquemaPedidoDoCardapio>;
+
+export type FalhaPedidoCardapio =
+  | "fora-de-forma" // esquema, ou item repetido que soma mais de 500
+  | "fechado" // montarCardapio devolveria null
+  | "mudou" // item que saiu do cardápio desde que a página abriu
+  | "data" // antes de amanhã ou depois de DIAS_A_FRENTE
+  | "cheio" // LIMITE_DE_ORCAMENTOS_EM_ABERTO
+  | "sem-configuracao"
+  | "sem-resposta"
+  | "sem-rede";
+
+/** A voz é a da confeiteira falando com a cliente, e não a do Rende. */
+export const MENSAGEM_FALHA_PEDIDO_CARDAPIO: Record<
+  FalhaPedidoCardapio,
+  string
+> = {
+  "fora-de-forma":
+    "Confira o nome, o WhatsApp com DDD e, se for entrega, o endereço.",
+  fechado: "O cardápio fechou enquanto você escolhia. Fale pelo WhatsApp.",
+  mudou: "O cardápio mudou enquanto você escolhia. Confira e mande de novo.",
+  data: `Escolha um dia entre amanhã e os próximos ${DIAS_A_FRENTE} dias.`,
+  cheio:
+    "Chegaram muitos pedidos de uma vez. Para não se perder, mande o seu pelo WhatsApp.",
+  "sem-configuracao":
+    "Não deu para enviar agora. Tente de novo daqui a pouco, ou mande pelo WhatsApp.",
+  "sem-resposta":
+    "Não deu para enviar agora. Tente de novo daqui a pouco, ou mande pelo WhatsApp.",
+  "sem-rede": "Parece que a internet caiu. Conecte e toque em Enviar de novo.",
+};
+
+/**
+ * O documento que o handler grava, menos os três `Timestamp` que o Admin SDK
+ * cria. Os opcionais vazios ficam **ausentes**, e não `null` como em
+ * `corpoDoPedido`: aqui é só criação, e o tipo não aceita `null`.
+ */
+export type CorpoDoPedidoDoCardapio = Omit<
+  Pedido,
+  "id" | "criadoEm" | "atualizadoEm" | "dataEntrega"
+> & { origem: "CARDAPIO" };
+
+/** Dia de calendário que existe: '2026-02-31' não volta igual. */
+function diaValido(iso: DataISO): boolean {
+  return dataISODe(dataDeISO(iso)) === iso;
+}
+
+/**
+ * O pedido que o handler grava, com o preço e o custo de AGORA, lidos da ficha
+ * (`#d160`). A mesma ficha em duas linhas vira uma linha só. Falha `mudou`
+ * quando um item não está mais na lista ou deixou de entrar no cardápio.
+ */
+export function pedidoDoCardapio(entrada: {
+  pedido: PedidoDoCardapio;
+  fichas: FichaTecnica[];
+  fichaIds: string[];
+  hojeISO: DataISO;
+}):
+  | { ok: true; corpo: CorpoDoPedidoDoCardapio }
+  | { ok: false; falha: FalhaPedidoCardapio } {
+  const { pedido, fichas, fichaIds, hojeISO } = entrada;
+
+  const quantidades = new Map<string, number>();
+  for (const item of pedido.itens) {
+    quantidades.set(
+      item.fichaId,
+      (quantidades.get(item.fichaId) ?? 0) + item.quantidade,
+    );
+  }
+  if ([...quantidades.values()].some((q) => q > QUANTIDADE_MAXIMA)) {
+    return { ok: false, falha: "fora-de-forma" };
+  }
+
+  const dia = pedido.dataEntregaISO;
+  if (
+    !diaValido(dia) ||
+    dia <= hojeISO ||
+    dia > diaVizinho(hojeISO, DIAS_A_FRENTE)
+  ) {
+    return { ok: false, falha: "data" };
+  }
+
+  const naLista = new Set(fichaIds);
+  const itens: ItemPedido[] = [];
+  for (const [fichaId, quantidade] of quantidades) {
+    const ficha = fichas.find((f) => f.id === fichaId);
+    if (!ficha || !naLista.has(fichaId) || !entraNoCardapio(ficha)) {
+      return { ok: false, falha: "mudou" };
+    }
+    itens.push({
+      fichaTecnicaId: fichaId,
+      nomeSnapshot: ficha.nome,
+      quantidade,
+      precoUnitario: ficha.precificacao.precoVenda,
+      custoUnitarioSnapshot: ficha.custoUnitario,
+      subtotal: 0,
+    });
+  }
+
+  const derivado = derivarPedido({ itens, desconto: 0, taxaEntrega: 0 });
+  derivado.linhas.forEach((linha, i) => (itens[i]!.subtotal = linha.subtotal));
+
+  const observacoes = pedido.observacoes?.trim();
+
+  return {
+    ok: true,
+    corpo: {
+      v: VERSAO_SCHEMA,
+      // Pela data de Brasília, e não pela da máquina: `dataDeISO` devolve a
+      // meia-noite local do dia, que é o que `codigoDoPedido` lê.
+      codigo: codigoDoPedido(dataDeISO(hojeISO)),
+      origem: "CARDAPIO",
+      // Sem `clienteId`: cliente se cadastra pela dona, não pelo link.
+      clienteNome: pedido.nome,
+      clienteTelefone: pedido.telefone,
+      itens,
+      fichaIds: itens.map((item) => item.fichaTecnicaId),
+      status: "ORCAMENTO",
+      dataEntregaISO: dia,
+      competencia: competenciaDeISO(dia),
+      // A taxa é combinada depois, e a página diz isso antes do envio.
+      entrega:
+        pedido.entrega.tipo === "ENTREGA"
+          ? { tipo: "ENTREGA", taxa: 0, endereco: pedido.entrega.endereco }
+          : { tipo: "RETIRADA", taxa: 0 },
+      subtotal: derivado.subtotal,
+      desconto: 0,
+      total: derivado.total,
+      custoTaxaPagamento: 0,
+      custoTotalEstimado: derivado.custoTotalEstimado,
+      lucroEstimado: derivado.lucroEstimado,
+      pago: false,
+      arquivado: false,
+      ...(observacoes ? { observacoes } : {}),
+    },
+  };
+}
+
+/** "na sexta-feira", mas "no sábado" e "no domingo". */
+function noDia(iso: DataISO): string {
+  const escrito = rotuloDiaPorExtenso(iso);
+  return `${/^(sábado|domingo)/.test(escrito) ? "no" : "na"} ${escrito}`;
+}
+
+/**
+ * O que a cliente manda para a dona depois de gravar. "Meu nome é", e não
+ * "Sou a": quem pede pode ser homem, e o texto sai no nome dele.
+ */
+export function mensagemDeAviso(entrada: {
+  negocio: string;
+  codigo: string;
+  nome: string;
+  itens: { nome: string; quantidade: number }[];
+  total: Centavos;
+  dataEntregaISO: DataISO;
+  entrega: "RETIRADA" | "ENTREGA";
+}): string {
+  const itens = entrada.itens
+    .map((item) => `${quantidadeEmTexto(item.quantidade)} ${item.nome}`)
+    .join(", ");
+  const total =
+    entrada.entrega === "ENTREGA"
+      ? `${formatarMoeda(entrada.total)} sem a entrega, para receber`
+      : `${formatarMoeda(entrada.total)}, para retirar`;
+  const nome = entrada.nome.trim().split(/\s+/)[0] ?? "";
+
+  return (
+    `Oi, ${entrada.negocio}! Acabei de fazer o pedido ${entrada.codigo} pelo cardápio: ${itens}. ` +
+    `Total ${total} ${noDia(entrada.dataEntregaISO)}. Meu nome é ${nome}.`
+  );
 }

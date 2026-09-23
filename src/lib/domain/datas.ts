@@ -185,3 +185,27 @@ export function rotuloAgenda(iso: DataISO, hoje: DataISO): string {
   const escrito = rotuloDiaPorExtenso(iso);
   return escrito.charAt(0).toUpperCase() + escrito.slice(1);
 }
+
+/**
+ * Hoje em Brasília, e não no relógio da máquina. É a exceção a este módulo, e
+ * só vale no servidor (spec 031): ele roda em UTC, e às 22h de São Paulo já é
+ * amanhã lá. O `en-CA` escreve 'YYYY-MM-DD'.
+ */
+// ponytail: fuso fixo (`DECISOES.md#d160`). `Conta.fuso` quando a primeira
+// conta de fora de Brasília reclamar.
+const HOJE_EM_BRASILIA = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/Sao_Paulo",
+});
+
+export function hojeEmBrasilia(agora: Date): DataISO {
+  return HOJE_EM_BRASILIA.format(agora);
+}
+
+/**
+ * A meia-noite de Brasília do dia, como instante. Sem horário de verão desde
+ * 2019, o deslocamento é sempre −03:00. `dataDeISO` daria a meia-noite da
+ * máquina, que no servidor é 21h do dia anterior no aparelho dela.
+ */
+export function meiaNoiteEmBrasilia(iso: DataISO): Date {
+  return new Date(`${iso}T00:00:00-03:00`);
+}

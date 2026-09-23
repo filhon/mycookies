@@ -924,6 +924,19 @@ export function FormularioPedido({
           >
             <div className="flex flex-wrap items-center gap-2">
               <SeloStatus status={status} />
+              {pedido.origem === "CARDAPIO" && (
+                <Selo
+                  icone={
+                    <Store
+                      aria-hidden
+                      className="size-3.5"
+                      strokeWidth={1.75}
+                    />
+                  }
+                >
+                  Pelo cardápio
+                </Selo>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-2">

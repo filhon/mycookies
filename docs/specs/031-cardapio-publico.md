@@ -4,16 +4,20 @@
 alguém de fora do negócio abre. Um link que a confeiteira põe na bio do Instagram e manda no
 WhatsApp; quem abre vê os produtos que ela escolheu, com foto e preço, monta o pedido e manda. O
 pedido cai em `/pedidos` como orçamento, e a conversa continua onde sempre esteve: no WhatsApp.
-**Tamanho:** duas sessões. A **A** é a vitrine — o tipo, o domínio, o painel "Seu cardápio" em
+**Tamanho:** duas sessões, mais três (C, D, E) acrescentadas depois. A **A** é a vitrine — o tipo, o domínio, o painel "Seu cardápio" em
 `/configuracao`, a página `/c/{contaId}` só de leitura e a rota da foto. A **B** é o pedido — o
 formulário da página, `POST /api/cardapio/pedido`, o aviso no WhatsApp e o selo "Pelo cardápio"
 no app dela. **A pode sair sozinha**: uma vitrine com "Falar no WhatsApp" já é um cardápio; a B
-acrescenta o carrinho sem jogar fora nada da A.
+acrescenta o carrinho sem jogar fora nada da A. Depois da B vêm três sessões acrescentadas em
+2026-09-23 (seção 4): a **C** põe os combos na página com a economia à vista, a **D** mostra
+quantas unidades restam do que ela marcou como limitado, e a **E** abre a promoção com prazo.
+Na ordem C, D, E; cada uma sai sozinha depois da anterior.
 **Origem:** roadmap, fase 3, 031, e `docs/saas/CLAUDE.md` §4 ("catálogo público com link de
 pedido" como upsell natural). O gatilho de lá é **cliente pagante pedindo**, e ele não aconteceu:
 esta spec está escrita antes do caso, como a 030 esteve. Quem abrir esta spec para codificar
 confere primeiro se "dá para eu mandar um link com meus produtos?" já foi perguntado por alguém
-que paga. Se não foi, fecha o arquivo.
+que paga. Se não foi, fecha o arquivo. As sessões C a E vêm de um pedido de quem conduz o
+projeto, em 2026-09-23: escassez de verdade, promoção com prazo e combo com a vantagem à vista.
 **Depende de:** a 017 (foto e descrição do produto, `ConfiguracaoGeral.contato`), a 010
 (`telefoneParaWhatsApp`, `linkDoWhatsApp`), a 028 (`situacaoDaConta`, `ocultarFeitoCom`), a 029
 (`status: "ENCERRADA"`) e a 030 (`ehDona` e a configuração só da dona). Tudo codificado.
@@ -23,11 +27,17 @@ rota que escreve sem login** — `POST /api/cardapio/pedido`, com Admin SDK, só
 `contas/{id}/pedidos` (seção 1, `#d160` e `#d161`); (3) **o que sai para fora**, campo por campo
 (seção 1, `#d158`); (4) nenhuma regra de segurança muda, nenhuma dependência entra — **e isso é
 diferente do que o roadmap previa**, que pedia aprovação para "a primeira regra pública do
-sistema" (`#d158`).
+sistema" (`#d158`); (5) nas sessões C a E, **mais schema aditivo** — `cardapio.limitados` e
+`cardapio.promocoes`, opcionais, e `escolhas` opcional no corpo do pedido público — e **mais o
+que sai para fora**: o nome das receitas que servem a um combo, quantas restam de um produto
+limitado e a promoção (seção 4).
 **Decisões a registrar:** `#d158` (o cardápio é lido pelo servidor, e a regra continua sem nada
 público), `#d159` (o cardápio é escolha dela, e mora na configuração), `#d160` (o pedido do
 cardápio nasce orçamento, com o preço do servidor), `#d161` (o freio é um teto de orçamentos em
-aberto, e não um captcha), `#d162` (a foto sai por rota própria, e não dentro da página).
+aberto, e não um captcha), `#d162` (a foto sai por rota própria, e não dentro da página). Nas
+sessões C a E: `#d163` (a economia do combo é contra o preço que a própria página cobra),
+`#d164` ("restam" é o pote menos o que os pedidos levam, e o servidor trava), `#d165` (a
+promoção desconta do preço de sempre e tem dia para acabar).
 
 ---
 
@@ -61,10 +71,15 @@ cliente abre no celular, vê os produtos por categoria com foto, descrição e p
 quantidades, diz nome, WhatsApp, data e se retira ou recebe, e manda; o pedido aparece em
 `/pedidos` com o selo "Pelo cardápio", e a cliente sai com um botão que avisa a dona no WhatsApp.
 
-**O que esta spec não entrega:** pagamento pela página, taxa de entrega calculada, "esgotado",
-dias e horários de funcionamento, combo à escolha e venda por peso na página, endereço bonito
-(`/c/mycookies` para toda conta), a cliente acompanhando o pedido depois de mandar. Está tudo em
-"Fora de escopo", com o porquê.
+**O que as sessões C a E acrescentam:** o combo na página, com "separados sairia R$ 69,00" ao
+lado do preço dele e a tela de escolha do combo à escolha; "Restam 8" e "Esgotado" nos produtos
+que ela marcar como limitados, contados do pote; e o preço de promoção riscando o de sempre, com
+o dia em que acaba.
+
+**O que esta spec não entrega:** pagamento pela página, taxa de entrega calculada, dias e
+horários de funcionamento, venda por peso na página, endereço bonito (`/c/mycookies` para toda
+conta), a cliente acompanhando o pedido depois de mandar, e promoção contra um preço que ela não
+pratica. Está tudo em "Fora de escopo", com o porquê.
 
 ---
 
@@ -76,6 +91,9 @@ dias e horários de funcionamento, combo à escolha e venda por peso na página,
   ir procurá-lo, e a conta nasce com ele fechado.
 - **Entra**, em `/pedidos` e no editor de pedido, o selo "Pelo cardápio" — **só** no pedido que
   veio de lá. Quem não abriu o cardápio nunca o vê.
+- **Entra**, nas sessões D e E, duas seções **dentro** do painel "Seu cardápio" ("Quantidade
+  limitada" e "Promoções"). Nenhum campo novo no editor de produto: quem não abriu o cardápio
+  continua sem ver nada disso.
 - **Sai**: nada. É uma spec aditiva, e está escrito aqui porque o `#d113` pede.
 
 ---
@@ -633,6 +651,339 @@ instalando na página pública.
 
 ---
 
+## 4 · Combos, quantidade limitada e promoção (sessões C, D e E)
+
+Acrescentadas em 2026-09-23, depois da A e da B codificadas. As três partem do mesmo lugar: a
+página já tem o preço certo e o servidor já decide tudo; o que muda é **o que a cliente vê ao
+lado do preço**. E as três obedecem a uma regra só, que é o que as separa de truque de loja
+virtual: **todo número na página é um número que o Rende sabe**. Economia contra um preço que a
+página cobra, "restam" contado do pote, promoção contra o preço de sempre. Nada de "restam
+poucas" sem número, "12 pessoas vendo agora" ou contador que recomeça quando a página recarrega.
+
+### A economia do combo é contra o preço que a própria página cobra — `#d163`
+
+Kit sem escolhas já entra no cardápio desde a A, mas aparece como um produto qualquer: "Caixa
+com 6 · R$ 60,00", sem dizer que é mais barato que seis avulsos. A C acrescenta a conta, e
+abre o combo à escolha, que a A deixou de fora.
+
+- **Kit fixo.** `avulso` = soma de `componente.quantidade × preço de hoje` de cada ficha de
+  dentro (o preço de hoje é o da promoção, se houver — `#d165`). Aparece **só** quando toda
+  ficha de dentro está na página (na lista e `entraNoCardapio`) e `avulso > preco`. "Separados
+  sairiam R$ 69,00" contra um preço que a cliente não consegue ver nem pedir ali é número
+  inventado; contra os produtos da mesma página, é uma conta que ela confere rolando a tela. O
+  que sobra dos dados já está carregado: as fichas de dentro são fichas da lista, e a C não lê
+  nada a mais para o kit fixo.
+- **Combo à escolha.** Entra no cardápio (`entraNoCardapio` perde a exclusão). As opções de
+  cada escolha são as da 014 — `opcoesDaEscolha`, pela categoria (`#d99`) —, mais `ativo`: um
+  sabor novo entra no combo no dia em que nasce, sem ela remarcar. A economia depende do que a
+  cliente escolhe, então a linha do produto diz **"economize pelo menos R$ 1,00"**, pela
+  combinação mais barata **entre as opções que estão na página**, e a tela de montar diz a conta
+  exata da combinação escolhida. Opção fora da lista entra no combo e fica fora da conta:
+  combinação com ela não mostra economia nenhuma. Combo sem opção viva numa das escolhas
+  (`custoDasEscolhas().semOpcao`) some da página, como ficha que deixou de entrar.
+- **O que sai para fora a mais:** o nome das opções de cada escolha. O preço de uma opção só sai
+  quando ela está na lista, e então já saía.
+
+**Por que "pelo menos" e não "até".** "Economize até R$ 7,00" é verdade para uma combinação e
+promessa para as outras; "pelo menos" é verdade para todas.
+
+### "Restam" é o pote menos o que os pedidos levam, e o servidor trava — `#d164`
+
+A A pôs "esgotado" fora de escopo porque "o cardápio de encomenda vende o que ainda vai ser
+feito". Continua certo para quase tudo; a D abre a exceção **por produto, escolhida por ela**:
+`cardapio.limitados`, um subconjunto de `fichaIds`. Produto limitado mostra "Restam 8" e, no
+zero, "Esgotado"; o resto continua de encomenda, sem número.
+
+**O número.** O pote da 013 (`estoqueProntoAtual`) é uma medição com data, e não um saldo
+(`#d97`): a fornada soma na projeção, mas o que sai do pote o sistema não vê. Um "restam" lido
+direto da projeção nunca desceria com os pedidos que chegam, e a página diria "Restam 8" para a
+décima cliente. Então:
+
+```
+restam = projecaoDoPronto(...).prontos
+       − unidades da ficha em pedidos não cancelados, não arquivados,
+         com dataEntregaISO > estoqueProntoContadoEmISO
+```
+
+"Unidades da ficha" é a linha, mais as escolhas × quantidade (como `reservadoNoPronto`), mais os
+componentes dos kits que a página conhece. Pedido entregue depois da contagem saiu do pote depois
+dela; pedido em aberto vai sair; os dois descontam. Orçamento também desconta — um orçamento de
+lixo prende unidades até ela cancelar, e o teto de vinte do `#d161` é o limite desse estrago.
+Pedido entregue antes da contagem já estava fora do pote quando ela contou.
+
+`ponytail:` componente de kit que **não** está na lista não desconta: o kit que ela vende só
+pelo app não é lido pela página. Ler as fichas de todo kit citado em pedido é o conserto, quando
+uma caixa vendida por fora esvaziar um pote limitado sem a página ver.
+
+**Sem contagem que valha** (nunca contou, ou a contagem venceu pela régua da 013), o produto
+limitado não mostra número e não trava: a página não inventa. O painel avisa ela.
+
+**A trava.** O handler relê tudo na hora de gravar e recusa com `acabou` (409) quando o pedido
+leva mais do que resta de algum produto limitado — somando as linhas, as escolhas e os
+componentes do próprio pedido. A página desabilita o "+" no que resta e troca "Adicionar" por
+"Esgotado", mas quem decide é o servidor, como no preço (`#d160`).
+
+**Leituras a mais**, só quando há produto limitado com contagem: `fornadas` com `dataISO >` a
+contagem mais antiga, e `pedidos` com `dataEntregaISO >` a mesma data. Duas consultas de
+intervalo em campo único, sem índice composto, limitadas pela janela da contagem; a página
+continua guardando por 60 s.
+
+`ponytail:` duas clientes no mesmo segundo podem levar as últimas unidades duas vezes. Uma
+transação não resolve (o número é derivado de consultas, não um contador), e o que escapa é um
+orçamento que ela recusa. Contador gravado quando isso acontecer com cliente de verdade.
+
+### A promoção desconta do preço de sempre, e tem dia para acabar — `#d165`
+
+O pedido de origem era **subir o preço mostrado em 20% acima do praticado e anunciar a
+promoção contra esse número**. Esta spec **não faz isso**, e a decisão é para ser lida por quem
+propuser de novo:
+
+- Preço "de" que nunca foi cobrado é a "metade do dobro". O Código de Defesa do Consumidor chama
+  de publicidade enganosa (art. 37, §1º), o Procon autua exatamente isso toda Black Friday, e
+  quem responde é a confeiteira — o nome na página é o dela, não o do Rende.
+- A cliente que compra toda semana sabe quanto custa o cookie. O risco de ser pega é maior no
+  WhatsApp da vizinha do que no Procon.
+
+**O que entra no lugar.** O preço riscado é o `precoVenda` da ficha, que é o que ela cobra fora
+da promoção; o preço da promoção é menor que ele; e a promoção tem data para acabar. Quem quer
+receber R$ 10,00 numa promoção de 20% precisa praticar R$ 12,50 de verdade no resto do tempo.
+
+```ts
+// src/lib/types/configuracao.ts
+export interface PromocaoDoCardapio {
+  fichaId: string;
+  /** O preço na promoção. Vale só se `0 < preco < precoVenda` na hora de ler. */
+  preco: Centavos;
+  /** O último dia, inclusive, pelo dia de Brasília. Até 30 dias depois de criada. */
+  ateISO: DataISO;
+}
+// em ConfiguracaoGeral.cardapio:
+limitados?: string[]; // sessão D, `#d164`
+promocoes?: PromocaoDoCardapio[]; // sessão E, `#d165`; uma por ficha
+```
+
+- **Uma por produto**, preço em reais e não percentual: ela pensa em "R$ 11,00", e dinheiro é
+  centavo inteiro. A página mostra o percentual **arredondado para baixo** (−15%, e não −16%),
+  para nunca anunciar mais desconto do que dá.
+- **Tem fim, e não se renova.** Até 30 dias (`DIAS_DE_PROMOCAO`). No dia seguinte ao `ateISO`,
+  a página e o handler voltam ao preço de sempre sozinhos; a promoção vencida é limpa da lista no
+  próximo `salvarCardapio`. Nada de "termina em 02:14:37" que recomeça: a página diz "até
+  sexta-feira, 25 de setembro", ou "termina hoje".
+- **Deixa de valer sozinha** quando ela muda o preço da ficha para igual ou abaixo do da
+  promoção — "de R$ 11,00 por R$ 11,00" não é promoção.
+- **O pedido grava o preço da promoção** em `precoUnitario`, pelo mesmo `precoVigente` que a
+  página usa. Nenhum campo novo em `Pedido`: o lucro estimado já mostra a ela o que a promoção
+  custou.
+
+`ponytail:` o sistema não confere se o preço de sempre é praticado há tempo — a ficha não guarda
+histórico de preço. Subir a ficha na véspera para descontar no dia seguinte é o mesmo truque,
+feito à mão; o painel diz em uma linha que o preço riscado precisa ser o que ela cobra fora da
+promoção. Um `precoVendaDesdeISO` na ficha, se um dia o Rende precisar provar isso.
+
+### Sessão C · Os combos
+
+#### 4.C.1 O domínio — `src/lib/domain/cardapio.ts`
+
+```ts
+export interface OpcaoDoCombo {
+  id: string;
+  nome: string;
+  /** Só quando a opção está na página; sem ele, a combinação não mostra economia. */
+  preco?: Centavos;
+}
+
+// em ProdutoDoCardapio:
+/** Kit fixo: a soma dos de dentro pelo preço de hoje, quando passa do preço do kit. */
+avulso?: Centavos;
+/** Combo à escolha: o que a cliente monta. */
+escolhas?: { categoria: string; quantidade: number; opcoes: OpcaoDoCombo[] }[];
+/** Combo à escolha: a economia da combinação mais barata, quando é positiva. */
+economiaMinima?: Centavos;
+
+/** A economia de uma combinação montada, ou `null` quando alguma opção não tem preço. */
+export function economiaDoCombo(
+  produto: ProdutoDoCardapio,
+  escolhas: { fichaId: string; quantidade: number }[],
+): Centavos | null;
+```
+
+`montarCardapio` recebe `opcoes: FichaTecnica[]` (as fichas das categorias dos combos) e passa
+a montar `avulso`, `escolhas` e `economiaMinima`. `economiaDoCombo` é da página (a tela de montar)
+e do teste; o servidor não a usa, porque a economia não é gravada.
+
+`esquemaPedidoDoCardapio`: cada item ganha `escolhas?: { fichaId, quantidade: int 1..50 }[]`, até
+12, por **uma** unidade do combo (como `EscolhaFeita`). `pedidoDoCardapio` recebe as fichas das
+opções escolhidas e:
+
+- kit com escolhas **sem** `escolhas`, ou kit sem escolhas **com** elas → `fora-de-forma`;
+- opção que não serve (`opcoesDaEscolha` com `ativo`) → `mudou`;
+- `escolhasCompletas` falso → `fora-de-forma` (a página não deixa mandar incompleto);
+- `EscolhaFeita` com nome e `custoUnitario` da ficha de agora; o `custoUnitarioSnapshot` da
+  linha é `custoDoComboMontado(kit, escolhas)` (`#d100`), o mesmo do editor de pedido;
+- a junção de linhas repetidas passa a ser por ficha **e** escolhas: duas Duplas com sabores
+  diferentes são duas linhas.
+
+`mensagemDeAviso` usa `nomeComEscolhas`: "2 Dupla (1 Cookie Tradicional + 1 Cookie Red Velvet)".
+
+#### 4.C.2 Leitura e handler
+
+A página e o handler leem, além das fichas da lista, as fichas de cada categoria de escolha dos
+combos da lista: uma consulta `where("categoria", "==", c)` por categoria distinta, filtrada em
+memória. Igualdade em campo único, sem índice. O handler lê só as opções que o pedido cita
+(`getAll`), e confere a categoria contra a ficha.
+
+#### 4.C.3 A página
+
+- **Kit fixo com `avulso`**: abaixo da descrição, em `ink-muted`, "Separados sairiam R$ 69,00 ·
+  você economiza R$ 9,00". Texto, sem selo colorido.
+- **Combo à escolha**: a mesma linha diz "Você escolhe os sabores" e, com `economiaMinima`,
+  "economize pelo menos R$ 1,00". O "Adicionar" abre o `Painel` **"Monte a sua {nome}"**: uma
+  seção por escolha ("Escolha 2 · Cookie"), uma linha por opção com o passo de quantidade, o "+"
+  travado quando a categoria enche (a regra de `escolhasCompletas`), o que falta em texto ("Falta
+  escolher 1"), a economia da combinação quando `economiaDoCombo` não é `null`, e
+  "Pôr no pedido" (52 px), desabilitado até completar.
+- **No carrinho**, a linha do combo mostra `nomeComEscolhas` e o passo de quantidade do combo
+  inteiro. Trocar o sabor é tirar e montar de novo: o carrinho é de dez itens, e um editor de
+  escolha dentro do painel do pedido é um painel dentro de outro.
+- **Painel da dona:** a linha "Combos à escolha e produtos vendidos por peso ainda não entram no
+  cardápio." vira "Produtos vendidos por peso ainda não entram no cardápio."
+
+#### 4.C.4 Caso de aceite da C
+
+Sobre o caso de aceite da B. Acrescenta na lista **"Caixa com 6"** (kit fixo: 3 Tradicional + 3
+Red Velvet, `precoVenda` R$ 60,00) e **"Dupla"** (kit, uma escolha: 2 de "Cookie";
+`precoVenda` R$ 19,00; embalagem R$ 1,00, então `custoEscolhas` R$ 8,40 e `custoUnitario`
+R$ 9,40). Na categoria "Cookie" também existe "Cookie teste", `ativo: false`.
+
+- "Caixa com 6": `avulso` R$ 69,00 (3 × 10 + 3 × 13). Com o Red Velvet fora da lista:
+  `avulso` ausente. Com `precoVenda` R$ 70,00: ausente.
+- "Dupla": opções Tradicional e Red Velvet, sem "Cookie teste"; `economiaMinima` R$ 1,00
+  (2 × 10 − 19). `economiaDoCombo` com 1 + 1: R$ 4,00; com 2 Red Velvet: R$ 7,00.
+- Pedido de 2 Duplas (1 Tradicional + 1 Red Velvet): uma linha, `precoUnitario` R$ 19,00,
+  subtotal R$ 38,00, `custoUnitarioSnapshot` R$ 8,61 (1,00 + 3,41 + 4,20). Com "Cookie teste"
+  numa escolha → `mudou`. Com só 1 sabor → `fora-de-forma`. 1 Dupla de 2 Tradicional e 1 Dupla
+  de 1 + 1 → duas linhas.
+
+### Sessão D · Quantidade limitada
+
+#### 4.D.1 O domínio
+
+```ts
+/** Unidades de cada receita que as linhas levam: a linha, as escolhas e os componentes dos kits dados. */
+export function unidadesPorFicha(
+  itens: Pick<ItemPedido, "fichaTecnicaId" | "quantidade" | "escolhas">[],
+  kits: Pick<FichaTecnica, "id" | "componentes">[],
+): Map<string, number>;
+
+/** Quantas restam de cada ficha limitada (`#d164`); ausente = sem contagem que valha. */
+export function restamNoPote(entrada: {
+  limitadas: FichaTecnica[];
+  kits: FichaTecnica[];
+  fornadas: FornadaDaFicha[];
+  pedidos: Pick<Pedido, "status" | "arquivado" | "dataEntregaISO" | "itens">[];
+  hojeISO: DataISO;
+}): Map<string, number>;
+```
+
+`restamNoPote` usa `projecaoDoPronto` da 013 e não reescreve a contagem. `ProdutoDoCardapio`
+ganha `restam?: number` (0 é esgotado; ausente é "sem número"), e a opção de combo ganha o mesmo
+campo. `montarCardapio` recebe o mapa pronto. `FalhaPedidoCardapio` ganha `acabou`: "Um dos
+produtos acabou, ou restam menos do que você escolheu. Confira e mande de novo."
+
+#### 4.D.2 Página, handler e painel
+
+- **Página**: "Restam 8" em `label` abaixo do preço; no zero, "Esgotado" no lugar do
+  "Adicionar", sem controle. O "+" do carrinho e o da tela de montar param no que resta. Opção de
+  combo esgotada aparece desabilitada, com "Esgotado".
+- **Handler**: depois de `pedidoDoCardapio`, com produto limitado no pedido, lê fornadas e
+  pedidos (seção `#d164`), soma `unidadesPorFicha` do pedido novo e recusa `acabou` (409) acima
+  do que resta. A página trata `acabou` como `mudou`: diz a frase e recarrega.
+- **Painel "Seu cardápio"**, seção **"Quantidade limitada"**, abaixo dos produtos: "Mostre
+  quantas restam e pare de receber pedido quando acabar." Um `checkbox` por produto marcado que
+  tem pote (`temPronto`: receita, e não kit), com a contagem ao lado — "No pote: 30, contado
+  ontem" — ou, sem contagem que valha, `TriangleAlert` e "Sem contagem: o cardápio não mostra
+  quantas restam", com o link para contar. Grava por `salvarCardapio`, como o resto.
+
+#### 4.D.3 Caso de aceite da D
+
+"Cookie Tradicional" limitado, `estoqueProntoAtual` 30 contado em 2026-09-22, uma fornada de 12
+vendáveis em 2026-09-23 (projeção: 42). Pedidos com `dataEntregaISO` depois de 22/09: um
+confirmado de 29 Tradicional; um orçamento de 2 Duplas com 1 Tradicional cada (2); uma "Caixa
+com 6" (3); um **cancelado** de 10 (não conta). Um **entregue em 22/09** de 4 (não conta).
+
+- `restam` = 42 − 34 = **8**. A página diz "Restam 8".
+- Pedido de 10 Tradicional → `acabou`. Pedido de 8 → passa; a página, renovada, diz "Esgotado".
+- Com `estoqueProntoContadoEmISO` vencido: `restam` ausente, a página sem número, o pedido de
+  100 passa.
+- Red Velvet, não limitado: sem `restam`, sempre.
+
+### Sessão E · A promoção
+
+#### 4.E.1 O domínio
+
+```ts
+export const DIAS_DE_PROMOCAO = 30;
+
+/** O preço de hoje, e o de sempre quando é promoção (`#d165`). */
+export function precoVigente(
+  ficha: Pick<FichaTecnica, "id" | "precificacao">,
+  promocoes: PromocaoDoCardapio[] | undefined,
+  hojeISO: DataISO,
+): { preco: Centavos; cheio?: Centavos; ateISO?: DataISO };
+
+/** O que o painel recusa antes de gravar. */
+export function problemaDaPromocao(
+  promocao: PromocaoDoCardapio,
+  ficha: FichaTecnica,
+  hojeISO: DataISO,
+): "maior-que-o-preco" | "sem-preco" | "data" | null;
+```
+
+`ProdutoDoCardapio` ganha `precoCheio?` e `promocaoAteISO?`, presentes só em promoção; `preco`
+passa a ser o vigente. `montarCardapio` calcula `hojeISO` de `agoraMs` por `hojeEmBrasilia`, e
+`avulso`/`economiaMinima` (C) usam o preço vigente dos de dentro. `pedidoDoCardapio` grava
+`precoUnitario` pelo `precoVigente`.
+
+#### 4.E.2 Página e painel
+
+- **Página**: o preço cheio riscado em `ink-muted` (`<s>`, com "antes" só para leitor de tela),
+  o preço da promoção em `body-strong`, e abaixo um `Selo` com ícone `Tag` e o texto "−15% até
+  sexta-feira, 25 de setembro" — ou "termina hoje". Ícone e texto; nunca só a cor.
+- **Painel "Seu cardápio"**, seção **"Promoções"**: as promoções que valem, uma por linha
+  ("Cookie Red Velvet · R$ 11,00 até sexta, 25/09"), cada uma com "Encerrar". "Nova promoção"
+  abre, no próprio painel, três campos — o produto (os marcados), "Preço na promoção" e "Até
+  quando" (`min` hoje, `max` hoje + 30) — e, ao vivo, **"Sobra pra você R$ 6,80 por unidade"**
+  (preço − `custoUnitario`). Abaixo do custo: `TriangleAlert` e "Nesse preço você paga para
+  vender." — avisa e deixa gravar. `problemaDaPromocao` recusa com a frase ("A promoção precisa
+  ser menor que o preço de sempre, R$ 13,00."). E a linha fixa, em `ink-muted`: "O preço riscado
+  é o da ficha. Ele precisa ser o que você cobra fora da promoção."
+
+#### 4.E.3 Caso de aceite da E
+
+Hoje é 23/09/2026. Promoção do Red Velvet: R$ 11,00 até 2026-09-25.
+
+- A página: R$ 13,00 riscado, R$ 11,00 · un, "−15% até sexta-feira, 25 de setembro"
+  (2/13 = 15,4%, para baixo). O painel: "Sobra pra você R$ 6,80 por unidade".
+- Pedido de 4 Red Velvet: `precoUnitario` R$ 11,00, subtotal R$ 44,00, custo R$ 16,80, lucro
+  R$ 27,20.
+- "Caixa com 6", durante a promoção: `avulso` R$ 63,00 (3 × 10 + 3 × 11), economia R$ 3,00.
+- Em 2026-09-26: a página diz R$ 13,00, sem selo; o pedido grava R$ 13,00.
+- Promoção de R$ 13,00 → `maior-que-o-preco`. Até 2026-10-24 (hoje + 31) → `data`. Com a ficha
+  mudada para R$ 11,00 depois de criada: `precoVigente` devolve R$ 11,00 sem `cheio`.
+
+### 4.F Testes, roteiro e documentação das três
+
+- **Testes** em `tests/domain/cardapio.test.ts`: os três casos de aceite número por número, e o
+  teste das chaves (`#d158`) com as chaves novas — `avulso`, `escolhas`, `economiaMinima`,
+  `restam`, `precoCheio`, `promocaoAteISO` — e só elas.
+- **Roteiro de navegador**, passos 14 a 20 (abaixo).
+- **Documentação**: `#d163` na C, `#d164` na D, `#d165` na E, em `docs/DECISOES.md`;
+  `ESTADO.md` a cada sessão; `firebaseAdmin.ts`, no cabeçalho, a leitura da página ganha "as
+  fichas das categorias dos combos" (C) e "fornadas e pedidos desde a contagem, só para contar"
+  (D).
+
+---
+
 ## Caso de aceite
 
 A conta `mycookies`, cardápio aberto com `fichaIds: ["tradicional", "redvelvet", "recheio"]`.
@@ -692,6 +1043,21 @@ logado no Rende e de rede. Aparelho em 360 px nos passos 3, 5 e 7.
     cardápio aparece com o selo em `/pedidos`.
 13. **A regra não mudou.** `git diff firestore.rules` vazio. No console da vitrine, sem login,
     `getDoc` em `contas/{contaId}/fichas/{id}`: `permission-denied`.
+14. **O combo fixo (C).** Pôr no cardápio uma caixa e os sabores de dentro: a linha diz
+    "Separados sairiam…" com a conta certa. Tirar um dos sabores da lista: a linha some.
+15. **O combo à escolha (C), a 360 px.** "Adicionar" abre "Monte a sua…"; o "+" trava quando a
+    categoria enche; "Pôr no pedido" só com tudo escolhido; a economia muda com o sabor. Mandar:
+    no app dela, o pedido tem as escolhas e o custo do combo montado, igual a um feito à mão.
+16. **Restam (D).** Contar o pote de um produto e marcá-lo como limitado: a página diz "Restam
+    N" com o N da conta de `#d164`. Mandar um pedido que leva tudo: a página, renovada, diz
+    "Esgotado". Com a página velha aberta em outro celular, pedir mais uma: `acabou`.
+17. **Contagem vencida (D).** Com a contagem fora da validade: sem número, e o painel avisa.
+18. **A promoção (E).** Criar uma até amanhã: a página mostra o riscado, o percentual e "até…";
+    o pedido grava o preço da promoção. Tentar uma igual ao preço de sempre: o painel recusa.
+19. **A promoção acaba (E).** No dia seguinte ao último: o preço de sempre, sem selo, na página e
+    no pedido — sem ela tocar em nada.
+20. **Nada inventado.** Com promoção, combo e limitado ao mesmo tempo, conferir cada número da
+    página contra a ficha, o pote e os pedidos. Nenhum número na página que ela não reconheça.
 
 ---
 
@@ -699,37 +1065,57 @@ logado no Rende e de rede. Aparelho em 360 px nos passos 3, 5 e 7.
 
 **A**
 
-- [ ] `ConfiguracaoGeral.cardapio` e `Pedido.origem` existem, opcionais; nenhum documento gravado
+- [x] `ConfiguracaoGeral.cardapio` e `Pedido.origem` existem, opcionais; nenhum documento gravado
       muda de forma.
-- [ ] `domain/cardapio.ts` com `entraNoCardapio`, `montarCardapio` e `mensagemDeContato`, sem
+- [x] `domain/cardapio.ts` com `entraNoCardapio`, `montarCardapio` e `mensagemDeContato`, sem
       Firebase e sem React, com o teste das chaves (`#d158`).
-- [ ] `/c/[contaId]` renderiza no servidor, guarda 60 s, e dá a mesma página de não encontrado
+- [x] `/c/[contaId]` renderiza no servidor, guarda 60 s, e dá a mesma página de não encontrado
       para os cinco casos de `null`.
-- [ ] A rota da foto devolve bytes com `Cache-Control` imutável e 404 fora do cardápio; a página
+- [x] A rota da foto devolve bytes com `Cache-Control` imutável e 404 fora do cardápio; a página
       não tem `data:` URL nenhum.
-- [ ] "Seu cardápio" em `/configuracao`, só para a dona: interruptor com texto, link com copiar e
+- [x] "Seu cardápio" em `/configuracao`, só para a dona: interruptor com texto, link com copiar e
       compartilhar, `checkbox` por produto que entra, o limite, a linha sobre combo e peso, o
       aviso sem telefone. Cada toque grava por `salvarCardapio`, despachado.
-- [ ] `firestore.rules` e `firestore.indexes.json` intocados.
+- [x] `firestore.rules` e `firestore.indexes.json` intocados.
 
 **B**
 
-- [ ] `esquemaPedidoDoCardapio`, `pedidoDoCardapio`, `mensagemDeAviso`, `hojeEmBrasilia` e
+- [x] `esquemaPedidoDoCardapio`, `pedidoDoCardapio`, `mensagemDeAviso`, `hojeEmBrasilia` e
       `meiaNoiteEmBrasilia` testados, com o caso de aceite número por número.
-- [ ] `POST /api/cardapio/pedido`: esquema, pote de mel sem gravar, `fechado` pela mesma
+- [x] `POST /api/cardapio/pedido`: esquema, pote de mel sem gravar, `fechado` pela mesma
       `montarCardapio`, teto por `count()`, preço e custo da ficha, `satisfies Omit<Pedido,
-    "id">`, um `set` e nada mais.
-- [ ] O formulário da página com o passo de quantidade, o painel do pedido, os erros em
+"id">`, um `set` e nada mais.
+- [x] O formulário da página com o passo de quantidade, o painel do pedido, os erros em
       `role="alert"` sem perder o que foi digitado, e o aviso no WhatsApp depois de enviar.
-- [ ] Selo "Pelo cardápio" em `LinhaPedido` e no `EditorPedido`, com ícone e texto.
+- [x] Selo "Pelo cardápio" em `LinhaPedido` e no `EditorPedido`, com ícone e texto.
 - [ ] Os passos 1 a 13 do roteiro passam; o 5 prova a data e o 6 prova o preço.
 
-**As duas**
+**C**
 
-- [ ] Alvo de 44 px, primário de 52 px, nada só por cor.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; o `build` lista `/c/[contaId]` (ISR), a rota da
+- [ ] Kit fixo com `avulso` só quando todos os de dentro estão na página e custam mais juntos.
+- [ ] Combo à escolha na página, com a tela de montar, `economiaMinima` e `economiaDoCombo`; o
+      handler confere as escolhas e grava o custo por `custoDoComboMontado`.
+- [ ] Linhas com escolhas diferentes não se juntam; `mensagemDeAviso` com `nomeComEscolhas`.
+
+**D**
+
+- [ ] `cardapio.limitados` escolhido no painel, com a contagem ao lado e o aviso sem contagem.
+- [ ] `restamNoPote` pelo caso de aceite; "Restam N" e "Esgotado" na página; `acabou` no
+      handler, contando linhas, escolhas e componentes.
+
+**E**
+
+- [ ] `cardapio.promocoes` pelo painel, com "Sobra pra você", o aviso abaixo do custo e as
+      recusas de `problemaDaPromocao`.
+- [ ] `precoVigente` na página, no `avulso` e no pedido; a promoção acaba sozinha no dia seguinte
+      ao `ateISO`; o percentual arredondado para baixo.
+
+**Todas**
+
+- [x] Alvo de 44 px, primário de 52 px, nada só por cor.
+- [x] `lint`, `typecheck`, `test` e `build` passam; o `build` lista `/c/[contaId]` (ISR), a rota da
       foto e `/api/cardapio/pedido` (dinâmicas).
-- [ ] `#d158` a `#d162` escritos; `ESTADO.md` e `ROADMAP.md` atualizados.
+- [x] `#d158` a `#d162` escritos; `ESTADO.md` e `ROADMAP.md` atualizados.
 
 ---
 
@@ -740,13 +1126,13 @@ logado no Rende e de rede. Aparelho em 360 px nos passos 3, 5 e 7.
   orçamento é justamente o passo em que ela diz se dá.
 - **Taxa de entrega calculada** (por bairro, por distância). Taxa zero e "a {quem} combina com
   você" é o que ela faz hoje no WhatsApp.
-- **"Esgotado" e estoque na página.** A 013 sabe quanto está pronto, mas o cardápio de encomenda
-  vende o que ainda vai ser feito. Ela desmarca o produto no painel quando não der.
+- **"Esgotado" e estoque em todo produto.** O cardápio de encomenda vende o que ainda vai ser
+  feito. Só o que ela marca como limitado conta o pote (sessão D, `#d164`).
 - **Dias e horários de funcionamento, antecedência configurável, pedido mínimo.** Amanhã e 90
   dias são constantes; ela recusa o dia que não dá, na conversa. Viram campo com o primeiro
   pedido real que ela precisar recusar toda semana.
-- **Combo à escolha e venda por peso na página** (`#d159`). A tela de escolha da 014 do lado da
-  cliente, e quantidade fracionária com preço por quilo.
+- **Venda por peso na página** (`#d159`). Quantidade fracionária com preço por quilo. O combo à
+  escolha, que a A deixava fora com ela, entra na sessão C.
 - **Endereço bonito** (`/c/mycookies` para toda conta). Índice global fora de `contas/` (`#d158`).
 - **A cliente acompanhando o pedido** (link de status, "sua encomenda está pronta"). Exige
   identificar a cliente sem login, e o WhatsApp já é o canal.
@@ -756,7 +1142,16 @@ logado no Rende e de rede. Aparelho em 360 px nos passos 3, 5 e 7.
 - **Captcha e limite por IP** (`#d161`).
 - **Indexação em busca e imagem de prévia** (`og:image`). O link é para quem ela manda; a prévia
   do WhatsApp mostra título e frase, e é o que basta.
-- **Preço de cardápio diferente do preço da ficha** (promoção). Um preço é um preço.
+- **Preço de cardápio diferente do preço da ficha**, fora da promoção com prazo da sessão E. Um
+  preço é um preço.
+- **Promoção contra preço inflado** ("de" acima do que ela cobra) (`#d165`). Publicidade
+  enganosa, e o nome na página é o dela.
+- **Contador regressivo, "restam poucas" sem número, "N pessoas vendo agora".** Todo número na
+  página é um número que o Rende sabe (seção 4).
+- **Promoção por percentual, por categoria ou para o cardápio inteiro, e cupom.** Uma por
+  produto, em reais, resolve o caso; o resto vira campo quando ela pedir.
+- **Economia do combo contra produto fora da página.** A conta que a cliente não confere não sai
+  (`#d163`).
 - **Mais de um cardápio por conta** (atacado e varejo). Uma lista.
 - **Gating por plano.** O cardápio é upsell natural (`docs/saas/CLAUDE.md` §4), e gating é a 032.
   Até lá, toda conta tem.
@@ -789,6 +1184,13 @@ logado no Rende e de rede. Aparelho em 360 px nos passos 3, 5 e 7.
   qualquer jeito. Se acontecer com cliente de verdade, o número sobe; não vira configuração.
 - **`contaId` no link.** Um UUID na bio do Instagram é feio. É o preço de não ter nada fora de
   `contas/`.
+- **Nada de preço de referência inflado** (`#d165`). Foi o pedido original. Quem quiser a
+  promoção de 20% sem perder receita sobe o preço de sempre de verdade, e cobra ele.
+- **Orçamento desconta do "restam"** (`#d164`). Um orçamento que ela vai recusar prende unidades
+  até ser cancelado. É o lado seguro: a página nunca vende o que já foi pedido.
+- **Sem contagem, sem trava** (`#d164`). O produto limitado com contagem vencida aceita
+  qualquer quantidade. Travar em zero esconderia o produto por ela ter esquecido de contar; o
+  painel avisa, e o pedido é orçamento.
 
 ---
 
@@ -821,6 +1223,12 @@ logado no Rende e de rede. Aparelho em 360 px nos passos 3, 5 e 7.
 - **O preço de um minuto atrás.** Entre ela salvar e a página renovar, a cliente vê o preço antigo
   e o pedido grava o novo. A tela de enviado mostra o total que o handler devolveu, que é o
   gravado. É raro, dura um minuto, e o orçamento passa pela confirmação dela de qualquer jeito.
+- **O "restam" depende de ela contar o pote.** Um número que só existe se ela conta é um número
+  que para de existir quando ela para de contar, e a página degrada para "sem número" sem
+  avisar a cliente. O painel é o único lugar que avisa ela.
+- **Mais leituras por visita não cacheada** (C e D): as categorias dos combos, as fornadas e os
+  pedidos desde a contagem. Continua dentro dos 60 s do `revalidate`; se a D pesar, é a janela
+  da contagem que se encurta, e não o cache que se desliga.
 - **Esta spec é da fase 3, e a fase 0 ainda não passou no teste.** Como a 030: nada aqui deve ser
   publicado antes de a usuária 0 chegar ao preço sozinha e de a 027–030 saírem do branch.
 
@@ -830,6 +1238,7 @@ logado no Rende e de rede. Aparelho em 360 px nos passos 3, 5 e 7.
 
 `npm run lint`, `npm run typecheck`, `npm test` e `npm run build` no fim de **cada** sessão, com o
 resultado real relatado, e o `build` listando as rotas novas. Mais o roteiro: passos 1 a 4 e 13
-no fim da A; 5 a 12 no fim da B. A spec só está pronta quando o passo 5 rodar num celular que
+no fim da A; 5 a 12 no fim da B; 14 e 15 no fim da C; 16 e 17 no fim da D; 18 a 20 no fim da
+E. A spec só está pronta quando o passo 5 rodar num celular que
 nunca entrou no Rende: uma cliente de verdade, sem ninguém explicar, mandando um pedido que chega
 em `/pedidos` no dia certo e com o preço certo.

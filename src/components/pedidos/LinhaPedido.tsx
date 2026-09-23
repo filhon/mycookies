@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Check, ChevronRight, Truck, TriangleAlert } from "lucide-react";
+import { Check, ChevronRight, Store, Truck, TriangleAlert } from "lucide-react";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Marcador } from "@/components/ui/Selo";
 import { SeloStatus } from "./SeloStatus";
@@ -50,6 +50,16 @@ export function LinhaPedido({ pedido }: { pedido: Pedido }) {
                 }
               >
                 Pago
+              </Marcador>
+            )}
+            {/* Marcador, e não pílula, pela mesma razão do pago (spec 031). */}
+            {pedido.origem === "CARDAPIO" && (
+              <Marcador
+                icone={
+                  <Store aria-hidden className="size-3.5" strokeWidth={1.75} />
+                }
+              >
+                Pelo cardápio
               </Marcador>
             )}
             {pedido.entrega.tipo === "ENTREGA" && (

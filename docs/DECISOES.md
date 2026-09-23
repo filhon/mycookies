@@ -5017,3 +5017,92 @@ ajudante não escreve `configuracao` (`#d154`) e não vê a prateleira.
 **Consequência.** A página lê um documento para saber quais fichas buscar, e busca só essas, sem
 consulta nem índice. O limite de 40 conta os ids da lista, inclusive os que deixaram de entrar,
 porque é sobre a lista que o servidor corta.
+
+---
+
+## D160 · O pedido do cardápio nasce orçamento, com o preço do servidor
+
+**Status:** vigente · decidida em 2026-09-23, na spec `031-cardapio-publico.md` (sessão B).
+
+**Contexto.** A página do cardápio é aberta por quem não tem login, e o pedido que sai dela
+precisa cair em `/pedidos` sem que a dona digite tudo de novo. Preço vindo do navegador de um
+estranho não se grava.
+
+**Decisão.** `POST /api/cardapio/pedido` recebe **ids e quantidades** (`esquemaPedidoDoCardapio`),
+relê a conta, a configuração e as fichas da lista (`lerContaDoCardapio`, a mesma leitura da
+página), passa por `montarCardapio` (fechado é `fechado`, sem segunda opinião) e monta o pedido
+por `pedidoDoCardapio` (`src/lib/domain/cardapio.ts`, puro): cada item conferido contra a lista e
+contra `entraNoCardapio` (senão `mudou`), `precoVenda` e `custoUnitario` **de agora**, a mesma
+ficha em duas linhas somada numa, e os totais por `derivarPedido`. O documento é um `Pedido`
+comum: `status: "ORCAMENTO"`, `pago: false`, `origem: "CARDAPIO"`, sem `clienteId`,
+`entrega.taxa: 0`, `desconto: 0`, `custoTaxaPagamento: 0`. Um `set`, e o objeto inteiro passa por
+`satisfies Omit<Pedido, "id">`. A data vai de amanhã a hoje + 90, com "hoje" de Brasília
+(`hojeEmBrasilia`) e `dataEntrega` na meia-noite de Brasília (`meiaNoiteEmBrasilia`), porque o
+servidor roda em UTC. O código do pedido sai da data de Brasília pelo mesmo motivo.
+
+**O que a spec não previu, e esta sessão fechou:**
+
+- **Ausente, e não `null`.** A spec pedia `endereco: null` na retirada e `formaPagamentoId: null`.
+  O tipo `Pedido` não aceita `null` nesses campos, e o `satisfies` recusaria. `corpoDoPedido` grava
+  `null` porque o mesmo corpo serve ao `updateDoc`; aqui é só criação, e ausente é o mesmo "não
+  tem". `observacoes` vazia também fica ausente.
+- **"Meu nome é Ana", e não "Sou a Ana"**, na mensagem de aviso. Quem pede pode ser homem, e o
+  texto sai no nome dele, pelo polegar dele. E **"no sábado" / "no domingo"**, e não "na" para
+  todo dia: `rotuloDiaPorExtenso` dá o nome, `mensagemDeAviso` põe o artigo. Com entrega, o total
+  diz "sem a entrega".
+- **Dia que não existe** (`2026-09-31`) é `data`: passa na expressão regular e não no calendário.
+- **O selo na lista é `Marcador`, e não `Selo`.** A linha de pedido tem uma pílula só, a do status;
+  pago e entrega já são marcadores sem fundo pela largura de 360px. "Pelo cardápio" segue a mesma
+  régua na lista, com o ícone `Store`; no editor, onde há espaço, é `Selo` neutro ao lado do status
+  no bloco "Em que pé está" (o `CabecalhoPagina` esconde a descrição no celular).
+
+**Consequência.** O pedido não é idempotente: dois toques em "Enviar" são dois orçamentos; o botão
+fica desabilitado enquanto envia. Entre a dona mudar um preço e a página renovar (60 s), a cliente
+vê o preço de antes e o pedido grava o novo; a tela de enviado mostra o total que o handler
+devolveu. `atualizarPedido` não conhece `origem` e não o apaga.
+
+---
+
+## D161 · O freio é um teto de orçamentos em aberto, e não um captcha
+
+**Status:** vigente · decidida em 2026-09-23, na spec `031-cardapio-publico.md` (sessão B).
+
+**Contexto.** Uma rota que escreve sem login vai receber lixo.
+
+**Decisão.** Três defesas, da mais barata para a mais cara. **O esquema** (nome de 2 a 80, telefone
+que `telefoneParaWhatsApp` aceita, 1 a 30 linhas, quantidade inteira de 1 a 500 também depois de
+somar a mesma ficha, endereço até 200, observação até 500). **O pote de mel**: um campo `site`
+fora da tela, `aria-hidden`, `tabIndex={-1}`, `autoComplete="off"`; preenchido, a rota responde
+200 com `{ codigo: null }` sem ler nem gravar. **O teto**: `count()` de `origem == "CARDAPIO"`,
+`status == "ORCAMENTO"`, `arquivado == false`, e a partir de `LIMITE_DE_ORCAMENTOS_EM_ABERTO` (20)
+a rota responde `cheio` (429) e a página oferece "Falar no WhatsApp". Só igualdades: rodou contra o
+projeto de verdade sem pedir índice composto. Sem captcha (serviço externo, script de terceiro na
+página da cliente dela, um passo a mais em todo pedido real) e sem limite por IP (uma escrita por
+requisição, inclusive das recusadas). O `ponytail:` no topo do handler diz quando o Turnstile entra.
+
+**Consequência.** No pior caso, vinte orçamentos de lixo para ela cancelar, e a próxima cliente de
+verdade vai para o WhatsApp, que é para onde ia de qualquer jeito. Uma cliente com preenchedor
+automático que escreve em campo escondido perderia o pedido sem saber; o roteiro não cobre isso.
+Se o teto morder cliente de verdade, o número sobe; não vira configuração.
+
+---
+
+## D162 · A foto sai por rota própria, e não dentro da página
+
+**Status:** vigente · decidida em 2026-09-23, na spec `031-cardapio-publico.md` (codificada na
+sessão A, registrada na B, como a spec divide).
+
+**Contexto.** A foto é `data:` URL dentro da ficha (`#d109`). Como `src` na página, viajaria duas
+vezes (no HTML e no pacote de dados do React) e sem `loading="lazy"`, que não vale para `data:`.
+
+**Decisão.** `GET /c/{contaId}/foto/{fichaId}?v={atualizadoEmMs}` decodifica o `data:` URL e
+devolve os bytes com o `Content-Type` do prefixo (`tipoDaFoto`: jpeg, png e webp, `#d159`) e
+`Cache-Control: public, max-age=31536000, immutable`. O `?v=` é o `atualizadoEm` da ficha: foto
+trocada é URL nova. 404 quando o cardápio está fechado, a ficha não está na lista ou não entra.
+A página usa `<img loading="lazy" decoding="async" width height>`, sem `next/image`. Na sessão B
+as linhas de produto passaram para o componente de cliente (`PedidoPeloCardapio`), e o
+`Cardapio` que ele recebe continua sem foto nenhuma dentro: só `fotoVersao`.
+
+**Consequência.** A rota lê a configuração e a ficha a cada foto não cacheada; com a URL imutável,
+é uma vez por versão por borda. Se pesar, é a foto que migra para o Storage, e a URL da página
+continua a mesma.

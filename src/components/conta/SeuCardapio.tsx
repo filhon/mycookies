@@ -222,7 +222,7 @@ export function SeuCardapio({
                 {aberto ? (
                   <>
                     <span className="font-semibold">Aberto:</span> quem tem o
-                    link vê os produtos e fala com você.
+                    link vê os produtos e faz o pedido.
                   </>
                 ) : (
                   <>

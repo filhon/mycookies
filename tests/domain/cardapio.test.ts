@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
   entraNoCardapio,
+  esquemaPedidoDoCardapio,
+  mensagemDeAviso,
   mensagemDeContato,
   montarCardapio,
+  pedidoDoCardapio,
   tipoDaFoto,
+  type PedidoDoCardapio,
 } from "@/lib/domain/cardapio";
+import { hojeEmBrasilia, meiaNoiteEmBrasilia } from "@/lib/domain/datas";
+import { formatarMoeda } from "@/lib/domain/money";
 import type { ConfiguracaoGeral, Conta, FichaTecnica } from "@/lib/types";
 
 // Spec 031, sessão A. O caso de aceite: `mycookies`, cardápio aberto com
@@ -361,6 +367,259 @@ describe("mensagemDeContato", () => {
   it("a frase inteira", () => {
     expect(mensagemDeContato(montar()!.negocio)).toBe(
       "Oi, MyCookie's! Vi o cardápio e queria fazer um pedido.",
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sessão B: o pedido. Ana manda 4 Tradicional, 4 Red Velvet e mais 2
+// Tradicional numa segunda linha, retirada em 25/09; hoje é 23/09.
+// ---------------------------------------------------------------------------
+
+const HOJE = "2026-09-23";
+
+function pedidoDaAna(
+  parcial: Partial<PedidoDoCardapio> = {},
+): PedidoDoCardapio {
+  return esquemaPedidoDoCardapio.parse({
+    contaId: "mycookies",
+    nome: "Ana Beatriz",
+    telefone: "(81) 98888-7777",
+    itens: [
+      { fichaId: "tradicional", quantidade: 4 },
+      { fichaId: "redvelvet", quantidade: 4 },
+      { fichaId: "tradicional", quantidade: 2 },
+    ],
+    dataEntregaISO: "2026-09-25",
+    entrega: { tipo: "RETIRADA" },
+    ...parcial,
+  });
+}
+
+function gravar(
+  pedido: PedidoDoCardapio = pedidoDaAna(),
+  fichas: FichaTecnica[] = [TRADICIONAL, RED_VELVET, RECHEIO],
+) {
+  return pedidoDoCardapio({
+    pedido,
+    fichas,
+    fichaIds: ["tradicional", "redvelvet", "recheio"],
+    hojeISO: HOJE,
+  });
+}
+
+describe("pedidoDoCardapio", () => {
+  it("o caso de aceite, número por número", () => {
+    const r = gravar();
+    if (!r.ok) throw new Error(r.falha);
+    const { corpo } = r;
+
+    expect(corpo.itens).toEqual([
+      {
+        fichaTecnicaId: "tradicional",
+        nomeSnapshot: "Cookie Tradicional",
+        quantidade: 6,
+        precoUnitario: 1000,
+        custoUnitarioSnapshot: 341,
+        subtotal: 6000,
+      },
+      {
+        fichaTecnicaId: "redvelvet",
+        nomeSnapshot: "Cookie Red Velvet",
+        quantidade: 4,
+        precoUnitario: 1300,
+        custoUnitarioSnapshot: 420,
+        subtotal: 5200,
+      },
+    ]);
+    expect(corpo.subtotal).toBe(11200);
+    expect(corpo.total).toBe(11200);
+    expect(corpo.custoTotalEstimado).toBe(3726);
+    expect(corpo.lucroEstimado).toBe(7474);
+    expect(corpo.clienteNome).toBe("Ana Beatriz");
+    expect(corpo.clienteTelefone).toBe("(81) 98888-7777");
+    expect(corpo.status).toBe("ORCAMENTO");
+    expect(corpo.origem).toBe("CARDAPIO");
+    expect(corpo.competencia).toBe("2026-09");
+    expect(corpo.dataEntregaISO).toBe("2026-09-25");
+    expect(corpo.entrega).toEqual({ tipo: "RETIRADA", taxa: 0 });
+    expect(corpo.fichaIds).toEqual(["tradicional", "redvelvet"]);
+    expect(corpo.codigo).toMatch(/^P-260923-[A-Z0-9]{3}$/);
+    expect(corpo.pago).toBe(false);
+    expect(corpo.arquivado).toBe(false);
+  });
+
+  it("zera taxa, desconto e maquininha, e não liga a cliente", () => {
+    const r = gravar(
+      pedidoDaAna({
+        entrega: { tipo: "ENTREGA", endereco: "Rua das Flores, 10" },
+      }),
+    );
+    if (!r.ok) throw new Error(r.falha);
+    expect(r.corpo.entrega).toEqual({
+      tipo: "ENTREGA",
+      taxa: 0,
+      endereco: "Rua das Flores, 10",
+    });
+    expect(r.corpo.desconto).toBe(0);
+    expect(r.corpo.custoTaxaPagamento).toBe(0);
+    expect(r.corpo).not.toHaveProperty("clienteId");
+    expect(r.corpo).not.toHaveProperty("formaPagamentoId");
+  });
+
+  it("ignora preço vindo do corpo: o gravado é o da ficha", () => {
+    const pedido = esquemaPedidoDoCardapio.parse({
+      ...pedidoDaAna(),
+      itens: [{ fichaId: "tradicional", quantidade: 1, precoUnitario: 1 }],
+    });
+    const r = gravar(pedido);
+    if (!r.ok) throw new Error(r.falha);
+    expect(r.corpo.itens[0]!.precoUnitario).toBe(1000);
+    expect(r.corpo.total).toBe(1000);
+  });
+
+  it("item fora da lista é `mudou`", () => {
+    const r = pedidoDoCardapio({
+      pedido: pedidoDaAna(),
+      fichas: [TRADICIONAL, RED_VELVET],
+      fichaIds: ["tradicional"],
+      hojeISO: HOJE,
+    });
+    expect(r).toEqual({ ok: false, falha: "mudou" });
+  });
+
+  it("ficha arquivada desde a página é `mudou`", () => {
+    const r = gravar(pedidoDaAna(), [
+      TRADICIONAL,
+      { ...RED_VELVET, arquivado: true },
+    ]);
+    expect(r).toEqual({ ok: false, falha: "mudou" });
+  });
+
+  it("produto sem preço é `mudou`", () => {
+    const r = gravar(
+      pedidoDaAna({ itens: [{ fichaId: "recheio", quantidade: 1 }] }),
+    );
+    expect(r).toEqual({ ok: false, falha: "mudou" });
+  });
+
+  it("a mesma ficha somando mais de 500 é `fora-de-forma`", () => {
+    const r = gravar(
+      pedidoDaAna({
+        itens: [
+          { fichaId: "tradicional", quantidade: 300 },
+          { fichaId: "tradicional", quantidade: 201 },
+        ],
+      }),
+    );
+    expect(r).toEqual({ ok: false, falha: "fora-de-forma" });
+  });
+
+  it("hoje é `data`; amanhã passa; hoje + 90 passa; hoje + 91 é `data`", () => {
+    const em = (dataEntregaISO: string) =>
+      gravar(pedidoDaAna({ dataEntregaISO })).ok;
+    expect(em("2026-09-24")).toBe(true);
+    expect(em("2026-12-22")).toBe(true);
+    expect(em("2026-12-23")).toBe(false);
+    expect(gravar(pedidoDaAna({ dataEntregaISO: HOJE }))).toEqual({
+      ok: false,
+      falha: "data",
+    });
+  });
+
+  it("dia que não existe é `data`", () => {
+    expect(gravar(pedidoDaAna({ dataEntregaISO: "2026-09-31" }))).toEqual({
+      ok: false,
+      falha: "data",
+    });
+  });
+});
+
+describe("esquemaPedidoDoCardapio", () => {
+  const base = {
+    contaId: "mycookies",
+    nome: "Ana",
+    telefone: "(81) 98888-7777",
+    itens: [{ fichaId: "tradicional", quantidade: 1 }],
+    dataEntregaISO: "2026-09-25",
+    entrega: { tipo: "RETIRADA" },
+  };
+
+  it("aceita o pedido mínimo", () => {
+    expect(esquemaPedidoDoCardapio.safeParse(base).success).toBe(true);
+  });
+  it("recusa telefone que não disca", () => {
+    expect(
+      esquemaPedidoDoCardapio.safeParse({ ...base, telefone: "9888-777" })
+        .success,
+    ).toBe(false);
+  });
+  it("recusa entrega sem endereço", () => {
+    expect(
+      esquemaPedidoDoCardapio.safeParse({
+        ...base,
+        entrega: { tipo: "ENTREGA" },
+      }).success,
+    ).toBe(false);
+  });
+  it("recusa 31 linhas", () => {
+    expect(
+      esquemaPedidoDoCardapio.safeParse({
+        ...base,
+        itens: Array.from({ length: 31 }, () => base.itens[0]),
+      }).success,
+    ).toBe(false);
+  });
+  it("recusa quantidade quebrada", () => {
+    expect(
+      esquemaPedidoDoCardapio.safeParse({
+        ...base,
+        itens: [{ fichaId: "tradicional", quantidade: 1.5 }],
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("hojeEmBrasilia e meiaNoiteEmBrasilia", () => {
+  it("01h30 UTC do dia 24 ainda é dia 23 em Brasília", () => {
+    expect(hojeEmBrasilia(new Date("2026-09-24T01:30:00Z"))).toBe("2026-09-23");
+  });
+  it("a meia-noite de Brasília é 03h UTC", () => {
+    expect(meiaNoiteEmBrasilia("2026-09-25").toISOString()).toBe(
+      "2026-09-25T03:00:00.000Z",
+    );
+  });
+});
+
+describe("mensagemDeAviso", () => {
+  const aviso = {
+    negocio: "MyCookie's",
+    codigo: "P-260923-K3F",
+    nome: "Ana Beatriz",
+    itens: [
+      { nome: "Cookie Tradicional", quantidade: 6 },
+      { nome: "Cookie Red Velvet", quantidade: 4 },
+    ],
+    total: 11200,
+    dataEntregaISO: "2026-09-25",
+    entrega: "RETIRADA" as const,
+  };
+
+  it("retirada, a frase inteira", () => {
+    expect(mensagemDeAviso(aviso)).toBe(
+      `Oi, MyCookie's! Acabei de fazer o pedido P-260923-K3F pelo cardápio: 6 Cookie Tradicional, 4 Cookie Red Velvet. Total ${formatarMoeda(11200)}, para retirar na sexta-feira, 25 de setembro. Meu nome é Ana.`,
+    );
+  });
+
+  it("entrega no sábado, a frase inteira", () => {
+    expect(
+      mensagemDeAviso({
+        ...aviso,
+        entrega: "ENTREGA",
+        dataEntregaISO: "2026-09-26",
+      }),
+    ).toBe(
+      `Oi, MyCookie's! Acabei de fazer o pedido P-260923-K3F pelo cardápio: 6 Cookie Tradicional, 4 Cookie Red Velvet. Total ${formatarMoeda(11200)} sem a entrega, para receber no sábado, 26 de setembro. Meu nome é Ana.`,
     );
   });
 });
