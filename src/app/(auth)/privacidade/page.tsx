@@ -39,6 +39,8 @@ const SECOES: SecaoDeTexto[] = [
       "Da assinatura: o plano, as datas e a situação dos pagamentos, e os identificadores que a Stripe nos devolve. Os dados do cartão são digitados na página da Stripe e ficam com ela: o Rende não os vê nem os guarda.",
       "Da foto de nota fiscal: quando você usa a leitura de nota, a imagem é enviada para ser lida por inteligência artificial, e só os itens e valores lidos voltam para o app. O Rende não guarda a imagem.",
       "Dados técnicos: os serviços que hospedam o Rende registram, como qualquer site, o endereço IP, a data e hora dos acessos e informações do navegador e do aparelho.",
+      // Spec 038 (`DECISOES.md#d180`). Espera a revisão de quem conduz o projeto.
+      "Nas páginas públicas do Rende e na tela de criar conta, contamos visitas de forma agregada, pela Vercel: qual página foi aberta, de que site a pessoa veio, o país e o tipo de aparelho. Não usamos cookie para isso, não identificamos quem visitou, e nada disso é contado dentro do aplicativo.",
     ],
   },
   {

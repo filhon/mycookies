@@ -5613,3 +5613,43 @@ uma segunda cópia para manter.
 
 **Consequência.** Se o Search Console mostrar que concorrentes com `FAQPage` aparecem melhor, é
 um `<script>` na página do preço, e esta decisão volta à mesa.
+
+---
+
+## D180 · A visita contada pela Vercel, sem pacote, só nas páginas públicas e no cadastro
+
+**Status:** vigente · decidida em 2026-09-24, na spec 038
+
+**Contexto.** `scripts/metricas.mjs` conta contas criadas; ninguém contava quem chegou e não
+criou. Entre o link aberto e a conta há três portas (a página, o botão, o formulário), e sem
+número nenhuma mudança da 039 e da 040 se mede.
+
+**Decisão.** Vercel Web Analytics: sem cookie, agregado, no mesmo lugar do deploy. Recusados:
+Google Analytics e Meta Pixel (cookie, banner, dado indo para anunciante, a mesma recusa da 036 e
+da 037) e contar no Firestore (escrita anônima exige abrir a regra). **Sem `@vercel/analytics`**:
+`src/components/site/Medicao.tsx` renderiza a forma de duas tags da documentação — a fila
+`window.va` com `window.va("beforeSend", …)` e `/_vercel/insights/script.js` —, as duas por
+`next/script` `afterInteractive`, só com `VERCEL_ENV === "production"`. O `beforeSend` descarta
+todo evento cujo `pathname` não esteja em `CAMINHOS_MEDIDOS` (`/conheca`, a página do preço e
+`/cadastro`): o script, uma vez carregado, conta também a navegação do cliente, e é o filtro que
+deixa o app de fora. Entra no `Topo` (`site/Moldura.tsx`) e em `(auth)/cadastro/layout.tsx`.
+`/login` fica fora: quem entra já é da casa.
+
+Conferido na documentação da Vercel de 2026-09-24: a forma com tags aceita `beforeSend` pela
+fila; o `<Analytics />` do pacote é um invólucro disso. A documentação agora mostra o script em
+`/<unique-path>/script.js` (a "Resilient Intake", que exige o pacote na versão 2), mas diz que
+ligar o Web Analytics cria rotas em `/_vercel/insights/*` **e** em `/<unique-path>/*`: o endereço
+fixo continua servido. O preço de não usar o pacote é o bloqueador de anúncio que barra
+`/_vercel/insights` e a falta de "route support" (agrupar `/c/[contaId]`), que aqui não serve:
+os três caminhos são fixos.
+
+**Fora da letra da spec.** A spec punha o `Medicao` "no fim do JSX" de `cadastro/page.tsx`. A
+página é client component, e lá `process.env.VERCEL_ENV` não existe (só `NEXT_PUBLIC_*` chega ao
+navegador): o componente nunca renderizaria. O `layout.tsx` do cadastro é o pai servidor.
+
+**Consequência.** O plano Hobby dá 50 mil eventos por mês, **janela de um mês** (o painel só
+garante o mês corrente: o número se anota no `ESTADO.md` todo mês, ou se perde), sem evento
+próprio e sem UTM. Nova página pública entra em `CAMINHOS_MEDIDOS` à mão, como entra no sitemap
+(`#d177`). Se a Vercel deixar de servir `/_vercel/insights/script.js`, o código não quebra, só
+para de contar; a saída é o pacote, e ele pede aprovação. Se o painel for pouco, Plausible no
+mesmo componente.

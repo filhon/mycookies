@@ -250,6 +250,13 @@ valem as variáveis das seções do Stripe acima; sem elas a página fica de pé
 `src/app/conheca/page.tsx` (`#d175`), e para a foto, se um dia entrar (em `public/site/`). Depois de publicar, o passo 1 do roteiro da
 spec no app instalado: sem login, ele abre `/login`, e não a página.
 
+**Antes do primeiro deploy da 036, ligar o Web Analytics** (spec 038, `DECISOES.md#d180`): no
+painel da Vercel, Analytics → o projeto → **Enable**. Sem isso `/_vercel/insights/script.js`
+responde 404 e nada é contado; o código não quebra. O script só é emitido em produção
+(`VERCEL_ENV`), nas duas páginas públicas e em `/cadastro`. Depois do deploy, o roteiro da 038:
+em `/conheca`, a aba Rede com `script.js` e uma chamada a `/_vercel/insights/view`; nenhuma
+chamada nova depois de criar a conta e cair em `/fichas`.
+
 ## 8 · Ao publicar a 037: a página do preço e o mapa
 
 `/como-calcular-o-preco-do-cookie`, `/robots.txt`, `/sitemap.xml` e `/llms.txt`. **Ordem: junto

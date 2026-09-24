@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { RESPONSAVEL } from "@/app/(auth)/responsavel";
 import { Logotipo } from "@/components/marca/Marca";
+import { Medicao } from "@/components/site/Medicao";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { DIAS_DE_TESTE } from "@/lib/domain/cadastro";
 import { cn } from "@/lib/utils/cn";
@@ -68,6 +69,8 @@ export function Topo({
           </Link>
         )}
       </nav>
+      {/* O topo é o que as duas páginas públicas têm em comum (spec 038). */}
+      <Medicao />
     </header>
   );
 }

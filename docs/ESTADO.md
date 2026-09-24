@@ -1,6 +1,7 @@
 # Estado do projeto
 
-Atualizado em 2026-09-24 (a **037 codificada**, a página do preço e o mapa para a busca,
+Atualizado em 2026-09-24 (a **038 codificada**, a visita contada pela Vercel nas páginas
+públicas e no cadastro, `#d180`; a **037 codificada**, a página do preço e o mapa para a busca,
 `#d176` a `#d179`; a **036 codificada**, a página de venda em `/conheca`, `#d172` a
 `#d175`; a **032 codificada**, o segundo plano, antes do gatilho da fase 3,
 `#d167` a `#d170`; spec 023 entregue, primeira da fase 1 do roadmap; a 024 e a 025
@@ -244,46 +245,50 @@ os números digitados de ponta a ponta.
 
 ## Módulos
 
-| #   | Módulo                                      | Estado                              | Spec                                        |
-| --- | ------------------------------------------- | ----------------------------------- | ------------------------------------------- |
-| 0   | Fundação: design system, shell, acesso, PWA | pronto                              | —                                           |
-| 1   | Insumos e embalagens                        | pronto                              | —                                           |
-| —   | Contas e tenancy                            | pronto                              | `specs/000-contas.md`                       |
-| 2   | Custos operacionais e precificação          | pronto (2A e 2B)                    | `specs/002-precificacao.md`                 |
-| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)                | `specs/003-pedidos.md`                      |
-| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                    | `specs/004-caixa.md`                        |
-| 5   | Prontidão: conserto e verificação           | pronto (5A e 5B)                    | `specs/005-prontidao.md`                    |
-| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)                    | `specs/006-nota-fiscal.md`                  |
-| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)                    | `specs/007-estoque.md`                      |
-| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)                    | `specs/008-onboarding.md`                   |
-| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros             | `specs/009-teclado-e-barra.md`              |
-| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro               | `specs/010-resumo-no-whatsapp.md`           |
-| —   | O caixa que não perde a conta               | pronto, sem o roteiro               | `specs/011-caixa-que-nao-perde-conta.md`    |
-| —   | O acerto das entregas                       | pronto, sem o roteiro               | `specs/012-entregas-a-pagar.md`             |
-| 13  | A fornada                                   | pronto (13A a 13D), sem os roteiros | `specs/013-a-fornada.md`                    |
-| 14  | O combo à escolha                           | pronto (14A e 14B)                  | `specs/014-combo-a-escolha.md`              |
-| 15  | Salvar no toque, no sistema inteiro         | pronto, sem o roteiro               | `specs/015-salvar-no-toque.md`              |
-| 16  | As listas que crescem                       | pronto, sem o roteiro               | `specs/016-listas-que-crescem.md`           |
-| 17  | O orçamento em papel                        | pronto (17A e 17B), sem o roteiro   | `specs/017-orcamento-em-papel.md`           |
-| 18  | O preço no primeiro minuto                  | pronto, sem o roteiro               | `specs/018-o-preco-no-primeiro-minuto.md`   |
-| 19  | O caminho começa pelo preço                 | pronto, sem o roteiro               | `specs/019-o-caminho-comeca-pelo-preco.md`  |
-| 20  | Menos na frente                             | pronto, sem o roteiro               | `specs/020-menos-na-frente.md`              |
-| 21  | As palavras dela                            | pronto, sem o roteiro               | `specs/021-as-palavras-dela.md`             |
-| 22  | A segunda conta                             | pronto, sem o roteiro               | `specs/022-a-segunda-conta.md`              |
-| 23  | Sair sem salvar                             | pronto, sem o roteiro               | `specs/023-sair-sem-salvar.md`              |
-| 24  | Fichas no vermelho                          | pronto, sem o roteiro               | `specs/024-fichas-no-vermelho.md`           |
-| 25  | Quem mais compra de mim                     | pronto, sem o roteiro               | `specs/025-quem-mais-compra-de-mim.md`      |
-| 26  | A fornada que quebrou                       | pronto, sem o roteiro               | `specs/026-a-fornada-que-quebrou.md`        |
-| 27  | Criar a conta sozinha                       | codificada; deploy espera os termos | `specs/027-criar-a-conta-sozinha.md`        |
-| 28  | O teste acaba, e a assinatura               | codificada; deploy espera o roteiro | `specs/028-o-teste-acaba-e-a-assinatura.md` |
-| 29  | Meus dados são meus                         | codificada; deploy espera os termos | `specs/029-meus-dados-sao-meus.md`          |
-| 30  | A ajudante                                  | A e B codificadas; não publicada    | `specs/030-a-ajudante.md`                   |
-| 31  | Cardápio público com link de pedido         | A a F codificadas; não publicada    | `specs/031-cardapio-publico.md`             |
-| 32  | O segundo plano                             | codificada; não publicada           | `specs/032-o-segundo-plano.md`              |
-| 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`                |
-| 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`               |
-| 35  | O celular por gesto                         | pronto, sem o roteiro               | `specs/035-o-celular-por-gesto.md`          |
-| 36  | A página do Rende                           | codificada; não publicada           | `specs/036-a-pagina-do-rende.md`            |
+| #   | Módulo                                      | Estado                                | Spec                                        |
+| --- | ------------------------------------------- | ------------------------------------- | ------------------------------------------- |
+| 0   | Fundação: design system, shell, acesso, PWA | pronto                                | —                                           |
+| 1   | Insumos e embalagens                        | pronto                                | —                                           |
+| —   | Contas e tenancy                            | pronto                                | `specs/000-contas.md`                       |
+| 2   | Custos operacionais e precificação          | pronto (2A e 2B)                      | `specs/002-precificacao.md`                 |
+| 3   | Vendas, pedidos e lista de compras          | pronto (3A, 3B e 3C)                  | `specs/003-pedidos.md`                      |
+| 4   | Caixa, metas e previsão                     | pronto (4A e 4B)                      | `specs/004-caixa.md`                        |
+| 5   | Prontidão: conserto e verificação           | pronto (5A e 5B)                      | `specs/005-prontidao.md`                    |
+| 6   | Leitura de nota fiscal por IA               | pronto (6A e 6B)                      | `specs/006-nota-fiscal.md`                  |
+| 7   | Estoque com idade e contagem da despensa    | pronto (7A e 7B)                      | `specs/007-estoque.md`                      |
+| 8   | Onboarding: o caminho das primeiras semanas | pronto (8A e 8B)                      | `specs/008-onboarding.md`                   |
+| —   | O teclado aberto e a barra do sistema       | pronto, sem os roteiros               | `specs/009-teclado-e-barra.md`              |
+| —   | O resumo do pedido no WhatsApp              | pronto, sem o roteiro                 | `specs/010-resumo-no-whatsapp.md`           |
+| —   | O caixa que não perde a conta               | pronto, sem o roteiro                 | `specs/011-caixa-que-nao-perde-conta.md`    |
+| —   | O acerto das entregas                       | pronto, sem o roteiro                 | `specs/012-entregas-a-pagar.md`             |
+| 13  | A fornada                                   | pronto (13A a 13D), sem os roteiros   | `specs/013-a-fornada.md`                    |
+| 14  | O combo à escolha                           | pronto (14A e 14B)                    | `specs/014-combo-a-escolha.md`              |
+| 15  | Salvar no toque, no sistema inteiro         | pronto, sem o roteiro                 | `specs/015-salvar-no-toque.md`              |
+| 16  | As listas que crescem                       | pronto, sem o roteiro                 | `specs/016-listas-que-crescem.md`           |
+| 17  | O orçamento em papel                        | pronto (17A e 17B), sem o roteiro     | `specs/017-orcamento-em-papel.md`           |
+| 18  | O preço no primeiro minuto                  | pronto, sem o roteiro                 | `specs/018-o-preco-no-primeiro-minuto.md`   |
+| 19  | O caminho começa pelo preço                 | pronto, sem o roteiro                 | `specs/019-o-caminho-comeca-pelo-preco.md`  |
+| 20  | Menos na frente                             | pronto, sem o roteiro                 | `specs/020-menos-na-frente.md`              |
+| 21  | As palavras dela                            | pronto, sem o roteiro                 | `specs/021-as-palavras-dela.md`             |
+| 22  | A segunda conta                             | pronto, sem o roteiro                 | `specs/022-a-segunda-conta.md`              |
+| 23  | Sair sem salvar                             | pronto, sem o roteiro                 | `specs/023-sair-sem-salvar.md`              |
+| 24  | Fichas no vermelho                          | pronto, sem o roteiro                 | `specs/024-fichas-no-vermelho.md`           |
+| 25  | Quem mais compra de mim                     | pronto, sem o roteiro                 | `specs/025-quem-mais-compra-de-mim.md`      |
+| 26  | A fornada que quebrou                       | pronto, sem o roteiro                 | `specs/026-a-fornada-que-quebrou.md`        |
+| 27  | Criar a conta sozinha                       | codificada; deploy espera os termos   | `specs/027-criar-a-conta-sozinha.md`        |
+| 28  | O teste acaba, e a assinatura               | codificada; deploy espera o roteiro   | `specs/028-o-teste-acaba-e-a-assinatura.md` |
+| 29  | Meus dados são meus                         | codificada; deploy espera os termos   | `specs/029-meus-dados-sao-meus.md`          |
+| 30  | A ajudante                                  | A e B codificadas; não publicada      | `specs/030-a-ajudante.md`                   |
+| 31  | Cardápio público com link de pedido         | A a F codificadas; não publicada      | `specs/031-cardapio-publico.md`             |
+| 32  | O segundo plano                             | codificada; não publicada             | `specs/032-o-segundo-plano.md`              |
+| 33  | A marca Rende                               | pronto (A, B e C), por publicar       | `specs/033-a-marca-rende.md`                |
+| 34  | A tela inteira                              | pronto, por publicar com a 033        | `specs/034-a-tela-inteira.md`               |
+| 35  | O celular por gesto                         | pronto, sem o roteiro                 | `specs/035-o-celular-por-gesto.md`          |
+| 36  | A página do Rende                           | codificada; não publicada             | `specs/036-a-pagina-do-rende.md`            |
+| 37  | A pergunta do preço                         | codificada; não publicada             | `specs/037-a-pergunta-do-preco.md`          |
+| 38  | O que a página mede                         | escrita; publica com a 036            | `specs/038-o-que-a-pagina-mede.md`          |
+| 39  | Por que todo mês                            | escrita; espera capturas e depoimento | `specs/039-por-que-todo-mes.md`             |
+| 40  | A conta dela (A calculadora, B levar)       | escrita                               | `specs/040-a-conta-dela.md`                 |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -3476,6 +3481,43 @@ mas a página é server component estático e o HTML do build tem o texto inteir
 perguntas; o 5 (validator.schema.org) e o 7 (Lighthouse, nota de desempenho) pedem navegador de
 verdade, com rede. Ficam para quem conduz o projeto, com o resto do roteiro.
 
+## A spec 038 · O que a página mede
+
+**Codificada em 2026-09-24**, no mesmo branch, por cima da 037 (`#d180`). Publica junto com a 036.
+
+- `src/components/site/Medicao.tsx`: as duas `next/script` da forma sem pacote — a fila
+  `window.va` com o `beforeSend` sobre `CAMINHOS_MEDIDOS` e `/_vercel/insights/script.js` —, só
+  com `VERCEL_ENV === "production"`.
+- No `Topo` (`site/Moldura.tsx`), que cobre `/conheca` e a página do preço, e em
+  `src/app/(auth)/cadastro/layout.tsx`. **Fora da letra da spec:** ela punha o componente no fim
+  do JSX de `cadastro/page.tsx`, que é client component; lá `VERCEL_ENV` não chega e o
+  componente nunca renderizaria. O layout é o pai servidor.
+- `/privacidade`: o parágrafo da spec no fim de "O que é coletado", **por revisar por quem conduz
+  o projeto** (`#d171`). A data "vigente desde" já era 24 de setembro de 2026, o mesmo dia, e
+  ficou.
+
+**Conferido:** a documentação da Vercel do dia aceita `beforeSend` na forma com tags
+(`window.va("beforeSend", …)`), e ligar o Web Analytics ainda cria as rotas `/_vercel/insights/*`
+(a documentação passou a mostrar `/<unique-path>/script.js`, que é a "Resilient Intake" do pacote
+na versão 2). Sem aprovação pedida, `package.json` intocado. Build com `VERCEL_ENV=production`
+forçado: `script.js` e `medicao-fila` no HTML de `/conheca`, da página do preço e de `/cadastro`;
+nada em `/login` nem em `/fichas`. Build normal: nada em lugar nenhum. O filtro rodado em Node
+contra seis endereços: conta `/conheca` (com e sem `?ref` e `#`) e `/cadastro`, descarta
+`/fichas`, `/login` e `/`.
+
+**O plano da Vercel não foi conferido no painel**: esta sessão não tem acesso a ele. Pela página
+de preços da Vercel (atualizada em 2026-08-25), o **Hobby** dá 50 mil eventos por mês, **janela
+de um mês**, sem evento próprio e sem UTM; página, origem, país e aparelho vêm em todos. Quem
+conduz o projeto confere o plano ao ligar o Web Analytics e corrige esta linha se for outro. A
+janela de um mês é o que obriga a anotação mensal: o número de um mês que não foi anotado some.
+
+Portão: lint e typecheck limpos, **695 testes**, `npm run build` passando. `package.json`,
+`firestore.rules` e `firestore.indexes.json` intocados.
+
+**O que não rodou:** o roteiro de quatro passos, que pede produção. **O passo 3 (criar a conta,
+cair em `/fichas`, nenhuma chamada nova) fica pendente** até o primeiro deploy, com o critério
+"nenhum cookie novo" (DevTools → Application → Cookies).
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -3485,6 +3527,17 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 038 publica junto com a 036**, com o Web Analytics ligado no painel antes do deploy
+(`docs/DEPLOY.md` § 7) e o parágrafo novo de `/privacidade` revisado. Depois, o roteiro de quatro
+passos, com o 3 (nada contado no app) sendo o que prova o filtro. **Uma vez por mês, antes de a
+janela do Hobby apagar o mês**, uma linha aqui:
+
+| Mês | `/conheca` | Página do preço | `/cadastro` | Contas (`metricas`) | As três origens que mais trouxeram gente |
+| --- | ---------- | --------------- | ----------- | ------------------- | ---------------------------------------- |
+
+Número bruto, não só a porcentagem: com dezenas de visitas por mês, a taxa oscila. `/cadastro`
+÷ páginas diz se a página convence; contas ÷ `/cadastro` diz se o formulário atrapalha.
 
 **A 037 está codificada e publica junto com ou depois da 036** (`docs/DEPLOY.md` § 8). Antes de
 publicar, o roteiro de sete passos da spec, com o 2 (JavaScript desligado), o 5 (validator.schema.org)
