@@ -5404,3 +5404,34 @@ nova. Com o downgrade configurado no fim do período, o webhook só vê o essenc
 pago do completo acabou. No painel, o essencial vê "Seu cardápio" e "Quem te ajuda" trocados por
 uma explicação (cadeado, ou triângulo quando o cardápio saiu do ar) e "Mudar para o completo",
 que abre o portal; nenhum controle de edição e nenhuma escrita saem desse estado.
+
+## D171 · Os termos e a privacidade dizem o que o sistema faz, com o responsável como pessoa física
+
+**Status:** vigente · decidida em 2026-09-24, fora de spec, a pedido de quem conduz o projeto ·
+**o texto espera a revisão de um advogado antes do deploy**
+
+**Contexto.** O texto de `/termos` e `/privacidade` era o portão do deploy desde a 027. Não há
+empresa: quem responde pelo Rende é uma pessoa física. A 027 listou as seções; a 028, a 029 e a
+032 disseram o que o texto precisa afirmar.
+
+**Decisão.** O texto foi escrito sob a lei brasileira e descreve o que o código faz, com os
+números das constantes de `domain/` (14 dias, 7 de folga de cobrança, 30 até a purga, 5
+ajudantes). Três coisas que as specs não pediam e a lei pede entraram: (1) **o direito de
+arrependimento** (CDC, art. 49): reembolso integral em até sete dias do primeiro pagamento,
+feito à mão no painel da Stripe; a regra da 029, "encerrar não reembolsa o proporcional",
+continua valendo fora desses sete dias, **em destaque** (CDC, art. 54, § 4º), e é por isso que
+`SecaoDeTexto` aceita `{ destaque }`; (2) **a identificação do fornecedor** (Decreto
+7.962/2013, art. 2º): nome, CPF e endereço, em `src/app/(auth)/responsavel.ts`, ainda com
+`[texto`; (3) **os papéis da LGPD**: o Rende controla os dados da dona e das ajudantes, e é
+operador dos dados das clientes dela (cadastradas ou vindas do cardápio). Seções novas: planos e
+pagamento, cardápio, uso permitido, responsabilidade, a quem a política se aplica, base legal,
+dados das clientes, segurança. Sem encarregado nomeado: agente de pequeno porte (Resolução
+CD/ANPD nº 2/2022, art. 11), com o e-mail como canal. Foro: o domicílio de quem usa.
+
+**Consequência.** Promessas novas que o código não faz sozinho, e que são de quem conduz: avisar
+mudança de preço e de termos com 30 dias; reembolsar o arrependimento; reabrir conta encerrada
+dentro dos 30 dias; avisar 60 dias antes se o serviço acabar; responder direitos em 15 dias.
+Para o advogado conferir: a folha de pedido do cardápio (`/c/{contaId}`) não liga a política;
+a conta vencida é guardada sem prazo; o encerramento sem reembolso proporcional no plano anual;
+a afirmação de que o Google não treina com a foto da nota vale para a API paga do Gemini; e, com
+empresa constituída, o art. 15 do Marco Civil (guardar registros de acesso por seis meses).

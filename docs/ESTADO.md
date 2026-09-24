@@ -3365,6 +3365,14 @@ entre tirar e suspender. `/impeccable` aplicado na escrita, com a spec como brie
 telas (os dois pacotes nos dois períodos, os painéis no teste e no essencial) foi vista em
 navegador, nos dois temas nem a 360px.
 
+## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
+
+`/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
+responsável como pessoa física (`#d171`). `SecaoDeTexto` aceita `{ destaque }` para a cláusula
+que limita direito. **Falta, e o portão pega** (`rg -n "\[texto" src/app`): nome, CPF, endereço e
+e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas páginas. **Antes do
+deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
+
 ## Próxima ação
 
 **A 032 publica depois da 028, da 030 e da 031, e nunca antes do painel do Stripe.** A ordem é a

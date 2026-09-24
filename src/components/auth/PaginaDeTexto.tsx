@@ -9,13 +9,17 @@ import { classesBotao } from "@/components/ui/estilosBotao";
  */
 export interface SecaoDeTexto {
   titulo: string;
-  paragrafos: string[];
+  /**
+   * `{ destaque }` sai em negrito: é a cláusula que limita direito, que o CDC
+   * (art. 54, § 4º) manda redigir com destaque.
+   */
+  paragrafos: (string | { destaque: string })[];
 }
 
 /**
- * O texto é de quem conduz o projeto; a spec entrega o lugar. Cada parágrafo
- * das duas páginas nasce como `[texto de quem conduz o projeto]`, visível de
- * propósito: o aceite antes do deploy é `rg -n "\[texto" src/app` vazio.
+ * O texto das duas páginas foi redigido em 2026-09-24 e espera revisão de um
+ * advogado antes do deploy (`DECISOES.md#d171`). O que falta preencher ainda
+ * carrega `[texto`, e o portão continua `rg -n "\[texto" src/app` vazio.
  */
 export function PaginaDeTexto({
   titulo,
@@ -48,9 +52,15 @@ export function PaginaDeTexto({
               {secao.titulo}
             </h2>
             <div className="mt-3 space-y-3 text-body text-ink">
-              {secao.paragrafos.map((paragrafo, i) => (
-                <p key={i}>{paragrafo}</p>
-              ))}
+              {secao.paragrafos.map((paragrafo, i) =>
+                typeof paragrafo === "string" ? (
+                  <p key={i}>{paragrafo}</p>
+                ) : (
+                  <p key={i} className="font-semibold">
+                    {paragrafo.destaque}
+                  </p>
+                ),
+              )}
             </div>
           </section>
         ))}
