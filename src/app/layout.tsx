@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Archivo, Figtree } from "next/font/google";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { DESCRICAO } from "./descricao";
+import { URL_DO_SITE } from "./site";
 import "./globals.css";
 
 // Só 600 e 700: a marca não tem Archivo 400, e `font-display` sem peso
@@ -20,6 +21,8 @@ const interface_ = Figtree({
 });
 
 export const metadata: Metadata = {
+  // `canonical` e Open Graph relativos viram absolutos daqui (`DECISOES.md#d178`).
+  metadataBase: new URL(URL_DO_SITE),
   title: {
     default: "Rende",
     template: "%s · Rende",
@@ -37,8 +40,8 @@ export const metadata: Metadata = {
     // evita que título e ações fiquem atrás do relógio/entalhe.
     statusBarStyle: "black-translucent",
   },
-  // O app é área logada; a página de venda é `/conheca`, que sobrepõe isto e é
-  // indexável (`DECISOES.md#d172`).
+  // O app é área logada; `/conheca` e `/como-calcular-o-preco-do-cookie`
+  // sobrepõem isto e são indexáveis (`DECISOES.md#d172`, `#d176`).
   robots: { index: false, follow: false },
   formatDetection: { telephone: false },
 };

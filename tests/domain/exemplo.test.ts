@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { composicaoDoLote } from "@/lib/domain/custoFicha";
-import { EXEMPLO } from "@/lib/domain/exemplo";
+import { ERRO_COMUM, EXEMPLO } from "@/lib/domain/exemplo";
 import {
   calcularPrecoSugerido,
   somaTaxas,
@@ -24,6 +24,30 @@ describe("o cookie da página de venda", () => {
     expect(
       verificarPreco(EXEMPLO.precoPraticado, 441, taxas).lucroUnitario,
     ).toBe(319);
+  });
+
+  // A página do preço (spec 037). Conferido à mão: 441 × 1,45 = 639,45 → 639;
+  // a maquininha leva 5% de 639 = 31,95 → 32; sobram 639 − 441 − 32 = 166,
+  // que são 25,98% do preço. Na conta certa, 441 ÷ 0,55 = 802, a maquininha
+  // leva 40 e sobram 321, 40,02%.
+  it("cobra R$ 6,39 no custo + 45%, e sobram 26% em vez de 40%", () => {
+    const errado = calcularPrecoSugerido(441, ERRO_COMUM);
+    expect(errado.ok && errado.precoArredondado).toBe(639);
+    const taxas = somaTaxas(EXEMPLO.parametros);
+    expect(verificarPreco(639, 441, taxas)).toMatchObject({
+      lucroUnitario: 166,
+      margemReal: 25.98,
+    });
+  });
+
+  it("deixa 40% no preço certo antes de arredondar", () => {
+    const certo = calcularPrecoSugerido(441, EXEMPLO.parametros);
+    expect(certo.ok && certo.precoSugerido).toBe(802);
+    const taxas = somaTaxas(EXEMPLO.parametros);
+    expect(verificarPreco(802, 441, taxas)).toMatchObject({
+      lucroUnitario: 321,
+      margemReal: 40.02,
+    });
   });
 
   it("abre em cinco parcelas, com o trabalho dela em destaque", () => {

@@ -1,6 +1,7 @@
 # Estado do projeto
 
-Atualizado em 2026-09-24 (a **036 codificada**, a página de venda em `/conheca`, `#d172` a
+Atualizado em 2026-09-24 (a **037 codificada**, a página do preço e o mapa para a busca,
+`#d176` a `#d179`; a **036 codificada**, a página de venda em `/conheca`, `#d172` a
 `#d175`; a **032 codificada**, o segundo plano, antes do gatilho da fase 3,
 `#d167` a `#d170`; spec 023 entregue, primeira da fase 1 do roadmap; a 024 e a 025
 entregues depois dela, a segunda e a terceira da fase 1; a 026 entregue fora da ordem das
@@ -3428,6 +3429,53 @@ e revalidação de 1h. `firestore.rules`, `firestore.indexes.json` e `package.js
 (sem o app instalado, sem teclado, sem a revalidação). O passo 1 no app instalado é o que prova
 que quem já usa nunca cai na página.
 
+## A spec 037 · A pergunta do preço
+
+**Codificada em 2026-09-24**, no mesmo branch, por cima da 036 (`#d176` a `#d179`).
+
+- `src/app/como-calcular-o-preco-do-cookie/page.tsx`: estática, indexável, `canonical`, Open
+  Graph `article`. `h1` com "Atualizado em" (`ATUALIZADO_EM`, em `<time>`), a resposta inteira no
+  primeiro parágrafo, `ContaAberta parada`, os cinco passos (`h2` cada, com a parcela por cookie
+  pelos rótulos de `ROTULO_PARCELA`), a fórmula aplicada, "o erro mais comum", as cinco perguntas
+  (`h3`) e o convite fora do `<article>`. No desktop a conta fica grudada ao lado dos passos; no
+  celular ela vem logo depois da resposta. Descrição com 137 caracteres.
+- **O "custo + 45%" é `ERRO_COMUM` em `domain/exemplo.ts`**: o markup do app (que já é custo ×
+  multiplicador) com `markup` = 1 + margem + maquininha e sem arredondar. Não precisou de conta
+  nova. Conferido à mão e preso no teste: R$ 6,39, sobram R$ 1,66 (25,98%); na conta certa, antes
+  de arredondar, R$ 8,02 e sobram R$ 3,21 (40,02%). A página compara os dois **sem**
+  arredondamento, e diz em uma frase que a etiqueta sobe para R$ 8,50 (`#d176`).
+- `Topo` e `Rodape` saíram para `src/components/site/Moldura.tsx`. O topo da página nova não tem
+  âncoras nem o "Testar" do desktop (o botão vem depois da conta); o logotipo virou link para
+  `/conheca` nas duas. O rodapé ganhou "Como calcular o preço", e "Dúvidas" virou
+  `/conheca#duvidas`.
+- `robots.ts`, `sitemap.ts`, `llms.txt/route.ts` e `site.ts` (`URL_DO_SITE`); `metadataBase` no
+  layout raiz; `canonical`, Open Graph e o `SoftwareApplication` em `/conheca`.
+
+**Conferido no HTML do build:** a página nova e `/conheca` com `index, follow` e `canonical`; `/`,
+`/login` e `/termos` com `noindex, nofollow`; `robots.txt` com `Allow: /`, `Disallow: /api/` e o
+`Sitemap:`; o sitemap com as duas páginas; o `llms.txt` com os dois links absolutos (todos em
+`localhost` no build local, como devem, `#d178`); o JSON-LD de `/conheca` com as duas `Offer` do
+Stripe de teste (39.00 e 69.00). Nenhum hex em `src/app/como-calcular-o-preco-do-cookie`.
+
+**`/impeccable`, registro brand**, sobre capturas do `next start` a 390 e 1280, claro e escuro. A
+identidade já está comprometida (Archivo + Figtree, tinta + âmbar), então a página herda a língua
+da `/conheca`, em coluna de leitura de 68ch: sem cartões, passos numerados em display, a fórmula
+num bloco `sunken`, o erro e a conta certa lado a lado numa lista com divisórias, com
+`trending-down` e texto no lado errado (cor nunca sozinha). Corrigido na passada: o corpo do texto
+estava em `ink-muted`, como na `/conheca`; num artigo longo, lido na cozinha clara, passou para
+`ink`, e o muted ficou para a linha "No exemplo". **Nota sobre as capturas:** o Chrome sem cabeça
+no Windows não abre janela abaixo de ~500px, então uma captura "a 390px" sai cortada à direita
+(a da `/conheca` também). As de 390 foram tiradas num `<iframe>` de 390px.
+
+Portão: lint e typecheck limpos, **695 testes** (693 + 2), `npm run build` com a página nova,
+`/robots.txt`, `/sitemap.xml` e `/llms.txt` estáticas. `package.json`, `firestore.rules` e
+`firestore.indexes.json` intocados.
+
+**O que não rodou do roteiro de sete passos:** o 2 (sem JavaScript) não foi provado em captura,
+mas a página é server component estático e o HTML do build tem o texto inteiro, da resposta às
+perguntas; o 5 (validator.schema.org) e o 7 (Lighthouse, nota de desempenho) pedem navegador de
+verdade, com rede. Ficam para quem conduz o projeto, com o resto do roteiro.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -3437,6 +3485,19 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 037 está codificada e publica junto com ou depois da 036** (`docs/DEPLOY.md` § 8). Antes de
+publicar, o roteiro de sete passos da spec, com o 2 (JavaScript desligado), o 5 (validator.schema.org)
+e o 7 (Lighthouse no celular: SEO 100, acessibilidade 100, e a nota de desempenho anotada aqui;
+passando de 2,5 s a primeira pintura, o `AuthProvider` do layout raiz é a próxima spec). Depois
+de publicar, **a seção 5 da spec, que é o que decide o resultado**: o domínio próprio apontado na
+Vercel como produção (`rende.com.br`, se estiver livre) **antes** de enviar o sitemap (`#d178`);
+Search Console e Bing Webmaster Tools, por TXT no DNS, com o sitemap enviado nos dois; indexação
+pedida para as duas páginas; gente apontando para a página da pergunta (aula, grupo, vídeo com o
+link na bio, fórum); e, uma vez por mês, anotar aqui as consultas, a posição média e os cliques do
+Search Console, e se o Rende aparece quando se pergunta "como saber o preço do meu cookie?" ao
+ChatGPT, ao Gemini, ao Claude e ao Perplexity, cada um numa conversa nova. O critério de sucesso
+é o Search Console em três meses; a página de outro doce e a calculadora pública esperam por ele.
 
 **A 036 publica junto com ou depois da 027 e da 032** (`docs/DEPLOY.md`): sem `/cadastro` no ar o
 botão da página leva a uma porta fechada, e sem a 032 a seção de preço mostra um pacote que não se

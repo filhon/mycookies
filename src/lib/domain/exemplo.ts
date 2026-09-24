@@ -33,3 +33,20 @@ export const EXEMPLO = {
   } satisfies ParametrosPreco,
   precoPraticado: 800,
 } as const;
+
+/**
+ * "Custo + 45%": a margem e a maquininha do `EXEMPLO` somadas em cima do
+ * custo, o erro que `/como-calcular-o-preco-do-cookie` mostra (spec 037). É o
+ * markup do app sem arredondar, para o número ser o custo × 1,45 da
+ * calculadora de quem faz a conta assim.
+ */
+export const ERRO_COMUM = {
+  ...EXEMPLO.parametros,
+  metodo: "MARKUP",
+  markup:
+    1 +
+    (EXEMPLO.parametros.margemDesejada +
+      EXEMPLO.parametros.taxaCartaoConsiderada) /
+      100,
+  arredondamento: "NENHUM",
+} as const satisfies ParametrosPreco;

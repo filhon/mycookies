@@ -405,7 +405,8 @@ celular, e a ordem das seções.
 
 - **Domínio próprio e a página em `/`.** `#d172`: volta quando houver domínio e um motivo.
 - **`sitemap.xml`, `robots.txt`, dados estruturados.** Uma página indexável não precisa de mapa.
-  Quando houver mais de uma, o `app/sitemap.ts` do Next é um arquivo.
+  Quando houver mais de uma, o `app/sitemap.ts` do Next é um arquivo. **Feito na 037**
+  (`#d177`, `#d179`).
 - **Imagem de prévia (Open Graph).** O WhatsApp mostra título e descrição sem ela. Quando o link
   circular e a prévia pedir imagem, é `app/conheca/opengraph-image.tsx`.
 - **Analytics, pixel, UTM.** O canal do roadmap é gente mandando link; `scripts/metricas.mjs` já

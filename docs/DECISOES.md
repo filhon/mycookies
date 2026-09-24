@@ -5527,3 +5527,89 @@ projeto; a autorização por escrito continua sendo o portão do deploy.
 **Consequência.** Se a autorização não vier, a seção sai (`temDepoimento`), e a página fica com
 quatro blocos. Nesse caso a barra fixa do celular volta a começar logo depois da conta; ver a
 nota da 036 no `ESTADO.md`.
+
+---
+
+## D176 · A resposta do preço mora numa página própria, com o endereço da pergunta
+
+**Status:** vigente · decidida em 2026-09-24, na spec 037
+
+**Contexto.** Quem tem a dúvida do preço procura a pergunta ("como calcular o preço do meu
+cookie"), e não "sistema de precificação". A única página indexável era `/conheca`, que é venda:
+o `h1` é a frase da marca e ela mostra o resultado da conta, não a ensina. Busca e chats de IA
+citam a página que responde de frente.
+
+**Decisão.** `/como-calcular-o-preco-do-cookie`: estática, indexável, com `canonical`, `title` e
+`h1` na forma da pergunta. Responde primeiro e vende depois: o primeiro parágrafo é a resposta
+inteira, com a fórmula e o número, e o botão do teste vem depois das perguntas, fora do
+`<article>`, sem barra fixa no celular. Toda quantia sai das funções do app sobre `EXEMPLO`
+(`#d173`), e o erro "custo + 45%" sobre `ERRO_COMUM` (o markup do app sem arredondar), com
+`tests/domain/exemplo.test.ts` prendendo 639 / 166 / 25,98% e 802 / 321 / 40,02%. O "erro" e a
+"conta de volta" comparam os dois preços **antes** do arredondamento: arredondado, o certo vira
+8,50 e o errado 6,50, e a diferença deixaria de ser só a da conta. Pesados e recusados: a conta
+como seção de `/conheca` (uma página não é a melhor venda e o melhor artigo ao mesmo tempo) e
+uma página por doce (quatro textos antes de saber se o primeiro funciona). `Topo` e `Rodape`
+saíram de `/conheca` para `src/components/site/Moldura.tsx`; o rodapé ganhou "Como calcular o
+preço", e "Dúvidas" virou `/conheca#duvidas` para servir às duas. O logotipo do topo passou a
+ser link para `/conheca`. `ContaAberta` ganhou `parada`, sem o movimento da abertura.
+
+**Consequência.** Se a regra de preço mudar, o teste quebra antes de a página ensinar errado.
+Mudar o endereço depois de indexado pede redirecionamento 301. A próxima página (outro doce, ou a
+calculadora pública) espera o Search Console mostrar impressões nesta.
+
+---
+
+## D177 · O mapa: `robots`, `sitemap` e `llms.txt`, nenhum robô de IA barrado
+
+**Status:** vigente · decidida em 2026-09-24, na spec 037
+
+**Decisão.** `src/app/robots.ts`: `allow: "/"` para `*`, `disallow: "/api/"`, e o sitemap.
+Nenhuma linha própria para GPTBot, OAI-SearchBot, ClaudeBot, PerplexityBot ou Google-Extended:
+sem regra eles seguem o `*`, e é o que se quer. As telas do app **não** entram no `disallow`:
+elas já dizem `noindex` pelo layout raiz, e o robô barrado não leria esse `noindex`, deixando o
+endereço aparecer na busca sem conteúdo. `src/app/sitemap.ts`: só `/conheca` e a página do preço
+(`/`, `/termos` e `/privacidade` são `noindex`; os cardápios são da confeiteira). Sem
+`lastModified`: a data da página mora nela (`ATUALIZADO_EM`), e o Next não deixa um arquivo de
+página exportar constante para fora. `src/app/llms.txt/route.ts`, `force-static`: convenção
+proposta (llmstxt.org), que nenhum buscador grande prometeu ler; entra porque custa um arquivo.
+Rota, e não arquivo em `public/`, pelo endereço absoluto; nenhum preço, porque o do Stripe muda.
+
+**Consequência.** Nova página pública entra no sitemap e no `llms.txt` à mão, e ganha `robots`
+indexável na própria `metadata`.
+
+---
+
+## D178 · O endereço absoluto vem da Vercel, e o domínio próprio é portão do deploy
+
+**Status:** vigente · decidida em 2026-09-24, na spec 037 · **portão do deploy**
+
+**Contexto.** Sitemap, `canonical`, Open Graph e `llms.txt` pedem endereço absoluto, e o projeto
+não tinha nenhum (o checkout usa a origem da requisição, que não existe no build).
+
+**Decisão.** `URL_DO_SITE` em `src/app/site.ts`: `https://` + `VERCEL_PROJECT_PRODUCTION_URL`,
+variável de sistema da Vercel presente no build e na execução, que vale o domínio de produção (o
+próprio quando houver, o `*.vercel.app` enquanto não houver); fora da Vercel,
+`http://localhost:3000`. Nenhuma variável nova. O layout raiz ganhou `metadataBase` com ela.
+**O domínio próprio vem antes de enviar o sitemap ao Google**: o que o Google aprende fica no
+endereço, e trocar depois pede 301 de tudo e meses para recuperar a posição.
+
+**Consequência.** O código pode ir ao ar sem domínio; o Search Console e o Bing só começam com
+ele (`DEPLOY.md` § 8). Um `npm run build` local grava `localhost` no sitemap, o que é certo: o
+deploy da Vercel refaz o build com a variável.
+
+---
+
+## D179 · Dados estruturados só em `/conheca`, `SoftwareApplication`
+
+**Status:** vigente · decidida em 2026-09-24, na spec 037
+
+**Decisão.** Um `<script type="application/ld+json">` no fim do `<main>` de `/conheca`:
+`SoftwareApplication`, `BusinessApplication`, "Web, Android, iOS", `pt-BR`, e uma `Offer` por
+pacote com o mensal em reais (`price` decimal, `BRL`) só quando `lerPrecos()` respondeu
+(`#d174`). Nenhuma `aggregateRating`: ninguém avaliou. O `<` do JSON é escapado para nenhum
+texto fechar a tag. Na página do preço, **nenhum**: o Google só mostra FAQ em destaque para
+governo e saúde desde 2023, "HowTo" saiu da busca no mesmo ano, e um JSON repetindo a página é
+uma segunda cópia para manter.
+
+**Consequência.** Se o Search Console mostrar que concorrentes com `FAQPage` aparecem melhor, é
+um `<script>` na página do preço, e esta decisão volta à mesa.

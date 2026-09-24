@@ -250,6 +250,27 @@ valem as variáveis das seções do Stripe acima; sem elas a página fica de pé
 `src/app/conheca/page.tsx` (`#d175`), e para a foto, se um dia entrar (em `public/site/`). Depois de publicar, o passo 1 do roteiro da
 spec no app instalado: sem login, ele abre `/login`, e não a página.
 
+## 8 · Ao publicar a 037: a página do preço e o mapa
+
+`/como-calcular-o-preco-do-cookie`, `/robots.txt`, `/sitemap.xml` e `/llms.txt`. **Ordem: junto
+com ou depois da 036**: o rodapé das duas páginas aponta uma para a outra, e o convite leva a
+`/cadastro` (a mesma ordem da 036 com a 027).
+
+Nenhuma variável nova: o endereço absoluto vem de `VERCEL_PROJECT_PRODUCTION_URL`, que a Vercel
+dá sozinha (`DECISOES.md#d178`). Depois do deploy, abrir `/sitemap.xml` e conferir que os
+endereços são os de produção, e não `localhost`.
+
+**Portão: o domínio próprio vem antes do sitemap.** O código pode ir ao ar no `*.vercel.app`,
+mas nada é enviado ao Google nem ao Bing antes de o domínio estar apontado na Vercel como
+produção e de um redeploy (a variável é lida no build). O que o Google aprende fica no endereço;
+trocar depois pede 301 de tudo. Com o domínio:
+
+1. **Google Search Console** e **Bing Webmaster Tools**, verificados por registro TXT no DNS
+   (nenhum código). Enviar `https://<domínio>/sitemap.xml` nos dois. O Bing importa: a busca do
+   ChatGPT e o Copilot se apoiam no índice dele.
+2. **Inspeção de URL** no Search Console, pedindo indexação das duas páginas.
+3. O resto é a seção 5 da spec 037, e é de quem conduz o projeto.
+
 ## Limites conhecidos
 
 **O arquivo da nota tem dois tetos, e o menor não é o nosso.** `LIMITE_ARQUIVO_BYTES` é 8 MB

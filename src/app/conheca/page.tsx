@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { Logotipo } from "@/components/marca/Marca";
 import { ContaAberta } from "@/components/site/ContaAberta";
+import { Rodape, Topo } from "@/components/site/Moldura";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
@@ -18,8 +18,8 @@ import { calcularPrecoSugerido } from "@/lib/domain/precificacao";
 import { lerPrecos, stripeDisponivel } from "@/lib/server/stripe";
 import type { Pacote } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
-import { RESPONSAVEL } from "../(auth)/responsavel";
 import { DESCRICAO } from "../descricao";
+import { URL_DO_SITE } from "../site";
 
 /**
  * A página de venda (spec 036). Pública e indexável, fora de `(app)` e de
@@ -35,9 +35,55 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: { absolute: "Rende · o preço certo de cada doce" },
   description: DESCRICAO,
-  // Sobrepõe o `noindex` do layout raiz: esta é a única rota que quer busca.
+  // Sobrepõe o `noindex` do layout raiz, como `/como-calcular-o-preco-do-cookie`.
   robots: { index: true, follow: true },
+  alternates: { canonical: "/conheca" },
+  openGraph: {
+    title: "Rende · o preço certo de cada doce",
+    description: DESCRICAO,
+    url: "/conheca",
+    locale: "pt_BR",
+    type: "website",
+    siteName: "Rende",
+  },
 };
+
+/**
+ * O Rende como aplicativo, para a busca (`DECISOES.md#d179`). Uma `Offer` por
+ * pacote só quando o Stripe respondeu (`#d174`); nenhuma avaliação, porque
+ * ninguém avaliou.
+ */
+function dadosEstruturados(precos: Precos | null) {
+  const pacotes = Object.keys(RECURSOS_DO_PACOTE) as Pacote[];
+  const ofertas = precos
+    ? pacotes.flatMap((pacote) => {
+        const preco = precos[pacote];
+        return preco
+          ? [
+              {
+                "@type": "Offer",
+                name: NOME_DO_PACOTE[pacote],
+                // Reais na borda: o schema.org pede o número decimal.
+                price: (preco.mensal / 100).toFixed(2),
+                priceCurrency: "BRL",
+              },
+            ]
+          : [];
+      })
+    : [];
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "Rende",
+    url: `${URL_DO_SITE}/conheca`,
+    description: DESCRICAO,
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web, Android, iOS",
+    inLanguage: "pt-BR",
+    ...(ofertas.length > 0 && { offers: ofertas }),
+  };
+}
 
 /**
  * As palavras dela, com autorização por escrito, ou a seção não vai ao ar
@@ -102,9 +148,6 @@ async function precosOuNada(): Promise<Precos | null> {
   }
 }
 
-const ALVO_LINK =
-  "toque inline-flex items-center rounded-md px-3 text-label font-medium";
-
 export default async function PaginaConheca() {
   const precos = await precosOuNada();
   const sugerido = calcularPrecoSugerido(
@@ -116,7 +159,7 @@ export default async function PaginaConheca() {
   return (
     <>
       <main>
-        <Topo />
+        <Topo ancoras={ANCORAS} convite />
 
         <div className="mx-auto grid max-w-6xl gap-10 px-4 pt-8 pb-16 lg:grid-cols-[1fr_28rem] lg:items-center lg:gap-16 lg:px-10 lg:pt-16 lg:pb-24">
           <section aria-labelledby="frase">
@@ -173,55 +216,21 @@ export default async function PaginaConheca() {
           <Duvidas />
           <BarraDoCelular />
         </div>
+
+        <script
+          type="application/ld+json"
+          // `<` escapado: nenhum texto do objeto fecha a tag `script`.
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(dadosEstruturados(precos)).replace(
+              /</g,
+              "\\u003c",
+            ),
+          }}
+        />
       </main>
 
       <Rodape />
     </>
-  );
-}
-
-function Topo() {
-  return (
-    <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-5 lg:px-10 lg:pt-7">
-      <Logotipo />
-      <nav aria-label="Página" className="flex items-center gap-1">
-        <ul className="hidden items-center gap-1 lg:flex">
-          {ANCORAS.map((a) => (
-            <li key={a.href}>
-              <a
-                href={a.href}
-                className={cn(
-                  ALVO_LINK,
-                  "text-ink-muted transition-colors duration-150 ease-quart hover:text-ink",
-                )}
-              >
-                {a.rotulo}
-              </a>
-            </li>
-          ))}
-        </ul>
-        <Link
-          href="/login"
-          className={classesBotao({
-            variante: "terciaria",
-            tamanho: "sm",
-            className: "lg:ml-3",
-          })}
-        >
-          Entrar
-        </Link>
-        {/* Secundário: o primário da tela é o da frase (seção 4, item 8). */}
-        <Link
-          href="/cadastro"
-          className={classesBotao({
-            tamanho: "sm",
-            className: "hidden lg:inline-flex",
-          })}
-        >
-          Testar {DIAS_DE_TESTE} dias
-        </Link>
-      </nav>
-    </header>
   );
 }
 
@@ -410,42 +419,5 @@ function BarraDoCelular() {
         Sem cartão · cancela quando quiser
       </p>
     </div>
-  );
-}
-
-function Rodape() {
-  const links = [
-    { href: "#duvidas", rotulo: "Dúvidas" },
-    { href: `mailto:${RESPONSAVEL.email}`, rotulo: "Contato" },
-    { href: "/termos", rotulo: "Termos" },
-    { href: "/privacidade", rotulo: "Privacidade" },
-  ];
-
-  return (
-    <footer className="sobre-marca border-t border-line bg-brand-900 text-on-brand">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 lg:flex-row lg:items-center lg:justify-between lg:px-10">
-        <div>
-          <Logotipo tom="negativa" />
-          <p className="mt-2 text-label text-ink-muted">
-            Precificação para quem faz à mão.
-          </p>
-        </div>
-        <ul className="-mx-3 flex flex-wrap gap-x-2">
-          {links.map((l) => (
-            <li key={l.href}>
-              <a
-                href={l.href}
-                className={cn(
-                  ALVO_LINK,
-                  "text-ink-muted transition-colors duration-150 ease-quart hover:text-ink",
-                )}
-              >
-                {l.rotulo}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </footer>
   );
 }

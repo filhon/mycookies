@@ -19,7 +19,14 @@ import { cn } from "@/lib/utils/cn";
  * nenhum é escrito aqui. A faixa e o ponto convivem porque é a reprodução do
  * editor, o único lugar em que o `MARCA.md` § 2.4 deixa (`#d126`).
  */
-export function ContaAberta({ className }: { className?: string }) {
+export function ContaAberta({
+  className,
+  parada = false,
+}: {
+  className?: string;
+  /** Sem o movimento da `.conta-que-abre`: onde a conta é ilustração, e não abertura de página. */
+  parada?: boolean;
+}) {
   const { custo, parametros, rende, precoPraticado } = EXEMPLO;
   const segmentos = composicaoDoLote(custo);
   const sugerido = calcularPrecoSugerido(custo.custoUnitario, parametros);
@@ -64,7 +71,7 @@ export function ContaAberta({ className }: { className?: string }) {
 
         <FaixaDeComposicao
           segmentos={segmentos}
-          className="conta-que-abre mt-4"
+          className={cn("mt-4", !parada && "conta-que-abre")}
         />
 
         <div className="mt-4 flex items-baseline justify-between gap-4">
@@ -86,7 +93,10 @@ export function ContaAberta({ className }: { className?: string }) {
             {/* O ponto marca o número que decide, como no painel do editor. */}
             <span
               aria-hidden
-              className="conta-que-abre-ponto size-3 shrink-0 rounded-full bg-accent-500"
+              className={cn(
+                "size-3 shrink-0 rounded-full bg-accent-500",
+                !parada && "conta-que-abre-ponto",
+              )}
             />
           </div>
           <p className="mt-3 max-w-[48ch] text-label text-ink-muted">
