@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  corDaLoja,
   entraNoCardapio,
   esquemaPedidoDoCardapio,
   mensagemDeAviso,
@@ -1261,5 +1262,54 @@ describe("a promoção", () => {
     expect(precoVigente(baixada, [PROMOCAO_RV], HOJE)).toEqual({
       preco: 1100,
     });
+  });
+});
+
+// Sessão F (`#d166`): a cara da loja.
+
+describe("corDaLoja", () => {
+  it("põe a tinta clara sobre cor escura e a escura sobre cor clara", () => {
+    expect(corDaLoja("#6B3E26")).toEqual({ fundo: "#6b3e26", tinta: "clara" });
+    expect(corDaLoja("#F4D35E")).toEqual({ fundo: "#f4d35e", tinta: "escura" });
+  });
+
+  it("recusa o que não é #rrggbb", () => {
+    expect(corDaLoja(undefined)).toBeNull();
+    expect(corDaLoja("")).toBeNull();
+    expect(corDaLoja("#fff")).toBeNull();
+    expect(corDaLoja("red")).toBeNull();
+    expect(corDaLoja("#12345g")).toBeNull();
+  });
+});
+
+describe("montarCardapio com a vitrine", () => {
+  const png = "data:image/png;base64,iVBORw0KGgo=";
+
+  it("sem vitrine, a página não tem cor, capa nem logo", () => {
+    const { negocio } = montar()!;
+    expect(negocio.cor).toBeUndefined();
+    expect(negocio.capaVersao).toBeUndefined();
+    expect(negocio.logoVersao).toBeUndefined();
+  });
+
+  it("leva a cor e a versão das imagens, e nunca a imagem", () => {
+    const cardapio = montarCardapio({
+      conta: CONTA,
+      configuracao: configuracao(),
+      fichas: [TRADICIONAL, RED_VELVET, RECHEIO],
+      opcoes: [],
+      vitrine: {
+        capa: png,
+        logo: "data:text/html;base64,PGgxPg==",
+        cor: "#9E2F4A",
+        atualizadoEm: ts(AGORA) as never,
+      },
+      agoraMs: AGORA,
+    })!;
+    expect(cardapio.negocio.cor).toEqual({ fundo: "#9e2f4a", tinta: "clara" });
+    expect(cardapio.negocio.capaVersao).toBe(AGORA);
+    // O logo que não é imagem não sai pela rota, então não vira `<img>`.
+    expect(cardapio.negocio.logoVersao).toBeUndefined();
+    expect(JSON.stringify(cardapio)).not.toContain("base64");
   });
 });

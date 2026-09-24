@@ -11,6 +11,7 @@ import {
   type ItemPedido,
   type Pedido,
   type PromocaoDoCardapio,
+  type VitrineDoCardapio,
 } from "@/lib/types";
 import { situacaoDaConta } from "./assinatura";
 import { opcoesDaEscolha, temEscolhas } from "./custoFicha";
@@ -90,6 +91,11 @@ export interface OpcaoDoCombo {
 
 export interface Cardapio {
   negocio: {
+    /** A cor da loja e a tinta que se lê sobre ela (`#d166`); ausente = a do Rende. */
+    cor?: CorDaLoja;
+    /** `atualizadoEm` da vitrine em ms, para o `?v=` da imagem; ausente = sem ela. */
+    capaVersao?: number;
+    logoVersao?: number;
     nome: string;
     /** Primeiro nome de `proprietaria`, para "a Maynara confirma pelo WhatsApp". */
     quem: string;
@@ -103,6 +109,58 @@ export interface Cardapio {
   };
   /** Na ordem de `categoriasProduto`, e categoria desconhecida no fim; nome dentro. */
   secoes: { categoria: string; produtos: ProdutoDoCardapio[] }[];
+}
+
+// ---------------------------------------------------------------------------
+// A cara da loja (sessão F, `#d166`)
+// ---------------------------------------------------------------------------
+
+/** A capa: larga, JPEG. 1600 px cobre a tela de 1280 com folga. */
+export const CAPA_LADO_PX = 1600;
+export const CAPA_MAX_BYTES = 300_000;
+/** O logo: sai a 112 px no desktop, 3× no celular de tela densa. */
+export const LOGO_LADO_PX = 400;
+export const LOGO_MAX_BYTES = 120_000;
+
+export interface CorDaLoja {
+  /** `#rrggbb`. */
+  fundo: string;
+  /** Qual tinta lê sobre ela: a clara do papel ou a escura do Rende. */
+  tinta: "clara" | "escura";
+}
+
+const HEX = /^#[0-9a-f]{6}$/i;
+
+/** Luminância relativa da WCAG 2.x. */
+function luminancia(hex: string): number {
+  const canal = (i: number) => {
+    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * canal(1) + 0.7152 * canal(3) + 0.0722 * canal(5);
+}
+
+function contraste(a: number, b: number): number {
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
+/** `--on-brand` (#F6F3ED) e `--ink` (#22242E), as duas tintas que a página tem. */
+const CLARA = luminancia("#F6F3ED");
+const ESCURA = luminancia("#22242E");
+
+/**
+ * A cor que ela escolheu, com a tinta que mais contrasta sobre ela, ou `null`
+ * para cor ausente ou fora de `#rrggbb`. A cor da loja é sempre fundo (botão,
+ * passo, pílula ativa) e nunca texto sobre o papel: é a mesma regra do âmbar
+ * do Rende, e é o que deixa qualquer cor passar sem reprovar contraste.
+ */
+export function corDaLoja(cor: string | undefined): CorDaLoja | null {
+  if (!cor || !HEX.test(cor)) return null;
+  const l = luminancia(cor);
+  return {
+    fundo: cor.toLowerCase(),
+    tinta: contraste(l, CLARA) >= contraste(l, ESCURA) ? "clara" : "escura",
+  };
 }
 
 const UNIDADE: Partial<Record<FichaTecnica["unidadeRendimento"], string>> = {
@@ -368,6 +426,11 @@ export function montarCardapio(entrada: {
   opcoes: FichaTecnica[];
   /** `restamNoPote`, pronto (`#d164`); ausente = nenhum produto com número. */
   restam?: Map<string, number>;
+  /** `configuracao/vitrine` (`#d166`); ausente = a página sem capa, logo nem cor. */
+  vitrine?: Pick<
+    VitrineDoCardapio,
+    "capa" | "logo" | "cor" | "atualizadoEm"
+  > | null;
   agoraMs: number;
 }): Cardapio | null {
   const { conta, configuracao, fichas, agoraMs } = entrada;
@@ -418,9 +481,15 @@ export function montarCardapio(entrada: {
   const whatsapp = telefoneParaWhatsApp(configuracao.contato?.telefone);
   const instagram = configuracao.contato?.instagram?.trim().replace(/^@+/, "");
   const frase = configuracao.frase?.trim();
+  const { vitrine } = entrada;
+  const cor = corDaLoja(vitrine?.cor);
+  const versao = vitrine?.atualizadoEm?.toMillis() ?? 0;
 
   return {
     negocio: {
+      ...(cor ? { cor } : {}),
+      ...(tipoDaFoto(vitrine?.capa) ? { capaVersao: versao } : {}),
+      ...(tipoDaFoto(vitrine?.logo) ? { logoVersao: versao } : {}),
       nome: conta.nome,
       quem: conta.proprietaria.trim().split(/\s+/)[0] ?? "",
       ...(frase ? { frase } : {}),

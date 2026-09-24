@@ -4,6 +4,7 @@ import {
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -21,15 +22,20 @@ import {
 } from "lucide-react";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, Seletor } from "@/components/ui/Campo";
+import { CampoImagem } from "@/components/ui/CampoImagem";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { Painel } from "@/components/ui/Painel";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
+  CAPA_LADO_PX,
+  CAPA_MAX_BYTES,
   DIAS_DE_PROMOCAO,
   entraNoCardapio,
   LIMITE_DO_CARDAPIO,
+  LOGO_LADO_PX,
+  LOGO_MAX_BYTES,
   porCategoria,
   precoVigente,
   problemaDaPromocao,
@@ -37,13 +43,17 @@ import {
 import { dataISODe, diaVizinho, rotuloDiaPorExtenso } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
 import { contagemDoPronto, temPronto } from "@/lib/domain/producao";
-import { colFichas } from "@/lib/firebase/colecoes";
-import { salvarCardapio } from "@/lib/firebase/mutations/configuracao";
-import { useColecao } from "@/lib/hooks/useColecao";
+import { colFichas, docVitrine } from "@/lib/firebase/colecoes";
+import {
+  salvarCardapio,
+  salvarVitrine,
+} from "@/lib/firebase/mutations/configuracao";
+import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
 import type {
   ConfiguracaoGeral,
   FichaTecnica,
   PromocaoDoCardapio,
+  VitrineDoCardapio,
 } from "@/lib/types";
 import { useAuth, useContaId } from "@/providers/AuthProvider";
 
@@ -80,6 +90,7 @@ export function SeuCardapio({
   const { conta } = useAuth();
   const idInterruptor = useId();
   const idPromocoes = useId();
+  const idCara = useId();
 
   // A mesma consulta de `/compras` e do editor de produto: o índice existe.
   const consulta = useMemo(
@@ -142,6 +153,12 @@ export function SeuCardapio({
   const fichaDaNova = naLista.find((f) => f.id === nova?.fichaId);
 
   const [painelAberto, setPainelAberto] = useState(false);
+  // As imagens pesam: a vitrine só é lida com o painel aberto (`#d166`).
+  const refVitrine = useMemo(
+    () => (painelAberto ? docVitrine(contaId) : null),
+    [painelAberto, contaId],
+  );
+  const vitrine = useDocumento<VitrineDoCardapio>(refVitrine);
   // Só no navegador: o servidor não sabe o endereço nem se há `share`.
   const origem = useSyncExternalStore(
     SEM_MUDANCA,
@@ -679,9 +696,119 @@ export function SeuCardapio({
                 )}
               </section>
             )}
+
+            {/* A página é dela (sessão F, `#d166`): cada toque grava na hora,
+                como o resto deste painel. */}
+            <section aria-labelledby={idCara} className="space-y-5">
+              <div>
+                <h3 id={idCara} className="text-label font-medium text-ink">
+                  A cara da loja
+                </h3>
+                <p className="mt-0.5 text-label text-ink-muted">
+                  O que a cliente vê no topo do cardápio. O Rende fica numa
+                  linha no rodapé.
+                </p>
+              </div>
+              <CampoImagem
+                rotulo="Capa"
+                dica="Uma foto larga: a fornada, a bancada, a vitrine."
+                formato="largo"
+                valor={vitrine.dado?.capa ?? null}
+                aoMudar={(capa) => salvarVitrine(contaId, { capa })}
+                reducao={{
+                  ladoMaximo: CAPA_LADO_PX,
+                  formato: "image/jpeg",
+                  qualidade: 0.8,
+                }}
+                maxBytes={CAPA_MAX_BYTES}
+                rotuloEscolher="Escolher foto"
+                rotuloTirar="Tirar"
+              />
+              <CampoImagem
+                rotulo="Logo"
+                dica="Sai num círculo, sobre a capa."
+                valor={vitrine.dado?.logo ?? null}
+                aoMudar={(logo) => salvarVitrine(contaId, { logo })}
+                reducao={{
+                  ladoMaximo: LOGO_LADO_PX,
+                  formato: "image/jpeg",
+                  qualidade: 0.85,
+                }}
+                maxBytes={LOGO_MAX_BYTES}
+                comAlpha={{ maxBytes: LOGO_MAX_BYTES }}
+                rotuloEscolher="Escolher imagem"
+                rotuloTirar="Tirar"
+              />
+              <CampoCor
+                valor={vitrine.dado?.cor}
+                aoMudar={(cor) => salvarVitrine(contaId, { cor })}
+              />
+            </section>
           </div>
         )}
       </Painel>
     </>
+  );
+}
+
+/** A cor que pinta os botões da página; sem ela, a tinta do Rende. */
+const COR_PADRAO = "#2a2c3a";
+
+/**
+ * O seletor nativo de cor. Grava no `change` (quando ela fecha o seletor), e
+ * não no `input`, que dispara a cada arrasto e viraria uma escrita por pixel.
+ * O React só expõe o `input` como `onChange`; por isso o ouvinte à mão.
+ */
+function CampoCor({
+  valor,
+  aoMudar,
+}: {
+  valor: string | undefined;
+  aoMudar: (cor: string | null) => void;
+}) {
+  const id = useId();
+  const entrada = useRef<HTMLInputElement>(null);
+  const aoMudarAtual = useRef(aoMudar);
+  useEffect(() => {
+    aoMudarAtual.current = aoMudar;
+  });
+
+  useEffect(() => {
+    const elemento = entrada.current;
+    if (!elemento) return;
+    const ouvir = () => aoMudarAtual.current(elemento.value);
+    elemento.addEventListener("change", ouvir);
+    return () => elemento.removeEventListener("change", ouvir);
+  }, []);
+
+  // O documento é a verdade: tirar a cor, ou outro aparelho trocando, volta aqui.
+  useEffect(() => {
+    if (entrada.current) entrada.current.value = valor ?? COR_PADRAO;
+  }, [valor]);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-label font-medium text-ink">
+        Cor da loja
+      </label>
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          ref={entrada}
+          id={id}
+          type="color"
+          defaultValue={valor ?? COR_PADRAO}
+          className="toque h-12 w-16 cursor-pointer rounded-md border border-line-strong bg-surface p-1"
+        />
+        {valor && (
+          <Botao variante="terciaria" onClick={() => aoMudar(null)}>
+            Voltar para a do Rende
+          </Botao>
+        )}
+      </div>
+      <p className="text-label text-ink-muted">
+        Vai nos botões e no que a cliente escolhe. O texto por cima se ajusta
+        sozinho para dar leitura.
+      </p>
+    </div>
   );
 }

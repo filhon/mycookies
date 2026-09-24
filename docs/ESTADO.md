@@ -12,7 +12,7 @@ e 034 por publicar juntas**; a **035 entregue** por cima delas, o celular por ge
 dela —, por publicar num deploy só, a regra antes do app; a **031 codificada inteira** em
 2026-09-23 (a A, a vitrine, e a B, o pedido, `specs/031-cardapio-publico.md`, antes do gatilho),
 por publicar depois do parágrafo de `/privacidade` e do roteiro; a **031-C, os combos**, e a
-**031-D, a quantidade limitada**, e a **031-E, a promoção**, codificadas no mesmo dia; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 027, 028, 029,
+**031-D, a quantidade limitada**, a **031-E, a promoção**, e a **031-F, a página da loja** (`#d166`), codificadas no mesmo dia; roteiros das 015, 016, 017, 018, 019, 020, 021, 022, 023, 024, 025, 026, 027, 028, 029,
 033, 034 e 035 por rodar).
 **Toda sessão atualiza este arquivo antes de encerrar.**
 
@@ -275,7 +275,7 @@ os números digitados de ponta a ponta.
 | 28  | O teste acaba, e a assinatura               | codificada; deploy espera o roteiro | `specs/028-o-teste-acaba-e-a-assinatura.md` |
 | 29  | Meus dados são meus                         | codificada; deploy espera os termos | `specs/029-meus-dados-sao-meus.md`          |
 | 30  | A ajudante                                  | A e B codificadas; não publicada    | `specs/030-a-ajudante.md`                   |
-| 31  | Cardápio público com link de pedido         | A a E codificadas; não publicada    | `specs/031-cardapio-publico.md`             |
+| 31  | Cardápio público com link de pedido         | A a F codificadas; não publicada    | `specs/031-cardapio-publico.md`             |
 | 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`                |
 | 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`               |
 | 35  | O celular por gesto                         | pronto, sem o roteiro               | `specs/035-o-celular-por-gesto.md`          |
@@ -3261,6 +3261,53 @@ Portão: lint e typecheck limpos, os **676 testes** (669 + 7), `npm run build` c
 riscado, o percentual e o pedido com o preço dela; o dia seguinte voltando sozinho ao preço de
 sempre; promoção, combo e limitado juntos, cada número conferido). Nenhuma tela nova foi vista em
 navegador, nos dois temas.
+
+## A spec 031 · Cardápio público — sessão F, a página é da loja
+
+A tela do Claude Design (`docs/marca/rende/Rende - Cardápio.dc.html`, trazida via `DesignSync`)
+aplicada sobre a A a E. A capa, o logo e a cor são da confeiteira, e o Rende fica numa linha de
+rodapé (`#d166`, spec seção 5). Antes do código, o design passou pelo `/impeccable critique`:
+24/40 e "template de iFood". O detector deu 9 achados no design e 0 no código novo. As correções
+da crítica entraram junto.
+
+- **Dados:**
+  - `configuracao/vitrine` (`VitrineDoCardapio`: `capa?`, `logo?`, `cor?`), documento novo e
+    aditivo;
+  - nenhuma regra muda;
+  - `salvarVitrine`, e o painel só assina o documento com ele aberto.
+- **Domínio:** `corDaLoja` (a tinta pela luminância da WCAG) e os tetos `CAPA_*` e `LOGO_*`;
+  `montarCardapio` recebe `vitrine`.
+- **Servidor:** `lerCardapio` lê a vitrine, e a rota nova `/c/[contaId]/vitrine/[qual]` serve a
+  capa e o logo.
+- **Tokens:** `--loja` e `--on-loja` em `globals.css`, `bg-loja` e `text-on-loja`, e a variante
+  `loja` do botão.
+- **`page.tsx`:**
+  - em cima, a capa ou a faixa na cor, o logo em círculo, o nome, e WhatsApp e Instagram como
+    secundários;
+  - no rodapé, o nome e a linha do Rende.
+- **`PedidoPeloCardapio.tsx`:**
+  - as pílulas de categoria como âncoras;
+  - a foto à direita, e "Adicionar" na linha do preço;
+  - o passo na cor da loja;
+  - "Ver pedido" na cor, no celular;
+  - no desktop, o pedido ao lado da lista (`useDesktop`, e um `<form>` só);
+  - os 14 dias seguintes como botões, mais "Outro dia";
+  - "Recado pra {quem}";
+  - no fim, o toque que falta, dito com todas as letras.
+- **`SeuCardapio.tsx`:** "A cara da loja", com a capa, o logo e a cor (seletor nativo, grava no
+  `change`).
+- **`TelaConfiguracao.tsx`:** o interruptor "feito com Rende" diz que vale para a folha e para o
+  cardápio.
+
+Portão:
+
+- `lint` e `typecheck` limpos;
+- **680 testes** (676 + 4);
+- `npm run build` com `/c/[contaId]` ● (ISR) e `/c/[contaId]/vitrine/[qual]` ƒ;
+- `firestore.rules` intocado.
+
+**O que não rodou:** os passos 21 a 23 do roteiro. Nenhuma tela nova foi vista em navegador,
+nem nos dois temas nem a 360 px. A página nunca rodou com uma capa de verdade.
 
 ## Próxima ação
 

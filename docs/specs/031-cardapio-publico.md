@@ -984,6 +984,48 @@ Hoje é 23/09/2026. Promoção do Red Velvet: R$ 11,00 até 2026-09-25.
 
 ---
 
+## 5 · Sessão F · A página é da loja (`#d166`)
+
+Acrescentada em 2026-09-23, a pedido de quem conduz o projeto, a partir da tela do Claude
+Design (`docs/marca/rende/Rende - Cardápio.dc.html`). **Aprovações pedidas e dadas:** schema
+aditivo (`configuracao/vitrine`, documento novo) e sair do escopo das A a E. Nenhuma regra
+muda (`configuracao/*` já é da dona), e nenhuma dependência entra.
+
+**Antes do código**, o design passou pelo `/impeccable critique`:
+
+- avaliação isolada, **24/40**: "template de iFood com o papel do Rende por baixo";
+- detector, **9 achados**: dois de contraste, cinco de enchimento, um de recorte e um de papel
+  creme.
+
+Depois das mudanças, o detector sobre `page.tsx`, `PedidoPeloCardapio.tsx` e
+`SeuCardapio.tsx` dá **0**. O que entrou e o que ficou de fora, com o porquê, está em `#d166`.
+
+- **Dados:** `VitrineDoCardapio` (`capa?`, `logo?`, `cor?`), `caminhos.vitrine`, `docVitrine`,
+  `salvarVitrine` (um campo por toque, `null` tira).
+- **Domínio:** `corDaLoja` (a tinta pela luminância da WCAG), `CAPA_*` e `LOGO_*`;
+  `montarCardapio` recebe `vitrine` e devolve `negocio.cor`, `capaVersao` e `logoVersao`, nunca a
+  imagem.
+- **Servidor:** `lerCardapio` lê a vitrine em paralelo com o que resta. `lerImagemDaVitrine` e a
+  rota `/c/[contaId]/vitrine/[qual]` servem as imagens.
+- **Página:**
+  - em cima, a capa (ou a faixa na cor dela, sem capa), o logo em círculo, o nome e a frase, e
+    WhatsApp e Instagram como botões secundários;
+  - as pílulas de categoria como âncoras e a lista com a foto à direita;
+  - "Ver pedido" na cor dela no celular, e o pedido ao lado da lista no desktop;
+  - no fim, o rodapé com a linha do Rende.
+- **Painel da dona:** "A cara da loja" em "Seu cardápio": capa, logo e cor. O interruptor
+  "feito com Rende" em `/configuracao` passa a dizer que vale para a folha e para o cardápio.
+- **Testes:** `corDaLoja` e `montarCardapio` com a vitrine, incluindo "nenhum `base64` sai no
+  cardápio".
+- **Roteiro, passos 21 a 23:**
+  - **21.** Em "Seu cardápio", pôr a capa, o logo e uma cor clara (amarelo). A página mostra as
+    duas imagens, e os botões saem com a tinta escura.
+  - **22.** Tirar a capa: sobra a faixa na cor. Tirar a cor: sobra o nome no papel, sem faixa.
+  - **23.** No desktop, o pedido ao lado da lista. Enviar um pedido: "Fazer outro pedido" zera o
+    pedido. No celular, a folha continua sendo a folha.
+
+---
+
 ## Caso de aceite
 
 A conta `mycookies`, cardápio aberto com `fichaIds: ["tradicional", "redvelvet", "recheio"]`.

@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils/cn";
 
-export type VarianteBotao = "primaria" | "secundaria" | "terciaria" | "perigo";
+export type VarianteBotao =
+  "primaria" | "secundaria" | "terciaria" | "perigo" | "loja";
 export type TamanhoBotao = "sm" | "md" | "lg";
 
 const VARIANTES: Record<VarianteBotao, string> = {
@@ -14,6 +15,8 @@ const VARIANTES: Record<VarianteBotao, string> = {
   // Nunca a marca: ela não pode significar destruição.
   perigo:
     "border border-negative/40 bg-transparent text-negative hover:bg-negative-soft active:bg-negative-soft",
+  // O primário do cardápio público: a cor dela, e não o âmbar do Rende (`#d166`).
+  loja: "bg-loja text-on-loja hover:brightness-95 active:brightness-90",
 };
 
 const TAMANHOS: Record<TamanhoBotao, string> = {

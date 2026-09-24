@@ -3,11 +3,13 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { AtSign, MessageCircle } from "lucide-react";
 import { PedidoPeloCardapio } from "@/components/cardapio/PedidoPeloCardapio";
+import { estiloDaLoja } from "@/components/cardapio/estiloDaLoja";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { mensagemDeContato, type Cardapio } from "@/lib/domain/cardapio";
 import { diaVizinho, hojeEmBrasilia } from "@/lib/domain/datas";
 import { linkDoWhatsApp } from "@/lib/domain/whatsapp";
 import { lerCardapio } from "@/lib/server/cardapio";
+import { cn } from "@/lib/utils/cn";
 
 /**
  * O cardápio público (spec 031): a vitrine que a confeiteira manda no WhatsApp
@@ -15,7 +17,8 @@ import { lerCardapio } from "@/lib/server/cardapio";
  * guarda de login. Renderizada no servidor com o Admin SDK, e a regra do
  * Firestore continua sem nada público (`DECISOES.md#d158`).
  *
- * A voz é a dela falando com a cliente, e não a do Rende falando com ela.
+ * A página é dela, e não do Rende (sessão F, `#d166`): a capa, o logo e a cor
+ * da loja na frente; o Rende é uma linha de rodapé que ela desliga.
  */
 
 // Uma cliente ou mil no mesmo minuto são as mesmas `2 + N` leituras.
@@ -50,10 +53,14 @@ export default async function PaginaCardapio({ params }: Props) {
   const { contaId } = await params;
   const cardapio = await cardapioDa(contaId);
   if (!cardapio) notFound();
+  const { negocio } = cardapio;
 
   return (
-    <main className="mx-auto w-full max-w-xl px-4 pb-12 pt-10 sm:pt-16">
-      <Topo negocio={cardapio.negocio} />
+    <main
+      style={estiloDaLoja(negocio.cor)}
+      className="mx-auto w-full max-w-6xl pb-12 lg:px-10"
+    >
+      <Topo contaId={contaId} negocio={negocio} />
 
       {/* Amanhã em Brasília, no servidor: o relógio do celular da cliente não
           decide o mínimo. Guardado com a página por até 60 s. */}
@@ -63,73 +70,118 @@ export default async function PaginaCardapio({ params }: Props) {
         amanha={diaVizinho(hojeEmBrasilia(new Date()), 1)}
       />
 
-      {cardapio.negocio.feitoComRende && (
-        <p className="mt-12 text-center text-micro text-ink-subtle">
-          Feito com Rende
+      <footer className="mx-4 mt-12 flex flex-col items-center gap-1 border-t border-line pt-6 text-label text-ink-muted lg:mx-0 lg:flex-row lg:justify-between">
+        <p>
+          {negocio.nome}
+          {negocio.instagram && ` · @${negocio.instagram}`}
         </p>
-      )}
+        {negocio.feitoComRende && <p>Cardápio feito no Rende</p>}
+      </footer>
     </main>
   );
 }
 
-function Topo({ negocio }: { negocio: Cardapio["negocio"] }) {
+/**
+ * A capa, o logo e o nome. Sem capa, a cor dela faz a faixa; sem nenhuma das
+ * duas, o nome começa no papel, sem faixa inventada.
+ */
+function Topo({
+  contaId,
+  negocio,
+}: {
+  contaId: string;
+  negocio: Cardapio["negocio"];
+}) {
+  const base = `/c/${encodeURIComponent(contaId)}/vitrine`;
+  const temFaixa = negocio.capaVersao !== undefined || !!negocio.cor;
   const contatos = [negocio.whatsapp, negocio.instagram].filter(Boolean);
 
   return (
     <header>
-      <h1 className="text-balance font-display text-display font-semibold text-ink">
-        {negocio.nome}
-      </h1>
-      {negocio.frase && (
-        <p className="mt-2 max-w-[48ch] text-body text-ink-muted">
-          {negocio.frase}
-        </p>
+      {negocio.capaVersao !== undefined ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={`${base}/capa?v=${negocio.capaVersao}`}
+          alt=""
+          className="h-44 w-full bg-sunken object-cover lg:mt-6 lg:h-65 lg:rounded-lg"
+        />
+      ) : (
+        negocio.cor && <div className="h-28 bg-loja lg:mt-6 lg:rounded-lg" />
       )}
 
-      {contatos.length > 0 && (
-        <div
-          className={
-            contatos.length === 2 ? "mt-6 grid grid-cols-2 gap-2" : "mt-6 grid"
-          }
-        >
-          {negocio.whatsapp && (
-            <a
-              href={linkDoWhatsApp(
-                negocio.whatsapp,
-                mensagemDeContato(negocio),
+      <div
+        className={cn(
+          "flex flex-col gap-4 px-4 lg:flex-row lg:items-end lg:justify-between lg:px-6",
+          !temFaixa && "pt-10",
+        )}
+      >
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:gap-6">
+          {negocio.logoVersao !== undefined && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`${base}/logo?v=${negocio.logoVersao}`}
+              alt={`Logo de ${negocio.nome}`}
+              width={112}
+              height={112}
+              className={cn(
+                "size-19 shrink-0 rounded-full border-4 border-canvas bg-canvas object-cover lg:size-28",
+                temFaixa && "-mt-9.5 lg:-mt-14",
               )}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Falar no WhatsApp"
-              className={classesBotao({ variante: "primaria", tamanho: "lg" })}
-            >
-              <MessageCircle
-                aria-hidden
-                className="size-5"
-                strokeWidth={1.75}
-              />
-              {/* A 360px, com os dois botões lado a lado, "Falar no WhatsApp"
-                  não cabe; o `aria-label` diz a frase inteira. */}
-              <span className="sm:hidden">WhatsApp</span>
-              <span className="hidden sm:inline">Falar no WhatsApp</span>
-            </a>
+            />
           )}
-          {negocio.instagram && (
-            <a
-              href={`https://instagram.com/${encodeURIComponent(negocio.instagram)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={classesBotao({
-                variante: "secundaria",
-                tamanho: "lg",
-              })}
-            >
-              <AtSign aria-hidden className="size-5" strokeWidth={1.75} />
-              Instagram
-            </a>
-          )}
+          <div
+            className={cn(
+              temFaixa && negocio.logoVersao === undefined && "pt-6",
+            )}
+          >
+            <h1 className="text-balance font-display text-display font-semibold text-ink lg:text-[2.25rem]">
+              {negocio.nome}
+            </h1>
+            {negocio.frase && (
+              <p className="mt-1 max-w-[48ch] text-body text-ink-muted">
+                {negocio.frase}
+              </p>
+            )}
+          </div>
         </div>
-      )}
+
+        {/* Para quem só quer perguntar "tem pra hoje?": é o motivo mais comum
+            de abrir o link da bio, e o pedido não é o único caminho. */}
+        {contatos.length > 0 && (
+          <div className="flex gap-2">
+            {negocio.whatsapp && (
+              <a
+                href={linkDoWhatsApp(
+                  negocio.whatsapp,
+                  mensagemDeContato(negocio),
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Falar no WhatsApp"
+                className={classesBotao({ tamanho: "sm" })}
+              >
+                <MessageCircle
+                  aria-hidden
+                  className="size-4"
+                  strokeWidth={1.75}
+                />
+                WhatsApp
+              </a>
+            )}
+            {negocio.instagram && (
+              <a
+                href={`https://instagram.com/${encodeURIComponent(negocio.instagram)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={classesBotao({ tamanho: "sm" })}
+              >
+                <AtSign aria-hidden className="size-4" strokeWidth={1.75} />
+                Instagram
+              </a>
+            )}
+          </div>
+        )}
+      </div>
     </header>
   );
 }

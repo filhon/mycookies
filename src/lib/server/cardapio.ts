@@ -17,6 +17,7 @@ import {
   type FichaTecnica,
   type Fornada,
   type Pedido,
+  type VitrineDoCardapio,
 } from "@/lib/types";
 import { adminDb, credencialDisponivel } from "./firebaseAdmin";
 
@@ -40,8 +41,18 @@ const ID = /^[A-Za-z0-9_-]{1,64}$/;
 export async function lerCardapio(contaId: string): Promise<Cardapio | null> {
   const lido = await lerContaDoCardapio(contaId);
   if (!lido) return null;
-  const restam = await lerRestam(contaId, lido, hojeEmBrasilia(new Date()));
-  return montarCardapio({ ...lido, restam, agoraMs: Date.now() });
+  // A vitrine é lida aqui e não em `lerContaDoCardapio`: o pedido não precisa
+  // das imagens, e elas são o documento mais pesado da conta (`#d166`).
+  const [restam, vitrine] = await Promise.all([
+    lerRestam(contaId, lido, hojeEmBrasilia(new Date())),
+    lerVitrine(contaId),
+  ]);
+  return montarCardapio({ ...lido, restam, vitrine, agoraMs: Date.now() });
+}
+
+async function lerVitrine(contaId: string): Promise<VitrineDoCardapio | null> {
+  const snap = await adminDb().doc(caminhos.vitrine(contaId)).get();
+  return snap.exists ? (snap.data() as VitrineDoCardapio) : null;
 }
 
 /**
@@ -168,9 +179,32 @@ export async function lerFotoDoCardapio(
   if (!snap.exists) return null;
   const ficha = { id: snap.id, ...snap.data() } as FichaTecnica;
 
-  const tipo = tipoDaFoto(ficha.fotoUrl);
-  if (!entraNoCardapio(ficha) || !tipo) return null;
+  if (!entraNoCardapio(ficha)) return null;
+  return bytesDe(ficha.fotoUrl);
+}
 
-  const base64 = ficha.fotoUrl!.slice(ficha.fotoUrl!.indexOf(",") + 1);
+/** A capa ou o logo do cardápio aberto, ou `null` (404). Como a foto (`#d162`). */
+export async function lerImagemDaVitrine(
+  contaId: string,
+  qual: "capa" | "logo",
+): Promise<{ tipo: string; bytes: Buffer } | null> {
+  if (!credencialDisponivel() || !ID.test(contaId)) return null;
+
+  const db = adminDb();
+  const [configuracaoSnap, vitrine] = await Promise.all([
+    db.doc(caminhos.configuracaoGeral(contaId)).get(),
+    lerVitrine(contaId),
+  ]);
+  const configuracao = configuracaoSnap.data() as ConfiguracaoGeral | undefined;
+  if (!configuracao?.cardapio?.aberto) return null;
+  return bytesDe(vitrine?.[qual]);
+}
+
+function bytesDe(
+  dataUrl: string | undefined,
+): { tipo: string; bytes: Buffer } | null {
+  const tipo = tipoDaFoto(dataUrl);
+  if (!tipo) return null;
+  const base64 = dataUrl!.slice(dataUrl!.indexOf(",") + 1);
   return { tipo, bytes: Buffer.from(base64, "base64") };
 }

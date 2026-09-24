@@ -67,6 +67,13 @@
      `accent-500` passa (9:1) e volta a ser o anel. */
   --focus: var(--accent-600);
 
+  /* ---------- a cor da loja (cardápio público, `DECISOES.md#d166`) ----------
+     A página `/c/{contaId}` redeclara os dois com a cor que ela escolheu e a
+     tinta que `corDaLoja` calcula. Sem cor, a tinta do Rende. É sempre fundo,
+     nunca texto sobre o papel: qualquer cor passa. */
+  --loja: var(--brand-700);
+  --on-loja: var(--on-brand);
+
   /* ---------- sombra (baixa ou nenhuma), na matiz da tinta ----------
      `--shadow-*` é namespace do Tailwind; o valor bruto mora em `--elevation-*`
      e o `@theme inline` o expõe como `shadow-raised` / `shadow-overlay`. */
@@ -140,6 +147,8 @@
   --color-on-accent: var(--on-accent);
 
   --color-on-brand: var(--on-brand);
+  --color-loja: var(--loja);
+  --color-on-loja: var(--on-loja);
   --color-on-brand-muted: var(--on-brand-muted);
 
   --color-canvas: var(--canvas);

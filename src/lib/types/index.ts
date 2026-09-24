@@ -20,6 +20,7 @@ export const caminhos = {
   configuracao: (contaId: string) => `contas/${contaId}/configuracao`,
   configuracaoGeral: (contaId: string) =>
     `contas/${contaId}/configuracao/geral`,
+  vitrine: (contaId: string) => `contas/${contaId}/configuracao/vitrine`,
   insumos: (contaId: string) => `contas/${contaId}/insumos`,
   fichas: (contaId: string) => `contas/${contaId}/fichas`,
   clientes: (contaId: string) => `contas/${contaId}/clientes`,

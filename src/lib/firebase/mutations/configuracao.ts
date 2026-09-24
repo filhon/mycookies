@@ -1,5 +1,5 @@
 import { deleteField, setDoc, Timestamp } from "firebase/firestore";
-import { docConfiguracao } from "../colecoes";
+import { docConfiguracao, docVitrine } from "../colecoes";
 import { despachar } from "./despachar";
 import type { RateioOperacional } from "@/lib/domain/custoFicha";
 import {
@@ -199,6 +199,30 @@ export async function salvarConfiguracao(
  * configuração, isto criaria um `configuracao/geral` sem `operacional`, e
  * `rateioDaConta` confiaria nele. O painel não oferece o toque nesse caso.
  */
+/**
+ * A capa, o logo e a cor do cardápio (spec 031, sessão F, `DECISOES.md#d166`),
+ * em `configuracao/vitrine`. Um campo por toque, como `salvarCardapio`; `null`
+ * tira. `merge` porque cada toque traz um campo só.
+ */
+export function salvarVitrine(
+  contaId: string,
+  mudanca: Partial<Record<"capa" | "logo" | "cor", string | null>>,
+): void {
+  const campos = Object.fromEntries(
+    Object.entries(mudanca).map(([campo, valor]) => [
+      campo,
+      valor ?? deleteField(),
+    ]),
+  );
+  despachar(
+    setDoc(
+      docVitrine(contaId),
+      { ...campos, v: VERSAO_SCHEMA, atualizadoEm: Timestamp.now() },
+      { merge: true },
+    ),
+  );
+}
+
 export function salvarCardapio(
   contaId: string,
   cardapio: NonNullable<ConfiguracaoGeral["cardapio"]>,

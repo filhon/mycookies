@@ -107,6 +107,24 @@ export interface ConfiguracaoGeral {
   atualizadoEm: Timestamp;
 }
 
+/**
+ * A cara da loja no cardápio público (spec 031, sessão F, `DECISOES.md#d166`):
+ * `contas/{contaId}/configuracao/vitrine`. Documento à parte de `geral` porque
+ * as imagens pesam, e `geral` sobe com o app inteiro. Só a página pública e o
+ * painel "Seu cardápio" o leem.
+ */
+export interface VitrineDoCardapio {
+  id: "vitrine";
+  v: VersaoSchema;
+  /** A foto larga do topo, `data:` URL (JPEG até `CAPA_LADO_PX`). */
+  capa?: string;
+  /** O logo, `data:` URL, quadrado na página (recortado em círculo). */
+  logo?: string;
+  /** A cor da loja, `#rrggbb`. Ausente = a tinta do Rende. */
+  cor?: string;
+  atualizadoEm: Timestamp;
+}
+
 /** Uma promoção do cardápio (spec 031, sessão E, `DECISOES.md#d165`). */
 export interface PromocaoDoCardapio {
   fichaId: string;

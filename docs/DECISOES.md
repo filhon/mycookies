@@ -5232,3 +5232,65 @@ novo em `Pedido`: o lucro estimado já mostra o que a promoção custou.
 a ficha não guarda histórico de preço. Subir a ficha na véspera é o mesmo truque, feito à mão; o
 painel diz em uma linha que o riscado precisa ser o que ela cobra fora da promoção. Um
 `precoVendaDesdeISO` na ficha, se um dia o Rende precisar provar isso.
+
+## D166 · A página é da loja: capa, logo e cor dela, e o Rende numa linha de rodapé
+
+**Status:** vigente · decidida em 2026-09-23, na spec `031-cardapio-publico.md` (sessão F).
+
+**Contexto.** Quem conduz o projeto pediu ao Claude Design a tela do cardápio público
+(`docs/marca/rende/Rende - Cardápio.dc.html`) e preferiu o resultado ao que a A e a B tinham
+entregue. A premissa de lá: a página é da confeiteira, e não do Rende. Antes de implementar, o
+design passou pelo `/impeccable critique`: **24/40**, com o veredito "template de iFood com o
+papel do Rende por baixo", e o detector com 9 achados (contraste do rodapé, papel creme,
+enchimento apertado). As correções da crítica entraram junto com o design.
+
+**Decisão.**
+
+- **`contas/{id}/configuracao/vitrine`** (`VitrineDoCardapio`): `capa?`, `logo?` (`data:` URL,
+  como a foto do produto, `#d109`) e `cor?` (`#rrggbb`). É um documento à parte de `geral`
+  porque as imagens pesam (capa até 300 KB, logo até 120 KB), e `geral` sobe com o app inteiro.
+  O painel só o assina com "Seu cardápio" aberto. A regra não muda: `configuracao/*` já era da
+  dona (`#d154`). A exportação e a purga já cobrem o documento, porque as duas listam as
+  coleções.
+- **As imagens saem por rota**, `/c/{contaId}/vitrine/{capa|logo}?v=`, pelo mesmo caminho da
+  foto (`#d162`): nunca dentro do HTML, cache imutável por versão, e 404 com o cardápio fechado.
+  A página só recebe `capaVersao`, `logoVersao` e a cor.
+- **A cor é sempre fundo, e nunca texto sobre o papel.** Vale a mesma regra do âmbar do Rende,
+  e é ela que deixa qualquer cor passar. `corDaLoja` calcula pela luminância da WCAG qual tinta
+  lê melhor sobre a cor: a clara (`--on-brand`) ou a escura (`--brand-800`, que não inverte no
+  escuro). A página redeclara `--loja` e `--on-loja`, e o botão ganha a variante `loja`. Sem cor,
+  valem os do Rende (`--brand-700`). Como o `Painel` abre num portal fora do `<main>`, a cor é
+  redeclarada dentro dele.
+- **O que o design inventava ficou de fora**, porque a spec já tinha dito não a cada item:
+  - a taxa de entrega fixa: continua "sem a entrega", e a taxa é combinada;
+  - "próxima fornada", as vagas por dia e o horário e o endereço de retirada: dias e horários
+    estão fora de escopo;
+  - o ponto verde de "aceitando encomendas": página aberta já é cardápio aberto;
+  - o selo "o mais pedido": o Rende não sabe disso;
+  - "volta na próxima": uma promessa sem dado.
+- **O que a crítica mudou no desenho:**
+  - o "+" deixou de flutuar sobre a foto e virou "Adicionar" na linha do preço, porque sem foto
+    ele flutuaria no nada;
+  - a web usa a mesma lista com divisórias do celular, e não a grade de cartões com elevação;
+  - "sacola" virou "pedido";
+  - as pílulas de categoria são âncoras, sem estado "ativa", porque uma pílula ativa que não
+    segue a rolagem mente;
+  - a data virou botões com os 14 dias seguintes, mais "Outro dia" com o calendário;
+  - todo alvo tem 44 px;
+  - o rodapé é `--ink-muted`, e não `--ink-subtle`;
+  - o fim da jornada diz o toque que falta: "mande a mensagem no WhatsApp, que é por lá que ela
+    confirma".
+- **No desktop, o pedido fica ao lado da lista**, sem painel, como no design. É o mesmo
+  formulário: `useDesktop` decide onde ele monta, e só monta num lugar, porque dois `<form>` com
+  o mesmo id mandariam o pedido pelo errado.
+
+**Consequência.** A crítica levantou três coisas que não entraram, e ficam registradas como
+pergunta, não como dívida:
+
+- o local e o horário de retirada, como campo de texto;
+- os dias de fornada da semana;
+- uma fonte de exibição escolhida pela loja.
+
+Hoje o nome da loja sai em Archivo, a fonte do Rende. `ponytail:` o "feito com Rende" da página
+e o da folha são o mesmo interruptor (`ocultarFeitoCom`, `#d147`). Dois interruptores, se ela
+quiser um e não o outro.

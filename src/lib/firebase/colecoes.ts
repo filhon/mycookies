@@ -23,6 +23,7 @@ import type {
   ResumoGlobal,
   ResumoMensal,
   Transacao,
+  VitrineDoCardapio,
 } from "@/lib/types";
 
 /**
@@ -103,6 +104,11 @@ export const docMeta = (contaId: string, competencia: string) =>
 export const docConfiguracao = (contaId: string) =>
   doc(obterDb(), caminhos.configuracaoGeral(contaId)).withConverter(
     conversor<ConfiguracaoGeral>(),
+  );
+
+export const docVitrine = (contaId: string) =>
+  doc(obterDb(), caminhos.vitrine(contaId)).withConverter(
+    conversor<VitrineDoCardapio>(),
   );
 
 export const docResumoMensal = (contaId: string, competencia: string) =>

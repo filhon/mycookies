@@ -20,6 +20,7 @@ retrabalho.
 | `Rende — Telas.dc.html`      | As telas de exemplo do app com os dados reais do brief: celular 360×800 (as nove telas), desktop 1280 com barra lateral, e tema escuro.                                                                               |
 | `Rende — Aplicações.dc.html` | Login, abertura, página inicial de venda (celular e desktop), Instagram, e-mail de boas-vindas, adesivo "feito com Rende" e a lâmina para a professora de confeitaria.                                                |
 | `Marca — Fase 1.dc.html`     | O documento da fase 1: posicionamento, os oito nomes e os três territórios. Histórico da decisão.                                                                                                                     |
+| `Rende - Cardápio.dc.html`   | O cardápio público (celular, pedido e web 1280), trazido em 2026-09-23. Aplicado com as correções do `/impeccable` na spec 031, sessão F: o que mudou e por quê está em `DECISOES.md#d166`.                           |
 
 ## Como usar
 
