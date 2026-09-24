@@ -6,6 +6,7 @@ import {
   LIMITE_DE_AJUDANTES,
   type FalhaConvite,
 } from "@/lib/domain/ajudante";
+import { paraSituar, permite, situacaoDaConta } from "@/lib/domain/assinatura";
 import {
   adminAuth,
   adminDb,
@@ -68,6 +69,10 @@ export async function POST(requisicao: Request) {
   const conta = (await db.doc(caminhos.conta(contaId)).get()).data() as
     Conta | undefined;
   if (!conta) return falha("fora-de-forma", 400);
+
+  // 2b. O pacote (`#d167`): o essencial não tem ajudante. Tirar não tem portão.
+  const situacao = situacaoDaConta(paraSituar(conta), Date.now());
+  if (!permite(situacao, "ajudante")) return falha("sem-pacote", 403);
 
   // 3. O freio. Quem já é membro ativa não conta contra o próprio convite.
   const membros = await db.collection(caminhos.membros(contaId)).get();

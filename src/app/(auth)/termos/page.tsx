@@ -8,7 +8,10 @@ export const metadata: Metadata = { title: "Termos de uso · Rende" };
 
 /**
  * As seções são da spec 027 (3.5); o texto é de quem conduz o projeto. A 028
- * reescreve o parágrafo do teste grátis; a 029, o de exportar e encerrar.
+ * reescreve o parágrafo do teste grátis; a 029, o de exportar e encerrar; a
+ * 032 acrescenta o dos dois planos (3.8: o que cada um inclui, o teste inclui
+ * tudo, e mudar para o menor tira o cardápio do ar e o acesso das ajudantes
+ * quando a mudança vale, sem apagar o que foi cadastrado).
  */
 const SECOES: SecaoDeTexto[] = [
   {
@@ -28,7 +31,10 @@ const SECOES: SecaoDeTexto[] = [
   },
   {
     titulo: "O teste grátis de catorze dias e o que acontece depois",
-    paragrafos: ["[texto de quem conduz o projeto]"],
+    paragrafos: [
+      "[texto de quem conduz o projeto]",
+      "[texto de quem conduz o projeto: os dois planos, spec 032, 3.8]",
+    ],
   },
   {
     titulo: "Os dados são seus",

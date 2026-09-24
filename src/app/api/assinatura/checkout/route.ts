@@ -43,18 +43,20 @@ export async function POST(requisicao: Request) {
   }
   if (!stripeDisponivel()) return falha("sem-configuracao", 500);
 
-  const { contaId, periodo } = corpo.data;
+  const { contaId, pacote, periodo } = corpo.data;
   const conta = (await adminDb().doc(caminhos.conta(contaId)).get()).data() as
     Conta | undefined;
 
   const origem = new URL(requisicao.url).origin;
   const sessao = await stripe().checkout.sessions.create({
     mode: "subscription",
-    line_items: [{ price: PRECOS[periodo], quantity: 1 }],
+    line_items: [{ price: PRECOS[pacote][periodo], quantity: 1 }],
     client_reference_id: contaId,
     ...(conta?.stripeCustomerId
       ? { customer: conta.stripeCustomerId }
       : { customer_email: quem.email }),
+    // Sem o pacote na metadata: quem decide é o produto (`#d169`), e duas
+    // fontes discordariam no dia em que ela trocasse pelo portal.
     subscription_data: { metadata: { contaId, uid: quem.uid } },
     locale: "pt-BR",
     success_url: `${origem}/assinatura/confirmando`,

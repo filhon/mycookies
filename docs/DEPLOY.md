@@ -102,7 +102,8 @@ node -e "console.log(Buffer.from(require('fs').readFileSync('./chave-servico.jso
 Sem `FIREBASE_SERVICE_ACCOUNT`, o app inteiro funciona e **só** a leitura de nota não: a tela
 diz "A leitura de nota ainda não está configurada neste servidor", que é a frase certa. Foi
 para isso que a rota passou a distinguir os dois erros (`DECISOES.md#d72`) — antes ela dizia
-que o login dela não abria a conta. Sem `STRIPE_SECRET_KEY` ou os dois preços,
+que o login dela não abria a conta. Sem `STRIPE_SECRET_KEY` ou os quatro preços (dois desde a
+spec 032),
 `/assinatura` diz o mesmo tipo de frase ("A assinatura ainda não está configurada neste
 servidor") e o resto do app continua de pé.
 
@@ -132,6 +133,32 @@ de **teste** primeiro:
 mão perde acesso), mas o webhook só deve apontar para uma URL que já responde 200 a um evento
 de teste — publicar o endpoint antes do app faria o Stripe achar o servidor fora do ar e
 começar a tentar de novo. Ver `DECISOES.md#d144` a `#d147`.
+
+### Stripe, o segundo plano (spec 032)
+
+Também à mão, também em modo de teste primeiro. O pacote de cada assinatura vem do **produto**,
+e não do preço (`DECISOES.md#d169`): o webhook lê `metadata.pacote` do produto, e qualquer
+outra coisa é o essencial.
+
+1. **O produto que já existe ("Rende") não muda.** Ele é o essencial, e fica **sem**
+   `metadata.pacote`.
+2. **Um produto novo, "Rende Completo"**, com `metadata.pacote = COMPLETO` (maiúsculo: `completo`
+   é o essencial) e dois preços recorrentes em BRL, mensal e anual, o anual valendo dez mensais.
+   Anotar os dois ids `price_…` → `STRIPE_PRICE_COMPLETO_MENSAL` e `STRIPE_PRICE_COMPLETO_ANUAL`.
+3. **Customer Portal → Subscriptions → "Customers can switch plans"** ligado, com **os dois
+   produtos** e os quatro preços na lista, e os downgrades aplicados **no fim do período**. Sem
+   isso o portal não mostra "Atualizar plano", e o botão "Mudar para o completo" dos painéis de
+   `/configuracao` leva a um portal sem a opção.
+4. **Conferir a `metadata` antes de qualquer cliente de verdade no completo** (passo 5 do
+   roteiro da spec): uma `metadata` errada faz o webhook gravar essencial e **tirar as
+   ajudantes** de quem paga o completo (`#d170`). O desfazer é corrigir a `metadata`, reenviar o
+   último evento pelo painel e a dona reconvidar.
+
+**Ordem, sempre: produto e preços no painel → as duas variáveis → app.** O app da 032 exige os
+quatro preços em `stripeDisponivel()`; publicado antes das variáveis, ninguém consegue assinar
+(`/assinatura` diz "A assinatura ainda não está configurada neste servidor"), e o resto do app
+continua de pé. Quem assinou antes da 032 fica sem `pacote` no documento, que é o essencial — o
+único que existia.
 
 ---
 

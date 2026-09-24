@@ -13,6 +13,8 @@ import type { VersaoSchema } from "./common";
 export type PlanoDaConta = "TRIAL" | "ASSINATURA";
 /** `"ENCERRADA"` é escrita por `/api/conta/encerrar` (spec 029) e lida pelo `AuthProvider` e pela purga. */
 export type StatusDaConta = "ATIVA" | "ENCERRADA";
+/** O que a assinatura dá. Ver `DECISOES.md#d168` a `#d170`. */
+export type Pacote = "ESSENCIAL" | "COMPLETO";
 
 export interface Conta {
   id: string;
@@ -53,6 +55,13 @@ export interface Conta {
   stripeSubscriptionId?: string;
   /** Até quando a assinatura deixa escrever: fim do período mais a folga. */
   assinaturaAte?: Timestamp;
+  /**
+   * Escrito pelo webhook do Stripe (spec 032) a partir do produto da
+   * assinatura, e por mais ninguém. Ausente em assinante = `"ESSENCIAL"`;
+   * ausente em teste e em conta liberada à mão não significa nada: as duas
+   * abrem tudo (`DECISOES.md#d168`).
+   */
+  pacote?: Pacote;
   /**
    * Quando ela encerrou a conta, e o login que pediu. `encerradaPor` é o
    * único lugar do dado que aponta para um `uid`, e existe para a purga saber

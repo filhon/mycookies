@@ -1,9 +1,10 @@
 import { z } from "zod";
-import type { Centavos } from "@/lib/types";
+import type { Centavos, Pacote } from "@/lib/types";
+import { LIMITE_DE_AJUDANTES } from "./ajudante";
 
 /**
  * O que a regra, o webhook, a tela e a linha da Hoje compartilham sobre o
- * relógio da assinatura (spec 028).
+ * relógio da assinatura (spec 028), e o que cada pacote abre (spec 032).
  *
  * Puro: nenhuma importação de Firebase, React ou `stripe`. O prazo em si mora
  * na claim `acessoAte` (`DECISOES.md#d144`); este módulo só decide os números
@@ -21,10 +22,30 @@ const DIA_MS = 24 * 60 * 60 * 1000;
 
 export type Periodo = "mensal" | "anual";
 
+export type Recurso = "cardapio" | "ajudante";
+
+/** O que cada pacote abre. O teste e a conta livre abrem tudo (`#d168`). */
+export const RECURSOS_DO_PACOTE: Record<Pacote, readonly Recurso[]> = {
+  ESSENCIAL: [],
+  COMPLETO: ["cardapio", "ajudante"],
+};
+
+export const NOME_DO_PACOTE: Record<Pacote, string> = {
+  ESSENCIAL: "Essencial",
+  COMPLETO: "Completo",
+};
+
+/** Uma linha por pacote, para o cartão de `/assinatura`: o que ele dá, em texto. */
+export const O_QUE_O_PACOTE_TEM: Record<Pacote, string> = {
+  ESSENCIAL:
+    "O preço de cada doce, os pedidos, a despensa e o caixa. Sem cardápio e sem ajudante.",
+  COMPLETO: `Tudo do essencial, mais o cardápio com link de pedido e até ${LIMITE_DE_AJUDANTES} ajudantes.`,
+};
+
 export type Situacao =
   | { tipo: "livre" } // sem `plano`: liberada à mão, sem prazo (`#d141`)
   | { tipo: "teste"; diasRestantes: number; acabaEmMs: number }
-  | { tipo: "assinante"; renovaEmMs: number }
+  | { tipo: "assinante"; renovaEmMs: number; pacote: Pacote }
   | { tipo: "vencida"; foi: "teste" | "assinatura" };
 
 /** O que a tela precisa da conta, sem `Timestamp`: quem chama converte com `toMillis()`. */
@@ -32,6 +53,28 @@ export interface ContaParaSituar {
   plano?: "TRIAL" | "ASSINATURA";
   trialAteMs?: number;
   assinaturaAteMs?: number;
+  /** Ausente em assinante = `"ESSENCIAL"` (`#d169`). */
+  pacote?: Pacote;
+}
+
+/** Só o que `paraSituar` chama num `Timestamp`: o domínio não o importa. */
+interface ComMillis {
+  toMillis(): number;
+}
+
+/** `Conta` → `ContaParaSituar`, para quem nasceu na 032 (os lugares da 028 montam à mão). */
+export function paraSituar(conta: {
+  plano?: "TRIAL" | "ASSINATURA";
+  trialAte?: ComMillis;
+  assinaturaAte?: ComMillis;
+  pacote?: Pacote;
+}): ContaParaSituar {
+  return {
+    plano: conta.plano,
+    trialAteMs: conta.trialAte?.toMillis(),
+    assinaturaAteMs: conta.assinaturaAte?.toMillis(),
+    pacote: conta.pacote,
+  };
 }
 
 /** Arredonda para cima: às 23h do último dia ainda é "acaba hoje", não "acabou". */
@@ -50,7 +93,11 @@ export function situacaoDaConta(
     if (agoraMs > conta.assinaturaAteMs) {
       return { tipo: "vencida", foi: "assinatura" };
     }
-    return { tipo: "assinante", renovaEmMs: conta.assinaturaAteMs };
+    return {
+      tipo: "assinante",
+      renovaEmMs: conta.assinaturaAteMs,
+      pacote: conta.pacote ?? "ESSENCIAL",
+    };
   }
 
   if (conta.trialAteMs == null) return { tipo: "livre" };
@@ -60,6 +107,27 @@ export function situacaoDaConta(
     diasRestantes: diasRestantes(conta.trialAteMs, agoraMs),
     acabaEmMs: conta.trialAteMs,
   };
+}
+
+/**
+ * O portão dos dois upsells (`#d167`): `livre` e `teste` abrem tudo (`#d168`),
+ * `vencida` não abre nada, `assinante` abre o que o pacote dela tem.
+ */
+export function permite(situacao: Situacao, recurso: Recurso): boolean {
+  switch (situacao.tipo) {
+    case "livre":
+    case "teste":
+      return true;
+    case "vencida":
+      return false;
+    case "assinante":
+      return RECURSOS_DO_PACOTE[situacao.pacote].includes(recurso);
+  }
+}
+
+/** `"COMPLETO"` só quando a metadata diz isso; qualquer outra coisa é essencial (`#d169`). */
+export function pacoteDaMetadata(valor: string | undefined): Pacote {
+  return valor === "COMPLETO" ? "COMPLETO" : "ESSENCIAL";
 }
 
 /** "Seu teste grátis acaba hoje" · "acaba amanhã" · "acaba em N dias". */
@@ -106,13 +174,14 @@ export function economiaAnual(mensal: Centavos, anual: Centavos): Centavos {
 
 export const esquemaCheckout = z.object({
   contaId: z.string().min(1),
+  pacote: z.enum(["ESSENCIAL", "COMPLETO"]),
   periodo: z.enum(["mensal", "anual"]),
 });
 
 export type FalhaAssinatura =
   | "sem-acesso" // token ausente ou inválido
   | "fora-de-forma" // corpo que não passa em `esquemaCheckout`, ou conta que o token não abre
-  | "sem-configuracao" // servidor sem chave do Stripe ou sem os dois preços
+  | "sem-configuracao" // servidor sem chave do Stripe ou sem os quatro preços
   | "sem-assinatura" // portal pedido por conta que nunca assinou
   | "sem-resposta"
   | "sem-rede";

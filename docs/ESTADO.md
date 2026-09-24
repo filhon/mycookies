@@ -1,6 +1,7 @@
 # Estado do projeto
 
-Atualizado em 2026-09-23 (spec 023 entregue, primeira da fase 1 do roadmap; a 024 e a 025
+Atualizado em 2026-09-24 (a **032 codificada**, o segundo plano, antes do gatilho da fase 3,
+`#d167` a `#d170`; spec 023 entregue, primeira da fase 1 do roadmap; a 024 e a 025
 entregues depois dela, a segunda e a terceira da fase 1; a 026 entregue fora da ordem das
 entrevistas, a quarta e última parcela do custo honesto do `docs/saas/CLAUDE.md` §1; a **027, a
 028 e a 029 codificadas antes do gatilho da fase 2**, a porta, a assinatura e a saída — com o
@@ -276,6 +277,7 @@ os números digitados de ponta a ponta.
 | 29  | Meus dados são meus                         | codificada; deploy espera os termos | `specs/029-meus-dados-sao-meus.md`          |
 | 30  | A ajudante                                  | A e B codificadas; não publicada    | `specs/030-a-ajudante.md`                   |
 | 31  | Cardápio público com link de pedido         | A a F codificadas; não publicada    | `specs/031-cardapio-publico.md`             |
+| 32  | O segundo plano                             | codificada; não publicada           | `specs/032-o-segundo-plano.md`              |
 | 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`                |
 | 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`               |
 | 35  | O celular por gesto                         | pronto, sem o roteiro               | `specs/035-o-celular-por-gesto.md`          |
@@ -3309,7 +3311,68 @@ Portão:
 **O que não rodou:** os passos 21 a 23 do roteiro. Nenhuma tela nova foi vista em navegador,
 nem nos dois temas nem a 360 px. A página nunca rodou com uma capa de verdade.
 
+## A spec 032 · O segundo plano
+
+**Codificada por pedido de quem conduz o projeto, antes do gatilho da fase 3** (nenhuma conta
+paga a assinatura da 028, que nem está publicada; a spec diz para conferir isso antes, como a
+030 e a 031). Mesmo branch da 031, por cima dela. Dois pacotes, o portão em três pontos do
+servidor, nenhuma regra (`#d167`).
+
+- Schema aditivo: `Pacote` (`"ESSENCIAL" | "COMPLETO"`) e `Conta.pacote?`, escrito só pelo
+  webhook. `ClaimDaConta` intacta.
+- `src/lib/domain/assinatura.ts`: `Recurso`, `RECURSOS_DO_PACOTE`, `NOME_DO_PACOTE`,
+  `O_QUE_O_PACOTE_TEM` (o "até 5" é `LIMITE_DE_AJUDANTES` interpolado), `permite`,
+  `pacoteDaMetadata`; `Situacao` do assinante ganha `pacote` (ausente = essencial);
+  `esquemaCheckout` ganha `pacote`. **Fora da letra da spec, dentro do que ela permitia:**
+  `paraSituar(conta)`, lendo `toMillis()` por tipo estrutural (como `montarCardapio` já fazia),
+  para os lugares novos; os três da 028 que não precisam do pacote continuam à mão (`#d167`).
+- `montarCardapio`: `permite(…, "cardapio")` no lugar do `if` da vencida; seis casos de "não
+  está aberto".
+- `src/lib/server/stripe.ts`: `PRECOS` por pacote e período; `stripeDisponivel()` exige os
+  quatro. `checkout` recebe `pacote`; `precos` devolve `{ ESSENCIAL, COMPLETO }`, cache por
+  `pacote:periodo`. O portal não mudou.
+- Webhook: relê com `expand: ["items.data.price.product"]`, grava `pacote` pela `metadata` do
+  produto (`#d169`); com assinatura viva de pacote sem ajudante, tira cada ajudante ativa
+  (`tirarContaDaClaim`, depois `removidaEm`) sem escrever `acessoAte` para ela; cancelada
+  continua suspendendo todas (`#d170`).
+- `POST /api/conta/membros`: 403 `sem-pacote` depois de ler a conta; `FalhaConvite` e a mensagem
+  ganham o código. O `DELETE` sem portão.
+- `/assinatura`: "Pagar" num `<fieldset>` com dois rádios nativos (44px, "Por ano" marcado), e
+  um `CartaoDePreco` por pacote (o essencial primário, o completo secundário) com o preço do
+  período, a economia do anual e a linha de `O_QUE_O_PACOTE_TEM`. O assinante lê "Você está no
+  plano …".
+- `src/components/assinatura/SoNoCompleto.tsx` (novo): `usePortao`, `LinhaNoTeste`,
+  `LegendaNoCompleto` (cadeado + "No plano completo") e `SoNoCompleto` (explicação com cadeado,
+  ou triângulo quando o cardápio saiu do ar, "Mudar para o completo" em 52px abrindo o portal,
+  erro em `role="alert"`). `SeuCardapio` e `QuemTeAjuda` usam os três casos da tabela 3.6; no
+  fechado o painel não mostra controle, não escreve, e "Seu cardápio" não assina a vitrine.
+- `/configuracao`: "Você está no plano {nome}." no bloco "Assinatura".
+- `/termos`: um parágrafo a mais no teste grátis, com o marcador `[texto de quem conduz o
+projeto: os dois planos…]` — o texto é de quem conduz (3.8), e o `rg -n "\[texto" src/app`
+  do portão do deploy o pega.
+- `.env.local.example` com as duas variáveis; `DEPLOY.md` com "Stripe, o segundo plano" e a
+  ordem painel → variáveis → app. Docs: `#d167` a `#d170`, `#d112` e `#d155` anotados,
+  `ROADMAP.md` com a 032 e a nota na linha "Vários planos".
+
+Portão: lint e typecheck limpos, **689 testes** (680 + 9), `npm run build` sem rota nova.
+`firestore.rules`, `firestore.indexes.json` e `package.json` intocados.
+
+**O que não rodou** — o roteiro de doze passos inteiro. Precisa do painel do Stripe em modo de
+teste com o produto novo, a `metadata` e o portal trocando de produto, do `stripe listen`, de
+dois e-mails sem login e de um test clock (passo 9). O passo 5 (a `metadata` conferida) é o que
+libera o primeiro cliente de verdade no completo, e o 4 e o 10 são os que provam a diferença
+entre tirar e suspender. `/impeccable` aplicado na escrita, com a spec como brief; nenhuma das
+telas (os dois pacotes nos dois períodos, os painéis no teste e no essencial) foi vista em
+navegador, nos dois temas nem a 360px.
+
 ## Próxima ação
+
+**A 032 publica depois da 028, da 030 e da 031, e nunca antes do painel do Stripe.** A ordem é a
+de `DEPLOY.md` ("Stripe, o segundo plano"): o produto "Rende Completo" com
+`metadata.pacote = COMPLETO` e os dois preços, o portal trocando de produto com downgrade no fim
+do período, as duas variáveis novas, e só então o app — sem as quatro variáveis ninguém assina.
+Antes do primeiro cliente de verdade no completo, o passo 5 do roteiro (a `metadata` conferida);
+e o parágrafo dos dois planos em `/termos`, texto de quem conduz o projeto.
 
 **Publicar a 033 e a 034 juntas** (`docs/DEPLOY.md`). A 027, a 028 e a 029 **não vão junto**: a
 porta espera o texto dos termos e da privacidade — agora com os três parágrafos que a 029
@@ -3536,3 +3599,4 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | `/privacidade` não diz nada sobre nome, WhatsApp e endereço da cliente da cliente, gravados pelo cardápio                             | `app/(auth)/privacidade/`                      | Portão do deploy da 031-B; o texto é de quem conduz o projeto (`#d143`)                                                                     |
 | O service worker e o `AuthProvider` do layout raiz sobem também na página pública do cardápio                                         | `app/layout.tsx`                               | Se o passo 3 medir peso: layout raiz sem os dois, e um de `(app)`/`(auth)` com eles; spec própria                                           |
 | O roteiro de treze passos da 028 nunca rodou: a regra publicada, o checkout, o cancelamento e o evento fora de ordem sem prova        | `firestore.rules`, `api/stripe/webhook/`       | Próxima ação, com o painel do Stripe em modo de teste e o Stripe CLI local; o passo 1 é o único que não se refaz depois de publicar a regra |
+| O roteiro de doze passos da 032 nunca rodou: tirar a ajudante, o cardápio fora do ar e a `metadata` do completo sem prova             | `api/stripe/webhook/`, `SoNoCompleto.tsx`      | Antes de publicar a 032; o passo 5 (a `metadata`) antes do primeiro cliente no completo, o 4 e o 10 provam tirar contra suspender           |

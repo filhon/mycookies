@@ -104,20 +104,20 @@ A maior parte das sugestões descreve o que o repositório já faz. Antes de qua
 
 Escrito para não ser relitigado. Cada item volta à mesa só com cliente pagante pedindo.
 
-| Sugestão                                                      | Por quê não                                                                                                          |
-| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Trocar Firebase por Postgres/Supabase (gpt §19)               | Offline-first é invariante e o Firestore é o que o entrega de graça. Trocar banco é reescrever o app.                |
-| Preço por pedidos/mês (gpt §13)                               | Exige contar no servidor; o agregado é escrito no aparelho (`#d10`). Preço por plano, `#d112`.                       |
-| Lotes, validade, rastreabilidade, recall (gpt §8)             | É ERP. A fornada (013) já é o lote que uma confeitaria artesanal precisa.                                            |
-| Contas a pagar/receber, fiscal, CRM, orçamentos (gpt §9, §25) | A armadilha do ERP, nomeada pelo claude.md. Concorrer com Bling e Tiny sendo um dev só é perder.                     |
-| Integração com a API do WhatsApp (gpt §10)                    | Custa por conversa, exige empresa verificada, e o link já resolve o caso real (`#d77`).                              |
-| IA consultora, benchmarking (gpt §17–18)                      | Sem cinquenta contas não há o que comparar. Quando houver, é uma consulta sobre agregados que já existem.            |
-| Etiqueta com tabela nutricional (claude §4)                   | Regulatório (RDC 429/819), outro produto.                                                                            |
-| Free tier (gpt §13)                                           | Suporte sem receita num público de ticket baixo. Trial de 14 dias.                                                   |
-| Vários planos com gating de funcionalidade (todas)            | Cada plano é código de permissão em cada tela. **Um plano no lançamento**; o segundo nasce com os upsells da fase 3. |
-| Tour, balões, vídeo de boas-vindas (gemini §1)                | `#d65`. O que reprovou não foi a falta de explicação: foi o que a tela pede antes de dar algo em troca.              |
-| Semear dado de exemplo automaticamente (gpt §16)              | `#d65`: o guia não semeia. A biblioteca é um botão que **ela** aperta (spec 018).                                    |
-| Anúncio pago no Meta (claude §5)                              | Não é código. O canal é professora de confeitaria com comissão recorrente, grupos, conteúdo sobre precificação.      |
+| Sugestão                                                      | Por quê não                                                                                                                                                                                                  |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Trocar Firebase por Postgres/Supabase (gpt §19)               | Offline-first é invariante e o Firestore é o que o entrega de graça. Trocar banco é reescrever o app.                                                                                                        |
+| Preço por pedidos/mês (gpt §13)                               | Exige contar no servidor; o agregado é escrito no aparelho (`#d10`). Preço por plano, `#d112`.                                                                                                               |
+| Lotes, validade, rastreabilidade, recall (gpt §8)             | É ERP. A fornada (013) já é o lote que uma confeitaria artesanal precisa.                                                                                                                                    |
+| Contas a pagar/receber, fiscal, CRM, orçamentos (gpt §9, §25) | A armadilha do ERP, nomeada pelo claude.md. Concorrer com Bling e Tiny sendo um dev só é perder.                                                                                                             |
+| Integração com a API do WhatsApp (gpt §10)                    | Custa por conversa, exige empresa verificada, e o link já resolve o caso real (`#d77`).                                                                                                                      |
+| IA consultora, benchmarking (gpt §17–18)                      | Sem cinquenta contas não há o que comparar. Quando houver, é uma consulta sobre agregados que já existem.                                                                                                    |
+| Etiqueta com tabela nutricional (claude §4)                   | Regulatório (RDC 429/819), outro produto.                                                                                                                                                                    |
+| Free tier (gpt §13)                                           | Suporte sem receita num público de ticket baixo. Trial de 14 dias.                                                                                                                                           |
+| Vários planos com gating de funcionalidade (todas)            | Cada plano é código de permissão em cada tela. **Um plano no lançamento**; o segundo nasce com os upsells da fase 3. Na 032 não foi por tela: três pontos no servidor e dois painéis que explicam (`#d167`). |
+| Tour, balões, vídeo de boas-vindas (gemini §1)                | `#d65`. O que reprovou não foi a falta de explicação: foi o que a tela pede antes de dar algo em troca.                                                                                                      |
+| Semear dado de exemplo automaticamente (gpt §16)              | `#d65`: o guia não semeia. A biblioteca é um botão que **ela** aperta (spec 018).                                                                                                                            |
+| Anúncio pago no Meta (claude §5)                              | Não é código. O canal é professora de confeitaria com comissão recorrente, grupos, conteúdo sobre precificação.                                                                                              |
 
 E uma regra nova, que vale para toda spec daqui em diante (`#d113`): **spec que adiciona
 campo, faixa ou tela diz o que tira da frente de quem está começando.** "Nada" é resposta
@@ -409,6 +409,16 @@ parágrafo de `/privacidade` sobre os dados da cliente da cliente.
 
 **032 · O segundo plano.** Só quando 030 e 031 existirem: são os upsells naturais. É aqui, e
 não antes, que gating de funcionalidade entra no código.
+
+**✔ Codificada em 2026-09-24, antes do gatilho** (`specs/032-o-segundo-plano.md`, `#d167` a
+`#d170`). Dois pacotes, "Essencial" (o produto que já existia) e "Completo" (cardápio e
+ajudante), escolhidos em `/assinatura` com o período num rádio à parte; o teste e a conta
+liberada à mão abrem tudo. O que muda do previsto: **o gating não é código de permissão em cada
+tela** — é uma função pura (`permite`) perguntada em três pontos do servidor por onde os dois
+upsells já passavam (`montarCardapio`, o convite e o webhook), e dois painéis que explicam;
+`firestore.rules` não muda. O pacote vem do produto no Stripe, não do preço (`#d169`), e descer
+de pacote tira as ajudantes pelo webhook (`#d170`). Por publicar: o produto e os preços no
+painel, as duas variáveis, o parágrafo dos dois planos em `/termos` e o roteiro de doze passos.
 
 ## 6 · Métricas
 

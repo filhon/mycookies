@@ -3549,6 +3549,8 @@ fase 3, que é quando haverá o que vender.
 **Cumprida na 028.** A claim que a regra lê é `acessoAte`, uma data em milissegundos, e não
 `ativas: true | false` — sem cron nenhum (`#d144`).
 
+**Cumprida na 032:** dois pacotes, o portão no servidor, nenhuma regra (`#d167`).
+
 ---
 
 ## D113 · Nenhuma conta de beta antes de a usuária 0 chegar ao preço sozinha — e toda spec diz o que tira da frente
@@ -4882,6 +4884,9 @@ Leitura sem `where` (campo ausente não casa com `== null`) e sem índice — s�
 `LIMITE_DE_AJUDANTES` (5) documentos. `scripts/encerrar-conta.mjs` não mudou: a varredura de
 `listUsers` já acha a ajudante, e o ramo "sobrou outra conta, só tira a chave" era este caso.
 
+**Na 032, o webhook também tira** (`#d170`): assinatura viva de um pacote sem ajudante faz no
+laço o mesmo que o `DELETE` de `/api/conta/membros`.
+
 ---
 
 ## D156 · A ajudante não paga: conta vencida com login de ajudante é uma tela sem checkout
@@ -5294,3 +5299,108 @@ pergunta, não como dívida:
 Hoje o nome da loja sai em Archivo, a fonte do Rende. `ponytail:` o "feito com Rende" da página
 e o da folha são o mesmo interruptor (`ocultarFeitoCom`, `#d147`). Dois interruptores, se ela
 quiser um e não o outro.
+
+---
+
+## D167 · O portão mora no servidor, onde os dois upsells já passam; a regra não muda
+
+**Status:** vigente · decidida em 2026-09-24, na spec `032-o-segundo-plano.md`. Diverge do
+roadmap (seção 4, "Vários planos com gating de funcionalidade"), que previa código de permissão
+em cada tela.
+
+**Contexto.** O `#d112` deixou o gating para a fase 3, junto dos dois upsells. Os dois já
+atravessam o servidor por decisões tomadas por outros motivos: o cardápio é renderizado com o
+Admin SDK e `montarCardapio` decide "não está aberto" (`#d158`); a ajudante só existe porque
+`/api/conta/membros` escreve a claim dela e o webhook a renova (`#d155`).
+
+**Decisão.** Uma função pura, `permite(situacao, "cardapio" | "ajudante")` em
+`domain/assinatura.ts`, com `RECURSOS_DO_PACOTE` como tabela de duas linhas: `livre` e `teste`
+abrem tudo, `vencida` nada, `assinante` o que o pacote tem. Ela é perguntada em três lugares do
+servidor: `montarCardapio` (o sexto caso de "não está aberto", no mesmo `if` da vencida; a
+página, o `POST /api/cardapio/pedido` e os combos passam por ela), o `POST /api/conta/membros`
+(403 `sem-pacote`, depois de ler a conta; o `DELETE` não tem portão, tirar acesso sempre pode)
+e o webhook (`#d170`). `firestore.rules` não muda, e o pacote não vai para a claim: a regra não
+o lê. A tela diz a verdade sobre o portão (os dois painéis de `/configuracao`); quem fecha é o
+servidor, e um `curl` não abre nenhum dos dois.
+
+**Consequência.** Um terceiro recurso que more só no cliente e no Firestore traria a regra com
+ele; até lá, zero linha de regra. `paraSituar(conta)` nasceu em `domain/assinatura.ts` para os
+lugares novos (o convite, os dois painéis, `/assinatura`, `/configuracao` e o cardápio), lendo
+`toMillis()` por tipo estrutural, como `montarCardapio` já fazia: o domínio continua sem
+importar `Timestamp`. Os três lugares da 028 que não precisam do pacote (`FaixaDoTeste`,
+`confirmando`, `(app)/layout.tsx`) continuam montando o objeto à mão.
+
+---
+
+## D168 · O teste e a conta liberada à mão abrem tudo
+
+**Status:** vigente · decidida em 2026-09-24, na spec `032-o-segundo-plano.md`
+
+**Contexto.** O teste podia ser o essencial, com os painéis mostrando "assine o completo" desde
+o dia 1.
+
+**Decisão.** O teste é o completo: um upsell que ela nunca viu não se vende, e o teste é a única
+vez em que ela usa o produto sem ter decidido pagar. A conta `livre` (`#d141`) também abre tudo:
+cortesia é tudo o que a assinatura dá, o mesmo argumento do `#d147`. Durante o teste, os dois
+painéis dizem numa linha "No teste está aberto. Depois, é do plano completo.", e o cartão do
+essencial em `/assinatura` diz em texto "Sem cardápio e sem ajudante".
+
+**Consequência.** Quem abriu o cardápio ou convidou ajudante no teste e assina o essencial perde
+os dois no dia em que assina — o app disse isso o teste inteiro. `contas/mycookies` e as contas
+do beta são `livre`: nada muda para nenhuma conta que existe, e a 032 publica sem migração.
+
+---
+
+## D169 · O pacote vem do produto no Stripe, e desconhecido é essencial
+
+**Status:** vigente · decidida em 2026-09-24, na spec `032-o-segundo-plano.md`
+
+**Contexto.** O webhook precisa saber de que pacote é a assinatura. O jeito óbvio é comparar o id
+do preço com as variáveis de ambiente.
+
+**Decisão.** Dois produtos no Stripe: o que já existe ("Rende", o essencial, sem `metadata`) e
+"Rende Completo", com `metadata.pacote = "COMPLETO"`. O webhook relê a assinatura com
+`expand: ["items.data.price.product"]` e grava `pacoteDaMetadata(produto.metadata.pacote)` em
+`Conta.pacote`. Preço muda criando um `Price` novo no mesmo produto; se o webhook comparasse
+ids de preço, a primeira mudança rebaixaria toda assinante antiga do completo, e o `#d170`
+tiraria as ajudantes delas. O produto não muda. **Desconhecido é essencial**, pelo princípio
+do `#d153` (errar para menos acesso): produto sem a `metadata`, produto apagado
+(`DeletedProduct`), `"completo"` minúsculo ou um terceiro produto dão essencial. O checkout não
+grava o pacote em `subscription_data.metadata`: duas fontes discordariam no dia em que ela
+trocasse pelo portal.
+
+**Consequência.** `Conta.pacote` é espelho escrito só pelo webhook, como `assinaturaAte`
+(`#d145`). Ausente em assinante é essencial: é o único pacote que existia antes da 032.
+`PRECOS` virou `Record<Pacote, Record<Periodo, string>>` e só serve ao checkout e à tela de
+preços; `stripeDisponivel()` exige os quatro, porque meio catálogo venderia um pacote e daria
+erro no outro. A `metadata` é escrita à mão uma vez, e o passo 5 do roteiro a confere
+(`DEPLOY.md`).
+
+---
+
+## D170 · Descer de pacote tira as ajudantes e tira o cardápio do ar, sem apagar nada
+
+**Status:** vigente · decidida em 2026-09-24, na spec `032-o-segundo-plano.md`
+
+**Contexto.** Uma dona que assina o completo, convida cinco ajudantes e desce para o essencial
+não pode ficar com as cinco, ou o portão vira enfeite no primeiro mês. Parar de renovar a claim
+seria zero escrita nova, mas a ajudante continuaria com a tela aberta até o prazo velho e depois
+salvaria calada contra `permission-denied` (`#d80`).
+
+**Decisão.** Os dois se desfazem de jeitos diferentes. **O cardápio é configuração dela**:
+`cardapio` e `configuracao/vitrine` ficam como estão, `montarCardapio` devolve `null`, e subir de
+volta traz tudo como estava no próximo `revalidate`. **A ajudante é acesso de outra pessoa**: o
+webhook faz no laço o que o `DELETE /api/conta/membros` faz — `tirarContaDaClaim`, depois
+`removidaEm` no espelho —, e não escreve `acessoAte` para ela. **Só a assinatura viva tira**
+(`active`, `trialing`, `past_due`): cancelada ou sem pagamento continua escrevendo
+`acessoAte = agora` para todas, como antes, e a ajudante suspensa volta sozinha se a dona
+voltar a pagar; a tirada, não — a dona reconvida, e o `POST` já trata reconvite. `past_due`
+conta como viva: o contrário deixaria a brecha de descer de pacote e não pagar.
+
+**Consequência.** É a primeira vez que o webhook escreve algo além de prazo. Continua
+idempotente: numa repetição, quem já foi tirada tem `removidaEm` e não entra no laço, e uma volta
+que caia no meio termina na repetição do Stripe. O invariante "nunca apagar" segue sem exceção
+nova. Com o downgrade configurado no fim do período, o webhook só vê o essencial quando o período
+pago do completo acabou. No painel, o essencial vê "Seu cardápio" e "Quem te ajuda" trocados por
+uma explicação (cadeado, ou triângulo quando o cardápio saiu do ar) e "Mudar para o completo",
+que abre o portal; nenhum controle de edição e nenhuma escrita saem desse estado.

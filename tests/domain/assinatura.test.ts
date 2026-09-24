@@ -6,7 +6,10 @@ import {
   FOLGA_COBRANCA_DIAS,
   FOLGA_RENOVACAO_DIAS,
   fraseDoTeste,
+  pacoteDaMetadata,
+  permite,
   situacaoDaConta,
+  type Situacao,
 } from "@/lib/domain/assinatura";
 
 const DIA_MS = 24 * 60 * 60 * 1000;
@@ -35,12 +38,31 @@ describe("situacaoDaConta", () => {
     });
   });
 
-  it("assinante", () => {
+  it("assinante sem pacote é essencial (o único antes da 032)", () => {
     const agora = Date.parse("2026-09-20T10:00:00Z");
     const assinaturaAteMs = agora + 30 * DIA_MS;
     expect(
       situacaoDaConta({ plano: "ASSINATURA", assinaturaAteMs }, agora),
-    ).toEqual({ tipo: "assinante", renovaEmMs: assinaturaAteMs });
+    ).toEqual({
+      tipo: "assinante",
+      renovaEmMs: assinaturaAteMs,
+      pacote: "ESSENCIAL",
+    });
+  });
+
+  it("assinante devolve o pacote gravado", () => {
+    const agora = Date.parse("2026-09-20T10:00:00Z");
+    const assinaturaAteMs = agora + 30 * DIA_MS;
+    expect(
+      situacaoDaConta(
+        { plano: "ASSINATURA", assinaturaAteMs, pacote: "COMPLETO" },
+        agora,
+      ),
+    ).toEqual({
+      tipo: "assinante",
+      renovaEmMs: assinaturaAteMs,
+      pacote: "COMPLETO",
+    });
   });
 
   it("assinatura vencida", () => {
@@ -64,6 +86,53 @@ describe("situacaoDaConta", () => {
     expect(
       situacaoDaConta({ plano: "TRIAL", trialAteMs: ate }, ate + 1),
     ).toEqual({ tipo: "vencida", foi: "teste" });
+  });
+});
+
+describe("permite (spec 032)", () => {
+  const livre: Situacao = { tipo: "livre" };
+  const teste: Situacao = { tipo: "teste", diasRestantes: 5, acabaEmMs: 1 };
+  const vencida: Situacao = { tipo: "vencida", foi: "teste" };
+  const essencial: Situacao = {
+    tipo: "assinante",
+    renovaEmMs: 1,
+    pacote: "ESSENCIAL",
+  };
+  const completo: Situacao = {
+    tipo: "assinante",
+    renovaEmMs: 1,
+    pacote: "COMPLETO",
+  };
+
+  it.each<[string, Situacao, boolean]>([
+    ["livre", livre, true],
+    ["teste", teste, true],
+    ["vencida", vencida, false],
+    ["assinante do essencial", essencial, false],
+    ["assinante do completo", completo, true],
+  ])("%s", (_, situacao, esperado) => {
+    expect(permite(situacao, "cardapio")).toBe(esperado);
+    expect(permite(situacao, "ajudante")).toBe(esperado);
+  });
+
+  it("assinante sem pacote gravado não tem cardápio nem ajudante", () => {
+    const agora = Date.parse("2026-09-20T10:00:00Z");
+    const situacao = situacaoDaConta(
+      { plano: "ASSINATURA", assinaturaAteMs: agora + DIA_MS },
+      agora,
+    );
+    expect(permite(situacao, "cardapio")).toBe(false);
+    expect(permite(situacao, "ajudante")).toBe(false);
+  });
+});
+
+describe("pacoteDaMetadata", () => {
+  it("só COMPLETO, maiúsculo, é completo; o resto é essencial (#d169)", () => {
+    expect(pacoteDaMetadata("COMPLETO")).toBe("COMPLETO");
+    expect(pacoteDaMetadata(undefined)).toBe("ESSENCIAL");
+    expect(pacoteDaMetadata("")).toBe("ESSENCIAL");
+    expect(pacoteDaMetadata("completo")).toBe("ESSENCIAL");
+    expect(pacoteDaMetadata("PREMIUM")).toBe("ESSENCIAL");
   });
 });
 

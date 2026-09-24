@@ -2,6 +2,12 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import { ChevronRight, UserMinus, Users } from "lucide-react";
+import {
+  LegendaNoCompleto,
+  LinhaNoTeste,
+  SoNoCompleto,
+  usePortao,
+} from "@/components/assinatura/SoNoCompleto";
 import { Botao } from "@/components/ui/Botao";
 import { Campo } from "@/components/ui/Campo";
 import { Confirmacao } from "@/components/ui/Confirmacao";
@@ -57,6 +63,10 @@ export function QuemTeAjuda() {
         .sort((a, b) => a.convidadaEm.toMillis() - b.convidadaEm.toMillis()),
     [dados],
   );
+
+  // O essencial não tem ajudante (spec 032, `#d167`): o painel só explica.
+  const portao = usePortao("ajudante");
+  const alguemFoiTirada = dados.some((membro) => membro.removidaEm);
 
   const [aberto, setAberto] = useState(false);
   const [email, setEmail] = useState("");
@@ -188,7 +198,13 @@ export function QuemTeAjuda() {
           <span className="mt-0.5 block truncate text-label text-ink-muted">
             {/* Enquanto a lista não chega, nada: "Só você" por um instante
                 seria mentir para quem tem ajudante. */}
-            {carregando ? " " : legenda(ativas)}
+            {portao === "fechado" ? (
+              <LegendaNoCompleto />
+            ) : carregando ? (
+              " "
+            ) : (
+              legenda(ativas)
+            )}
           </span>
         </span>
         <ChevronRight
@@ -202,9 +218,20 @@ export function QuemTeAjuda() {
         aberto={aberto}
         aoFechar={fechar}
         titulo="Quem te ajuda"
-        rodape={rodape}
+        rodape={portao === "fechado" ? undefined : rodape}
       >
-        {carregando ? (
+        {portao === "no-teste" && (
+          <div className="mb-4">
+            <LinhaNoTeste />
+          </div>
+        )}
+        {portao === "fechado" ? (
+          <SoNoCompleto>
+            Ajudante é do plano completo.
+            {alguemFoiTirada &&
+              " Quem te ajudava perdeu o acesso quando o plano mudou; para voltar, mude de plano e convide de novo."}
+          </SoNoCompleto>
+        ) : carregando ? (
           <EsqueletoLista linhas={2} />
         ) : erro ? (
           <p role="alert" className="text-label text-negative">

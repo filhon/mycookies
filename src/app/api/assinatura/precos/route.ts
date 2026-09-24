@@ -6,7 +6,7 @@ import {
   credencialDisponivel,
 } from "@/lib/server/firebaseAdmin";
 import { PRECOS, stripe, stripeDisponivel } from "@/lib/server/stripe";
-import type { Centavos } from "@/lib/types";
+import type { Centavos, Pacote } from "@/lib/types";
 
 /**
  * O preço mora no Stripe e em lugar nenhum do código (roadmap §7); esta rota é
@@ -20,17 +20,26 @@ function falha(codigo: FalhaAssinatura, status: number) {
 }
 
 /** Cache por instância, como o CNPJ de `/api/nota` (`DECISOES.md#d52`). */
-const CACHE = new Map<Periodo, { centavos: Centavos; ate: number }>();
+const CACHE = new Map<string, { centavos: Centavos; ate: number }>();
 const VALIDADE_MS = 60 * 60 * 1000;
 
-async function precoDe(periodo: Periodo): Promise<Centavos> {
-  const guardado = CACHE.get(periodo);
+async function precoDe(pacote: Pacote, periodo: Periodo): Promise<Centavos> {
+  const chave = `${pacote}:${periodo}`;
+  const guardado = CACHE.get(chave);
   if (guardado && guardado.ate > Date.now()) return guardado.centavos;
 
-  const preco = await stripe().prices.retrieve(PRECOS[periodo]);
+  const preco = await stripe().prices.retrieve(PRECOS[pacote][periodo]);
   const centavos = preco.unit_amount ?? 0;
-  CACHE.set(periodo, { centavos, ate: Date.now() + VALIDADE_MS });
+  CACHE.set(chave, { centavos, ate: Date.now() + VALIDADE_MS });
   return centavos;
+}
+
+async function precosDe(pacote: Pacote) {
+  const [mensal, anual] = await Promise.all([
+    precoDe(pacote, "mensal"),
+    precoDe(pacote, "anual"),
+  ]);
+  return { mensal, anual };
 }
 
 export async function GET(requisicao: Request) {
@@ -42,11 +51,11 @@ export async function GET(requisicao: Request) {
   if (!stripeDisponivel()) return falha("sem-configuracao", 500);
 
   try {
-    const [mensal, anual] = await Promise.all([
-      precoDe("mensal"),
-      precoDe("anual"),
+    const [ESSENCIAL, COMPLETO] = await Promise.all([
+      precosDe("ESSENCIAL"),
+      precosDe("COMPLETO"),
     ]);
-    return NextResponse.json({ mensal, anual });
+    return NextResponse.json({ ESSENCIAL, COMPLETO });
   } catch {
     return falha("sem-resposta", 502);
   }

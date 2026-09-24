@@ -47,6 +47,8 @@ import {
 import {
   fraseDoTeste,
   MENSAGEM_FALHA_ASSINATURA,
+  NOME_DO_PACOTE,
+  paraSituar,
   situacaoDaConta,
 } from "@/lib/domain/assinatura";
 import {
@@ -292,14 +294,7 @@ function ConfiguracaoDaDona() {
   const idOcultarFeitoCom = useId();
 
   const situacao = conta
-    ? situacaoDaConta(
-        {
-          plano: conta.plano,
-          trialAteMs: conta.trialAte?.toMillis(),
-          assinaturaAteMs: conta.assinaturaAte?.toMillis(),
-        },
-        new Date().getTime(),
-      )
+    ? situacaoDaConta(paraSituar(conta), new Date().getTime())
     : null;
 
   async function abrirPortalAssinatura() {
@@ -656,7 +651,7 @@ function ConfiguracaoDaDona() {
               <p className="text-label text-ink-muted">
                 {situacao.tipo === "teste"
                   ? fraseDoTeste(situacao.diasRestantes)
-                  : "Sua assinatura está ativa."}
+                  : `Você está no plano ${NOME_DO_PACOTE[situacao.pacote]}.`}
               </p>
               {situacao.tipo === "teste" ? (
                 <Link

@@ -13,7 +13,7 @@ import {
   type PromocaoDoCardapio,
   type VitrineDoCardapio,
 } from "@/lib/types";
-import { situacaoDaConta } from "./assinatura";
+import { paraSituar, permite, situacaoDaConta } from "./assinatura";
 import { opcoesDaEscolha, temEscolhas } from "./custoFicha";
 import {
   contagemDoPronto,
@@ -413,9 +413,10 @@ export function economiaDoCombo(
 
 /**
  * Tudo o que a página desenha, ou `null` para "este cardápio não está aberto":
- * sem configuração, `aberto` falso, conta encerrada, conta vencida
- * (`situacaoDaConta`), ou nenhum produto que entre. Os cinco casos dão a
- * mesma resposta, de propósito: a página não diz a um estranho se a conta existe.
+ * sem configuração, `aberto` falso, conta encerrada, conta vencida, pacote
+ * sem cardápio (`permite`, `#d167`), ou nenhum produto que entre. Os seis
+ * casos dão a mesma resposta, de propósito: a página não diz a um estranho se
+ * a conta existe.
  */
 export function montarCardapio(entrada: {
   conta: Conta;
@@ -439,15 +440,10 @@ export function montarCardapio(entrada: {
   if (conta.status === "ENCERRADA") return null;
 
   // Vencida lê e não escreve (`#d144`): não conseguiria responder o orçamento.
-  const situacao = situacaoDaConta(
-    {
-      plano: conta.plano,
-      trialAteMs: conta.trialAte?.toMillis(),
-      assinaturaAteMs: conta.assinaturaAte?.toMillis(),
-    },
-    agoraMs,
-  );
-  if (situacao.tipo === "vencida") return null;
+  // O essencial não tem cardápio (`#d170`): nada é apagado, a página só some.
+  if (!permite(situacaoDaConta(paraSituar(conta), agoraMs), "cardapio")) {
+    return null;
+  }
 
   const naLista = new Set(cardapio.fichaIds);
   const naPagina = fichas.filter(

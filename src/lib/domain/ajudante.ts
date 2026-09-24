@@ -22,6 +22,7 @@ export type FalhaConvite =
   | "fora-de-forma" // corpo que não passa no esquema, ou e-mail da própria dona
   | "ja-convidada" // o e-mail já abre esta conta
   | "cheio" // LIMITE_DE_AJUDANTES
+  | "sem-pacote" // assinante de um pacote sem ajudante (spec 032, `#d167`)
   | "sem-configuracao"
   | "sem-resposta"
   | "sem-rede";
@@ -33,6 +34,7 @@ export const MENSAGEM_FALHA_CONVITE: Record<FalhaConvite, string> = {
     "Confira o e-mail. Ele precisa ser o de quem te ajuda, e não o seu.",
   "ja-convidada": "Esse e-mail já entra no seu negócio.",
   cheio: `Seu negócio já tem ${LIMITE_DE_AJUDANTES} pessoas ajudando. Tire o acesso de alguém para convidar outra.`,
+  "sem-pacote": "Convidar ajudante é do plano completo.",
   "sem-configuracao":
     "Isso ainda não está configurado neste servidor. Avise quem cuida do Rende.",
   "sem-resposta":

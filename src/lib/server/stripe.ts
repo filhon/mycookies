@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import type { Periodo } from "@/lib/domain/assinatura";
+import type { Pacote } from "@/lib/types";
 import { adminAuth } from "./firebaseAdmin";
 
 /**
@@ -14,15 +15,34 @@ function chaveSecreta(): string | undefined {
   return process.env.STRIPE_SECRET_KEY?.trim() || undefined;
 }
 
-/** Vazio quando a variável de ambiente não está configurada. */
-export const PRECOS: Record<Periodo, string> = {
-  mensal: process.env.STRIPE_PRICE_MENSAL?.trim() ?? "",
-  anual: process.env.STRIPE_PRICE_ANUAL?.trim() ?? "",
+/**
+ * Vazio quando a variável de ambiente não está configurada. O essencial fica
+ * nas variáveis da 028; o completo nas da 032. Serve ao checkout e à tela de
+ * preços: quem decide o pacote de uma assinatura é o produto, não o preço
+ * (`DECISOES.md#d169`).
+ */
+export const PRECOS: Record<Pacote, Record<Periodo, string>> = {
+  ESSENCIAL: {
+    mensal: process.env.STRIPE_PRICE_MENSAL?.trim() ?? "",
+    anual: process.env.STRIPE_PRICE_ANUAL?.trim() ?? "",
+  },
+  COMPLETO: {
+    mensal: process.env.STRIPE_PRICE_COMPLETO_MENSAL?.trim() ?? "",
+    anual: process.env.STRIPE_PRICE_COMPLETO_ANUAL?.trim() ?? "",
+  },
 };
 
-/** Chave secreta e os dois preços — o mínimo para checkout e webhook existirem. */
+/**
+ * Chave secreta e os quatro preços — o mínimo para checkout e webhook
+ * existirem. Meio catálogo venderia um pacote e daria erro no outro.
+ */
 export function stripeDisponivel(): boolean {
-  return !!chaveSecreta() && !!PRECOS.mensal && !!PRECOS.anual;
+  return (
+    !!chaveSecreta() &&
+    Object.values(PRECOS).every((periodos) =>
+      Object.values(periodos).every(Boolean),
+    )
+  );
 }
 
 let instancia: Stripe | undefined;

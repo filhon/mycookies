@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { MolduraDeEntrada } from "@/components/auth/MolduraDeEntrada";
 import { MeusDados } from "@/components/conta/MeusDados";
 import { Simbolo } from "@/components/marca/Marca";
@@ -11,18 +11,22 @@ import { classesBotao } from "@/components/ui/estilosBotao";
 import {
   economiaAnual,
   MENSAGEM_FALHA_ASSINATURA,
+  NOME_DO_PACOTE,
+  O_QUE_O_PACOTE_TEM,
+  paraSituar,
   situacaoDaConta,
   type FalhaAssinatura,
   type Periodo,
 } from "@/lib/domain/assinatura";
 import { formatarMoeda } from "@/lib/domain/money";
+import type { Pacote } from "@/lib/types";
 import { AVISO_SAIR_PENDENTE, useAuth } from "@/providers/AuthProvider";
 import { cn } from "@/lib/utils/cn";
 
-interface Precos {
-  mensal: number;
-  anual: number;
-}
+type Precos = Record<Pacote, Record<Periodo, number>>;
+
+/** O essencial primeiro, e primário: o produto que se vende é a frase do preço (spec 032, 3.5). */
+const PACOTES: Pacote[] = ["ESSENCIAL", "COMPLETO"];
 
 /**
  * A tela de quatro estados (spec 028, 3.5): teste, teste vencido, assinatura
@@ -41,7 +45,10 @@ export default function PaginaAssinatura() {
 
   const [precos, setPrecos] = useState<Precos | null>(null);
   const [falhaPrecos, setFalhaPrecos] = useState(false);
-  const [enviando, setEnviando] = useState<Periodo | "portal" | null>(null);
+  const [enviando, setEnviando] = useState<Pacote | "portal" | null>(null);
+  // O anual continua sendo a arma contra o churn (roadmap §1).
+  const [periodo, setPeriodo] = useState<Periodo>("anual");
+  const idPeriodo = useId();
   const [erro, setErro] = useState<string | null>(null);
   const [saindo, setSaindo] = useState(false);
   const [sairPendente, setSairPendente] = useState(false);
@@ -80,11 +87,7 @@ export default function PaginaAssinatura() {
 
   const situacao = conta
     ? situacaoDaConta(
-        {
-          plano: conta.plano,
-          trialAteMs: conta.trialAte?.toMillis(),
-          assinaturaAteMs: conta.assinaturaAte?.toMillis(),
-        },
+        paraSituar(conta),
         // `new Date().getTime()`, e não `Date.now()`: o compilador do React
         // recusa uma função impura direto no corpo do componente.
         new Date().getTime(),
@@ -111,7 +114,7 @@ export default function PaginaAssinatura() {
   async function abrirUrl(
     rota: string,
     corpo: Record<string, unknown>,
-    chave: Periodo | "portal",
+    chave: Pacote | "portal",
   ) {
     if (!usuario) return;
     setErro(null);
@@ -140,8 +143,8 @@ export default function PaginaAssinatura() {
     }
   }
 
-  const assinar = (periodo: Periodo) =>
-    abrirUrl("/api/assinatura/checkout", { contaId, periodo }, periodo);
+  const assinar = (pacote: Pacote) =>
+    abrirUrl("/api/assinatura/checkout", { contaId, pacote, periodo }, pacote);
   const gerenciar = () =>
     abrirUrl("/api/assinatura/portal", { contaId }, "portal");
 
@@ -154,33 +157,57 @@ export default function PaginaAssinatura() {
     );
   }
 
-  const economia = precos ? economiaAnual(precos.mensal, precos.anual) : 0;
-
+  // Duas perguntas separadas (spec 032, 3.5): por quanto tempo, no rádio;
+  // o quê, nos cartões. Quatro cartões empilhados em 360px seriam uma tela e meia.
   const cartoesDePreco = (
-    <div className="mt-8 grid gap-3 sm:grid-cols-2">
-      <CartaoDePreco
-        titulo="Mensal"
-        centavos={precos?.mensal}
-        rotulo="por mês"
-        variante="secundaria"
-        carregando={enviando === "mensal"}
-        disabled={enviando !== null}
-        onClick={() => void assinar("mensal")}
-      />
-      <CartaoDePreco
-        titulo="Anual"
-        centavos={precos?.anual}
-        rotulo="por ano"
-        subtitulo={
-          economia > 0
-            ? `${formatarMoeda(economia)} a menos que mês a mês`
-            : undefined
-        }
-        variante="primaria"
-        carregando={enviando === "anual"}
-        disabled={enviando !== null}
-        onClick={() => void assinar("anual")}
-      />
+    <div className="mt-8 space-y-4">
+      <fieldset>
+        <legend className="text-label font-medium text-ink">Pagar</legend>
+        <div className="mt-1 flex gap-6">
+          {(["anual", "mensal"] as const).map((cada) => (
+            <label
+              key={cada}
+              className="flex min-h-11 cursor-pointer items-center gap-2.5 text-body text-ink"
+            >
+              <input
+                type="radio"
+                name={idPeriodo}
+                checked={periodo === cada}
+                onChange={() => setPeriodo(cada)}
+                disabled={enviando !== null}
+                className="size-5 shrink-0"
+              />
+              {cada === "anual" ? "Por ano" : "Por mês"}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {PACOTES.map((pacote) => {
+          const economia = precos
+            ? economiaAnual(precos[pacote].mensal, precos[pacote].anual)
+            : 0;
+          return (
+            <CartaoDePreco
+              key={pacote}
+              titulo={NOME_DO_PACOTE[pacote]}
+              centavos={precos?.[pacote][periodo]}
+              rotulo={periodo === "anual" ? "por ano" : "por mês"}
+              oQueTem={O_QUE_O_PACOTE_TEM[pacote]}
+              subtitulo={
+                periodo === "anual" && economia > 0
+                  ? `${formatarMoeda(economia)} a menos que mês a mês`
+                  : undefined
+              }
+              variante={pacote === "ESSENCIAL" ? "primaria" : "secundaria"}
+              carregando={enviando === pacote}
+              disabled={enviando !== null}
+              onClick={() => void assinar(pacote)}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 
@@ -276,8 +303,10 @@ export default function PaginaAssinatura() {
   } else {
     // assinante
     titulo = "Sua assinatura está ativa";
-    descricao =
-      "Trocar o cartão, mudar para o anual ou cancelar é no portal de pagamento.";
+    // O `else` não estreita a união: as duas vencidas saíram pelos `&&` acima.
+    const pacote =
+      situacao.tipo === "assinante" ? situacao.pacote : "ESSENCIAL";
+    descricao = `Você está no plano ${NOME_DO_PACOTE[pacote]}. Trocar o cartão, mudar de plano ou cancelar é no portal de pagamento.`;
     acoes = (
       <div className="mt-8 space-y-3">
         <Botao
@@ -329,6 +358,7 @@ function CartaoDePreco({
   titulo,
   centavos,
   rotulo,
+  oQueTem,
   subtitulo,
   variante,
   carregando,
@@ -338,6 +368,7 @@ function CartaoDePreco({
   titulo: string;
   centavos: number | undefined;
   rotulo: string;
+  oQueTem: string;
   subtitulo?: string;
   variante: "primaria" | "secundaria";
   carregando: boolean;
@@ -365,6 +396,7 @@ function CartaoDePreco({
         <span className="text-label font-normal opacity-80">{rotulo}</span>
       </span>
       {subtitulo && <span className="text-label opacity-90">{subtitulo}</span>}
+      <span className="mt-1 text-label">{oQueTem}</span>
     </button>
   );
 }

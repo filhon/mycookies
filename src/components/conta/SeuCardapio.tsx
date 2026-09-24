@@ -20,6 +20,12 @@ import {
   Tag,
   TriangleAlert,
 } from "lucide-react";
+import {
+  LegendaNoCompleto,
+  LinhaNoTeste,
+  SoNoCompleto,
+  usePortao,
+} from "@/components/assinatura/SoNoCompleto";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, Seletor } from "@/components/ui/Campo";
 import { CampoImagem } from "@/components/ui/CampoImagem";
@@ -152,11 +158,16 @@ export function SeuCardapio({
     useState<ReturnType<typeof problemaDaPromocao>>(null);
   const fichaDaNova = naLista.find((f) => f.id === nova?.fichaId);
 
+  // O essencial não tem cardápio (spec 032, `#d170`): o painel só explica, e
+  // o que está gravado não é lido para mais nada.
+  const portao = usePortao("cardapio");
+  const fechado = portao === "fechado";
+
   const [painelAberto, setPainelAberto] = useState(false);
   // As imagens pesam: a vitrine só é lida com o painel aberto (`#d166`).
   const refVitrine = useMemo(
-    () => (painelAberto ? docVitrine(contaId) : null),
-    [painelAberto, contaId],
+    () => (painelAberto && !fechado ? docVitrine(contaId) : null),
+    [painelAberto, fechado, contaId],
   );
   const vitrine = useDocumento<VitrineDoCardapio>(refVitrine);
   // Só no navegador: o servidor não sabe o endereço nem se há `share`.
@@ -283,7 +294,13 @@ export function SeuCardapio({
           <span className="mt-0.5 block truncate text-label text-ink-muted">
             {/* Enquanto nada chega, nada: "Fechado" por um instante seria
                 mentir para quem abriu. */}
-            {carregandoConfiguracao || fichas.carregando ? " " : legenda}
+            {fechado ? (
+              <LegendaNoCompleto />
+            ) : carregandoConfiguracao || fichas.carregando ? (
+              " "
+            ) : (
+              legenda
+            )}
           </span>
         </span>
         <ChevronRight
@@ -299,7 +316,22 @@ export function SeuCardapio({
         titulo="Seu cardápio"
         descricao="Um link com os seus produtos e preços, para a bio do Instagram e o WhatsApp."
       >
-        {carregandoConfiguracao || fichas.carregando ? (
+        {portao === "no-teste" && (
+          <div className="mb-4">
+            <LinhaNoTeste />
+          </div>
+        )}
+        {fechado ? (
+          carregandoConfiguracao ? (
+            <EsqueletoLista linhas={2} />
+          ) : (
+            <SoNoCompleto aviso={aberto}>
+              {aberto
+                ? "Seu cardápio saiu do ar. O que você escolheu continua guardado e volta como estava quando você mudar para o completo."
+                : "O cardápio com link de pedido é do plano completo."}
+            </SoNoCompleto>
+          )
+        ) : carregandoConfiguracao || fichas.carregando ? (
           <EsqueletoLista linhas={3} />
         ) : fichas.erro ? (
           <p role="alert" className="text-label text-negative">

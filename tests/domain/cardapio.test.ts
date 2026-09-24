@@ -324,6 +324,21 @@ describe("montarCardapio", () => {
     ).not.toBeNull();
   });
 
+  it("o pacote (spec 032): essencial e assinante sem pacote dão null", () => {
+    const assinante = (pacote?: "ESSENCIAL" | "COMPLETO") =>
+      ({
+        ...CONTA,
+        plano: "ASSINATURA",
+        assinaturaAte: ts(AGORA + 30 * DIA),
+        ...(pacote && { pacote }),
+      }) as unknown as Conta;
+    expect(montar({ conta: assinante("ESSENCIAL") })).toBeNull();
+    expect(montar({ conta: assinante() })).toBeNull();
+    expect(montar({ conta: assinante("COMPLETO") })).not.toBeNull();
+    // Livre (a CONTA, sem plano) e teste abrem tudo (#d168).
+    expect(montar()).not.toBeNull();
+  });
+
   it("ordena as seções por categoriasProduto, a desconhecida no fim", () => {
     const brownie = ficha({ id: "b", nome: "Brownie", categoria: "Brownie" });
     const torta = ficha({ id: "t", nome: "Torta", categoria: "Torta" });
