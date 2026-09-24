@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import type { Periodo } from "@/lib/domain/assinatura";
-import type { Pacote } from "@/lib/types";
+import type { Centavos, Pacote } from "@/lib/types";
 import { adminAuth } from "./firebaseAdmin";
 
 /**
@@ -55,6 +55,44 @@ export function stripe(): Stripe {
     instancia = new Stripe(chave);
   }
   return instancia;
+}
+
+/** Cache por instância, como o CNPJ de `/api/nota` (`DECISOES.md#d52`). */
+const CACHE = new Map<string, { centavos: Centavos; ate: number }>();
+const VALIDADE_MS = 60 * 60 * 1000;
+
+async function precoDe(pacote: Pacote, periodo: Periodo): Promise<Centavos> {
+  const chave = `${pacote}:${periodo}`;
+  const guardado = CACHE.get(chave);
+  if (guardado && guardado.ate > Date.now()) return guardado.centavos;
+
+  const preco = await stripe().prices.retrieve(PRECOS[pacote][periodo]);
+  const centavos = preco.unit_amount ?? 0;
+  CACHE.set(chave, { centavos, ate: Date.now() + VALIDADE_MS });
+  return centavos;
+}
+
+async function precosDe(pacote: Pacote) {
+  const [mensal, anual] = await Promise.all([
+    precoDe(pacote, "mensal"),
+    precoDe(pacote, "anual"),
+  ]);
+  return { mensal, anual };
+}
+
+/**
+ * Os quatro preços, lidos do Stripe: o preço mora lá e em lugar nenhum do
+ * código (roadmap §7). Quem chama confere `stripeDisponivel()` antes; lida por
+ * `/api/assinatura/precos` e pela página de venda (`DECISOES.md#d174`).
+ */
+export async function lerPrecos(): Promise<
+  Record<Pacote, { mensal: Centavos; anual: Centavos }>
+> {
+  const [ESSENCIAL, COMPLETO] = await Promise.all([
+    precosDe("ESSENCIAL"),
+    precosDe("COMPLETO"),
+  ]);
+  return { ESSENCIAL, COMPLETO };
 }
 
 /**

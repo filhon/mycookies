@@ -35,7 +35,10 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    if (!carregando && !usuario) router.replace("/login");
+    if (carregando || usuario) return;
+    // O app instalado não é vitrine: quem o instalou já sabe o que é (`#d172`).
+    const instalado = window.matchMedia("(display-mode: standalone)").matches;
+    router.replace(instalado ? "/login" : "/conheca");
   }, [carregando, usuario, router]);
 
   // O relógio aqui é o do aparelho; o que vale é o da regra (`DECISOES.md#d144`).

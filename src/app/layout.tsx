@@ -37,8 +37,8 @@ export const metadata: Metadata = {
     // evita que título e ações fiquem atrás do relógio/entalhe.
     statusBarStyle: "black-translucent",
   },
-  // O app é área logada; a página de venda, quando existir, é outra rota e é
-  // indexável.
+  // O app é área logada; a página de venda é `/conheca`, que sobrepõe isto e é
+  // indexável (`DECISOES.md#d172`).
   robots: { index: false, follow: false },
   formatDetection: { telephone: false },
 };

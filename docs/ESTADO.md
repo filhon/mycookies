@@ -1,6 +1,7 @@
 # Estado do projeto
 
-Atualizado em 2026-09-24 (a **032 codificada**, o segundo plano, antes do gatilho da fase 3,
+Atualizado em 2026-09-24 (a **036 codificada**, a página de venda em `/conheca`, `#d172` a
+`#d175`; a **032 codificada**, o segundo plano, antes do gatilho da fase 3,
 `#d167` a `#d170`; spec 023 entregue, primeira da fase 1 do roadmap; a 024 e a 025
 entregues depois dela, a segunda e a terceira da fase 1; a 026 entregue fora da ordem das
 entrevistas, a quarta e última parcela do custo honesto do `docs/saas/CLAUDE.md` §1; a **027, a
@@ -281,6 +282,7 @@ os números digitados de ponta a ponta.
 | 33  | A marca Rende                               | pronto (A, B e C), por publicar     | `specs/033-a-marca-rende.md`                |
 | 34  | A tela inteira                              | pronto, por publicar com a 033      | `specs/034-a-tela-inteira.md`               |
 | 35  | O celular por gesto                         | pronto, sem o roteiro               | `specs/035-o-celular-por-gesto.md`          |
+| 36  | A página do Rende                           | codificada; não publicada           | `specs/036-a-pagina-do-rende.md`            |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -3365,6 +3367,67 @@ entre tirar e suspender. `/impeccable` aplicado na escrita, com a spec como brie
 telas (os dois pacotes nos dois períodos, os painéis no teste e no essencial) foi vista em
 navegador, nos dois temas nem a 360px.
 
+## A spec 036 · A página do Rende
+
+**Codificada em 2026-09-24**, no mesmo branch, por cima da 032. A prancha `Rende - Landing.dc.html`
+com os treze pontos da seção 4 corrigidos.
+
+- `src/lib/domain/exemplo.ts`: `EXEMPLO`, o cookie de R$ 4,41 (`#d173`); `tests/domain/exemplo.test.ts`
+  prende 441, 850, 319 e as cinco parcelas com "Seu trabalho" em destaque.
+- `src/lib/server/stripe.ts`: `lerPrecos()`, com o `precoDe`, o `precosDe` e o cache que saíram de
+  `/api/assinatura/precos`; a rota só chama a função e continua pedindo token (`#d174`).
+- `src/app/conheca/page.tsx`: estática, `revalidate` de 3600, `robots` indexável (conferido no
+  HTML do build: `/conheca` com `index, follow`, `/` com `noindex`). Topo, a frase (os dois valores
+  por `formatarMoeda` sobre `EXEMPLO`), a conta, "Quem já usa" com o texto da Maynara, sem foto
+  (`#d175`, preenchido no mesmo dia), os dois pacotes do Stripe (sem Stripe, sem número), as cinco dúvidas, o rodapé
+  `brand-900` com a borda de cima, e a barra fixa do celular só em CSS.
+- `src/components/site/ContaAberta.tsx`: `Parcela`, `FaixaDeComposicao`, `composicaoDoLote` e
+  `ROTULO_PARCELA`, por unidade; o painel `brand-700` com `sobre-marca` e o ponto.
+- `(app)/layout.tsx`: sem login no navegador vai para `/conheca`; instalado, `/login` (`#d172`).
+- `globals.css`: `--color-brand-900` no `@theme` (o token já existia sem nome de uso); as classes
+  `.conta-que-abre` (na faixa, pelo `className`) e `.conta-que-abre-ponto`, só dentro de
+  `prefers-reduced-motion: no-preference`.
+
+**Três coisas fora da letra da spec, com motivo:**
+
+1. **A barra do celular começa depois do depoimento, e não logo depois da conta.** Medido a
+   390×844: a conta termina a ~1.040px, e com o bloco começando ali a barra aparece com a
+   rolagem em ~330px, quando o botão âmbar da frase ainda está na tela (a ~130px do topo). Dois
+   âmbar juntos é o erro que a barra existe para não cometer. Começando depois de "Quem já usa"
+   (~1.380px), a barra só entra depois que o botão da frase saiu. **Se o depoimento não vier e a
+   seção sair**, o problema volta: aí o bloco precisa começar mais abaixo (em "Preço"), e é uma
+   linha.
+2. **No celular, o botão da seção de preço some** (`hidden lg:flex`): a barra fixa já está na tela
+   ali e faz o papel dele. No desktop ele fica, e a barra não existe.
+3. **A cópia marcada "como na prancha"** (o sobretítulo, o parágrafo da frase e as respostas das
+   dúvidas 1 a 3) foi escrita a partir do manifesto do `MARCA.md` § 1.3: a prancha mora no Claude
+   Design e não no repositório. Quem conduz o projeto confere as três respostas contra a prancha.
+
+`/termos` conferido (seção 2, passo 4): "cancela quando quiser" e "no fim do teste os dados ficam,
+dá para ver e baixar, não dá para alterar" batem com as seções 4 e 5.
+
+**`/impeccable`, registro brand.** Antes: a prancha, com os treze pontos da seção 4 (conta que
+não fecha, rótulos que não são os do app, dois âmbar, cascata, selo sem dado, depoimento sem
+fonte, `h2` na frase). Depois, **critique** sobre as capturas do build (1280 e 390, claro e
+escuro): hierarquia clara (a frase, a conta ao lado no desktop e logo abaixo no celular), um
+primário por tela nos dois arranjos, a faixa e o ponto sendo o único movimento, o escuro vindo dos
+tokens sem ajuste (as faixas `brand-800`/`brand-700` ficam, o rodapé se separa pela borda).
+Corrigido na passada: "rende 24 unidades" quebrava em duas linhas no cabeçalho do cartão a 390px.
+**Audit**: `h1` → `h2` → `h3` em ordem; faixa com `role="img"` e as parcelas com percentual no
+`aria-label`; todo link e botão com 44px (`toque`), 52px no primário do celular e 56px no do
+desktop; nenhum hex em `src/app/conheca` e `src/components/site`; nenhum número de dinheiro
+escrito à mão (o HTML do build tem 4,41 / 8,50 / 3,12 · 0,45 · 0,56 · 0,18 · 0,10 / 8,00 / 3,19
+e os preços do Stripe de teste, R$ 39 e R$ 69). O que fica, e o `audit` não mede sem navegador
+de verdade: a primeira pintura no celular com o `AuthProvider` do layout raiz (fora de escopo; se
+passar de 2,5 s, a próxima spec o tira da página).
+
+Portão: lint e typecheck limpos, **693 testes** (689 + 4), `npm run build` com `/conheca` estática
+e revalidação de 1h. `firestore.rules`, `firestore.indexes.json` e `package.json` intocados.
+
+**O que não rodou:** o roteiro de nove passos. As capturas foram tiradas no Chrome sem cabeça
+(sem o app instalado, sem teclado, sem a revalidação). O passo 1 no app instalado é o que prova
+que quem já usa nunca cai na página.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -3374,6 +3437,11 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 036 publica junto com ou depois da 027 e da 032** (`docs/DEPLOY.md`): sem `/cadastro` no ar o
+botão da página leva a uma porta fechada, e sem a 032 a seção de preço mostra um pacote que não se
+vende. O texto do depoimento está na página, sem foto; antes de publicar, a autorização dela por
+escrito guardada (`#d175`), e as respostas 1 a 3 das dúvidas conferidas contra a prancha.
 
 **A 032 publica depois da 028, da 030 e da 031, e nunca antes do painel do Stripe.** A ordem é a
 de `DEPLOY.md` ("Stripe, o segundo plano"): o produto "Rende Completo" com
@@ -3608,3 +3676,4 @@ Nenhuma delas bloqueia o próximo passo. Estão aqui para não serem redescobert
 | O service worker e o `AuthProvider` do layout raiz sobem também na página pública do cardápio                                         | `app/layout.tsx`                               | Se o passo 3 medir peso: layout raiz sem os dois, e um de `(app)`/`(auth)` com eles; spec própria                                           |
 | O roteiro de treze passos da 028 nunca rodou: a regra publicada, o checkout, o cancelamento e o evento fora de ordem sem prova        | `firestore.rules`, `api/stripe/webhook/`       | Próxima ação, com o painel do Stripe em modo de teste e o Stripe CLI local; o passo 1 é o único que não se refaz depois de publicar a regra |
 | O roteiro de doze passos da 032 nunca rodou: tirar a ajudante, o cardápio fora do ar e a `metadata` do completo sem prova             | `api/stripe/webhook/`, `SoNoCompleto.tsx`      | Antes de publicar a 032; o passo 5 (a `metadata`) antes do primeiro cliente no completo, o 4 e o 10 provam tirar contra suspender           |
+| O roteiro de nove passos da 036 nunca rodou inteiro: a porta no app instalado, o teclado e a revalidação do preço sem prova           | `app/conheca/`, `(app)/layout.tsx`             | Antes de publicar; o passo 1 no app instalado prova que quem já usa nunca cai na página                                                     |

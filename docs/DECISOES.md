@@ -4085,6 +4085,10 @@ sete lugares que a spec lista (botão primário, flutuante, `Logotipo`, `Simbolo
 "Meta batida" virou `positive` (barra e texto), que é onde a tabela de semânticos do pacote a
 põe.
 
+**Exceção: a página de venda (`#d173`, spec 036).** `site/ContaAberta.tsx` reproduz o bloco "O
+custo do lote" do editor com o cookie de `EXEMPLO`: a faixa sai de `composicaoDoLote`, e o ponto
+do preço convive com ela como no editor. É o oitavo lugar de `bg-accent-500` em `src/`.
+
 ---
 
 ## D127 · A folha é dela; "feito com Rende" é uma linha fixa por enquanto
@@ -5435,3 +5439,91 @@ Para o advogado conferir: a folha de pedido do cardápio (`/c/{contaId}`) não l
 a conta vencida é guardada sem prazo; o encerramento sem reembolso proporcional no plano anual;
 a afirmação de que o Google não treina com a foto da nota vale para a API paga do Gemini; e, com
 empresa constituída, o art. 15 do Marco Civil (guardar registros de acesso por seis meses).
+
+---
+
+## D172 · A página de venda mora em `/conheca`; `/` continua sendo o app
+
+**Status:** vigente · decidida em 2026-09-24, na spec 036
+
+**Contexto.** Quem chegava ao endereço sem login caía em `/login`, e não havia lugar que dissesse o
+que o Rende faz, quanto custa e para quem é, nem link para a professora, o grupo ou o Instagram.
+
+**Decisão.** Uma rota pública, estática com `revalidate` de uma hora, fora de `(app)` e de
+`(auth)`, como `/c/[contaId]`: `src/app/conheca/page.tsx`, a única com `robots` indexável. O
+guarda do `(app)/layout.tsx` manda o visitante sem login **no navegador** para `/conheca` e o do
+**app instalado** (`display-mode: standalone`) para `/login`, como antes. `sair()` e as guardas de
+`/assinatura` continuam indo para `/login`: quem chega nelas já sabe o que é o Rende. Pesados e
+recusados: a página em `/` com o app em `/hoje` (mudaria todo `href="/"`, o `start_url`, e o
+ícone já instalado passaria a abrir a página de venda) e a decisão no servidor por cookie (o
+login é do Firebase no aparelho, `#d14`).
+
+**Consequência.** `/` continua `noindex`, e quem digita o endereço vê o símbolo pulsando por um
+instante antes da página. Os links que a gente manda apontam para `/conheca` direto. Quando houver
+domínio e o `/` virar a porta, a página em `/` volta à mesa com um motivo.
+
+---
+
+## D173 · Os números da página saem do domínio, e a margem é 40% + maquininha 5%
+
+**Status:** vigente · decidida em 2026-09-24, na spec 036 · **corrige o `MARCA.md` § 1.1**
+
+**Contexto.** O `MARCA.md` diz "preço sugerido com 45% de margem: R$ 8,50" e "no preço praticado
+de R$ 8,00 sobram R$ 3,19 depois da maquininha". Pelas funções do app, 45% de margem com a
+maquininha de 5% (que é o que dá os R$ 3,19) sugere R$ 9,00, e não R$ 8,50.
+
+**Decisão.** Margem 40% + maquininha 5%: 441 / 0,55 = 802 → `MEIO_REAL` → 850. Os três números
+da marca ficam de pé; o errado era o rótulo, e os 45% eram margem mais maquininha. O cookie virou
+`EXEMPLO` em `domain/exemplo.ts`; a página mostra o que `composicaoDoLote`,
+`calcularPrecoSugerido` e `verificarPreco` devolvem para ele, e `tests/domain/exemplo.test.ts`
+prende 441, 850, 319 e as cinco parcelas. O `MARCA.md` fica como veio (`#d125`); esta decisão é a
+correção.
+
+**Consequência.** Se a regra de preço mudar, o teste quebra antes de a página mentir. A faixa na
+página é exceção nomeada ao `#d126`: é a do editor, com o dado do exemplo.
+
+---
+
+## D174 · O preço da página é o do Stripe, os dois pacotes; sem Stripe, sem número
+
+**Status:** vigente · decidida em 2026-09-24, na spec 036
+
+**Contexto.** A prancha vendia "um preço, tudo dentro". Desde a 032 o app vende dois pacotes, e
+`/assinatura` mostra os dois.
+
+**Decisão.** A seção de preço tem um cartão por pacote, na ordem de `RECURSOS_DO_PACOTE` (o
+Essencial primeiro), com o mensal em display, o anual e a economia numa linha, e
+`O_QUE_O_PACOTE_TEM`. O número vem de `lerPrecos()` em `server/stripe.ts`, a mesma função (e o
+mesmo cache por instância) de `/api/assinatura/precos`, que saiu da rota para cá. Sem
+`stripeDisponivel()`, ou com o Stripe fora do ar, os cartões ficam com o nome e o que têm, sem
+valor. Nunca um número de reserva escrito à mão. Os cartões não são clicáveis; o botão é um só.
+
+**Consequência.** O preço da página e o do checkout podem divergir por até uma hora depois de uma
+mudança no painel; o checkout cobra o do Stripe. Se a 032 for revertida, o `map` sobre
+`RECURSOS_DO_PACOTE` decide quantos cartões há.
+
+---
+
+## D175 · O depoimento é dela, com autorização escrita, ou a seção não vai ao ar
+
+**Status:** vigente · decidida em 2026-09-24, na spec 036 · **portão do deploy**
+
+**Contexto.** A prancha punha na boca da Maynara "Eu vendia cookie a R$ 6,00. Estava perdendo
+R$ 0,41 em cada um", com "Sorocaba". A conta contradiz o cartão ao lado (a R$ 6,00, com custo de
+R$ 4,41 e maquininha de 5%, sobram R$ 1,29), nada no repositório confirma a frase nem a cidade, e
+nome e rosto de pessoa real numa página de venda pedem consentimento (LGPD, art. 7º, I; Código
+Civil, art. 20).
+
+**Decisão.** A frase, a cidade e a foto vêm dela, com os números reais do cookie dela e
+autorização por escrito (uma mensagem de WhatsApp guardada basta). Até lá `DEPOIMENTO`, em
+`src/app/conheca/page.tsx`, carrega `[texto de quem conduz o projeto…]`, que o
+`rg -n "\[texto" src/app` do portão do deploy pega. Sem foto autorizada, a citação ocupa a faixa
+sozinha: nunca um retângulo vazio. Se os números dela contradisserem o exemplo, o exemplo não
+muda: o cartão diz "Exemplo" no título.
+
+**Preenchido em 2026-09-24**, sem foto e sem cidade, com o texto dela trazido por quem conduz o
+projeto; a autorização por escrito continua sendo o portão do deploy.
+
+**Consequência.** Se a autorização não vier, a seção sai (`temDepoimento`), e a página fica com
+quatro blocos. Nesse caso a barra fixa do celular volta a começar logo depois da conta; ver a
+nota da 036 no `ESTADO.md`.

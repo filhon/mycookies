@@ -130,6 +130,8 @@
    ============================================================ */
 
 @theme inline {
+  /* O rodapé da página de venda (spec 036). No escuro é o próprio `canvas`. */
+  --color-brand-900: var(--brand-900);
   --color-brand-800: var(--brand-800);
   --color-brand-700: var(--brand-700);
   --color-brand-600: var(--brand-600);
@@ -414,6 +416,52 @@
   .folha {
     box-shadow: none;
     zoom: 1;
+  }
+}
+
+/**
+ * A conta abrindo, na página de venda (spec 036): os segmentos da faixa
+ * crescem da esquerda, um depois do outro, e o ponto do preço chega por último.
+ * É o único movimento da página, porque é o que ela diz. Só com
+ * `no-preference`: com movimento reduzido nada se mexe, e nada fica escondido
+ * esperando um atraso.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .conta-que-abre > span {
+    transform-origin: left;
+    animation: conta-que-abre 420ms var(--ease-quart) backwards;
+  }
+  .conta-que-abre > span:nth-child(2) {
+    animation-delay: 140ms;
+  }
+  .conta-que-abre > span:nth-child(3) {
+    animation-delay: 280ms;
+  }
+  .conta-que-abre > span:nth-child(4) {
+    animation-delay: 420ms;
+  }
+  .conta-que-abre > span:nth-child(5) {
+    animation-delay: 560ms;
+  }
+  .conta-que-abre > span:nth-child(n + 6) {
+    animation-delay: 700ms;
+  }
+
+  .conta-que-abre-ponto {
+    animation: conta-que-abre-ponto 220ms var(--ease-quart) 1000ms backwards;
+  }
+}
+
+@keyframes conta-que-abre {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes conta-que-abre-ponto {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
   }
 }
 

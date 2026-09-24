@@ -237,6 +237,19 @@ As sessões A e B da 030 saem **no mesmo deploy do app**: entre elas existe pape
 recusa e tela que não sabe disso (escrita negada em silêncio, `#d80`). `firestore.indexes.json`
 não muda.
 
+## 7 · Ao publicar a 036: a página de venda
+
+`/conheca` é a primeira rota indexável, e o visitante sem login no navegador passa a cair nela
+em vez de `/login` (`DECISOES.md#d172`). **Ordem: junto com ou depois da 027 e da 032.** Sem a
+027 no ar, "Começar o teste" leva a um `/cadastro` que não existe em produção; sem a 032, a
+seção de preço mostra um pacote que não se vende. Os preços vêm do Stripe (`lerPrecos`), então
+valem as variáveis das seções do Stripe acima; sem elas a página fica de pé, sem número
+(`#d174`).
+
+**Portão:** a **autorização da Maynara por escrito** para o depoimento que está em
+`src/app/conheca/page.tsx` (`#d175`), e para a foto, se um dia entrar (em `public/site/`). Depois de publicar, o passo 1 do roteiro da
+spec no app instalado: sem login, ele abre `/login`, e não a página.
+
 ## Limites conhecidos
 
 **O arquivo da nota tem dois tetos, e o menor não é o nosso.** `LIMITE_ARQUIVO_BYTES` é 8 MB
