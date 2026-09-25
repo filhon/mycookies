@@ -11,6 +11,7 @@ import {
   FileText,
   Flame,
   LogOut,
+  Mail,
   Receipt,
   Tag,
 } from "lucide-react";
@@ -62,6 +63,7 @@ import {
   salvarConfiguracao,
   type DadosConfiguracao,
 } from "@/lib/firebase/mutations/configuracao";
+import { definirAvisosPorEmail } from "@/lib/firebase/mutations/conta";
 import { useDocumento } from "@/lib/hooks/useColecao";
 import type {
   ConfiguracaoGeral,
@@ -292,6 +294,7 @@ function ConfiguracaoDaDona() {
   const [portalEnviando, setPortalEnviando] = useState(false);
   const [portalErro, setPortalErro] = useState<string | null>(null);
   const idOcultarFeitoCom = useId();
+  const idAvisos = useId();
 
   const situacao = conta
     ? situacaoDaConta(paraSituar(conta), new Date().getTime())
@@ -876,6 +879,31 @@ function ConfiguracaoDaDona() {
                 </option>
               ))}
             </Seletor>
+          </div>
+        </BlocoConfiguracao>
+
+        {/* Fora do formulário: vale no toque, como a conta que o AuthProvider
+            já assina, e não espera o "Salvar" (spec 044-B, `#d207`). */}
+        <BlocoConfiguracao
+          id="avisos"
+          icone={Mail}
+          titulo="Avisos por e-mail"
+          descricao="O aviso do fim do teste chega sempre. Estes dois são notícia, e você escolhe. Vale no toque, sem salvar."
+        >
+          <div className="flex min-h-11 items-start gap-3 rounded-md border border-line-strong px-3 py-3">
+            <input
+              id={idAvisos}
+              type="checkbox"
+              checked={conta?.avisosPorEmail !== false}
+              disabled={!conta}
+              onChange={(evento) =>
+                void definirAvisosPorEmail(contaId, evento.target.checked)
+              }
+              className="mt-0.5 size-5 shrink-0"
+            />
+            <label htmlFor={idAvisos} className="text-label text-ink">
+              Receber por e-mail o resumo do mês e o aviso de meta batida
+            </label>
           </div>
         </BlocoConfiguracao>
       </div>

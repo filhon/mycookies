@@ -6208,7 +6208,7 @@ e só um script que lê a resposta perceberia.
 
 ## D205 · Um cron por dia, e nenhum marcador gravado: o dia decide
 
-**Status:** vigente · decidida em 2026-09-25, na spec `044-o-rende-escreve.md`; código na sessão B
+**Status:** vigente · decidida em 2026-09-25, na spec `044-o-rende-escreve.md`; codificada na sessão B
 
 **Decisão.** `vercel.json` com `0 12 * * *` (9h em São Paulo) para `GET /api/emails/diario`,
 protegido por `CRON_SECRET`. Teste acabando quando o dia de `trialAte` é daqui a exatamente 3
@@ -6225,7 +6225,7 @@ o aviso não sair, e nunca sair em dobro.
 
 ## D206 · Quem recebe é a dona, no e-mail do login
 
-**Status:** vigente · decidida em 2026-09-25, na spec `044-o-rende-escreve.md`; código na sessão B
+**Status:** vigente · decidida em 2026-09-25, na spec `044-o-rende-escreve.md`; codificada na sessão B
 
 **Decisão.** O endereço vem do Auth (`listUsers` e a claim `DONA`, o caminho de
 `scripts/metricas.mjs`), e não de um campo na conta, que envelheceria quando ela trocasse de
@@ -6237,7 +6237,7 @@ de criar a conta.
 
 ## D207 · Dois avisos se desligam; três não
 
-**Status:** vigente · decidida em 2026-09-25, na spec `044-o-rende-escreve.md`; código na sessão B
+**Status:** vigente · decidida em 2026-09-25, na spec `044-o-rende-escreve.md`; codificada na sessão B
 
 **Decisão.** Meta batida e mês fechado são notícia: `Conta.avisosPorEmail?: false` (ausente =
 recebe) e uma caixa em `/configuracao#avisos`, e o rodapé das duas peças diz onde desligar.
@@ -6255,3 +6255,24 @@ rota com token assinado.
 assinada pelo Filipe, convida a responder, e quem responde fala com uma pessoa; `ola@` não precisa
 de caixa. Rastreamento de abertura e de clique **desligados** no domínio do Resend: o de clique
 reescreve os links, e o link da senha carrega um código de uso único (`DEPLOY.md` § 12).
+
+---
+
+## D209 · No mês fechado, a maquininha entra no que saiu
+
+**Status:** vigente · decidida em 2026-09-25, na sessão B da spec `044-o-rende-escreve.md`
+
+**Contexto.** A peça do mês fechado calcula o que sobrou como `entrou − saiu`. O `/financeiro`
+mostra como resultado o `lucro` do agregado, que é `entradas − saídas − custoTaxasPagamento`. Com
+`saidas` puro, o número grande do e-mail (e o assunto) passaria o da tela pelo que a maquininha
+comeu, e o roteiro confere um contra o outro.
+
+**Decisão.** O cron passa `saiu = saidas + custoTaxasPagamento`. O que sobrou e o que entrou batem
+com o `/financeiro`; a linha "Saiu" do e-mail fica maior que a da tela pelo valor da maquininha, e
+a conta do e-mail (entrou menos saiu) continua fechando. A peça não mudou.
+
+**Também na B, sem decisão nova:** o "hoje em São Paulo" que a spec chamou de `hojeEmSaoPaulo` é o
+`hojeEmBrasilia` que `domain/datas.ts` já tinha (`#d160`); "fora de produção" é `VERCEL_ENV !==
+"production"`, porque a prévia da Vercel roda com `NODE_ENV=production`; a chave de
+`/configuracao#avisos` fica fora do formulário e grava no toque, lendo o documento da conta que o
+`AuthProvider` já assina, e com o teste vencido a regra recusa a escrita como recusa qualquer outra.

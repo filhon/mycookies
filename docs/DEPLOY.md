@@ -371,6 +371,19 @@ deploy chega à produção. No `npm run dev`, `/api/email/previa?peca=…&enviar
 o logotipo apontando para `localhost`, que o Gmail não carrega; para conferir o logotipo antes,
 `VERCEL_PROJECT_PRODUCTION_URL=www.rendeapp.com.br` no `.env.local` depois do deploy.
 
+**O cron dos avisos (044-B).** `vercel.json` agenda `GET /api/emails/diario` às 12h UTC (9h em
+São Paulo), e a Vercel só roda cron em produção (`#d205`).
+
+5. **Vercel → Environment Variables:** `CRON_SECRET` (um texto aleatório, `openssl rand -hex
+32`), em Production e Preview. A Vercel o manda sozinha no `Authorization` do cron; sem ele, a
+   rota responde 401.
+6. **Na prévia**, a rota exige `?so={contaId}` (400 sem ele): o Firebase é um só, e a prévia
+   mandaria para todas as contas. O roteiro chama à mão, com `?simular=1` para ver sem mandar e
+   `?hoje=AAAA-MM-DD` para trocar o dia:
+   `curl -H "Authorization: Bearer $CRON_SECRET" "https://{prévia}/api/emails/diario?so=…&simular=1&hoje=…"`.
+7. **Depois do deploy:** Vercel → Settings → Cron Jobs mostra o agendamento, e o log do primeiro
+   dia termina com `{ enviados, repetidos, falhas: 0 }`.
+
 ## Limites conhecidos
 
 **O arquivo da nota tem dois tetos, e o menor não é o nosso.** `LIMITE_ARQUIVO_BYTES` é 8 MB

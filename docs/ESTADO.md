@@ -2,8 +2,8 @@
 
 Atualizado em 2026-09-25 (a **044-A codificada**, o Rende escreve: o transporte do Resend por
 `fetch`, as cinco peças, a boas-vindas no cadastro e a senha nova com o Firebase de reserva,
-`#d202` a `#d208`, com o roteiro A e o domínio no Resend como portão do deploy; a B, o cron, por
-fazer; **preços novos no Stripe ao vivo**, R$ 29/290 e R$ 49/490, `#d201`,
+`#d202` a `#d208`, com o roteiro A e o domínio no Resend como portão do deploy; a **044-B
+codificada**, o cron diário e os três avisos, com a chave em `/configuracao#avisos`, `#d209`; **preços novos no Stripe ao vivo**, R$ 29/290 e R$ 49/490, `#d201`,
 com as quatro `STRIPE_PRICE_*` por trocar na Vercel; o domínio `www.rendeapp.com.br` no
 `DEPLOY.md` § 10 e § 11, com os passos 2, 3 e 5 da § 11 por fazer à mão; a **043 codificada**, "Continuar com o Google" no login e no
 cadastro, com `/__/auth/*` servido pelo domínio do app, `#d198` a `#d200`, e o roteiro de
@@ -307,7 +307,7 @@ os números digitados de ponta a ponta.
 | 41  | A porta de volta                            | codificada; não publicada             | `specs/041-a-porta-de-volta.md`             |
 | 42  | A senha nova em casa                        | codificada; console depois do deploy  | `specs/042-a-senha-nova-em-casa.md`         |
 | 43  | Entrar com o Google                         | escrita; pede aprovação antes         | `specs/043-entrar-com-o-google.md`          |
-| 44  | O Rende escreve (A peças, B cron)           | A codificada; B por fazer             | `specs/044-o-rende-escreve.md`              |
+| 44  | O Rende escreve (A peças, B cron)           | A e B codificadas; não publicada      | `specs/044-o-rende-escreve.md`              |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -3856,6 +3856,34 @@ Portão: lint e typecheck limpos, **721 testes** (um novo, `tests/email.test.ts`
 passa com `/api/senha` e `/api/email/previa`. `package.json`, `firestore.rules` e
 `firestore.indexes.json` intocados.
 
+## A spec 044 · O Rende escreve — sessão B, o cron e os três avisos
+
+**Codificada em 2026-09-25**, no mesmo branch (`#d205` a `#d207` codificadas, e `#d209`). Uma rota
+nova, um campo opcional em `Conta`, nenhuma regra, índice ou dependência.
+
+- `src/lib/domain/avisos.ts`: `diasAteOFimDoTeste`, `diaEmQueBateu` e `avisosDoDia`, puros. O "hoje
+  em São Paulo" é o `hojeEmBrasilia` que já existia.
+- `/api/emails/diario`: `CRON_SECRET` no `Authorization` (401 sem ele), a dona de cada conta pela
+  claim, uma conta de cada vez, `?hoje=`, `?simular=1` e `?so=` obrigatório fora de produção
+  (`VERCEL_ENV`). Teste acabando lê fichas e materiais vivos (`custosDeHoje`), conta pedidos vivos,
+  soma as entradas dos agregados desde o mês de `criadaEm` e lê o preço do Stripe uma vez por
+  rodada; o mínimo pra não perder é `calcularPrecoSugerido` com margem zero. Mês fechado passa a
+  maquininha no que saiu (`#d209`). Varre todas as contas todo dia, `ponytail:` com o teto.
+- `vercel.json` com o cron `0 12 * * *`; `CRON_SECRET` em `.env.local.example` e `DEPLOY.md` § 12,
+  passos 5 a 7.
+- `Conta.avisosPorEmail?` e a seção "Avisos por e-mail" em `/configuracao#avisos`, só na tela da
+  dona, gravando no toque (`definirAvisosPorEmail`, sem `await`).
+
+O que rodou, no `next dev` com o Firebase de verdade e só com `simular=1`: sem `?so=`, 400; sem o
+segredo, 401; `hoje=x`, 400; `so=mycookies` hoje, lista vazia; `so=mycookies&hoje=2026-10-02`, o
+mês fechado ("Setembro fechou: sobraram R$ 1.269,14"). **Não rodou**: nenhum envio, e o caminho do
+teste acabando contra uma conta em teste de verdade (a MyCookie's é liberada à mão); os dois são
+os passos 8 e 9 do roteiro.
+
+Portão: lint e typecheck limpos, **734 testes** (13 novos, `tests/avisos.test.ts`), `npm run build`
+passa com `/api/emails/diario`. `package.json`, `firestore.rules` e `firestore.indexes.json`
+intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -3866,9 +3894,9 @@ deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do 
 
 ## Próxima ação
 
-**A 044-A está codificada** (seção acima). A próxima sessão é a **044-B**: `domain/avisos.ts`, o
-cron diário, os três avisos e a chave de desligar. A A publica sozinha se quiser: não depende da B,
-e depende do domínio verificado no Resend e do roteiro A.
+**A 044 está codificada inteira** (seções da A e da B, acima). Publica depois do domínio verificado
+no Resend e de `DEPLOY.md` § 12 inteira (os passos 5 a 7 são do cron: `CRON_SECRET` na Vercel);
+o portão é o roteiro da spec, A (1 a 7) e B (8 a 12), na prévia da Vercel. A A pode ir antes da B.
 
 **A 043 está codificada** (seção acima). Publica depois da 041 e com o domínio próprio no ar;
 antes, `DEPLOY.md` § 11 na prévia da Vercel e o roteiro de aparelho da spec inteiro, que é o

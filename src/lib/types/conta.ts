@@ -75,6 +75,13 @@ export interface Conta {
    * da calculadora pública no aparelho. Ausente = veio por outro caminho.
    */
   origem?: "calculadora";
+  /**
+   * Meta batida e mês fechado por e-mail (spec 044-B, `DECISOES.md#d207`).
+   * Ausente = recebe; escrito pela chave em `/configuracao#avisos`. Não desliga
+   * boas-vindas, senha nova nem teste acabando, que são do funcionamento da
+   * conta.
+   */
+  avisosPorEmail?: boolean;
   v: VersaoSchema;
 }
 

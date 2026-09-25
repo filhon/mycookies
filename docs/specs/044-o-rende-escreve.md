@@ -325,15 +325,15 @@ conta de teste cujo e-mail é de quem conduz o projeto.
 
 **B**
 
-- [ ] `domain/avisos.ts` puro e testado; `/api/emails/diario` protegido pelo segredo, com
+- [x] `domain/avisos.ts` puro e testado; `/api/emails/diario` protegido pelo segredo, com
       `simular`, `hoje` e o `so` obrigatório fora de produção.
-- [ ] `vercel.json` com o cron; `CRON_SECRET` documentado.
-- [ ] `Conta.avisosPorEmail` opcional e a chave em `/configuracao`; `firestore.rules` intocado.
+- [x] `vercel.json` com o cron; `CRON_SECRET` documentado.
+- [x] `Conta.avisosPorEmail` opcional e a chave em `/configuracao`; `firestore.rules` intocado.
 
 **As duas**
 
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d202` a `#d208` escritos; `ESTADO.md` atualizado, com o roteiro como portão do deploy.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d202` a `#d208` escritos; `ESTADO.md` atualizado, com o roteiro como portão do deploy.
 
 ---
 

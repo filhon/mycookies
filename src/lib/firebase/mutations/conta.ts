@@ -27,6 +27,20 @@ import { VERSAO_SCHEMA } from "@/lib/types";
  * escrita fica na fila do Firestore. Chamar de novo depois de concluído apenas
  * reescreve a data, e ninguém tem por onde fazer isso — o cartão já não existe.
  */
+/**
+ * A chave de `/configuracao#avisos` (spec 044-B, `#d207`). Desmarcar grava
+ * `false`, marcar grava `true`; ausente já é "recebe". Sem `await` na tela.
+ */
+export function definirAvisosPorEmail(
+  contaId: string,
+  receber: boolean,
+): Promise<void> {
+  return updateDoc(docConta(contaId), {
+    v: VERSAO_SCHEMA,
+    avisosPorEmail: receber,
+  });
+}
+
 export function concluirPrimeirosPassos(contaId: string): Promise<void> {
   return updateDoc(docConta(contaId), {
     v: VERSAO_SCHEMA,
