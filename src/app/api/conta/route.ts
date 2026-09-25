@@ -95,6 +95,7 @@ async function garantirConta(uid: string, cadastro: Cadastro): Promise<string> {
       status: "ATIVA",
       trialAte,
       termosAceitosEm: agora,
+      ...(cadastro.origem && { origem: cadastro.origem }),
       v: VERSAO_SCHEMA,
     });
   } else {

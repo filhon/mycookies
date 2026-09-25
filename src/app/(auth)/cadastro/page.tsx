@@ -14,6 +14,7 @@ import {
   type FalhaCadastro,
 } from "@/lib/domain/cadastro";
 import { obterAuth } from "@/lib/firebase/client";
+import { useRascunhoDaPorta } from "@/lib/utils/rascunhoDaPorta";
 import { traduzirErroAuth, useAuth } from "@/providers/AuthProvider";
 
 /**
@@ -38,6 +39,9 @@ export default function PaginaCadastro() {
   const [termos, setTermos] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  // O rascunho da calculadora pública (spec 040-B): a conta nasce sabendo de
+  // onde veio, e a moldura diz que o cookie dela vai estar lá.
+  const daCalculadora = useRascunhoDaPorta() !== null;
 
   useEffect(() => {
     if (!carregando && contaId) router.replace("/");
@@ -85,6 +89,7 @@ export default function PaginaCadastro() {
           nome: nome.trim(),
           negocio: negocio.trim() || undefined,
           termos,
+          origem: daCalculadora ? "calculadora" : undefined,
         }),
       });
       if (!resposta.ok) {
@@ -107,7 +112,9 @@ export default function PaginaCadastro() {
   return (
     <MolduraDeEntrada
       titulo="Criar minha conta"
-      descricao="Catorze dias grátis, sem cartão. Primeiro preço em dez minutos."
+      descricao={`Catorze dias grátis, sem cartão. Primeiro preço em dez minutos.${
+        daCalculadora ? " O cookie que você calculou vai estar lá." : ""
+      }`}
     >
       <form onSubmit={aoEnviar} className="mt-8 space-y-5" noValidate>
         {terminando ? (

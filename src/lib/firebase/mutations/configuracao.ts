@@ -54,40 +54,45 @@ export async function salvarConfiguracao(
   contaId: string,
   dados: DadosConfiguracao,
 ): Promise<void> {
-  const { operacional } = dados;
-
   despachar(
-    setDoc(
-      docConfiguracao(contaId),
-      {
-        v: VERSAO_SCHEMA,
-        ...(dados.nomeNegocio ? { nomeNegocio: dados.nomeNegocio } : {}),
-        operacional: {
-          ...operacional,
-          custoIndiretoPorHora: custoIndiretoPorHora(
-            operacional.despesasFixasMensais,
-            operacional.horasProdutivasMes,
-          ),
-        },
-        precificacao: dados.precificacao,
-        formasPagamento: dados.formasPagamento,
-        categoriasProduto: dados.categoriasProduto,
-        // Vazio apaga, e não esconde: com `merge`, uma chave ausente deixaria
-        // o telefone velho e a assinatura que ela acabou de tirar no documento.
-        ...(dados.contato && {
-          contato: {
-            telefone: dados.contato.telefone?.trim() || deleteField(),
-            instagram: dados.contato.instagram?.trim() || deleteField(),
-          },
-        }),
-        assinaturaDataUrl: dados.assinaturaDataUrl || deleteField(),
-        frase: dados.frase?.trim() || deleteField(),
-        ocultarFeitoCom: dados.ocultarFeitoCom || deleteField(),
-        atualizadoEm: Timestamp.now(),
-      },
-      { merge: true },
-    ),
+    setDoc(docConfiguracao(contaId), corpoDaConfiguracao(dados), {
+      merge: true,
+    }),
   );
+}
+
+/**
+ * O documento que `salvarConfiguracao` grava, com `merge: true`. A biblioteca
+ * trazida da calculadora grava o mesmo corpo no lote dela (`#d191`).
+ */
+export function corpoDaConfiguracao(dados: DadosConfiguracao) {
+  const { operacional } = dados;
+  return {
+    v: VERSAO_SCHEMA,
+    ...(dados.nomeNegocio ? { nomeNegocio: dados.nomeNegocio } : {}),
+    operacional: {
+      ...operacional,
+      custoIndiretoPorHora: custoIndiretoPorHora(
+        operacional.despesasFixasMensais,
+        operacional.horasProdutivasMes,
+      ),
+    },
+    precificacao: dados.precificacao,
+    formasPagamento: dados.formasPagamento,
+    categoriasProduto: dados.categoriasProduto,
+    // Vazio apaga, e não esconde: com `merge`, uma chave ausente deixaria
+    // o telefone velho e a assinatura que ela acabou de tirar no documento.
+    ...(dados.contato && {
+      contato: {
+        telefone: dados.contato.telefone?.trim() || deleteField(),
+        instagram: dados.contato.instagram?.trim() || deleteField(),
+      },
+    }),
+    assinaturaDataUrl: dados.assinaturaDataUrl || deleteField(),
+    frase: dados.frase?.trim() || deleteField(),
+    ocultarFeitoCom: dados.ocultarFeitoCom || deleteField(),
+    atualizadoEm: Timestamp.now(),
+  };
 }
 
 /**

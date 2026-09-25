@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { Centavos } from "@/lib/types";
 import { FICHAS_DA_BIBLIOTECA, INSUMOS_DA_BIBLIOTECA } from "./biblioteca";
 import {
@@ -66,6 +67,50 @@ export interface ContaDaPorta {
   sugerido: VerificacaoPreco | null;
   /** (sobra no sugerido − sobra hoje) × vendas; 0 quando hoje ≥ sugerido. */
   aMaisNoMes: Centavos;
+}
+
+/**
+ * O rascunho no aparelho (spec 040-B, `#d189`): a entrada da calculadora,
+ * guardada a cada mudança, para o botão da biblioteca levar para a conta nova.
+ * Um só; calcular de novo sobrescreve.
+ */
+export const CHAVE_DO_RASCUNHO = "rende:conta-da-porta";
+export const VALIDADE_DO_RASCUNHO_MS = 30 * 24 * 60 * 60 * 1000;
+
+export interface RascunhoDaPorta extends EntradaDaPorta {
+  v: 1;
+  salvoEm: number;
+}
+
+const centavos = z.number().int().nonnegative();
+const esquemaRascunho = z.object({
+  v: z.literal(1),
+  salvoEm: z.number(),
+  receita: z.enum(["cookie-classico", "cookie-recheado"]),
+  rendimento: z.number().int().nonnegative(),
+  tempoProducaoMinutos: z.number().int().nonnegative(),
+  valorHoraTrabalho: centavos,
+  precos: z.record(z.string(), centavos),
+  precoHoje: centavos.nullable(),
+  vendasMes: z.number().int().nonnegative(),
+});
+
+/** O rascunho, ou `null` em qualquer dúvida: vazio, quebrado, de outra versão ou velho. */
+export function lerRascunho(
+  texto: string | null,
+  agora: number,
+): RascunhoDaPorta | null {
+  if (!texto) return null;
+  let bruto: unknown;
+  try {
+    bruto = JSON.parse(texto);
+  } catch {
+    return null;
+  }
+  const lido = esquemaRascunho.safeParse(bruto);
+  if (!lido.success) return null;
+  if (agora - lido.data.salvoEm > VALIDADE_DO_RASCUNHO_MS) return null;
+  return lido.data;
 }
 
 function fichaDa(receita: ReceitaDaPorta) {

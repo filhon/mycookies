@@ -23,6 +23,8 @@ export const esquemaCadastro = z.object({
   nome: z.string().trim().min(1).max(TAMANHO_MAXIMO_NOME),
   negocio: z.string().trim().max(TAMANHO_MAXIMO_NOME).optional(),
   termos: z.literal(true),
+  /** Veio da calculadora pública com rascunho no aparelho (spec 040-B, `#d191`). */
+  origem: z.enum(["calculadora"]).optional(),
 });
 export type Cadastro = z.infer<typeof esquemaCadastro>;
 

@@ -22,6 +22,7 @@ import { precificacaoSugerida } from "@/lib/domain/configuracaoSugerida";
 import { formatarMoeda } from "@/lib/domain/money";
 import type { Centavos } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
+import { guardarRascunho } from "@/lib/utils/rascunhoDaPorta";
 
 /**
  * A calculadora pública (spec 040, `DECISOES.md#d185` a `#d188`): as receitas
@@ -42,6 +43,14 @@ export function CalculadoraDaPorta({
     entradaPadrao("cookie-classico"),
   );
   const conta = contaDaPorta(entrada);
+
+  // O rascunho que o botão da biblioteca leva (`#d189`). Abrir a página não
+  // grava: só a entrada que ela mexeu é diferente da do primeiro render.
+  const primeira = useRef(entrada);
+  useEffect(() => {
+    if (entrada !== primeira.current) guardarRascunho(entrada);
+  }, [entrada]);
+
   const mudar = (parcial: Partial<EntradaDaPorta>) =>
     setEntrada((atual) => ({ ...atual, ...parcial }));
 

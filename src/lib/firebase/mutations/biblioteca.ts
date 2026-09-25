@@ -1,11 +1,22 @@
 import { increment, Timestamp, writeBatch } from "firebase/firestore";
 import { obterDb } from "../client";
-import { docFicha, docInsumo, docResumoGlobal } from "../colecoes";
+import {
+  docConfiguracao,
+  docFicha,
+  docInsumo,
+  docResumoGlobal,
+} from "../colecoes";
 import { despachar } from "./despachar";
-import { precificacaoPadraoDaConta, rateioDaConta } from "./configuracao";
+import {
+  CONFIGURACAO_SUGERIDA,
+  corpoDaConfiguracao,
+  precificacaoPadraoDaConta,
+  rateioDaConta,
+} from "./configuracao";
 import { corpoDaFicha } from "./fichas";
 import { corpoDeInsumoNovo } from "./insumos";
 import { montarBiblioteca, PREFIXO_BIBLIOTECA } from "@/lib/domain/biblioteca";
+import type { EntradaDaPorta } from "@/lib/domain/calculadora";
 import { VERSAO_SCHEMA } from "@/lib/types";
 import type { ConfiguracaoGeral, FichaTecnica, Insumo } from "@/lib/types";
 
@@ -16,18 +27,46 @@ import type { ConfiguracaoGeral, FichaTecnica, Insumo } from "@/lib/types";
  * botão e a rota abre do cache, com ou sem rede. `instalarBiblioteca` reusa
  * `corpoDeInsumoNovo` e `corpoDaFicha` — o mesmo que o cadastro manual grava —
  * para que a ficha-modelo não seja uma segunda forma de documento.
+ *
+ * Com `conta` (a calculadora da porta, spec 040-B): a biblioteca sai com a
+ * conta dela por cima (`#d189`, `#d190`), e ela cai na ficha que calculou. Se
+ * a hora dela não é a sugerida, a configuração é gravada no mesmo lote, com a
+ * hora dela, para o próximo "Salvar" da ficha não voltar para a sugerida
+ * (`#d191`).
  */
 export function instalarBiblioteca(
   contaId: string,
   configuracao: ConfiguracaoGeral | null,
+  conta?: EntradaDaPorta,
 ): string {
   const momento = Timestamp.now();
-  const { insumos, fichas } = montarBiblioteca({
-    operacional: rateioDaConta(configuracao),
-    precificacao: precificacaoPadraoDaConta(configuracao),
-  });
-
   const lote = writeBatch(obterDb());
+
+  let operacional = rateioDaConta(configuracao);
+  if (
+    conta &&
+    conta.valorHoraTrabalho !==
+      CONFIGURACAO_SUGERIDA.operacional.valorHoraTrabalho
+  ) {
+    const base = configuracao ?? CONFIGURACAO_SUGERIDA;
+    const corpo = corpoDaConfiguracao({
+      ...base,
+      operacional: {
+        ...base.operacional,
+        valorHoraTrabalho: conta.valorHoraTrabalho,
+      },
+    });
+    lote.set(docConfiguracao(contaId), corpo, { merge: true });
+    operacional = corpo.operacional;
+  }
+
+  const { insumos, fichas } = montarBiblioteca(
+    {
+      operacional,
+      precificacao: precificacaoPadraoDaConta(configuracao),
+    },
+    conta,
+  );
 
   for (const insumo of insumos) {
     lote.set(
@@ -59,5 +98,5 @@ export function instalarBiblioteca(
 
   despachar(lote.commit());
 
-  return PREFIXO_BIBLIOTECA + "cookie-classico";
+  return PREFIXO_BIBLIOTECA + (conta?.receita ?? "cookie-classico");
 }

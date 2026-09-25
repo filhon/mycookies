@@ -34,6 +34,16 @@ describe("esquemaCadastro", () => {
     ).toBe(false);
   });
 
+  it("aceita origem calculadora e recusa outra", () => {
+    const corpo = { nome: "Maynara", termos: true };
+    expect(
+      esquemaCadastro.safeParse({ ...corpo, origem: "calculadora" }).success,
+    ).toBe(true);
+    expect(
+      esquemaCadastro.safeParse({ ...corpo, origem: "instagram" }).success,
+    ).toBe(false);
+  });
+
   it("recusa nome vazio, mesmo só de espaços", () => {
     expect(
       esquemaCadastro.safeParse({ nome: "   ", termos: true }).success,

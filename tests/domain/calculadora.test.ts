@@ -1,10 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { montarBiblioteca, PREFIXO_BIBLIOTECA } from "@/lib/domain/biblioteca";
+import {
+  montarBiblioteca,
+  PREFIXO_BIBLIOTECA,
+  PREFIXO_PORTA,
+  temPrecoMedio,
+} from "@/lib/domain/biblioteca";
 import {
   contaDaPorta,
   entradaPadrao,
+  lerRascunho,
   RECEITAS_DA_PORTA,
   trocarReceita,
+  VALIDADE_DO_RASCUNHO_MS,
+  type EntradaDaPorta,
 } from "@/lib/domain/calculadora";
 import {
   precificacaoSugerida,
@@ -146,5 +154,127 @@ describe("trocarReceita", () => {
       precoHoje: 600,
       vendasMes: 250,
     });
+  });
+});
+
+describe("lerRascunho", () => {
+  const agora = Date.UTC(2026, 8, 25);
+  const valido = {
+    ...entradaPadrao("cookie-recheado"),
+    precos: { "manteiga-sem-sal": 1400 },
+    precoHoje: 600,
+    v: 1,
+    salvoEm: agora - 1000,
+  };
+  const texto = (dados: object) => JSON.stringify(dados);
+
+  it("devolve o rascunho válido", () => {
+    expect(lerRascunho(texto(valido), agora)).toEqual(valido);
+  });
+
+  it("recusa vazio, JSON quebrado e versão errada", () => {
+    expect(lerRascunho(null, agora)).toBeNull();
+    expect(lerRascunho("{quebrado", agora)).toBeNull();
+    expect(lerRascunho(texto({ ...valido, v: 2 }), agora)).toBeNull();
+  });
+
+  it("recusa o de mais de 30 dias", () => {
+    const velho = { ...valido, salvoEm: agora - VALIDADE_DO_RASCUNHO_MS - 1 };
+    expect(lerRascunho(texto(velho), agora)).toBeNull();
+  });
+
+  it("recusa campo com tipo errado", () => {
+    expect(
+      lerRascunho(texto({ ...valido, rendimento: "doze" }), agora),
+    ).toBeNull();
+    expect(
+      lerRascunho(texto({ ...valido, precos: { manteiga: 14.5 } }), agora),
+    ).toBeNull();
+    expect(
+      lerRascunho(texto({ ...valido, receita: "brigadeiro" }), agora),
+    ).toBeNull();
+  });
+});
+
+// Levar a conta (spec 040-B, 4.5): a ficha que a biblioteca instala com a conta
+// dela é a conta que a página mostrou.
+describe("montarBiblioteca com a conta da porta", () => {
+  const conta: EntradaDaPorta = {
+    ...entradaPadrao("cookie-recheado"),
+    rendimento: 10,
+    tempoProducaoMinutos: 100,
+    valorHoraTrabalho: 3000,
+    precos: { "manteiga-sem-sal": 1400, ovos: 1200 },
+    precoHoje: 600,
+  };
+  const { insumos, fichas } = montarBiblioteca(
+    {
+      operacional: { ...rateioSugerido(), valorHoraTrabalho: 3000 },
+      precificacao: precificacaoSugerida(),
+    },
+    conta,
+  );
+  const ficha = fichas.find(
+    (f) => f.id === PREFIXO_BIBLIOTECA + "cookie-recheado",
+  );
+  if (!ficha) throw new Error("sem ficha");
+
+  it("o material trocado nasce porta-, sem preço médio; o igual ao médio não", () => {
+    const manteiga = insumos.find((i) => i.nome === "Manteiga sem sal");
+    expect(manteiga).toMatchObject({
+      id: PREFIXO_PORTA + "manteiga-sem-sal",
+      precoCompra: 1400,
+    });
+    expect(temPrecoMedio({ id: manteiga!.id, historicoPrecos: [] })).toBe(
+      false,
+    );
+    expect(insumos.find((i) => i.nome === "Ovos")?.id).toBe(
+      PREFIXO_BIBLIOTECA + "ovos",
+    );
+    expect(insumos).toHaveLength(25);
+  });
+
+  it("toda ficha que usa o material trocado aponta para o porta-", () => {
+    for (const f of fichas) {
+      const ids = f.itens.map((item) => item.insumoId);
+      expect(ids).toContain(PREFIXO_PORTA + "manteiga-sem-sal");
+      expect(ids).not.toContain(PREFIXO_BIBLIOTECA + "manteiga-sem-sal");
+    }
+  });
+
+  it("a ficha escolhida leva rendimento, tempo e preço de hoje dela; a outra fica", () => {
+    expect(ficha).toMatchObject({
+      rendimento: 10,
+      tempoProducaoMinutos: 100,
+      precoVenda: 600,
+    });
+    const outra = fichas.find(
+      (f) => f.id === PREFIXO_BIBLIOTECA + "cookie-classico",
+    );
+    expect(outra).toMatchObject({ rendimento: 20, precoVenda: null });
+  });
+
+  it("o custo e o preço da ficha montada são os que a página mostrou", () => {
+    const doApp = derivarFicha(ficha);
+    const daPagina = contaDaPorta(conta);
+    expect(doApp.custo.custoUnitario).toBe(
+      daPagina.derivados.custo.custoUnitario,
+    );
+    expect(doApp.precoArredondado).toBe(daPagina.derivados.precoArredondado);
+    expect(doApp.verificacao.lucroUnitario).toBe(daPagina.hoje?.lucroUnitario);
+    expect(doApp.verificacao.lucroUnitario).toBeLessThan(0);
+  });
+
+  it("sem conta, a saída é a de sempre", () => {
+    const parametros = {
+      operacional: rateioSugerido(),
+      precificacao: precificacaoSugerida(),
+    };
+    expect(montarBiblioteca(parametros, undefined)).toEqual(
+      montarBiblioteca(parametros),
+    );
+    expect(
+      montarBiblioteca(parametros, entradaPadrao("cookie-classico")),
+    ).toEqual(montarBiblioteca(parametros));
   });
 });

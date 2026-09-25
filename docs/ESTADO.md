@@ -1,8 +1,9 @@
 # Estado do projeto
 
-Atualizado em 2026-09-25 (a **040-A codificada**, a calculadora pública em `/conheca` e na
-página do preço, com a configuração sugerida no domínio, `#d185` a `#d188`; a 040-B, levar a conta
-para dentro da conta nova, é a próxima sessão; a **039 codificada**, a seção "depois do preço" esperando as três
+Atualizado em 2026-09-25 (a **040 codificada inteira**: a A, a calculadora pública em `/conheca`
+e na página do preço, com a configuração sugerida no domínio, `#d185` a `#d188`; a B, o rascunho
+no aparelho que o botão da biblioteca leva para a conta nova, e a `origem` da conta, `#d189` a
+`#d191`; a **039 codificada**, a seção "depois do preço" esperando as três
 capturas, o preço do plano em cookies e a imagem de prévia das duas páginas públicas, `#d181` a
 `#d184`; a **038 codificada**, a visita contada pela Vercel nas páginas
 públicas e no cadastro, `#d180`; a **037 codificada**, a página do preço e o mapa para a busca,
@@ -292,7 +293,7 @@ os números digitados de ponta a ponta.
 | 37  | A pergunta do preço                         | codificada; não publicada             | `specs/037-a-pergunta-do-preco.md`          |
 | 38  | O que a página mede                         | escrita; publica com a 036            | `specs/038-o-que-a-pagina-mede.md`          |
 | 39  | Por que todo mês                            | escrita; espera capturas e depoimento | `specs/039-por-que-todo-mes.md`             |
-| 40  | A conta dela (A calculadora, B levar)       | escrita                               | `specs/040-a-conta-dela.md`                 |
+| 40  | A conta dela (A calculadora, B levar)       | A e B codificadas; não publicada      | `specs/040-a-conta-dela.md`                 |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -3654,6 +3655,43 @@ intocados.
 **Fora do que esta sessão fez:** o texto do depoimento em `src/app/conheca/page.tsx` mudou no
 disco durante a sessão ("Eu tinha um produto muito gostoso…"), e ficou como veio.
 
+## A spec 040 · A conta dela — sessão B, levar para a conta
+
+**Codificada em 2026-09-25**, no mesmo branch, por cima da A (`#d189` a `#d191`). Publica junto
+com a A ou depois dela; sem rascunho no aparelho, biblioteca e cadastro são os de antes.
+
+- `src/lib/domain/calculadora.ts`: `CHAVE_DO_RASCUNHO`, `RascunhoDaPorta` e `lerRascunho` (zod,
+  versão 1, 30 dias, `null` em qualquer dúvida).
+- `src/lib/utils/rascunhoDaPorta.ts`: `guardarRascunho`, `apagarRascunho` e o hook
+  `useRascunhoDaPorta` (`useSyncExternalStore`, como `useDispositivo`: o lint recusa `setState`
+  em efeito), tudo em `try/catch`. A calculadora grava a cada mudança, e só quando a entrada é
+  outra que a do primeiro render.
+- `montarBiblioteca(parametros, conta?)`: material com o preço dela, e diferente do médio, nasce
+  `porta-{id}` (`PREFIXO_PORTA`), e toda ficha que o usa aponta para ele; a ficha da receita dela
+  leva rendimento, tempo e o preço de hoje como `precoVenda`. Rendimento zero no rascunho vale o
+  da biblioteca. Sem `conta`, a saída é a de antes (o teste confere com `toEqual`).
+- `instalarBiblioteca(contaId, configuracao, conta?)`: com hora diferente da sugerida, grava
+  `configuracao/geral` no mesmo lote com `corpoDaConfiguracao`, extraído de
+  `salvarConfiguracao` (o mesmo corpo, `merge: true`), e usa esse `operacional` nas fichas.
+  Devolve a ficha da receita dela.
+- `BotaoBiblioteca`: com rascunho, "Trazer o cookie que você calculou"; instala, apaga o
+  rascunho e abre a ficha.
+- `origem`: `esquemaCadastro` aceita `"calculadora"`; `/cadastro` manda com rascunho e a
+  moldura ganha "O cookie que você calculou vai estar lá."; `/api/conta` grava na conta nova;
+  `Conta.origem?`; `npm run metricas` imprime a coluna. `conceder-acesso.mjs` não muda: conta
+  liberada à mão não vem da calculadora.
+
+**Roteiro (seção 5, 040-B).** No `next start` com Chrome sem cabeça pelo DevTools Protocol, sem
+conta: abrir `/conheca` não grava nada; trocar para o recheado e pôr R$ 6,00 grava o rascunho;
+`/cadastro` sem rascunho não tem a frase, com rascunho tem. **Os passos 8 a 12 com conta de
+verdade não rodaram** (criam conta no Firebase): ficam para quem conduz o projeto, e o **passo 9
+é o portão da sessão** (o número da página e o do app lado a lado, iguais). O teste de
+`montarBiblioteca` com `conta` prende a mesma igualdade no domínio: custo, preço arredondado e a
+sobra no preço de hoje da ficha montada são os de `contaDaPorta`.
+
+Portão: lint e typecheck limpos, **720 testes** (710 + 10), `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -3664,10 +3702,9 @@ deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do 
 
 ## Próxima ação
 
-**A 040-B é a próxima sessão** (`specs/040-a-conta-dela.md`, seção 4): o rascunho no aparelho, o
-botão da biblioteca que o instala, e a `origem` da conta, `#d189` a `#d191`. A 040-A publica
-sozinha, junto com ou depois da 036 e da 037; antes, o passo 6 do roteiro com NVDA ou VoiceOver e
-o Lighthouse no celular de `/conheca`, com a nota de desempenho anotada na seção da 040.
+**A 040 está codificada inteira.** Publica junto com ou depois da 036 e da 037. Antes: o passo 6
+do roteiro da A com NVDA ou VoiceOver, o Lighthouse no celular de `/conheca`, e os passos 8 a 12
+da B com conta de verdade (o 9 é o portão: o número da página e o do app, iguais).
 
 **A 039 publica junto com ou depois da 036 e da 037** (`docs/DEPLOY.md` § 9). Antes, as três
 capturas da conta de demonstração em `public/site/` e `TELAS_DO_MES` preenchido (seção da 039,

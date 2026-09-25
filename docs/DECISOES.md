@@ -5845,3 +5845,67 @@ mais dica: com o rótulo inteiro, o campo do tempo ficava uma linha abaixo do do
 
 **Consequência.** A faixa e o ponto convivem no resultado pelo mesmo motivo da `ContaAberta`
 (`#d126`): é a reprodução do editor, com dado de verdade.
+
+---
+
+## D189 · Levar a conta: o rascunho no aparelho, instalado pelo botão da biblioteca
+
+**Status:** vigente · decidida em 2026-09-25, na spec 040 (sessão B)
+
+**Contexto.** Quem calcula na página e cria a conta cai em `/fichas` vazia: tudo o que ela pensou
+na página ficou lá.
+
+**Decisão.** A calculadora grava a entrada em `localStorage` (`rende:conta-da-porta`, versão 1)
+a cada mudança, depois da primeira interação. Em `/fichas`, com a conta vazia e um rascunho
+válido (`lerRascunho`: zod, 30 dias), o `BotaoBiblioteca` diz "Trazer o cookie que você
+calculou" e instala a biblioteca com a conta dela por cima: `montarBiblioteca(parametros, conta)`
+troca o preço dos materiais, e a ficha da receita dela leva rendimento, tempo e o preço de hoje
+como `precoVenda` (perdendo dinheiro, a conta nova abre com o aviso de vermelho da 024). O mesmo
+`writeBatch` despachado de sempre (`#d104`), offline. O rascunho é apagado depois do toque.
+Pesados e recusados: mandar a conta no cadastro (o servidor montaria insumo e ficha, e a
+biblioteca existiria em dois lugares) e instalar sozinho ao abrir `/fichas` (escrever sem ela
+pedir). Toda leitura e escrita em `try/catch`; a leitura é um `useSyncExternalStore` com retrato
+estável por texto, porque o lint do React recusa `setState` em efeito.
+
+**Consequência.** É conveniência de um aparelho: calculou no celular e criou a conta no
+computador, o botão é o de sempre. Rascunho com rendimento zero instala o rendimento da
+biblioteca. Se o roteiro mostrar gente tocando no outro botão por engano, a instalação passa a
+ser automática.
+
+---
+
+## D190 · O material que ela corrigiu nasce dela, com `porta-`
+
+**Status:** vigente · decidida em 2026-09-25, na spec 040 (sessão B)
+
+**Contexto.** `temPrecoMedio` marca "Preço médio" no insumo `biblioteca-` com uma compra só.
+
+**Decisão.** O material com preço dela na calculadora nasce `porta-{id}` (`PREFIXO_PORTA`), e toda
+ficha que o usa aponta para ele; os outros continuam `biblioteca-`. O selo não aparece nele, e o
+caminho dos primeiros passos conta o insumo pelo mesmo `temInsumo`. **Preço igual ao médio não
+é troca:** mesmo custo, e o id continua `biblioteca-` (o campo da calculadora grava o valor a cada
+tecla, e ela pode ter voltado ao médio); é o mesmo critério do "N com o seu preço" da página.
+
+**Consequência.** `metricas` conta "1º próprio" pelas fichas sem `biblioteca-`; as fichas da
+porta continuam `biblioteca-`, então a ficha trazida não conta como própria. Os ids `porta-` não
+colidem: o botão some quando a conta tem qualquer insumo ou ficha.
+
+---
+
+## D191 · A hora dela grava a configuração; a origem fica na conta
+
+**Status:** vigente · decidida em 2026-09-25, na spec 040 (sessão B)
+
+**Decisão.** **A hora.** Se a hora do rascunho não é a sugerida, `instalarBiblioteca` grava
+`configuracao/geral` no mesmo lote, com `corpoDaConfiguracao` (extraído de `salvarConfiguracao`:
+o mesmo corpo, `v`, `Timestamp.now()`, `merge: true`), sobre a configuração que a conta já tiver
+ou a sugerida, trocando só a hora; as fichas usam esse `operacional`. Sem isso, o próximo
+"Salvar" da ficha relê a configuração e a hora volta a R$ 25. Consequência aceita: o passo 3 dos
+primeiros passos aparece feito. **A origem.** `esquemaCadastro` aceita `origem: "calculadora"`;
+`/cadastro` manda quando há rascunho válido no aparelho (e a moldura diz "O cookie que você
+calculou vai estar lá."); `/api/conta` grava na conta nova com o Admin SDK; `Conta.origem?`,
+ausente = veio por outro caminho; `npm run metricas` imprime a coluna. Nenhuma regra muda.
+
+**Consequência.** A origem é gravada só quando a conta nasce: o POST que volta depois de cair no
+meio encontra o documento e não o reescreve. Quem cria a conta com rascunho e não toca no botão
+fica com `origem` mesmo assim: a origem diz por onde ela chegou, e não se trouxe o cookie.

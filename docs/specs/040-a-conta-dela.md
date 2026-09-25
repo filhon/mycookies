@@ -400,31 +400,31 @@ nada muda.
 
 **040-A**
 
-- [ ] Calculadora em `/conheca` e na página do preço, preenchida por padrão, sem botão de
+- [x] Calculadora em `/conheca` e na página do preço, preenchida por padrão, sem botão de
       calcular.
-- [ ] Nenhuma aritmética nova fora de `aMaisNoMes`; o teste prende que a página e o app dão o
+- [x] Nenhuma aritmética nova fora de `aMaisNoMes`; o teste prende que a página e o app dão o
       mesmo custo e o mesmo preço para as duas receitas.
-- [ ] `CONFIGURACAO_SUGERIDA` no domínio, sem mudança de valor; testes existentes intactos.
-- [ ] Perda com cor, ícone e palavra; o mês só com preço de hoje abaixo do sugerido.
-- [ ] `rg "@/lib/firebase" src/components/site src/lib/domain/calculadora.ts src/lib/domain/configuracaoSugerida.ts`
+- [x] `CONFIGURACAO_SUGERIDA` no domínio, sem mudança de valor; testes existentes intactos.
+- [x] Perda com cor, ícone e palavra; o mês só com preço de hoje abaixo do sugerido.
+- [x] `rg "@/lib/firebase" src/components/site src/lib/domain/calculadora.ts src/lib/domain/configuracaoSugerida.ts`
       vazio.
-- [ ] Campos com 48 px e rótulo acima; primário com 52 px no celular; um primário por tela.
-- [ ] A página do preço legível sem JavaScript.
+- [~] Campos com 48 px e rótulo acima; primário com 52 px no celular; um primário por tela.
+- [x] A página do preço legível sem JavaScript.
 
 **040-B**
 
-- [ ] Rascunho gravado só depois da primeira interação, lido com `lerRascunho`, apagado depois
+- [x] Rascunho gravado só depois da primeira interação, lido com `lerRascunho`, apagado depois
       de instalado, tudo em `try/catch`.
-- [ ] O botão da biblioteca leva a conta dela: materiais `porta-`, rendimento, tempo, preço de
+- [x] O botão da biblioteca leva a conta dela: materiais `porta-`, rendimento, tempo, preço de
       hoje, e a hora com a configuração quando mudou.
-- [ ] Sem rascunho, biblioteca e cadastro idênticos aos de hoje.
-- [ ] `origem` gravada pelo servidor e impressa por `metricas`; `firestore.rules` intocado.
+- [x] Sem rascunho, biblioteca e cadastro idênticos aos de hoje.
+- [x] `origem` gravada pelo servidor e impressa por `metricas`; `firestore.rules` intocado.
 
 **As duas**
 
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `package.json` e `firestore.indexes.json`
+- [x] `lint`, `typecheck`, `test` e `build` passam; `package.json` e `firestore.indexes.json`
       intocados.
-- [ ] `#d185` a `#d191` escritos; `ESTADO.md` atualizado a cada sessão; na 037, "Calculadora
+- [x] `#d185` a `#d191` escritos; `ESTADO.md` atualizado a cada sessão; na 037, "Calculadora
       pública" no "Fora de escopo" ganha "feito na 040".
 
 ---

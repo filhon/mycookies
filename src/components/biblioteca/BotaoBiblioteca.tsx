@@ -10,8 +10,13 @@ import {
   docConfiguracao,
 } from "@/lib/firebase/colecoes";
 import { instalarBiblioteca } from "@/lib/firebase/mutations/biblioteca";
+import { FICHAS_DA_BIBLIOTECA } from "@/lib/domain/biblioteca";
 import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
 import type { ConfiguracaoGeral, FichaTecnica, Insumo } from "@/lib/types";
+import {
+  apagarRascunho,
+  useRascunhoDaPorta,
+} from "@/lib/utils/rascunhoDaPorta";
 import { useContaId } from "@/providers/AuthProvider";
 
 /**
@@ -21,6 +26,9 @@ import { useContaId } from "@/providers/AuthProvider";
  * `useComeco` — mais o documento de configuração. Renderiza `null` enquanto
  * carrega e sempre que a conta já tem um insumo ou uma ficha, para que a
  * farinha dela nunca ganhe uma irmã de mentira.
+ *
+ * Com o rascunho da calculadora no aparelho (spec 040-B, `#d189`), traz o
+ * cookie que ela calculou: a mesma biblioteca, com a conta dela por cima.
  */
 export function BotaoBiblioteca({
   variante = "primaria",
@@ -44,6 +52,8 @@ export function BotaoBiblioteca({
   const fichas = useColecao<FichaTecnica>(consultaFichas);
   const configuracao = useDocumento<ConfiguracaoGeral>(refConfiguracao);
 
+  const rascunho = useRascunhoDaPorta();
+
   const carregando =
     insumos.carregando || fichas.carregando || configuracao.carregando;
   const contaVazia = insumos.dados.length === 0 && fichas.dados.length === 0;
@@ -51,18 +61,30 @@ export function BotaoBiblioteca({
   if (carregando || !contaVazia) return null;
 
   function comecar() {
-    const idDaFicha = instalarBiblioteca(contaId, configuracao.dado);
+    const idDaFicha = instalarBiblioteca(
+      contaId,
+      configuracao.dado,
+      rascunho ?? undefined,
+    );
+    if (rascunho) apagarRascunho();
     router.push(`/fichas/${idDaFicha}`);
   }
+
+  const receita = rascunho
+    ? FICHAS_DA_BIBLIOTECA.find((f) => f.id === rascunho.receita)?.nome
+    : undefined;
 
   return (
     <div className="flex flex-col items-center gap-2 text-center">
       <Botao variante={variante} tamanho="lg" onClick={comecar}>
-        Começar com o que toda cozinha tem
+        {receita
+          ? "Trazer o cookie que você calculou"
+          : "Começar com o que toda cozinha tem"}
       </Botao>
       <p className="max-w-[42ch] text-label text-ink-muted">
-        25 ingredientes e embalagens com preço médio, e dois produtos de cookie
-        já com preço. Você corrige o que for diferente na sua cozinha.
+        {receita
+          ? `${receita}, com os preços e a hora que você pôs. Os outros materiais vêm com preço médio.`
+          : "25 ingredientes e embalagens com preço médio, e dois produtos de cookie já com preço. Você corrige o que for diferente na sua cozinha."}
       </p>
     </div>
   );

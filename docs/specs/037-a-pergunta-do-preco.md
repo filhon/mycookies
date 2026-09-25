@@ -322,7 +322,7 @@ Isto é de quem conduz o projeto, depois de publicar, e é o que decide o result
   o preço. É o passo seguinte mais forte (ferramenta ranqueia e converte melhor que texto), e é
   uma spec inteira: componente de cliente, validação, o que fazer com o número depois. Escrita
   como a 040 (`specs/040-a-conta-dela.md`), sem esperar o gatilho do Search Console. **Feito na
-  040** (a calculadora na sessão A, em 2026-09-25).
+  040** (a calculadora na sessão A e o levar para a conta na B, em 2026-09-25).
 - **Blog, calendário de conteúdo, CMS.** Uma página escrita à mão não precisa de sistema.
 - **Imagem de prévia (Open Graph).** Continua fora como na 036. **Feito na 039** (`#d183`).
 - **Os cardápios `/c/[contaId]` indexáveis.** O cardápio é da confeiteira; pôr o dela na busca é

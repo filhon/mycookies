@@ -69,6 +69,12 @@ export interface Conta {
    */
   encerradaEm?: Timestamp;
   encerradaPor?: string;
+  /**
+   * Por onde ela chegou, gravado pelo cadastro (`/api/conta`, spec 040-B,
+   * `DECISOES.md#d191`) e por mais ninguém. `"calculadora"`: havia o rascunho
+   * da calculadora pública no aparelho. Ausente = veio por outro caminho.
+   */
+  origem?: "calculadora";
   v: VersaoSchema;
 }
 

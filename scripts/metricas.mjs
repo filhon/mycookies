@@ -102,6 +102,8 @@ async function linhaDaConta(contaSnap, ultimoLogin, hoje) {
       ? String(diasEntre(criada, primeiraPropria.get("criadoEm").toDate()))
       : "—",
     "login 30d": login30d,
+    // Ausente = veio por outro caminho (spec 040-B, `DECISOES.md#d191`).
+    origem: conta.origem ?? "—",
   };
 }
 

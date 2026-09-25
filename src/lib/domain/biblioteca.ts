@@ -6,12 +6,19 @@ import type {
   UnidadeCompra,
   UnidadeRendimento,
 } from "@/lib/types";
+import type { EntradaDaPorta } from "./calculadora";
 import { calcularCustoInsumo } from "./custoInsumo";
 import type { RateioOperacional } from "./custoFicha";
 import type { ParametrosPreco } from "./precificacao";
 
 /** Todo documento da biblioteca nasce com este prefixo no id (`DECISOES.md#d114`). */
 export const PREFIXO_BIBLIOTECA = "biblioteca-";
+
+/**
+ * O material cujo preço ela pôs na calculadora nasce com este (`#d190`): não é
+ * média, é o preço dela, e `temPrecoMedio` não o marca.
+ */
+export const PREFIXO_PORTA = "porta-";
 
 export function ehDaBiblioteca(id: string): boolean {
   return id.startsWith(PREFIXO_BIBLIOTECA);
@@ -109,7 +116,8 @@ export interface DadosFichaDaBiblioteca {
   custoEscolhas: 0;
   operacional: RateioOperacional;
   precificacao: ParametrosPreco;
-  precoVenda: null;
+  /** `null`, a não ser na ficha que ela trouxe da calculadora com o preço de hoje. */
+  precoVenda: Centavos | null;
 }
 
 /**
@@ -402,20 +410,41 @@ export const FICHAS_DA_BIBLIOTECA: readonly FichaDaBiblioteca[] = [
  * `calcularCustoInsumo` para o custo corrigido — para que a ficha-modelo grave
  * exatamente o custo que o editor mostraria se ela tivesse acabado de montar a
  * mesma receita.
+ *
+ * Com `conta` (a calculadora da porta, spec 040-B, `#d189`): o material com o
+ * preço dela nasce `porta-` com esse preço, e toda ficha que o usa aponta para
+ * ele; a ficha da receita dela leva o rendimento, o tempo e o preço de hoje
+ * dela. O `operacional` com a hora dela é de quem chama.
  */
-export function montarBiblioteca(parametros: {
-  operacional: RateioOperacional;
-  precificacao: ParametrosPreco;
-}): {
+export function montarBiblioteca(
+  parametros: {
+    operacional: RateioOperacional;
+    precificacao: ParametrosPreco;
+  },
+  conta?: EntradaDaPorta,
+): {
   insumos: (DadosInsumoDaBiblioteca & { id: string })[];
   fichas: (DadosFichaDaBiblioteca & { id: string })[];
 } {
+  // Id final e preço de cada material, por id sem prefixo. Preço igual ao
+  // médio não é troca: mesmo custo, e o selo continua dizendo a verdade.
   const mapaInsumos = new Map(
-    INSUMOS_DA_BIBLIOTECA.map((insumo) => [insumo.id, insumo]),
+    INSUMOS_DA_BIBLIOTECA.map((insumo) => {
+      const dela = conta?.precos[insumo.id];
+      const trocou = !!dela && dela > 0 && dela !== insumo.precoCompra;
+      return [
+        insumo.id,
+        {
+          ...insumo,
+          id: (trocou ? PREFIXO_PORTA : PREFIXO_BIBLIOTECA) + insumo.id,
+          precoCompra: trocou ? dela : insumo.precoCompra,
+        },
+      ];
+    }),
   );
 
-  const insumos = INSUMOS_DA_BIBLIOTECA.map((insumo) => ({
-    id: PREFIXO_BIBLIOTECA + insumo.id,
+  const insumos = [...mapaInsumos.values()].map((insumo) => ({
+    id: insumo.id,
     nome: insumo.nome,
     categoria: insumo.categoria,
     precoCompra: insumo.precoCompra,
@@ -424,38 +453,43 @@ export function montarBiblioteca(parametros: {
     perdaPercentual: insumo.perdaPercentual,
   }));
 
-  const fichas = FICHAS_DA_BIBLIOTECA.map((ficha) => ({
-    id: PREFIXO_BIBLIOTECA + ficha.id,
-    nome: ficha.nome,
-    categoria: ficha.categoria,
-    tipo: "SIMPLES" as const,
-    rendimento: ficha.rendimento,
-    unidadeRendimento: ficha.unidadeRendimento,
-    fornadasMinimas: 0 as const,
-    tempoProducaoMinutos: ficha.tempoProducaoMinutos,
-    itens: ficha.itens.map((item) => {
-      const insumo = mapaInsumos.get(item.insumoId);
-      if (!insumo)
-        throw new Error(
-          `Insumo da biblioteca não encontrado: ${item.insumoId}`,
-        );
-      const custo = calcularCustoInsumo(insumo);
-      return {
-        insumoId: PREFIXO_BIBLIOTECA + insumo.id,
-        nomeSnapshot: insumo.nome,
-        categoria: insumo.categoria,
-        quantidade: item.quantidade,
-        unidadeBase: custo.unidadeBase,
-        custoUnidadeBaseCorrigido: custo.custoUnidadeBaseCorrigido,
-      };
-    }),
-    componentes: [] as never[],
-    escolhas: [] as never[],
-    custoEscolhas: 0 as const,
-    operacional: parametros.operacional,
-    precificacao: parametros.precificacao,
-    precoVenda: null,
-  }));
+  const fichas = FICHAS_DA_BIBLIOTECA.map((ficha) => {
+    const dela = conta?.receita === ficha.id ? conta : null;
+    return {
+      id: PREFIXO_BIBLIOTECA + ficha.id,
+      nome: ficha.nome,
+      categoria: ficha.categoria,
+      tipo: "SIMPLES" as const,
+      // Rendimento zero não é receita: vale o da biblioteca.
+      rendimento: dela?.rendimento || ficha.rendimento,
+      unidadeRendimento: ficha.unidadeRendimento,
+      fornadasMinimas: 0 as const,
+      tempoProducaoMinutos:
+        dela?.tempoProducaoMinutos ?? ficha.tempoProducaoMinutos,
+      itens: ficha.itens.map((item) => {
+        const insumo = mapaInsumos.get(item.insumoId);
+        if (!insumo)
+          throw new Error(
+            `Insumo da biblioteca não encontrado: ${item.insumoId}`,
+          );
+        const custo = calcularCustoInsumo(insumo);
+        return {
+          insumoId: insumo.id,
+          nomeSnapshot: insumo.nome,
+          categoria: insumo.categoria,
+          quantidade: item.quantidade,
+          unidadeBase: custo.unidadeBase,
+          custoUnidadeBaseCorrigido: custo.custoUnidadeBaseCorrigido,
+        };
+      }),
+      componentes: [] as never[],
+      escolhas: [] as never[],
+      custoEscolhas: 0 as const,
+      operacional: parametros.operacional,
+      precificacao: parametros.precificacao,
+      precoVenda: dela?.precoHoje || null,
+    };
+  });
 
   return { insumos, fichas };
 }
