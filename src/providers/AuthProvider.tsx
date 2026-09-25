@@ -76,6 +76,11 @@ const MENSAGENS: Record<string, string> = {
   "auth/email-already-in-use":
     "Esse e-mail já tem conta. Entre com ele, ou toque em 'Esqueci minha senha' na tela de entrar.",
   "auth/weak-password": "A senha precisa ter pelo menos 6 caracteres.",
+  // O link do e-mail de senha nova (spec 042).
+  "auth/expired-action-code":
+    "Este link já foi usado ou venceu. Peça outro na tela de entrar.",
+  "auth/invalid-action-code":
+    "Este link já foi usado ou venceu. Peça outro na tela de entrar.",
 };
 
 /**

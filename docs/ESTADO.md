@@ -1,6 +1,7 @@
 # Estado do projeto
 
-Atualizado em 2026-09-25 (a **041 codificada**, a porta de volta: o login com o botão sempre
+Atualizado em 2026-09-25 (a **042 codificada**, a senha nova em `/redefinir-senha` e a entrada
+logo depois, `#d196` e `#d197`, com o passo 3 do console esperando o deploy da tela; a **041 codificada**, a porta de volta: o login com o botão sempre
 ativo, a senha à mostra, o erro com a saída, o aviso sem internet, a conta de exemplo no painel
 e a ajuda no pé das telas de acesso, `#d192` a `#d195`; a **040 codificada inteira**: a A, a calculadora pública em `/conheca`
 e na página do preço, com a configuração sugerida no domínio, `#d185` a `#d188`; a B, o rascunho
@@ -297,7 +298,7 @@ os números digitados de ponta a ponta.
 | 39  | Por que todo mês                            | escrita; espera capturas e depoimento | `specs/039-por-que-todo-mes.md`             |
 | 40  | A conta dela (A calculadora, B levar)       | A e B codificadas; não publicada      | `specs/040-a-conta-dela.md`                 |
 | 41  | A porta de volta                            | codificada; não publicada             | `specs/041-a-porta-de-volta.md`             |
-| 42  | A senha nova em casa                        | escrita                               | `specs/042-a-senha-nova-em-casa.md`         |
+| 42  | A senha nova em casa                        | codificada; console depois do deploy  | `specs/042-a-senha-nova-em-casa.md`         |
 | 43  | Entrar com o Google                         | escrita; pede aprovação antes         | `specs/043-entrar-com-o-google.md`          |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
@@ -3745,6 +3746,38 @@ de 360 a 1280 px, nenhum par de links fica a menos de 8 px.
 Portão: lint e typecheck limpos, **720 testes** (nenhum novo, como a spec pede), `npm run build`
 passa. `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 042 · A senha nova, em casa
+
+**Codificada em 2026-09-25**, no branch `feat/spec-041-a-porta-de-volta`, por cima da 041
+(`#d196`, `#d197`). Uma rota nova, nenhum campo, regra, índice ou dependência.
+
+- `src/app/(auth)/redefinir-senha/page.tsx`: `useSearchParams` sob `Suspense`; conferindo
+  (esqueleto), formulário ("Para {email}.", `CampoSenha` "Senha nova", "Salvar e entrar", a frase
+  do app instalado) e link que não serve (saída para `/login`). Sem rede na conferência, a frase
+  traduzida e "Tentar de novo". Senha salva e entrada caída: o próximo envio só entra.
+- `layout.tsx` da rota: `robots` `noindex, nofollow`. Fora do sitemap (a lista é explícita).
+- `MENSAGENS` do `AuthProvider`: `auth/expired-action-code` e `auth/invalid-action-code`.
+- `docs/DEPLOY.md` §10: os quatro passos do console.
+
+**Pendência de quem conduz o projeto, nesta ordem:** publicar a tela; **só então** o passo 3 do
+`DEPLOY.md` §10 (a URL de ação personalizada). Trocar a URL antes quebra a recuperação de quem
+pedir no meio. Os passos 1 e 2 (português, remetente, assunto, corpo) podem ir antes; o 4 espera
+o domínio próprio. **O roteiro (§5 da spec) não rodou**: o link aponta para o domínio do console,
+então ele roda na prévia da Vercel com o console apontando para ela, ou em produção depois do
+passo 3.
+
+O que rodou, no `next start` com Chrome sem cabeça pelo DevTools Protocol, a 390 × 844: um
+`oobCode` falso contra o Firebase de verdade dá o link que não serve (o passo 4 do roteiro, por
+tabela); `?mode=verifyEmail&oobCode=x` no tema escuro também (o passo 5); com o
+`identitytoolkit` bloqueado, a frase de sem conexão e "Tentar de novo". Sem rolagem lateral. A
+1280 × 800, o link que não serve com o painel. O formulário não foi visto: precisa de um código
+de verdade. Corrigido no caminho: a descrição do estado sem rede dizia "Conferindo o link." ao
+lado do erro; virou "Falta conferir o link do e-mail."
+
+Portão: lint e typecheck limpos, **720 testes** (nenhum novo, como a spec pede), `npm run build`
+passa com `/redefinir-senha` estática. `package.json`, `firestore.rules` e
+`firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -3755,13 +3788,15 @@ deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do 
 
 ## Próxima ação
 
-**A 041 está codificada** (seção acima). Antes de publicar: o número de WhatsApp em
+**A 042 está codificada** (seção acima). Publica junto com ou depois da 041; depois do deploy,
+o passo 3 do console (`DEPLOY.md` §10) e o roteiro da spec.
+
+**A 041 está codificada.** Antes de publicar: o número de WhatsApp em
 `RESPONSAVEL.whatsapp` (sem ele o link é o e-mail, e funciona), e os passos 1 e 3 do roteiro
 com aparelho de verdade (senha salva no Chrome do Android e no Safari do iPhone; leitor de
-tela). **Seguem escritas**, da mesma crítica do `/impeccable` sobre `/login` (21/40): a **042** (a senha nova no `/redefinir-senha`, com o e-mail do
-Firebase em português e com o nome do Rende; depende da 041) e a **043** (entrar com o Google;
-depende da 041 e do domínio próprio decidido, e quem conduz aprova antes por ser superfície de
-autenticação nova). Decisões reservadas para elas: `#d196` a `#d200`.
+tela). **Segue escrita**, da mesma crítica do `/impeccable` sobre `/login` (21/40), a **043**
+(entrar com o Google; depende da 041 e do domínio próprio decidido, e quem conduz aprova antes
+por ser superfície de autenticação nova). Decisões reservadas para ela: `#d198` a `#d200`.
 
 **A 040 está codificada inteira.** Publica junto com ou depois da 036 e da 037. Antes: o passo 6
 do roteiro da A com NVDA ou VoiceOver, o Lighthouse no celular de `/conheca`, e os passos 8 a 12

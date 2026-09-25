@@ -5990,3 +5990,56 @@ eles. Sem a coluna, entre 560 e 639 px os dois grupos cabiam numa linha, a 4 px 
 na sessão, e o link é o e-mail até ele entrar em `src/app/(auth)/responsavel.ts` (só dígitos,
 com DDI). WhatsApp pessoal serve enquanto são poucas contas; quando a ajuda virar volume,
 troca-se o número, não a tela.
+
+---
+
+## D196 · A senha nova se cria no Rende
+
+**Status:** vigente · decidida em 2026-09-25, na spec `042-a-senha-nova-em-casa.md`
+
+**Contexto.** O e-mail de "Esqueci minha senha" chegava de `noreply@{id}.firebaseapp.com` e o
+link abria a página branca do Firebase em `{id}.firebaseapp.com/__/auth/action`, com o id de
+antes da marca (`#d122`). Para quem nunca viu esse endereço, parecia golpe; e depois da senha
+nova a página parava, sem caminho de volta.
+
+**Decisão.** O modelo "Redefinição de senha" ganha URL de ação personalizada
+`https://{domínio do app}/redefinir-senha`. A página (`src/app/(auth)/redefinir-senha/`) lê
+`mode` e `oobCode`, confere com `verifyPasswordResetCode` e salva com `confirmPasswordReset`.
+Três estados: conferindo (o esqueleto do formulário, sem giro), formulário ("Para {email}.") e
+link que não serve (`auth/expired-action-code`, `auth/invalid-action-code`, `mode` diferente de
+`resetPassword` ou sem `oobCode`), com saída para `/login`. `auth/user-not-found` na conferência
+também é link que não serve: é a conta purgada depois do pedido (`#d148`), e a frase traduzida
+dele ("E-mail ou senha incorretos.") não faz sentido aqui. Qualquer outra falha na conferência
+(sem rede, na prática) mostra a frase traduzida e "Tentar de novo". `noindex` pelo layout da
+rota, que é server component: a URL carrega o código de uso único.
+
+Pesado e recusado: `continueUrl` no envio, mantendo a página do Firebase. Resolve o caminho de
+volta e deixa o endereço estranho e a página sem marca, que são o que parece golpe.
+
+**Consequência.** A URL personalizada vale para todos os modelos do projeto; hoje só a senha
+nova é enviada (`#d142`), e qualquer outro `mode` cai no "link que não serve". A ordem do deploy
+importa: a URL trocada no console antes da tela no ar quebra a recuperação de quem pedir no
+meio (`DEPLOY.md` §10). A página diz o e-mail da conta a quem tem o link, e o link só chega à
+caixa desse e-mail: `#d143` continua de pé.
+
+---
+
+## D197 · Depois da senha nova, ela já entrou
+
+**Status:** vigente · decidida em 2026-09-25, na spec `042-a-senha-nova-em-casa.md`
+
+**Decisão.** "Salvar e entrar": `confirmPasswordReset` e, em seguida, `entrar()` do
+`AuthProvider` (o `signInWithEmailAndPassword` de sempre) com o e-mail que a conferência devolveu
+e a senha que ela acabou de digitar; depois `router.replace("/")`. Validação no envio, como o
+login (`#d192`): vazia é "Escreva a senha nova.", menos de 6 é a frase de `auth/weak-password`.
+Como não há tela de sucesso, a frase do app instalado vem antes, embaixo do botão: o link do
+e-mail abre no navegador, não no app.
+
+Se a senha salvou e a entrada caiu (a rede no meio dos dois passos), a tela diz que a senha está
+salva, e o "Salvar e entrar" seguinte só entra: o código já foi gasto, e mandar de novo daria
+"link já usado" para quem acabou de trocar a senha. Um `input` escondido com
+`autocomplete="username"` e o e-mail dela diz ao gerenciador de senhas de quem é a senha nova.
+
+**Consequência.** Quem abre o link num navegador em que outra conta está aberta entra na conta
+do link, sem passar pelo `sair()` que apaga o cache local (`#d118`). Não foi tratado: hoje as
+contas são uma por pessoa e por aparelho; se o caso aparecer, a tela pede para sair antes.

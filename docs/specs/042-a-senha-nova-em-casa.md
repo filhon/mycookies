@@ -132,11 +132,11 @@ na prévia da Vercel com o console apontando para ela, ou em produção depois d
 
 ## Critérios de aceite
 
-- [ ] `/redefinir-senha` com os três estados, `noindex`, sem Firebase fora dos três métodos de auth.
-- [ ] Senha nova salva e entrada automática; link vencido ou usado com saída para `/login`.
-- [ ] `docs/DEPLOY.md` com os quatro passos e a ordem (tela antes da URL).
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `package.json` e `firestore.rules` intocados.
-- [ ] `#d196` e `#d197` escritos; `ESTADO.md` atualizado, com o passo 3 do console como pendência.
+- [x] `/redefinir-senha` com os três estados, `noindex`, sem Firebase fora dos três métodos de auth.
+- [x] Senha nova salva e entrada automática; link vencido ou usado com saída para `/login`.
+- [x] `docs/DEPLOY.md` com os quatro passos e a ordem (tela antes da URL).
+- [x] `lint`, `typecheck`, `test` e `build` passam; `package.json` e `firestore.rules` intocados.
+- [x] `#d196` e `#d197` escritos; `ESTADO.md` atualizado, com o passo 3 do console como pendência.
 
 ---
 

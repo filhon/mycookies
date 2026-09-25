@@ -299,6 +299,26 @@ Depois do deploy, o passo 5 do roteiro da spec: colar o link de `/conheca` numa 
 WhatsApp consigo mesmo e ver a imagem. O WhatsApp guarda a prévia por endereço: se a primeira
 colagem veio sem imagem, testar com `?v=1` no fim.
 
+## 10 · E-mail de senha nova (spec 042)
+
+O e-mail de "Esqueci minha senha" com o nome do Rende, e o link abrindo `/redefinir-senha` em
+vez da página do Firebase (`DECISOES.md#d196`). No console do Firebase, nesta ordem:
+
+1. **Authentication → Modelos → Redefinição de senha** → idioma **português (Brasil)**.
+2. Nome do remetente **Rende**; assunto **"Sua senha nova do Rende"**; corpo:
+
+   > Alguém pediu uma senha nova para a sua conta no Rende. Se foi você, toque no link.
+   > Se não foi, ignore este e-mail: a senha de hoje continua valendo.
+
+3. **URL de ação personalizada:** `https://{domínio do app}/redefinir-senha`. **Só depois do
+   deploy da tela**: trocar antes quebra a recuperação de quem pedir no meio. A URL vale para
+   todos os modelos do projeto; hoje só a senha nova é enviada.
+4. **Com o domínio próprio no ar:** domínio personalizado do remetente (os registros de DNS que
+   o console pede). Sem ele o remetente continua `firebaseapp.com` e o spam continua possível.
+
+Se o domínio do app mudar depois (o domínio próprio chegando), a URL do passo 3 muda junto: é
+uma linha no console. Depois do passo 3, o roteiro da spec 042, §5.
+
 ## Limites conhecidos
 
 **O arquivo da nota tem dois tetos, e o menor não é o nosso.** `LIMITE_ARQUIVO_BYTES` é 8 MB
