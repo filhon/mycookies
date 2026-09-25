@@ -1,6 +1,7 @@
 import { TrendingDown } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CalculadoraDaPorta } from "@/components/site/CalculadoraDaPorta";
 import { ContaAberta } from "@/components/site/ContaAberta";
 import { Rodape, Topo } from "@/components/site/Moldura";
 import { Dinheiro } from "@/components/ui/Dinheiro";
@@ -279,8 +280,32 @@ export default function PaginaComoCalcular() {
                   lado.
                 </p>
               </section>
+            </div>
+          </div>
 
-              <section aria-labelledby="erro" className="mt-16">
+          {/* A calculadora sai da coluna de leitura: tem a sua própria conta
+              ao lado, e a do exemplo, grudada até aqui, fica para trás (spec
+              040, `#d187`). Sem JavaScript ela é o HTML do padrão, parada, e
+              o texto em volta continua inteiro. */}
+          <section
+            id="sua-conta"
+            aria-labelledby="sua-conta-titulo"
+            className="mt-16 scroll-mt-4 border-t border-line pt-16"
+          >
+            <h2 id="sua-conta-titulo" className={TITULO_H2}>
+              Faça a conta do seu cookie
+            </h2>
+            <p className="mt-4 max-w-[68ch] text-body text-ink">
+              O cookie do exemplo custa <Valor centavos={custo.custoUnitario} />
+              . O seu é outro: troque o que for diferente na sua cozinha, e a
+              conta refaz na hora, do mesmo jeito que o Rende faz.
+            </p>
+            <CalculadoraDaPorta className="mt-10" />
+          </section>
+
+          <div className="mt-16 border-t border-line pt-16">
+            <div className="max-w-[68ch]">
+              <section aria-labelledby="erro">
                 <h2 id="erro" className={TITULO_H2}>
                   O erro mais comum: somar a porcentagem em cima do custo
                 </h2>

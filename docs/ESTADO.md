@@ -1,6 +1,8 @@
 # Estado do projeto
 
-Atualizado em 2026-09-24 (a **039 codificada**, a seção "depois do preço" esperando as três
+Atualizado em 2026-09-25 (a **040-A codificada**, a calculadora pública em `/conheca` e na
+página do preço, com a configuração sugerida no domínio, `#d185` a `#d188`; a 040-B, levar a conta
+para dentro da conta nova, é a próxima sessão; a **039 codificada**, a seção "depois do preço" esperando as três
 capturas, o preço do plano em cookies e a imagem de prévia das duas páginas públicas, `#d181` a
 `#d184`; a **038 codificada**, a visita contada pela Vercel nas páginas
 públicas e no cadastro, `#d180`; a **037 codificada**, a página do preço e o mapa para a busca,
@@ -3579,6 +3581,79 @@ estáticas. `package.json`, `firestore.rules` e `firestore.indexes.json` intocad
 esperam as capturas; o 3 (a linha dos cookies com o Stripe) e o 4 (as nove dúvidas) pedem
 navegador; o 5 (a prévia no WhatsApp) pede o deploy.
 
+## A spec 040 · A conta dela — sessão A, a calculadora
+
+**Codificada em 2026-09-25**, no mesmo branch (`feat/spec-040-a-conta-dela`), por cima da 039
+(`#d185` a `#d188`). Publicável sozinha, junto com ou depois da 036 e da 037.
+
+- `src/lib/domain/configuracaoSugerida.ts`: `CONFIGURACAO_SUGERIDA`, `rateioSugerido()`,
+  `precificacaoSugerida()` e `parametrosDePreco()` (o mapa configuração → parâmetros, que as duas
+  origens usam). `DadosConfiguracao` foi para `src/lib/types/configuracao.ts`.
+  `firebase/mutations/configuracao.ts` importa de lá e reexporta `CONFIGURACAO_SUGERIDA` e o tipo:
+  nenhum importador mudou. Mudança de lugar, sem mudança de valor (`#d186`).
+- `src/lib/domain/calculadora.ts`: `entradaPadrao`, `trocarReceita`, `contaDaPorta` e
+  `RECEITAS_DA_PORTA`. `ContaDaPorta.materiais` ganhou `padrao` além do que a spec lista, para o
+  campo dizer o preço médio quando ela zera o pacote.
+- `src/components/site/CalculadoraDaPorta.tsx`: client component; `Pilulas`, `Campo`,
+  `CampoMoeda`, `Parcela`, `FaixaDeComposicao` e `Dinheiro` do app. **Conferido (seção 2, passo
+  4): nenhum deles importa Firebase**, e `rg "@/lib/firebase" src/components/site
+src/lib/domain/calculadora.ts src/lib/domain/configuracaoSugerida.ts` sai vazio.
+- `/conheca`: a seção `#sua-conta` depois do topo, âncora "Sua conta"; o botão do topo virou
+  "Fazer a conta do meu cookie" → `#sua-conta`, com "Leva um minuto, sem cadastro"; o convite do
+  teste no fim da calculadora, com "Sem cartão · funciona offline, na bancada" (vira o link para
+  `#depois` sozinho quando `TELAS_DO_MES` tiver as capturas).
+- `/como-calcular-o-preco-do-cookie`: a calculadora entre "Margem e maquininha" e "O erro mais
+  comum", fora da coluna de leitura (a grade da `ContaAberta` grudada termina antes dela).
+
+**Os números do padrão**, pelas funções (margem 35% + crédito 4,99%, `CENTAVO_90`): clássico
+R$ 3,30 → R$ 5,90, sobram R$ 2,31; recheado R$ 7,19 → R$ 12,90, sobram R$ 5,07. O teste prende que
+são os mesmos da ficha que a biblioteca instala.
+
+**Fora da letra da spec, com motivo:**
+
+1. **A barra fixa do celular começa nas dúvidas, e não mais depois do depoimento.** Medido com
+   varredura de rolagem de 20 em 20 px: a 390 × 844, o convite do fim da calculadora e a barra
+   ficavam juntos na tela por 240 px de rolagem (dois âmbar). Começando nas dúvidas, a barra entra
+   com os cartões de preço ainda à vista, e a varredura dá zero sobreposição a 360 × 640,
+   390 × 844, 430 × 932 e 1280 × 800. O botão da seção de preço continua `hidden lg:flex`. Isto
+   substitui o item 1 da nota da 036 acima.
+2. **"Quanto tempo leva, da massa ao forno desligado" virou rótulo curto mais dica**, para o campo
+   do tempo alinhar com o do rendimento ao lado (`#d188`).
+
+**Roteiro (seção 5, 040-A), rodado no `next start` com Chrome sem cabeça pelo DevTools Protocol**
+(emulação de aparelho: a 390 px sem o `<iframe>` da 037):
+
+1. Feito: o botão do topo leva a `#sua-conta`; custo e preço aparecem sem tocar em nada.
+2. Feito: recheado muda rendimento (12), tempo (90) e materiais; a hora fica.
+3. Feito: manteiga a R$ 24 sobe o recheado de R$ 7,19 / R$ 12,90 para R$ 8,19 / R$ 13,90.
+4. Feito, no recheado com a manteiga a R$ 24: R$ 3,00 perde R$ 5,34 (ícone, "perde", cor) e
+   "Vendendo 100 por mês, são R$ 1.036 a mais"; R$ 6,00 perde R$ 2,49 e R$ 751 no mês; R$ 20,00
+   "já cobre a conta", sem o mês. No clássico, R$ 6,00 fica acima do sugerido (R$ 5,90) e cobre.
+5. Feito: rendimento vazio troca o resultado pelo pedido do número, com o triângulo; nenhum `NaN`
+   na página.
+6. **Não rodou com leitor de tela.** Conferido só o conteúdo da região `aria-live`: nada ao abrir,
+   e uma frase ("Falta dizer quantos cookies saem da receita.", ou custo e preço) 700 ms depois da
+   última tecla. NVDA ou VoiceOver fica para quem conduz o projeto.
+7. Feito: na página do preço a calculadora fica entre as duas seções; com o JavaScript desligado
+   ela é o HTML do padrão, e "O erro mais comum" e as perguntas continuam no texto.
+
+Os dois temas vistos a 390 e a 1280. **O peso da página** (spec, "Riscos"): o JS que o HTML de
+`/conheca` carrega passou de 391,5 KB para 411,4 KB gzip (+19,9 KB: o componente, o domínio da
+biblioteca, `tailwind-merge` e os ícones); a página do preço, de 387,0 KB para 406,3 KB. O grosso
+dos 391 KB já estava lá: é o Firebase que o `AuthProvider` do layout raiz carrega (a dívida já
+anotada na 036). O Next 16 não imprime mais "First Load JS" no build; o número é a soma dos
+`<script src>` do HTML gerado. **O Lighthouse no celular não rodou** (pede navegador de verdade,
+com rede); fica para quem conduz o projeto, com o da 037.
+
+Portão: lint e typecheck limpos, **710 testes** (698 + 12), `npm run build` com `/conheca` e a
+página do preço estáticas. Uma rodada do `npm test` saiu com as 27 suítes falhando sem executar
+teste nenhum, logo depois de derrubar o `next start`; as três seguintes passaram inteiras, sem
+mudança de código entre elas. `package.json`, `firestore.rules` e `firestore.indexes.json`
+intocados.
+
+**Fora do que esta sessão fez:** o texto do depoimento em `src/app/conheca/page.tsx` mudou no
+disco durante a sessão ("Eu tinha um produto muito gostoso…"), e ficou como veio.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -3588,6 +3663,11 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 040-B é a próxima sessão** (`specs/040-a-conta-dela.md`, seção 4): o rascunho no aparelho, o
+botão da biblioteca que o instala, e a `origem` da conta, `#d189` a `#d191`. A 040-A publica
+sozinha, junto com ou depois da 036 e da 037; antes, o passo 6 do roteiro com NVDA ou VoiceOver e
+o Lighthouse no celular de `/conheca`, com a nota de desempenho anotada na seção da 040.
 
 **A 039 publica junto com ou depois da 036 e da 037** (`docs/DEPLOY.md` § 9). Antes, as três
 capturas da conta de demonstração em `public/site/` e `TELAS_DO_MES` preenchido (seção da 039,

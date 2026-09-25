@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { CalculadoraDaPorta } from "@/components/site/CalculadoraDaPorta";
 import { ContaAberta } from "@/components/site/ContaAberta";
 import { Rodape, Topo } from "@/components/site/Moldura";
 import { Dinheiro } from "@/components/ui/Dinheiro";
@@ -100,7 +101,7 @@ const DEPOIMENTO: {
   foto?: string;
 } = {
   texto:
-    "Eu sabia fazer um cookie muito gostoso, mas não sabia como precificar. O Rende me ajudou nisso e em muito mais. Agora tenho tudo organizado e a certeza de que estou cobrando o valor certo.",
+    "Eu tinha um produto muito gostoso, mas não sabia como precificar. O Rende me ajudou nisso e em muito mais. Agora tenho tudo organizado e a certeza de que estou cobrando o valor certo.",
   nome: "Maynara",
   origem:
     "O Rende nasceu na cozinha da MyCookie's. Tudo o que ele sabe sobre a bancada veio de ver a Maynara trabalhar.",
@@ -208,6 +209,7 @@ const DUVIDAS = [
 
 const ANCORAS = [
   { href: "#conta", rotulo: "A conta" },
+  { href: "#sua-conta", rotulo: "Sua conta" },
   ...(temTelasDoMes ? [{ href: "#depois", rotulo: "Depois do preço" }] : []),
   { href: "#quem", rotulo: "Quem usa" },
   { href: "#preco", rotulo: "Preço" },
@@ -264,38 +266,44 @@ export default async function PaginaConheca() {
               o preço, sugere quanto cobrar e diz, em reais, quanto sobra pra
               você.
             </p>
-            <Link
-              href="/cadastro"
+            {/* O convite do teste passou para o fim da calculadora, onde ele
+                faz sentido (`#d187`). */}
+            <a
+              href="#sua-conta"
               className={classesBotao({
                 variante: "primaria",
                 tamanho: "lg",
                 className: "mt-8 w-full sm:w-auto lg:h-14 lg:px-6",
               })}
             >
-              Começar o teste de {DIAS_DE_TESTE} dias
-            </Link>
+              Fazer a conta do meu cookie
+            </a>
             <p className="mt-3 text-label text-ink-muted">
-              Sem cartão · funciona offline, na bancada
+              Leva um minuto, sem cadastro
             </p>
           </section>
 
           <ContaAberta />
         </div>
 
+        <SuaConta />
+
         {temTelasDoMes && <DepoisDoPreco />}
 
         {temDepoimento && <QuemJaUsa />}
 
+        <Preco
+          precos={precos}
+          precoDoCookie={sugerido.ok ? sugerido.precoArredondado : 0}
+        />
+
         {/* A barra do celular é o último filho deste bloco, `sticky` no pé:
             só aparece depois que ele entra na tela e descansa acima do rodapé.
-            O bloco começa depois do depoimento, e não logo depois da conta:
-            no celular a conta termina perto demais do botão da frase, e os
-            dois âmbar apareceriam juntos (ver `ESTADO.md`, spec 036). */}
+            O bloco começa nas dúvidas: a barra entra quando elas chegam ao pé
+            da tela, com os cartões de preço ainda à vista. Começando no preço,
+            ela aparecia junto com o botão do fim da calculadora (spec 040,
+            medido a 390 × 844; ver `ESTADO.md`), e dois âmbar juntos é erro. */}
         <div>
-          <Preco
-            precos={precos}
-            precoDoCookie={sugerido.ok ? sugerido.precoArredondado : 0}
-          />
           <Duvidas />
           <BarraDoCelular />
         </div>
@@ -314,6 +322,65 @@ export default async function PaginaConheca() {
 
       <Rodape />
     </>
+  );
+}
+
+/**
+ * A conta do cookie dela (spec 040, `#d187`): logo depois do topo, com o
+ * convite do teste no fim, onde ele faz sentido. O exemplo do topo continua
+ * parado, com os 40% + 5% dele; a calculadora diz a margem que usa (`#d186`).
+ */
+function SuaConta() {
+  return (
+    <section
+      id="sua-conta"
+      aria-labelledby="sua-conta-titulo"
+      className="mx-auto max-w-6xl scroll-mt-4 px-4 pb-16 lg:px-10 lg:pb-24"
+    >
+      <div className="border-t border-line pt-16 lg:pt-24">
+        <h2
+          id="sua-conta-titulo"
+          className="max-w-[24ch] text-balance font-display text-[1.75rem] leading-[1.15] font-bold tracking-[-0.02em] text-ink lg:text-[2.375rem]"
+        >
+          Agora a conta do seu cookie
+        </h2>
+        <p className="mt-4 max-w-[52ch] text-body text-ink-muted lg:text-subheading">
+          Troque o que for diferente na sua cozinha e ponha o preço que você
+          cobra hoje. É a mesma conta que o Rende faz depois que você entra.
+        </p>
+
+        <CalculadoraDaPorta className="mt-10 lg:mt-14">
+          <div className="flex flex-col gap-3">
+            <Link
+              href="/cadastro"
+              className={classesBotao({
+                variante: "primaria",
+                tamanho: "lg",
+                larguraTotal: true,
+                className: "lg:h-14",
+              })}
+            >
+              Começar o teste de {DIAS_DE_TESTE} dias
+            </Link>
+            <p className="text-center text-label text-ink-muted">
+              {temTelasDoMes ? (
+                <>
+                  Sem cartão.{" "}
+                  <a
+                    href="#depois"
+                    className="font-medium text-brand-ink underline underline-offset-4"
+                  >
+                    Veja o que acontece depois do preço
+                  </a>
+                </>
+              ) : (
+                "Sem cartão · funciona offline, na bancada"
+              )}
+            </p>
+          </div>
+        </CalculadoraDaPorta>
+      </div>
+    </section>
   );
 }
 

@@ -5750,3 +5750,98 @@ quando `DEPOIMENTO.texto` fica vazio.
 
 **Consequência.** Se a Maynara preferir não aparecer como origem, `origem` sai e o depoimento
 fica.
+
+---
+
+## D185 · A calculadora parte das receitas da biblioteca, e só faz cookie
+
+**Status:** vigente · decidida em 2026-09-25, na spec 040 (sessão A)
+
+**Contexto.** O número de `/conheca` é o do exemplo (`#d173`). A visitante lê, concorda e vai
+embora: nada nela é dela.
+
+**Decisão.** Uma calculadora pública sobre as duas receitas de `FICHAS_DA_BIBLIOTECA`, com o que
+muda de cozinha para cozinha editável: o rendimento, o tempo, a hora e o preço de cada pacote. As
+quantidades não mudam na página. `contaDaPorta` (`src/lib/domain/calculadora.ts`) monta os itens
+como `montarBiblioteca` monta, com o preço dela onde houver (`calcularCustoInsumo` sobre o
+material com o `precoCompra` dela), e chama `derivarFicha`; a única conta nova é `aMaisNoMes`.
+Pesados e recusados: campos soltos ("quanto você gasta de ingrediente no lote" é o número que ela
+não sabe, e não vira ficha) e a receita linha a linha (é o editor do app numa página de venda).
+Só cookie porque a página do preço é do cookie (`#d176`) e a biblioteca só tem cookie.
+
+**Consequência.** `tests/domain/calculadora.test.ts` prende que, para as duas receitas, a página e
+a ficha que a biblioteca instala dão o mesmo custo por unidade e o mesmo preço arredondado. Se a
+regra de preço, a biblioteca ou a configuração sugerida mudarem, o teste quebra antes da promessa.
+Brigadeiro e bolo entram quando a biblioteca os tiver; a calculadora não ganha campo solto.
+
+---
+
+## D186 · A sugestão da calculadora é a da conta nova, e a configuração sugerida mora no domínio
+
+**Status:** vigente · decidida em 2026-09-25, na spec 040 (sessão A)
+
+**Contexto.** O exemplo do topo usa 40% de margem + maquininha 5% (`#d173`). A conta nova nasce com
+35%, a maior taxa ativa das formas sugeridas (crédito, 4,99%) e `CENTAVO_90`.
+
+**Decisão.** A calculadora usa a configuração da conta nova: é o preço que ela vai ver no app
+depois de criar a conta, e dois números para o mesmo cookie fariam ela desconfiar dos dois. O
+bloco do resultado diz a margem e a maquininha em uma linha, como a `ContaAberta` diz as dela; o
+exemplo do topo fica como está. `CONFIGURACAO_SUGERIDA`, `rateioSugerido()`,
+`precificacaoSugerida()` e `parametrosDePreco()` saíram de `firebase/mutations/configuracao.ts`
+para `src/lib/domain/configuracaoSugerida.ts`, e o tipo `DadosConfiguracao` para
+`src/lib/types/configuracao.ts`: a calculadora é pública e não pode puxar Firebase. O arquivo de
+mutações importa de lá e reexporta os dois nomes; `rateioDaConta(null)` e
+`precificacaoPadraoDaConta(null)` chamam as funções novas. Mudança de lugar, sem mudança de valor:
+os testes da biblioteca, do custo da ficha e do preço passaram sem ninguém tocar neles.
+
+**Consequência.** Mudar a sugestão da conta nova muda a página no mesmo commit, e o teste do
+`#d185` confere que continuam iguais.
+
+---
+
+## D187 · Uma seção própria logo depois do topo; o exemplo do topo fica
+
+**Status:** vigente · decidida em 2026-09-25, na spec 040 (sessão A)
+
+**Decisão.** Em `/conheca`, o `h1` com o exemplo e a `ContaAberta` continuam a primeira coisa: é a
+frase da marca e o que a busca lê. A calculadora é a seção seguinte, `id="sua-conta"`, "Agora a
+conta do seu cookie", com a âncora "Sua conta" no `Topo`. O botão do topo muda de texto e de
+destino, **"Fazer a conta do meu cookie" → `#sua-conta`**, e continua primário: o convite do teste
+("Começar o teste de 14 dias") passa para o fim da calculadora, embaixo do resultado, onde ele faz
+sentido. No desktop o resultado fica grudado à direita enquanto ela rola os materiais; o convite
+vai grudado com ele. Na página do preço, a calculadora entra depois de "Margem e maquininha" e
+antes de "O erro mais comum", com "Faça a conta do seu cookie", **fora da coluna de leitura**: a
+grade da `ContaAberta` grudada termina antes dela, e o resto do artigo volta à coluna de 68ch.
+Duas contas lado a lado (a do exemplo e a dela) seriam dois resultados para ler.
+
+A barra fixa do celular em `/conheca` passou a começar nas dúvidas: começando no preço, ela ficava
+na tela junto com o convite da calculadora a 390 × 844 (medido; `ESTADO.md`, seção da 040).
+
+**Consequência.** Sem JavaScript a calculadora é o HTML do padrão (o clássico, sem preço de hoje),
+parada, e o texto em volta está inteiro: o robô lê a resposta como antes. O primeiro parágrafo da
+página do preço continua sendo a resposta (`#d176`).
+
+---
+
+## D188 · O que ela pode trocar e o que ela vê
+
+**Status:** vigente · decidida em 2026-09-25, na spec 040 (sessão A)
+
+**Decisão.** Entradas, todas preenchidas: o cookie (pílulas), quantos saem, quanto tempo leva (a
+dica diz "da massa ao forno desligado"), a hora (o sugerido, R$ 25), o preço de cada pacote num
+`<details>` fechado, o preço de hoje (vazio) e, só com ele, as vendas do mês (100). Trocar de
+cookie volta rendimento, tempo e preços ao padrão daquele e mantém a hora, o preço de hoje e as
+vendas (`trocarReceita`). Preço de pacote zerado vale o médio, e o campo diz isso; rendimento
+vazio troca o resultado por "Diga quantos cookies saem da receita e a conta aparece aqui", com o
+triângulo, e nunca R$ 0,00. Saídas a cada tecla, sem botão: as parcelas por cookie e a faixa, o
+custo por cookie, o preço sugerido com o ponto âmbar e o quanto sobra nele; com o preço de hoje,
+uma de três frases (perde, com `trending-down`, a palavra e a cor negativa; sobra menos que no
+sugerido; já cobre a conta, sem alarme) e, abaixo do sugerido, "Vendendo {n} por mês, são R$ {x} a
+mais pra você no preço sugerido", em reais redondos. O leitor de tela ouve só o custo e o preço,
+700 ms depois da última tecla, e nada ao abrir a página.
+
+**Fora da letra da spec.** "Quanto tempo leva, da massa ao forno desligado" virou rótulo curto
+mais dica: com o rótulo inteiro, o campo do tempo ficava uma linha abaixo do do rendimento ao lado.
+
+**Consequência.** A faixa e o ponto convivem no resultado pelo mesmo motivo da `ContaAberta`
+(`#d126`): é a reprodução do editor, com dado de verdade.

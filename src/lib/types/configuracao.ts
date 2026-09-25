@@ -108,6 +108,32 @@ export interface ConfiguracaoGeral {
 }
 
 /**
+ * O que a tela de configuração entrega. `custoIndiretoPorHora` fica de fora de
+ * propósito: é derivado, e derivado é calculado na escrita, nunca digitado
+ * (`DECISOES.md#d04`). Mora aqui desde a 040, com o resto do schema: a
+ * configuração sugerida, que tem esta forma, saiu para o domínio.
+ */
+export interface DadosConfiguracao {
+  /**
+   * Espelho de `contas/{contaId}.nome`, que é onde o nome do negócio de fato
+   * mora desde D14. Ausente quando a tela ainda não sabe o valor: espelho que
+   * não conhece o original não escreve por cima dele.
+   */
+  nomeNegocio?: string;
+  operacional: Omit<CustosOperacionais, "custoIndiretoPorHora">;
+  precificacao: PrecificacaoPadrao;
+  formasPagamento: FormaPagamento[];
+  categoriasProduto: string[];
+  /** O rodapé e a assinatura da folha do orçamento (spec 017). */
+  contato?: ConfiguracaoGeral["contato"];
+  assinaturaDataUrl?: string;
+  /** A frase dela no rodapé (`#d127`). */
+  frase?: string;
+  /** Tira o "feito com Rende" da folha (spec 028, `#d147`). */
+  ocultarFeitoCom?: true;
+}
+
+/**
  * A cara da loja no cardápio público (spec 031, sessão F, `DECISOES.md#d166`):
  * `contas/{contaId}/configuracao/vitrine`. Documento à parte de `geral` porque
  * as imagens pesam, e `geral` sobe com o app inteiro. Só a página pública e o
