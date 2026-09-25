@@ -6136,3 +6136,122 @@ cookies" leem o Stripe (`lerPrecos`). O que muda são as quatro `STRIPE_PRICE_*`
 e na Vercel, com redeploy; até lá, a produção aponta para preços arquivados e o checkout falha.
 Os números antigos em specs e decisões anteriores ficam como estavam, porque são história;
 `MARCA.md` foi atualizada.
+
+---
+
+## D202 · E-mail próprio, pelo Resend, por `fetch`
+
+**Status:** vigente · decidida em 2026-09-25, na spec `044-o-rende-escreve.md`
+
+**Contexto.** Fora do app o Rende não dizia nada: o único e-mail com o nome dele era o modelo de
+senha do Firebase. A 028 e a 042 tinham posto e-mail próprio fora de escopo por ser "dependência
+e conta nova".
+
+**Decisão.** Conta nova no Resend, sem dependência: `enviarEmail` (`src/lib/server/email.ts`) é
+um `POST https://api.resend.com/emails` com `Authorization: Bearer RESEND_API_KEY` e o cabeçalho
+`Idempotency-Key`. Devolve `"enviado" | "repetido" | "falhou"` e nunca lança: e-mail é
+consequência, nunca o motivo de uma rota falhar. O 409 do Resend (chave já usada, com outro corpo
+ou em andamento) é `"repetido"`. Sem a chave, `"falhou"` e um `console.warn`, sem o endereço no
+log. Pesados e recusados: o SDK `resend` (embrulha o mesmo `fetch`) e o `react-email` (um
+renderizador para cinco peças fixas, já escritas em HTML).
+
+**Consequência.** O plano grátis manda 100 por dia e 3.000 por mês; passando de noventa contas com
+caixa, o Pro. A boas-vindas sai de `/api/conta` por `after()`, só no ramo em que o documento da
+conta nasce, com a chave `boas-vindas/{contaId}`: a resposta do cadastro não espera o e-mail, e a
+volta que repete o POST não manda outro.
+
+---
+
+## D203 · As peças são HTML de e-mail escrito à mão
+
+**Status:** vigente · decidida em 2026-09-25, na spec `044-o-rende-escreve.md`
+
+**Decisão.** Tabelas, estilo inline, 560 px, e o molde aprovado em `docs/specs/044-emails/`.
+`src/lib/email/pecas.ts` tem a moldura, os pedaços que se repetem e as cinco funções puras
+`(dados) => { assunto, preheader, html, texto }`, com `escapar()` em todo texto que veio dela e
+dinheiro e datas pelas funções de `domain/`. A faixa de tinta no topo com o logotipo creme em PNG
+**opaco** (`public/email/rende.png`): o Gmail do Android inverte as cores no tema escuro e não
+inverte a imagem. `color-scheme: light only` e nenhum tema escuro próprio. Archivo e Figtree pelo
+Google Fonts onde o cliente deixa; o nome da marca é imagem. Os tokens de `globals.css` estão
+escritos em hex no topo do arquivo, porque e-mail não lê variável de CSS: é a única exceção à
+regra de não soltar cor.
+
+As variações que os moldes não mostravam e a sessão A decidiu no caminho: "Batida no dia 30" diz
+"Entrou em {mês}" sem "até agora"; meta alcançada exata diz "Bem na meta de…"; no mês fechado, a
+meta não batida é "faltaram R$ …" em tinta, sem verde; "Pedidos" some com zero pedido; e os
+singulares ("1 dia", "o seu produto").
+
+**Consequência.** Mudança de desenho volta para aprovação de quem conduz o projeto. O
+`rende-principal.png` da marca, que tinha perdido o "rende" (o Archivo não estava instalado quando
+foi gerado), foi refeito pelo Chrome com o Archivo do Google Fonts e o desenho do `Logotipo`.
+
+---
+
+## D204 · A senha nova sai pelo Resend, e o Firebase fica de reserva
+
+**Status:** vigente · decidida em 2026-09-25, na spec `044-o-rende-escreve.md`
+
+**Decisão.** `POST /api/senha` com `{ email }` (`z.email()`), sem login. Sem conta: `{ ok: true }`
+e nada sai (`#d143`). Com conta: `generatePasswordResetLink`, e do link só o `oobCode`; o link do
+e-mail é `{URL_DO_SITE}/redefinir-senha?mode=resetPassword&oobCode=…&lang=pt-BR`, a tela da 042,
+qualquer que seja a URL de ação do console. `Idempotency-Key: senha/{uid}/{bloco de 10 min}`:
+cinco toques seguidos, um e-mail. Qualquer falha do caminho novo (sem credencial, sem chave, cota,
+5xx, rede) é `503 { reserva: true }`, e o login chama `sendPasswordResetEmail` como antes. Corpo
+fora de forma é 400, e o login também cai na reserva, que dá a frase do Firebase para e-mail
+inválido.
+
+**Consequência.** O modelo do Firebase da 042 continua existindo, agora como reserva. Com o Resend
+fora do ar, "e-mail com conta" responde `reserva` e "sem conta" responde `ok`: a tela é a mesma,
+e só um script que lê a resposta perceberia.
+
+---
+
+## D205 · Um cron por dia, e nenhum marcador gravado: o dia decide
+
+**Status:** vigente · decidida em 2026-09-25, na spec `044-o-rende-escreve.md`; código na sessão B
+
+**Decisão.** `vercel.json` com `0 12 * * *` (9h em São Paulo) para `GET /api/emails/diario`,
+protegido por `CRON_SECRET`. Teste acabando quando o dia de `trialAte` é daqui a exatamente 3
+dias; meta batida quando o dia em que a soma de `porDia[].entradas` alcançou o alvo foi ontem;
+mês fechado no dia 2, quando o mês anterior teve entrada ou pedido. Nenhum campo "avisado em":
+cada condição é verdadeira em um dia só. A `Idempotency-Key` `{modelo}/{contaId}/{período}` cobre
+a mesma rodada chamada duas vezes.
+
+**Consequência.** O dia em que o cron não rodar é o dia cujos avisos não saem; o teste continua
+avisado pela linha da tela Hoje. Um lançamento sincronizado depois do dia em que a meta bateu faz
+o aviso não sair, e nunca sair em dobro.
+
+---
+
+## D206 · Quem recebe é a dona, no e-mail do login
+
+**Status:** vigente · decidida em 2026-09-25, na spec `044-o-rende-escreve.md`; código na sessão B
+
+**Decisão.** O endereço vem do Auth (`listUsers` e a claim `DONA`, o caminho de
+`scripts/metricas.mjs`), e não de um campo na conta, que envelheceria quando ela trocasse de
+login. A ajudante não recebe nada. A conta liberada à mão recebe meta e mês, nunca "teste
+acabando". Conta `ENCERRADA` não recebe nada. A boas-vindas vai para o `email` do login que acabou
+de criar a conta.
+
+---
+
+## D207 · Dois avisos se desligam; três não
+
+**Status:** vigente · decidida em 2026-09-25, na spec `044-o-rende-escreve.md`; código na sessão B
+
+**Decisão.** Meta batida e mês fechado são notícia: `Conta.avisosPorEmail?: false` (ausente =
+recebe) e uma caixa em `/configuracao#avisos`, e o rodapé das duas peças diz onde desligar.
+Boas-vindas, senha nova e teste acabando são do funcionamento da conta e não se desligam. Sem
+`List-Unsubscribe` de um toque: o Gmail e o Yahoo só o exigem acima de 5.000 por dia, e ele pede
+rota com token assinado.
+
+---
+
+## D208 · O remetente
+
+**Status:** vigente · decidida em 2026-09-25, na spec `044-o-rende-escreve.md`
+
+**Decisão.** `Rende <ola@rendeapp.com.br>`, com `reply_to` em `RESPONSAVEL.email`. A boas-vindas,
+assinada pelo Filipe, convida a responder, e quem responde fala com uma pessoa; `ola@` não precisa
+de caixa. Rastreamento de abertura e de clique **desligados** no domínio do Resend: o de clique
+reescreve os links, e o link da senha carrega um código de uso único (`DEPLOY.md` § 12).

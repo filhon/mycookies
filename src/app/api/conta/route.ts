@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { Timestamp } from "firebase-admin/firestore";
 import {
   esquemaCadastro,
@@ -8,6 +8,9 @@ import {
   type Cadastro,
   type FalhaCadastro,
 } from "@/lib/domain/cadastro";
+import { hojeEmBrasilia } from "@/lib/domain/datas";
+import { boasVindas } from "@/lib/email/pecas";
+import { enviarEmail } from "@/lib/server/email";
 import {
   adminAuth,
   adminDb,
@@ -98,6 +101,18 @@ async function garantirConta(uid: string, cadastro: Cadastro): Promise<string> {
       ...(cadastro.origem && { origem: cadastro.origem }),
       v: VERSAO_SCHEMA,
     });
+    // Só quando a conta nasce, e depois da resposta: o cadastro não espera o
+    // e-mail (spec 044, `#d202`). A chave segura a volta que repete o POST.
+    const para = usuario.email;
+    if (para) {
+      const peca = boasVindas({
+        nome: cadastro.nome,
+        email: para,
+        acabaEmISO: hojeEmBrasilia(trialAte.toDate()),
+        origem: cadastro.origem,
+      });
+      after(() => enviarEmail({ para, peca, chave: `boas-vindas/${contaId}` }));
+    }
   } else {
     trialAte = existente.get("trialAte") as Timestamp;
   }

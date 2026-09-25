@@ -351,6 +351,26 @@ do deploy de produção: o parágrafo novo de `/privacidade` revisado, e o rotei
 spec 043, §4, inteiro, com o passo 6 (a conta de senha que passa a entrar pelo Google) numa
 conta de teste.
 
+## 12 · E-mail pelo Resend (spec 044)
+
+A boas-vindas e a senha nova saem pelo Resend, com o remetente `Rende <ola@rendeapp.com.br>` e a
+resposta indo para `RESPONSAVEL.email` (`DECISOES.md#d202`, `#d208`). **Espera o domínio
+próprio** (`#d178`): o Resend só manda com o domínio verificado no DNS.
+
+1. **Resend → Domains → Add domain:** `rendeapp.com.br`, região São Paulo se houver. No DNS, os
+   registros que o painel pedir (DKIM em `resend._domainkey`; SPF e MX no subdomínio de envio),
+   e mais um TXT em `_dmarc` com `v=DMARC1; p=none;`. Esperar o painel dizer "Verified".
+2. **No mesmo domínio, Open tracking e Click tracking desligados** (`#d208`): o de clique
+   reescreve os links, e o link da senha carrega um código de uso único.
+3. **Vercel → Environment Variables:** `RESEND_API_KEY`, em Production e Preview, e novo deploy.
+4. **A § 10, passo 4** (domínio do remetente no Firebase) continua valendo: o modelo do Firebase
+   é a reserva, e é por ele que a senha sai quando o Resend falha (`#d204`).
+
+O logotipo do e-mail é `{domínio de produção}/email/rende.png`: ele só aparece depois que este
+deploy chega à produção. No `npm run dev`, `/api/email/previa?peca=…&enviar=1` manda a peça com
+o logotipo apontando para `localhost`, que o Gmail não carrega; para conferir o logotipo antes,
+`VERCEL_PROJECT_PRODUCTION_URL=www.rendeapp.com.br` no `.env.local` depois do deploy.
+
 ## Limites conhecidos
 
 **O arquivo da nota tem dois tetos, e o menor não é o nosso.** `LIMITE_ARQUIVO_BYTES` é 8 MB

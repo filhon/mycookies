@@ -39,6 +39,21 @@ function codigoDe(falha: unknown): string {
     : "";
 }
 
+/** `true` quando o Rende mandou (ou nem precisava mandar); senão, a reserva. */
+async function senhaPeloRende(email: string): Promise<boolean> {
+  try {
+    const resposta = await fetch("/api/senha", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    return resposta.ok;
+  } catch {
+    // Sem rede: a reserva também cai, e a frase de rede é a dela.
+    return false;
+  }
+}
+
 export default function PaginaLogin() {
   const { usuario, carregando, entrar, reconferirAcesso } = useAuth();
   const router = useRouter();
@@ -116,7 +131,8 @@ export default function PaginaLogin() {
   /**
    * Trancada para fora, ela dependia de alguém com acesso ao console do
    * Firebase: era a única falha do produto que não se contorna por dentro dele.
-   * `sendPasswordResetEmail` é do SDK que já está instalado.
+   * O e-mail sai pelo Rende (`/api/senha`, `DECISOES.md#d204`); com a rota
+   * pedindo reserva ou sem resposta, pelo modelo do Firebase, como antes.
    */
   async function recuperarSenha() {
     setFalha(null);
@@ -129,7 +145,9 @@ export default function PaginaLogin() {
 
     setRecuperando(true);
     try {
-      await sendPasswordResetEmail(obterAuth(), email);
+      if (!(await senhaPeloRende(email))) {
+        await sendPasswordResetEmail(obterAuth(), email);
+      }
       setAvisoSenha(AVISO_ENVIO);
     } catch (erro) {
       // Cadastro inexistente devolve a mesma frase do envio: quem pergunta pelo

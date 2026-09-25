@@ -1,6 +1,9 @@
 # Estado do projeto
 
-Atualizado em 2026-09-25 (**preços novos no Stripe ao vivo**, R$ 29/290 e R$ 49/490, `#d201`,
+Atualizado em 2026-09-25 (a **044-A codificada**, o Rende escreve: o transporte do Resend por
+`fetch`, as cinco peças, a boas-vindas no cadastro e a senha nova com o Firebase de reserva,
+`#d202` a `#d208`, com o roteiro A e o domínio no Resend como portão do deploy; a B, o cron, por
+fazer; **preços novos no Stripe ao vivo**, R$ 29/290 e R$ 49/490, `#d201`,
 com as quatro `STRIPE_PRICE_*` por trocar na Vercel; o domínio `www.rendeapp.com.br` no
 `DEPLOY.md` § 10 e § 11, com os passos 2, 3 e 5 da § 11 por fazer à mão; a **043 codificada**, "Continuar com o Google" no login e no
 cadastro, com `/__/auth/*` servido pelo domínio do app, `#d198` a `#d200`, e o roteiro de
@@ -304,6 +307,7 @@ os números digitados de ponta a ponta.
 | 41  | A porta de volta                            | codificada; não publicada             | `specs/041-a-porta-de-volta.md`             |
 | 42  | A senha nova em casa                        | codificada; console depois do deploy  | `specs/042-a-senha-nova-em-casa.md`         |
 | 43  | Entrar com o Google                         | escrita; pede aprovação antes         | `specs/043-entrar-com-o-google.md`          |
+| 44  | O Rende escreve (A peças, B cron)           | A codificada; B por fazer             | `specs/044-o-rende-escreve.md`              |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -3813,6 +3817,45 @@ revisado.
 Portão: lint e typecheck limpos, **720 testes** (nenhum novo, como a spec pede), `npm run build`
 passa. `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 044 · O Rende escreve — sessão A, o transporte, as peças, a boas-vindas e a senha
+
+**Codificada em 2026-09-25**, no branch `feat/spec-044-o-rende-escreve` (`#d202` a `#d208`; os três
+do cron, `#d205` a `#d207`, escritos agora e codificados na B). Duas rotas novas, nenhum campo,
+regra, índice ou dependência. As peças foram tomadas como aprovadas pelo pedido de quem conduz o
+projeto de implementar a A.
+
+- `src/lib/server/email.ts`: `enviarEmail`, `fetch` ao Resend com `Idempotency-Key`, nunca lança;
+  o 409 é `"repetido"`. Remetente `Rende <ola@rendeapp.com.br>`, resposta para `RESPONSAVEL.email`.
+- `src/lib/email/pecas.ts`: a moldura, os pedaços e as cinco peças, com texto e `escapar()`. As
+  variações da spec (calculadora, sem produto, nenhum no vermelho, sem preço do Stripe, meta no
+  último dia, mês no prejuízo, sem meta, meta do mês novo já definida) e as que a sessão decidiu
+  (`#d203`). Comparadas com os moldes no Chrome sem cabeça a 700 px: o desenho bate; as diferenças
+  são o domínio do rodapé (`localhost:3000` no dev) e o `&lang=pt-BR` do link da senha.
+- `/api/conta`: a boas-vindas por `after()`, só quando o documento nasce, `boas-vindas/{contaId}`.
+- `/api/senha` e `recuperarSenha` no login: o `POST` primeiro; resposta que não é 200, ou sem rede,
+  cai no `sendPasswordResetEmail` de sempre. `AVISO_ENVIO` não mudou.
+- `/api/email/previa?peca=…[&enviar=1]`, só em `NODE_ENV === "development"`.
+- `public/email/rende.png` (o PNG aprovado) e `docs/marca/rende/logo/rende-principal.png` refeito
+  com o Archivo, pelo Chrome, no desenho do `Logotipo`.
+- `.env.local.example` com `RESEND_API_KEY`; `docs/DEPLOY.md` § 12.
+
+O que rodou, no `next dev` que já estava de pé: a prévia responde as cinco peças e 404 para nome
+desconhecido; o PNG é servido; `/api/senha` com um e-mail sem conta responde `{ ok: true }` pelo
+Admin SDK de verdade, e com `"x"` responde 400. **Não rodou**: nenhum envio de verdade (o domínio
+ainda não está verificado no Resend, e mandar é o passo 1 do roteiro), nem a senha de uma conta
+que existe.
+
+**Portão do deploy, nesta ordem:** o domínio próprio (`#d178`); `DEPLOY.md` § 12 (domínio
+verificado no Resend, rastreamento desligado, a chave na Vercel); o roteiro A da spec (§5, passos
+1 a 7), na prévia da Vercel. **O logotipo aponta para `{URL_DO_SITE}/email/rende.png`**: no `npm
+run dev` ele é `localhost` e não carrega no Gmail, então o passo 1 vê a faixa sem o logotipo até o
+PNG estar em produção (ou com `VERCEL_PROJECT_PRODUCTION_URL` no `.env.local` apontando para um
+domínio que já o sirva).
+
+Portão: lint e typecheck limpos, **721 testes** (um novo, `tests/email.test.ts`), `npm run build`
+passa com `/api/senha` e `/api/email/previa`. `package.json`, `firestore.rules` e
+`firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -3822,6 +3865,10 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 044-A está codificada** (seção acima). A próxima sessão é a **044-B**: `domain/avisos.ts`, o
+cron diário, os três avisos e a chave de desligar. A A publica sozinha se quiser: não depende da B,
+e depende do domínio verificado no Resend e do roteiro A.
 
 **A 043 está codificada** (seção acima). Publica depois da 041 e com o domínio próprio no ar;
 antes, `DEPLOY.md` § 11 na prévia da Vercel e o roteiro de aparelho da spec inteiro, que é o
