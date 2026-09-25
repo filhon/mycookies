@@ -5,7 +5,17 @@
  * controlador. Um lugar só, lido por `/termos` e `/privacidade`; mora em
  * `src/app` para que o portão do deploy (o da spec 027) o veja.
  */
-export const RESPONSAVEL = {
+export const RESPONSAVEL: {
+  nome: string;
+  cpf: string;
+  endereco: string;
+  email: string;
+  /**
+   * A ajuda do pé das telas de acesso (`DECISOES.md#d195`): só dígitos, com
+   * DDI. Sem ele, o link é o `mailto:` do `email`.
+   */
+  whatsapp?: string;
+} = {
   nome: "Filipe Honório da Silva Santos",
   cpf: "104.869.324-43",
   endereco:

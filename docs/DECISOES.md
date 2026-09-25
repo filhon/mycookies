@@ -4549,7 +4549,9 @@ se prova. Depois do `POST`, `reconferirAcesso()` e `router.replace("/fichas")`, 
 Hoje de uma conta vazia é um painel em branco apontando para `/fichas`, e `/fichas` vazio é o
 botão da biblioteca, que é o passo 1 da 019. Um formulário com dois estados, e não duas telas:
 com login e sem conta (o `POST` caiu no meio), o mesmo formulário sem e-mail e senha, com
-"Tentar de novo" no lugar de "Criar conta".
+"Tentar de novo" no lugar de "Criar conta". **Atualização da 041 (`#d193`):** "sem confirmar senha"
+continua, mas o motivo passa a ser o botão de mostrar a senha em `/cadastro`, e não o navegador:
+só o Edge mostra o que se digita.
 
 **Consequência.** Se a gravação da fase 0 mostrar que ela procura "onde estou" antes de "quanto
 custa", o destino volta a `/` e o cartão do caminho faz o resto: é uma string. Se mostrar
@@ -5909,3 +5911,81 @@ ausente = veio por outro caminho; `npm run metricas` imprime a coluna. Nenhuma r
 **Consequência.** A origem é gravada só quando a conta nasce: o POST que volta depois de cair no
 meio encontra o documento e não o reescreve. Quem cria a conta com rascunho e não toca no botão
 fica com `origem` mesmo assim: a origem diz por onde ela chegou, e não se trouxe o cookie.
+
+---
+
+## D192 · O botão de entrar está sempre ativo; a validação é no envio
+
+**Status:** vigente · decidida em 2026-09-25, na spec `041-a-porta-de-volta.md`
+
+**Contexto.** `disabled={!email || !senha}` pintava o primário de âmbar lavado, com cara de app
+quebrado, e o preenchimento automático do Chrome não entrega o valor ao JavaScript antes do
+primeiro toque na página: com a senha salva, o campo aparecia cheio, o estado continuava vazio e
+o primeiro toque em "Entrar" não fazia nada.
+
+**Decisão.** Em `/login`, o primário só fica ocupado durante o envio (`carregando`). `aoEnviar` lê
+o formulário por `FormData`, e não o estado do React: o valor do campo existe no DOM mesmo sem
+`onChange`. Os dois `useState` de e-mail e senha saíram; "Esqueci minha senha" lê o e-mail pelo
+mesmo `FormData`. Campo vazio vira erro no próprio campo ("Escreva o seu e-mail.", "Escreva a
+sua senha.") e `focarPrimeiroErro()`, sem chamar o Firebase; o erro some ao digitar no campo.
+Sem asterisco: os dois campos passam `aria-required`, e não `required`.
+
+**Consequência.** O cadastro continua com o botão desligado até o formulário estar pronto: a
+spec não o tocou, e lá não há senha salva a preencher. Se o roteiro mostrar o mesmo desbotado
+estranhando, o padrão vale para ele também.
+
+---
+
+## D193 · Mostrar a senha, no login e no cadastro
+
+**Status:** vigente · decidida em 2026-09-25, na spec `041-a-porta-de-volta.md`
+
+**Decisão.** `CampoSenha`, em `src/components/ui/Campo.tsx`: o envelope de `Campo` e um botão de
+44×44 dentro do campo, à direita, com `Eye` / `EyeOff` (1.75), que troca `type` entre `password`
+e `text`. Começa escondida. `type="button"`, `onMouseDown` com `preventDefault` (o foco e o
+teclado do celular ficam no campo) e `pr-12` no `input`. O `sufixo` de `Campo` não servia: é
+`pointer-events-none`. Usado no login (`current-password`) e no cadastro (`new-password`).
+
+**Desvio da spec.** A spec pedia `aria-label` alternando entre "Mostrar senha" e "Esconder
+senha" junto com `aria-pressed`. Os dois mudando juntos dão estado duplo ("Esconder senha,
+pressionado" é ambíguo), então o rótulo fica "Mostrar senha" e quem diz o estado é o
+`aria-pressed`, que é o que o passo 3 do roteiro espera ouvir. O ícone troca para quem vê.
+
+---
+
+## D194 · O painel de marca mostra a conta de exemplo
+
+**Status:** vigente · decidida em 2026-09-25, na spec `041-a-porta-de-volta.md`
+
+**Contexto.** No desktop, 42% da tela de entrar era tinta vazia: o split de login do "dashboard
+SaaS escuro genérico" que o `PRODUCT.md` lista como anti-referência.
+
+**Decisão.** `MolduraDeEntrada` ganha `painel?: ReactNode`, entre o logotipo e a frase. O login
+e o cadastro passam `<ContaAberta parada className="max-w-md" />`, o bloco de `/conheca` (sem
+Firebase, `#d173`); `/assinatura` não passa nada. Abaixo de 720 px de altura de janela o cartão
+some e fica a frase (`[@media(max-height:719px)]:hidden`). Pesados e recusados: depoimento
+(serve à venda, e quem está aqui já comprou) e novidades do produto (não há notas de versão).
+
+**Consequência.** No tema escuro, o risco de o cartão sumir no `brand-800` não se confirmou no
+roteiro a 1280 × 800: a borda `line` e o bloco do preço separam o cartão, e o
+`border-line-strong` de reserva não entrou. Se o roteiro com ela mostrar o número de um cookie
+que não é o dela como enfeite, o painel do login volta a ser só a frase.
+
+---
+
+## D195 · Ajuda, termos e privacidade no pé das telas de acesso
+
+**Status:** vigente · decidida em 2026-09-25, na spec `041-a-porta-de-volta.md`
+
+**Decisão.** Rodapé da `MolduraDeEntrada`, nas três telas de acesso, no fim do `main`: "Não
+consegue entrar? Fale com a gente" · Termos · Privacidade, em `text-label text-ink-muted`, cada
+link com o terciário `sm` (44 px). Tudo abre em aba nova, para o cadastro não perder o
+formulário. "Fale com a gente" é `https://wa.me/{RESPONSAVEL.whatsapp}?text=…` com "Oi, não estou
+conseguindo entrar no Rende."; sem `whatsapp`, é `mailto:` com o e-mail de `RESPONSAVEL` e a
+mesma frase no assunto. O texto não leva o e-mail dela. No celular o rodapé quebra em dois
+grupos, e o ponto entre eles só aparece a partir de 640 px.
+
+**Consequência.** `RESPONSAVEL.whatsapp` nasceu vazio: quem conduz o projeto não passou o número
+na sessão, e o link é o e-mail até ele entrar em `src/app/(auth)/responsavel.ts` (só dígitos,
+com DDI). WhatsApp pessoal serve enquanto são poucas contas; quando a ajuda virar volume,
+troca-se o número, não a tela.

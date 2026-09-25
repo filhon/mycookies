@@ -1,8 +1,9 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Eye, EyeOff } from "lucide-react";
 import {
   useId,
+  useState,
   type InputHTMLAttributes,
   type ReactNode,
   type Ref,
@@ -125,6 +126,65 @@ export function Campo({
             {sufixo}
           </span>
         )}
+      </div>
+    </Envelope>
+  );
+}
+
+/**
+ * A senha com o olho (`DECISOES.md#d193`): dedo com farinha e teclado de
+ * celular, e só o Edge mostra o que se digita. O `sufixo` de `Campo` não serve,
+ * porque é `pointer-events-none`. O rótulo do botão não muda: quem diz se a
+ * senha está à mostra é o `aria-pressed`.
+ */
+export function CampoSenha({
+  rotulo,
+  dica,
+  erro,
+  className,
+  required,
+  ...props
+}: Omit<CampoProps, "type" | "prefixo" | "sufixo">) {
+  const id = useId();
+  const [visivel, setVisivel] = useState(false);
+  const Icone = visivel ? EyeOff : Eye;
+
+  return (
+    <Envelope
+      id={id}
+      rotulo={rotulo}
+      dica={dica}
+      erro={erro}
+      obrigatorio={required}
+      className={className}
+    >
+      <div className="relative">
+        <input
+          id={id}
+          type={visivel ? "text" : "password"}
+          aria-invalid={erro ? true : undefined}
+          aria-describedby={
+            erro ? `${id}-erro` : dica ? `${id}-dica` : undefined
+          }
+          className={cn(
+            BASE_CONTROLE,
+            "pr-12",
+            erro ? "border-negative" : "border-line-strong",
+          )}
+          {...props}
+        />
+        {/* `preventDefault` no toque: o foco fica no campo, e o teclado do
+            celular não fecha. */}
+        <button
+          type="button"
+          aria-label="Mostrar senha"
+          aria-pressed={visivel}
+          onMouseDown={(evento) => evento.preventDefault()}
+          onClick={() => setVisivel((v) => !v)}
+          className="absolute inset-y-0 right-0.5 my-auto flex size-11 items-center justify-center rounded-md text-ink-muted transition-colors duration-150 ease-quart hover:text-ink"
+        >
+          <Icone aria-hidden strokeWidth={1.75} className="size-5" />
+        </button>
       </div>
     </Envelope>
   );

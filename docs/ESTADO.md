@@ -1,6 +1,8 @@
 # Estado do projeto
 
-Atualizado em 2026-09-25 (a **040 codificada inteira**: a A, a calculadora pública em `/conheca`
+Atualizado em 2026-09-25 (a **041 codificada**, a porta de volta: o login com o botão sempre
+ativo, a senha à mostra, o erro com a saída, o aviso sem internet, a conta de exemplo no painel
+e a ajuda no pé das telas de acesso, `#d192` a `#d195`; a **040 codificada inteira**: a A, a calculadora pública em `/conheca`
 e na página do preço, com a configuração sugerida no domínio, `#d185` a `#d188`; a B, o rascunho
 no aparelho que o botão da biblioteca leva para a conta nova, e a `origem` da conta, `#d189` a
 `#d191`; a **039 codificada**, a seção "depois do preço" esperando as três
@@ -294,6 +296,9 @@ os números digitados de ponta a ponta.
 | 38  | O que a página mede                         | escrita; publica com a 036            | `specs/038-o-que-a-pagina-mede.md`          |
 | 39  | Por que todo mês                            | escrita; espera capturas e depoimento | `specs/039-por-que-todo-mes.md`             |
 | 40  | A conta dela (A calculadora, B levar)       | A e B codificadas; não publicada      | `specs/040-a-conta-dela.md`                 |
+| 41  | A porta de volta                            | codificada; não publicada             | `specs/041-a-porta-de-volta.md`             |
+| 42  | A senha nova em casa                        | escrita                               | `specs/042-a-senha-nova-em-casa.md`         |
+| 43  | Entrar com o Google                         | escrita; pede aprovação antes         | `specs/043-entrar-com-o-google.md`          |
 
 A ordem acordada é 1 → 2 → 4 → 3, com o refactor de contas já inserido antes do 2 pelo
 motivo registrado em `DECISOES.md#d01`. A spec do Módulo 4 estava dividida em duas sessões:
@@ -3692,6 +3697,51 @@ sobra no preço de hoje da ficha montada são os de `contaDaPorta`.
 Portão: lint e typecheck limpos, **720 testes** (710 + 10), `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 041 · A porta de volta
+
+**Codificada em 2026-09-25**, no branch `feat/spec-040-a-conta-dela`, por cima da 040 (`#d192` a
+`#d195`, e uma linha nova no `#d142`). Nenhum campo, regra, índice, dependência ou rota.
+
+- `src/app/(auth)/login/page.tsx`: o envio lê `FormData` (o preenchimento automático do Chrome),
+  sem `useState` de e-mail e senha; vazio vira erro no campo e foco nele, sem Firebase; o
+  primário nunca `disabled` por campo vazio; sem asterisco (`aria-required`). A falha guarda o
+  código com a frase, e credencial ou excesso de tentativa ganham "Mandar link para criar senha
+  nova" (`FALHAS_COM_SAIDA`); rede, não. Com `useConexao()` falso, a linha "Sem internet agora…"
+  com `CloudOff` acima do formulário, sem bloquear o botão.
+- `CampoSenha` em `src/components/ui/Campo.tsx`, no login e no cadastro. **Desvio:** o
+  `aria-label` fica "Mostrar senha" e só o `aria-pressed` muda (`#d193`).
+- `MolduraDeEntrada`: `painel?` entre o logotipo e a frase, escondido abaixo de 720 px de altura;
+  login e cadastro passam `<ContaAberta parada />`. Rodapé nas três telas: ajuda, termos e
+  privacidade, em aba nova, em dois grupos no celular.
+- `RESPONSAVEL.whatsapp?`: **vazio.** O número não veio na sessão, então "Fale com a gente" é o
+  `mailto:` até quem conduz o projeto preenchê-lo (só dígitos, com DDI).
+
+**Roteiro (seção 4), rodado no `next start` com Chrome sem cabeça pelo DevTools Protocol:**
+
+1. **Não rodou.** Senha salva no Chrome e no Safari do iPhone, com o app instalado e no
+   navegador, é para quem conduz o projeto. É o passo que prova o `#d192`.
+2. Feito: o botão é âmbar cheio (`oklch(0.74 0.14 78)`), sem asterisco; vazio dá os dois erros e
+   o foco vai ao e-mail.
+3. Feito: um toque no olho põe `type="text"` e `aria-pressed="true"`, outro volta; o foco fica
+   no campo; alvo de 44×44. **O leitor de tela não rodou**: NVDA ou VoiceOver fica para quem
+   conduz.
+4. Feito, com um e-mail que não existe: "E-mail ou senha incorretos." e o link embaixo; tocar
+   mostra o aviso de sempre.
+5. Feito, com a rede cortada pelo DevTools: o aviso aparece antes de digitar; entrar dá "Sem
+   conexão para entrar…", sem o link.
+6. Feito: a 1280 × 800 o painel mostra logotipo, conta e frase sem rolar, nos dois temas; no
+   escuro a borda do cartão o separa do `brand-800`, e o `border-line-strong` de reserva não
+   entrou. A 1280 × 700, sem a conta.
+7. Parcial: o link é o `mailto:` com a frase no assunto, em aba nova; o WhatsApp espera o número.
+8. Feito: `/cadastro` com o olho em `new-password` e o painel.
+9. Parcial: sem login, `/assinatura` manda para `/login`; o rodapé é da moldura, a mesma das
+   três telas, mas a tela com conta vencida não foi vista.
+
+Corrigido no roteiro: a 390 px o rodapé quebrava com um "·" sozinho no fim da linha.
+
+Portão: lint e typecheck limpos, **720 testes** (nenhum novo, como a spec pede), `npm run build`
+passa. `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -3701,6 +3751,14 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 041 está codificada** (seção acima). Antes de publicar: o número de WhatsApp em
+`RESPONSAVEL.whatsapp` (sem ele o link é o e-mail, e funciona), e os passos 1 e 3 do roteiro
+com aparelho de verdade (senha salva no Chrome do Android e no Safari do iPhone; leitor de
+tela). **Seguem escritas**, da mesma crítica do `/impeccable` sobre `/login` (21/40): a **042** (a senha nova no `/redefinir-senha`, com o e-mail do
+Firebase em português e com o nome do Rende; depende da 041) e a **043** (entrar com o Google;
+depende da 041 e do domínio próprio decidido, e quem conduz aprova antes por ser superfície de
+autenticação nova). Decisões reservadas para elas: `#d196` a `#d200`.
 
 **A 040 está codificada inteira.** Publica junto com ou depois da 036 e da 037. Antes: o passo 6
 do roteiro da A com NVDA ou VoiceOver, o Lighthouse no celular de `/conheca`, e os passos 8 a 12

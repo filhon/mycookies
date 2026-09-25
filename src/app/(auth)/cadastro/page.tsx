@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { MolduraDeEntrada } from "@/components/auth/MolduraDeEntrada";
+import { ContaAberta } from "@/components/site/ContaAberta";
 import { Botao } from "@/components/ui/Botao";
-import { Campo } from "@/components/ui/Campo";
+import { Campo, CampoSenha } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
   MENSAGEM_FALHA_CADASTRO,
@@ -115,6 +116,7 @@ export default function PaginaCadastro() {
       descricao={`Catorze dias grátis, sem cartão. Primeiro preço em dez minutos.${
         daCalculadora ? " O cookie que você calculou vai estar lá." : ""
       }`}
+      painel={<ContaAberta parada className="max-w-md" />}
     >
       <form onSubmit={aoEnviar} className="mt-8 space-y-5" noValidate>
         {terminando ? (
@@ -137,9 +139,8 @@ export default function PaginaCadastro() {
               onChange={(evento) => setEmail(evento.target.value)}
             />
 
-            <Campo
+            <CampoSenha
               rotulo="Senha"
-              type="password"
               autoComplete="new-password"
               minLength={6}
               dica="Pelo menos 6 caracteres."
