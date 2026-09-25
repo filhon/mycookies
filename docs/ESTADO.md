@@ -3737,7 +3737,10 @@ Portão: lint e typecheck limpos, **720 testes** (710 + 10), `npm run build` pas
 9. Parcial: sem login, `/assinatura` manda para `/login`; o rodapé é da moldura, a mesma das
    três telas, mas a tela com conta vencida não foi vista.
 
-Corrigido no roteiro: a 390 px o rodapé quebrava com um "·" sozinho no fim da linha.
+Corrigido no roteiro: a 390 px o rodapé quebrava com um "·" sozinho no fim da linha; e, na
+conferência dos critérios, os alvos do rodapé se encostavam (0 px entre as linhas até 480 px,
+4 px e sem o ponto entre 560 e 639 px). Abaixo de 640 px o rodapé é coluna com `gap-y-2`: medido
+de 360 a 1280 px, nenhum par de links fica a menos de 8 px.
 
 Portão: lint e typecheck limpos, **720 testes** (nenhum novo, como a spec pede), `npm run build`
 passa. `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.

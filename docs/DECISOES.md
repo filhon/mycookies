@@ -5982,8 +5982,9 @@ consegue entrar? Fale com a gente" · Termos · Privacidade, em `text-label text
 link com o terciário `sm` (44 px). Tudo abre em aba nova, para o cadastro não perder o
 formulário. "Fale com a gente" é `https://wa.me/{RESPONSAVEL.whatsapp}?text=…` com "Oi, não estou
 conseguindo entrar no Rende."; sem `whatsapp`, é `mailto:` com o e-mail de `RESPONSAVEL` e a
-mesma frase no assunto. O texto não leva o e-mail dela. No celular o rodapé quebra em dois
-grupos, e o ponto entre eles só aparece a partir de 640 px.
+mesma frase no assunto. O texto não leva o e-mail dela. Abaixo de 640 px o rodapé vira dois
+grupos, um por linha, com 8 px entre as linhas; a partir de 640 px, uma linha com o ponto entre
+eles. Sem a coluna, entre 560 e 639 px os dois grupos cabiam numa linha, a 4 px e sem o ponto.
 
 **Consequência.** `RESPONSAVEL.whatsapp` nasceu vazio: quem conduz o projeto não passou o número
 na sessão, e o link é o e-mail até ele entrar em `src/app/(auth)/responsavel.ts` (só dígitos,

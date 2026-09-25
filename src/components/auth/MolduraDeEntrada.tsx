@@ -70,9 +70,9 @@ export function MolduraDeEntrada({
         {/* Para uma dona de negócio sem equipe técnica, o link de ajuda é o
             suporte (`DECISOES.md#d195`). Aba nova: o cadastro não perde o
             formulário. */}
-        {/* Dois grupos: no celular a linha quebra entre eles, e não deixa um
-            ponto sozinho no fim. */}
-        <footer className="mt-10 flex flex-wrap items-center justify-center gap-x-1 text-label text-ink-muted">
+        {/* Dois grupos: abaixo de 640 px, um por linha, com 8 px entre os alvos
+            e sem ponto sozinho no fim; acima, uma linha com o ponto. */}
+        <footer className="mt-10 flex flex-wrap items-center justify-center gap-x-1 gap-y-2 text-label text-ink-muted max-sm:flex-col">
           <span className="flex items-center gap-x-1">
             Não consegue entrar?
             <a

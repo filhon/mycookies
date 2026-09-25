@@ -192,15 +192,15 @@ Nenhum teste novo: não há domínio nesta spec. Os existentes passam sem mudan�
 
 ## Critérios de aceite
 
-- [ ] Primário nunca `disabled` por campo vazio; envio lê `FormData`; vazio vira erro no campo.
-- [ ] Sem asterisco no login.
-- [ ] `CampoSenha` no login e no cadastro, 44×44, `aria-pressed`, sem roubar foco.
-- [ ] Erro de credencial e de excesso de tentativa com o terciário do link; de rede, sem.
-- [ ] Aviso de sem internet com ícone e frase, sem bloquear o botão.
-- [ ] Painel com `ContaAberta parada` no login e no cadastro, escondido abaixo de 720 px de altura.
-- [ ] Rodapé com ajuda, termos e privacidade nas três telas de acesso.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `package.json` e `firestore.rules` intocados.
-- [ ] `#d192` a `#d195` escritos; a linha nova no `#d142`; `ESTADO.md` atualizado.
+- [x] Primário nunca `disabled` por campo vazio; envio lê `FormData`; vazio vira erro no campo.
+- [x] Sem asterisco no login.
+- [x] `CampoSenha` no login e no cadastro, 44×44, `aria-pressed`, sem roubar foco.
+- [x] Erro de credencial e de excesso de tentativa com o terciário do link; de rede, sem.
+- [x] Aviso de sem internet com ícone e frase, sem bloquear o botão.
+- [x] Painel com `ContaAberta parada` no login e no cadastro, escondido abaixo de 720 px de altura.
+- [x] Rodapé com ajuda, termos e privacidade nas três telas de acesso.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `package.json` e `firestore.rules` intocados.
+- [x] `#d192` a `#d195` escritos; a linha nova no `#d142`; `ESTADO.md` atualizado.
 
 ---
 
