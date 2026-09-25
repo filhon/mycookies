@@ -278,6 +278,27 @@ trocar depois pede 301 de tudo. Com o domínio:
 2. **Inspeção de URL** no Search Console, pedindo indexação das duas páginas.
 3. O resto é a seção 5 da spec 037, e é de quem conduz o projeto.
 
+## 9 · Ao publicar a 039: depois do preço, e a prévia
+
+A seção "Depois do preço" de `/conheca`, a linha "O mês sai por {n} cookies", o texto novo dos
+planos (em `/conheca` e em `/assinatura`), as nove dúvidas, a frase da origem e as duas imagens de
+prévia. **Ordem: junto com ou depois da 036 e da 037.** Nenhuma variável nova.
+
+**Portão:**
+
+1. **As três capturas em `public/site/`** (`mes-manteiga-subiu.webp`, `mes-encomenda.webp`,
+   `mes-caixa.webp`), de uma **conta de demonstração** e nunca da MyCookie's, WebP até 120 KB,
+   com `src`, `largura`, `altura` e `alt` preenchidos em `TELAS_DO_MES`
+   (`src/app/conheca/page.tsx`, `DECISOES.md#d181`). Enquanto `src` estiver vazio a seção não
+   aparece, e o `alt` por escrever é pego pelo `rg -n "\[texto" src/app` de sempre. Conferir as
+   três ampliadas: nenhum nome de cliente real, nenhum número da Maynara.
+2. **A frase da origem autorizada** junto com o depoimento, na mesma mensagem por escrito
+   (`#d184`). Sem autorização, `DEPOIMENTO.origem` sai (ou o bloco inteiro, com o `texto`).
+
+Depois do deploy, o passo 5 do roteiro da spec: colar o link de `/conheca` numa conversa do
+WhatsApp consigo mesmo e ver a imagem. O WhatsApp guarda a prévia por endereço: se a primeira
+colagem veio sem imagem, testar com `?v=1` no fim.
+
 ## Limites conhecidos
 
 **O arquivo da nota tem dois tetos, e o menor não é o nosso.** `LIMITE_ARQUIVO_BYTES` é 8 MB

@@ -1,6 +1,8 @@
 # Estado do projeto
 
-Atualizado em 2026-09-24 (a **038 codificada**, a visita contada pela Vercel nas páginas
+Atualizado em 2026-09-24 (a **039 codificada**, a seção "depois do preço" esperando as três
+capturas, o preço do plano em cookies e a imagem de prévia das duas páginas públicas, `#d181` a
+`#d184`; a **038 codificada**, a visita contada pela Vercel nas páginas
 públicas e no cadastro, `#d180`; a **037 codificada**, a página do preço e o mapa para a busca,
 `#d176` a `#d179`; a **036 codificada**, a página de venda em `/conheca`, `#d172` a
 `#d175`; a **032 codificada**, o segundo plano, antes do gatilho da fase 3,
@@ -3518,6 +3520,65 @@ Portão: lint e typecheck limpos, **695 testes**, `npm run build` passando. `pac
 cair em `/fichas`, nenhuma chamada nova) fica pendente** até o primeiro deploy, com o critério
 "nenhum cookie novo" (DevTools → Application → Cookies).
 
+## A spec 039 · Por que todo mês
+
+**Codificada em 2026-09-24**, no mesmo branch, por cima da 038 (`#d181` a `#d184`). Publica junto
+com ou depois da 036 e da 037 (`docs/DEPLOY.md` § 9).
+
+- `src/lib/domain/assinatura.ts`: `unidadesQuePagam` (para cima; preço de unidade ≤ 0 devolve 0),
+  com três testes (**695 → 698**); `O_QUE_O_PACOTE_TEM` diz o que cada plano dá, sem "sem", e
+  muda junto em `/assinatura`.
+- `src/app/conheca/page.tsx`: `TELAS_DO_MES` e a seção `DepoisDoPreco` (`id="depois"`) entre a
+  conta e o depoimento, com a âncora "Depois do preço" no `Topo`; a linha "O mês sai por {n}
+  cookies como o do exemplo" em cada plano, só com preço do Stripe; as nove dúvidas na ordem da
+  spec; `DEPOIMENTO.origem` embaixo da `figcaption`.
+- `src/app/previa/` (`previa.tsx`, `Archivo-Bold.ttf`, `OFL.txt`) e os dois
+  `opengraph-image.tsx`. No build, `/conheca/opengraph-image` e
+  `/como-calcular-o-preco-do-cookie/opengraph-image` estáticas, PNG 1200 × 630; o HTML das duas
+  páginas com `og:image` absoluto (em `localhost` no build local, como deve, `#d178`), com
+  largura, altura e `alt`. As duas imagens foram abertas e conferidas.
+
+**Fora da letra da spec, com motivo (seção 2, passo 3: a página não promete o que o app não
+entrega):**
+
+1. **"O orçamento pronto pro WhatsApp" virou "o resumo pronto pro WhatsApp"**: o botão do pedido
+   manda o resumo (010); o orçamento é a folha A4 (017).
+2. **"A lista do mercado já sai com o que falta comprar" virou "Confirmado, o pedido entra na
+   lista do mercado, só com o que falta na despensa"**: `/compras` soma os pedidos confirmados.
+3. **A taxa da maquininha saiu da dúvida "por que pagar todo mês"**: o aviso da 024 olha
+   material (`custoDeHoje`), e a taxa é da configuração, gravada na ficha. A frase diz "a
+   manteiga sobe, o saquinho muda de preço".
+4. **O completo não diz "só ao que você liberar"**: a ajudante não tem permissão escolhida, tem a
+   régua fixa do `#d157`. A frase diz "que produzem e entregam com você sem ver o seu caixa".
+
+**As capturas não existem ainda.** Nem `public/site/` nem a conta de demonstração existiam antes
+da sessão, e criar conta no Firebase de produção é de quem conduz o projeto. `TELAS_DO_MES` está
+com `src` vazio, e a seção e a âncora não aparecem; o `alt` de cada uma carrega
+`[texto de quem conduz o projeto…]`, que o `rg -n "\[texto" src/app` do portão pega. Para ligar:
+criar a conta pelo `/cadastro` com e-mail de demonstração, instalar a biblioteca, salvar os
+produtos e subir a manteiga em `/insumos`; duas clientes de nome inventado e dois pedidos; um mês
+de caixa e uma meta. Capturar a 390 × 844, tema claro, recortar, WebP até 120 KB, e preencher
+`src`, `largura`, `altura` e o `alt` com os números da tela.
+
+**As capturas envelhecem**: toda spec que mudar a tela Hoje (o cartão de fichas no vermelho), o
+editor de pedido (total, sobra, WhatsApp) ou o painel do mês (entradas, saídas, meta) refaz a
+imagem correspondente.
+
+**Critério "nenhuma cor solta":** o `rg "#[0-9A-Fa-f]{6}" src/app src/components` acha
+`src/app/previa/previa.tsx` e também cinco arquivos que já tinham hex antes desta spec, todos
+fora do alcance de variável CSS ou do mesmo tipo de exceção: `globals.css` (comentários dos
+tokens), `manifest.ts` e `layout.tsx` (`theme_color`/`background_color`, assados no WebAPK,
+`#d124`), `icon.svg` e `SeuCardapio.tsx` (`COR_PADRAO`, a cor da loja como dado, `#d166`). A 039
+não acrescentou nenhum além da prévia; o critério da spec, lido ao pé da letra, não fecha sem
+mexer nesses cinco, o que é fora de escopo.
+
+Portão: lint e typecheck limpos, **698 testes**, `npm run build` com as duas `opengraph-image`
+estáticas. `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
+**O que não rodou:** o roteiro de seis passos. O 1 e o 2 (a seção, no claro e no escuro)
+esperam as capturas; o 3 (a linha dos cookies com o Stripe) e o 4 (as nove dúvidas) pedem
+navegador; o 5 (a prévia no WhatsApp) pede o deploy.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -3527,6 +3588,11 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 039 publica junto com ou depois da 036 e da 037** (`docs/DEPLOY.md` § 9). Antes, as três
+capturas da conta de demonstração em `public/site/` e `TELAS_DO_MES` preenchido (seção da 039,
+acima), e a frase da origem dentro da autorização por escrito da Maynara. Depois, o roteiro de
+seis passos da spec, com o 5 (o link colado no WhatsApp mostrando a imagem) no primeiro deploy.
 
 **A 038 publica junto com a 036**, com o Web Analytics ligado no painel antes do deploy
 (`docs/DEPLOY.md` § 7) e o parágrafo novo de `/privacidade` revisado. Depois, o roteiro de quatro

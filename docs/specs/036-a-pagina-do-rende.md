@@ -408,7 +408,8 @@ celular, e a ordem das seções.
   Quando houver mais de uma, o `app/sitemap.ts` do Next é um arquivo. **Feito na 037**
   (`#d177`, `#d179`).
 - **Imagem de prévia (Open Graph).** O WhatsApp mostra título e descrição sem ela. Quando o link
-  circular e a prévia pedir imagem, é `app/conheca/opengraph-image.tsx`.
+  circular e a prévia pedir imagem, é `app/conheca/opengraph-image.tsx`. **Feito na 039**
+  (`#d183`).
 - **Analytics, pixel, UTM.** O canal do roadmap é gente mandando link; `scripts/metricas.mjs` já
   conta contas criadas. Sem dependência e sem banner de cookie.
 - **Tirar o `AuthProvider` da página.** O layout raiz envolve tudo com ele, e a página carrega o

@@ -35,11 +35,15 @@ export const NOME_DO_PACOTE: Record<Pacote, string> = {
   COMPLETO: "Completo",
 };
 
-/** Uma linha por pacote, para o cartão de `/assinatura`: o que ele dá, em texto. */
+/**
+ * Uma linha por pacote, para o cartão de `/assinatura` e o de `/conheca`: o que
+ * ele dá, em texto, e nunca o que falta (spec 039). A ajudante não escolhe o
+ * que vê: a régua é fixa (`#d157`), e a frase diz a régua.
+ */
 export const O_QUE_O_PACOTE_TEM: Record<Pacote, string> = {
   ESSENCIAL:
-    "O preço de cada doce, os pedidos, a despensa e o caixa. Sem cardápio e sem ajudante.",
-  COMPLETO: `Tudo do essencial, mais o cardápio com link de pedido e até ${LIMITE_DE_AJUDANTES} ajudantes.`,
+    "O preço de cada doce e o aviso quando um custo sobe, as encomendas com a lista do mercado, e o caixa do mês com a sua meta.",
+  COMPLETO: `Tudo do Essencial, mais o cardápio com link pra cliente pedir sozinha e até ${LIMITE_DE_AJUDANTES} ajudantes, que produzem e entregam com você sem ver o seu caixa.`,
 };
 
 export type Situacao =
@@ -170,6 +174,17 @@ export function acessoAteDaAssinatura(entrada: {
 /** `mensal × 12 − anual`, em centavos. Zero ou negativo quando o anual não compensa. */
 export function economiaAnual(mensal: Centavos, anual: Centavos): Centavos {
   return mensal * 12 - anual;
+}
+
+/**
+ * Quantas unidades a este preço pagam o valor (`DECISOES.md#d182`). Para cima:
+ * 4,6 cookies são 5. Preço zero ou negativo devolve 0, e a linha não aparece.
+ */
+export function unidadesQuePagam(
+  valor: Centavos,
+  precoUnidade: Centavos,
+): number {
+  return precoUnidade > 0 ? Math.ceil(valor / precoUnidade) : 0;
 }
 
 export const esquemaCheckout = z.object({

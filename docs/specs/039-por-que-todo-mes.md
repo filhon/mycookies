@@ -256,20 +256,20 @@ Nenhum número escrito à mão: os dois arquivos chamam as funções sobre `EXEM
 
 ## Critérios de aceite
 
-- [ ] Seção "depois do preço" com três momentos, sem grade de cartões iguais, cada frase
-      conferida contra o app.
+- [~] Seção "depois do preço" com três momentos, sem grade de cartões iguais, cada frase
+  conferida contra o app.
 - [ ] As três capturas de uma conta de demonstração, WebP até 120 KB, com `alt` que descreve o
       número da tela.
-- [ ] `unidadesQuePagam` no domínio, com teste; a linha só aparece com preço do Stripe.
-- [ ] `O_QUE_O_PACOTE_TEM` diz o que cada plano dá, sem "sem".
-- [ ] Nove dúvidas, na ordem da seção 3.5.
-- [ ] A frase da origem sai junto com o depoimento.
-- [ ] Prévia nas duas páginas, 1200 × 630, números do `EXEMPLO`.
-- [ ] Nenhuma cor solta fora de `CORES_DA_PREVIA`: `rg "#[0-9A-Fa-f]{6}" src/app src/components`
+- [x] `unidadesQuePagam` no domínio, com teste; a linha só aparece com preço do Stripe.
+- [x] `O_QUE_O_PACOTE_TEM` diz o que cada plano dá, sem "sem".
+- [x] Nove dúvidas, na ordem da seção 3.5.
+- [x] A frase da origem sai junto com o depoimento.
+- [x] Prévia nas duas páginas, 1200 × 630, números do `EXEMPLO`.
+- [x] Nenhuma cor solta fora de `CORES_DA_PREVIA`: `rg "#[0-9A-Fa-f]{6}" src/app src/components`
       só acha `src/app/previa/previa.tsx`.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `package.json`, `firestore.rules` e
+- [x] `lint`, `typecheck`, `test` e `build` passam; `package.json`, `firestore.rules` e
       `firestore.indexes.json` intocados.
-- [ ] `#d181` a `#d184` escritos; `ESTADO.md` e `DEPLOY.md` atualizados.
+- [x] `#d181` a `#d184` escritos; `ESTADO.md` e `DEPLOY.md` atualizados.
 
 ---
 

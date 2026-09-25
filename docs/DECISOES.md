@@ -5347,7 +5347,9 @@ o dia 1.
 vez em que ela usa o produto sem ter decidido pagar. A conta `livre` (`#d141`) também abre tudo:
 cortesia é tudo o que a assinatura dá, o mesmo argumento do `#d147`. Durante o teste, os dois
 painéis dizem numa linha "No teste está aberto. Depois, é do plano completo.", e o cartão do
-essencial em `/assinatura` diz em texto "Sem cardápio e sem ajudante".
+essencial em `/assinatura` diz em texto "Sem cardápio e sem ajudante". **Mudado na 039**: os
+cartões dizem o que cada plano dá, e a diferença fica no do completo ("Tudo do Essencial, mais o
+cardápio… e até 5 ajudantes"); os dois painéis continuam dizendo a linha do teste.
 
 **Consequência.** Quem abriu o cardápio ou convidou ajudante no teste e assina o essencial perde
 os dois no dia em que assina — o app disse isso o teste inteiro. `contas/mycookies` e as contas
@@ -5653,3 +5655,98 @@ próprio e sem UTM. Nova página pública entra em `CAMINHOS_MEDIDOS` à mão, c
 (`#d177`). Se a Vercel deixar de servir `/_vercel/insights/script.js`, o código não quebra, só
 para de contar; a saída é o pacote, e ele pede aprovação. Se o painel for pouco, Plausible no
 mesmo componente.
+
+---
+
+## D181 · Depois do preço: três momentos do mês, com capturas de uma conta de demonstração
+
+**Status:** vigente · decidida em 2026-09-24, na spec 039 · **portão do deploy**
+
+**Contexto.** `/conheca` vendia o preço, e preço parece conta que se faz uma vez. A pergunta que
+trava a assinatura ("por que pagar R$ 39 todo mês?") tinha a resposta no app (024, 003, 004) e
+cabia numa linha do cartão do plano. E o app nunca aparecia.
+
+**Decisão.** A seção `DepoisDoPreco` (`id="depois"`), entre a conta e o depoimento: o argumento
+da mensalidade é que o preço envelhece. Três momentos (a manteiga subiu, chegou uma encomenda,
+fechou o mês), um `h3` e duas frases cada, e a captura da tela que resolve o momento; no desktop
+texto e tela lado a lado alternando o lado, no celular empilhados; nenhuma grade de cartões,
+nenhuma moldura de aparelho. **Capturas, e não os componentes do app com dado falso**: três
+árvores de componentes com dezenas de props falsas quebrariam em silêncio a cada mudança do app;
+imagem envelhece, e se refaz. **Da conta de demonstração, nunca da MyCookie's**: os números da
+Maynara são dela (`#d175`), e cliente real em pedido é dado de terceiro. `TELAS_DO_MES` guarda
+título, texto, `src`, `alt`, `largura` e `altura`; com `src` vazio a seção e a âncora "Depois do
+preço" somem, e o `alt` por escrever (`[texto de quem conduz o projeto…]`) é pego pelo portão.
+
+**Conferido contra o app, e a frase mudou onde ele faz outra coisa.** O aviso da 024 nomeia o
+material que mais subiu (`custoDeHoje(...).culpado`) e diz o doce que ficou no vermelho. O
+WhatsApp do pedido manda o **resumo** (spec 010), e não o orçamento, que é a folha A4: a frase
+diz "o resumo pronto pro WhatsApp". O pedido não monta a lista sozinho: **confirmado**, ele entra
+em `/compras` com o que falta na despensa, e a frase diz isso. A meta diz quantos doces faltam
+por semana ou até o fim do mês (`BlocoMeta`). Na dúvida "por que pagar todo mês", **a taxa da
+maquininha saiu**: o aviso olha material, e não configuração (`custoDeHoje` usa a taxa gravada
+na ficha).
+
+**Consequência.** Toda spec que mudar a tela Hoje, o editor de pedido ou o painel do mês refaz a
+captura correspondente (`ESTADO.md`). Se as imagens envelhecerem sempre, volta a reproduzir o
+componente, um por vez, começando pelo que mais muda.
+
+---
+
+## D182 · O preço do plano em cookies
+
+**Status:** vigente · decidida em 2026-09-24, na spec 039
+
+**Decisão.** Embaixo do mensal de cada plano: "O mês sai por {n} cookies como o do exemplo". `n`
+é `unidadesQuePagam(mensal, precoArredondado do EXEMPLO)` em `domain/assinatura.ts`, para cima
+(R$ 39 a R$ 8,50 são 5); preço de unidade zero ou negativo devolve 0 e a linha não aparece. Sem
+preço do Stripe, sem a linha (`#d174`). É o princípio "todo número mostra a sua consequência"
+aplicado ao nosso preço, com o cookie que a página já ensinou. Nada de "menos que um café": o
+café não é da confeitaria.
+
+**Consequência.** Se soar como conta de vendedor, a saída é tirar a linha; a divisão não custa
+nada a manter. Se o `EXEMPLO` mudar, a linha muda junto.
+
+---
+
+## D183 · A imagem de prévia: cores escritas no arquivo, fonte no repositório
+
+**Status:** vigente · decidida em 2026-09-24, na spec 039
+
+**Contexto.** O canal do roadmap é gente mandando link, e a 036 e a 037 deixaram o link chegar
+ao WhatsApp sem imagem.
+
+**Decisão.** `opengraph-image.tsx` em `/conheca` e na página do preço, com `ImageResponse` de
+`next/og` (vem com o Next, nenhuma dependência), gerados no build como rotas estáticas. Os dois
+chamam `desenharPrevia({ linhaDeCima, frase })` em `src/app/previa/previa.tsx`: 1200 × 630,
+fundo canvas, o logotipo "rende" com o ponto âmbar (a geometria de `Marca.tsx`), a linha de cima
+em tinta apagada e a frase grande em tinta, com os números saindo das funções sobre `EXEMPLO`
+(`#d173`). Duas exceções à regra de sempre:
+
+- **Cores literais.** `ImageResponse` não lê variável CSS. As quatro vivem em `CORES_DA_PREVIA`,
+  com o token ao lado (canvas `#F7F4EE`, tinta `#22242E`, tinta apagada `#6A6C78`, âmbar
+  `#D89B3C`, do tema claro do `DESIGN.md`). É a exceção nomeada; os hex que já existiam
+  (`globals.css`, o manifesto e o `themeColor`, `icon.svg`, a cor padrão da loja) ficam como
+  estavam.
+- **Fonte no repositório.** Archivo 700 (`Archivo-Bold.ttf`, estática, do repositório
+  Omnibus-Type/Archivo) com o `OFL.txt` ao lado, lida por `readFile` no build. Baixar do Google
+  Fonts no build poria rede no build.
+
+**Consequência.** Se a tinta ou o âmbar mudarem em `globals.css`, `CORES_DA_PREVIA` muda à mão.
+O WhatsApp guarda a prévia por endereço: um link colado antes do deploy continua sem imagem.
+
+---
+
+## D184 · A origem do Rende dita no bloco do depoimento, sob a mesma autorização
+
+**Status:** vigente · decidida em 2026-09-24, na spec 039 · **portão do deploy**
+
+**Contexto.** O depoimento é de quem está perto do projeto, e a visitante desconfiada descobre
+isso sozinha.
+
+**Decisão.** Dizer: embaixo da `figcaption`, "O Rende nasceu na cozinha da MyCookie's. Tudo o
+que ele sabe sobre a bancada veio de ver a Maynara trabalhar." A frase fala dela: é
+`DEPOIMENTO.origem`, entra na mesma autorização por escrito do `#d175` e sai junto com o bloco
+quando `DEPOIMENTO.texto` fica vazio.
+
+**Consequência.** Se a Maynara preferir não aparecer como origem, `origem` sai e o depoimento
+fica.

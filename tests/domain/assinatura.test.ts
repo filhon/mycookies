@@ -10,6 +10,7 @@ import {
   permite,
   situacaoDaConta,
   type Situacao,
+  unidadesQuePagam,
 } from "@/lib/domain/assinatura";
 
 const DIA_MS = 24 * 60 * 60 * 1000;
@@ -240,5 +241,19 @@ describe("economiaAnual", () => {
   it("anual igual a doze mensais não economiza nada", () => {
     const mensal = 3900;
     expect(economiaAnual(mensal, mensal * 12)).toBe(0);
+  });
+});
+
+describe("unidadesQuePagam (spec 039)", () => {
+  it("arredonda para cima: R$ 39 a R$ 8,50 são 5 cookies", () => {
+    expect(unidadesQuePagam(3900, 850)).toBe(5);
+  });
+
+  it("o valor exato de uma unidade é uma", () => {
+    expect(unidadesQuePagam(850, 850)).toBe(1);
+  });
+
+  it("preço zero não paga nada: a linha não aparece", () => {
+    expect(unidadesQuePagam(3900, 0)).toBe(0);
   });
 });
