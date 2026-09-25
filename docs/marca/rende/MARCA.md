@@ -29,7 +29,7 @@ maquininha. E a MyCookie's, em uso diário, com esses números.
 **A frase que o produto existe para dizer.** "Este doce te custa R$ 3,41 e você deveria cobrar
 R$ 8,50."
 
-**O que vendemos.** Não um app de R$ 39. O número que mostra os R$ 600 por mês que estavam
+**O que vendemos.** Não um app de R$ 29. O número que mostra os R$ 600 por mês que estavam
 indo embora no preço errado.
 
 ### 1.2 Personalidade e arquétipo
@@ -205,7 +205,7 @@ Número sempre com sua consequência.
 | Sem internet          | normal, não alarme            | "Salvo no aparelho. Sobe quando você tiver sinal." |
 | Meta batida           | reconhece e para              | "Meta do mês batida: R$ 4.512,00."                 |
 | Prejuízo detectado    | direto, com o caminho         | "Neste preço você perde R$ 0,38 por unidade."      |
-| Cobrança e teste      | claro, sem pressão            | "Seu teste acaba em 3 dias. Depois é R$ 39/mês."   |
+| Cobrança e teste      | claro, sem pressão            | "Seu teste acaba em 3 dias. Depois é R$ 29/mês."   |
 | Convite ao beta       | pessoal, curto                | "Quero te mostrar antes de abrir pra todo mundo."  |
 | Ensinar contabilidade | uma frase, no lugar do número | "Margem é quanto do preço sobra: 45% de R$ 8,50."  |
 
@@ -269,7 +269,7 @@ onboarding, engajamento, erro de sincronização.
    "Feito no Rende. Teste 14 dias."
 
 **Stories (3 quadros):** "Quanto sobra pra você neste doce?" → "Se a resposta for 'acho que
-uns 3 reais', a gente tem uma conta pra te mostrar." → "rende.com.br · 14 dias grátis"
+uns 3 reais', a gente tem uma conta pra te mostrar." → "rendeapp.com.br · 14 dias grátis"
 
 **E-mail de boas-vindas**
 Assunto: "Bem-vinda ao Rende. Comece por um produto só."
@@ -280,7 +280,7 @@ aparecer te surpreender, era exatamente pra isso. — Precisa de ajuda? Responde
 **E-mail de teste acabando**
 Assunto: "Faltam 3 dias — e o que o Rende já achou"
 Corpo: "Oi, [nome]. Seu teste acaba em [data]. Até aqui você precificou [n] produtos, e em
-[n] deles o preço estava abaixo do custo + margem. A assinatura é R$ 39/mês, ou R$ 390 no ano.
+[n] deles o preço estava abaixo do custo + margem. A assinatura é R$ 29/mês, ou R$ 290 no ano.
 Seus dados ficam do jeito que estão."
 
 **Convite ao beta (WhatsApp)**

@@ -33,6 +33,8 @@ const SECOES: SecaoDeTexto[] = [
     titulo: "O que é coletado",
     paragrafos: [
       "Da dona da conta: nome, e-mail, senha (guardada cifrada pelo serviço de login do Google; ninguém a vê, nem nós), nome do negócio, e a data em que aceitou os termos.",
+      // Spec 043 (`DECISOES.md#d198`). Espera a revisão de quem conduz o projeto.
+      "Se você entrar com o Google, o Rende recebe do Google o seu nome, o seu e-mail e a sua foto de perfil. A foto não é guardada.",
       "Do que ela cadastra: ingredientes, receitas, preços, fotos e descrições de produtos, pedidos, clientes (nome, telefone, endereço e o que ela anotar), despensa, lançamentos de caixa e o contato do negócio (telefone e Instagram).",
       "Das ajudantes: e-mail, senha (nas mesmas condições da dona) e a data em que foram convidadas ou tiradas da conta.",
       "Das clientes que pedem pelo cardápio: nome, WhatsApp, os produtos, a data, a forma de entrega, o endereço quando for entrega, e as observações que escreverem.",

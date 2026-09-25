@@ -310,7 +310,7 @@ vez da página do Firebase (`DECISOES.md#d196`). No console do Firebase, nesta o
    > Alguém pediu uma senha nova para a sua conta no Rende. Se foi você, toque no link.
    > Se não foi, ignore este e-mail: a senha de hoje continua valendo.
 
-3. **URL de ação personalizada:** `https://{domínio do app}/redefinir-senha`. **Só depois do
+3. **URL de ação personalizada:** `https://www.rendeapp.com.br/redefinir-senha`. **Só depois do
    deploy da tela**: trocar antes quebra a recuperação de quem pedir no meio. A URL vale para
    todos os modelos do projeto; hoje só a senha nova é enviada.
 4. **Com o domínio próprio no ar:** domínio personalizado do remetente (os registros de DNS que
@@ -318,6 +318,38 @@ vez da página do Firebase (`DECISOES.md#d196`). No console do Firebase, nesta o
 
 Se o domínio do app mudar depois (o domínio próprio chegando), a URL do passo 3 muda junto: é
 uma linha no console. Depois do passo 3, o roteiro da spec 042, §5.
+
+## 11 · Entrar com o Google (spec 043)
+
+O botão "Continuar com o Google" no login e no cadastro, com o login voltando pelo domínio do
+app (`DECISOES.md#d199`). **Espera o domínio próprio** (`#d178`): trocar o `authDomain` depois
+é refazer os passos 2 a 5. O código já serve `/__/auth/*` e `/__/firebase/*` pelo `rewrites`
+de `next.config.ts`, e o service worker não os intercepta.
+
+O domínio do app é **`www.rendeapp.com.br`** (o `rendeapp.com.br` sem `www` redireciona para ele).
+
+1. **Firebase → Authentication → Métodos de login → Google:** ativar; e-mail de suporte do
+   projeto. Deixar "Uma conta por endereço de e-mail" como está (`#d200`). _Feito._
+2. **Google Cloud → APIs e serviços → Tela de consentimento OAuth** (Branding): nome **Rende**,
+   logotipo, e-mail de suporte, página inicial `https://www.rendeapp.com.br`, links de
+   `https://www.rendeapp.com.br/privacidade` e `https://www.rendeapp.com.br/termos`, e
+   `rendeapp.com.br` em domínios autorizados. Depois, **pedir a verificação da marca**: sem ela o
+   Google mostra o domínio ("Prosseguir para www.rendeapp.com.br") e não o nome. Não há CLI para
+   esta tela.
+3. **Google Cloud → Credenciais → o cliente OAuth da web** (o que o Firebase criou, "Web client
+   (auto created by Google Service)"): origem JavaScript `https://www.rendeapp.com.br` e URI de
+   redirecionamento autorizado `https://www.rendeapp.com.br/__/auth/handler`. O de
+   `firebaseapp.com` fica: é o do desenvolvimento local. Também sem CLI.
+4. **Firebase → Authentication → Configurações → Domínios autorizados:** o domínio do app e o
+   da prévia da Vercel. _Feito: `www.rendeapp.com.br` e `rendeapp.com.br` já estão na lista._
+5. **Vercel → Environment Variables:** `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=www.rendeapp.com.br`,
+   sem `https://`, só em Production, e **novo deploy** (a variável é assada no bundle). Em
+   Preview fica o `firebaseapp.com`, ou o domínio da prévia com os passos 3 e 4 para ele.
+
+Na prévia da Vercel, o domínio da prévia faz o papel do domínio do app nos passos 3 a 5. Antes
+do deploy de produção: o parágrafo novo de `/privacidade` revisado, e o roteiro de aparelho da
+spec 043, §4, inteiro, com o passo 6 (a conta de senha que passa a entrar pelo Google) numa
+conta de teste.
 
 ## Limites conhecidos
 

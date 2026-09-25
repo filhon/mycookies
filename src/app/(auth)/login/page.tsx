@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { CloudOff } from "lucide-react";
 import { sendPasswordResetEmail } from "firebase/auth";
+import { BotaoGoogle } from "@/components/auth/BotaoGoogle";
 import { MolduraDeEntrada } from "@/components/auth/MolduraDeEntrada";
 import { ContaAberta } from "@/components/site/ContaAberta";
 import { Botao } from "@/components/ui/Botao";
@@ -39,10 +40,11 @@ function codigoDe(falha: unknown): string {
 }
 
 export default function PaginaLogin() {
-  const { usuario, carregando, entrar } = useAuth();
+  const { usuario, carregando, entrar, reconferirAcesso } = useAuth();
   const router = useRouter();
   const online = useConexao();
   const formulario = useRef<HTMLFormElement>(null);
+  const chegadaConferida = useRef(false);
 
   const [erroEmail, setErroEmail] = useState<string>();
   const [erroSenha, setErroSenha] = useState<string>();
@@ -53,9 +55,25 @@ export default function PaginaLogin() {
   const [recuperando, setRecuperando] = useState(false);
   const [avisoSenha, setAvisoSenha] = useState<string | null>(null);
 
+  // Só quem já chega com sessão. Quem entra aqui é levada por quem a fez
+  // entrar: o Google decide entre `/` e `/cadastro`, e este efeito, disparando
+  // antes da claim chegar, mandaria para `/` quem ainda não tem conta.
   useEffect(() => {
-    if (!carregando && usuario) router.replace("/");
+    if (carregando || chegadaConferida.current) return;
+    chegadaConferida.current = true;
+    if (usuario) router.replace("/");
   }, [carregando, usuario, router]);
+
+  /** Sem conta, é uma cadastrada que ainda não terminou (spec 043, 3.2). */
+  async function depoisDoGoogle() {
+    let temConta = true;
+    try {
+      temConta = await reconferirAcesso();
+    } catch {
+      // Sem rede para perguntar: `/` tem a tela de quem não sabe ainda.
+    }
+    router.replace(temConta ? "/" : "/cadastro");
+  }
 
   /**
    * O valor sai do formulário, e não do estado do React: o preenchimento
@@ -151,10 +169,12 @@ export default function PaginaLogin() {
         </p>
       )}
 
+      <BotaoGoogle aoEntrar={depoisDoGoogle} />
+
       <form
         ref={formulario}
         onSubmit={aoEnviar}
-        className="mt-8 space-y-5"
+        className="mt-6 space-y-5"
         noValidate
       >
         {/* `aria-required`, e não `required`: com dois campos, os dois

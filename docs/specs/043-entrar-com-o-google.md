@@ -171,14 +171,14 @@ Na prévia da Vercel com o console configurado. **É o portão do deploy.**
 
 ## Critérios de aceite
 
-- [ ] `BotaoGoogle` no login e no cadastro, secundário, 52 px, com a divisória.
-- [ ] Google sem conta vai para o cadastro "terminando", com o nome preenchido e os termos
+- [x] `BotaoGoogle` no login e no cadastro, secundário, 52 px, com a divisória.
+- [x] Google sem conta vai para o cadastro "terminando", com o nome preenchido e os termos
       obrigatórios.
-- [ ] `/__/auth/*` servido pelo domínio do app; o service worker não o intercepta.
-- [ ] Popup fechado não vira erro; bloqueado vira frase com a saída.
-- [ ] `docs/DEPLOY.md` com os cinco passos de console; `/privacidade` com o parágrafo proposto.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `package.json` e `firestore.rules` intocados.
-- [ ] `#d198` a `#d200` escritos; `ESTADO.md` atualizado, com o roteiro de aparelho como portão.
+- [x] `/__/auth/*` servido pelo domínio do app; o service worker não o intercepta.
+- [x] Popup fechado não vira erro; bloqueado vira frase com a saída.
+- [x] `docs/DEPLOY.md` com os cinco passos de console; `/privacidade` com o parágrafo proposto.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `package.json` e `firestore.rules` intocados.
+- [x] `#d198` a `#d200` escritos; `ESTADO.md` atualizado, com o roteiro de aparelho como portão.
 
 ---
 

@@ -6043,3 +6043,96 @@ salva, e o "Salvar e entrar" seguinte só entra: o código já foi gasto, e mand
 **Consequência.** Quem abre o link num navegador em que outra conta está aberta entra na conta
 do link, sem passar pelo `sair()` que apaga o cache local (`#d118`). Não foi tratado: hoje as
 contas são uma por pessoa e por aparelho; se o caso aparecer, a tela pede para sair antes.
+
+---
+
+## D198 · Google, e só o Google
+
+**Status:** vigente · decidida em 2026-09-25, na spec `043-entrar-com-o-google.md`
+
+**Contexto.** Só havia e-mail e senha. Criar a conta é inventar senha num teclado de celular, e
+voltar depois de trocar de aparelho é lembrar uma senha usada uma vez; o Android dela já está
+logado no Google.
+
+**Decisão.** Um segundo jeito de entrar e de criar a conta: `BotaoGoogle`
+(`src/components/auth/BotaoGoogle.tsx`), secundário, 52 px, largura total, com o "G" nas cores
+do Google (a única cor fora dos tokens, porque as regras de marca do Google não deixam
+recolorir) e a divisória "ou com e-mail" embaixo, no login e no cadastro. Fechar a janela
+(`auth/popup-closed-by-user`, `auth/cancelled-popup-request`) não é erro; `auth/popup-blocked`
+diz a saída. Sem rede, o botão não abre a janela: dá a frase de rede de `MENSAGENS` na hora.
+
+No login, depois do Google, `reconferirAcesso()`: com conta, `/`; sem conta, `/cadastro`. O
+efeito do login que mandava para `/` quem tinha sessão passou a valer só para quem **chega** com
+sessão: disparando a cada troca de `usuario`, ele corria antes da claim e levava para `/` quem
+não tinha conta. No cadastro, depois do Google, a tela cai no estado "terminando" da 027 com o
+nome do `displayName` (cortado em `TAMANHO_MAXIMO_NOME`, editável) e a caixa dos termos
+obrigatória. A frase do estado virou "Confira o seu nome e aceite os termos.", e o botão diz
+"Criar conta" até haver erro, e só então "Tentar de novo": depois do Google é a primeira vez.
+
+Pesados e recusados: link mágico por e-mail (abre no navegador, e não no app instalado) e Apple
+(conta paga de desenvolvedor; só quando a `metricas` mostrar iPhone sem conta Google).
+
+**Consequência.** `/privacidade` diz o que o Google entrega (nome, e-mail, foto; a foto não é
+guardada), texto proposto que espera a revisão de quem conduz o projeto. E-mail e senha
+continuam, para quem já tem conta e para quem não quer o Google.
+
+---
+
+## D199 · Popup, com o `authDomain` no domínio do app
+
+**Status:** vigente · decidida em 2026-09-25, na spec `043-entrar-com-o-google.md`
+
+**Contexto.** Com o `authDomain` em `{id}.firebaseapp.com`, a tela do Google diz "para continuar
+em {id}.firebaseapp.com", o nome de antes da marca (`#d122`), e Safari e Chrome, bloqueando
+armazenamento de terceiros, quebram o fluxo entre os dois domínios.
+
+**Decisão.** `signInWithPopup` com `prompt: "select_account"`, e `/__/auth/*` e `/__/firebase/*`
+servidos pelo próprio domínio: `rewrites` em `next.config.ts` para o `firebaseapp.com` do
+projeto (lido de `NEXT_PUBLIC_FIREBASE_PROJECT_ID`; sem ele, nenhum). Em produção
+`NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` é o domínio do app; no desenvolvimento local continua o
+`firebaseapp.com`. O service worker ganha um ouvinte de `fetch` antes do Serwist que chama
+`stopImmediatePropagation()` para `/__/` na mesma origem: o `defaultCache` responderia
+`/__/auth/handler` com `NetworkFirst` e o `handler.js` com `StaleWhileRevalidate`, e a página
+offline entraria no lugar do documento. Sem resposta do worker, o navegador vai à rede.
+
+**Consequência.** `/__/firebase/init.json` responde 404 pelo proxy e direto, porque o projeto não
+usa o Firebase Hosting; o handler não depende dele. Trocar o domínio do app depois é refazer o
+console (`DEPLOY.md` § 11). Se o roteiro mostrar o popup se perdendo no celular, troca-se por
+`signInWithRedirect`, que o mesmo proxy suporta; se só o app instalado no iPhone falhar, o botão
+some em `display-mode: standalone` no iOS, e isso vira decisão nova.
+
+---
+
+## D200 · A conta de senha que entra pelo Google continua sendo a mesma
+
+**Status:** vigente · decidida em 2026-09-25, na spec `043-entrar-com-o-google.md`
+
+**Decisão.** "Uma conta por endereço de e-mail" fica. Entrar com o Google num Gmail que já tem
+senha não cria outro login: o Google é provedor confiável para Gmail, e como as contas de senha
+do Rende não têm e-mail verificado (`#d142`), o Firebase troca o provedor. O `uid`, a claim e os
+dados ficam; a senha deixa de valer, e "Esqueci minha senha" a devolve. Fora do Gmail, onde o
+Google não garante o e-mail, o Firebase recusa com `auth/account-exists-with-different-credential`,
+e a frase manda entrar com e-mail e senha.
+
+**Consequência.** A Maynara, que entra com senha, se tocar no Google uma vez passa a entrar pelo
+Google. O passo 6 do roteiro prova isso numa conta de teste antes do deploy, com `uid` e claim
+conferidos no console. Se incomodar, a saída é verificar o e-mail no cadastro, o que reabre o
+`#d142`.
+
+---
+
+## D201 · Essencial a R$ 29, completo a R$ 49
+
+**Status:** vigente · decidida em 2026-09-25, por quem conduz o projeto
+
+**Decisão.** Essencial R$ 29,00/mês e R$ 290,00/ano; completo R$ 49,00/mês e R$ 490,00/ano
+(antes R$ 39/390 e R$ 69/690). O anual continua valendo dez mensais. No Stripe ao vivo, preço
+não muda de valor: foram criados quatro preços novos nos mesmos dois produtos, que viraram o
+`default_price`, e os quatro antigos foram arquivados. Não havia assinatura nenhuma, então
+ninguém ficou no preço velho.
+
+**Consequência.** O código não muda: `/conheca`, `/assinatura` e a linha "O mês sai por {n}
+cookies" leem o Stripe (`lerPrecos`). O que muda são as quatro `STRIPE_PRICE_*`, no `.env.local`
+e na Vercel, com redeploy; até lá, a produção aponta para preços arquivados e o checkout falha.
+Os números antigos em specs e decisões anteriores ficam como estavam, porque são história;
+`MARCA.md` foi atualizada.

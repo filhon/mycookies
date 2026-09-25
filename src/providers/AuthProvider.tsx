@@ -81,6 +81,13 @@ const MENSAGENS: Record<string, string> = {
     "Este link já foi usado ou venceu. Peça outro na tela de entrar.",
   "auth/invalid-action-code":
     "Este link já foi usado ou venceu. Peça outro na tela de entrar.",
+  // Entrar com o Google (spec 043). Fechar a janela não é erro, e não entra aqui.
+  "auth/popup-blocked":
+    "O navegador bloqueou a janela do Google. Toque de novo, ou entre com e-mail e senha.",
+  // E-mail fora do Gmail com senha já cadastrada: o Google não é quem garante
+  // esse e-mail, e o Firebase não troca o provedor sozinho (`#d200`).
+  "auth/account-exists-with-different-credential":
+    "Esse e-mail já tem conta com senha. Entre com e-mail e senha.",
 };
 
 /**

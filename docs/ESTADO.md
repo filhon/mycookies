@@ -1,6 +1,10 @@
 # Estado do projeto
 
-Atualizado em 2026-09-25 (a **042 codificada**, a senha nova em `/redefinir-senha` e a entrada
+Atualizado em 2026-09-25 (**preços novos no Stripe ao vivo**, R$ 29/290 e R$ 49/490, `#d201`,
+com as quatro `STRIPE_PRICE_*` por trocar na Vercel; o domínio `www.rendeapp.com.br` no
+`DEPLOY.md` § 10 e § 11, com os passos 2, 3 e 5 da § 11 por fazer à mão; a **043 codificada**, "Continuar com o Google" no login e no
+cadastro, com `/__/auth/*` servido pelo domínio do app, `#d198` a `#d200`, e o roteiro de
+aparelho como portão do deploy; a **042 codificada**, a senha nova em `/redefinir-senha` e a entrada
 logo depois, `#d196` e `#d197`, com o passo 3 do console esperando o deploy da tela; a **041 codificada**, a porta de volta: o login com o botão sempre
 ativo, a senha à mostra, o erro com a saída, o aviso sem internet, a conta de exemplo no painel
 e a ajuda no pé das telas de acesso, `#d192` a `#d195`; a **040 codificada inteira**: a A, a calculadora pública em `/conheca`
@@ -3778,6 +3782,37 @@ Portão: lint e typecheck limpos, **720 testes** (nenhum novo, como a spec pede)
 passa com `/redefinir-senha` estática. `package.json`, `firestore.rules` e
 `firestore.indexes.json` intocados.
 
+## A spec 043 · Entrar com o Google
+
+**Codificada em 2026-09-25**, no branch `feat/spec-043-entrar-com-o-google`, por cima da 042
+(`#d198` a `#d200`). Nenhum campo, regra, índice, dependência ou rota.
+
+- `src/components/auth/BotaoGoogle.tsx`: o botão, o erro dele e a divisória "ou com e-mail".
+  Popup com `prompt: "select_account"`; fechar a janela não é erro; sem rede, a frase na hora.
+- `MENSAGENS`: `auth/popup-blocked` e, fora do que a spec pedia,
+  `auth/account-exists-with-different-credential` (e-mail fora do Gmail com senha, `#d200`).
+- Login: depois do Google, `/` com conta e `/cadastro` sem. O efeito de "já tem sessão" só vale
+  na chegada (`#d198`). Cadastro: o botão some no estado "terminando"; o nome vem do
+  `displayName`; a frase nova; o botão diz "Tentar de novo" só depois de um erro.
+- `next.config.ts`: `rewrites` de `/__/auth/*` e `/__/firebase/*`. `sw.ts`: `/__/` fora do
+  Serwist. `.env.local.example` e `docs/DEPLOY.md` § 11 (os cinco passos do console).
+- `/privacidade`: o parágrafo do Google, **proposto**, esperando a revisão de quem conduz.
+
+O que rodou, no `next start`: `/__/auth/handler` e `/__/auth/handler.js` respondem 200 pelo proxy
+(o `init.json`, 404, como direto no `firebaseapp.com`: o projeto não usa o Hosting); o `sw.js`
+gerado leva o ouvinte antes do Serwist; login e cadastro no Chrome sem cabeça, a 390 px e a
+1280 × 800 no escuro, com o botão, a divisória e o painel no lugar. **O login com o Google não
+rodou**: precisa do console (a seção 11) e de um domínio autorizado.
+
+**Portão do deploy, nesta ordem:** o domínio próprio (`#d178`); `DEPLOY.md` § 11 com a prévia da
+Vercel; o roteiro de aparelho da spec (§ 4) inteiro, com o passo 4 (iPhone, app instalado)
+decidindo se o botão fica no iOS instalado, e o 6 (conta de teste com senha entrando pelo
+Google: `uid` e claim iguais no console) antes de publicar; o parágrafo de `/privacidade`
+revisado.
+
+Portão: lint e typecheck limpos, **720 testes** (nenhum novo, como a spec pede), `npm run build`
+passa. `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -3788,15 +3823,17 @@ deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do 
 
 ## Próxima ação
 
+**A 043 está codificada** (seção acima). Publica depois da 041 e com o domínio próprio no ar;
+antes, `DEPLOY.md` § 11 na prévia da Vercel e o roteiro de aparelho da spec inteiro, que é o
+portão.
+
 **A 042 está codificada** (seção acima). Publica junto com ou depois da 041; depois do deploy,
 o passo 3 do console (`DEPLOY.md` §10) e o roteiro da spec.
 
 **A 041 está codificada.** Antes de publicar: o número de WhatsApp em
 `RESPONSAVEL.whatsapp` (sem ele o link é o e-mail, e funciona), e os passos 1 e 3 do roteiro
 com aparelho de verdade (senha salva no Chrome do Android e no Safari do iPhone; leitor de
-tela). **Segue escrita**, da mesma crítica do `/impeccable` sobre `/login` (21/40), a **043**
-(entrar com o Google; depende da 041 e do domínio próprio decidido, e quem conduz aprova antes
-por ser superfície de autenticação nova). Decisões reservadas para ela: `#d198` a `#d200`.
+tela).
 
 **A 040 está codificada inteira.** Publica junto com ou depois da 036 e da 037. Antes: o passo 6
 do roteiro da A com NVDA ou VoiceOver, o Lighthouse no celular de `/conheca`, e os passos 8 a 12

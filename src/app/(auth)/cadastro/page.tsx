@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import { BotaoGoogle } from "@/components/auth/BotaoGoogle";
 import { MolduraDeEntrada } from "@/components/auth/MolduraDeEntrada";
 import { ContaAberta } from "@/components/site/ContaAberta";
 import { Botao } from "@/components/ui/Botao";
@@ -25,7 +26,8 @@ import { traduzirErroAuth, useAuth } from "@/providers/AuthProvider";
  * Um formulário com dois estados, e não duas telas: sem `usuario`, o formulário
  * inteiro; com `usuario` e sem `contaId`, o mesmo formulário sem e-mail e senha
  * — é o que aparece quando o `POST` caiu e ela volta, pelo "Tentar de novo",
- * recarregando a página ou dias depois pela tela "sem conta". Com `contaId`,
+ * recarregando a página ou dias depois pela tela "sem conta", e o que aparece
+ * logo depois de "Continuar com o Google" (spec 043). Com `contaId`,
  * não há o que cadastrar: vai para `/`.
  */
 export default function PaginaCadastro() {
@@ -118,12 +120,30 @@ export default function PaginaCadastro() {
       }`}
       painel={<ContaAberta parada className="max-w-md" />}
     >
-      <form onSubmit={aoEnviar} className="mt-8 space-y-5" noValidate>
+      {/* Depois do Google, `usuario` existe e a tela cai no segundo estado: o
+          nome vem do `displayName`, e a caixa dos termos continua dela. */}
+      {!terminando && (
+        <BotaoGoogle
+          aoEntrar={(conta) =>
+            setNome(
+              (atual) =>
+                atual ||
+                (conta.displayName ?? "").slice(0, TAMANHO_MAXIMO_NOME),
+            )
+          }
+        />
+      )}
+
+      <form
+        onSubmit={aoEnviar}
+        className={terminando ? "mt-8 space-y-5" : "mt-6 space-y-5"}
+        noValidate
+      >
         {terminando ? (
           <p className="rounded-md bg-sunken px-4 py-3 text-label text-ink">
             Você entrou como{" "}
-            <strong className="font-semibold">{usuario?.email}</strong>. Falta
-            só dizer o seu nome.
+            <strong className="font-semibold">{usuario?.email}</strong>. Confira
+            o seu nome e aceite os termos.
           </p>
         ) : (
           <>
@@ -220,7 +240,8 @@ export default function PaginaCadastro() {
           carregando={enviando}
           disabled={!pronto}
         >
-          {terminando ? "Tentar de novo" : "Criar conta"}
+          {/* Depois do Google é a primeira vez, e não uma nova tentativa. */}
+          {terminando && erro ? "Tentar de novo" : "Criar conta"}
         </Botao>
       </form>
 
