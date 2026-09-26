@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, Seletor } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
@@ -66,11 +66,23 @@ export function FormularioInsumo({
   aberto,
   aoFechar,
   insumo,
+  leitura,
+  aoEditar,
+  aoVoltar,
 }: {
   aberto: boolean;
   aoFechar: () => void;
   /** Ausente = novo cadastro. */
   insumo?: Insumo;
+  /**
+   * A ficha do material (`#d222`). Presente, o painel mostra ela no lugar dos
+   * campos, com "Editar material" no rodapé. O painel é o mesmo nos dois
+   * modos: trocar o conteúdo não fecha nem reabre nada.
+   */
+  leitura?: ReactNode;
+  aoEditar?: () => void;
+  /** Presente, "Cancelar" volta para a ficha em vez de fechar. */
+  aoVoltar?: () => void;
 }) {
   const contaId = useContaId();
   const [estado, setEstado] = useState<EstadoFormulario>(
@@ -90,6 +102,26 @@ export function FormularioInsumo({
     setErros({});
     setFalha(null);
     setConfirmandoArquivo(false);
+  }
+
+  // O botão que trocou o modo sai da tela junto com o modo: o foco vai para o
+  // conteúdo do painel, e não para o `body`, fora da armadilha de foco.
+  const conteudo = useRef<HTMLDivElement>(null);
+  const lendo = !!leitura;
+  const lendoAntes = useRef(lendo);
+  useEffect(() => {
+    if (lendoAntes.current === lendo) return;
+    lendoAntes.current = lendo;
+    if (aberto) conteudo.current?.focus();
+  }, [lendo, aberto]);
+
+  function voltar() {
+    // O que ela digitou e desistiu não reaparece no próximo "Editar".
+    if (insumo) setEstado(doInsumo(insumo));
+    setErros({});
+    setFalha(null);
+    setConfirmandoArquivo(false);
+    aoVoltar?.();
   }
 
   const definir = <C extends keyof EstadoFormulario>(
@@ -195,6 +227,29 @@ export function FormularioInsumo({
     }
   }
 
+  if (insumo && leitura) {
+    const categoria = CATEGORIAS_INSUMO.find(
+      (opcao) => opcao.valor === insumo.categoria,
+    )?.rotulo;
+    return (
+      <Painel
+        aberto={aberto}
+        aoFechar={aoFechar}
+        titulo={insumo.nome}
+        descricao={[categoria, insumo.marca].filter(Boolean).join(" · ")}
+        rodape={
+          <Botao variante="primaria" onClick={aoEditar} className="w-full">
+            Editar material
+          </Botao>
+        }
+      >
+        <div ref={conteudo} tabIndex={-1} className="outline-none">
+          {leitura}
+        </div>
+      </Painel>
+    );
+  }
+
   return (
     <Painel
       aberto={aberto}
@@ -207,7 +262,11 @@ export function FormularioInsumo({
       }
       rodape={
         <div className="flex gap-3">
-          <Botao onClick={aoFechar} className="flex-1" disabled={salvando}>
+          <Botao
+            onClick={aoVoltar ? voltar : aoFechar}
+            className="flex-1"
+            disabled={salvando}
+          >
             Cancelar
           </Botao>
           <Botao
@@ -221,7 +280,7 @@ export function FormularioInsumo({
         </div>
       }
     >
-      <div className="space-y-5">
+      <div ref={conteudo} tabIndex={-1} className="space-y-5 outline-none">
         <Campo
           rotulo="Nome"
           required

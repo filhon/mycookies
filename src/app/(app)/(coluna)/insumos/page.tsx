@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { BotaoBiblioteca } from "@/components/biblioteca/BotaoBiblioteca";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
+import { FichaDoMaterial } from "@/components/insumos/FichaDoMaterial";
 import { FormularioInsumo } from "@/components/insumos/FormularioInsumo";
 import { LinhaInsumo } from "@/components/insumos/LinhaInsumo";
 import {
@@ -19,14 +20,20 @@ import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { Pilulas, type OpcaoPilula } from "@/components/ui/Pilulas";
 import { temPrecoMedio } from "@/lib/domain/biblioteca";
+import { custosDeHoje } from "@/lib/domain/custoFicha";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { dataISODe } from "@/lib/domain/datas";
 import { MENSAGEM_FALHA } from "@/lib/domain/notaFiscal";
-import { colInsumos } from "@/lib/firebase/colecoes";
+import { colFichas, colInsumos } from "@/lib/firebase/colecoes";
 import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
 import { useColecao } from "@/lib/hooks/useColecao";
 import { useConexao } from "@/lib/hooks/useDispositivo";
-import type { CategoriaInsumo, Fornada, Insumo } from "@/lib/types";
+import type {
+  CategoriaInsumo,
+  FichaTecnica,
+  Fornada,
+  Insumo,
+} from "@/lib/types";
 import { useContaId, usePapel } from "@/providers/AuthProvider";
 
 /** `PRECO_MEDIO` não é pílula: só a faixa entra nele, e "Ver todos" sai. */
@@ -50,6 +57,8 @@ export default function PaginaInsumos() {
   const [filtro, setFiltro] = useState<Filtro>("TODOS");
   const [emEdicao, setEmEdicao] = useState<Insumo | undefined>();
   const [painelAberto, setPainelAberto] = useState(false);
+  // Tocar lê; editar é o botão do rodapé (`#d222`). "Novo" abre já editando.
+  const [modo, setModo] = useState<"ver" | "editar">("ver");
   // O mesmo sinal de `EntradaLeitura`: sem rede, "Ler uma nota" na bandeja
   // nasce desabilitada e diz por quê.
   const online = useConexao();
@@ -80,6 +89,28 @@ export default function PaginaInsumos() {
   );
   const { dados: fornadas } = useColecao<Fornada>(consultaProducao);
 
+  // A mesma consulta de `ListaFichas`, para cair no mesmo cache: "Onde entra"
+  // abre sem rede para quem já abriu Produtos.
+  const consultaFichas = useMemo(
+    () =>
+      query(
+        colFichas(contaId),
+        where("arquivado", "==", false),
+        orderBy("nomeBusca"),
+      ),
+    [contaId],
+  );
+  const fichas = useColecao<FichaTecnica>(consultaFichas);
+  const custos = useMemo(
+    () => custosDeHoje(fichas.dados, dados),
+    [fichas.dados, dados],
+  );
+
+  // O documento vivo, e não o da hora do toque: a ficha e o "anterior" da
+  // escrita leem o que o cache tem agora.
+  const aberto =
+    emEdicao && (dados.find((insumo) => insumo.id === emEdicao.id) ?? emEdicao);
+
   // O critério é o do selo na linha (`temPrecoMedio`), não outro.
   const comPrecoMedio = useMemo(
     () => dados.filter(temPrecoMedio).length,
@@ -101,11 +132,13 @@ export default function PaginaInsumos() {
 
   function abrirNovo() {
     setEmEdicao(undefined);
+    setModo("editar");
     setPainelAberto(true);
   }
 
-  function abrirEdicao(insumo: Insumo) {
+  function abrirFicha(insumo: Insumo) {
     setEmEdicao(insumo);
+    setModo("ver");
     setPainelAberto(true);
   }
 
@@ -284,7 +317,7 @@ export default function PaginaInsumos() {
                 insumo={insumo}
                 fornadas={fornadas}
                 hoje={hoje}
-                aoAbrir={abrirEdicao}
+                aoAbrir={abrirFicha}
               />
             ))}
           </ul>
@@ -294,7 +327,20 @@ export default function PaginaInsumos() {
       <FormularioInsumo
         aberto={painelAberto}
         aoFechar={() => setPainelAberto(false)}
-        insumo={emEdicao}
+        insumo={aberto}
+        leitura={
+          aberto && modo === "ver" ? (
+            <FichaDoMaterial
+              insumo={aberto}
+              fichas={fichas.carregando || fichas.erro ? null : fichas.dados}
+              custos={custos}
+              fornadas={fornadas}
+              hoje={hoje}
+            />
+          ) : undefined
+        }
+        aoEditar={() => setModo("editar")}
+        aoVoltar={emEdicao ? () => setModo("ver") : undefined}
       />
     </>
   );

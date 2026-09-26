@@ -165,14 +165,14 @@ E em `src/lib/domain/custoFicha.ts`:
 
 ## Critérios de aceite
 
-- [ ] Tocar abre a ficha; editar é o botão do rodapé; o painel não fecha na troca.
-- [ ] Histórico do mais novo ao mais velho, quilo sem perda, variação, fornecedor.
-- [ ] A entrada da biblioteca rotulada e fora de toda variação.
-- [ ] "Onde entra" com custo por unidade e parte do custo, maior primeiro, tocável.
-- [ ] Variação de 5% ou mais na linha, com ícone e texto, sem cor semântica.
-- [ ] Funções puras com teste; `domain/` sem Firebase nem React.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d222` e `#d223` escritos; `ESTADO.md` atualizado.
+- [x] Tocar abre a ficha; editar é o botão do rodapé; o painel não fecha na troca.
+- [x] Histórico do mais novo ao mais velho, quilo sem perda, variação, fornecedor.
+- [x] A entrada da biblioteca rotulada e fora de toda variação.
+- [x] "Onde entra" com custo por unidade e parte do custo, maior primeiro, tocável.
+- [x] Variação de 5% ou mais na linha, com ícone e texto, sem cor semântica.
+- [x] Funções puras com teste; `domain/` sem Firebase nem React.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d222` e `#d223` escritos; `ESTADO.md` atualizado.
 
 ---
 

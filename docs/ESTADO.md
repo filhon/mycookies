@@ -1,12 +1,15 @@
 # Estado do projeto
 
-Atualizado em 2026-09-26 (**a 049 codificada**, o preço da gôndola: a linha do material diz o
+Atualizado em 2026-09-26 (**a 050 codificada**, a ficha do material: tocar num material abre a
+ficha para ler, com o preço de cada compra, onde ele entra e a despensa, e editar vira o botão do
+rodapé no mesmo painel; a linha ganha a variação da última compra, `#d222` e `#d223`; **a 049
+codificada**, o preço da gôndola: a linha do material diz o
 custo do quilo, do litro ou da unidade, o custo unitário com dois dígitos significativos, a idade
 da contagem só fora de fresca e a faixa que conta os preços médios, `#d220` e `#d221`; **specs
-050 a 052 escritas, não codificadas**: a crítica da tela Materiais virou quatro specs de uma
+051 e 052 escritas, não codificadas**: a crítica da tela Materiais virou quatro specs de uma
 sessão cada, na ordem 049 (o preço da gôndola), 050 (a ficha do material), 051 (o que o preço
-novo faz) e 052 (a mesa dos materiais, a de menor retorno), com as decisões `#d222` a `#d226`
-reservadas; **a 048 codificada**, o teste que mostra o que rendeu: a faixa do teste
+novo faz) e 052 (a mesa dos materiais, a de menor retorno), com as decisões `#d224` a `#d226`
+reservadas para a 051 e a 052; **a 048 codificada**, o teste que mostra o que rendeu: a faixa do teste
 na Hoje conta os produtos com preço e as vendas do mês e, nos três últimos dias, põe o preço do
 completo na sobra do produto mais vendido com o botão de assinar, `#d218` e `#d219`; **a 047 codificada**, quanto cobrar: a busca na faixa do cabeçalho da
 tela Hoje responde o total e a sobra da quantidade pedida, "30 brig", `#d216` e `#d217`; **a 046 codificada**, o que espera por você: a lista do pedido pelo
@@ -4013,6 +4016,38 @@ no celular), o 4 (leitor de tela) e o 5 (tema escuro).
 Portão: lint e typecheck limpos, **760 testes** (9 novos), `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 050 · A ficha do material
+
+**Codificada em 2026-09-26** (`#d222` e `#d223`). Nenhum campo, índice, regra ou dependência;
+uma assinatura nova, a de fichas vivas, idêntica à de `ListaFichas`.
+
+- `src/lib/domain/custoInsumo.ts`: `comprasDoInsumo` (o histórico do mais novo ao mais velho, o
+  quilo sem perda, a variação para a compra anterior dela, a entrada da biblioteca marcada por
+  `criadoEm` e o resumo) e `variacaoDaUltimaCompra`, com sete testes. Importa `ehDaBiblioteca`
+  de `biblioteca.ts`, que importa `calcularCustoInsumo` daqui: o ciclo é seguro porque o uso
+  dos dois lados é dentro de função.
+- `src/lib/domain/custoFicha.ts`: `usoDoMaterial`, com dois testes.
+- `src/components/insumos/FichaDoMaterial.tsx`, novo: custo, compras (uma frase por compra no
+  leitor de tela), onde entra (some enquanto as fichas carregam) e a despensa.
+- `src/components/insumos/FormularioInsumo.tsx`: `leitura`, `aoEditar` e `aoVoltar`; o mesmo
+  `Painel` nos dois modos, o foco no conteúdo na troca, e "Cancelar" com `aoVoltar` volta e
+  descarta o digitado.
+- `src/components/insumos/LinhaInsumo.tsx`: a seta e o percentual a partir de 5%, `ink-muted`.
+- `src/app/(app)/(coluna)/insumos/page.tsx`: a assinatura das fichas, `custosDeHoje` num
+  `useMemo`, o modo `"ver" | "editar"`, e o material aberto lido vivo do cache (`dados`), e não
+  o objeto da hora do toque.
+
+**Fora do que a spec desenhou**: com material da biblioteca sem compra dela, a frase é "Nenhuma
+compra sua ainda. Quando você corrigir o preço, ela aparece aqui." A linha de compra diz "R$
+109,50 por 1 kg" (a spec esboçava "o pote de 1 kg", e o documento não sabe se é pote). A
+descrição do painel é categoria e marca.
+
+**Não rodou**: o roteiro de aparelho da spec (§ 4), inteiro; em especial o 2 (a troca sem piscar),
+o 4 (a parte batendo com a composição do editor), o 5 (sem rede) e o 6 (leitor de tela).
+
+Portão: lint e typecheck limpos, **769 testes** (9 novos), `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -4023,8 +4058,11 @@ deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do 
 
 ## Próxima ação
 
-**A 049 está codificada** (seção acima). Publica sozinha; o portão é o roteiro da spec. A próxima
-da crítica de Materiais é a 050 (a ficha do material).
+**A 050 está codificada** (seção acima). Publica junto com ou depois da 049 (usa
+`custoDeReferencia`); o portão é o roteiro da spec. A próxima da crítica de Materiais é a 051 (o
+que o preço novo faz).
+
+**A 049 está codificada** (seção acima). Publica sozinha; o portão é o roteiro da spec.
 
 **A 048 está codificada** (seção acima). Publica junto com ou depois da 045 (lê o mesmo
 agregado); o portão é o passe de navegador da seção. Com ela, as quatro specs da crítica da Hoje

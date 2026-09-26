@@ -11,6 +11,7 @@ import {
   opcoesDaEscolha,
   podeSerComponente,
   temEscolhas,
+  usoDoMaterial,
   type EntradaCustoFicha,
   type FichaParaEscolha,
   type MaterialDeHoje,
@@ -855,5 +856,59 @@ describe("custosDeHoje", () => {
     // vira `Infinity` nem `NaN`, e a sobra apenas sobe.
     expect(hoje?.custoUnitario).toBe(50);
     expect(Number.isFinite(hoje?.custoUnitario)).toBe(true);
+  });
+});
+
+describe("usoDoMaterial", () => {
+  const COOKIE = fichaHoje();
+  const BRIGADEIRO = fichaHoje({
+    id: "brigadeiro",
+    nome: "Brigadeiro",
+    rendimento: 20,
+    itens: [
+      {
+        insumoId: "chocolate",
+        nomeSnapshot: "Chocolate",
+        categoria: "INGREDIENTE",
+        quantidade: 100,
+        unidadeBase: "g",
+        custoLinha: 400,
+      },
+    ],
+    insumoIds: ["chocolate"],
+    custoUnitario: 100,
+  });
+  const SO_FARINHA = fichaHoje({ id: "pao", insumoIds: ["farinha"] });
+
+  it("as fichas que usam o material, com o preço de hoje, a maior parte primeiro", () => {
+    const chocolate = { id: "chocolate", custoUnidadeBaseCorrigido: 6.5 };
+    const custos = custosDeHoje(
+      [COOKIE, BRIGADEIRO],
+      [FARINHA, { ...chocolate, nome: "Chocolate" }],
+    );
+    const uso = usoDoMaterial(
+      [COOKIE, SO_FARINHA, BRIGADEIRO],
+      chocolate,
+      custos,
+    );
+
+    // Cookie: 200 g × 6,50 = 1300 no lote de 10 → 130 de 293 hoje.
+    // Brigadeiro: 100 g × 6,50 = 650 no lote de 20 → 32,5; o lote gravado de
+    // 2425 sobe 250 hoje, 2675 / 20 = 134.
+    expect(uso.map((u) => u.fichaId)).toEqual(["cookie", "brigadeiro"]);
+    expect(uso[0]?.custoPorUnidade).toBe(130);
+    expect(uso[0]?.parte).toBeCloseTo(130 / 293);
+    expect(uso[1]?.custoPorUnidade).toBe(32.5);
+    expect(uso[1]?.parte).toBeCloseTo(32.5 / 134);
+  });
+
+  it("nenhuma ficha: lista vazia", () => {
+    expect(
+      usoDoMaterial(
+        [SO_FARINHA],
+        { id: "chocolate", custoUnidadeBaseCorrigido: 4 },
+        new Map(),
+      ),
+    ).toEqual([]);
   });
 });

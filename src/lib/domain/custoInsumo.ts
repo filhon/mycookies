@@ -2,11 +2,14 @@ import type {
   CategoriaInsumo,
   Centavos,
   CentavosFracionados,
+  HistoricoPreco,
   Percentual,
   UnidadeBase,
   UnidadeCompra,
 } from "@/lib/types";
-import { paraBase, unidadeBaseDe } from "./unidades";
+// Ciclo com `biblioteca.ts`, que usa `calcularCustoInsumo` só dentro de função.
+import { ehDaBiblioteca } from "./biblioteca";
+import { custoDeReferencia, paraBase, unidadeBaseDe } from "./unidades";
 
 /**
  * As cinco categorias, na ordem em que aparecem em toda tela que as oferece.
@@ -98,6 +101,111 @@ export function custoDeUso(
   quantidade: number,
 ): Centavos {
   return Math.round(custoUnidadeBaseCorrigido * quantidade);
+}
+
+/** O que `comprasDoInsumo` chama num `Timestamp`: o domínio não o importa. */
+interface Momento {
+  toMillis(): number;
+}
+
+/** O que a ficha do material lê do histórico. `Insumo` serve. */
+export interface InsumoComHistorico {
+  id: string;
+  unidadeBase: UnidadeBase;
+  criadoEm: Momento;
+  historicoPrecos: (Omit<HistoricoPreco, "data"> & { data: Momento })[];
+}
+
+export interface CompraDoInsumo {
+  dataMs: number;
+  precoCompra: Centavos;
+  quantidadeCompra: number;
+  unidadeCompra: UnidadeCompra;
+  /** O quilo, o litro ou a unidade, **sem** perda: perda mudar não é o preço mudar. */
+  referencia: CentavosFracionados;
+  fornecedor?: string;
+  /** O preço médio com que o material nasceu, e não uma compra dela. */
+  daBiblioteca: boolean;
+  /** Em %, contra a compra anterior dela. `null` na primeira e na da biblioteca. */
+  variacao: number | null;
+}
+
+export interface ComprasDoInsumo {
+  /** Do mais novo ao mais velho. */
+  compras: CompraDoInsumo[];
+  /** Quantas são dela, sem a da biblioteca. */
+  quantas: number;
+  /** A primeira compra dela. `null` sem nenhuma. */
+  primeiraMs: number | null;
+  /** Em %, da primeira compra dela à última. `null` com menos de duas. */
+  variacaoTotal: number | null;
+}
+
+/** 99,90 → 109,50 = 10. Inteiro, e sem "-0". */
+function variacaoEntre(antes: number, depois: number): number | null {
+  if (antes <= 0) return null;
+  return Math.round((depois / antes - 1) * 100) || 0;
+}
+
+/**
+ * O histórico gravado, pronto para a ficha do material (`#d222`).
+ *
+ * A entrada da biblioteca é a que nasceu com o documento (`criadoEm`) num id da
+ * biblioteca: a mais velha, até a poda das doze a levar embora. Fica fora de
+ * toda variação; sem isso, a primeira compra real sairia "subiu 40%".
+ */
+export function comprasDoInsumo(insumo: InsumoComHistorico): ComprasDoInsumo {
+  const criadoMs = insumo.criadoEm?.toMillis();
+  const ordenadas = [...(insumo.historicoPrecos ?? [])].sort(
+    (a, b) => a.data.toMillis() - b.data.toMillis(),
+  );
+
+  const compras: CompraDoInsumo[] = [];
+  let primeiraMs: number | null = null;
+  let primeira: number | null = null;
+  let anterior: number | null = null;
+  let quantas = 0;
+  for (const [indice, entrada] of ordenadas.entries()) {
+    const dataMs = entrada.data.toMillis();
+    const daBiblioteca =
+      indice === 0 && ehDaBiblioteca(insumo.id) && dataMs === criadoMs;
+    compras.push({
+      dataMs,
+      precoCompra: entrada.precoCompra,
+      quantidadeCompra: entrada.quantidadeCompra,
+      unidadeCompra: entrada.unidadeCompra,
+      referencia: custoDeReferencia(
+        entrada.custoUnidadeBase,
+        insumo.unidadeBase,
+      ).centavos,
+      ...(entrada.fornecedor ? { fornecedor: entrada.fornecedor } : {}),
+      daBiblioteca,
+      variacao:
+        daBiblioteca || anterior === null
+          ? null
+          : variacaoEntre(anterior, entrada.custoUnidadeBase),
+    });
+    if (daBiblioteca) continue;
+    quantas += 1;
+    primeiraMs ??= dataMs;
+    primeira ??= entrada.custoUnidadeBase;
+    anterior = entrada.custoUnidadeBase;
+  }
+
+  return {
+    compras: compras.reverse(),
+    quantas,
+    primeiraMs,
+    variacaoTotal: quantas < 2 ? null : variacaoEntre(primeira!, anterior!),
+  };
+}
+
+/** O percentual da última compra dela contra a anterior dela; `null` com menos de duas. */
+export function variacaoDaUltimaCompra(
+  insumo: InsumoComHistorico,
+): number | null {
+  const ultima = comprasDoInsumo(insumo).compras[0];
+  return ultima && !ultima.daBiblioteca ? ultima.variacao : null;
 }
 
 /** Normaliza nome para busca offline: minúsculo, sem acento, sem espaço duplo. */

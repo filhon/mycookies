@@ -6517,3 +6517,61 @@ Erro relativo abaixo de 5%.
 **Antes.** Quatro casas abaixo de um centavo e duas acima: entre R$ 0,01 e R$ 0,10, a faixa de
 laticínio e chocolate, o erro chegava a 33% (creme de leite a R$ 0,01 o grama, real R$ 0,015).
 Não havia teste da função; a tabela da spec está em `tests/domain/money.test.ts`.
+
+---
+
+## D222 · Tocar no material lê; editar é o botão do rodapé
+
+**Status:** vigente · decidida em 2026-09-26, na spec `050-a-ficha-do-material.md`; codificada em 2026-09-26
+
+**Decisão.** Tocar numa linha de `/insumos` abre o `Painel` com `FichaDoMaterial`: o custo (o
+quilo com a perda, como na linha), **o preço de cada compra** (`comprasDoInsumo`, sobre o
+`historicoPrecos` que o documento já guardava e nenhuma tela lia), **onde entra**
+(`usoDoMaterial`: as fichas vivas com o id em `insumoIds`, o custo dele por unidade de rendimento
+ao preço de hoje e a parte disso no `custoDeHoje(...).custoUnitario`, maior primeiro, cada uma
+indo a `/fichas/{id}`) e a despensa, com a idade sempre. "Editar material" é o primário do
+rodapé; "Cancelar" num material existente volta para a ficha e descarta o digitado. "Novo
+material" abre direto o formulário. Arquivar continua dentro do formulário.
+
+**O mesmo painel.** `FormularioInsumo` ganhou `leitura`, `aoEditar` e `aoVoltar`: com `leitura`,
+ele devolve o `Painel` com a ficha; sem, o de sempre. As duas saídas são o mesmo `Painel` na
+mesma posição da árvore, e o React o reaproveita: a troca não fecha, não reabre e não refaz a
+transição. O foco vai para o conteúdo do painel na troca, porque o botão que a pediu some junto.
+
+**A entrada da biblioteca não é compra dela.** Num id `biblioteca-`, a entrada que nasceu com o
+documento (a mais velha, com `data` igual a `criadoEm`) é o preço médio: rotulada, sem variação,
+fora da frase do total e da variação da linha. A comparação com `criadoEm`, e não "a mais velha"
+sem mais, porque a poda das doze (`podarHistorico`) acaba levando a da biblioteca embora, e a
+mais velha passa a ser compra dela.
+
+**O quilo do histórico é sem perda** (`custoUnidadeBase`): perda mudar não é o preço mudar. O
+custo do topo é com perda, porque é o que entra nos produtos, e a frase diz qual.
+
+**A consulta de fichas é a de `ListaFichas`**, idêntica, para cair no mesmo cache: sem rede,
+quem já abriu Produtos vê "Onde entra" inteiro. Enquanto ela carrega (ou se a regra negasse),
+a seção some, em vez de dizer "nenhum produto" por um instante. A ajudante lê fichas pela regra
+atual (`#d157`), e vê tudo.
+
+**Kit que usa o material só pelas receitas de dentro não aparece**: o kit não tem o id em
+`insumoIds`. A caixa e a fita do próprio kit aparecem.
+
+---
+
+## D223 · O histórico é uma lista, e a variação vai para a linha
+
+**Status:** vigente · decidida em 2026-09-26, na spec `050-a-ficha-do-material.md`; codificada em 2026-09-26
+
+**Decisão.** Sem gráfico. Doze pontos no máximo, quase sempre dois ou três: uma lista com a
+variação escrita ("subiu 9%") diz mais que uma linha subindo, cabe no celular a meio metro e
+não pede dependência. Cada compra mostra a variação para a anterior dela a partir de 1%; o
+total ("Subiu 19% desde a primeira compra, em …") só com duas compras dela ou mais. Se a conta
+passar a ter doze compras em quase todo material, o gráfico volta à mesa.
+
+Na `LinhaInsumo`, ao lado do custo, quando a **última compra dela** mudou o quilo em 5% ou mais
+(`variacaoDaUltimaCompra`, `VARIACAO_NA_LINHA`): `trending-up` ou `trending-down` em `ink-muted`,
+o número, e em `sr-only` "subiu 9% na última compra". **Sem cor semântica**: preço de material
+subir não é erro nem prejuízo, é informação; a consequência mora nos produtos (e na 051). A
+atenção já é do custo desatualizado, e usar a mesma cor para "subiu" diluiria o selo.
+
+Os percentuais são inteiros e sem "-0" (`variacaoEntre`); os limiares de 1% e 5% ficam na tela,
+e as funções devolvem o número cru.

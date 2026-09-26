@@ -527,3 +527,53 @@ export function custosDeHoje(
   }
   return resultado;
 }
+
+export interface UsoDoMaterial {
+  fichaId: string;
+  nome: string;
+  unidadeRendimento: UnidadeRendimento;
+  /** O que este material custa numa unidade do rendimento, ao preço de hoje. */
+  custoPorUnidade: CentavosFracionados;
+  /** A parte disso no custo unitário de hoje, de 0 a 1. */
+  parte: number;
+}
+
+/**
+ * "Onde entra" da ficha do material (`#d222`): as fichas com o id em
+ * `insumoIds`, com o que ele pesa em cada uma, a maior parte primeiro. As
+ * linhas saem de `custoLinhaItem`, a mesma conta de `custoDeHoje`. Kit que só o
+ * usa pelas receitas de dentro não tem o id e não entra.
+ */
+export function usoDoMaterial(
+  fichas: FichaTecnica[],
+  material: Pick<Insumo, "id" | "custoUnidadeBaseCorrigido">,
+  custos: Map<string, CustoDeHoje>,
+): UsoDoMaterial[] {
+  return fichas
+    .filter((ficha) => ficha.insumoIds?.includes(material.id))
+    .map((ficha) => {
+      const lote = ficha.itens
+        .filter((item) => item.insumoId === material.id)
+        .reduce(
+          (soma, item) =>
+            soma +
+            custoLinhaItem({
+              ...item,
+              custoUnidadeBaseCorrigido: material.custoUnidadeBaseCorrigido,
+            }),
+          0,
+        );
+      const custoPorUnidade =
+        ficha.rendimento > 0 ? lote / ficha.rendimento : 0;
+      const unitario =
+        custos.get(ficha.id)?.custoUnitario ?? ficha.custoUnitario;
+      return {
+        fichaId: ficha.id,
+        nome: ficha.nome,
+        unidadeRendimento: ficha.unidadeRendimento,
+        custoPorUnidade,
+        parte: unitario > 0 ? custoPorUnidade / unitario : 0,
+      };
+    })
+    .sort((a, b) => b.parte - a.parte);
+}

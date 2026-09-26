@@ -1,13 +1,22 @@
 "use client";
 
-import { ChevronRight, TriangleAlert } from "lucide-react";
+import {
+  ChevronRight,
+  TrendingDown,
+  TrendingUp,
+  TriangleAlert,
+} from "lucide-react";
 import { Selo } from "@/components/ui/Selo";
 import { temPrecoMedio } from "@/lib/domain/biblioteca";
+import { variacaoDaUltimaCompra } from "@/lib/domain/custoInsumo";
 import { contagemDoInsumo, rotuloDeIdade } from "@/lib/domain/estoque";
 import { formatarCustoUnitario, formatarMoeda } from "@/lib/domain/money";
 import { projecaoDoInsumo } from "@/lib/domain/producao";
 import { custoDeReferencia, formatarQuantidade } from "@/lib/domain/unidades";
 import type { DataISO, Fornada, Insumo } from "@/lib/types";
+
+/** Abaixo disso a última compra não vira sinal na linha; a ficha diz tudo (`#d223`). */
+const VARIACAO_NA_LINHA = 5;
 
 /**
  * A linha do insumo, com o que a despensa tem e desde quando.
@@ -47,6 +56,13 @@ export function LinhaInsumo({
     insumo.unidadeBase,
   );
 
+  // Sem cor semântica: subir não é erro nem prejuízo, é informação, e a
+  // atenção já é do custo desatualizado (`#d223`).
+  const variacao = variacaoDaUltimaCompra(insumo);
+  const mostraVariacao =
+    variacao !== null && Math.abs(variacao) >= VARIACAO_NA_LINHA;
+  const Seta = (variacao ?? 0) > 0 ? TrendingUp : TrendingDown;
+
   // Três andares, como a linha da ficha: nome e custo em cima, a compra e a
   // unidade no meio, e a despensa na largura inteira embaixo. Ao lado do custo,
   // a despensa quebrava em três linhas num celular de 360px.
@@ -61,6 +77,16 @@ export function LinhaInsumo({
           <p className="min-w-0 flex-1 truncate text-body font-medium text-ink">
             {insumo.nome}
           </p>
+          {mostraVariacao && (
+            <p className="num flex shrink-0 items-center gap-1 text-label text-ink-muted">
+              <Seta aria-hidden className="size-4" strokeWidth={1.75} />
+              <span aria-hidden>{Math.abs(variacao)}%</span>
+              <span className="sr-only">
+                {variacao > 0 ? "subiu" : "caiu"} {Math.abs(variacao)}% na
+                última compra
+              </span>
+            </p>
+          )}
           <p className="num shrink-0 text-body font-semibold text-ink">
             {referencia.rotulo === "a unidade"
               ? formatarCustoUnitario(referencia.centavos)
