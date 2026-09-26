@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Centavos, Pacote } from "@/lib/types";
+import type { Centavos, Pacote, ResumoProduto } from "@/lib/types";
 import { LIMITE_DE_AJUDANTES } from "./ajudante";
 
 /**
@@ -185,6 +185,28 @@ export function unidadesQuePagam(
   precoUnidade: Centavos,
 ): number {
   return precoUnidade > 0 ? Math.ceil(valor / precoUnidade) : 0;
+}
+
+/**
+ * O plano pago com o que sobra do produto que ela mais vendeu no mês
+ * (`DECISOES.md#d219`): o `#d182` com o produto dela, e com sobra em vez de
+ * preço. Mais vendido é a maior `quantidade`; no empate, a maior receita.
+ * Sem produto vendido ou com sobra que não paga nada, `null`: a linha some.
+ */
+export function sobraQuePagaOPlano(
+  produtos: Record<string, ResumoProduto>,
+  mensal: Centavos,
+): { nome: string; unidades: number } | null {
+  const maisVendido = Object.values(produtos)
+    .filter((produto) => produto.quantidade > 0)
+    .sort((a, b) => b.quantidade - a.quantidade || b.receita - a.receita)[0];
+  if (!maisVendido) return null;
+
+  const unidades = unidadesQuePagam(
+    mensal,
+    Math.round(maisVendido.lucro / maisVendido.quantidade),
+  );
+  return unidades > 0 ? { nome: maisVendido.nome, unidades } : null;
 }
 
 export const esquemaCheckout = z.object({

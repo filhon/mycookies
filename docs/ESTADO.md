@@ -1,6 +1,8 @@
 # Estado do projeto
 
-Atualizado em 2026-09-26 (**a 047 codificada**, quanto cobrar: a busca na faixa do cabeçalho da
+Atualizado em 2026-09-26 (**a 048 codificada**, o teste que mostra o que rendeu: a faixa do teste
+na Hoje conta os produtos com preço e as vendas do mês e, nos três últimos dias, põe o preço do
+completo na sobra do produto mais vendido com o botão de assinar, `#d218` e `#d219`; **a 047 codificada**, quanto cobrar: a busca na faixa do cabeçalho da
 tela Hoje responde o total e a sobra da quantidade pedida, "30 brig", `#d216` e `#d217`; **a 046 codificada**, o que espera por você: a lista do pedido pelo
 cardápio, do pedido que passou do dia e do que falta receber no topo da tela Hoje, a agenda vazia
 em uma linha depois dos primeiros passos e o link do cardápio perto dela, `#d213` a `#d215`; **a
@@ -3960,6 +3962,26 @@ o 5 (sem rede) e o 6 (leitor de tela). Conferir também, no desktop largo, a col
 Portão: lint e typecheck limpos, **746 testes** (6 novos), `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 048 · O teste que mostra o que rendeu
+
+**Codificada em 2026-09-26** (`#d218` e `#d219`). Nenhum campo, consulta nova, índice, regra ou
+dependência; a única leitura nova é `/api/assinatura/precos`, só nos três últimos dias.
+
+- `src/lib/domain/assinatura.ts`: `sobraQuePagaOPlano`, pura, com cinco testes (o caso da spec,
+  sem produtos, empate por receita, lucro negativo ou zero, quantidade zero).
+- `src/components/assinatura/FaixaDoTeste.tsx`, reescrito: a segunda linha com produtos e vendas;
+  nos três últimos dias o bloco com o preço em sobra, o "nada se perde" e o primário. Lê as mesmas
+  consultas de `CartaoDoMes` e `CartaoNoVermelhoHoje` em vez de recebê-las da página (`#d218`).
+- `src/app/(app)/(coluna)/page.tsx`: só um conserto. A 047 deixou `xl:top-56xl:col-start-2`
+  colado, e a coluna do mês não grudava; voltou a ser `xl:top-56 xl:col-start-2`.
+
+**Não rodou**: nenhum passe de navegador. Conferir com uma conta de teste mexendo no `trialAte`:
+5 dias (duas linhas, link inteiro), 2 dias (bloco, botão de 52 px no celular), sem rede (sem a
+linha do preço), conta nova sem nada (uma linha). E a coluna grudenta do mês no desktop largo.
+
+Portão: lint e typecheck limpos, **751 testes** (5 novos), `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -3970,8 +3992,12 @@ deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do 
 
 ## Próxima ação
 
+**A 048 está codificada** (seção acima). Publica junto com ou depois da 045 (lê o mesmo
+agregado); o portão é o passe de navegador da seção. Com ela, as quatro specs da crítica da Hoje
+(045 a 048) estão codificadas.
+
 **A 047 está codificada** (seção acima). Publica junto com ou depois da 045 e da 046; o portão é
-o roteiro da spec. A próxima sessão é a 048, o teste que mostra o que rendeu.
+o roteiro da spec.
 
 **A 046 está codificada** (seção acima). Publica junto com ou depois da 045; o portão é o roteiro
 da spec.

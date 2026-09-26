@@ -133,7 +133,7 @@ export default function PaginaHoje() {
             // o cabeçalho mudar.
             <section
               aria-labelledby="hoje-o-mes"
-              className="contents xl:sticky xl:top-56xl:col-start-2 xl:row-start-1 xl:flex xl:flex-col xl:gap-4"
+              className="contents xl:sticky xl:top-56 xl:col-start-2 xl:row-start-1 xl:flex xl:flex-col xl:gap-4"
             >
               <h2 id="hoje-o-mes" className="sr-only">
                 O mês

@@ -9,6 +9,7 @@ import {
   pacoteDaMetadata,
   permite,
   situacaoDaConta,
+  sobraQuePagaOPlano,
   type Situacao,
   unidadesQuePagam,
 } from "@/lib/domain/assinatura";
@@ -255,5 +256,51 @@ describe("unidadesQuePagam (spec 039)", () => {
 
   it("preço zero não paga nada: a linha não aparece", () => {
     expect(unidadesQuePagam(3900, 0)).toBe(0);
+  });
+});
+
+describe("sobraQuePagaOPlano (spec 048)", () => {
+  const cookie = {
+    nome: "Cookie Oreo",
+    quantidade: 40,
+    receita: 36000,
+    lucro: 16000,
+  };
+
+  it("R$ 49 com R$ 4,00 de sobra por unidade são 13", () => {
+    expect(sobraQuePagaOPlano({ a: cookie }, 4900)).toEqual({
+      nome: "Cookie Oreo",
+      unidades: 13,
+    });
+  });
+
+  it("sem produtos não há linha", () => {
+    expect(sobraQuePagaOPlano({}, 4900)).toBeNull();
+  });
+
+  it("o mais vendido ganha, e no empate a maior receita", () => {
+    const brigadeiro = {
+      nome: "Brigadeiro",
+      quantidade: 40,
+      receita: 9000,
+      lucro: 5000,
+    };
+    const bolo = { nome: "Bolo", quantidade: 2, receita: 20000, lucro: 10000 };
+    expect(
+      sobraQuePagaOPlano({ b: brigadeiro, a: cookie, c: bolo }, 4900)?.nome,
+    ).toBe("Cookie Oreo");
+  });
+
+  it("lucro negativo ou zero do mais vendido não paga nada", () => {
+    expect(
+      sobraQuePagaOPlano({ a: { ...cookie, lucro: -800 } }, 4900),
+    ).toBeNull();
+    expect(sobraQuePagaOPlano({ a: { ...cookie, lucro: 0 } }, 4900)).toBeNull();
+  });
+
+  it("quantidade zero não conta como vendido", () => {
+    expect(
+      sobraQuePagaOPlano({ a: { ...cookie, quantidade: 0 } }, 4900),
+    ).toBeNull();
   });
 });

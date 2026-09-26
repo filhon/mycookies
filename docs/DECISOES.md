@@ -6428,3 +6428,49 @@ ferramentas, como o de `/fichas`. No celular a faixa gruda com o cabeçalho; com
 
 **Consequência.** O cabeçalho cresceu 81 px no desktop (a faixa: 32 de respiro, 48 do campo, 1 de
 filete), e a coluna grudenta do mês (`#d212`) passou de `top-36` para `top-56`, medida à mão.
+
+---
+
+## D218 · A faixa do teste conta o que rendeu, com os números da conta
+
+**Status:** vigente · decidida em 2026-09-25, na spec `048-o-teste-que-mostra-o-que-rendeu.md`; codificada em 2026-09-26
+
+**Decisão.** Durante o teste, a `FaixaDoTeste` ganha uma segunda linha em `ink-muted` quando há o
+que contar: "{n} produtos com preço" (fichas vivas com `precificacao.precoVenda > 0`) e "R$ … em
+vendas em {mês}" (`entradas` do agregado do mês), separados por ponto médio; um dos dois em zero
+sai da linha, os dois em zero deixam a faixa em uma linha. "Assinar" deixa de ser texto depois do
+ponto médio: fora dos três últimos dias a faixa inteira continua sendo o link para `/assinatura`,
+com a seta.
+
+**Diferente da spec, e por quê.** A spec mandava a página passar o resumo e as fichas. A página não
+os lê: quem lê é `CartaoDoMes` (o agregado) e `CartaoNoVermelhoHoje` (as fichas), fora do escopo.
+Subir as duas leituras para a página mexeria nos dois cartões. A faixa monta as **mesmas** duas
+consultas (mesma referência do agregado, mesma consulta de fichas vivas por `nomeBusca`), e o
+Firestore divide o alvo, como no `#d216`: nenhuma leitura nova. As duas só montam durante o teste,
+num filho que a faixa só cria nessa situação.
+
+---
+
+## D219 · Nos três últimos dias, o preço ao lado do que ela vende, e um botão de verdade
+
+**Status:** vigente · decidida em 2026-09-25, na spec `048-o-teste-que-mostra-o-que-rendeu.md`; codificada em 2026-09-26
+
+**Decisão.** Com `diasRestantes <= DIAS_DE_ATENCAO` a faixa vira bloco no mesmo contorno: o prazo
+em `text-attention` com o `TriangleAlert`, a linha do `#d218`, "O completo custa R$ 49,00 por mês:
+a sobra de 13 unidades de Cookie Oreo.", "Sem assinar, nada se perde: tudo fica guardado para
+ler." (`#d144`) e "Assinar" como botão primário (`classesBotao` primária, 52 px no celular e
+largura cheia, 48 px a partir de `lg`). O bloco deixa de ser link: o alvo é o botão.
+
+`sobraQuePagaOPlano(produtos, mensal)` em `domain/assinatura.ts`, com teste: o mais vendido do mês
+por `quantidade` (empate: maior `receita`), sobra por unidade `lucro / quantidade` arredondada em
+centavos, e `unidadesQuePagam`. Sem produto vendido, sobra zero ou negativa, ou sem preço do Stripe:
+`null`, e a linha do preço some sem mexer no resto. É o `#d182` com o produto dela e com sobra em
+vez de preço: o plano se paga com o que sobra. Sempre "N unidades de {nome}" ("1 unidade" no
+singular): o nome da ficha não tem plural gravado.
+
+O preço é o mensal do **completo** (o teste abre tudo, `#d168`), lido de `/api/assinatura/precos`
+uma vez por montagem e só nos três últimos dias. A rota pede token válido, não papel de dona; a
+ajudante nunca monta a faixa (`#d156`).
+
+**Consequência.** A Hoje ganha um primário por três dias por conta. Se a 032 passar a permitir
+teste do essencial, o preço lido muda para `precos[pacote]`.

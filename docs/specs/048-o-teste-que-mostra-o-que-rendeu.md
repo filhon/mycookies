@@ -106,14 +106,14 @@ em quantidade (maior receita ganha), lucro negativo, quantidade zero.
 
 ## Critérios de aceite
 
-- [ ] Segunda linha com produtos e vendas quando há o que contar; uma linha quando não há.
-- [ ] Nos três últimos dias: o preço do plano em sobra de produto dela, a frase do "nada se
+- [x] Segunda linha com produtos e vendas quando há o que contar; uma linha quando não há.
+- [x] Nos três últimos dias: o preço do plano em sobra de produto dela, a frase do "nada se
       perde" e o botão primário.
-- [ ] Sem preço do Stripe ou sem produto vendido: sem a linha do preço, e o resto igual.
-- [ ] `sobraQuePagaOPlano` com teste.
-- [ ] Nenhuma leitura nova além da rota de preços, e só nos três últimos dias.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d218` e `#d219` escritos; `ESTADO.md` atualizado.
+- [x] Sem preço do Stripe ou sem produto vendido: sem a linha do preço, e o resto igual.
+- [x] `sobraQuePagaOPlano` com teste.
+- [x] Nenhuma leitura nova além da rota de preços, e só nos três últimos dias.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d218` e `#d219` escritos; `ESTADO.md` atualizado.
 
 ---
 
