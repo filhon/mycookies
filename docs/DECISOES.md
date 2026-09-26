@@ -6474,3 +6474,46 @@ ajudante nunca monta a faixa (`#d156`).
 
 **Consequência.** A Hoje ganha um primário por três dias por conta. Se a 032 passar a permitir
 teste do essencial, o preço lido muda para `precos[pacote]`.
+
+---
+
+## D220 · O custo da linha é o do quilo, do litro ou da unidade
+
+**Status:** vigente · decidida em 2026-09-26, na spec `049-o-preco-da-gondola.md`; codificada em 2026-09-26
+
+**Decisão.** A coluna da direita da `LinhaInsumo` mostra o custo no número da etiqueta da
+gôndola: `custoDeReferencia(custoUnidadeBaseCorrigido, unidadeBase)` (`domain/unidades.ts`, com
+teste) multiplica grama e mililitro por 1000, arredonda em centavos inteiros e diz "o quilo" ou "o
+litro"; a unidade fica como está, fracionária, e diz "a unidade". Quilo e litro em
+`formatarMoeda`, unidade em `formatarCustoUnitario` (luva a R$ 0,088). O rótulo sai em `micro`
+no lugar do "por g"; o custo já é o corrigido pela perda, e a linha do meio continua dizendo a
+perda. O leitor de tela lê valor e rótulo na mesma frase: um `sr-only` ", o quilo" junto do
+número, e o rótulo visível `aria-hidden`.
+
+**Por quê.** Ninguém compara farinha em reais por grama: o número era o do motor de custo, não o
+dela. Com centavos inteiros a coluna também alinha.
+
+**O grama não some.** `ResumoCusto`, `FormularioFicha` e `CartaoLinhaNota` continuam "por g":
+ali a conta é "quantos gramas × quanto o grama". A lista é lida no mercado; o formulário, na
+bancada. Escolher outra referência (chocolate "por 100 g") ficou fora: seria configuração a manter.
+
+**Junto, na mesma spec.** A idade da contagem sai da linha quando `FRESCA` (até
+`IDADE_FRESCA_DIAS`): repetida em quase toda linha, não pedia decisão. E a tela conta
+`temPrecoMedio` (o critério do selo, `#d65` e `#d190`) numa faixa informativa com "Mostrar esses", que
+leva a um filtro `PRECO_MEDIO` fora das pílulas, saído por "Ver todos" na linha da contagem. A
+faixa some em zero e dentro do filtro.
+
+---
+
+## D221 · O custo unitário tem dois dígitos que importam
+
+**Status:** vigente · decidida em 2026-09-26, na spec `049-o-preco-da-gondola.md`; codificada em 2026-09-26
+
+**Decisão.** `formatarCustoUnitario` escolhe as casas pelo tamanho do número: no mínimo dois
+dígitos significativos e no mínimo duas casas (`max(2, 1 − ⌊log10 reais⌋)`, teto de 8; zero é
+"R$ 0,00"). R$ 0,01495 vira "R$ 0,015", R$ 0,0875 vira "R$ 0,088", R$ 0,60 e R$ 12,50 não mudam.
+Erro relativo abaixo de 5%.
+
+**Antes.** Quatro casas abaixo de um centavo e duas acima: entre R$ 0,01 e R$ 0,10, a faixa de
+laticínio e chocolate, o erro chegava a 33% (creme de leite a R$ 0,01 o grama, real R$ 0,015).
+Não havia teste da função; a tabela da spec está em `tests/domain/money.test.ts`.

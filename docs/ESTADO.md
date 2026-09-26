@@ -1,6 +1,12 @@
 # Estado do projeto
 
-Atualizado em 2026-09-26 (**a 048 codificada**, o teste que mostra o que rendeu: a faixa do teste
+Atualizado em 2026-09-26 (**a 049 codificada**, o preço da gôndola: a linha do material diz o
+custo do quilo, do litro ou da unidade, o custo unitário com dois dígitos significativos, a idade
+da contagem só fora de fresca e a faixa que conta os preços médios, `#d220` e `#d221`; **specs
+050 a 052 escritas, não codificadas**: a crítica da tela Materiais virou quatro specs de uma
+sessão cada, na ordem 049 (o preço da gôndola), 050 (a ficha do material), 051 (o que o preço
+novo faz) e 052 (a mesa dos materiais, a de menor retorno), com as decisões `#d222` a `#d226`
+reservadas; **a 048 codificada**, o teste que mostra o que rendeu: a faixa do teste
 na Hoje conta os produtos com preço e as vendas do mês e, nos três últimos dias, põe o preço do
 completo na sobra do produto mais vendido com o botão de assinar, `#d218` e `#d219`; **a 047 codificada**, quanto cobrar: a busca na faixa do cabeçalho da
 tela Hoje responde o total e a sobra da quantidade pedida, "30 brig", `#d216` e `#d217`; **a 046 codificada**, o que espera por você: a lista do pedido pelo
@@ -3982,6 +3988,31 @@ linha do preço), conta nova sem nada (uma linha). E a coluna grudenta do mês n
 Portão: lint e typecheck limpos, **751 testes** (5 novos), `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 049 · O preço da gôndola
+
+**Codificada em 2026-09-26** (`#d220` e `#d221`). Nenhum campo, consulta, índice, regra ou
+dependência.
+
+- `src/lib/domain/unidades.ts`: `custoDeReferencia`, com teste (grama ao quilo, mililitro ao
+  litro em centavos inteiros; unidade como está).
+- `src/lib/domain/money.ts`: `formatarCustoUnitario` com dois dígitos significativos e no mínimo
+  duas casas; a tabela da spec em `tests/domain/money.test.ts` (não havia teste antes). Os quatro
+  chamadores ganham a correção; `CartaoLinhaNota`, `ResumoCusto` e `FormularioFicha` continuam
+  "por g".
+- `src/components/insumos/LinhaInsumo.tsx`: o custo de referência com o rótulo em `micro` ("o
+  quilo"), lido pelo leitor de tela na mesma frase do valor (`sr-only` junto do número, o rótulo
+  visível `aria-hidden`); a idade da contagem some quando `FRESCA`.
+- `src/app/(app)/(coluna)/insumos/page.tsx`: a faixa informativa (`info` / `info-soft`) com a
+  contagem de `temPrecoMedio` e "Mostrar esses", o filtro `PRECO_MEDIO` fora das pílulas (nenhuma
+  pílula marcada dentro dele) e a linha "N com preço médio · Ver todos". A faixa some dentro do
+  filtro: a linha da contagem já diz o mesmo.
+
+**Não rodou**: o roteiro de aparelho da spec (§ 4), inteiro; em especial o 1 (a coluna alinhada
+no celular), o 4 (leitor de tela) e o 5 (tema escuro).
+
+Portão: lint e typecheck limpos, **760 testes** (9 novos), `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -3991,6 +4022,9 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 049 está codificada** (seção acima). Publica sozinha; o portão é o roteiro da spec. A próxima
+da crítica de Materiais é a 050 (a ficha do material).
 
 **A 048 está codificada** (seção acima). Publica junto com ou depois da 045 (lê o mesmo
 agregado); o portão é o passe de navegador da seção. Com ela, as quatro specs da crítica da Hoje

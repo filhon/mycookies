@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   arredondarPreco,
   digitosParaCentavos,
+  formatarCustoUnitario,
   formatarValor,
   parseParaCentavos,
   percentualDe,
@@ -94,5 +95,20 @@ describe("formatarValor", () => {
 describe("percentualDe", () => {
   it("calcula taxa de cartão sobre o total", () => {
     expect(percentualDe(10000, 4.99)).toBe(499);
+  });
+});
+
+describe("formatarCustoUnitario", () => {
+  // A tabela da spec 049 (`#d221`), em centavos: dois dígitos significativos.
+  it.each([
+    [0.359, "R$ 0,0036"],
+    [1.495, "R$ 0,015"],
+    [2.995, "R$ 0,030"],
+    [8.75, "R$ 0,088"],
+    [60, "R$ 0,60"],
+    [1250, "R$ 12,50"],
+    [0, "R$ 0,00"],
+  ])("%s centavos → %s", (centavos, esperado) => {
+    expect(formatarCustoUnitario(centavos)).toBe(esperado);
   });
 });

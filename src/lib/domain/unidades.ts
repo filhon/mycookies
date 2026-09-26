@@ -63,6 +63,24 @@ export function formatarQuantidade(
   return `${numero(quantidadeBase)} ${unidadeBase}`;
 }
 
+/**
+ * O custo no número da etiqueta da gôndola (`#d220`): o quilo, o litro ou a
+ * unidade. O do quilo e o do litro saem em centavos inteiros; o da unidade
+ * continua fracionário (luva a R$ 0,0875).
+ * 1.495 centavo/g → { centavos: 1495, rotulo: "o quilo" }
+ */
+export function custoDeReferencia(
+  custoPorBase: number,
+  unidadeBase: UnidadeBase,
+): { centavos: number; rotulo: "o quilo" | "o litro" | "a unidade" } {
+  if (unidadeBase === "un")
+    return { centavos: custoPorBase, rotulo: "a unidade" };
+  return {
+    centavos: Math.round(custoPorBase * 1000),
+    rotulo: unidadeBase === "g" ? "o quilo" : "o litro",
+  };
+}
+
 /** Unidades de medida compatíveis para digitar uma quantidade de receita. */
 export function unidadesCompativeis(unidadeBase: UnidadeBase): UnidadeCompra[] {
   if (unidadeBase === "g") return ["g", "kg"];

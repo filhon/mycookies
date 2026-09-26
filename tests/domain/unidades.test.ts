@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  custoDeReferencia,
   daBase,
   formatarQuantidade,
   paraBase,
@@ -37,5 +38,26 @@ describe("formatarQuantidade", () => {
 
   it("não usa casa decimal em contagem", () => {
     expect(formatarQuantidade(12, "un")).toBe("12 un");
+  });
+});
+
+describe("custoDeReferencia", () => {
+  it("leva o grama ao quilo e o mililitro ao litro, em centavos inteiros", () => {
+    // Creme de leite: R$ 2,99 por 200 g.
+    expect(custoDeReferencia(299 / 200, "g")).toEqual({
+      centavos: 1495,
+      rotulo: "o quilo",
+    });
+    expect(custoDeReferencia(0.8, "ml")).toEqual({
+      centavos: 800,
+      rotulo: "o litro",
+    });
+  });
+
+  it("deixa a unidade como está", () => {
+    expect(custoDeReferencia(8.75, "un")).toEqual({
+      centavos: 8.75,
+      rotulo: "a unidade",
+    });
   });
 });

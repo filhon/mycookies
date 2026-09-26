@@ -23,11 +23,17 @@ export function formatarValor(centavos: Centavos): string {
 
 /**
  * Formata custos que são frações de centavo sem virar "R$ 0,00".
- * 1.25 centavo/g → "R$ 0,0125".
+ * 1.495 centavo/g → "R$ 0,015" · 0.359 → "R$ 0,0036" · 60 → "R$ 0,60".
+ *
+ * Dois dígitos significativos e no mínimo duas casas: o erro fica abaixo de
+ * 5%. Com duas casas fixas acima do centavo, R$ 0,01495 virava R$ 0,01 (`#d221`).
  */
 export function formatarCustoUnitario(centavos: number): string {
   const reais = centavos / 100;
-  const casas = Math.abs(reais) < 0.01 ? 4 : 2;
+  const casas =
+    reais === 0
+      ? 2
+      : Math.min(8, Math.max(2, 1 - Math.floor(Math.log10(Math.abs(reais)))));
   return `R$ ${reais.toLocaleString("pt-BR", {
     minimumFractionDigits: casas,
     maximumFractionDigits: casas,

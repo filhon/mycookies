@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, ScanLine } from "lucide-react";
+import { Info, Plus, ScanLine } from "lucide-react";
 import { orderBy, query, where } from "firebase/firestore";
 import { useMemo, useState } from "react";
 import { BotaoBiblioteca } from "@/components/biblioteca/BotaoBiblioteca";
@@ -18,6 +18,7 @@ import { CampoBusca } from "@/components/ui/CampoBusca";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { Pilulas, type OpcaoPilula } from "@/components/ui/Pilulas";
+import { temPrecoMedio } from "@/lib/domain/biblioteca";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { dataISODe } from "@/lib/domain/datas";
 import { MENSAGEM_FALHA } from "@/lib/domain/notaFiscal";
@@ -28,7 +29,10 @@ import { useConexao } from "@/lib/hooks/useDispositivo";
 import type { CategoriaInsumo, Fornada, Insumo } from "@/lib/types";
 import { useContaId, usePapel } from "@/providers/AuthProvider";
 
-const FILTROS: OpcaoPilula<CategoriaInsumo | "TODOS">[] = [
+/** `PRECO_MEDIO` não é pílula: só a faixa entra nele, e "Ver todos" sai. */
+type Filtro = CategoriaInsumo | "TODOS" | "PRECO_MEDIO";
+
+const FILTROS: OpcaoPilula<Filtro>[] = [
   { valor: "TODOS", rotulo: "Todos" },
   { valor: "INGREDIENTE", rotulo: "Ingredientes" },
   { valor: "EMBALAGEM", rotulo: "Embalagens" },
@@ -43,7 +47,7 @@ export default function PaginaInsumos() {
   // medida, e uma tela que o relesse a cada render mediria contra outro relógio.
   const [hoje] = useState(() => dataISODe(new Date()));
   const [busca, setBusca] = useState("");
-  const [filtro, setFiltro] = useState<CategoriaInsumo | "TODOS">("TODOS");
+  const [filtro, setFiltro] = useState<Filtro>("TODOS");
   const [emEdicao, setEmEdicao] = useState<Insumo | undefined>();
   const [painelAberto, setPainelAberto] = useState(false);
   // O mesmo sinal de `EntradaLeitura`: sem rede, "Ler uma nota" na bandeja
@@ -76,11 +80,20 @@ export default function PaginaInsumos() {
   );
   const { dados: fornadas } = useColecao<Fornada>(consultaProducao);
 
+  // O critério é o do selo na linha (`temPrecoMedio`), não outro.
+  const comPrecoMedio = useMemo(
+    () => dados.filter(temPrecoMedio).length,
+    [dados],
+  );
+
   const visiveis = useMemo(() => {
     const termo = chaveDeBusca(busca);
     return dados.filter((insumo) => {
       const combinaCategoria =
-        filtro === "TODOS" || insumo.categoria === filtro;
+        filtro === "TODOS" ||
+        (filtro === "PRECO_MEDIO"
+          ? temPrecoMedio(insumo)
+          : insumo.categoria === filtro);
       const combinaBusca = !termo || insumo.nomeBusca.includes(termo);
       return combinaCategoria && combinaBusca;
     });
@@ -171,12 +184,53 @@ export default function PaginaInsumos() {
         </div>
       </CabecalhoPagina>
 
+      {/* O maior erro de custo do primeiro mês: o produto custado com a
+          média da biblioteca, e não com o que ela paga. Dentro do filtro a
+          linha da contagem já diz o mesmo. */}
+      {comPrecoMedio > 0 && filtro !== "PRECO_MEDIO" && (
+        <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-info/30 bg-info-soft px-3 py-2 text-label text-ink">
+          <Info
+            aria-hidden
+            className="mt-3 size-4 shrink-0 text-info"
+            strokeWidth={1.75}
+          />
+          <p className="min-w-0 flex-1 py-2.5">
+            {comPrecoMedio === 1
+              ? "1 material ainda está"
+              : `${comPrecoMedio} materiais ainda estão`}{" "}
+            com o preço médio da biblioteca. Com o que você paga, o custo dos
+            seus produtos fica seu.
+          </p>
+          <button
+            type="button"
+            onClick={() => setFiltro("PRECO_MEDIO")}
+            className="toque shrink-0 rounded-md px-2 font-semibold text-brand-ink transition-colors duration-150 ease-quart hover:bg-brand-100"
+          >
+            Mostrar esses
+          </button>
+        </div>
+      )}
+
       <div className="mt-4 flex min-h-8 items-center justify-between gap-3">
-        <p className="text-label text-ink-muted" aria-live="polite">
-          {carregando
-            ? "Carregando"
-            : `${visiveis.length} ${visiveis.length === 1 ? "material" : "materiais"}`}
-        </p>
+        {filtro === "PRECO_MEDIO" ? (
+          <p className="flex items-center gap-1 text-label text-ink-muted">
+            <span aria-live="polite">{visiveis.length} com preço médio</span>
+            <span aria-hidden>·</span>
+            <button
+              type="button"
+              onClick={() => setFiltro("TODOS")}
+              className="toque -my-2 rounded-md px-2 font-semibold text-brand-ink transition-colors duration-150 ease-quart hover:bg-brand-100"
+            >
+              Ver todos
+            </button>
+          </p>
+        ) : (
+          <p className="text-label text-ink-muted" aria-live="polite">
+            {carregando
+              ? "Carregando"
+              : `${visiveis.length} ${visiveis.length === 1 ? "material" : "materiais"}`}
+          </p>
+        )}
         <SeloSincronizacao pendente={pendente} />
       </div>
 

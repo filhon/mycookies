@@ -6,7 +6,7 @@ import { temPrecoMedio } from "@/lib/domain/biblioteca";
 import { contagemDoInsumo, rotuloDeIdade } from "@/lib/domain/estoque";
 import { formatarCustoUnitario, formatarMoeda } from "@/lib/domain/money";
 import { projecaoDoInsumo } from "@/lib/domain/producao";
-import { formatarQuantidade } from "@/lib/domain/unidades";
+import { custoDeReferencia, formatarQuantidade } from "@/lib/domain/unidades";
 import type { DataISO, Fornada, Insumo } from "@/lib/types";
 
 /**
@@ -40,6 +40,13 @@ export function LinhaInsumo({
   const projecao = projecaoDoInsumo(fornadas, insumo, hoje);
   const comForno = projecao.fornadas > 0 && contagem.quantidade !== null;
 
+  // O custo no número da gôndola, já com a perda (`#d220`). O grama fica no
+  // formulário, onde a conta é "quantos gramas × quanto o grama".
+  const referencia = custoDeReferencia(
+    insumo.custoUnidadeBaseCorrigido,
+    insumo.unidadeBase,
+  );
+
   // Três andares, como a linha da ficha: nome e custo em cima, a compra e a
   // unidade no meio, e a despensa na largura inteira embaixo. Ao lado do custo,
   // a despensa quebrava em três linhas num celular de 360px.
@@ -55,7 +62,11 @@ export function LinhaInsumo({
             {insumo.nome}
           </p>
           <p className="num shrink-0 text-body font-semibold text-ink">
-            {formatarCustoUnitario(insumo.custoUnidadeBaseCorrigido)}
+            {referencia.rotulo === "a unidade"
+              ? formatarCustoUnitario(referencia.centavos)
+              : formatarMoeda(referencia.centavos)}
+            {/* O leitor de tela lê valor e rótulo na mesma frase. */}
+            <span className="sr-only">, {referencia.rotulo}</span>
           </p>
           <ChevronRight
             aria-hidden
@@ -77,19 +88,22 @@ export function LinhaInsumo({
               </>
             )}
           </p>
-          <p className="shrink-0 text-micro text-ink-muted">
-            por {insumo.unidadeBase}
+          <p aria-hidden className="shrink-0 text-micro text-ink-muted">
+            {referencia.rotulo}
           </p>
         </div>
 
         <div className="mt-2 flex flex-wrap items-start gap-x-5 gap-y-1">
           {/* A despensa, e desde quando. Sem a idade o número é um palpite
               antigo tratado como verdade, que é exatamente o que a lista de
-              compras deixou de fazer. */}
+              compras deixou de fazer. A idade fresca sai: repetida em toda
+              linha, virava o cinza da planilha e não pedia decisão. */}
           <p className="num text-label text-ink-subtle">
             {contagem.anotado === null
               ? "nunca contada"
-              : `${formatarQuantidade(contagem.anotado, insumo.unidadeBase)} na despensa · ${rotuloDeIdade(contagem)}`}
+              : contagem.frescor === "FRESCA"
+                ? `${formatarQuantidade(contagem.anotado, insumo.unidadeBase)} na despensa`
+                : `${formatarQuantidade(contagem.anotado, insumo.unidadeBase)} na despensa · ${rotuloDeIdade(contagem)}`}
           </p>
 
           {comForno && (
