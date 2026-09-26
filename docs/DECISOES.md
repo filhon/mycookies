@@ -6333,3 +6333,55 @@ de tela segue o DOM (o mês antes do dia), e as duas seções têm rótulo escon
 coluna grudenta é a altura do cabeçalho no desktop mais 24 px, medida à mão (`ponytail:` no
 código). A página passou a ser dona do espaço entre os blocos (16 px dentro de um grupo, 24 px
 entre grupos): os três cartões que traziam margem de cima própria a perderam.
+
+---
+
+## D213 · "Esperando você": três fontes, uma lista, acima do mês
+
+**Status:** vigente · decidida em 2026-09-25, na spec `046-o-que-espera-por-voce.md`; codificada em 2026-09-26
+
+**Decisão.** `EsperandoVoce` é o primeiro bloco do dia: na pilha, antes do mês; a partir de `xl`,
+no topo da coluna da esquerda. Lista com divisórias, linhas de 52 px, e não existe quando está
+vazia. Pedido pelo cardápio (`ORCAMENTO` com `origem: "CARDAPIO"`, qualquer data, até 3), pedido
+que passou do dia (`passouDoDia`, sem o orçamento, até 3, o mais recente primeiro) e uma linha só
+com a soma de `aReceber` dos entregues em aberto, essa só para a dona. "E mais N" leva a
+`/pedidos`. A agenda da Hoje continua começando em hoje.
+
+**Diferente da spec, e por quê.** As duas primeiras linhas não abrem consulta nova: saem de
+`consultaAgenda` filtrada em memória, a mesma assinatura de `/pedidos` (o que não fechou, de
+qualquer data, finita porque ela fecha os pedidos). A spec previa duas consultas; uma já existente
+basta, e o cache é o mesmo. Como a agenda vem por data de entrega, o pedido do cardápio para hoje e
+amanhã já chega no topo; ele leva "Para hoje", "Para amanhã" ou "Passou do dia" no lugar da data.
+A linha diz "Pedido **de** Ana era para ontem", e não "da": o nome da cliente não diz o gênero.
+`passouDoDia(pedido, hoje)` foi para `domain/pedido.ts`, com teste, e o "Passou da data" de
+`ListaPedidos` passou a usá-la.
+
+---
+
+## D214 · A agenda vazia de quem já opera é uma linha
+
+**Status:** vigente · decidida em 2026-09-25, na spec `046-o-que-espera-por-voce.md`; codificada em 2026-09-26
+
+**Decisão.** Sem `conta.primeirosPassosEm`, o estado vazio grande continua, porque ensina. Com ele,
+uma linha de 56 px no contorno da agenda: "Nada marcado até sexta-feira, 2 de outubro." (o
+`diaVizinho(hoje, 7)` de `rotuloDiaPorExtenso`, que diz até onde a agenda olha) e "Anotar um
+pedido" terciário à direita.
+
+---
+
+## D215 · O link do cardápio vai para perto da agenda
+
+**Status:** vigente · decidida em 2026-09-25, na spec `046-o-que-espera-por-voce.md`; codificada em 2026-09-26
+
+**Decisão.** `LinhaDoCardapioHoje`, montada pela `AgendaHoje` abaixo dela quando a semana tem menos
+de 3 pedidos; só a dona, nunca com `usePortao("cardapio") === "fechado"`. Cardápio aberto: "Seu
+cardápio está no ar", o número de produtos e "Mandar o link" (a folha do sistema quando há
+`navigator.share`, copiar quando não). Cardápio fechado: "Receba pedido por um link" e "Abrir o
+cardápio", que leva a `/configuracao?painel=cardapio`; `SeuCardapio` lê o parâmetro uma vez e abre
+o painel. O endereço, o `share` e o "Copiado" por 2 s saíram de `SeuCardapio` para
+`useLinkDoCardapio()`, usado pelos dois.
+
+**Consequência.** A segunda linha fica só com os produtos: contar os pedidos do mês pelo cardápio
+pede consulta nova (os já confirmados saem da agenda), e a spec mandou cortar nesse caso. O número
+de produtos é `fichaIds.length`, que conta também um produto marcado e depois arquivado; ler as
+fichas na Hoje só para isso não se paga.

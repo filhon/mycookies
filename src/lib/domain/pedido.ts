@@ -311,6 +311,17 @@ export const STATUS_NA_AGENDA: StatusPedido[] = FLUXO_PEDIDO.filter(
 /** O que já saiu dela. */
 export const STATUS_CONCLUIDOS: StatusPedido[] = ["ENTREGUE", "CANCELADO"];
 
+/**
+ * O dia da entrega ficou para trás e o pedido não fechou: "Passou da data" em
+ * `/pedidos` e "era para ontem" na tela Hoje (spec 046). ISO compara como texto.
+ */
+export function passouDoDia(
+  pedido: { dataEntregaISO: DataISO; status: StatusPedido },
+  hoje: DataISO,
+): boolean {
+  return pedido.dataEntregaISO < hoje && !ehConcluido(pedido.status);
+}
+
 export interface AReceber {
   total: Centavos;
   quantidade: number;

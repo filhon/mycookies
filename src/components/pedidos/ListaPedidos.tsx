@@ -24,6 +24,7 @@ import {
   agruparPorEntrega,
   aReceber,
   ehConcluido,
+  passouDoDia,
   ROTULO_STATUS_PEDIDO,
   STATUS_CONCLUIDOS,
 } from "@/lib/domain/pedido";
@@ -401,8 +402,7 @@ function GrupoDoDia({
   hoje: DataISO;
 }) {
   const total = pedidos.reduce((soma, pedido) => soma + pedido.total, 0);
-  const atrasado =
-    dataISO < hoje && pedidos.some((pedido) => !ehConcluido(pedido.status));
+  const atrasado = pedidos.some((pedido) => passouDoDia(pedido, hoje));
   const id = `dia-${prefixo}-${dataISO}`;
 
   return (

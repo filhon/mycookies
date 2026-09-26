@@ -143,15 +143,15 @@ convite):
 
 ## Critérios de aceite
 
-- [ ] "Esperando você" com as três fontes, lista com divisórias, ausente quando vazia.
-- [ ] Pedido pelo cardápio aparece em qualquer data; hoje e amanhã no topo.
-- [ ] Passou do dia com ícone e palavra, sem vermelho.
-- [ ] Agenda vazia: grande antes dos primeiros passos, uma linha depois, com a data-limite.
-- [ ] Linha do cardápio só para a dona, cardápio aberto, semana com menos de 3 pedidos.
-- [ ] `useLinkDoCardapio` usado pelo painel e pela Hoje.
-- [ ] Nenhum índice novo em `firestore.indexes.json`; `firestore.rules` intocado.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d213` a `#d215` escritos; `ESTADO.md` atualizado.
+- [x] "Esperando você" com as três fontes, lista com divisórias, ausente quando vazia.
+- [x] Pedido pelo cardápio aparece em qualquer data; hoje e amanhã no topo.
+- [x] Passou do dia com ícone e palavra, sem vermelho.
+- [x] Agenda vazia: grande antes dos primeiros passos, uma linha depois, com a data-limite.
+- [x] Linha do cardápio só para a dona, cardápio aberto, semana com menos de 3 pedidos.
+- [x] `useLinkDoCardapio` usado pelo painel e pela Hoje.
+- [x] Nenhum índice novo em `firestore.indexes.json`; `firestore.rules` intocado.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d213` a `#d215` escritos; `ESTADO.md` atualizado.
 
 ---
 

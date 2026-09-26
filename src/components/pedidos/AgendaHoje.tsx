@@ -11,26 +11,39 @@ import { Marcador } from "@/components/ui/Selo";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { ID_PEDIDO_NOVO } from "./EditorPedido";
 import { SeloStatus } from "./SeloStatus";
-import { dataISODe, diaVizinho, rotuloAgenda } from "@/lib/domain/datas";
+import { LinhaDoCardapioHoje } from "@/components/conta/LinhaDoCardapioHoje";
+import {
+  dataISODe,
+  diaVizinho,
+  rotuloAgenda,
+  rotuloDiaPorExtenso,
+} from "@/lib/domain/datas";
 import { ehConcluido, resumoDosItens } from "@/lib/domain/pedido";
 import { colPedidos } from "@/lib/firebase/colecoes";
 import { useColecao } from "@/lib/hooks/useColecao";
 import type { DataISO, Pedido } from "@/lib/types";
-import { useContaId } from "@/providers/AuthProvider";
+import { useAuth, useContaId } from "@/providers/AuthProvider";
 
 /** O que cabe na tela de entrada sem virar a lista de pedidos inteira. */
 const MAXIMO_NA_AGENDA = 12;
 
+/** Com três pedidos na semana, o convite do cardápio sobra (`#d215`). */
+const SEMANA_CHEIA = 3;
+
 /**
  * A agenda da tela Hoje: o que sai do forno para hoje, e o que vem logo depois.
  *
- * A consulta começa em hoje e sobe: o pedido atrasado mora na tela de pedidos,
- * porque a tela de entrada precisa responder "o que eu entrego agora" sem
- * cobrança de ontem no meio. Data de entrega, e não data de pagamento — o
- * dinheiro é outro assunto e mora no caixa.
+ * A consulta começa em hoje e sobe: a agenda responde "o que eu entrego
+ * agora". O pedido que passou do dia mora logo acima, em "Esperando você", com
+ * a pergunta "isso saiu?" e a saída na própria linha (spec 046, `#d213`). Data
+ * de entrega, e não data de pagamento — o dinheiro é outro assunto.
+ *
+ * A semana vazia de quem já opera é uma linha, e não o estado vazio que ensina
+ * a tela (`#d214`); e a semana calma traz o cardápio para perto (`#d215`).
  */
 export function AgendaHoje() {
   const contaId = useContaId();
+  const { conta } = useAuth();
   const [hoje] = useState(() => dataISODe(new Date()));
   const fimDaSemana = useMemo(() => diaVizinho(hoje, 7), [hoje]);
 
@@ -83,7 +96,9 @@ export function AgendaHoje() {
         </Link>
       </div>
 
-      {carregando ? (
+      {/* Sem o documento da conta não se sabe qual dos dois vazios mostrar
+          (`#d214`): o grande piscaria antes de virar linha. */}
+      {carregando || !conta ? (
         <div role="status" aria-label="Carregando" className="mt-3 space-y-3">
           <Esqueleto className="h-24 rounded-lg" />
           <Esqueleto className="h-24 rounded-lg" />
@@ -95,7 +110,21 @@ export function AgendaHoje() {
             descricao="Verifique a conexão. O que já foi aberto antes continua disponível offline."
           />
         </div>
+      ) : naAgenda.length === 0 && conta?.primeirosPassosEm ? (
+        <div className="mt-3 flex min-h-14 flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border border-line bg-surface py-2 pr-2 pl-5">
+          <p className="text-body text-ink-muted">
+            Nada marcado até {rotuloDiaPorExtenso(fimDaSemana)}.
+          </p>
+          <Link
+            href={`/pedidos/${ID_PEDIDO_NOVO}`}
+            className={classesBotao({ variante: "terciaria" })}
+          >
+            <Plus aria-hidden className="size-4" strokeWidth={2} />
+            Anotar um pedido
+          </Link>
+        </div>
       ) : naAgenda.length === 0 ? (
+        // Antes dos primeiros passos terminarem, o estado vazio ensina a tela.
         <div className="mt-3 overflow-hidden rounded-lg border border-line bg-surface">
           <EstadoVazio
             titulo="Nada marcado para os próximos dias"
@@ -125,6 +154,12 @@ export function AgendaHoje() {
             </li>
           ))}
         </ul>
+      )}
+
+      {!carregando && !erro && daSemana.length < SEMANA_CHEIA && (
+        <div className="mt-4 empty:hidden">
+          <LinhaDoCardapioHoje />
+        </div>
       )}
     </section>
   );

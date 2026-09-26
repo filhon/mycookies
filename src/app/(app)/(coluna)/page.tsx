@@ -9,6 +9,7 @@ import { CartaoComprasHoje } from "@/components/compras/CartaoComprasHoje";
 import { CartaoNoVermelhoHoje } from "@/components/fichas/CartaoNoVermelhoHoje";
 import { CartaoDoMes } from "@/components/financeiro/CartaoDoMes";
 import { AgendaHoje } from "@/components/pedidos/AgendaHoje";
+import { EsperandoVoce } from "@/components/pedidos/EsperandoVoce";
 import { cn } from "@/lib/utils/cn";
 import { useAuth, usePapel } from "@/providers/AuthProvider";
 
@@ -82,8 +83,9 @@ export default function PaginaHoje() {
           </div>
         )}
 
-        {/* Uma estrutura só, dois arranjos (`#d212`): na pilha, o mês, o
-            produto no vermelho, a agenda e as compras; a partir de `xl`, o dia
+        {/* Uma estrutura só, dois arranjos (`#d212`): na pilha, o que espera
+            por você, o mês, o produto no vermelho, a agenda e as compras; a
+            partir de `xl`, o dia
             à esquerda e o mês à direita. A seção do mês é `contents` na pilha
             para que seus cartões entrem na ordem da coluna única. A ajudante,
             sem o mês, fica na coluna única em qualquer largura. */}
@@ -111,13 +113,18 @@ export default function PaginaHoje() {
             doMes
           )}
 
+          {/* Como a do mês, `contents` na pilha: "Esperando você" sobe para o
+              topo da coluna única (`#d213`), e a agenda fica depois do mês. */}
           <section
             aria-labelledby="hoje-o-dia"
-            className="xl:col-start-1 xl:row-start-1"
+            className="contents xl:col-start-1 xl:row-start-1 xl:flex xl:flex-col xl:gap-6"
           >
             <h2 id="hoje-o-dia" className="sr-only">
               O dia
             </h2>
+            <div className="order-first empty:hidden xl:order-0">
+              <EsperandoVoce />
+            </div>
             <AgendaHoje />
           </section>
         </div>

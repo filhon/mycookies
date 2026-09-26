@@ -12,6 +12,7 @@ import {
   entregasEsquecidas,
   escolhasCompletas,
   ofereceOPrecoDeHoje,
+  passouDoDia,
   podeIrPara,
   repassesFeitos,
   resumoDasEscolhas,
@@ -256,6 +257,26 @@ describe("transicoesPermitidas", () => {
     for (const status of STATUS_CONCLUIDOS) {
       expect(ehConcluido(status)).toBe(true);
     }
+  });
+
+  it("passou do dia: data anterior a hoje e pedido ainda aberto", () => {
+    const hoje = "2026-09-26";
+    expect(
+      passouDoDia({ dataEntregaISO: "2026-09-25", status: "CONFIRMADO" }, hoje),
+    ).toBe(true);
+    // Virada de mês: a comparação é de texto ISO, e continua valendo.
+    expect(
+      passouDoDia({ dataEntregaISO: "2026-08-31", status: "ORCAMENTO" }, hoje),
+    ).toBe(true);
+    expect(passouDoDia({ dataEntregaISO: hoje, status: "PRONTO" }, hoje)).toBe(
+      false,
+    );
+    expect(
+      passouDoDia({ dataEntregaISO: "2026-09-25", status: "ENTREGUE" }, hoje),
+    ).toBe(false);
+    expect(
+      passouDoDia({ dataEntregaISO: "2026-09-25", status: "CANCELADO" }, hoje),
+    ).toBe(false);
   });
 });
 

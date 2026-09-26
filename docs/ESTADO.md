@@ -1,8 +1,11 @@
 # Estado do projeto
 
-Atualizado em 2026-09-26 (**a 045 codificada**, o mês na abertura: a tela Hoje abre no que
+Atualizado em 2026-09-26 (**a 046 codificada**, o que espera por você: a lista do pedido pelo
+cardápio, do pedido que passou do dia e do que falta receber no topo da tela Hoje, a agenda vazia
+em uma linha depois dos primeiros passos e o link do cardápio perto dela, `#d213` a `#d215`; **a
+045 codificada**, o mês na abertura: a tela Hoje abre no que
 sobrou no mês, com a meta em barra dentro dele e a comparação com o mês passado, e duas colunas a
-partir de `xl`, `#d210` a `#d212`; **specs 046 a 048 escritas, nenhuma codificada**: a crítica da
+partir de `xl`, `#d210` a `#d212`; **specs 047 e 048 escritas, nenhuma codificada**: a crítica da
 tela Hoje virou quatro specs de uma sessão cada, na ordem 045 (o mês na abertura), 046 (o que
 espera por você), 047 (quanto cobrar) e 048 (o teste que mostra o que rendeu), com as decisões
 `#d213` a `#d219` reservadas e escritas só quando cada uma for codificada; a **044-A codificada**, o Rende escreve: o transporte do Resend por
@@ -3911,6 +3914,30 @@ especial o passo 5 (a direita grudenta sem sobrepor o cabeçalho) e o 6 (leitor 
 Portão: lint e typecheck limpos, **739 testes** (5 novos), `npm run build` passa.
 `package.json` e `firestore.rules` intocados.
 
+## A spec 046 · O que espera por você
+
+**Codificada em 2026-09-26** (`#d213` a `#d215`). Nenhum campo, rota, índice, regra ou dependência,
+e nenhuma consulta nova além do que `/pedidos` já abre.
+
+- `src/lib/domain/pedido.ts`: `passouDoDia`, pura, com teste; o "Passou da data" de `ListaPedidos`
+  passou a usá-la.
+- `src/components/pedidos/EsperandoVoce.tsx`: pedido pelo cardápio e pedido que passou do dia
+  saem de `consultaAgenda` filtrada em memória (a spec previa duas consultas novas, `#d213`); o
+  "pra receber", de `consultaEntreguesEmAberto`, só para a dona. Ausente quando vazia.
+- `src/components/pedidos/AgendaHoje.tsx`: o estado vazio grande só antes dos primeiros passos;
+  depois, "Nada marcado até …" em uma linha. Monta `LinhaDoCardapioHoje` abaixo com menos de 3
+  pedidos na semana.
+- `src/components/conta/useLinkDoCardapio.ts` (extraído de `SeuCardapio`) e
+  `LinhaDoCardapioHoje.tsx`; `SeuCardapio` abre o painel com `?painel=cardapio`.
+- `src/app/(app)/(coluna)/page.tsx`: a seção do dia é `contents` na pilha, e "Esperando você" sobe
+  para o topo com `order-first`; a partir de `xl`, no topo da coluna da esquerda.
+
+**Não rodou**: o roteiro de navegador da spec (§ 4), inteiro; em especial o 4 ("Mandar o link" no
+celular e no desktop), o 5 (ajudante) e o 6 (sem rede).
+
+Portão: lint e typecheck limpos, **740 testes** (um novo), `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -3921,8 +3948,10 @@ deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do 
 
 ## Próxima ação
 
-**A 045 está codificada** (seção acima). Publica sozinha; o portão é o roteiro da spec. A próxima
-sessão é a 046, que encaixa "o que espera por você" na coluna do dia.
+**A 046 está codificada** (seção acima). Publica junto com ou depois da 045; o portão é o roteiro
+da spec. A próxima sessão é a 047, quanto cobrar.
+
+**A 045 está codificada** (seção acima). Publica sozinha; o portão é o roteiro da spec.
 
 **A 044 está codificada inteira** (seções da A e da B, acima). Publica depois do domínio verificado
 no Resend e de `DEPLOY.md` § 12 inteira (os passos 5 a 7 são do cron: `CRON_SECRET` na Vercel);

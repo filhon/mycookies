@@ -61,9 +61,10 @@ import type {
   PromocaoDoCardapio,
   VitrineDoCardapio,
 } from "@/lib/types";
-import { useAuth, useContaId } from "@/providers/AuthProvider";
+import { useContaId } from "@/providers/AuthProvider";
+import { useLinkDoCardapio } from "./useLinkDoCardapio";
 
-/** O endereço e o `share` não mudam enquanto a tela está aberta. */
+/** O endereço da tela não muda enquanto ela está aberta. */
 const SEM_MUDANCA = () => () => {};
 
 /** "contado hoje", "contado ontem", "contado há 3 dias". */
@@ -93,7 +94,6 @@ export function SeuCardapio({
   carregando: boolean;
 }) {
   const contaId = useContaId();
-  const { conta } = useAuth();
   const idInterruptor = useId();
   const idPromocoes = useId();
   const idCara = useId();
@@ -164,32 +164,26 @@ export function SeuCardapio({
   const fechado = portao === "fechado";
 
   const [painelAberto, setPainelAberto] = useState(false);
+  // `?painel=cardapio` (spec 046): a linha da tela Hoje abre o painel direto.
+  const pedidoPelaUrl = useSyncExternalStore(
+    SEM_MUDANCA,
+    () =>
+      new URLSearchParams(window.location.search).get("painel") === "cardapio",
+    () => false,
+  );
+  const [urlLida, setUrlLida] = useState(false);
+  if (pedidoPelaUrl && !urlLida) {
+    setUrlLida(true);
+    setPainelAberto(true);
+  }
   // As imagens pesam: a vitrine só é lida com o painel aberto (`#d166`).
   const refVitrine = useMemo(
     () => (painelAberto && !fechado ? docVitrine(contaId) : null),
     [painelAberto, fechado, contaId],
   );
   const vitrine = useDocumento<VitrineDoCardapio>(refVitrine);
-  // Só no navegador: o servidor não sabe o endereço nem se há `share`.
-  const origem = useSyncExternalStore(
-    SEM_MUDANCA,
-    () => window.location.origin,
-    () => "",
-  );
-  const podeCompartilhar = useSyncExternalStore(
-    SEM_MUDANCA,
-    () => typeof navigator.share === "function",
-    () => false,
-  );
-  const [copiado, setCopiado] = useState(false);
-
-  useEffect(() => {
-    if (!copiado) return;
-    const relogio = setTimeout(() => setCopiado(false), 2000);
-    return () => clearTimeout(relogio);
-  }, [copiado]);
-
-  const endereco = `${origem}/c/${contaId}`;
+  const { endereco, podeCompartilhar, copiado, copiar, compartilhar } =
+    useLinkDoCardapio();
   const semTelefone = !configuracao?.contato?.telefone?.trim();
 
   function gravar(mudanca: {
@@ -254,21 +248,6 @@ export function SeuCardapio({
         ? [...limitados, fichaId]
         : limitados.filter((id) => id !== fichaId),
     });
-  }
-
-  async function copiar() {
-    try {
-      await navigator.clipboard.writeText(endereco);
-      setCopiado(true);
-    } catch {
-      // Sem permissão de área de transferência: o endereço está na tela,
-      // selecionável num toque.
-    }
-  }
-
-  function compartilhar() {
-    // Fechar a folha do sistema sem escolher rejeita a promessa; não é erro.
-    navigator.share({ title: conta?.nome, url: endereco }).catch(() => {});
   }
 
   const legenda = aberto
