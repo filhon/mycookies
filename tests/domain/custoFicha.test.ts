@@ -9,8 +9,11 @@ import {
   custosDeHoje,
   efeitoDoPrecoNovo,
   ehEmbalagem,
+  kitDividido,
+  levaDoKit,
   opcoesDaEscolha,
   podeSerComponente,
+  rotuloDaQuantidade,
   temEscolhas,
   usoDoMaterial,
   type EntradaCustoFicha,
@@ -1059,5 +1062,42 @@ describe("efeitoDoPrecoNovo", () => {
     expect(
       efeitoDoPrecoNovo([COOKIE], [FARINHA, chocolate(4)], chocolate(4)),
     ).toEqual([]);
+  });
+});
+
+describe("rotuloDaQuantidade", () => {
+  it("concorda a unidade com o número", () => {
+    expect(rotuloDaQuantidade(1, "un")).toBe("1 unidade");
+    expect(rotuloDaQuantidade(2, "un")).toBe("2 unidades");
+    expect(rotuloDaQuantidade(1, "porcao")).toBe("1 porção");
+    expect(rotuloDaQuantidade(300, "g")).toBe("300 gramas");
+    expect(rotuloDaQuantidade(1.5, "porcao")).toBe("1,5 porções");
+    expect(rotuloDaQuantidade(0, "un")).toBe("0 unidades");
+  });
+});
+
+describe("levaDoKit e kitDividido", () => {
+  const componente = {
+    fichaId: "c",
+    nomeSnapshot: "Cookie",
+    quantidade: 2,
+    custoUnitarioSnapshot: 500,
+    custoLinha: 1000,
+  };
+
+  it("soma os produtos de dentro e as escolhas", () => {
+    expect(
+      levaDoKit({
+        componentes: [componente, { ...componente, quantidade: 1 }],
+        escolhas: [{ categoria: "Cookie", quantidade: 4 }],
+      }),
+    ).toBe(7);
+    expect(levaDoKit({ componentes: [] })).toBe(0);
+  });
+
+  it("aponta só o kit que não rende um", () => {
+    expect(kitDividido({ tipo: "KIT", rendimento: 4 })).toBe(true);
+    expect(kitDividido({ tipo: "KIT", rendimento: 1 })).toBe(false);
+    expect(kitDividido({ tipo: "SIMPLES", rendimento: 4 })).toBe(false);
   });
 });

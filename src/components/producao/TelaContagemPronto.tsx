@@ -14,7 +14,7 @@ import { Pilulas } from "@/components/ui/Pilulas";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
 import {
-  ROTULO_UNIDADE_RENDIMENTO,
+  rotuloDaQuantidade,
   SUFIXO_UNIDADE_RENDIMENTO,
 } from "@/lib/domain/custoFicha";
 import { dataISODe } from "@/lib/domain/datas";
@@ -44,7 +44,7 @@ import { useContaId } from "@/providers/AuthProvider";
 import { cn } from "@/lib/utils/cn";
 
 function quanto(valor: number, unidade: UnidadeRendimento): string {
-  return `${String(Number(valor.toFixed(2))).replace(".", ",")} ${ROTULO_UNIDADE_RENDIMENTO[unidade]}`;
+  return rotuloDaQuantidade(valor, unidade);
 }
 
 /**

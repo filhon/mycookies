@@ -9,6 +9,7 @@ import { classesBotao } from "@/components/ui/estilosBotao";
 import {
   composicaoDoLote,
   custoGravado,
+  levaDoKit,
   ROTULO_TIPO_FICHA,
   SUFIXO_UNIDADE_RENDIMENTO,
   type CustoDeHoje,
@@ -87,8 +88,14 @@ export function PainelProduto({
             {ficha.nome}
           </h2>
           <p className="num mt-1 text-label text-ink-muted">
-            rende {ficha.rendimento}{" "}
-            {SUFIXO_UNIDADE_RENDIMENTO[ficha.unidadeRendimento]}
+            {ficha.tipo === "KIT" ? (
+              `leva ${levaDoKit(ficha)}`
+            ) : (
+              <>
+                rende {ficha.rendimento}{" "}
+                {SUFIXO_UNIDADE_RENDIMENTO[ficha.unidadeRendimento]}
+              </>
+            )}
             <span className="mx-1.5 text-ink-subtle">·</span>
             {ficha.invisiveis.tempoProducaoMinutos} min
             <span className="mx-1.5 text-ink-subtle">·</span>

@@ -10,7 +10,9 @@ import {
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Selo } from "@/components/ui/Selo";
 import {
-  ROTULO_UNIDADE_RENDIMENTO,
+  kitDividido,
+  levaDoKit,
+  rotuloDaQuantidade,
   SUFIXO_UNIDADE_RENDIMENTO,
   type CustoDeHoje,
 } from "@/lib/domain/custoFicha";
@@ -126,6 +128,15 @@ export function LinhaFicha({
   const selos = (
     <>
       {ficha.tipo === "KIT" && <Selo tom="neutro">Kit</Selo>}
+      {/* O custo da caixa dividido pelo que vai dentro (`#d227`). */}
+      {kitDividido(ficha) && (
+        <Selo
+          tom="atencao"
+          icone={<TriangleAlert aria-hidden className="size-3.5" />}
+        >
+          Confira o kit
+        </Selo>
+      )}
       {ficha.custoDesatualizado && (
         <Selo
           tom="atencao"
@@ -189,8 +200,9 @@ export function LinhaFicha({
             <p className="num min-w-0 flex-1 truncate text-label text-ink-muted">
               custa {formatarMoeda(ficha.custoUnitario)}
               <span className="mx-1.5 text-ink-subtle">·</span>
-              rende {ficha.rendimento}{" "}
-              {ROTULO_UNIDADE_RENDIMENTO[ficha.unidadeRendimento]}
+              {ficha.tipo === "KIT"
+                ? `leva ${levaDoKit(ficha)}`
+                : `rende ${rotuloDaQuantidade(ficha.rendimento, ficha.unidadeRendimento)}`}
             </p>
             <p
               className={cn(
@@ -239,9 +251,15 @@ export function LinhaFicha({
             )}
           </div>
           <p className="num text-right text-body text-ink">
-            <span className="sr-only">rende </span>
-            {ficha.rendimento}{" "}
-            {SUFIXO_UNIDADE_RENDIMENTO[ficha.unidadeRendimento]}
+            {ficha.tipo === "KIT" ? (
+              `leva ${levaDoKit(ficha)}`
+            ) : (
+              <>
+                <span className="sr-only">rende </span>
+                {ficha.rendimento}{" "}
+                {SUFIXO_UNIDADE_RENDIMENTO[ficha.unidadeRendimento]}
+              </>
+            )}
           </p>
           <p className="num text-right text-body text-ink">
             <span className="sr-only">custa </span>

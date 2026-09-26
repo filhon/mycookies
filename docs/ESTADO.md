@@ -1,6 +1,16 @@
 # Estado do projeto
 
-Atualizado em 2026-09-26 (**a 052 codificada**, a mesa dos materiais: no desktop a lista de
+Atualizado em 2026-09-26 (**a 053 codificada**, o kit que rende um: o kit perde o campo "Rende",
+nasce com 1, diz "leva N" na lista e, gravado com outro rendimento, leva o selo "Confira o kit" e a
+faixa no editor com a ação que põe o 1, sem reescrita sozinha; de carona, "1 unidade pronta",
+`#d227`; **specs 053 a 056 escritas**: a crítica da tela
+Produtos virou quatro specs de uma sessão cada, na ordem 053 (o kit que rende um: o custo do kit
+é dividido pelo "Rende" que ela digitou como número de cookies dentro, e os três combos podem
+estar perdendo dinheiro com a tela dizendo que são os melhores; **vem antes de tudo**), 054 (o
+que cada produto deixou: vendas e lucro do mês na lista, colunas novas, ordem, seta com limiar),
+055 (o que falta pra fazer: a falta vira uma faixa com saída para `/compras`) e 056 (o que o mês
+diz do cardápio: até três frases de popularidade × margem), com as decisões `#d227` a `#d233`
+reservadas; **a 052 codificada**, a mesa dos materiais: no desktop a lista de
 materiais vira tabela com a ficha do material acoplada à direita, e a lista ganha ordem, pelo
 nome, pelo preço que mudou por último ou pelo que pesa mais nos produtos, guardada no aparelho,
 `#d225` e `#d226`; **a 051 codificada**, o que o preço novo faz: editando um material, o
@@ -4113,6 +4123,31 @@ fica.
 Portão: lint e typecheck limpos, **778 testes** (4 novos), `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 053 · O kit que rende um
+
+**Codificada em 2026-09-26** (`#d227`). Nenhum campo, consulta, índice, regra ou dependência; o
+schema não muda, `rendimento` só passa a valer 1 para o kit novo.
+
+- `src/lib/domain/custoFicha.ts`: `rotuloDaQuantidade`, `levaDoKit` e `kitDividido`; três testes.
+- `src/components/fichas/FormularioFicha.tsx`: "Rende" e "Em" somem no kit; a troca para Kit põe
+  sempre 1 e "un"; a descrição do bloco fala da montagem; a faixa do kit dividido, com a sobra da
+  caixa inteira e a ação "É o preço da caixa inteira"; "Dividido por 1 unidade".
+- `src/components/fichas/LinhaFicha.tsx`: "leva N" no kit (celular e desktop), o selo "Confira o
+  kit", "rende 1 unidade" na receita.
+- `src/components/fichas/PainelProduto.tsx`: "leva N" no cabeçalho do kit.
+- `src/components/producao/FraseDaCapacidade.tsx`, `PainelFornada.tsx` e `TelaContagemPronto.tsx`:
+  a concordância por `rotuloDaQuantidade`, e "pronta/prontas".
+
+**Fora do que a spec desenhou** (no `#d227`): salvar não força o 1, grava o que está no formulário,
+então o kit antigo só muda pela ação; a sobra da faixa desconta a maquininha (a spec dava preço menos
+custo); `PainelFornada` e `TelaContagemPronto` entraram pela busca que a spec pedia.
+
+**Não rodou**: a conferência da hipótese no dado (§ 2, o Combo Dupla aberto) e o roteiro de
+aparelho da spec (§ 4), inteiro.
+
+Portão: lint e typecheck limpos, **781 testes** (3 novos), `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -4122,6 +4157,11 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 053 está codificada** (seção acima). Publica sozinha, e antes da 054 e da 056, que somam lucro
+por produto; o portão é o roteiro da spec, com o Combo Dupla aberto no passo 2. Depois de publicar,
+ela confere os três combos um a um. A próxima da crítica de Produtos é a 054 (o que cada produto
+deixou).
 
 **A 052 está codificada** (seção acima), e com ela as quatro specs da crítica de Materiais (049 a
 052). Publica depois da 050 e da 051; o portão é o roteiro da 050 (se a tabela fica) e o da 052.

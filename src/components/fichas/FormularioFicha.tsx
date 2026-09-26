@@ -49,6 +49,7 @@ import {
   LinhaItemFicha,
 } from "./LinhaItemFicha";
 import { FaixaDeComposicao, Parcela } from "./FaixaDeComposicao";
+import { palavraSobra } from "./LinhaFicha";
 import { PainelPreco } from "./PainelPreco";
 import { insumosComPrecoMedio } from "@/lib/domain/biblioteca";
 import {
@@ -62,6 +63,7 @@ import {
   podeSerComponente,
   ROTULO_PARCELA,
   ROTULO_UNIDADE_RENDIMENTO,
+  rotuloDaQuantidade,
   type RateioOperacional,
 } from "@/lib/domain/custoFicha";
 import {
@@ -74,7 +76,10 @@ import {
   FOTO_LADO_PX,
   FOTO_MAX_BYTES,
 } from "@/lib/domain/orcamento";
-import type { ParametrosPreco } from "@/lib/domain/precificacao";
+import {
+  verificarPreco,
+  type ParametrosPreco,
+} from "@/lib/domain/precificacao";
 import {
   projecaoDoPronto,
   quebraDaFicha,
@@ -481,6 +486,15 @@ export function FormularioFicha({
     precoVenda: valores.precoManual ? valores.precoVenda : null,
   });
 
+  // O kit gravado dividido pelo que vai dentro (`#d227`): a caixa inteira
+  // custa o lote, e a faixa diz o que sobra dela ao preço de hoje.
+  const kitDividido = ehKit && rendimento !== 1;
+  const sobraDaCaixa = verificarPreco(
+    derivado.precoVenda,
+    derivado.custo.custoTotalLote,
+    derivado.taxas,
+  ).lucroUnitario;
+
   // O tipo de `errors` para lista de campos é uma união de "erro da lista" e
   // "erros por linha". Uma leitura tipada, e o resto do arquivo fica limpo.
   const errosItens = form.formState.errors.itens as
@@ -571,7 +585,9 @@ export function FormularioFicha({
       });
       const removidos = valores.itens.length - mantidos.length;
       form.setValue("itens", mantidos);
-      if (!valores.rendimento) form.setValue("rendimento", "1");
+      // Kit rende um: o lote é uma caixa (`#d227`), e o campo nem aparece.
+      form.setValue("rendimento", "1");
+      form.setValue("unidadeRendimento", "un");
       setAviso(
         removidos > 0
           ? `Um kit não leva ingrediente solto: ${removidos} ${removidos === 1 ? "item saiu" : "itens saíram"} da lista, e só a embalagem ficou.`
@@ -883,8 +899,33 @@ export function FormularioFicha({
         <Bloco
           icone={Tag}
           titulo={ehKit ? "O kit" : "A receita"}
-          descricao="O nome, quanto sai de um lote e quanto tempo ele toma do começo ao fim: forno, bancada e embalagem."
+          descricao={
+            ehKit
+              ? "O nome e quanto tempo a montagem toma do começo ao fim: bancada e embalagem."
+              : "O nome, quanto sai de um lote e quanto tempo ele toma do começo ao fim: forno, bancada e embalagem."
+          }
         >
+          {kitDividido && (
+            <Faixa tom="atencao">
+              <p className="num">
+                Este kit está dividido por {texto(rendimento)}. Se{" "}
+                {formatarMoeda(derivado.precoVenda)} é o preço da caixa inteira,
+                ela custa {formatarMoeda(derivado.custo.custoTotalLote)} e{" "}
+                {palavraSobra(sobraDaCaixa)}{" "}
+                {formatarMoeda(Math.abs(sobraDaCaixa))}, já com a maquininha.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  form.setValue("rendimento", "1");
+                  form.setValue("unidadeRendimento", "un");
+                }}
+                className="toque mt-2 inline-flex items-center rounded-md text-label font-semibold text-brand-ink underline underline-offset-2"
+              >
+                É o preço da caixa inteira
+              </button>
+            </Faixa>
+          )}
           <div className="grid gap-4 sm:grid-cols-2">
             <Campo
               rotulo="Nome"
@@ -895,23 +936,25 @@ export function FormularioFicha({
               {...form.register("nome")}
             />
 
-            <div className="grid grid-cols-[1fr_8rem] gap-3">
-              <Campo
-                rotulo="Rende"
-                required
-                inputMode="decimal"
-                placeholder="20"
-                erro={form.formState.errors.rendimento?.message}
-                {...form.register("rendimento")}
-              />
-              <Seletor rotulo="Em" {...form.register("unidadeRendimento")}>
-                {UNIDADES_RENDIMENTO.map((unidade) => (
-                  <option key={unidade} value={unidade}>
-                    {ROTULO_UNIDADE_RENDIMENTO[unidade]}
-                  </option>
-                ))}
-              </Seletor>
-            </div>
+            {!ehKit && (
+              <div className="grid grid-cols-[1fr_8rem] gap-3">
+                <Campo
+                  rotulo="Rende"
+                  required
+                  inputMode="decimal"
+                  placeholder="20"
+                  erro={form.formState.errors.rendimento?.message}
+                  {...form.register("rendimento")}
+                />
+                <Seletor rotulo="Em" {...form.register("unidadeRendimento")}>
+                  {UNIDADES_RENDIMENTO.map((unidade) => (
+                    <option key={unidade} value={unidade}>
+                      {ROTULO_UNIDADE_RENDIMENTO[unidade]}
+                    </option>
+                  ))}
+                </Seletor>
+              </div>
+            )}
 
             <Campo
               rotulo="Tempo de produção"
@@ -1294,8 +1337,10 @@ export function FormularioFicha({
             </div>
             <div className="flex items-baseline justify-between gap-4">
               <dt className="text-ink-muted">
-                Dividido por {rendimento > 0 ? texto(rendimento) : "—"}{" "}
-                {ROTULO_UNIDADE_RENDIMENTO[valores.unidadeRendimento]}
+                Dividido por{" "}
+                {rendimento > 0
+                  ? rotuloDaQuantidade(rendimento, valores.unidadeRendimento)
+                  : `— ${ROTULO_UNIDADE_RENDIMENTO[valores.unidadeRendimento]}`}
               </dt>
               <dd>
                 <Dinheiro centavos={derivado.custo.custoUnitario} />

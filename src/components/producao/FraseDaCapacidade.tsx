@@ -7,7 +7,7 @@ import {
   PackageOpen,
   TriangleAlert,
 } from "lucide-react";
-import { ROTULO_UNIDADE_RENDIMENTO } from "@/lib/domain/custoFicha";
+import { rotuloDaQuantidade } from "@/lib/domain/custoFicha";
 import { rotuloDeIdade } from "@/lib/domain/estoque";
 import {
   faltaPara,
@@ -19,7 +19,10 @@ import { formatarQuantidade } from "@/lib/domain/unidades";
 import type { UnidadeRendimento } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
-/** "13 unidades prontas", "300 gramas prontos": o adjetivo segue a unidade. */
+/**
+ * "13 unidades prontas", "300 gramas prontos": o adjetivo segue a unidade, e
+ * no singular perde o "s" ("1 unidade pronta").
+ */
 const PRONTO: Record<UnidadeRendimento, string> = {
   un: "prontas",
   porcao: "prontas",
@@ -28,7 +31,11 @@ const PRONTO: Record<UnidadeRendimento, string> = {
 };
 
 function prontas(quantidade: number, unidade: UnidadeRendimento): string {
-  return `${texto(quantidade)} ${ROTULO_UNIDADE_RENDIMENTO[unidade]} ${PRONTO[unidade]}`;
+  const rotulo = rotuloDaQuantidade(quantidade, unidade);
+  const adjetivo = rotulo.startsWith("1 ")
+    ? PRONTO[unidade].slice(0, -1)
+    : PRONTO[unidade];
+  return `${rotulo} ${adjetivo}`;
 }
 
 /**
@@ -143,8 +150,7 @@ export function FraseDaCapacidade({
       {leitura === "PISO" ? `pelo menos ${quantas}` : `dá para ${quantas}`}
       {alem}
       <Separador />
-      {texto(unidades)}{" "}
-      {ROTULO_UNIDADE_RENDIMENTO[capacidade.unidadeRendimento]}
+      {rotuloDaQuantidade(unidades, capacidade.unidadeRendimento)}
       {gargalo && (
         <>
           <Separador />
@@ -244,7 +250,6 @@ export function FraseCabeNoPedido({
   nome?: string;
 }) {
   const unidade = capacidade.unidadeRendimento;
-  const rotulo = ROTULO_UNIDADE_RENDIMENTO[unidade];
   const precisa = unidades - jaFeitas;
   const livres =
     prontos === null ? 0 : Math.max(0, prontos - Math.min(unidades, jaFeitas));
@@ -259,7 +264,8 @@ export function FraseCabeNoPedido({
   if (precisa <= 0) {
     return (
       <Frase icone={CookingPot} rotulo={nome}>
-        A massa para este item já está feita: {texto(jaFeitas)} {rotulo}.
+        A massa para este item já está feita:{" "}
+        {rotuloDaQuantidade(jaFeitas, unidade)}.
       </Frase>
     );
   }
@@ -311,7 +317,7 @@ export function FraseCabeNoPedido({
         Dá:{" "}
         {prontosFrase
           ? `${prontosFrase}, e a despensa faz mais ${texto(capacidade.unidades)} hoje`
-          : `a despensa tem para ${texto(capacidade.unidades)} ${rotulo} hoje`}
+          : `a despensa tem para ${rotuloDaQuantidade(capacidade.unidades, unidade)} hoje`}
         {outros}
         {semContagemFrase && (
           <>
@@ -334,7 +340,7 @@ export function FraseCabeNoPedido({
 
   return (
     <Frase icone={TriangleAlert} tom="atencao" rotulo={nome}>
-      Falta massa para {texto(precisa - disponivel)} {rotulo}
+      Falta massa para {rotuloDaQuantidade(precisa - disponivel, unidade)}
       {prontosFrase && ` (${prontosFrase})`}
       {outros}.{compras && ` Comprar ${compras} resolve.`}
       {semContagemFrase && (

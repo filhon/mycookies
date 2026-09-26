@@ -6665,3 +6665,53 @@ algo; servem para ordenar e só.
 nome no servidor, todo acesso em `try/catch`; valor desconhecido é "pelo nome". É preferência de
 tela, e não dado da conta: não vai para o Firestore. O `select` é o nativo, que no celular o próprio
 aparelho abre em folha; a ordem vale com qualquer filtro e busca.
+
+---
+
+## D227 · Kit rende um
+
+**Status:** vigente · decidida em 2026-09-26, na spec `053-o-kit-que-rende-um.md`; codificada em 2026-09-26
+
+**Decisão.** O lote de um kit é uma caixa: `EscolhaDoKit.quantidade` e `ComponenteKit.quantidade`
+já dizem o que entra em **um** kit, e o custo do lote é o da caixa inteira. No editor, com o tipo
+Kit, os campos "Rende" e "Em" somem, e trocar para Kit põe `rendimento: "1"` e
+`unidadeRendimento: "un"` no formulário, sempre (antes só punha o 1 com o campo vazio). A descrição
+do bloco "O kit" fala do tempo da montagem, e não de quanto sai de um lote. Na lista (as duas
+arrumações) e no cabeçalho do `PainelProduto`, o kit diz **"leva N"**, `levaDoKit`: a soma das
+quantidades dos produtos de dentro e das escolhas, derivada e sem campo.
+
+**O kit gravado com outro rendimento não é reescrito.** `kitDividido(ficha)` (`tipo === "KIT" &&
+rendimento !== 1`) acende o selo `atencao` "Confira o kit" com `TriangleAlert` na linha, ao lado dos
+outros selos, e, no editor, uma faixa no topo do bloco "O kit": "Este kit está dividido por 4. Se
+R$ 48,00 é o preço da caixa inteira, ela custa R$ X e perde R$ Y, já com a maquininha", com a ação em
+texto "É o preço da caixa inteira", que põe o 1 no formulário. O painel de preço recalcula na hora;
+nada grava até ela salvar, e salvo com 1 o selo some.
+
+**Salvar não força o 1.** A spec deixava aberto se o 1 vinha do `onSubmit`. Não vem: o `salvar`
+grava o que está no formulário. Forçar no salvar reescreveria o kit antigo na primeira edição de
+nome ou foto, sem ela ver a sobra mudar, e apagaria o caso do kit montado de propósito como "lote de
+4 caixas". O kit novo nasce com 1 pela troca de tipo, e o campo não aparece para ela mudar; o antigo
+muda pela ação.
+
+**A sobra da faixa desconta a maquininha.** O exemplo da spec ("perde R$ 3,52") era preço menos
+custo. A faixa usa `verificarPreco` com as taxas da ficha, o mesmo número que o painel de preço e a
+lista vão mostrar depois de tocar na ação; dois números para a mesma sobra seriam uma dúvida a mais.
+O custo da caixa é `custoTotalLote` do `derivarFicha`, que é o `calcularCustoFicha` com rendimento 1.
+
+**A despensa já estava certa com o 1.** `consumoPorLote` explode os componentes de **um** kit por
+lote, e a fornada divide as unidades pelo rendimento: com 4, uma fornada de 4 caixas descontava os
+cookies de uma, e a capacidade saía quatro vezes maior. O 1 corrige as duas contas sem tocar em
+`producao.ts`. Pedidos pagos ficam com o `custoUnitarioSnapshot` que gravaram.
+
+**A hipótese não foi conferida no dado.** A sessão não teve acesso à conta da Maynara: o Combo
+Dupla não foi aberto para ver se os componentes são os de uma caixa. A faixa já pergunta ("Se R$ 48,00
+é o preço da caixa inteira…") em vez de afirmar, então vale nos dois casos. Fica para o passo 2 do
+roteiro.
+
+**A quantidade concorda com o número.** `rotuloDaQuantidade(n, unidade)`: "1 unidade", "2
+unidades", "1 porção", "300 gramas", com até duas casas em pt-BR; singular só quando o número
+mostrado é "1". "Pronta/prontas" concorda junto. Trocado onde o número pode ser 1: `FraseDaCapacidade`
+(o pronto, as unidades da capacidade, as três frases do pedido), `PainelFornada`,
+`TelaContagemPronto`, o "rende" da linha do celular e o "Dividido por" do editor. As opções do
+seletor "Em" ficam no plural, porque não levam número. "contadas hoje" na contagem do pronto
+continua no plural feminino: não é desta spec.

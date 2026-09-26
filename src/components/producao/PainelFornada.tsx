@@ -8,7 +8,7 @@ import { Campo, Seletor } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { Painel } from "@/components/ui/Painel";
 import {
-  ROTULO_UNIDADE_RENDIMENTO,
+  rotuloDaQuantidade,
   SUFIXO_UNIDADE_RENDIMENTO,
 } from "@/lib/domain/custoFicha";
 import { contagemDoInsumo, rotuloDeIdade } from "@/lib/domain/estoque";
@@ -208,8 +208,7 @@ export function PainelFornada({
 
   if (registrada) {
     const contagem = contagemDoPronto(registrada.ficha, hoje);
-    const rotulo =
-      ROTULO_UNIDADE_RENDIMENTO[registrada.ficha.unidadeRendimento];
+    const unidade = registrada.ficha.unidadeRendimento;
     return (
       <Painel
         aberto={aberto}
@@ -249,7 +248,7 @@ export function PainelFornada({
             <span>
               {registrada.ficha.nome}: massa para{" "}
               <span className="font-semibold">
-                {texto(registrada.unidades)} {rotulo}
+                {rotuloDaQuantidade(registrada.unidades, unidade)}
               </span>
               .
             </span>
@@ -257,7 +256,7 @@ export function PainelFornada({
           <p className="max-w-[56ch] text-label text-ink-muted">
             {contagem.quantidade === null
               ? "Você ainda não contou o que está pronto deste produto. Contar agora abre o campo já com esta massa."
-              : `Pela última contagem, ${texto(contagem.quantidade)} ${rotulo} (${rotuloDeIdade(contagem)}). Contar agora abre o campo já com esta massa somada, para você conferir no pote.`}
+              : `Pela última contagem, ${rotuloDaQuantidade(contagem.quantidade, unidade)} (${rotuloDeIdade(contagem)}). Contar agora abre o campo já com esta massa somada, para você conferir no pote.`}
           </p>
         </div>
       </Painel>
@@ -349,8 +348,7 @@ export function PainelFornada({
           <p className="num text-label text-ink-muted">
             O produto rende{" "}
             <span className="font-semibold text-ink">
-              {texto(ficha.rendimento)}{" "}
-              {ROTULO_UNIDADE_RENDIMENTO[ficha.unidadeRendimento]}
+              {rotuloDaQuantidade(ficha.rendimento, ficha.unidadeRendimento)}
             </span>{" "}
             por lote
             {gravavel.unidadesProduzidas > 0 && (

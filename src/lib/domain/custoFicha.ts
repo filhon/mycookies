@@ -138,6 +138,51 @@ export const ROTULO_UNIDADE_RENDIMENTO: Record<UnidadeRendimento, string> = {
   ml: "mililitros",
 };
 
+const ROTULO_UNIDADE_SINGULAR: Record<UnidadeRendimento, string> = {
+  un: "unidade",
+  porcao: "porção",
+  g: "grama",
+  ml: "mililitro",
+};
+
+/**
+ * "1 unidade", "2 unidades", "1,5 porções": o número com a unidade que
+ * concorda com ele. Singular só quando o que a tela mostra é "1".
+ */
+export function rotuloDaQuantidade(
+  quantidade: number,
+  unidade: UnidadeRendimento,
+): string {
+  const numero = quantidade.toLocaleString("pt-BR", {
+    maximumFractionDigits: 2,
+  });
+  const rotulo =
+    numero === "1"
+      ? ROTULO_UNIDADE_SINGULAR[unidade]
+      : ROTULO_UNIDADE_RENDIMENTO[unidade];
+  return `${numero} ${rotulo}`;
+}
+
+/** O que vai dentro de um kit: os produtos e as escolhas, somados (`#d227`). */
+export function levaDoKit(
+  ficha: Pick<FichaTecnica, "componentes" | "escolhas">,
+): number {
+  return [...ficha.componentes, ...(ficha.escolhas ?? [])].reduce(
+    (soma, linha) => soma + linha.quantidade,
+    0,
+  );
+}
+
+/**
+ * O kit gravado com rendimento diferente de 1: o custo da caixa está dividido
+ * pelo que vai dentro dela (`#d227`). Não se corrige sozinho; a tela aponta.
+ */
+export function kitDividido(
+  ficha: Pick<FichaTecnica, "tipo" | "rendimento">,
+): boolean {
+  return ficha.tipo === "KIT" && ficha.rendimento !== 1;
+}
+
 /** O sufixo curto de um campo: "un", e não "unidades", ao lado de um número. */
 export const SUFIXO_UNIDADE_RENDIMENTO: Record<UnidadeRendimento, string> = {
   un: "un",
