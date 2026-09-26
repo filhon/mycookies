@@ -108,13 +108,13 @@ cada tecla.
 
 ## Critérios de aceite
 
-- [ ] Bloco só em edição, só com preço diferente do gravado, só com produtos afetados.
-- [ ] Sobra de antes e de depois por unidade, três linhas, "e mais N".
-- [ ] Cruzar o zero com sinal, cor, ícone e palavra; o resto sem cor semântica.
-- [ ] A mesma sobra de `/fichas` (mesma função).
-- [ ] `efeitoDoPrecoNovo` pura e testada.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d224` escrito; `ESTADO.md` atualizado.
+- [x] Bloco só em edição, só com preço diferente do gravado, só com produtos afetados.
+- [x] Sobra de antes e de depois por unidade, três linhas, "e mais N".
+- [x] Cruzar o zero com sinal, cor, ícone e palavra; o resto sem cor semântica.
+- [x] A mesma sobra de `/fichas` (mesma função).
+- [x] `efeitoDoPrecoNovo` pura e testada.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d224` escrito; `ESTADO.md` atualizado.
 
 ---
 

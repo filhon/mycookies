@@ -22,7 +22,7 @@ import type {
   UnidadeRendimento,
 } from "@/lib/types";
 
-const POR_UNIDADE: Record<UnidadeRendimento, string> = {
+export const POR_UNIDADE: Record<UnidadeRendimento, string> = {
   un: "por unidade",
   porcao: "por porção",
   g: "por grama",
@@ -30,7 +30,7 @@ const POR_UNIDADE: Record<UnidadeRendimento, string> = {
 };
 
 /** O quilo e o litro em centavos inteiros; a unidade, fracionária (`#d220`). */
-function formatarReferencia(centavos: number, unidadeBase: UnidadeBase) {
+export function formatarReferencia(centavos: number, unidadeBase: UnidadeBase) {
   return unidadeBase === "un"
     ? formatarCustoUnitario(centavos)
     : formatarMoeda(centavos);

@@ -6575,3 +6575,38 @@ atenção já é do custo desatualizado, e usar a mesma cor para "subiu" diluiri
 
 Os percentuais são inteiros e sem "-0" (`variacaoEntre`); os limiares de 1% e 5% ficam na tela,
 e as funções devolvem o número cru.
+
+---
+
+## D224 · O formulário mostra a sobra de antes e a de depois
+
+**Status:** vigente · decidida em 2026-09-26, na spec `051-o-que-o-preco-novo-faz.md`; codificada em 2026-09-26
+
+**Decisão.** Editando um material, o bloco "Com esse preço" (`EfeitoDoPreco`), logo abaixo do
+`ResumoCusto`, mostra o quilo (o litro, a unidade) gravado e o digitado com o percentual, e a
+sobra por unidade de antes e de depois de cada produto que muda, antes de salvar.
+`efeitoDoPrecoNovo` (`domain/custoFicha.ts`, com teste) é `custosDeHoje` com os materiais de hoje
+contra `custosDeHoje` com o material trocado pelo custo que `calcularCustoInsumo` dá ao digitado:
+o antes é a sobra de hoje, a mesma de `/fichas` (`#d135`), e não a gravada. Só as fichas cuja
+sobra mudou, a maior diferença primeiro (com um material só todas mudam no mesmo sentido, então é
+a maior queda, ou a maior alta se o preço caiu). Kit entra pelas receitas de dentro, porque
+`custosDeHoje` já o recalcula por elas; ao contrário do "Onde entra" da ficha (`#d222`), aqui o
+kit que só usa o material pela receita aparece, porque a sobra dele muda.
+
+Três linhas e "e mais N produtos", sem link. Cor semântica só em quem cruza o zero: "fica no
+vermelho" em `negative` com `TriangleAlert`, "sai do vermelho" em `positive` com `trending-up`;
+as outras dizem a diferença com a seta em `ink-muted`. **Quem cruza sobe para as três linhas**:
+a ordem pela diferença poria o produto de R$ 0,12 de sobra atrás de oito cookies, e é ele a
+linha que muda a decisão. Na leitura de tela, só a contagem é viva ("Com esse preço, 11 produtos
+mudam; 1 fica no vermelho"): a lista a cada tecla seria ruído. A frase genérica da descrição do
+painel sai em edição; o bloco é a versão concreta dela.
+
+**Quando aparece.** Em edição, com preço e quantidade para calcular, com as fichas carregadas e
+com a lista não vazia. A lista vazia já cobre o `precoMudou` da spec: sem mudança de preço,
+embalagem ou perda, o custo por base é o mesmo, e nenhuma sobra muda. **Unidade de outra
+grandeza** (g trocado por un) esconde o bloco: as quantidades das fichas estão na base gravada, e
+a conta sairia sem sentido.
+
+**Custo.** Dois `custosDeHoje` por tecla, num `useMemo`, com dezenas de fichas: aritmética de
+microssegundos. Se a conta crescer a ponto de pesar, `useDeferredValue` no custo digitado, e não
+`setTimeout`.

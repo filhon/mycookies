@@ -528,6 +528,48 @@ export function custosDeHoje(
   return resultado;
 }
 
+export interface EfeitoNaFicha {
+  fichaId: string;
+  nome: string;
+  unidadeRendimento: UnidadeRendimento;
+  /** A sobra de hoje por unidade, a mesma de `/fichas`. */
+  antes: Centavos;
+  /** A sobra com o preço digitado no lugar do de hoje. */
+  depois: Centavos;
+}
+
+/**
+ * O que o preço digitado faz com a sobra de cada produto, antes de salvar
+ * (`#d224`): `custosDeHoje` com os materiais de hoje contra o mesmo cálculo com
+ * `materialNovo` trocado. Só as fichas cuja sobra mudou, a maior diferença
+ * primeiro: com um material só, todas mudam no mesmo sentido, e a maior
+ * diferença é a maior queda (ou a maior alta, se o preço caiu). Kit entra
+ * pelas receitas, porque `custosDeHoje` já o recalcula por elas.
+ */
+export function efeitoDoPrecoNovo(
+  fichas: FichaTecnica[],
+  materiais: MaterialDeHoje[],
+  materialNovo: MaterialDeHoje,
+): EfeitoNaFicha[] {
+  const antes = custosDeHoje(fichas, materiais);
+  const depois = custosDeHoje(
+    fichas,
+    materiais.map((m) => (m.id === materialNovo.id ? materialNovo : m)),
+  );
+  return fichas
+    .map((ficha) => ({
+      fichaId: ficha.id,
+      nome: ficha.nome,
+      unidadeRendimento: ficha.unidadeRendimento,
+      antes: antes.get(ficha.id)?.sobra ?? 0,
+      depois: depois.get(ficha.id)?.sobra ?? 0,
+    }))
+    .filter((efeito) => efeito.depois !== efeito.antes)
+    .sort(
+      (a, b) => Math.abs(b.depois - b.antes) - Math.abs(a.depois - a.antes),
+    );
+}
+
 export interface UsoDoMaterial {
   fichaId: string;
   nome: string;

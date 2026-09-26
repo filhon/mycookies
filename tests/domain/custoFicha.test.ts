@@ -7,6 +7,7 @@ import {
   custoGravado,
   custoLinhaItem,
   custosDeHoje,
+  efeitoDoPrecoNovo,
   ehEmbalagem,
   opcoesDaEscolha,
   podeSerComponente,
@@ -909,6 +910,154 @@ describe("usoDoMaterial", () => {
         { id: "chocolate", custoUnidadeBaseCorrigido: 4 },
         new Map(),
       ),
+    ).toEqual([]);
+  });
+});
+
+describe("efeitoDoPrecoNovo", () => {
+  const COOKIE = fichaHoje();
+  // Lote gravado 2425 com chocolate a 4; 100 g de chocolate no lote de 20.
+  const BRIGADEIRO = fichaHoje({
+    id: "brigadeiro",
+    nome: "Brigadeiro",
+    rendimento: 20,
+    itens: [
+      {
+        insumoId: "chocolate",
+        nomeSnapshot: "Chocolate",
+        categoria: "INGREDIENTE",
+        quantidade: 100,
+        unidadeBase: "g",
+        custoLinha: 400,
+      },
+    ],
+    insumoIds: ["chocolate"],
+  });
+  const PAO = fichaHoje({
+    id: "pao",
+    nome: "Pão",
+    itens: [
+      {
+        insumoId: "farinha",
+        nomeSnapshot: "Farinha",
+        categoria: "INGREDIENTE",
+        quantidade: 500,
+        unidadeBase: "g",
+        custoLinha: 625,
+      },
+    ],
+    insumoIds: ["farinha"],
+  });
+  const chocolate = (custo: number): MaterialDeHoje => ({
+    id: "chocolate",
+    nome: "Chocolate",
+    custoUnidadeBaseCorrigido: custo,
+  });
+
+  it("preço sobe: só quem usa, a maior queda primeiro", () => {
+    const efeito = efeitoDoPrecoNovo(
+      [BRIGADEIRO, PAO, COOKIE],
+      [FARINHA, chocolate(4)],
+      chocolate(6.5),
+    );
+
+    // Cookie: 243 → 293, sobra 447 → 397. Brigadeiro: 2425/20 = 121 → 2675/20
+    // = 134, sobra 569 → 556. O pão não usa chocolate e não aparece.
+    expect(efeito).toEqual([
+      expect.objectContaining({ fichaId: "cookie", antes: 447, depois: 397 }),
+      expect.objectContaining({
+        fichaId: "brigadeiro",
+        antes: 569,
+        depois: 556,
+      }),
+    ]);
+  });
+
+  it("preço cai: a maior alta primeiro", () => {
+    const efeito = efeitoDoPrecoNovo(
+      [BRIGADEIRO, COOKIE],
+      [FARINHA, chocolate(4)],
+      chocolate(2),
+    );
+
+    // Cookie: 2025/10 = 203, sobra 487. Brigadeiro: 2225/20 = 111, sobra 579.
+    expect(efeito.map((e) => [e.fichaId, e.antes, e.depois])).toEqual([
+      ["cookie", 447, 487],
+      ["brigadeiro", 569, 579],
+    ]);
+  });
+
+  it("cruza o zero nos dois sentidos", () => {
+    const apertado = fichaHoje({
+      precificacao: { ...COOKIE.precificacao, precoVenda: 260 },
+    });
+
+    // 260 − 243 = 17; com chocolate a 6,50, 260 − 293 = −33.
+    const [entra] = efeitoDoPrecoNovo(
+      [apertado],
+      [FARINHA, chocolate(4)],
+      chocolate(6.5),
+    );
+    expect([entra?.antes, entra?.depois]).toEqual([17, -33]);
+
+    const [sai] = efeitoDoPrecoNovo(
+      [apertado],
+      [FARINHA, chocolate(6.5)],
+      chocolate(4),
+    );
+    expect([sai?.antes, sai?.depois]).toEqual([-33, 17]);
+  });
+
+  it("kit que só usa o material pela receita de dentro entra", () => {
+    const kit = fichaHoje({
+      id: "caixa-6",
+      nome: "Caixa de 6",
+      tipo: "KIT",
+      rendimento: 1,
+      itens: [],
+      componentes: [
+        {
+          fichaId: "cookie",
+          nomeSnapshot: "Cookie",
+          quantidade: 6,
+          custoUnitarioSnapshot: 243,
+          custoLinha: 1458,
+        },
+      ],
+      insumoIds: [],
+      componenteIds: ["cookie"],
+      custoTotalLote: 1458,
+      custoUnitario: 1458,
+      precificacao: { ...COOKIE.precificacao, precoVenda: 2000 },
+    });
+
+    const efeito = efeitoDoPrecoNovo(
+      [COOKIE, kit],
+      [FARINHA, chocolate(4)],
+      chocolate(6.5),
+    );
+
+    // 6 × (293 − 243) = 300 a mais na caixa: sobra 542 → 242.
+    expect(efeito.map((e) => [e.fichaId, e.antes, e.depois])).toEqual([
+      ["caixa-6", 542, 242],
+      ["cookie", 447, 397],
+    ]);
+  });
+
+  it("material sem uso, ou o mesmo preço: nada", () => {
+    const manteiga = {
+      id: "manteiga",
+      nome: "Manteiga",
+      custoUnidadeBaseCorrigido: 5,
+    };
+    expect(
+      efeitoDoPrecoNovo([COOKIE], [FARINHA, chocolate(4), manteiga], {
+        ...manteiga,
+        custoUnidadeBaseCorrigido: 9,
+      }),
+    ).toEqual([]);
+    expect(
+      efeitoDoPrecoNovo([COOKIE], [FARINHA, chocolate(4)], chocolate(4)),
     ).toEqual([]);
   });
 });

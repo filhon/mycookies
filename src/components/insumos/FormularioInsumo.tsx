@@ -5,6 +5,7 @@ import { Botao } from "@/components/ui/Botao";
 import { Campo, Seletor } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Painel } from "@/components/ui/Painel";
+import { EfeitoDoPreco } from "./EfeitoDoPreco";
 import { ResumoCusto } from "./ResumoCusto";
 import {
   calcularCustoInsumo,
@@ -20,7 +21,12 @@ import {
   criarInsumo,
   type DadosInsumo,
 } from "@/lib/firebase/mutations/insumos";
-import type { CategoriaInsumo, Insumo, UnidadeCompra } from "@/lib/types";
+import type {
+  CategoriaInsumo,
+  FichaTecnica,
+  Insumo,
+  UnidadeCompra,
+} from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
 
 interface EstadoFormulario {
@@ -69,6 +75,8 @@ export function FormularioInsumo({
   leitura,
   aoEditar,
   aoVoltar,
+  fichas,
+  materiais = [],
 }: {
   aberto: boolean;
   aoFechar: () => void;
@@ -83,6 +91,13 @@ export function FormularioInsumo({
   aoEditar?: () => void;
   /** Presente, "Cancelar" volta para a ficha em vez de fechar. */
   aoVoltar?: () => void;
+  /**
+   * Para "Com esse preço" (`#d224`). Nulo enquanto carrega: o bloco espera, em
+   * vez de dizer que nada muda.
+   */
+  fichas?: FichaTecnica[] | null;
+  /** Os materiais vivos, para a sobra de hoje dos produtos. */
+  materiais?: Insumo[];
 }) {
   const contaId = useContaId();
   const [estado, setEstado] = useState<EstadoFormulario>(
@@ -255,9 +270,10 @@ export function FormularioInsumo({
       aberto={aberto}
       aoFechar={aoFechar}
       titulo={insumo ? "Editar material" : "Novo material"}
+      // Em edição, "Com esse preço" é a versão concreta da frase que ficava aqui.
       descricao={
         insumo
-          ? "Mudar o preço aqui marca todos os produtos que usam este material para recálculo."
+          ? undefined
           : "Cadastre como você compra. O custo por grama o sistema calcula."
       }
       rodape={
@@ -342,6 +358,15 @@ export function FormularioInsumo({
         </div>
 
         {podeCalcular && <ResumoCusto custo={custo} perdaPercentual={perda} />}
+
+        {podeCalcular && insumo && fichas && (
+          <EfeitoDoPreco
+            insumo={insumo}
+            custo={custo}
+            fichas={fichas}
+            materiais={materiais}
+          />
+        )}
 
         <details
           key={chaveAtual}

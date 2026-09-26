@@ -1,12 +1,14 @@
 # Estado do projeto
 
-Atualizado em 2026-09-26 (**a 050 codificada**, a ficha do material: tocar num material abre a
+Atualizado em 2026-09-26 (**a 051 codificada**, o que o preço novo faz: editando um material, o
+bloco "Com esse preço" mostra a sobra de antes e a de depois dos produtos que o usam, antes de
+salvar, `#d224`; **a 050 codificada**, a ficha do material: tocar num material abre a
 ficha para ler, com o preço de cada compra, onde ele entra e a despensa, e editar vira o botão do
 rodapé no mesmo painel; a linha ganha a variação da última compra, `#d222` e `#d223`; **a 049
 codificada**, o preço da gôndola: a linha do material diz o
 custo do quilo, do litro ou da unidade, o custo unitário com dois dígitos significativos, a idade
-da contagem só fora de fresca e a faixa que conta os preços médios, `#d220` e `#d221`; **specs
-051 e 052 escritas, não codificadas**: a crítica da tela Materiais virou quatro specs de uma
+da contagem só fora de fresca e a faixa que conta os preços médios, `#d220` e `#d221`; **spec
+052 escrita, não codificada**: a crítica da tela Materiais virou quatro specs de uma
 sessão cada, na ordem 049 (o preço da gôndola), 050 (a ficha do material), 051 (o que o preço
 novo faz) e 052 (a mesa dos materiais, a de menor retorno), com as decisões `#d224` a `#d226`
 reservadas para a 051 e a 052; **a 048 codificada**, o teste que mostra o que rendeu: a faixa do teste
@@ -4048,6 +4050,33 @@ o 4 (a parte batendo com a composição do editor), o 5 (sem rede) e o 6 (leitor
 Portão: lint e typecheck limpos, **769 testes** (9 novos), `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 051 · O que o preço novo faz
+
+**Codificada em 2026-09-26** (`#d224`). Nenhum campo, consulta, índice, regra ou dependência: as
+fichas vêm da assinatura que a 050 já subiu na página.
+
+- `src/lib/domain/custoFicha.ts`: `efeitoDoPrecoNovo(fichas, materiais, materialNovo)`, dois
+  `custosDeHoje` e a diferença, só as fichas cuja sobra mudou, a maior diferença primeiro; cinco
+  testes (sobe, cai, cruza o zero nos dois sentidos, kit pela receita, sem uso ou mesmo preço).
+- `src/lib/domain/custoInsumo.ts`: `variacaoEntre` exportada, para o percentual do quilo.
+- `src/components/insumos/EfeitoDoPreco.tsx`, novo: o quilo antes e depois, três linhas, "e
+  mais N", a frase do rodapé e a contagem viva em `sr-only`.
+- `src/components/insumos/FichaDoMaterial.tsx`: `POR_UNIDADE` e `formatarReferencia` exportados.
+- `src/components/insumos/FormularioInsumo.tsx`: props `fichas` e `materiais`, o bloco abaixo
+  do `ResumoCusto`, e a frase genérica sai da descrição em edição.
+- `src/app/(app)/(coluna)/insumos/page.tsx`: passa `fichas` (nulo enquanto carrega) e `dados`.
+
+**Fora do que a spec desenhou** (no `#d224`): quem cruza o zero sobe para as três linhas
+visíveis; trocar a unidade para outra grandeza (g por un) esconde o bloco; a condição de
+aparecer é a lista não vazia, e não `precoMudou`, que dá no mesmo; a sobra negativa sai
+"-R$ 0,05" (`formatarMoeda`), e não "R$ −0,05".
+
+**Não rodou**: o roteiro de aparelho da spec (§ 4), inteiro; em especial o 4 (a seta de
+`/fichas` batendo com o bloco depois de salvar) e o 5 (360px com o teclado aberto).
+
+Portão: lint e typecheck limpos, **774 testes** (5 novos), `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -4057,6 +4086,11 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 051 está codificada** (seção acima). Publica junto com ou depois da 050 (usa a assinatura de
+fichas e os ajudantes dela); o portão é o roteiro da spec. A próxima da crítica de Materiais é a
+052 (a mesa dos materiais). A nota fiscal com o mesmo bloco espera spec própria, depois do
+roteiro desta.
 
 **A 050 está codificada** (seção acima). Publica junto com ou depois da 049 (usa
 `custoDeReferencia`); o portão é o roteiro da spec. A próxima da crítica de Materiais é a 051 (o

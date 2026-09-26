@@ -142,7 +142,7 @@ export interface ComprasDoInsumo {
 }
 
 /** 99,90 → 109,50 = 10. Inteiro, e sem "-0". */
-function variacaoEntre(antes: number, depois: number): number | null {
+export function variacaoEntre(antes: number, depois: number): number | null {
   if (antes <= 0) return null;
   return Math.round((depois / antes - 1) * 100) || 0;
 }

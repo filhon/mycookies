@@ -341,6 +341,8 @@ export default function PaginaInsumos() {
         }
         aoEditar={() => setModo("editar")}
         aoVoltar={emEdicao ? () => setModo("ver") : undefined}
+        fichas={fichas.carregando || fichas.erro ? null : fichas.dados}
+        materiais={dados}
       />
     </>
   );
