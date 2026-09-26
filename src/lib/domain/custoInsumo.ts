@@ -200,12 +200,48 @@ export function comprasDoInsumo(insumo: InsumoComHistorico): ComprasDoInsumo {
   };
 }
 
+/** A última compra dela; `null` sem nenhuma (a entrada da biblioteca não conta). */
+export function ultimaCompraDela(
+  insumo: InsumoComHistorico,
+): CompraDoInsumo | null {
+  const ultima = comprasDoInsumo(insumo).compras[0];
+  return ultima && !ultima.daBiblioteca ? ultima : null;
+}
+
 /** O percentual da última compra dela contra a anterior dela; `null` com menos de duas. */
 export function variacaoDaUltimaCompra(
   insumo: InsumoComHistorico,
 ): number | null {
-  const ultima = comprasDoInsumo(insumo).compras[0];
-  return ultima && !ultima.daBiblioteca ? ultima.variacao : null;
+  return ultimaCompraDela(insumo)?.variacao ?? null;
+}
+
+/** As três ordens da lista de materiais (`#d226`). */
+export type OrdemMateriais = "NOME" | "PRECO_MUDOU" | "PESO";
+
+/**
+ * A lista de materiais na ordem escolhida (`#d226`). `peso` é, por id, a soma
+ * das partes do custo pelos produtos em que o material entra (`usoDoMaterial`):
+ * uma ordem, e não um número para mostrar. Material sem compra dela, ou sem
+ * uso, vai para o fim, por nome.
+ */
+export function ordenarMateriais<
+  T extends InsumoComHistorico & { nomeBusca: string },
+>(insumos: T[], ordem: OrdemMateriais, peso: Map<string, number>): T[] {
+  const porNome = (a: T, b: T) =>
+    a.nomeBusca < b.nomeBusca ? -1 : a.nomeBusca > b.nomeBusca ? 1 : 0;
+  if (ordem === "NOME") return [...insumos].sort(porNome);
+
+  const chave = new Map(
+    insumos.map((insumo) => [
+      insumo.id,
+      ordem === "PESO"
+        ? (peso.get(insumo.id) ?? 0)
+        : (ultimaCompraDela(insumo)?.dataMs ?? 0),
+    ]),
+  );
+  return [...insumos].sort(
+    (a, b) => chave.get(b.id)! - chave.get(a.id)! || porNome(a, b),
+  );
 }
 
 /** Normaliza nome para busca offline: minúsculo, sem acento, sem espaço duplo. */

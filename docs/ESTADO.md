@@ -1,6 +1,9 @@
 # Estado do projeto
 
-Atualizado em 2026-09-26 (**a 051 codificada**, o que o preço novo faz: editando um material, o
+Atualizado em 2026-09-26 (**a 052 codificada**, a mesa dos materiais: no desktop a lista de
+materiais vira tabela com a ficha do material acoplada à direita, e a lista ganha ordem, pelo
+nome, pelo preço que mudou por último ou pelo que pesa mais nos produtos, guardada no aparelho,
+`#d225` e `#d226`; **a 051 codificada**, o que o preço novo faz: editando um material, o
 bloco "Com esse preço" mostra a sobra de antes e a de depois dos produtos que o usam, antes de
 salvar, `#d224`; **a 050 codificada**, a ficha do material: tocar num material abre a
 ficha para ler, com o preço de cada compra, onde ele entra e a despensa, e editar vira o botão do
@@ -8,7 +11,7 @@ rodapé no mesmo painel; a linha ganha a variação da última compra, `#d222` e
 codificada**, o preço da gôndola: a linha do material diz o
 custo do quilo, do litro ou da unidade, o custo unitário com dois dígitos significativos, a idade
 da contagem só fora de fresca e a faixa que conta os preços médios, `#d220` e `#d221`; **spec
-052 escrita, não codificada**: a crítica da tela Materiais virou quatro specs de uma
+052 escrita**: a crítica da tela Materiais virou quatro specs de uma
 sessão cada, na ordem 049 (o preço da gôndola), 050 (a ficha do material), 051 (o que o preço
 novo faz) e 052 (a mesa dos materiais, a de menor retorno), com as decisões `#d224` a `#d226`
 reservadas para a 051 e a 052; **a 048 codificada**, o teste que mostra o que rendeu: a faixa do teste
@@ -4077,6 +4080,39 @@ aparecer é a lista não vazia, e não `precoMudou`, que dá no mesmo; a sobra n
 Portão: lint e typecheck limpos, **774 testes** (5 novos), `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 052 · A mesa dos materiais
+
+**Codificada em 2026-09-26** (`#d225` e `#d226`). Nenhum campo, consulta, índice, regra ou
+dependência. **Codificada antes do roteiro da 050**, que a spec punha como portão da parte da
+tabela: se o roteiro mostrar que o painel lateral basta, a tabela e a coluna acoplada saem e a
+ordem fica.
+
+- `src/lib/domain/custoInsumo.ts`: `ultimaCompraDela` (a última compra sem a da biblioteca;
+  `variacaoDaUltimaCompra` passou a usá-la), `OrdemMateriais` e `ordenarMateriais(insumos,
+ordem, peso)`; quatro testes.
+- `src/components/insumos/LinhaInsumo.tsx`: a grade de seis colunas (`COLUNAS_MATERIAL`) no
+  mesmo `<li>`, no padrão de `LinhaFicha`; props `produtos`, `selecionado` e `comFicha`. A linha
+  do celular não mudou.
+- `src/app/(app)/insumos/page.tsx`, **movido** de `(coluna)/insumos/`: a `FichaAcoplada` (o
+  arranjo do `PainelProduto`, com a `FichaDoMaterial` dentro e "Editar material" secundário no
+  rodapé), o clique que decide entre coluna e folha por `matchMedia`, o cabeçalho de colunas, o
+  `usoDoMaterial` de cada material (a coluna "Entra em" e o peso da ordem) e o seletor "Ordem"
+  guardado em `localStorage` (`rende:ordem-materiais`). `contagem/` e `nota/` ficaram em
+  `(coluna)`; o build aceita os dois grupos no mesmo segmento, como `/fichas`.
+
+**Fora do que a spec desenhou** (no `#d225`): com a ficha aberta, a tabela só aparece a partir de
+`xl`; entre `lg` e `xl` as linhas voltam ao arranjo do celular ao lado da ficha, porque em 1024px
+sobram menos de 300px para seis colunas. "Editar material" na ficha ao lado abre o `Painel` já no
+formulário, e "Cancelar" fecha o painel em vez de voltar à ficha, que já está na tela. A célula
+da despensa diz a idade sempre (a tabela é o lugar da comparação) e, com fornada depois da
+contagem, a projeção no lugar dela.
+
+**Não rodou**: o roteiro de aparelho da spec (§ 4), inteiro; nem o da 050, que decide se a tabela
+fica.
+
+Portão: lint e typecheck limpos, **778 testes** (4 novos), `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -4086,6 +4122,9 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 052 está codificada** (seção acima), e com ela as quatro specs da crítica de Materiais (049 a
+052). Publica depois da 050 e da 051; o portão é o roteiro da 050 (se a tabela fica) e o da 052.
 
 **A 051 está codificada** (seção acima). Publica junto com ou depois da 050 (usa a assinatura de
 fichas e os ajudantes dela); o portão é o roteiro da spec. A próxima da crítica de Materiais é a

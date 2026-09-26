@@ -103,12 +103,12 @@ No celular o seletor abre a folha inferior, como todo `Seletor` (`DESIGN.md`).
 
 ## Critérios de aceite
 
-- [ ] Tabela a partir de `lg`, no padrão de `LinhaFicha`, com `sr-only` por célula.
-- [ ] Ficha do material acoplada no desktop; folha inferior abaixo de `lg`.
-- [ ] Três ordens, a escolhida guardada no aparelho, `ordenarMateriais` testada.
-- [ ] `/insumos/contagem` e `/insumos/nota` continuam funcionando e na coluna.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d225` e `#d226` escritos; `ESTADO.md` e `DESIGN.md` (a tabela de materiais na regra
+- [x] Tabela a partir de `lg`, no padrão de `LinhaFicha`, com `sr-only` por célula.
+- [x] Ficha do material acoplada no desktop; folha inferior abaixo de `lg`.
+- [x] Três ordens, a escolhida guardada no aparelho, `ordenarMateriais` testada.
+- [x] `/insumos/contagem` e `/insumos/nota` continuam funcionando e na coluna.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d225` e `#d226` escritos; `ESTADO.md` e `DESIGN.md` (a tabela de materiais na regra
       de "Tabela") atualizados.
 
 ---

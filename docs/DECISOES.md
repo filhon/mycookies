@@ -6610,3 +6610,58 @@ a conta sairia sem sentido.
 **Custo.** Dois `custosDeHoje` por tecla, num `useMemo`, com dezenas de fichas: aritmética de
 microssegundos. Se a conta crescer a ponto de pesar, `useDeferredValue` no custo digitado, e não
 `setTimeout`.
+
+---
+
+## D225 · Materiais no desktop é tabela, com a ficha do material acoplada
+
+**Status:** vigente · decidida em 2026-09-26, na spec `052-a-mesa-dos-materiais.md`; codificada em 2026-09-26
+
+**Decisão.** A partir de `lg`, a `<li>` da `LinhaInsumo` vira grade de seis colunas, no padrão de
+`LinhaFicha` (`#d129`): Material (nome, selos, categoria · marca) · Compra (preço · embalagem, a
+perda embaixo) · O quilo (`custoDeReferencia`, com "o litro" ou "a unidade" na célula quando não é
+quilo) · Última compra (`ultimaCompraDela`: o dia e a variação de `#d223`, a partir dos mesmos 5%) ·
+Despensa (o anotado e a idade; com fornada depois da contagem, a projeção no lugar da idade) ·
+Entra em (quantos produtos, pelo `usoDoMaterial`; vazia enquanto os produtos carregam). Cabeçalho
+`aria-hidden`, rótulo de cada célula em `sr-only`. As colunas são `minmax(0, …)`: a célula quebra em
+vez de empurrar a tabela para fora.
+
+O clique na linha, no desktop (`matchMedia`), abre a `FichaDoMaterial` numa coluna de 26rem
+acoplada à direita, o arranjo do `PainelProduto` (`#d130`): foco na coluna ao abrir e ao trocar,
+`Escape` e "×" devolvem o foco à linha, seleção em `surface-sunken` e derivada de `dados` (material
+arquivado fecha a coluna). Abaixo de `lg`, o `Painel` de sempre (`#d222`). "Editar material" no
+rodapé da coluna é secundário, porque o primário da tela é "Novo material"; ele abre o `Painel` já
+no formulário, e "Cancelar" fecha o painel, porque a ficha já está na tela ao lado.
+
+`/insumos/page.tsx` saiu de `(coluna)`, como `/fichas`; `contagem/` e `nota/` ficaram.
+
+**Com a ficha aberta, a tabela espera o `xl`.** Em 1024px, tirada a barra lateral, a margem e os
+26rem da coluna, sobram menos de 300px: seis colunas não cabem nem quebrando. Entre `lg` e `xl`, com
+a ficha aberta, as linhas voltam ao arranjo do celular, que foi desenhado para 360px; sem ficha, a
+tabela vale desde `lg`. É uma classe condicional na linha e no cabeçalho (`comFicha`), e nenhum
+arranjo novo. `/fichas` tem o mesmo aperto em 1024px e não foi mexida.
+
+**Fica em aberto.** A spec condiciona a tabela ao roteiro da 050: se ele mostrar que o painel
+lateral basta no desktop, a grade, a coluna acoplada e a mudança de grupo saem, e fica a ordem.
+
+---
+
+## D226 · A lista de materiais tem três ordens, guardadas no aparelho
+
+**Status:** vigente · decidida em 2026-09-26, na spec `052-a-mesa-dos-materiais.md`; codificada em 2026-09-26
+
+**Decisão.** Um `Seletor` "Ordem" na linha da contagem, à esquerda do selo de sincronização, com
+**Pelo nome** (padrão), **Preço mudou por último** (a data da última compra dela, a mais nova
+primeiro; a entrada da biblioteca não conta, como em `#d222`) e **Pesa mais nos produtos** (a soma,
+pelos produtos em que entra, da `parte` do `usoDoMaterial`, a maior primeiro). Sem compra dela ou
+sem uso, o material vai para o fim, por nome. `ordenarMateriais(insumos, ordem, peso)` em
+`domain/custoInsumo.ts`, com teste; o peso chega pronto num `Map` porque `usoDoMaterial` mora em
+`custoFicha.ts`, que importa `custoInsumo.ts`.
+
+**A soma não aparece.** Partes de produtos diferentes somadas não são um número que signifique
+algo; servem para ordenar e só.
+
+**No aparelho.** `localStorage` (`rende:ordem-materiais`), lido por `useSyncExternalStore` com o
+nome no servidor, todo acesso em `try/catch`; valor desconhecido é "pelo nome". É preferência de
+tela, e não dado da conta: não vai para o Firestore. O `select` é o nativo, que no celular o próprio
+aparelho abre em folha; a ordem vale com qualquer filtro e busca.

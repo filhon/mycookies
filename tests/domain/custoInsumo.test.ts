@@ -4,6 +4,7 @@ import {
   chaveDeBusca,
   comprasDoInsumo,
   custoDeUso,
+  ordenarMateriais,
   variacaoDaUltimaCompra,
   type InsumoComHistorico,
 } from "@/lib/domain/custoInsumo";
@@ -192,5 +193,65 @@ describe("variacaoDaUltimaCompra", () => {
     expect(
       variacaoDaUltimaCompra(creme([70, 100], PREFIXO_BIBLIOTECA + "creme")),
     ).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spec 052 · a ordem da lista (`#d226`).
+// ---------------------------------------------------------------------------
+
+describe("ordenarMateriais", () => {
+  /** Um material com compras nos dias dados; `biblioteca` nasce com a média. */
+  function material(nome: string, dias: number[], biblioteca = false) {
+    const base = creme(
+      dias.map(() => 10),
+      (biblioteca ? PREFIXO_BIBLIOTECA : "") + nome,
+    );
+    base.historicoPrecos.forEach((compra, i) => (compra.data = em(dias[i]!)));
+    base.criadoEm = em(dias[0] ?? 0);
+    return { ...base, nomeBusca: nome };
+  }
+
+  const acucar = material("acucar", [2, 9]);
+  const creme_ = material("creme", [5]);
+  const farinha = material("farinha", [3, 4]);
+  const leite = material("leite", [8], true);
+  const lista = [leite, farinha, creme_, acucar];
+  const nomes = (l: { nomeBusca: string }[]) => l.map((m) => m.nomeBusca);
+
+  it("pelo nome", () => {
+    expect(nomes(ordenarMateriais(lista, "NOME", new Map()))).toEqual([
+      "acucar",
+      "creme",
+      "farinha",
+      "leite",
+    ]);
+  });
+
+  it("preço mudou por último: a compra dela mais nova primeiro; a da biblioteca não conta", () => {
+    expect(nomes(ordenarMateriais(lista, "PRECO_MUDOU", new Map()))).toEqual([
+      "acucar",
+      "creme",
+      "farinha",
+      "leite",
+    ]);
+  });
+
+  it("pesa mais: a soma das partes, e sem uso vai para o fim, por nome", () => {
+    const peso = new Map([
+      [farinha.id, 0.3 + 0.2],
+      [creme_.id, 0.4],
+    ]);
+    expect(nomes(ordenarMateriais(lista, "PESO", peso))).toEqual([
+      "farinha",
+      "creme",
+      "acucar",
+      "leite",
+    ]);
+  });
+
+  it("não mexe na lista recebida", () => {
+    ordenarMateriais(lista, "NOME", new Map());
+    expect(nomes(lista)).toEqual(["leite", "farinha", "creme", "acucar"]);
   });
 });
