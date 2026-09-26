@@ -6385,3 +6385,46 @@ o painel. O endereço, o `share` e o "Copiado" por 2 s saíram de `SeuCardapio` 
 pede consulta nova (os já confirmados saem da agenda), e a spec mandou cortar nesse caso. O número
 de produtos é `fichaIds.length`, que conta também um produto marcado e depois arquivado; ler as
 fichas na Hoje só para isso não se paga.
+
+---
+
+## D216 · A busca da Hoje responde o preço, com quantidade
+
+**Status:** vigente · decidida em 2026-09-25, na spec `047-quanto-cobrar.md`; codificada em 2026-09-26
+
+**Decisão.** `CampoBusca` "Quanto cobrar? Ex.: 30 brigadeiros" na faixa de ferramentas do
+cabeçalho da Hoje. Com texto, `QuantoCobrar` toma o lugar do conteúdo, que fica montado e
+escondido (`hidden`): as assinaturas não caem e reabrem a cada letra, e o ponto do mês sai da tela.
+Ao começar a busca a página sobe ao topo; ao apagar, volta à rolagem guardada. A quantidade sai do
+texto por `lerPedidoDeBusca` (`domain/precificacao.ts`, com teste): número no começo ou no fim,
+vírgula decimal, "x", "kg" e "un" colados no número caem, sem número é 1, zero ou mais de 9999 é 1
+com o número no termo. Cada linha: nome, `quantidade × preço`, o total em `heading` com o ponto
+âmbar só na primeira, e a sobra do total com `custosDeHoje` (a mesma do cartão do vermelho e da
+seta de `/fichas`), arredondada em centavos depois de multiplicar. "Depois da maquininha" só quando
+`taxaCartaoConsiderada > 0`: a sobra de `verificarPreco` já desconta `somaTaxas`. Sobra negativa:
+`TrendingDown`, `text-negative`, "−R$ 4,20: você paga isso para vender". Entram fichas com `ativo`
+e preço maior que zero; até 6 linhas, "Ver os N produtos" leva a `/fichas` (que não lê `?busca`).
+Sem resultado, a frase e "Montar um produto" terciário para `/fichas/nova`.
+
+**Diferente da spec, e por quê.** O termo perde o "s" final: com `includes` puro, "30 brigadeiros"
+não acharia "Brigadeiro tradicional", e o roteiro pede que dê o mesmo que "30 brig". Tirar do fim
+só alarga (o que sobra é prefixo do que ela digitou), e a chave continua `chaveDeBusca` contra
+`nomeBusca`; `/fichas` fica como está. O "sinal" do negativo vai no valor ("−R$ 4,20"), e a frase
+da spec virou "você paga isso para vender" para não ler "você paga menos R$ 4,20".
+
+**Nenhuma consulta nova.** `QuantoCobrar` monta as mesmas duas consultas de
+`CartaoNoVermelhoHoje` (fichas e insumos vivos por `nomeBusca`); o Firestore divide o alvo.
+
+---
+
+## D217 · Sem botão primário novo na Hoje
+
+**Status:** vigente · decidida em 2026-09-25, na spec `047-quanto-cobrar.md`; codificada em 2026-09-26
+
+**Decisão.** A busca é campo, não botão: a Hoje continua tela de leitura, sem primário. O
+`descricaoSempreVisivel` fica (a data é da Hoje), e o cabeçalho da Hoje passa a ter faixa de
+ferramentas, como o de `/fichas`. No celular a faixa gruda com o cabeçalho; com o teclado aberto, o
+`apertado:` já encolhe a tinta.
+
+**Consequência.** O cabeçalho cresceu 81 px no desktop (a faixa: 32 de respiro, 48 do campo, 1 de
+filete), e a coluna grudenta do mês (`#d212`) passou de `top-36` para `top-56`, medida à mão.

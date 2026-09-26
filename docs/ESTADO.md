@@ -1,14 +1,15 @@
 # Estado do projeto
 
-Atualizado em 2026-09-26 (**a 046 codificada**, o que espera por você: a lista do pedido pelo
+Atualizado em 2026-09-26 (**a 047 codificada**, quanto cobrar: a busca na faixa do cabeçalho da
+tela Hoje responde o total e a sobra da quantidade pedida, "30 brig", `#d216` e `#d217`; **a 046 codificada**, o que espera por você: a lista do pedido pelo
 cardápio, do pedido que passou do dia e do que falta receber no topo da tela Hoje, a agenda vazia
 em uma linha depois dos primeiros passos e o link do cardápio perto dela, `#d213` a `#d215`; **a
 045 codificada**, o mês na abertura: a tela Hoje abre no que
 sobrou no mês, com a meta em barra dentro dele e a comparação com o mês passado, e duas colunas a
-partir de `xl`, `#d210` a `#d212`; **specs 047 e 048 escritas, nenhuma codificada**: a crítica da
+partir de `xl`, `#d210` a `#d212`; **spec 048 escrita, não codificada**: a crítica da
 tela Hoje virou quatro specs de uma sessão cada, na ordem 045 (o mês na abertura), 046 (o que
 espera por você), 047 (quanto cobrar) e 048 (o teste que mostra o que rendeu), com as decisões
-`#d213` a `#d219` reservadas e escritas só quando cada uma for codificada; a **044-A codificada**, o Rende escreve: o transporte do Resend por
+`#d218` e `#d219` reservadas para a 048; a **044-A codificada**, o Rende escreve: o transporte do Resend por
 `fetch`, as cinco peças, a boas-vindas no cadastro e a senha nova com o Firebase de reserva,
 `#d202` a `#d208`, com o roteiro A e o domínio no Resend como portão do deploy; a **044-B
 codificada**, o cron diário e os três avisos, com a chave em `/configuracao#avisos`, `#d209`; **preços novos no Stripe ao vivo**, R$ 29/290 e R$ 49/490, `#d201`,
@@ -3938,6 +3939,27 @@ celular e no desktop), o 5 (ajudante) e o 6 (sem rede).
 Portão: lint e typecheck limpos, **740 testes** (um novo), `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 047 · Quanto cobrar
+
+**Codificada em 2026-09-26** (`#d216` e `#d217`). Nenhum campo, rota, consulta, índice, regra ou
+dependência.
+
+- `src/lib/domain/precificacao.ts`: `lerPedidoDeBusca`, pura, com seis testes (começo, fim, plural,
+  decimal, ausente, zero e absurdo, número sozinho). O "s" final do termo cai, para "30
+  brigadeiros" achar "Brigadeiro tradicional" (`#d216`).
+- `src/components/fichas/QuantoCobrar.tsx`: até 6 linhas com `quantidade × preço`, o total, o ponto
+  na primeira e a sobra do total por `custosDeHoje`; negativo com sinal, ícone e palavra; sem
+  resultado, "Montar um produto". As consultas são as do `CartaoNoVermelhoHoje`.
+- `src/app/(app)/(coluna)/page.tsx`: o `CampoBusca` no cabeçalho; com texto, a Hoje fica montada e
+  escondida, e a rolagem volta ao apagar. A coluna grudenta do mês foi para `top-56` (`#d217`).
+
+**Não rodou**: o roteiro de aparelho da spec (§ 4), inteiro; em especial o 3 (a rolagem de volta),
+o 5 (sem rede) e o 6 (leitor de tela). Conferir também, no desktop largo, a coluna do mês em
+`top-56` sem sobrepor a faixa da busca.
+
+Portão: lint e typecheck limpos, **746 testes** (6 novos), `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -3948,8 +3970,11 @@ deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do 
 
 ## Próxima ação
 
+**A 047 está codificada** (seção acima). Publica junto com ou depois da 045 e da 046; o portão é
+o roteiro da spec. A próxima sessão é a 048, o teste que mostra o que rendeu.
+
 **A 046 está codificada** (seção acima). Publica junto com ou depois da 045; o portão é o roteiro
-da spec. A próxima sessão é a 047, quanto cobrar.
+da spec.
 
 **A 045 está codificada** (seção acima). Publica sozinha; o portão é o roteiro da spec.
 

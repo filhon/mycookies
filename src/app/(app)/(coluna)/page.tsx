@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useRef, useState } from "react";
 import { Settings } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
+import { CampoBusca } from "@/components/ui/CampoBusca";
+import { QuantoCobrar } from "@/components/fichas/QuantoCobrar";
 import { FaixaDoTeste } from "@/components/assinatura/FaixaDoTeste";
 import { CartaoPrimeirosPassos } from "@/components/comecar/CartaoPrimeirosPassos";
 import { CartaoComprasHoje } from "@/components/compras/CartaoComprasHoje";
@@ -33,6 +36,23 @@ export default function PaginaHoje() {
   // primeira leitura não chega, a saudação vai sozinha — melhor um cumprimento
   // curto por um instante do que um nome de mentira que depois troca na tela.
   const saudacao = SAUDACAO_POR_HORA(agora.getHours());
+
+  // "Quanto cobrar?" (`#d216`): com texto, a resposta toma o lugar da Hoje, que
+  // fica montada e escondida; apagar devolve a Hoje na rolagem em que estava.
+  const [busca, setBusca] = useState("");
+  const rolagem = useRef(0);
+  const buscando = busca.trim() !== "";
+
+  function aoBuscar(valor: string) {
+    const vaiBuscar = valor.trim() !== "";
+    if (vaiBuscar && !buscando) {
+      rolagem.current = window.scrollY;
+      window.scrollTo(0, 0);
+    } else if (!vaiBuscar && buscando) {
+      requestAnimationFrame(() => window.scrollTo(0, rolagem.current));
+    }
+    setBusca(valor);
+  }
 
   const doMes = (
     <>
@@ -66,13 +86,24 @@ export default function PaginaHoje() {
             <Settings aria-hidden className="size-5" strokeWidth={1.75} />
           </Link>
         }
-      />
+      >
+        {/* Campo, e não botão: não disputa o primário de tela nenhuma (`#d217`). */}
+        <CampoBusca
+          rotulo="Quanto cobrar? Ex.: 30 brigadeiros"
+          placeholder="Quanto cobrar? Ex.: 30 brigadeiros"
+          enterKeyHint="search"
+          value={busca}
+          onChange={(evento) => aoBuscar(evento.target.value)}
+        />
+      </CabecalhoPagina>
+
+      {buscando && <QuantoCobrar busca={busca} />}
 
       {/* Enquanto o caminho do começo não terminou, "o que eu faço agora" vem
           antes de "como estou indo". Quando ele termina, o cartão some e esta
           tela volta a ser exatamente o que era. */}
       {/* 16 px dentro de um grupo, 24 px entre grupos (spec 045). */}
-      <div className="mt-6 flex flex-col gap-6">
+      <div className={cn("mt-6 flex flex-col gap-6", buscando && "hidden")}>
         {/* Os três são da dona (spec 030): a cobrança, o caminho do começo e o
             mês, que lê `agregados`. Para a ajudante não montam, e por isso
             não assinam nada que a regra negaria. */}
@@ -97,11 +128,12 @@ export default function PaginaHoje() {
           )}
         >
           {dona ? (
-            // ponytail: `top-36` é a altura do cabeçalho no desktop mais 24 px,
-            // medida à mão; muda se o cabeçalho mudar.
+            // ponytail: `top-56` é a altura do cabeçalho no desktop (a faixa da
+            // tinta mais a da busca, `#d217`) mais 24 px, medida à mão; muda se
+            // o cabeçalho mudar.
             <section
               aria-labelledby="hoje-o-mes"
-              className="contents xl:sticky xl:top-36 xl:col-start-2 xl:row-start-1 xl:flex xl:flex-col xl:gap-4"
+              className="contents xl:sticky xl:top-56xl:col-start-2 xl:row-start-1 xl:flex xl:flex-col xl:gap-4"
             >
               <h2 id="hoje-o-mes" className="sr-only">
                 O mês

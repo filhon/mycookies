@@ -127,13 +127,14 @@ Celular, tema claro, em pé, uma mão:
 
 ## Critérios de aceite
 
-- [ ] Busca na faixa de ferramentas da Hoje; a Hoje volta intacta ao apagar.
-- [ ] `lerPedidoDeBusca` com teste (número no começo, no fim, decimal, ausente, absurdo).
-- [ ] Toda linha com total e sobra do total; negativo com sinal, cor, ícone e palavra.
-- [ ] Mesma `chaveDeBusca` de `/fichas`; mesma sobra de `custosDeHoje`.
-- [ ] Nenhuma consulta nova; nenhum primário novo na Hoje.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d216` e `#d217` escritos; `ESTADO.md` atualizado.
+- [x] Busca na faixa de ferramentas da Hoje; a Hoje volta intacta ao apagar.
+- [x] `lerPedidoDeBusca` com teste (número no começo, no fim, decimal, ausente, absurdo).
+- [x] Toda linha com total e sobra do total; negativo com sinal, cor, ícone e palavra.
+- [x] Mesma `chaveDeBusca` de `/fichas`; mesma sobra de `custosDeHoje`. (O termo perde o "s"
+      final antes da chave, `#d216`.)
+- [x] Nenhuma consulta nova; nenhum primário novo na Hoje.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d216` e `#d217` escritos; `ESTADO.md` atualizado.
 
 ---
 

@@ -3,6 +3,7 @@ import { derivarFicha } from "@/lib/domain/custoFicha";
 import { formatarPercentual, formatarValor } from "@/lib/domain/money";
 import {
   calcularPrecoSugerido,
+  lerPedidoDeBusca,
   somaTaxas,
   verificarPreco,
   type ParametrosPreco,
@@ -218,5 +219,47 @@ describe("verificarPreco", () => {
 
     // Custo zero é o estado de uma ficha recém-aberta, ainda sem itens.
     expect(verificarPreco(690, 0, 4.99).markupReal).toBe(0);
+  });
+});
+
+describe("lerPedidoDeBusca", () => {
+  it("lê o número no começo e no fim, com o mesmo resultado", () => {
+    const esperado = { quantidade: 30, termo: "brig" };
+    expect(lerPedidoDeBusca("30 brig")).toEqual(esperado);
+    expect(lerPedidoDeBusca("brig 30")).toEqual(esperado);
+    expect(lerPedidoDeBusca("  30x brig ")).toEqual(esperado);
+  });
+
+  it("tira o plural do fim, para achar o nome no singular", () => {
+    expect(lerPedidoDeBusca("30 brigadeiros")).toEqual({
+      quantidade: 30,
+      termo: "brigadeiro",
+    });
+  });
+
+  it("aceita vírgula decimal, para o produto por peso", () => {
+    expect(lerPedidoDeBusca("1,5 kg bolo")).toEqual({
+      quantidade: 1.5,
+      termo: "bolo",
+    });
+  });
+
+  it("sem número, é um", () => {
+    expect(lerPedidoDeBusca("brig")).toEqual({ quantidade: 1, termo: "brig" });
+  });
+
+  it("zero ou absurdo é um, e o número fica no termo", () => {
+    expect(lerPedidoDeBusca("0 brig")).toEqual({
+      quantidade: 1,
+      termo: "0 brig",
+    });
+    expect(lerPedidoDeBusca("brig 10000")).toEqual({
+      quantidade: 1,
+      termo: "brig 10000",
+    });
+  });
+
+  it("número sozinho é a quantidade de tudo", () => {
+    expect(lerPedidoDeBusca("30")).toEqual({ quantidade: 30, termo: "" });
   });
 });

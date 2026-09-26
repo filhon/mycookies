@@ -126,6 +126,42 @@ export function verificarPreco(
   };
 }
 
+/** Acima disto o número é engano de digitação, e não pedido (spec 047). */
+const QUANTIDADE_MAXIMA_DA_BUSCA = 9999;
+
+const NUMERO = String.raw`(\d+(?:,\d+)?)`;
+// "30x", "1,5 kg", "12 un": a unidade colada no número não é parte do nome.
+const UNIDADE = String.raw`(?:\s*(?:x|kg|un)(?=\s|$))?`;
+const NO_COMECO = new RegExp(String.raw`^${NUMERO}${UNIDADE}\s*(.*)$`, "i");
+const NO_FIM = new RegExp(String.raw`^(.*?)\s*${NUMERO}${UNIDADE}$`, "i");
+
+/**
+ * "30 brigadeiros", "brig 30", "1,5 kg bolo": a quantidade e o que buscar, do
+ * jeito que ela escreve no WhatsApp (`DECISOES.md#d216`). Sem número, 1. Zero
+ * ou mais de 9999 é 1, e o número fica no termo.
+ *
+ * O "s" final do termo cai: "30 brigadeiros" acha "Brigadeiro tradicional".
+ * Tirar do fim só alarga a busca, porque o que sobra é prefixo do que ela
+ * digitou.
+ */
+export function lerPedidoDeBusca(texto: string): {
+  quantidade: number;
+  termo: string;
+} {
+  const limpo = texto.trim();
+  const comeco = NO_COMECO.exec(limpo);
+  const fim = comeco ? null : NO_FIM.exec(limpo);
+  const numero = comeco?.[1] ?? fim?.[2];
+  const resto = (comeco ? comeco[2] : fim ? fim[1] : limpo) ?? "";
+  const quantidade = numero ? Number(numero.replace(",", ".")) : 1;
+
+  const valida = quantidade > 0 && quantidade <= QUANTIDADE_MAXIMA_DA_BUSCA;
+  return {
+    quantidade: valida ? quantidade : 1,
+    termo: (valida ? resto : limpo).trim().replace(/s$/i, ""),
+  };
+}
+
 /**
  * Percentual e múltiplo são gravados com duas casas: são números de exibição,
  * e guardar 31.159420289855074 no banco só adiciona ruído ao documento.
