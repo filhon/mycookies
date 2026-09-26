@@ -74,7 +74,7 @@ export type PassoBase = Omit<PassoDoComeco, "estado">;
  * primeiro deles.
  *
  * A meta ficou de fora de propósito (`DECISOES.md#d66`): ela já tem quem a peça,
- * e quem pede é o `CartaoMetaHoje`, logo abaixo deste cartão na mesma tela.
+ * e quem pede é o `CartaoDoMes`, logo abaixo deste cartão na mesma tela.
  */
 export const CATALOGO_DO_COMECO: readonly PassoBase[] = [
   {

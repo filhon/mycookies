@@ -6276,3 +6276,60 @@ a conta do e-mail (entrou menos saiu) continua fechando. A peça não mudou.
 "production"`, porque a prévia da Vercel roda com `NODE_ENV=production`; a chave de
 `/configuracao#avisos` fica fora do formulário e grava no toque, lendo o documento da conta que o
 `AuthProvider` já assina, e com o teste vencido a regra recusa a escrita como recusa qualquer outra.
+
+---
+
+## D210 · O mês abre a tela Hoje, com a meta dentro dele
+
+**Status:** vigente · decidida em 2026-09-25, na spec `045-o-mes-na-abertura.md`; codificada em 2026-09-26
+
+**Contexto.** O trabalho do produto é "saber se está ganhando dinheiro", e a tela que ela abre toda
+manhã não mostrava um real ganho. O cartão da meta trocava "faltam R$ 114" por "faça 12 doces".
+
+**Decisão.** `CartaoDoMes` substitui `CartaoMetaHoje`, no mesmo lugar e com o mesmo portão (só a
+dona, `#d154`). O valor em display é `parcelasDoResumo(resumo).lucro`, o mesmo do `ResultadoDoMes`;
+com lucro negativo, `comSinal`, `trending-down` e "faltou no mês". O ponto âmbar (10 px,
+`aria-hidden`) vai depois do valor e só no lucro positivo: é a única ocorrência na tela. A meta vira
+barra (trilha `sunken`, preenchimento `brand-ink`, batida em `positive`) com a frase em reais antes
+dos doces; o dia da meta batida vem de `diaEmQueBateu`, a mesma função do cron. Mês com entradas e
+saídas em zero vira uma linha, sem R$ 0,00 em display. O bloco inteiro leva a `/financeiro`.
+
+**Também, sem decisão nova:** a linha "Entrou · Saiu" passa a maquininha no que saiu, como o e-mail
+do mês (`#d209`), para que entrou menos saiu feche com o número de cima. Os valores mostram
+centavos (`formatarMoeda`): o desenho da spec arredondava, e um formatador sem centavos seria o
+segundo da casa por um bloco só.
+
+---
+
+## D211 · A comparação é com o mês passado na mesma altura, por entradas
+
+**Status:** vigente · decidida em 2026-09-25, na spec `045-o-mes-na-abertura.md`; codificada em 2026-09-26
+
+**Decisão.** `entradasAteODia(porDia, dia)` em `domain/caixa.ts`, e a diferença é a do mês atual
+menos a do anterior até o dia de hoje. Em entradas e não em sobra, porque `porDia` não guarda a
+sobra do dia; o texto diz "Entrou R$ … a mais que agosto até o dia 25", nomeando o que compara.
+Dia 31 contra mês de 30 soma o mês inteiro. Sem agregado do mês anterior, a linha não aparece.
+Diferença abaixo de R$ 1,00 é "igual". Seta e palavra; cor positiva ou `ink-muted`, **nunca
+negativa**: vender menos que o mês passado até aqui não é erro.
+
+**Consequência.** Comparar a sobra pede `porDia[].lucro` gravado, mudança no agregado e nas
+mutações do caixa. Volta se ela perguntar.
+
+---
+
+## D212 · Dois arranjos, a partir do desktop largo
+
+**Status:** vigente · decidida em 2026-09-25, na spec `045-o-mes-na-abertura.md`; codificada em 2026-09-26
+
+**Decisão.** A partir de `xl`, a tela Hoje da dona vira duas colunas, `minmax(0,7fr)
+minmax(0,5fr)`, `gap-6`: à esquerda o dia (a agenda; a 046 põe "o que espera por você" ali), à
+direita o mês, o produto no vermelho e as compras, grudenta abaixo do cabeçalho. Abaixo de `xl`, a
+pilha: faixa do teste, primeiros passos, o mês, produto no vermelho, agenda, compras. A ajudante,
+sem o mês, fica com a coluna única em qualquer largura.
+
+**Como.** Um DOM só: a seção do mês é `display: contents` na pilha, para que seus cartões entrem
+na coluna única, e as compras levam `order-last` para cair depois da agenda. A leitura por leitor
+de tela segue o DOM (o mês antes do dia), e as duas seções têm rótulo escondido. O `top-36` da
+coluna grudenta é a altura do cabeçalho no desktop mais 24 px, medida à mão (`ponytail:` no
+código). A página passou a ser dona do espaço entre os blocos (16 px dentro de um grupo, 24 px
+entre grupos): os três cartões que traziam margem de cima própria a perderam.

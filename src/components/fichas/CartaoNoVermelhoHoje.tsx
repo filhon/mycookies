@@ -86,7 +86,7 @@ export function CartaoNoVermelhoHoje() {
   return (
     <Link
       href={caidas.length === 1 ? `/fichas/${pior.id}` : "/fichas"}
-      className="mt-4 flex items-center gap-3 rounded-lg border border-line bg-surface px-5 py-4 transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken"
+      className="flex items-center gap-3 rounded-lg border border-line bg-surface px-5 py-4 transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken"
     >
       <TrendingDown
         aria-hidden

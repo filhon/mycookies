@@ -6,6 +6,7 @@ import {
   conferirAgregado,
   deltaDaTransacao,
   deltaDoPedido,
+  entradasAteODia,
   PARCELAS_ZERADAS,
   parcelasDoResumo,
   produtosOrdenados,
@@ -904,5 +905,31 @@ describe("conferirAgregado", () => {
     const reconstruido = agregarTransacoes(lancamentos);
 
     expect(conferirAgregado(lancamentos, reconstruido).confere).toBe(true);
+  });
+});
+
+describe("entradasAteODia", () => {
+  const dia = (entradas: number) => ({ entradas });
+
+  it("no dia 1 conta só o dia 1", () => {
+    expect(entradasAteODia({ "01": dia(500), "02": dia(700) }, 1)).toBe(500);
+  });
+
+  it("dia 31 contra um mês de 30 compara com o mês inteiro", () => {
+    const setembro = { "01": dia(100), "15": dia(200), "30": dia(300) };
+    expect(entradasAteODia(setembro, 31)).toBe(600);
+  });
+
+  it("mês curto contra longo: fevereiro até o dia 30 é fevereiro inteiro", () => {
+    expect(entradasAteODia({ "28": dia(900) }, 30)).toBe(900);
+    expect(entradasAteODia({ "28": dia(900), "29": dia(1) }, 28)).toBe(900);
+  });
+
+  it("mês anterior ausente é zero", () => {
+    expect(entradasAteODia(parcelasDoResumo(null).porDia, 25)).toBe(0);
+  });
+
+  it("buraco em porDia é dia sem movimento", () => {
+    expect(entradasAteODia({ "03": dia(250), "20": dia(750) }, 10)).toBe(250);
   });
 });

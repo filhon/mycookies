@@ -437,6 +437,23 @@ export function parcelasDoResumo(
 }
 
 /**
+ * O que entrou até o dia `dia` num mês, pela soma de `porDia` (`#d211`).
+ *
+ * Dia maior que o mês (31 contra um mês de 30) soma o mês inteiro, e dia sem
+ * chave é dia sem movimento: nada a somar.
+ */
+export function entradasAteODia(
+  porDia: Record<string, Pick<ResumoDia, "entradas">>,
+  dia: number,
+): Centavos {
+  let soma = 0;
+  for (const [chave, linha] of Object.entries(porDia)) {
+    if (Number(chave) <= dia) soma += linha.entradas;
+  }
+  return soma;
+}
+
+/**
  * O que a lista de lançamentos prova sobre o agregado do mesmo mês.
  *
  * A `/financeiro` já assina as duas fontes, e a consulta da lista é exatamente

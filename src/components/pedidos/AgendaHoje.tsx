@@ -60,7 +60,7 @@ export function AgendaHoje() {
   const titulo = deHoje.length > 0 ? "Entregas de hoje" : "Os próximos dias";
 
   return (
-    <section aria-labelledby="titulo-entregas" className="mt-6">
+    <section aria-labelledby="titulo-entregas">
       <div className="flex items-center justify-between gap-3">
         <h2
           id="titulo-entregas"

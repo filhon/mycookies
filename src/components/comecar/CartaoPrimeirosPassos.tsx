@@ -21,7 +21,7 @@ import { Trilha } from "./Trilha";
  * este cartão é o retorno, porque fazer o passo tira ela desta tela e a
  * navegação inferior a traz de volta para cá.
  *
- * Fica **acima do `CartaoMetaHoje`** enquanto existir: enquanto o caminho não
+ * Fica **acima do `CartaoDoMes`** enquanto existir: enquanto o caminho não
  * terminou, "o que eu faço agora" vem antes de "como estou indo". Quando ele
  * termina, o cartão some e a tela Hoje volta a ser exatamente o que era, sem uma
  * linha de diferença.

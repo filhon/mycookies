@@ -1,6 +1,11 @@
 # Estado do projeto
 
-Atualizado em 2026-09-25 (a **044-A codificada**, o Rende escreve: o transporte do Resend por
+Atualizado em 2026-09-26 (**a 045 codificada**, o mês na abertura: a tela Hoje abre no que
+sobrou no mês, com a meta em barra dentro dele e a comparação com o mês passado, e duas colunas a
+partir de `xl`, `#d210` a `#d212`; **specs 046 a 048 escritas, nenhuma codificada**: a crítica da
+tela Hoje virou quatro specs de uma sessão cada, na ordem 045 (o mês na abertura), 046 (o que
+espera por você), 047 (quanto cobrar) e 048 (o teste que mostra o que rendeu), com as decisões
+`#d213` a `#d219` reservadas e escritas só quando cada uma for codificada; a **044-A codificada**, o Rende escreve: o transporte do Resend por
 `fetch`, as cinco peças, a boas-vindas no cadastro e a senha nova com o Firebase de reserva,
 `#d202` a `#d208`, com o roteiro A e o domínio no Resend como portão do deploy; a **044-B
 codificada**, o cron diário e os três avisos, com a chave em `/configuracao#avisos`, `#d209`; **preços novos no Stripe ao vivo**, R$ 29/290 e R$ 49/490, `#d201`,
@@ -3884,6 +3889,28 @@ Portão: lint e typecheck limpos, **734 testes** (13 novos, `tests/avisos.test.t
 passa com `/api/emails/diario`. `package.json`, `firestore.rules` e `firestore.indexes.json`
 intocados.
 
+## A spec 045 · O mês na abertura
+
+**Codificada em 2026-09-26** (`#d210` a `#d212`). Nenhum campo, rota, índice, regra ou dependência.
+
+- `src/lib/domain/caixa.ts`: `entradasAteODia`, pura, com cinco testes (dia 1, dia 31 contra mês de
+  30, mês curto contra longo, mês anterior ausente, buraco em `porDia`).
+- `src/components/financeiro/CartaoDoMes.tsx` no lugar de `CartaoMetaHoje` (apagado): o `lucro` de
+  `parcelasDoResumo` em display com o ponto âmbar (sem ponto no prejuízo), entrou e saiu com a
+  maquininha no que saiu (`#d209`), a comparação por entradas até o dia com o mês anterior, a meta
+  em barra com "Faltam R$ …, uns N doces …", "Meta batida no dia N" por `diaEmQueBateu`, "Pôr uma
+  meta" sem meta, e uma linha só no mês sem nada. Duas leituras; a anterior não segura o esqueleto.
+- `src/app/(app)/(coluna)/page.tsx`: grade `7fr/5fr` a partir de `xl` só para a dona, a direita
+  grudenta em `top-36` (altura do cabeçalho medida à mão, `ponytail:`); na pilha, o mês, o produto
+  no vermelho, a agenda e as compras. A página passou a ser dona dos espaços: `AgendaHoje`,
+  `CartaoComprasHoje` e `CartaoNoVermelhoHoje` perderam a margem de cima que traziam.
+
+**Não rodou**: o roteiro de navegador da spec (§ 4), nos dois temas e nas três larguras; em
+especial o passo 5 (a direita grudenta sem sobrepor o cabeçalho) e o 6 (leitor de tela).
+
+Portão: lint e typecheck limpos, **739 testes** (5 novos), `npm run build` passa.
+`package.json` e `firestore.rules` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -3893,6 +3920,9 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 045 está codificada** (seção acima). Publica sozinha; o portão é o roteiro da spec. A próxima
+sessão é a 046, que encaixa "o que espera por você" na coluna do dia.
 
 **A 044 está codificada inteira** (seções da A e da B, acima). Publica depois do domínio verificado
 no Resend e de `DEPLOY.md` § 12 inteira (os passos 5 a 7 são do cron: `CRON_SECRET` na Vercel);
