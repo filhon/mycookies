@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { PackageOpen, Plus } from "lucide-react";
+import { PackageOpen, Plus, TriangleAlert } from "lucide-react";
 import { orderBy, query, where } from "firebase/firestore";
 import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { EntradaContagem } from "@/components/estoque/EntradaContagem";
@@ -28,7 +28,12 @@ import {
 } from "@/lib/domain/custoFicha";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { competenciaAtual, dataISODe, rotuloMes } from "@/lib/domain/datas";
-import { capacidadeDaFicha, projecaoDoPronto } from "@/lib/domain/producao";
+import {
+  capacidadeDaFicha,
+  faltasDaLista,
+  projecaoDoPronto,
+} from "@/lib/domain/producao";
+import { listarNomes } from "@/components/producao/FraseDaCapacidade";
 import { colFichas, docResumoMensal } from "@/lib/firebase/colecoes";
 import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
 import {
@@ -199,6 +204,14 @@ export function ListaFichas() {
         (capacidades.get(ficha.id)?.capacidade?.semContagem.length ?? 0) > 0,
     );
 
+  // A falta dita uma vez, do que está à vista (`#d231`): a linha só diz
+  // "falta X", e a faixa diz o tamanho e leva à lista de compras.
+  const faltas = despensaPronta
+    ? faltasDaLista(
+        visiveis.map((ficha) => capacidades.get(ficha.id)?.capacidade),
+      )
+    : null;
+
   return (
     <>
       <CabecalhoPagina
@@ -288,6 +301,35 @@ export function ListaFichas() {
           <SeloSincronizacao pendente={pendente} />
         </div>
       </div>
+
+      {/* "Abrir a lista", e não "ver o que comprar": `/compras` monta a demanda
+          dos pedidos e do piso, e o produto sem piso pode não estar lá. */}
+      {faltas && faltas.produtos > 0 && (
+        <div className="mt-2 flex items-start gap-2.5 rounded-lg border border-attention/30 bg-attention-soft p-4 text-label text-ink">
+          <TriangleAlert
+            aria-hidden
+            className="mt-0.5 size-4 shrink-0 text-attention"
+            strokeWidth={1.75}
+          />
+          <div className="min-w-0">
+            <p className="num">
+              <span className="font-semibold">
+                {faltas.produtos}{" "}
+                {faltas.produtos === 1 ? "produto para" : "produtos param"} por
+                falta de {faltas.materiais.length}{" "}
+                {faltas.materiais.length === 1 ? "material" : "materiais"}:
+              </span>{" "}
+              {listarNomes(faltas.materiais, 4)}.
+            </p>
+            <Link
+              href="/compras"
+              className="toque mt-1 inline-flex items-center rounded-md text-label font-semibold text-brand-ink underline underline-offset-2"
+            >
+              Abrir a lista de compras
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* O atalho para contar mora aqui, e não em cada linha: a linha inteira
           já é um link para a ficha, e link dentro de link não existe. */}
@@ -414,6 +456,14 @@ export function ListaFichas() {
           <PainelProduto
             ficha={selecionada}
             hoje={despensaPronta ? hojes.get(selecionada.id) : undefined}
+            capacidade={
+              despensaPronta
+                ? capacidades.get(selecionada.id)?.capacidade
+                : undefined
+            }
+            pronto={
+              despensaPronta ? capacidades.get(selecionada.id) : undefined
+            }
             aoFechar={fecharPainel}
           />
         )}

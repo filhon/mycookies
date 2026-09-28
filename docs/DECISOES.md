@@ -6787,3 +6787,44 @@ seta aparece quando o sinal cruza o zero, ou quando `|hoje − gravado| ≥ max(
 praticado)`. Abaixo disso, a linha mostra a sobra de hoje sem seta, e o selo "Custo desatualizado"
 continua dizendo que o gravado envelheceu. O `PainelProduto` e o `CartaoNoVermelhoHoje` não mudam:
 o painel é o lugar do centavo, e o cartão já conta cruzamento.
+
+---
+
+## D231 · A falta é uma faixa, e a linha diz uma coisa só
+
+**Status:** vigente · decidida em 2026-09-26, na spec `055-o-que-falta-pra-fazer.md`; codificada em 2026-09-28
+
+**Contexto.** Na conta da Maynara, 6 das 12 linhas de `/fichas` diziam em ocre "não dá nem uma
+fornada · falta Biscoito Oreo", explicadas por quatro materiais. O alarme em toda linha deixa de
+ser alarme, não levava a lugar nenhum, e a célula do produto no desktop ia de uma a quatro alturas.
+
+**Decisão.** Acima da lista, abaixo da linha da contagem, uma faixa de atenção (a "Faixa de aviso"
+do `DESIGN.md`, o mesmo desenho da `Faixa` do editor) só quando há produto visível com
+`fornadas === 0` e gargalo: "**6 produtos param por falta de 4 materiais:** Biscoito Oreo, Cream
+cheese, Creme de pistache e Amido de milho.", com `listarNomes(…, 4)` e o total no cabeçalho
+mesmo com "e mais N". `faltasDaLista(capacidades)` em `domain/producao.ts`, com teste: materiais
+por `insumoId`, sem repetir, o que trava mais produtos primeiro, empate na ordem da lista. Conta o
+que a busca e o filtro deixam à vista. O aviso de material sem contagem continua separado: um
+pede compra, o outro contagem.
+
+**A ação diz "Abrir a lista de compras"**, e não "Ver o que comprar". `/compras` monta a demanda
+dos pedidos abertos e da reserva de fornadas (`reservaDeProducao`, só fichas com piso); o produto
+sem piso que não dá uma fornada pode não pôr o material lá, e a faixa não promete o que a lista
+não garante. Se o roteiro mostrar que ela chega e não acha, é a spec do "pôr na lista com um
+toque" (fora de escopo da 055).
+
+**A linha.** `FraseDaCapacidade` e `FraseDoPronto` ganham `curta`, uma linha sem quebra (o texto
+trunca): "7 prontas" (a unidade e a porção perdem o nome; grama e mililitro ficam inteiros),
+"dá 1 fornada", "dá pelo menos 1 fornada" no `PISO`, "não dá para saber" no `DESCONHECIDA`, e
+"falta X" com o triângulo em `attention` e o texto em `ink-muted`. Saem da linha a idade da
+contagem, o "além dos pedidos", as unidades, o "acaba primeiro" e os nomes sem contagem.
+
+**O detalhe vai para o painel.** O `PainelProduto` ganha "Pra produzir", entre o cabeçalho (e o
+aviso de custo desatualizado) e "O custo do lote", com as duas frases inteiras e os mesmos números
+da linha (a capacidade e o reservado vêm de `ListaFichas`).
+
+**O editor não tinha a capacidade.** A spec contava que o `FormularioFicha` já usava
+`FraseDaCapacidade`; ele só usa `FraseDoPronto` (com a idade da contagem). No celular, onde a linha
+leva ao editor, as unidades e o "acaba primeiro" não aparecem mais em lugar nenhum. Pôr a frase no
+editor pede os pedidos abertos no `EditorFicha` (`useDespensaParaProduzir`), para o número não
+discordar da lista, e isso sai do escopo da spec: fica para decisão.

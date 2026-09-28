@@ -39,24 +39,49 @@ function prontas(quantidade: number, unidade: UnidadeRendimento): string {
 }
 
 /**
+ * A forma da lista: "7 prontas". Só a unidade e a porção perdem o nome, que é
+ * o que a linha do produto já diz; "300 gramas prontos" continua inteiro.
+ */
+function prontasCurto(quantidade: number, unidade: UnidadeRendimento): string {
+  if (unidade !== "un" && unidade !== "porcao")
+    return prontas(quantidade, unidade);
+  const adjetivo =
+    texto(quantidade) === "1" ? PRONTO[unidade].slice(0, -1) : PRONTO[unidade];
+  return `${texto(quantidade)} ${adjetivo}`;
+}
+
+/**
  * O que está pronto, numa linha: a contagem projetada, sem o que já tem dono.
  * Some sem contagem que valha: não há o que dizer, e a capacidade continua
  * falando pela despensa.
+ *
+ * `curta` é a da lista de produtos (`#d231`): só o número, sem a idade da
+ * contagem, que mora no painel e no editor.
  */
 export function FraseDoPronto({
   projecao,
   unidade,
   reservado = 0,
+  curta = false,
   className,
 }: {
   projecao: ProjecaoDoPronto;
   unidade: UnidadeRendimento;
   /** O que dos prontos já é de pedido aberto. */
   reservado?: number;
+  curta?: boolean;
   className?: string;
 }) {
   const livres = prontosLivres(projecao, reservado);
   if (livres === null) return null;
+
+  if (curta) {
+    return (
+      <Frase icone={PackageOpen} curta className={className}>
+        {livres === 0 ? "nada pronto" : prontasCurto(livres, unidade)}
+      </Frase>
+    );
+  }
 
   return (
     <Frase icone={PackageOpen} className={className}>
@@ -96,15 +121,46 @@ export function texto(numero: number): string {
  * `PISO` diz "pelo menos" e nomeia o que falta contar, `DESCONHECIDA` diz que
  * não dá para saber. Zero é dito com ícone, porque zero é o número que ela
  * precisa ver antes de prometer, e a cor sozinha nunca decide.
+ *
+ * `curta` é a da lista de produtos (`#d231`): "dá 1 fornada", "falta Oreo",
+ * numa linha. As unidades, o "acaba primeiro" e o que não tem contagem ficam
+ * no painel; na falta, o triângulo leva a atenção e o texto fica calmo,
+ * porque a faixa acima da lista já carrega o peso.
  */
 export function FraseDaCapacidade({
   capacidade,
+  curta = false,
   className,
 }: {
   capacidade: CapacidadeDaFicha;
+  curta?: boolean;
   className?: string;
 }) {
   const { leitura, fornadas, unidades, gargalo, semContagem } = capacidade;
+
+  if (curta) {
+    if (leitura === "DESCONHECIDA" || fornadas === null) {
+      return (
+        <Frase icone={CircleHelp} curta className={className}>
+          não dá para saber
+        </Frase>
+      );
+    }
+    if (fornadas === 0) {
+      return (
+        <Frase icone={TriangleAlert} curta iconeAtencao className={className}>
+          {gargalo ? `falta ${gargalo.nome}` : "não dá nem uma fornada"}
+        </Frase>
+      );
+    }
+    const quantas = `${texto(fornadas)} ${fornadas === 1 ? "fornada" : "fornadas"}`;
+    return (
+      <Frase icone={CookingPot} curta className={className}>
+        {leitura === "PISO" ? `dá pelo menos ${quantas}` : `dá ${quantas}`}
+      </Frase>
+    );
+  }
+
   const semContagemFrase =
     semContagem.length > 0 ? `${listarNomes(semContagem)} sem contagem` : null;
 
@@ -175,11 +231,17 @@ function Frase({
   icone: Icone,
   tom = "neutro",
   rotulo,
+  curta = false,
+  iconeAtencao = false,
   className,
   children,
 }: {
   icone: typeof CookingPot;
   tom?: "neutro" | "atencao" | "positivo";
+  /** Numa linha, sem quebra: a forma da lista de produtos. */
+  curta?: boolean;
+  /** Só o ícone em atenção, com o texto no tom da frase. */
+  iconeAtencao?: boolean;
   /** De quem é a frase, quando há mais de uma na mesma linha (o combo). */
   rotulo?: string;
   className?: string;
@@ -190,15 +252,16 @@ function Frase({
       className={cn(
         "num flex items-start gap-1.5 text-label",
         TOM[tom],
+        curta && "min-w-0 whitespace-nowrap",
         className,
       )}
     >
       <Icone
         aria-hidden
-        className="mt-0.75 size-3.5 shrink-0"
-        strokeWidth={tom === "neutro" ? 1.75 : 2}
+        className={cn("mt-0.75 size-3.5 shrink-0", iconeAtencao && TOM.atencao)}
+        strokeWidth={tom === "neutro" && !iconeAtencao ? 1.75 : 2}
       />
-      <span>
+      <span className={cn(curta && "truncate")}>
         {rotulo && (
           <>
             <span className="font-medium">{rotulo}</span>

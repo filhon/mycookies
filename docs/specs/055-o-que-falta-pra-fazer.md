@@ -105,12 +105,12 @@ materiais: string[] }`, materiais sem repetição, na ordem de quantos produtos 
 
 ## Critérios de aceite
 
-- [ ] Uma faixa com produtos e materiais, sem repetição, com a ação para `/compras`.
-- [ ] Linha de produção curta, uma linha, com ícone e palavra na falta.
-- [ ] Detalhe da produção no painel do desktop e no editor.
-- [ ] `faltasDaLista` testada.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d231` escrito; `ESTADO.md` atualizado.
+- [x] Uma faixa com produtos e materiais, sem repetição, com a ação para `/compras`.
+- [x] Linha de produção curta, uma linha, com ícone e palavra na falta.
+- [~] Detalhe da produção no painel do desktop e no editor.
+- [x] `faltasDaLista` testada.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d231` escrito; `ESTADO.md` atualizado.
 
 ---
 

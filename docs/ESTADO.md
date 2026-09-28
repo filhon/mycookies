@@ -1,6 +1,9 @@
 # Estado do projeto
 
-Atualizado em 2026-09-28 (**a 054 codificada**, o que cada produto deixou: a lista de produtos
+Atualizado em 2026-09-28 (**a 055 codificada**, o que falta pra fazer: a falta de material vira
+uma faixa só acima da lista de produtos, com "Abrir a lista de compras", e a linha de produção
+encolhe para "7 prontas · dá 1 fornada" ou "falta Biscoito Oreo", com o detalhe na seção "Pra
+produzir" do painel do desktop, `#d231`; **a 054 codificada**, o que cada produto deixou: a lista de produtos
 ganha "Vendeu" e "Deixou" do mês ao lado da sobra por unidade, com a margem embaixo, o sugerido
 só quando o preço está abaixo dele, a sobra do celular fora do `micro`, quatro ordens guardadas no
 aparelho e a seta de "hoje" só a partir de R$ 0,10 ou 2% do preço, `#d228` a `#d230`; **a 053 codificada**, o kit que rende um: o kit perde o campo "Rende",
@@ -4179,6 +4182,30 @@ contra o ranking do Caixa, que ordena por receita, e não por lucro) e o 5 (1024
 Portão: lint e typecheck limpos, **787 testes** (6 novos), `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 055 · O que falta pra fazer
+
+**Codificada em 2026-09-28** (`#d231`). Nenhum campo, consulta, índice, regra ou dependência.
+
+- `src/lib/domain/producao.ts`: `faltasDaLista`; dois testes.
+- `src/components/producao/FraseDaCapacidade.tsx`: a prop `curta` em `FraseDaCapacidade` e
+  `FraseDoPronto`: "7 prontas", "dá 1 fornada", "dá pelo menos 1 fornada", "falta X" (triângulo em
+  atenção, texto calmo), "não dá para saber"; uma linha, sem quebra.
+- `src/components/fichas/ListaFichas.tsx`: a faixa de atenção abaixo da contagem, sobre o que está
+  visível, e a capacidade e o pronto passados ao painel.
+- `src/components/fichas/LinhaFicha.tsx`: a forma curta nas duas arrumações.
+- `src/components/fichas/PainelProduto.tsx`: a seção "Pra produzir", com as frases inteiras.
+
+**Fora do que a spec desenhou** (no `#d231`): a ação diz "Abrir a lista de compras", porque
+`/compras` só monta a demanda dos pedidos e do piso. **O editor não mostra a capacidade**: a spec
+supunha que o `FormularioFicha` já usava `FraseDaCapacidade`, e ele só usa `FraseDoPronto`. No
+celular, "N unidades" e "X acaba primeiro" deixaram de aparecer em qualquer lugar; a correção pede
+os pedidos abertos no `EditorFicha` e fica para decisão (fora do escopo da 055).
+
+**Não rodou**: o roteiro de aparelho da spec (§ 4), inteiro.
+
+Portão: lint e typecheck limpos, **789 testes** (2 novos), `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -4188,6 +4215,10 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 055 está codificada** (seção acima). Publica depois da 054, que mexe na mesma linha; o portão
+é o roteiro da spec. Antes, decidir se a capacidade inteira entra no editor (a lacuna do
+celular). A próxima da crítica de Produtos é a 056 (o que o mês diz do cardápio).
 
 **A 054 está codificada** (seção acima). Publica junto com ou depois da 053, que corrige o lucro
 dos kits que a coluna "Deixou" mostra; o portão é o roteiro da spec. A próxima da crítica de

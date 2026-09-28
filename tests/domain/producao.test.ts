@@ -15,6 +15,7 @@ import {
   custoPorVendavel,
   disponivelParaProducao,
   faltaPara,
+  faltasDaLista,
   fichasAbaixoDoPiso,
   fornadaGravavel,
   fornadasDesdeAContagem,
@@ -30,6 +31,7 @@ import {
   type FichaParaProduzir,
   type FornadaDaFicha,
   type FornadaRegistrada,
+  type CapacidadeDaFicha,
   type InsumoParaCapacidade,
 } from "@/lib/domain/producao";
 
@@ -1708,5 +1710,62 @@ describe("o combo à escolha produz pelas receitas escolhidas", () => {
       ],
     );
     expect(reservado.get("nutella")).toBe(3);
+  });
+});
+
+describe("faltasDaLista: a falta dita uma vez, acima da lista (#d231)", () => {
+  const capacidade = (
+    fichaId: string,
+    fornadas: number | null,
+    gargalo: string | null,
+  ): CapacidadeDaFicha => ({
+    fichaId,
+    nome: fichaId,
+    rendimento: 20,
+    unidadeRendimento: "un",
+    leitura: fornadas === null ? "DESCONHECIDA" : "MEDIDA",
+    fornadas,
+    unidades: fornadas === null ? null : fornadas * 20,
+    gargalo:
+      gargalo === null
+        ? null
+        : {
+            insumoId: gargalo.toLowerCase(),
+            nome: gargalo,
+            unidadeBase: "g",
+            precisaPorLote: 100,
+            tem: 0,
+          },
+    semContagem: [],
+    descontaPedidos: false,
+    insumos: [],
+  });
+
+  it("conta os produtos parados e os materiais sem repetir, o que trava mais primeiro", () => {
+    expect(
+      faltasDaLista([
+        capacidade("pistache", 0, "Creme de pistache"),
+        capacidade("oreo", 0, "Biscoito Oreo"),
+        capacidade("tradicional", 2, "Amido de milho"),
+        capacidade("red", 0, "Cream cheese"),
+        capacidade("mini-oreo", 0, "Biscoito Oreo"),
+        capacidade("cheesecake", 0, "Cream cheese"),
+        capacidade("mini-oreo-2", 0, "Biscoito Oreo"),
+      ]),
+    ).toEqual({
+      produtos: 6,
+      materiais: ["Biscoito Oreo", "Cream cheese", "Creme de pistache"],
+    });
+  });
+
+  it("não sei, sem pergunta e despensa em dia não entram", () => {
+    expect(
+      faltasDaLista([
+        capacidade("desconhecida", null, null),
+        null,
+        undefined,
+        capacidade("da", 1, "Farinha"),
+      ]),
+    ).toEqual({ produtos: 0, materiais: [] });
   });
 });

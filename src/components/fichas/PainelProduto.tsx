@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useEffect, useRef, type KeyboardEvent } from "react";
 import { RefreshCw, TrendingDown, X } from "lucide-react";
+import {
+  FraseDaCapacidade,
+  FraseDoPronto,
+} from "@/components/producao/FraseDaCapacidade";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Selo } from "@/components/ui/Selo";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -17,6 +21,10 @@ import {
 import { formatarMoeda, formatarPercentual } from "@/lib/domain/money";
 import { palavraSobra } from "./LinhaFicha";
 import { somaTaxas } from "@/lib/domain/precificacao";
+import type {
+  CapacidadeDaFicha,
+  ProjecaoDoPronto,
+} from "@/lib/domain/producao";
 import type { Centavos, FichaTecnica } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 import { FaixaDeComposicao, Parcela } from "./FaixaDeComposicao";
@@ -49,11 +57,16 @@ function Metrica({ rotulo, valor }: { rotulo: string; valor: Centavos }) {
 export function PainelProduto({
   ficha,
   hoje,
+  capacidade,
+  pronto,
   aoFechar,
 }: {
   ficha: FichaTecnica;
   /** O custo e a sobra se ela salvasse agora, com os materiais de hoje (`#d135`). */
   hoje?: CustoDeHoje;
+  /** As mesmas da linha, aqui inteiras (`#d231`). */
+  capacidade?: CapacidadeDaFicha | null;
+  pronto?: { pronto: ProjecaoDoPronto; reservado: number };
   aoFechar: () => void;
 }) {
   const ref = useRef<HTMLElement>(null);
@@ -143,6 +156,29 @@ export function PainelProduto({
               </p>
             )}
           </div>
+        )}
+
+        {/* O detalhe que a linha curta deixou de dizer (`#d231`): a idade da
+            contagem, as unidades e o que acaba primeiro. */}
+        {(capacidade || pronto?.pronto.prontos != null) && (
+          <section aria-labelledby={`produzir-${ficha.id}`}>
+            <h3
+              id={`produzir-${ficha.id}`}
+              className="text-subheading font-semibold text-ink"
+            >
+              Pra produzir
+            </h3>
+            <div className="mt-2 space-y-1.5">
+              {pronto && (
+                <FraseDoPronto
+                  projecao={pronto.pronto}
+                  unidade={ficha.unidadeRendimento}
+                  reservado={pronto.reservado}
+                />
+              )}
+              {capacidade && <FraseDaCapacidade capacidade={capacidade} />}
+            </div>
+          </section>
         )}
 
         <section aria-labelledby={`custo-${ficha.id}`}>

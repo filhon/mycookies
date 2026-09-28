@@ -848,3 +848,33 @@ export function faltaPara(
     ];
   });
 }
+
+/**
+ * O que trava a lista inteira, dito uma vez (`#d231`): quantos produtos não
+ * dão nem uma fornada e por falta de quais materiais, sem repetir, o que
+ * trava mais produtos primeiro (empate na ordem em que aparecem).
+ *
+ * Só conta quem tem gargalo: zero sem gargalo não existe (`DESCONHECIDA` é
+ * `null`), e o "não sei" pede contagem, não compra.
+ */
+export function faltasDaLista(
+  capacidades: (CapacidadeDaFicha | null | undefined)[],
+): { produtos: number; materiais: string[] } {
+  const travados = new Map<string, { nome: string; produtos: number }>();
+  let produtos = 0;
+
+  for (const capacidade of capacidades) {
+    const gargalo = capacidade?.gargalo;
+    if (capacidade?.fornadas !== 0 || !gargalo) continue;
+    produtos += 1;
+    const atual = travados.get(gargalo.insumoId);
+    if (atual) atual.produtos += 1;
+    else travados.set(gargalo.insumoId, { nome: gargalo.nome, produtos: 1 });
+  }
+
+  // `sort` é estável: no empate, fica a ordem da lista.
+  const materiais = [...travados.values()]
+    .sort((a, b) => b.produtos - a.produtos)
+    .map((material) => material.nome);
+  return { produtos, materiais };
+}

@@ -96,7 +96,7 @@ function SemVenda() {
  * **No celular**, andares, e não colunas. Em cima, nome e preço; no meio,
  * custo e sobra, a sobra em `label` 600, nunca em `micro`; embaixo, com venda
  * no mês, quanto vendeu e quanto deixou; por último, o que está pronto e
- * quantas fornadas dá, na largura inteira da linha.
+ * quantas fornadas dá, na forma curta (`#d231`).
  *
  * **No desktop**, a linha da tabela, e o clique abre o painel ao lado da lista
  * em vez de sair dela (`#d130`). Com o painel aberto, a tabela espera o `xl`
@@ -186,6 +186,8 @@ export function LinhaFicha({
     </>
   );
 
+  // A forma curta, uma linha só (`#d231`): a idade da contagem, as unidades
+  // e o "acaba primeiro" moram no painel, e a falta, na faixa acima da lista.
   const producao = (
     <>
       {pronto && (
@@ -193,9 +195,10 @@ export function LinhaFicha({
           projecao={pronto.pronto}
           unidade={ficha.unidadeRendimento}
           reservado={pronto.reservado}
+          curta
         />
       )}
-      {capacidade && <FraseDaCapacidade capacidade={capacidade} />}
+      {capacidade && <FraseDaCapacidade capacidade={capacidade} curta />}
     </>
   );
 
@@ -310,7 +313,7 @@ export function LinhaFicha({
               {selos}
             </div>
             {(pronto || capacidade) && (
-              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
+              <div className="mt-1 flex min-w-0 gap-x-3 overflow-hidden">
                 {producao}
               </div>
             )}
