@@ -7,6 +7,9 @@ import {
   deltaDaTransacao,
   deltaDoPedido,
   entradasAteODia,
+  eSeCobrasseMais,
+  leituraDoCardapio,
+  mesDaLeitura,
   PARCELAS_ZERADAS,
   parcelasDoResumo,
   produtosOrdenados,
@@ -19,7 +22,7 @@ import {
   type TransacaoAgregavel,
 } from "@/lib/domain/caixa";
 import { competenciaDeISO } from "@/lib/domain/datas";
-import type { FormaPagamento } from "@/lib/types";
+import type { FichaTecnica, FormaPagamento, ResumoProduto } from "@/lib/types";
 
 function forma(
   id: string,
@@ -931,5 +934,130 @@ describe("entradasAteODia", () => {
 
   it("buraco em porDia é dia sem movimento", () => {
     expect(entradasAteODia({ "03": dia(250), "20": dia(750) }, 10)).toBe(250);
+  });
+});
+
+describe("leituraDoCardapio", () => {
+  function ficha(
+    id: string,
+    margemReal: number,
+    lucroUnitario: number,
+    extra: Partial<FichaTecnica["precificacao"]> = {},
+    arquivado = false,
+  ) {
+    return {
+      id,
+      nome: id,
+      arquivado,
+      precificacao: {
+        margemReal,
+        lucroUnitario,
+        precoVenda: 350,
+        precoSugerido: 0,
+        taxaCartaoConsiderada: 0,
+        outrasTaxas: 0,
+        ...extra,
+      } as FichaTecnica["precificacao"],
+    };
+  }
+  const venda = (quantidade: number, lucro: number): ResumoProduto => ({
+    nome: "",
+    quantidade,
+    receita: quantidade * 100,
+    lucro,
+  });
+
+  const fichas = [
+    ficha("Red Velvet", 45, 656),
+    ficha("Mini", 20, 192),
+    ficha("Pistache", 55, 626),
+    ficha("Brigadeiro", 30, 200),
+  ];
+  const mes = {
+    "Red Velvet": venda(86, 56420),
+    Mini: venda(212, 40704),
+    Pistache: venda(4, 2504),
+    Brigadeiro: venda(20, 4000),
+  };
+
+  it("acha as três frases pelas medianas", () => {
+    const leitura = leituraDoCardapio(mes, fichas);
+    expect(leitura?.sustenta).toMatchObject({
+      fichaId: "Red Velvet",
+      lucro: 56420,
+      quantidade: 86,
+    });
+    expect(leitura?.vendeMuito).toMatchObject({
+      fichaId: "Mini",
+      sobra: 192,
+      aMais: 40,
+      noMes: 8480,
+    });
+    expect(leitura?.deixaMuito).toMatchObject({
+      fichaId: "Pistache",
+      sobra: 626,
+      quantidade: 4,
+    });
+  });
+
+  it("o mesmo produto não aparece em duas frases", () => {
+    const leitura = leituraDoCardapio(
+      { ...mes, Mini: venda(212, 99999) },
+      fichas,
+    );
+    expect(leitura?.sustenta?.fichaId).toBe("Mini");
+    expect(leitura?.vendeMuito).toBeNull();
+    expect(leitura?.deixaMuito?.fichaId).toBe("Pistache");
+  });
+
+  it("abaixo de 4 produtos ou 30 unidades, nada", () => {
+    const tres = { ...mes, Brigadeiro: venda(0, 0) };
+    expect(leituraDoCardapio(tres, fichas)).toBeNull();
+    const poucas = {
+      a: venda(10, 1),
+      b: venda(10, 1),
+      c: venda(5, 1),
+      d: venda(4, 1),
+    };
+    const quatro = ["a", "b", "c", "d"].map((id) => ficha(id, 30, 100));
+    expect(leituraDoCardapio(poucas, quatro)).toBeNull();
+    expect(
+      leituraDoCardapio({ ...poucas, d: venda(5, 1) }, quatro),
+    ).not.toBeNull();
+  });
+
+  it("arquivado e linha zerada ficam fora das medianas e do mínimo", () => {
+    const comArquivado = fichas.map((f) =>
+      f.id === "Brigadeiro" ? { ...f, arquivado: true } : f,
+    );
+    expect(leituraDoCardapio(mes, comArquivado)).toBeNull();
+    expect(
+      leituraDoCardapio({ ...mes, Brigadeiro: venda(0, 0) }, fichas),
+    ).toBeNull();
+  });
+
+  it("o e se: até o sugerido, ou o degrau de 10% para cima a R$ 0,10, sem a taxa", () => {
+    expect(
+      eSeCobrasseMais(
+        ficha("x", 0, 0, { precoSugerido: 420 }).precificacao,
+        10,
+      ),
+    ).toEqual({ aMais: 70, noMes: 700 });
+    expect(
+      eSeCobrasseMais(
+        ficha("x", 0, 0, {
+          precoVenda: 355,
+          taxaCartaoConsiderada: 4,
+          outrasTaxas: 1,
+        }).precificacao,
+        212,
+      ),
+    ).toEqual({ aMais: 40, noMes: 8056 });
+  });
+
+  it("o mês troca no dia 10", () => {
+    expect(mesDaLeitura(new Date(2026, 8, 9))).toBe("2026-08");
+    expect(mesDaLeitura(new Date(2026, 8, 10))).toBe("2026-09");
+    expect(mesDaLeitura(new Date(2026, 0, 3))).toBe("2025-12");
   });
 });

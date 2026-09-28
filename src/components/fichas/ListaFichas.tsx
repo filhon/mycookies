@@ -16,6 +16,8 @@ import { Botao } from "@/components/ui/Botao";
 import { Seletor } from "@/components/ui/Campo";
 import { Pilulas, type OpcaoPilula } from "@/components/ui/Pilulas";
 import { COLUNAS_FICHA, LinhaFicha } from "./LinhaFicha";
+import { LeituraDoMes } from "./LeituraDoMes";
+import { leituraDoCardapio, mesDaLeitura } from "@/lib/domain/caixa";
 import { PainelProduto } from "./PainelProduto";
 import { ID_FICHA_NOVA } from "./EditorFicha";
 import { BotaoBiblioteca } from "@/components/biblioteca/BotaoBiblioteca";
@@ -117,6 +119,21 @@ export function ListaFichas() {
   );
   const produtosDoMes = useDocumento<ResumoMensal>(refResumo).dado?.produtos;
 
+  // O que o mês diz do cardápio lê o corrente a partir do dia 10; antes, o
+  // anterior, e só aí abre uma segunda leitura do resumo (`#d232`).
+  const [mesLido] = useState(() => mesDaLeitura(new Date()));
+  const refResumoLido = useMemo(
+    () =>
+      dona && mesLido !== competencia
+        ? docResumoMensal(contaId, mesLido)
+        : null,
+    [dona, contaId, mesLido, competencia],
+  );
+  const produtosAnteriores =
+    useDocumento<ResumoMensal>(refResumoLido).dado?.produtos;
+  const produtosLidos =
+    mesLido === competencia ? produtosDoMes : produtosAnteriores;
+
   // Quantas fornadas dá, por ficha: a despensa projetada, menos o que os
   // pedidos abertos já prometeram. É a tela que ela abre quando alguém
   // pergunta se tem cookie, e a resposta é sobre hoje.
@@ -167,6 +184,11 @@ export function ListaFichas() {
     });
     return ordenarFichas(filtradas, ordem, produtosDoMes ?? {});
   }, [dados, busca, filtro, ordem, produtosDoMes]);
+
+  const leitura = useMemo(
+    () => (produtosLidos ? leituraDoCardapio(produtosLidos, dados) : null),
+    [produtosLidos, dados],
+  );
 
   // Derivada, e não guardada: se a ficha sair de `dados` (arquivada em outra
   // aba), o painel fecha sozinho.
@@ -329,6 +351,14 @@ export function ListaFichas() {
             </Link>
           </div>
         </div>
+      )}
+
+      {!carregando && leitura && (
+        <LeituraDoMes
+          leitura={leitura}
+          competencia={mesLido}
+          aoAbrir={setSelecionadaId}
+        />
       )}
 
       {/* O atalho para contar mora aqui, e não em cada linha: a linha inteira

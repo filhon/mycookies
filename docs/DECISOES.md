@@ -6828,3 +6828,60 @@ da linha (a capacidade e o reservado vêm de `ListaFichas`).
 leva ao editor, as unidades e o "acaba primeiro" não aparecem mais em lugar nenhum. Pôr a frase no
 editor pede os pedidos abertos no `EditorFicha` (`useDespensaParaProduzir`), para o número não
 discordar da lista, e isso sai do escopo da spec: fica para decisão.
+
+---
+
+## D232 · O mês diz do cardápio em até três frases
+
+**Status:** vigente · decidida em 2026-09-26, na spec `056-o-que-o-mes-diz-do-cardapio.md`; codificada em 2026-09-28
+
+**Contexto.** Depois da 054 a lista tem "Vendeu" e "Deixou" ao lado da sobra por unidade, mas
+cruzar doze linhas em duas dimensões continuava sendo trabalho dela. A engenharia de cardápio das
+ferramentas pagas é um gráfico de quadrantes com rótulo por produto: a anti-referência do
+dashboard SaaS e o selo que o `PRODUCT.md` recusa.
+
+**Decisão.** Um bloco em `surface`, "O que {mês} diz", entre a faixa da falta (`#d231`) e a
+lista, com até três frases em `body`, cada nome como link (desktop: o `PainelProduto`; celular: o
+editor, o mesmo clique da linha, `DESKTOP` exportado de `LinhaFicha`):
+
+1. **Quem sustenta o mês:** o maior `lucro` do resumo, só se positivo.
+2. **Vende muito e deixa pouco:** `quantidade ≥ mediana` e `margemReal < mediana`, o de maior
+   quantidade, com o "e se" do `#d233`. Com a sobra negativa, "perde".
+3. **Deixa muito e vende pouco:** `margemReal ≥ mediana` e `quantidade < mediana`, o de maior
+   `lucroUnitario`, sem sugestão.
+
+`leituraDoCardapio(produtosDoMes, fichas)` em `domain/caixa.ts`, pura, com teste, devolve dados e
+não texto. As medianas (a do meio, ou a média das duas do meio) são sobre os produtos vendidos no
+mês com ficha viva, pela filtragem da linha zerada de `produtosOrdenados`; o nome é o da ficha, não
+o do resumo (`#d228`). Mínimo de 4 produtos e 30 unidades, senão nenhum bloco. Um produto numa
+frase só, na ordem das frases (as frases 2 e 3 já são disjuntas pela quantidade; a exclusão
+importa entre a 1 e as outras). Frase sem candidato some; nenhuma, nenhum bloco. O "deixa R$ X em
+cada" é a `lucroUnitario` gravada, a mesma da coluna Sobra/un.
+
+**O mês.** `mesDaLeitura(agora)`: o corrente a partir do dia 10, antes o anterior; o título o
+nomeia. **Diferente da spec, e por quê:** a spec dizia "nenhuma consulta além da da 054", mas do
+dia 1 ao 9 o mês lido não é o das colunas, e o resumo do mês anterior é outro documento. A lista
+abre essa segunda leitura (`docResumoMensal` do mês anterior, a mesma regra) só nesses nove dias e
+só para a dona; do dia 10 em diante, reaproveita a leitura da 054. As colunas continuam no mês
+corrente.
+
+**No celular**, um `<details>` nativo fechado com o título e a primeira frase no `<summary>`; no
+desktop, o mesmo `<details>` aberto na montagem (`matchMedia` do `lg`), e ela pode fechá-lo. Com
+uma frase só não há o que abrir, e o bloco é uma `section` sem `<details>`. `<section>` com
+`aria-labelledby` no título, sem `aria-live`. A ajudante não lê o resumo (`#d157`) e não vê o
+bloco.
+
+---
+
+## D233 · O "e se" assume as mesmas vendas
+
+**Status:** vigente · decidida em 2026-09-26, na spec `056-o-que-o-mes-diz-do-cardapio.md`; codificada em 2026-09-28
+
+**Decisão.** "R$ X a mais, com as mesmas vendas, teriam sido R$ Y no mês." `eSeCobrasseMais` em
+`domain/caixa.ts`, com teste, em centavos inteiros: **X** é o maior entre `precoSugerido −
+precoVenda` e 10% do `precoVenda` (arredondado ao centavo), arredondado para cima ao múltiplo de
+10 centavos; **Y** é `X × quantidade × (1 − somaTaxas/100)`, arredondado ao centavo, porque a
+maquininha leva a parte dela do aumento. Produto sem preço (`precoVenda` 0) não é candidato.
+
+O Rende não sabe quanto a cliente aceita: a frase diz "com as mesmas vendas" e nunca "suba o
+preço". Reajuste em lote fica para outra spec.

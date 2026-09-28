@@ -1,14 +1,17 @@
 import type {
   CategoriaTransacao,
   Centavos,
+  CompetenciaMensal,
   DataISO,
+  FichaTecnica,
   FormaPagamento,
   ResumoDia,
   ResumoProduto,
   TipoTransacao,
 } from "@/lib/types";
 import { taxaCobrada } from "./custosOperacionais";
-import { diaDeISO } from "./datas";
+import { competenciaDe, competenciaVizinha, diaDeISO } from "./datas";
+import { somaTaxas } from "./precificacao";
 
 /**
  * O motor do agregado mensal, nas suas duas metades.
@@ -514,6 +517,156 @@ export function produtosOrdenados(
     .map(([fichaId, produto]) => ({ fichaId, produto }))
     .filter(({ produto }) => produto.quantidade > 0 || produto.receita !== 0)
     .sort((a, b) => b.produto.receita - a.produto.receita);
+}
+
+/**
+ * O mês que a leitura do cardápio lê (`#d232`): o corrente a partir do dia 10;
+ * antes, o anterior, porque nove dias de venda ainda não dizem nada.
+ */
+export function mesDaLeitura(agora: Date): CompetenciaMensal {
+  const corrente = competenciaDe(agora);
+  return agora.getDate() >= 10 ? corrente : competenciaVizinha(corrente, -1);
+}
+
+/** Abaixo disso a mediana é ruído dito com confiança (`#d232`). */
+export const LEITURA_MINIMO_PRODUTOS = 4;
+export const LEITURA_MINIMO_UNIDADES = 30;
+
+/**
+ * O "e se" da frase de quem vende muito e deixa pouco (`#d233`): `aMais` é o
+ * maior entre a distância até o sugerido e 10% do preço, arredondado para cima
+ * a R$ 0,10; `noMes` é esse aumento nas mesmas vendas, já sem a maquininha.
+ */
+export function eSeCobrasseMais(
+  precificacao: Pick<
+    FichaTecnica["precificacao"],
+    "precoVenda" | "precoSugerido" | "taxaCartaoConsiderada" | "outrasTaxas"
+  >,
+  quantidade: number,
+): { aMais: Centavos; noMes: Centavos } {
+  const ateOSugerido = precificacao.precoSugerido - precificacao.precoVenda;
+  const degrau = Math.round(precificacao.precoVenda / 10);
+  const aMais = Math.ceil(Math.max(ateOSugerido, degrau) / 10) * 10;
+  const noMes = Math.round(
+    aMais * quantidade * (1 - somaTaxas(precificacao) / 100),
+  );
+  return { aMais, noMes };
+}
+
+interface ProdutoDaLeitura {
+  fichaId: string;
+  nome: string;
+  quantidade: number;
+}
+
+export interface LeituraDoCardapio {
+  /** O maior lucro do mês. */
+  sustenta: (ProdutoDaLeitura & { lucro: Centavos }) | null;
+  /** Quantidade na mediana ou acima, margem abaixo: o de maior quantidade. */
+  vendeMuito:
+    | (ProdutoDaLeitura & { sobra: Centavos; aMais: Centavos; noMes: Centavos })
+    | null;
+  /** Margem na mediana ou acima, quantidade abaixo: o de maior sobra. */
+  deixaMuito: (ProdutoDaLeitura & { sobra: Centavos }) | null;
+}
+
+function mediana(valores: number[]): number {
+  const ordenados = [...valores].sort((a, b) => a - b);
+  const meio = Math.floor(ordenados.length / 2);
+  return ordenados.length % 2
+    ? ordenados[meio]!
+    : (ordenados[meio - 1]! + ordenados[meio]!) / 2;
+}
+
+/**
+ * Popularidade × margem, em até três frases (`#d232`). Devolve dados, não
+ * texto; `null` quando o mês não sustenta nenhuma frase. As medianas são sobre
+ * os produtos vendidos no mês que ainda estão em `fichas` (vivos), com a mesma
+ * filtragem da linha zerada de `produtosOrdenados`. Um produto aparece numa
+ * frase só, na ordem das frases.
+ */
+export function leituraDoCardapio(
+  produtosDoMes: Record<string, ResumoProduto>,
+  fichas: Pick<FichaTecnica, "id" | "nome" | "arquivado" | "precificacao">[],
+): LeituraDoCardapio | null {
+  const porId = new Map(
+    fichas
+      .filter((ficha) => !ficha.arquivado)
+      .map((ficha) => [ficha.id, ficha]),
+  );
+  const vendidos = produtosOrdenados(produtosDoMes).flatMap(
+    ({ fichaId, produto }) => {
+      const ficha = porId.get(fichaId);
+      return ficha ? [{ ficha, produto }] : [];
+    },
+  );
+
+  const unidades = vendidos.reduce((soma, v) => soma + v.produto.quantidade, 0);
+  if (
+    vendidos.length < LEITURA_MINIMO_PRODUTOS ||
+    unidades < LEITURA_MINIMO_UNIDADES
+  ) {
+    return null;
+  }
+
+  const medQuantidade = mediana(vendidos.map((v) => v.produto.quantidade));
+  const medMargem = mediana(
+    vendidos.map((v) => v.ficha.precificacao.margemReal),
+  );
+  const usados = new Set<string>();
+  const base = (v: (typeof vendidos)[number]): ProdutoDaLeitura => {
+    usados.add(v.ficha.id);
+    return {
+      fichaId: v.ficha.id,
+      nome: v.ficha.nome,
+      quantidade: v.produto.quantidade,
+    };
+  };
+  const livres = () => vendidos.filter((v) => !usados.has(v.ficha.id));
+
+  const primeiro = vendidos
+    .filter((v) => v.produto.lucro > 0)
+    .sort((a, b) => b.produto.lucro - a.produto.lucro)[0];
+  const sustenta = primeiro
+    ? { ...base(primeiro), lucro: primeiro.produto.lucro }
+    : null;
+
+  const segundo = livres()
+    .filter(
+      (v) =>
+        v.produto.quantidade >= medQuantidade &&
+        v.ficha.precificacao.margemReal < medMargem &&
+        v.ficha.precificacao.precoVenda > 0,
+    )
+    .sort((a, b) => b.produto.quantidade - a.produto.quantidade)[0];
+  const vendeMuito = segundo
+    ? {
+        ...base(segundo),
+        sobra: segundo.ficha.precificacao.lucroUnitario,
+        ...eSeCobrasseMais(
+          segundo.ficha.precificacao,
+          segundo.produto.quantidade,
+        ),
+      }
+    : null;
+
+  const terceiro = livres()
+    .filter(
+      (v) =>
+        v.ficha.precificacao.margemReal >= medMargem &&
+        v.produto.quantidade < medQuantidade,
+    )
+    .sort(
+      (a, b) =>
+        b.ficha.precificacao.lucroUnitario - a.ficha.precificacao.lucroUnitario,
+    )[0];
+  const deixaMuito = terceiro
+    ? { ...base(terceiro), sobra: terceiro.ficha.precificacao.lucroUnitario }
+    : null;
+
+  return sustenta || vendeMuito || deixaMuito
+    ? { sustenta, vendeMuito, deixaMuito }
+    : null;
 }
 
 /** As saídas do mês em ordem de tamanho: para onde o dinheiro foi de fato. */

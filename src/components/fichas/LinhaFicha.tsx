@@ -36,7 +36,7 @@ export const COLUNAS_FICHA =
   "grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,1.3fr)]";
 
 /** O `lg:` do Tailwind, para o clique decidir entre o painel e o editor. */
-const DESKTOP = "(min-width: 64rem)";
+export const DESKTOP = "(min-width: 64rem)";
 
 /** "sobram" ou "perde", conforme o sinal (`#d136`). */
 export function palavraSobra(centavos: Centavos): "sobram" | "perde" {

@@ -1,6 +1,8 @@
 # Estado do projeto
 
-Atualizado em 2026-09-28 (**a 055 codificada**, o que falta pra fazer: a falta de material vira
+Atualizado em 2026-09-28 (**a 056 codificada**, o que o mês diz do cardápio: acima da lista de
+produtos, até três frases de quanto vende × quanto deixa, com o "e se" em centavos e o nome que
+abre o produto, `<details>` fechado no celular, `#d232` e `#d233`; **a 055 codificada**, o que falta pra fazer: a falta de material vira
 uma faixa só acima da lista de produtos, com "Abrir a lista de compras", e a linha de produção
 encolhe para "7 prontas · dá 1 fornada" ou "falta Biscoito Oreo", com o detalhe na seção "Pra
 produzir" do painel do desktop, `#d231`; **a 054 codificada**, o que cada produto deixou: a lista de produtos
@@ -4206,6 +4208,27 @@ os pedidos abertos no `EditorFicha` e fica para decisão (fora do escopo da 055)
 Portão: lint e typecheck limpos, **789 testes** (2 novos), `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 056 · O que o mês diz do cardápio
+
+**Codificada em 2026-09-28** (`#d232` e `#d233`). Nenhum campo, índice, regra ou dependência.
+
+- `src/lib/domain/caixa.ts`: `mesDaLeitura`, `eSeCobrasseMais` e `leituraDoCardapio`; seis testes
+  (as três frases, o mesmo produto fora de duas, o mínimo, arquivado e linha zerada, o degrau do
+  "e se" com a taxa, a troca de mês no dia 10).
+- `src/components/fichas/LeituraDoMes.tsx`: o bloco, `<section>` com `<details>` aberto só no
+  desktop.
+- `src/components/fichas/ListaFichas.tsx`: o bloco abaixo da faixa da falta; o nome abre o painel.
+- `src/components/fichas/LinhaFicha.tsx`: `DESKTOP` exportado.
+
+**Fora do que a spec desenhou** (no `#d232`): do dia 1 ao 9, uma segunda leitura do resumo, a do
+mês anterior, porque o mês lido deixa de ser o das colunas; com uma frase só, sem `<details>`; a
+frase 1 só com lucro positivo e a 2 só com preço.
+
+**Não rodou**: o roteiro de aparelho da spec (§ 4), inteiro.
+
+Portão: lint e typecheck limpos, **795 testes** (6 novos), `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -4215,6 +4238,10 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 056 está codificada** (seção acima), a última da crítica de Produtos. Publica depois da 053
+e da 054, que corrigem e trazem o lucro por produto que ela lê; o portão é o roteiro da spec, com
+o passo 5 (dia 3) simulável mudando a data do aparelho.
 
 **A 055 está codificada** (seção acima). Publica depois da 054, que mexe na mesma linha; o portão
 é o roteiro da spec. Antes, decidir se a capacidade inteira entra no editor (a lacuna do
