@@ -1,6 +1,9 @@
 # Estado do projeto
 
-Atualizado em 2026-09-26 (**a 053 codificada**, o kit que rende um: o kit perde o campo "Rende",
+Atualizado em 2026-09-28 (**a 054 codificada**, o que cada produto deixou: a lista de produtos
+ganha "Vendeu" e "Deixou" do mês ao lado da sobra por unidade, com a margem embaixo, o sugerido
+só quando o preço está abaixo dele, a sobra do celular fora do `micro`, quatro ordens guardadas no
+aparelho e a seta de "hoje" só a partir de R$ 0,10 ou 2% do preço, `#d228` a `#d230`; **a 053 codificada**, o kit que rende um: o kit perde o campo "Rende",
 nasce com 1, diz "leva N" na lista e, gravado com outro rendimento, leva o selo "Confira o kit" e a
 faixa no editor com a ação que põe o 1, sem reescrita sozinha; de carona, "1 unidade pronta",
 `#d227`; **specs 053 a 056 escritas**: a crítica da tela
@@ -4148,6 +4151,34 @@ aparelho da spec (§ 4), inteiro.
 Portão: lint e typecheck limpos, **781 testes** (3 novos), `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 054 · O que cada produto deixou
+
+**Codificada em 2026-09-28** (`#d228` a `#d230`). Nenhum campo, consulta nova, índice, regra ou
+dependência: a lista lê o `ResumoMensal` do mês com `docResumoMensal` + `useDocumento`, a mesma
+chave da Hoje e do Caixa.
+
+- `src/lib/domain/custoFicha.ts`: `sobraMudouDeVerdade`, `vendaDoMes`, `OrdemFichas` e
+  `ordenarFichas`; seis testes.
+- `src/components/fichas/LinhaFicha.tsx`: as colunas Produto · Custo/un · Preço (o sugerido em
+  atenção só abaixo dele) · Sobra/un (a margem embaixo) · Vendeu · Deixou; `COLUNAS_FICHA` em
+  `minmax(0, …)`; props `venda` e `comPainel`; no celular, a sobra em `label` 600 com a margem, a
+  linha "vendeu · deixou" e o selo "Kit" na linha do nome; a seta com limiar.
+- `src/components/fichas/ListaFichas.tsx`: o resumo do mês (só para a dona), o seletor "Ordem"
+  (`rende:ordem-produtos`), o cabeçalho novo, a contagem com o mês e o arranjo do celular entre
+  `lg` e `xl` com o painel aberto.
+- `DESIGN.md`, regra "Tabela": Produtos com as duas regras de Materiais, e a ordem pelo seletor.
+
+**Fora do que a spec desenhou** (no `#d228`): o "leva N" do kit sai da linha junto com o "rende";
+com a seta à vista, a margem mostrada é a de hoje; a ajudante não abre o resumo (a regra nega), não
+vê o mês na contagem nem a ordem "Deixou mais no mês", e as colunas dela ficam com "—". O sugerido
+abaixo do preço não aparece na linha do celular, que a spec não pedia.
+
+**Não rodou**: o roteiro de aparelho da spec (§ 4), inteiro; em especial o passo 1 (os números
+contra o ranking do Caixa, que ordena por receita, e não por lucro) e o 5 (1024px com o painel).
+
+Portão: lint e typecheck limpos, **787 testes** (6 novos), `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -4157,6 +4188,10 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 054 está codificada** (seção acima). Publica junto com ou depois da 053, que corrige o lucro
+dos kits que a coluna "Deixou" mostra; o portão é o roteiro da spec. A próxima da crítica de
+Produtos é a 055 (o que falta pra fazer).
 
 **A 053 está codificada** (seção acima). Publica sozinha, e antes da 054 e da 056, que somam lucro
 por produto; o portão é o roteiro da spec, com o Combo Dupla aberto no passo 2. Depois de publicar,

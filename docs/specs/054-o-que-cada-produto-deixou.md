@@ -140,13 +140,13 @@ dizendo que o gravado envelheceu. O painel do produto e o cartão da Hoje não m
 
 ## Critérios de aceite
 
-- [ ] Colunas Produto · Custo/un · Preço · Sobra/un (com margem) · Vendeu · Deixou.
-- [ ] Sugerido só quando o praticado está abaixo dele, com ícone e palavra.
-- [ ] Sobra do celular em `label` 600, nunca `micro`.
-- [ ] Quatro ordens, guardadas no aparelho, `ordenarFichas` testada.
-- [ ] Seta com limiar, `sobraMudouDeVerdade` testada.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d228` a `#d230` escritos; `ESTADO.md` e a regra "Tabela" do `DESIGN.md` atualizados.
+- [x] Colunas Produto · Custo/un · Preço · Sobra/un (com margem) · Vendeu · Deixou.
+- [x] Sugerido só quando o praticado está abaixo dele, com ícone e palavra.
+- [x] Sobra do celular em `label` 600, nunca `micro`.
+- [x] Quatro ordens, guardadas no aparelho, `ordenarFichas` testada.
+- [x] Seta com limiar, `sobraMudouDeVerdade` testada.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d228` a `#d230` escritos; `ESTADO.md` e a regra "Tabela" do `DESIGN.md` atualizados.
 
 ---
 

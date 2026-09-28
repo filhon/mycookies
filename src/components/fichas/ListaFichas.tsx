@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { PackageOpen, Plus } from "lucide-react";
 import { orderBy, query, where } from "firebase/firestore";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { EntradaContagem } from "@/components/estoque/EntradaContagem";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
@@ -13,31 +13,62 @@ import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { Botao } from "@/components/ui/Botao";
+import { Seletor } from "@/components/ui/Campo";
 import { Pilulas, type OpcaoPilula } from "@/components/ui/Pilulas";
 import { COLUNAS_FICHA, LinhaFicha } from "./LinhaFicha";
 import { PainelProduto } from "./PainelProduto";
 import { ID_FICHA_NOVA } from "./EditorFicha";
 import { BotaoBiblioteca } from "@/components/biblioteca/BotaoBiblioteca";
 import { EntradaContagemPronto } from "@/components/producao/EntradaContagemPronto";
-import { custosDeHoje } from "@/lib/domain/custoFicha";
+import {
+  custosDeHoje,
+  ordenarFichas,
+  vendaDoMes,
+  type OrdemFichas,
+} from "@/lib/domain/custoFicha";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
-import { dataISODe } from "@/lib/domain/datas";
+import { competenciaAtual, dataISODe, rotuloMes } from "@/lib/domain/datas";
 import { capacidadeDaFicha, projecaoDoPronto } from "@/lib/domain/producao";
-import { colFichas } from "@/lib/firebase/colecoes";
-import { useColecao } from "@/lib/hooks/useColecao";
+import { colFichas, docResumoMensal } from "@/lib/firebase/colecoes";
+import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
 import {
   contextoDaCapacidade,
   useDespensaParaProduzir,
 } from "@/lib/hooks/useDespensaParaProduzir";
-import type { FichaTecnica, TipoFicha } from "@/lib/types";
+import type { FichaTecnica, ResumoMensal, TipoFicha } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
-import { useContaId } from "@/providers/AuthProvider";
+import { useContaId, usePapel } from "@/providers/AuthProvider";
 
 const FILTROS: OpcaoPilula<TipoFicha | "TODAS">[] = [
   { valor: "TODAS", rotulo: "Todos" },
   { valor: "SIMPLES", rotulo: "Receitas" },
   { valor: "KIT", rotulo: "Kits" },
 ];
+
+const ORDENS: { valor: OrdemFichas; rotulo: string }[] = [
+  { valor: "NOME", rotulo: "Pelo nome" },
+  { valor: "DEIXOU", rotulo: "Deixou mais no mês" },
+  { valor: "SOBRA", rotulo: "Sobra por unidade" },
+  { valor: "MARGEM", rotulo: "Margem" },
+];
+
+/*
+ * A ordem mora no aparelho (`#d229`), como a de materiais (`#d226`). Navegador
+ * que bloqueia armazenamento lança no acesso: tudo em `try/catch`, e quem não
+ * pode guardar volta ao nome.
+ */
+const CHAVE_ORDEM = "rende:ordem-produtos";
+
+function ordemGuardada(): OrdemFichas {
+  try {
+    const lida = localStorage.getItem(CHAVE_ORDEM);
+    return ORDENS.find((ordem) => ordem.valor === lida)?.valor ?? "NOME";
+  } catch {
+    return "NOME";
+  }
+}
+
+const semAssinatura = () => () => {};
 
 export function ListaFichas() {
   const contaId = useContaId();
@@ -46,6 +77,14 @@ export function ListaFichas() {
   // O produto no painel ao lado, só no desktop (`DECISOES.md#d130`).
   const [selecionadaId, setSelecionadaId] = useState<string | null>(null);
   const lista = useRef<HTMLUListElement>(null);
+  // A guardada até ela escolher outra nesta visita; no servidor, o nome.
+  const guardada = useSyncExternalStore(
+    semAssinatura,
+    ordemGuardada,
+    () => "NOME" as const,
+  );
+  const [escolhida, setEscolhida] = useState<OrdemFichas | null>(null);
+  const ordem = escolhida ?? guardada;
 
   // Uma consulta ordenada, o resto filtrado em memória: são dezenas de
   // fichas, e o cache do Firestore já as tem.
@@ -61,6 +100,17 @@ export function ListaFichas() {
 
   const { dados, carregando, erro, pendente } =
     useColecao<FichaTecnica>(consulta);
+
+  // O que cada produto vendeu e deixou no mês: a mesma leitura do Caixa e da
+  // Hoje, casada pelo `fichaId`, e não pelo nome (`#d228`). O dinheiro não é
+  // da ajudante: a regra nega a leitura, e a tela nem pede (`#d157`).
+  const dona = usePapel() === "DONA";
+  const [competencia] = useState(() => competenciaAtual(new Date()));
+  const refResumo = useMemo(
+    () => (dona ? docResumoMensal(contaId, competencia) : null),
+    [dona, contaId, competencia],
+  );
+  const produtosDoMes = useDocumento<ResumoMensal>(refResumo).dado?.produtos;
 
   // Quantas fornadas dá, por ficha: a despensa projetada, menos o que os
   // pedidos abertos já prometeram. É a tela que ela abre quando alguém
@@ -105,16 +155,26 @@ export function ListaFichas() {
 
   const visiveis = useMemo(() => {
     const termo = chaveDeBusca(busca);
-    return dados.filter((ficha) => {
+    const filtradas = dados.filter((ficha) => {
       const combinaTipo = filtro === "TODAS" || ficha.tipo === filtro;
       const combinaBusca = !termo || ficha.nomeBusca.includes(termo);
       return combinaTipo && combinaBusca;
     });
-  }, [dados, busca, filtro]);
+    return ordenarFichas(filtradas, ordem, produtosDoMes ?? {});
+  }, [dados, busca, filtro, ordem, produtosDoMes]);
 
   // Derivada, e não guardada: se a ficha sair de `dados` (arquivada em outra
   // aba), o painel fecha sozinho.
   const selecionada = dados.find((ficha) => ficha.id === selecionadaId) ?? null;
+
+  function mudarOrdem(nova: OrdemFichas) {
+    setEscolhida(nova);
+    try {
+      localStorage.setItem(CHAVE_ORDEM, nova);
+    } catch {
+      // Sem armazenamento, a ordem vale só nesta visita.
+    }
+  }
 
   /** Fecha o painel e devolve o foco à linha que estava selecionada. */
   function fecharPainel() {
@@ -201,13 +261,32 @@ export function ListaFichas() {
         </div>
       </CabecalhoPagina>
 
-      <div className="mt-4 flex min-h-8 items-center justify-between gap-3">
+      <div className="mt-4 flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <p className="text-label text-ink-muted" aria-live="polite">
           {carregando
             ? "Carregando"
-            : `${visiveis.length} ${visiveis.length === 1 ? "produto" : "produtos"}`}
+            : `${visiveis.length} ${visiveis.length === 1 ? "produto" : "produtos"}${dona ? ` · vendas de ${rotuloMes(competencia)}` : ""}`}
         </p>
-        <SeloSincronizacao pendente={pendente} />
+        <div className="flex items-center gap-3">
+          {/* O `select` nativo: no celular o próprio aparelho abre a folha. */}
+          <Seletor
+            rotulo="Ordem"
+            value={ordem}
+            onChange={(evento) =>
+              mudarOrdem(evento.target.value as OrdemFichas)
+            }
+            className="flex-row items-center gap-2"
+          >
+            {ORDENS.filter((opcao) => dona || opcao.valor !== "DEIXOU").map(
+              (opcao) => (
+                <option key={opcao.valor} value={opcao.valor}>
+                  {opcao.rotulo}
+                </option>
+              ),
+            )}
+          </Seletor>
+          <SeloSincronizacao pendente={pendente} />
+        </div>
       </div>
 
       {/* O atalho para contar mora aqui, e não em cada linha: a linha inteira
@@ -292,16 +371,17 @@ export function ListaFichas() {
               <div
                 aria-hidden
                 className={cn(
-                  "hidden gap-x-4 border-b border-line px-4 py-2 text-micro font-semibold uppercase tracking-wide text-ink-muted lg:grid",
+                  "hidden gap-x-4 border-b border-line px-4 py-2 text-micro font-semibold uppercase tracking-wide text-ink-muted",
+                  selecionada ? "xl:grid" : "lg:grid",
                   COLUNAS_FICHA,
                 )}
               >
                 <span>Produto</span>
-                <span className="text-right">Rende</span>
                 <span className="text-right">Custo/un</span>
-                <span className="text-right">Sugerido</span>
-                <span className="text-right">Praticado</span>
-                <span className="text-right">Sobra</span>
+                <span className="text-right">Preço</span>
+                <span className="text-right">Sobra/un</span>
+                <span className="text-right">Vendeu</span>
+                <span className="text-right">Deixou</span>
               </div>
               <ul ref={lista} className="divide-y divide-line">
                 {visiveis.map((ficha) => (
@@ -319,7 +399,9 @@ export function ListaFichas() {
                       despensaPronta ? capacidades.get(ficha.id) : undefined
                     }
                     hoje={despensaPronta ? hojes.get(ficha.id) : undefined}
+                    venda={vendaDoMes(produtosDoMes?.[ficha.id])}
                     selecionada={ficha.id === selecionada?.id}
+                    comPainel={!!selecionada}
                     aoSelecionar={() => setSelecionadaId(ficha.id)}
                   />
                 ))}

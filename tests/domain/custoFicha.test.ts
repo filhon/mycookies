@@ -12,6 +12,8 @@ import {
   kitDividido,
   levaDoKit,
   opcoesDaEscolha,
+  ordenarFichas,
+  sobraMudouDeVerdade,
   podeSerComponente,
   rotuloDaQuantidade,
   temEscolhas,
@@ -1099,5 +1101,85 @@ describe("levaDoKit e kitDividido", () => {
     expect(kitDividido({ tipo: "KIT", rendimento: 4 })).toBe(true);
     expect(kitDividido({ tipo: "KIT", rendimento: 1 })).toBe(false);
     expect(kitDividido({ tipo: "SIMPLES", rendimento: 4 })).toBe(false);
+  });
+});
+
+describe("sobraMudouDeVerdade", () => {
+  it("cala os centavos e mostra a partir de R$ 0,10", () => {
+    expect(sobraMudouDeVerdade(3512, 3509, 300)).toBe(false);
+    expect(sobraMudouDeVerdade(200, 190, 300)).toBe(true);
+    expect(sobraMudouDeVerdade(200, 191, 300)).toBe(false);
+  });
+
+  it("no preço alto, o limiar é 2% do preço", () => {
+    // 2% de R$ 48,00 = R$ 0,96.
+    expect(sobraMudouDeVerdade(1000, 905, 4800)).toBe(false);
+    expect(sobraMudouDeVerdade(1000, 904, 4800)).toBe(true);
+  });
+
+  it("cruzar o zero sempre aparece, por um centavo que seja", () => {
+    expect(sobraMudouDeVerdade(1, -1, 4800)).toBe(true);
+    expect(sobraMudouDeVerdade(-2, 0, 4800)).toBe(true);
+    expect(sobraMudouDeVerdade(500, 500, 4800)).toBe(false);
+  });
+});
+
+describe("ordenarFichas", () => {
+  const ficha = (id: string, lucroUnitario: number, margemReal: number) => ({
+    id,
+    nomeBusca: id,
+    precificacao: { lucroUnitario, margemReal } as FichaTecnica["precificacao"],
+  });
+  const fichas = [
+    ficha("combo", 3500, 40),
+    ficha("brownie", 300, 55),
+    ficha("mini", 170, 52),
+    ficha("alfajor", 170, 30),
+  ];
+  const venda = (lucro: number, quantidade = 1) => ({
+    nome: "",
+    quantidade,
+    receita: 100,
+    lucro,
+  });
+  const ids = (lista: { id: string }[]) => lista.map((f) => f.id);
+
+  it("pelo nome, sem mexer na lista de entrada", () => {
+    expect(ids(ordenarFichas(fichas, "NOME", {}))).toEqual([
+      "alfajor",
+      "brownie",
+      "combo",
+      "mini",
+    ]);
+    expect(ids(fichas)[0]).toBe("combo");
+  });
+
+  it("deixou mais no mês: sem venda no fim, por nome, e prejuízo antes dela", () => {
+    const mes = {
+      mini: venda(27880, 41),
+      combo: venda(-500),
+      brownie: { nome: "", quantidade: 0, receita: 0, lucro: 0 },
+    };
+    expect(ids(ordenarFichas(fichas, "DEIXOU", mes))).toEqual([
+      "mini",
+      "combo",
+      "alfajor",
+      "brownie",
+    ]);
+  });
+
+  it("sobra por unidade e margem, maior primeiro, empate por nome", () => {
+    expect(ids(ordenarFichas(fichas, "SOBRA", {}))).toEqual([
+      "combo",
+      "brownie",
+      "alfajor",
+      "mini",
+    ]);
+    expect(ids(ordenarFichas(fichas, "MARGEM", {}))).toEqual([
+      "brownie",
+      "mini",
+      "combo",
+      "alfajor",
+    ]);
   });
 });

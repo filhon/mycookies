@@ -7,6 +7,7 @@ import type {
   FichaTecnica,
   Insumo,
   Percentual,
+  ResumoProduto,
   TipoFicha,
   UnidadeRendimento,
 } from "@/lib/types";
@@ -663,4 +664,61 @@ export function usoDoMaterial(
       };
     })
     .sort((a, b) => b.parte - a.parte);
+}
+
+/**
+ * A seta "gravado → hoje" da linha só aparece quando a diferença vale uma
+ * olhada (`#d230`): o sinal cruzou o zero, ou a sobra andou pelo menos
+ * R$ 0,10 ou 2% do preço praticado, o que for maior.
+ */
+export function sobraMudouDeVerdade(
+  gravado: Centavos,
+  hoje: Centavos,
+  preco: Centavos,
+): boolean {
+  if (gravado < 0 !== hoje < 0) return true;
+  return Math.abs(hoje - gravado) >= Math.max(10, preco * 0.02);
+}
+
+/**
+ * A venda do mês de uma ficha, ou `null` sem venda. O mesmo critério do
+ * ranking do Caixa (`produtosOrdenados`): quantidade ou receita.
+ */
+export function vendaDoMes(
+  produto: ResumoProduto | undefined,
+): ResumoProduto | null {
+  return produto && (produto.quantidade > 0 || produto.receita !== 0)
+    ? produto
+    : null;
+}
+
+export type OrdemFichas = "NOME" | "DEIXOU" | "SOBRA" | "MARGEM";
+
+/**
+ * A lista de produtos na ordem escolhida (`#d229`). `produtosDoMes` é o
+ * `ResumoMensal.produtos` do mês corrente, por `fichaId`. Na ordem "deixou",
+ * produto sem venda vai para o fim; empate, por nome. A sobra e a margem são
+ * as gravadas, as mesmas da coluna de margem.
+ */
+export function ordenarFichas<
+  T extends Pick<FichaTecnica, "id" | "nomeBusca" | "precificacao">,
+>(
+  fichas: T[],
+  ordem: OrdemFichas,
+  produtosDoMes: Record<string, ResumoProduto>,
+): T[] {
+  const porNome = (a: T, b: T) =>
+    a.nomeBusca < b.nomeBusca ? -1 : a.nomeBusca > b.nomeBusca ? 1 : 0;
+  if (ordem === "NOME") return [...fichas].sort(porNome);
+
+  const chave = (ficha: T): number => {
+    if (ordem === "SOBRA") return ficha.precificacao.lucroUnitario;
+    if (ordem === "MARGEM") return ficha.precificacao.margemReal;
+    return vendaDoMes(produtosDoMes[ficha.id])?.lucro ?? -Infinity;
+  };
+  return [...fichas].sort((a, b) => {
+    const ka = chave(a);
+    const kb = chave(b);
+    return ka === kb ? porNome(a, b) : kb > ka ? 1 : -1;
+  });
 }

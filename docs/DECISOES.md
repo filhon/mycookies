@@ -4166,7 +4166,7 @@ linha aqui. A escala tipográfica não mudou (`#d123`): `text-title lg:text-disp
 
 ## D129 · A coluna de leitura é da tela, não do shell
 
-**Status:** vigente · decidida em 2026-09-19, na spec 034
+**Status:** vigente; as seis colunas de `/fichas` revistas por D228 · decidida em 2026-09-19, na spec 034
 
 **Contexto.** `AppShell` travava `main` em `max-w-5xl` (`#d42`). Certo para formulário e
 prosa, errado para a tabela com o painel ao lado: em 1024px sobrariam 580px para seis colunas.
@@ -4372,7 +4372,7 @@ virar "quanto custaria salvar agora, com tudo" (inclusive hora e energia), aí s
 
 ## D136 · O cartão conta cruzamento; a lista mostra toda diferença
 
-**Status:** vigente · decidida em 2026-09-19, na spec `024-fichas-no-vermelho.md`
+**Status:** vigente na metade do cartão e do painel; a metade da linha **substituída por D230** · decidida em 2026-09-19, na spec `024-fichas-no-vermelho.md`
 
 **Contexto.** Com `custoDeHoje` em mãos, faltava decidir o que a tela Hoje e a lista de
 `/fichas` fazem com o número. Um cartão que mostrasse toda diferença — a farinha sobe dois
@@ -6670,7 +6670,7 @@ aparelho abre em folha; a ordem vale com qualquer filtro e busca.
 
 ## D227 · Kit rende um
 
-**Status:** vigente · decidida em 2026-09-26, na spec `053-o-kit-que-rende-um.md`; codificada em 2026-09-26
+**Status:** vigente; o "leva N" da lista saiu com a coluna "Rende" (D228) · decidida em 2026-09-26, na spec `053-o-kit-que-rende-um.md`; codificada em 2026-09-26
 
 **Decisão.** O lote de um kit é uma caixa: `EscolhaDoKit.quantidade` e `ComponenteKit.quantidade`
 já dizem o que entra em **um** kit, e o custo do lote é o da caixa inteira. No editor, com o tipo
@@ -6715,3 +6715,75 @@ mostrado é "1". "Pronta/prontas" concorda junto. Trocado onde o número pode se
 `TelaContagemPronto`, o "rende" da linha do celular e o "Dividido por" do editor. As opções do
 seletor "Em" ficam no plural, porque não levam número. "contadas hoje" na contagem do pronto
 continua no plural feminino: não é desta spec.
+
+---
+
+## D228 · A lista de produtos diz o que cada um deixou no mês
+
+**Status:** vigente · decidida em 2026-09-26, na spec `054-o-que-cada-produto-deixou.md`; codificada em 2026-09-28
+
+**Decisão.** As seis colunas do desktop passam a ser Produto · Custo/un · Preço · Sobra/un ·
+Vendeu · Deixou. Saem "Rende" (fato da receita, mora no painel e no editor) e "Sugerido" como
+coluna: o sugerido só aparece como segunda linha da célula do preço, em `attention` com
+`TriangleAlert`, quando o praticado está **abaixo** dele (`precoVenda < precoSugerido` gravado);
+acima, silêncio. A sobra por unidade leva a margem embaixo, em `label` `ink-muted`, sem casa
+decimal ("52%"). "Vendeu" e "Deixou" são `quantidade` e `lucro` de `ResumoMensal.produtos` do mês
+corrente, casados por `fichaId` (o `nome` do resumo não é usado): sem venda, "—" em `ink-subtle`
+com "sem venda no mês" para o leitor de tela; "Deixou" negativo com sinal, `negative` e
+`trending-down`. "Sem venda" é o critério do ranking do Caixa (`produtosOrdenados`): quantidade ou
+receita, em `vendaDoMes`. A contagem nomeia o mês ("12 produtos · vendas de setembro").
+
+`COLUNAS_FICHA` virou `minmax(0, …)` sem o `lg:`, como `COLUNAS_MATERIAL`: o `grid` vem da linha,
+`lg:grid` sem painel e `xl:grid` com ele. Com o `PainelProduto` aberto entre `lg` e `xl`, a linha
+volta ao arranjo do celular, como Materiais (`#d225`).
+
+**No celular**, a sobra sai do `micro`: "custa R$ 6,20 · **sobram R$ 6,80** (52%)" em `label`, a
+sobra em `ink` 600. Embaixo, só com venda, "vendeu 41 · deixou R$ 278,80" ("perdeu" no negativo,
+com o ícone). O selo "Kit" sobe para a linha do nome.
+
+**A margem da seta.** Com a seta de `#d230` à vista, a margem mostrada é a de hoje
+(`sobra de hoje / preço`), para o percentual não contradizer o número de cima; sem seta, é a
+`margemReal` gravada, a mesma que ordena.
+
+**Some o "rende N" e o "leva N" da linha**, nas duas arrumações. A spec tirava o "rende"; o "leva"
+do kit (`#d227`) morava na mesma coluna e no mesmo lugar do celular, e sai junto: continua no
+cabeçalho do painel e no editor.
+
+**A ajudante não lê o resumo.** `agregados` é do dinheiro (`#d157`), e a regra nega. Para ela a
+leitura nem é aberta (referência `null`, como no `FormularioPedido`), a contagem não nomeia o mês e
+a ordem "Deixou mais no mês" não é oferecida. As colunas continuam com "—": esconder duas colunas
+por papel seria outro arranjo de tabela, e ela já via preço e sobra.
+
+---
+
+## D229 · A lista de produtos tem quatro ordens, guardadas no aparelho
+
+**Status:** vigente · decidida em 2026-09-26, na spec `054-o-que-cada-produto-deixou.md`; codificada em 2026-09-28
+
+**Decisão.** O `Seletor` "Ordem" de `/insumos` (`#d226`) na linha da contagem de `/fichas`, com
+**Pelo nome** (padrão), **Deixou mais no mês** (`lucro` do resumo, maior primeiro; sem venda no
+fim, por nome; prejuízo antes de sem venda), **Sobra por unidade** e **Margem** (maior primeiro,
+empate por nome). `ordenarFichas(fichas, ordem, produtosDoMes)` em `domain/custoFicha.ts`, com
+teste; vale depois da busca e do filtro. `localStorage` `rende:ordem-produtos`, lido por
+`useSyncExternalStore` com o nome no servidor, tudo em `try/catch`.
+
+**A sobra e a margem que ordenam são as gravadas** (`lucroUnitario`, `margemReal`), e não as de
+hoje: a função é pura sobre a ficha, e abaixo do limiar de `#d230` a diferença não troca ninguém de
+lugar de um jeito que ela perceba. Se o roteiro mostrar produto fora de ordem com seta à vista, a
+função recebe o mapa de `custosDeHoje`.
+
+---
+
+## D230 · A seta da linha só aparece quando a diferença vale uma olhada
+
+**Status:** vigente · decidida em 2026-09-26, na spec `054-o-que-cada-produto-deixou.md`; codificada em 2026-09-28 · substitui a metade da linha de D136
+
+**Contexto.** `#d136` mandava a linha mostrar toda diferença entre a sobra gravada e a de hoje. Nos
+três combos, "R$ 35,12 → R$ 35,09": um quarto da tabela dizendo "mudou" sobre 0,1%, e ela aprende
+a não olhar a seta, inclusive no dia em que importa.
+
+**Decisão.** `sobraMudouDeVerdade(gravado, hoje, preco)` em `domain/custoFicha.ts`, com teste: a
+seta aparece quando o sinal cruza o zero, ou quando `|hoje − gravado| ≥ max(R$ 0,10, 2% do preço
+praticado)`. Abaixo disso, a linha mostra a sobra de hoje sem seta, e o selo "Custo desatualizado"
+continua dizendo que o gravado envelheceu. O `PainelProduto` e o `CartaoNoVermelhoHoje` não mudam:
+o painel é o lugar do centavo, e o cartão já conta cruzamento.
