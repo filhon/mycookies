@@ -4739,7 +4739,8 @@ sem ninguém lembrar de acrescentá-la a uma lista — é o invariante "todo dad
 
 ## D150 · A navegação inferior só com ícones
 
-**Status:** vigente · decidida em 2026-09-21, na spec `035-o-celular-por-gesto.md`
+**Status:** vigente · decidida em 2026-09-21, na spec `035-o-celular-por-gesto.md`. Revista pelo
+`#d240`: três destinos, o "+" e o ⋯, todos só com ícone.
 
 **Contexto.** Cinco palavras embaixo de cinco ícones gastavam 20px de altura em toda tela do
 celular, e depois da primeira semana ninguém as lia: "Hoje", "Materiais", "Produtos",
@@ -4756,8 +4757,8 @@ cinco nomes.
 
 ## D151 · O "+" no cabeçalho e a bandeja, no lugar da pílula flutuante
 
-**Status:** vigente · decidida em 2026-09-21, na spec `035-o-celular-por-gesto.md`. Reverte a
-linha "nunca círculo com +" do `DESIGN.md`.
+**Status:** substituída pelo `#d240` e pelo `#d241` em 2026-09-30 · decidida em 2026-09-21, na
+spec `035-o-celular-por-gesto.md`. Reverte a linha "nunca círculo com +" do `DESIGN.md`.
 
 **Contexto.** A pílula flutuante cobria a última linha da lista e disputava o polegar com a
 navegação. Em `/insumos` ela ainda dividia o cabeçalho com "Ler uma nota", que espremia o
@@ -7108,3 +7109,139 @@ corrigir foi corrigido; o que ficou de fora está listado abaixo, com o motivo.
 dá "25/09", e o curto é de propósito. A capa do cardápio não ganha `width`/`height`: a proporção é a
 da foto dela, e a altura fixa da classe já guarda o lugar. O `theme-color` continua `brand-700`
 (`#d124`).
+
+## D240 · A barra com o "+" no centro e o ⋯
+
+**Status:** vigente · decidida em 2026-09-30, na spec `061-o-mais-na-mao.md`; codificada em 2026-09-30.
+Revisa o `#d150` (cinco destinos) e o `#d151` (o "+" no cabeçalho e a bandeja).
+
+**Contexto.** O "+" do `#d151` mora no canto superior direito do cabeçalho, o ponto da tela mais
+longe do polegar de quem segura o celular com uma mão (mercado, entrega, feira), e desde o `#d237`
+ele ainda sai com a faixa ao descer. E cada tela só criava o que era dela: lançar no caixa estando
+em Produtos custava dois toques de navegação antes do "+". Com cinco destinos e o "+", a barra
+teria seis espaços e nenhum centro.
+
+**Decisão.** Cinco espaços iguais: **Hoje · Pedidos · + · Produtos · ⋯** (escolha de quem conduz
+o projeto entre três arranjos). `DESTINOS_DO_CELULAR` e `DESTINOS_DO_MAIS` em `navegacao.ts`;
+`DESTINOS` continua sendo o da barra lateral. O ⋯ (`Ellipsis` de 20px, menor que os 24px dos
+destinos: é a saída para o resto, e não um lugar) abre o `Painel` "Mais" com Materiais, Caixa,
+Compras e Clientes em linhas de 52px, filtrados por `destinosDo` (a ajudante vê Materiais e
+Compras). Leva a pílula de ativo quando ela está numa dessas páginas; a linha da página atual
+também. O "+" é um círculo cheio `accent-500` de 48px, dentro da barra e sem sobressair dela:
+não é a pílula flutuante que o `#d151` tirou. `BotaoMais` foi apagado; os botões do cabeçalho
+continuam, só no desktop.
+
+**Consequência.** O cabeçalho do celular fica só com título, descrição e, nos editores, o voltar.
+"O que comprar" e "Clientes", que moravam na bandeja de Pedidos, passam ao ⋯. O "+" é o primário
+do celular em toda tela com a barra, inclusive com o estado vazio na tela: é cromo, como a barra,
+e o botão do estado vazio continua o primário do conteúdo. O desktop não muda.
+
+## D241 · A grade do "+" e o gesto de apertar, arrastar e soltar
+
+**Status:** vigente · decidida em 2026-09-30, na spec `061-o-mais-na-mao.md`; codificada em 2026-09-30
+
+**Contexto.** Com o "+" na barra, ele deixa de ser da tela e passa a ser do app: tudo o que se
+registra cabe atrás dele. E o polegar que já está na barra pode fazer o caminho inteiro sem sair
+do vidro.
+
+**Decisão.** `src/components/layout/GradeAdicionar.tsx`:
+
+- **Sete ações em ordem fixa**: Novo pedido (largura inteira), Lançar no caixa, Novo produto,
+  Novo material, Ler uma nota, Contar a despensa, Contar o que está pronto. A ajudante não vê
+  Caixa nem nota (`#d157`). A ordem não muda por tela: o gesto depende da memória do polegar.
+- **Arranjo:** duas colunas, ícone, nome e uma linha do que é, divisórias de 1px (`gap-px` sobre
+  `line`) e não um cartão por item; presa acima da barra, que continua à vista, sob o véu do
+  `Painel` (`brand-800/35`) que cobre a tela e não a barra. O "+" gira 45° e vira o "×".
+- **O gesto:** `pointerdown` abre na hora e captura o ponteiro; com mais de 10px de arraste,
+  `elementFromPoint` acha o item sob o dedo (`data-acao`) e o pinta de `brand-100`, com
+  `navigator.vibrate?.(8)` quando ele muda. Soltar sobre um item executa; soltar sem arrastar, ou
+  no vazio, deixa a grade aberta para tocar. `touch-none` e `-webkit-touch-callout: none` no "+".
+- **Teclado e leitor de tela** entram pelo `click`: o `click` que segue um ponteiro tratado há
+  menos de 500ms é ignorado, e qualquer outro alterna e leva o foco ao primeiro item. É uma
+  revelação (`aria-expanded`, `aria-controls`), e não um diálogo: a barra continua à vista.
+  `Escape` fecha e devolve o foco ao "+"; tocar nos outros itens da barra fecha.
+- **O véu fecha no `click`, e não no `pointerdown`**: fechado no apertar, ele deixaria de segurar
+  o toque e o `click` cairia na linha da lista por baixo.
+- **O repasse.** "Novo material" e "Lançar no caixa" abrem painéis dentro da tela. A grade chama
+  `pedirAcao` (`src/lib/acaoPedida.ts`) e navega; a tela consome o pedido com `useAcaoPedida` ao
+  montar ou, se já está aberta, na hora. Em memória, e não na URL: `useSearchParams` pediria
+  `Suspense` nas duas telas, e o repasse funciona sem rede.
+- `/pedidos/novo` e `/fichas/nova` escritos à mão: importar `ID_PEDIDO_NOVO` e `ID_FICHA_NOVA`
+  traria os dois editores para o pacote de toda tela.
+
+**Consequência.** "Ler uma nota" sem rede fica `aria-disabled`, com `MENSAGEM_FALHA["sem-rede"]`
+no lugar da linha, como na bandeja. Nem Popover API nem `Painel`: a camada de cima cobriria a
+barra, e o "×" precisa estar onde o dedo está.
+
+## D242 · A ordem em folha no celular
+
+**Status:** vigente · decidida em 2026-09-30, na spec `061-o-mais-na-mao.md`; codificada em 2026-09-30
+
+**Contexto.** A ordem de Materiais (`#d226`) e de Produtos (`#d229`) era um `Seletor` nativo na
+linha da contagem: um rótulo "Ordem" e uma caixa que abre a roleta do sistema, sem dizer o que
+cada ordem faz. O `DESIGN.md` já prometia que o seletor, no celular, abre a folha inferior.
+
+**Decisão.** `src/components/ui/EscolhaDeOrdem.tsx`. Abaixo de `lg`, um botão terciário de 44px
+com `ArrowUpDown` e o nome da ordem atual, que abre o `Painel` "Ordenar materiais" / "Ordenar
+produtos": uma linha de 52px por ordem, rádio nativo em `sr-only` dentro do `<label>`, nome e o
+que a ordem faz, `Check` na escolhida. Escolher fecha; tocar na já escolhida também. No desktop, o
+`Seletor` de sempre. A ordem continua guardada no aparelho.
+
+**Consequência.** Cada ordem ganhou uma `linha` com o que ela faz ("O que mais pesa no custo dos
+produtos, antes"). A leitura do `localStorage`, igual nas duas telas, continua duplicada: fica
+para quando vier a terceira.
+
+## D243 · O cabeçalho de contexto no papel
+
+**Status:** vigente · decidida em 2026-09-30, a pedido de quem conduz o projeto, na sessão da spec
+`061-o-mais-na-mao.md`. Revisa a faixa `brand-700` do `#d128`.
+
+**Contexto.** Quem conduz o projeto pediu para tirar o fundo do cabeçalho, no celular e no
+desktop. A faixa de tinta era a maior área cheia de marca dentro do conteúdo, e com o "+" saindo
+dela (`#d240`) ficou só com o título.
+
+**Decisão.** A faixa de contexto do `CabecalhoPagina` sai do `brand-700` e do escopo
+`sobre-marca`: fundo `bg-canvas` (o `<header>` é grudento e a lista passa por baixo), título
+`ink`, descrição `ink-muted`, e as ações com os tokens de sempre. O filete `line` fica embaixo da
+última faixa: a de ferramentas quando há `children`, senão a de contexto.
+
+**A barra de status.** No iPhone instalado ela é translúcida e o relógio é branco
+(`black-translucent`); sobre o papel ele sumiria. Trocar para `default` pintaria a barra de branco
+também no tema escuro. Então o `AppShell` ganha uma tira fixa `brand-700` com a altura de
+`env(safe-area-inset-top)`, acima do cabeçalho: no navegador ela mede zero; no app instalado faz
+par com o `theme_color` do Android (`#d124`), que continua o mesmo e não pede reinstalação. Com a
+faixa recolhida (`#d237`), o que sobra dela fica sob a tira.
+
+**Consequência.** O `sobre-marca` continua existindo para os blocos de tinta das páginas
+públicas. A marca no app fica na barra lateral, na pílula ativa e no âmbar.
+
+## D244 · O seletor de tema
+
+**Status:** vigente · decidida em 2026-09-30, a pedido de quem conduz o projeto. Revisa a linha
+"Não há alternador de tema" do `DESIGN.md`.
+
+**Contexto.** O tema seguia só o `prefers-color-scheme`. Quem conduz o projeto pediu para escolher
+claro ou escuro independente do aparelho: o celular pode estar no escuro por padrão e a cozinha
+iluminada, ou o contrário.
+
+**Decisão.**
+
+- **Três escolhas, e não duas:** Do aparelho (o padrão, e o comportamento de antes), Claro e
+  Escuro. Sem "Do aparelho" não haveria volta ao que era.
+- **O mecanismo é o do pacote da marca** (`tokens.css`): o escuro vale em
+  `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) }` e em
+  `:root[data-theme="dark"]`, com os mesmos valores nos dois blocos; `[data-theme="light"]` só
+  fixa `color-scheme: light`, para os controles nativos acompanharem. "Do aparelho" é a ausência
+  do atributo, e o sistema volta a mandar sem JavaScript nenhum ouvindo.
+- **Mora no aparelho** (`localStorage`, `rende:tema`), como a ordem das listas (`#d226`), e não na
+  conta: o celular da bancada e o computador da noite podem querer temas diferentes.
+- **Sem piscar:** um script de uma linha no `<head>` do layout raiz (`SCRIPT_TEMA`, em
+  `src/lib/tema.ts`) escreve o `data-theme` antes da primeira pintura; o `<html>` leva
+  `suppressHydrationWarning`. O `useTema` (em `BlocoTema`, porque o layout raiz é de servidor e
+  não pode importar hook) lê o atributo, e não o armazenamento: é o que está na
+  tela.
+- **Onde:** o bloco "Tema" da Configuração, com as `Pilulas`, fora do formulário: vale no toque,
+  sem "Salvar", como os avisos por e-mail. A ajudante também o vê.
+
+**Consequência.** A barra de status do Android continua `brand-700` (`#d124`), escura nos dois
+temas. As páginas públicas também seguem a escolha, porque o script está no layout raiz.

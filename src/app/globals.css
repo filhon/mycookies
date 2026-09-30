@@ -4,8 +4,8 @@
    Tokens brutos: os nomes de `docs/marca/rende/tokens.css`, para que o
    pacote da marca e o código se comparem com `diff`. Marca fixa em cima,
    superfícies invertem no escuro. Três tokens são do código e não do pacote
-   (`--on-accent`, `--on-brand-muted`, o valor escuro de `--brand-100`); os
-   blocos `[data-theme]` do pacote não entram, o app segue o sistema.
+   (`--on-accent`, `--on-brand-muted`, o valor escuro de `--brand-100`). O
+   tema segue o sistema, e `[data-theme]` passa por cima (`#d244`).
    Ver `DECISOES.md#d123`.
    ============================================================ */
 
@@ -85,9 +85,14 @@
     0 12px 32px oklch(0.24 0.02 272 / 0.14);
 }
 
-/* ---------- tema escuro · a marca vira fundo, a superfície vira tinta ---------- */
+/* ---------- tema escuro · a marca vira fundo, a superfície vira tinta ----------
+   O padrão do pacote (`tokens.css`): o sistema decide, e `data-theme` no
+   `<html>` passa por cima dele, gravado pelo seletor de tema da Configuração
+   (`DECISOES.md#d244`). Os dois blocos têm os mesmos valores: uma mudança
+   entra nos dois. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --canvas: oklch(0.19 0.025 272); /* #15171F */
     --surface: oklch(0.235 0.028 272); /* #1E2029 */
     --surface-sunken: oklch(0.165 0.022 272); /* #101219 */
@@ -123,6 +128,48 @@
     --elevation-overlay:
       0 -2px 8px oklch(0 0 0 / 0.3), 0 12px 32px oklch(0 0 0 / 0.5);
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: oklch(0.19 0.025 272); /* #15171F */
+  --surface: oklch(0.235 0.028 272); /* #1E2029 */
+  --surface-sunken: oklch(0.165 0.022 272); /* #101219 */
+  --border: oklch(0.31 0.025 272); /* #343641 */
+  --border-strong: oklch(0.42 0.028 272); /* #4C4F5C */
+  --ink: oklch(0.955 0.006 85); /* #F4F1EB */
+  --ink-muted: oklch(0.74 0.012 272); /* #A8AAB5 */
+  --ink-subtle: oklch(0.6 0.015 272); /* #7F8290 */
+  --on-brand: oklch(0.965 0.006 85);
+  --brand-as-ink: oklch(
+    0.88 0.012 272
+  ); /* #DADCE4  marca como tinta no escuro */
+
+  /* Fundo de hover terciário e de opção escolhida. O claro do pacote é
+     quase branco e vira um flash sobre o tema escuro. */
+  --brand-100: oklch(0.3 0.03 272);
+
+  --positive: oklch(0.76 0.14 152); /* #5FD49A */
+  --positive-bg: oklch(0.27 0.05 152); /* #163021 */
+  --attention: oklch(0.8 0.12 80); /* #E3B267 */
+  --attention-bg: oklch(0.28 0.055 78); /* #34280F */
+  --negative: oklch(0.72 0.15 27); /* #F08070 */
+  --negative-bg: oklch(0.28 0.06 27); /* #3A1A16 */
+  --info: oklch(0.76 0.1 250); /* #8FB6E8 */
+  --info-bg: oklch(0.27 0.05 250); /* #14243A */
+
+  --accent-500: oklch(0.78 0.13 78); /* #E3A94F  âmbar sobe no escuro */
+  --accent-ink: oklch(0.82 0.12 80); /* #EDB863 */
+  --focus: var(--accent-500);
+
+  --elevation-raised:
+    0 1px 2px oklch(0 0 0 / 0.3), 0 4px 12px oklch(0 0 0 / 0.25);
+  --elevation-overlay:
+    0 -2px 8px oklch(0 0 0 / 0.3), 0 12px 32px oklch(0 0 0 / 0.5);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
 /* ============================================================
@@ -350,7 +397,8 @@
 }
 
 /**
- * O escopo sobre a tinta da marca: o cabeçalho de contexto. Irmão da `folha`,
+ * O escopo sobre a tinta da marca: os blocos de tinta das páginas públicas (o
+ * cabeçalho de contexto do app saiu dela no `#d243`). Irmão da `folha`,
  * pelo mesmo mecanismo: redeclara os tokens, e os componentes que caem aqui
  * (botão secundário, terciário, link de voltar, ícone) invertem sem saber que
  * estão sobre `brand-700`. O primário âmbar e o selo de sincronização têm

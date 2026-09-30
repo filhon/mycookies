@@ -1,6 +1,6 @@
 "use client";
 
-import { Info, Plus, ScanLine, X } from "lucide-react";
+import { Info, Plus, X } from "lucide-react";
 import { orderBy, query, where } from "firebase/firestore";
 import {
   useEffect,
@@ -24,9 +24,11 @@ import {
   EntradaLeitura,
 } from "@/components/notas/EntradaLeitura";
 import { Botao } from "@/components/ui/Botao";
-import { BotaoMais } from "@/components/ui/BotaoMais";
-import { Seletor } from "@/components/ui/Campo";
 import { CampoBusca } from "@/components/ui/CampoBusca";
+import {
+  EscolhaDeOrdem,
+  type OpcaoOrdem,
+} from "@/components/ui/EscolhaDeOrdem";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { Pilulas, type OpcaoPilula } from "@/components/ui/Pilulas";
@@ -39,27 +41,34 @@ import {
   type OrdemMateriais,
 } from "@/lib/domain/custoInsumo";
 import { dataISODe } from "@/lib/domain/datas";
-import { MENSAGEM_FALHA } from "@/lib/domain/notaFiscal";
 import { colFichas, colInsumos } from "@/lib/firebase/colecoes";
 import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
 import { useColecao } from "@/lib/hooks/useColecao";
-import { useConexao } from "@/lib/hooks/useDispositivo";
 import type {
   CategoriaInsumo,
   FichaTecnica,
   Fornada,
   Insumo,
 } from "@/lib/types";
+import { useAcaoPedida } from "@/lib/acaoPedida";
 import { cn } from "@/lib/utils/cn";
-import { useContaId, usePapel } from "@/providers/AuthProvider";
+import { useContaId } from "@/providers/AuthProvider";
 
 /** O `lg:` do Tailwind, para o toque decidir entre a coluna e o painel. */
 const DESKTOP = "(min-width: 64rem)";
 
-const ORDENS: { valor: OrdemMateriais; rotulo: string }[] = [
-  { valor: "NOME", rotulo: "Pelo nome" },
-  { valor: "PRECO_MUDOU", rotulo: "Preço mudou por último" },
-  { valor: "PESO", rotulo: "Pesa mais nos produtos" },
+const ORDENS: OpcaoOrdem<OrdemMateriais>[] = [
+  { valor: "NOME", rotulo: "Pelo nome", linha: "De A a Z" },
+  {
+    valor: "PRECO_MUDOU",
+    rotulo: "Preço mudou por último",
+    linha: "O que você comprou por último vem primeiro",
+  },
+  {
+    valor: "PESO",
+    rotulo: "Pesa mais nos produtos",
+    linha: "O que mais pesa no custo dos produtos, antes",
+  },
 ];
 
 /*
@@ -188,10 +197,6 @@ export default function PaginaInsumos() {
   );
   const [escolhida, setEscolhida] = useState<OrdemMateriais | null>(null);
   const ordem = escolhida ?? guardada;
-  // O mesmo sinal de `EntradaLeitura`: sem rede, "Ler uma nota" na bandeja
-  // nasce desabilitada e diz por quê.
-  const online = useConexao();
-  const dona = usePapel() === "DONA";
 
   /**
    * Uma consulta só, ordenada, e todo o resto filtrado em memória.
@@ -333,8 +338,11 @@ export default function PaginaInsumos() {
     setPainelAberto(true);
   }
 
+  // "Novo material" na grade do "+", vindo de outra tela ou desta (`#d241`).
+  useAcaoPedida("novo-material", abrirNovo);
+
   // Um botão primário por tela: enquanto o estado vazio ensina a tela, a ação
-  // é dele (a biblioteca), e o botão do cabeçalho e o "+" saem.
+  // é dele (a biblioteca), e o botão do cabeçalho sai.
   const estadoVazioNaTela = !carregando && !erro && dados.length === 0;
 
   return (
@@ -345,53 +353,29 @@ export default function PaginaInsumos() {
         recolhe
         descricao="Ingredientes e embalagens. É daqui que sai o custo de todo produto."
         acao={
-          // No desktop as duas ações moram no cabeçalho; no celular só o "+",
-          // e a bandeja é o único lugar delas (`DECISOES.md#d151`).
+          // Só no desktop: no celular as duas ações moram na grade do "+" da
+          // navegação inferior (`DECISOES.md#d240`).
           <div className="flex items-start gap-2">
             <EntradaLeitura className="hidden lg:inline-flex" />
             {!estadoVazioNaTela && (
-              <>
-                <Botao
-                  variante="primaria"
-                  onClick={abrirNovo}
-                  iconeInicial={
-                    <Plus aria-hidden className="size-5" strokeWidth={2} />
-                  }
-                  className="hidden lg:inline-flex"
-                >
-                  Novo material
-                </Botao>
-                <BotaoMais
-                  rotulo="Adicionar"
-                  opcoes={[
-                    {
-                      rotulo: "Novo material",
-                      icone: Plus,
-                      onClick: abrirNovo,
-                    },
-                    // A nota é da dona (spec 030): lança a compra no caixa.
-                    ...(dona
-                      ? [
-                          {
-                            rotulo: "Ler uma nota",
-                            icone: ScanLine,
-                            href: "/insumos/nota" as const,
-                            desabilitada: !online,
-                            dica: MENSAGEM_FALHA["sem-rede"],
-                          },
-                        ]
-                      : []),
-                  ]}
-                />
-              </>
+              <Botao
+                variante="primaria"
+                onClick={abrirNovo}
+                iconeInicial={
+                  <Plus aria-hidden className="size-5" strokeWidth={2} />
+                }
+                className="hidden lg:inline-flex"
+              >
+                Novo material
+              </Botao>
             )}
           </div>
         }
       >
         <div className="space-y-3">
           {/* A frase da entrada desabilitada vai aqui, e não embaixo do botão:
-              é a faixa que tem a largura da página. No celular ela mora ao
-              lado da opção que explica, na bandeja. */}
+              é a faixa que tem a largura da página. No celular ela mora no
+              lugar da linha de "Ler uma nota", na grade do "+". */}
           <AvisoLeituraSemRede className="hidden lg:flex" />
 
           <CampoBusca
@@ -457,21 +441,12 @@ export default function PaginaInsumos() {
               : `${visiveis.length} ${visiveis.length === 1 ? "material" : "materiais"}`}
           </p>
         )}
-        {/* O `select` nativo: no celular o próprio aparelho abre a folha. */}
-        <Seletor
-          rotulo="Ordem"
-          value={ordem}
-          onChange={(evento) =>
-            mudarOrdem(evento.target.value as OrdemMateriais)
-          }
-          className="flex-row items-center gap-2"
-        >
-          {ORDENS.map((opcao) => (
-            <option key={opcao.valor} value={opcao.valor}>
-              {opcao.rotulo}
-            </option>
-          ))}
-        </Seletor>
+        <EscolhaDeOrdem
+          titulo="Ordenar materiais"
+          opcoes={ORDENS}
+          valor={ordem}
+          aoMudar={mudarOrdem}
+        />
       </div>
 
       {/* No desktop a tabela e a ficha do material selecionado dividem a

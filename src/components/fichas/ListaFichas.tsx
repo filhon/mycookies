@@ -1,18 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { PackageOpen, Plus, TriangleAlert } from "lucide-react";
+import { Plus, TriangleAlert } from "lucide-react";
 import { orderBy, query, where } from "firebase/firestore";
 import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { EntradaContagem } from "@/components/estoque/EntradaContagem";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
-import { BotaoMais } from "@/components/ui/BotaoMais";
 import { CampoBusca } from "@/components/ui/CampoBusca";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { Botao } from "@/components/ui/Botao";
-import { Seletor } from "@/components/ui/Campo";
+import {
+  EscolhaDeOrdem,
+  type OpcaoOrdem,
+} from "@/components/ui/EscolhaDeOrdem";
 import { Pilulas, type OpcaoPilula } from "@/components/ui/Pilulas";
 import { COLUNAS_FICHA, LinhaFicha } from "./LinhaFicha";
 import { LeituraDoMes } from "./LeituraDoMes";
@@ -51,11 +53,23 @@ const FILTROS: OpcaoPilula<TipoFicha | "TODAS">[] = [
   { valor: "KIT", rotulo: "Kits" },
 ];
 
-const ORDENS: { valor: OrdemFichas; rotulo: string }[] = [
-  { valor: "NOME", rotulo: "Pelo nome" },
-  { valor: "DEIXOU", rotulo: "Deixou mais no mês" },
-  { valor: "SOBRA", rotulo: "Sobra por unidade" },
-  { valor: "MARGEM", rotulo: "Margem" },
+const ORDENS: OpcaoOrdem<OrdemFichas>[] = [
+  { valor: "NOME", rotulo: "Pelo nome", linha: "De A a Z" },
+  {
+    valor: "DEIXOU",
+    rotulo: "Deixou mais no mês",
+    linha: "O que mais deixou de dinheiro neste mês",
+  },
+  {
+    valor: "SOBRA",
+    rotulo: "Sobra por unidade",
+    linha: "O que sobra mais em cada unidade vendida",
+  },
+  {
+    valor: "MARGEM",
+    rotulo: "Margem",
+    linha: "A maior parte do preço que fica com você",
+  },
 ];
 
 /*
@@ -216,7 +230,7 @@ export function ListaFichas() {
   // isso o estado vazio de hoje trocaria de texto para quem já tem insumo.
   const contaVazia = despensaPronta && insumos.length === 0;
   // Um botão primário por tela: enquanto o estado vazio ensina a tela, a ação
-  // é dele, e o botão do cabeçalho e o "+" saem.
+  // é dele, e o botão do cabeçalho sai.
   const estadoVazioNaTela = !carregando && !erro && dados.length === 0;
   const semContagem =
     despensaPronta &&
@@ -246,36 +260,19 @@ export function ListaFichas() {
                 está pronto é consequência do que foi feito, e é daqui que se
                 responde "tem cookie?". */}
             <EntradaContagemPronto className="hidden lg:inline-flex" />
+            {/* Só no desktop: no celular as duas ações moram na grade do "+"
+                da navegação inferior (`DECISOES.md#d240`). */}
             {!estadoVazioNaTela && (
-              <>
-                <Link
-                  href={`/fichas/${ID_FICHA_NOVA}`}
-                  className={classesBotao({
-                    variante: "primaria",
-                    className: "hidden lg:inline-flex",
-                  })}
-                >
-                  <Plus aria-hidden className="size-5" strokeWidth={2} />
-                  Novo produto
-                </Link>
-                {/* No celular, o "+" e a bandeja são o único lugar das duas
-                    ações (`DECISOES.md#d151`). */}
-                <BotaoMais
-                  rotulo="Adicionar"
-                  opcoes={[
-                    {
-                      rotulo: "Novo produto",
-                      icone: Plus,
-                      href: `/fichas/${ID_FICHA_NOVA}`,
-                    },
-                    {
-                      rotulo: "Contar o que está pronto",
-                      icone: PackageOpen,
-                      href: "/fichas/contagem",
-                    },
-                  ]}
-                />
-              </>
+              <Link
+                href={`/fichas/${ID_FICHA_NOVA}`}
+                className={classesBotao({
+                  variante: "primaria",
+                  className: "hidden lg:inline-flex",
+                })}
+              >
+                <Plus aria-hidden className="size-5" strokeWidth={2} />
+                Novo produto
+              </Link>
             )}
           </div>
         }
@@ -303,21 +300,12 @@ export function ListaFichas() {
             ? "Carregando"
             : `${visiveis.length} ${visiveis.length === 1 ? "produto" : "produtos"}${dona ? ` · vendas de ${rotuloMes(competencia)}` : ""}`}
         </p>
-        {/* O `select` nativo: no celular o próprio aparelho abre a folha. */}
-        <Seletor
-          rotulo="Ordem"
-          value={ordem}
-          onChange={(evento) => mudarOrdem(evento.target.value as OrdemFichas)}
-          className="flex-row items-center gap-2"
-        >
-          {ORDENS.filter((opcao) => dona || opcao.valor !== "DEIXOU").map(
-            (opcao) => (
-              <option key={opcao.valor} value={opcao.valor}>
-                {opcao.rotulo}
-              </option>
-            ),
-          )}
-        </Seletor>
+        <EscolhaDeOrdem
+          titulo="Ordenar produtos"
+          opcoes={ORDENS.filter((opcao) => dona || opcao.valor !== "DEIXOU")}
+          valor={ordem}
+          aoMudar={mudarOrdem}
+        />
       </div>
 
       {/* "Abrir a lista", e não "ver o que comprar": `/compras` monta a demanda

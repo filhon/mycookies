@@ -14,6 +14,15 @@ export function AppShell({ children }: { children: ReactNode }) {
         Pular para o conteúdo
       </a>
 
+      {/* A tira sob a barra de status do iPhone instalado, que é translúcida
+          e tem o relógio branco: sem ela, o relógio ficaria sobre o papel do
+          cabeçalho (`DECISOES.md#d243`). Fora do app instalado a área segura
+          é zero, e ela não existe. Faz par com o `theme_color` do Android. */}
+      <div
+        aria-hidden
+        className="fixed inset-x-0 top-0 z-40 h-[env(safe-area-inset-top)] bg-brand-700 print:hidden"
+      />
+
       <BarraLateral />
 
       {/* `overflow-x-clip` corta a sangria do cabeçalho (`sangria`, em

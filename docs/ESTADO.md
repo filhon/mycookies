@@ -1,6 +1,14 @@
 # Estado do projeto
 
-Atualizado em 2026-09-30 (**as diretrizes de interface nas páginas públicas**, fora de spec:
+Atualizado em 2026-09-30 (**o seletor de tema**, fora de spec, a pedido: bloco "Tema" na
+Configuração com Do aparelho · Claro · Escuro, guardado no aparelho e aplicado antes da
+primeira pintura, `#d244`; **a 061 escrita e codificada**, o "+" na mão: no celular a barra
+passa a Hoje · Pedidos · "+" · Produtos · ⋯, o "+" abre a grade das sete ações de registrar
+(por toque ou apertando, arrastando e soltando), o ⋯ abre a folha com Materiais, Caixa, Compras e
+Clientes, o `BotaoMais` do cabeçalho foi apagado, e a ordem de Materiais e Produtos vira botão +
+folha no celular, `#d240` a `#d242`; roteiro de aparelho da spec por rodar; **o cabeçalho
+no papel**, fora de spec, a pedido: a faixa de contexto perde o `brand-700` no celular e no
+desktop, e uma tira de tinta fixa fica só sob a barra de status do iPhone instalado, `#d243`; **as diretrizes de interface nas páginas públicas**, fora de spec:
 o cadastro valida no envio com erro por campo, o cardápio guarda o que a cliente digitou no
 recarregar do `mudou` e não perde o foco no "Adicionar", o link de pular nas páginas de venda,
 aspas, reticências e regiões `aria-live` montadas, `#d239`; roteiro de teclado e leitor de tela por

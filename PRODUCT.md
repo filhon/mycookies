@@ -121,4 +121,4 @@ Nunca infantiliza a usuária: ela é dona de um negócio, não uma criança brin
   porque o âmbar da marca e o ocre de atenção dividem matiz: todo estado de atenção leva o
   triângulo e a palavra, e o âmbar nunca é texto.
 - Tema claro por padrão (uso predominante em cozinha iluminada), tema escuro seguindo a
-  preferência do sistema para o uso noturno.
+  preferência do sistema para o uso noturno, ou a escolha dela na Configuração.

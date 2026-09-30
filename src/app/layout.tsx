@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Figtree } from "next/font/google";
+import { SCRIPT_TEMA } from "@/lib/tema";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { DESCRICAO } from "./descricao";
 import { URL_DO_SITE } from "./site";
@@ -33,11 +34,11 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "Rende",
-    // "default" pinta a barra de branco com ícone escuro: quebra a faixa
-    // única com o cabeçalho `brand-700`. Translúcida deixa o conteúdo
-    // aparecer por trás dela — é o cabeçalho, sticky no topo, que vira a cor
-    // da barra; o respiro de `safe-area-inset-top` em `CabecalhoPagina`
-    // evita que título e ações fiquem atrás do relógio/entalhe.
+    // "default" pinta a barra de branco, que não acompanha o tema escuro.
+    // Translúcida deixa o conteúdo aparecer por trás dela: no app, a tira de
+    // tinta do `AppShell` é a cor da barra (`#d243`); o respiro de
+    // `safe-area-inset-top` em `CabecalhoPagina` evita que título e ações
+    // fiquem atrás do relógio/entalhe.
     statusBarStyle: "black-translucent",
   },
   // O app é área logada; `/conheca` e `/como-calcular-o-preco-do-cookie`
@@ -64,7 +65,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR" className={`${display.variable} ${interface_.variable}`}>
+    // `suppressHydrationWarning`: o `data-theme` vem do script, antes do React.
+    <html
+      lang="pt-BR"
+      className={`${display.variable} ${interface_.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        {/* O tema escolhido, antes da primeira pintura (`DECISOES.md#d244`). */}
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
+      </head>
       <body>
         <AuthProvider>{children}</AuthProvider>
       </body>

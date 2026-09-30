@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, ShoppingCart, TriangleAlert, Users, Wallet } from "lucide-react";
+import { Plus, TriangleAlert, Wallet } from "lucide-react";
 import { useMemo, useState } from "react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { Botao } from "@/components/ui/Botao";
-import { BotaoMais } from "@/components/ui/BotaoMais";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { Pilulas, type OpcaoPilula } from "@/components/ui/Pilulas";
@@ -159,9 +158,9 @@ export function ListaPedidos() {
         descricao="O que você combinou entregar, para quem, e quanto sobra de cada encomenda."
         acao={
           <div className="flex items-center gap-2">
-            {/* A lista de compras não cabe na navegação inferior — cinco
-                destinos é o teto —, e é daqui que ela nasce: o que comprar é
-                consequência do que foi combinado. */}
+            {/* No desktop a lista de compras nasce daqui: o que comprar é
+                consequência do que foi combinado. No celular ela mora no ⋯
+                da navegação inferior (`DECISOES.md#d240`). */}
             <AtalhoParaCompras className="hidden lg:inline-flex" />
             {/* Mesma regra de "Novo pedido": sem pedido gravado não há
                 cliente que a tela pudesse mostrar (`#d113`). */}
@@ -169,44 +168,16 @@ export function ListaPedidos() {
               <AtalhoParaClientes className="hidden lg:inline-flex" />
             )}
             {!estadoVazioNaTela && (
-              <>
-                <Link
-                  href={`/pedidos/${ID_PEDIDO_NOVO}`}
-                  className={classesBotao({
-                    variante: "primaria",
-                    className: "hidden lg:inline-flex",
-                  })}
-                >
-                  <Plus aria-hidden className="size-5" strokeWidth={2} />
-                  Novo pedido
-                </Link>
-                {/* No celular o cabeçalho tem só o título e o "+"; as três
-                    ações moram na bandeja (`DECISOES.md#d151`). */}
-                <BotaoMais
-                  rotulo="Mais ações"
-                  opcoes={[
-                    {
-                      rotulo: "Novo pedido",
-                      icone: Plus,
-                      href: `/pedidos/${ID_PEDIDO_NOVO}`,
-                    },
-                    {
-                      rotulo: "O que comprar",
-                      icone: ShoppingCart,
-                      href: "/compras",
-                    },
-                    ...(dona
-                      ? [
-                          {
-                            rotulo: "Clientes",
-                            icone: Users,
-                            href: "/clientes" as const,
-                          },
-                        ]
-                      : []),
-                  ]}
-                />
-              </>
+              <Link
+                href={`/pedidos/${ID_PEDIDO_NOVO}`}
+                className={classesBotao({
+                  variante: "primaria",
+                  className: "hidden lg:inline-flex",
+                })}
+              >
+                <Plus aria-hidden className="size-5" strokeWidth={2} />
+                Novo pedido
+              </Link>
             )}
           </div>
         }

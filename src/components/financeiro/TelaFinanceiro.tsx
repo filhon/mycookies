@@ -6,7 +6,6 @@ import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { BlocoMeta } from "@/components/metas/BlocoMeta";
 import { FormularioMeta } from "@/components/metas/FormularioMeta";
 import { Botao } from "@/components/ui/Botao";
-import { BotaoMais } from "@/components/ui/BotaoMais";
 import { EsqueletoLista, Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import {
@@ -38,6 +37,7 @@ import type {
   ResumoMensal,
   Transacao,
 } from "@/lib/types";
+import { useAcaoPedida } from "@/lib/acaoPedida";
 import { useContaId } from "@/providers/AuthProvider";
 import { FormularioTransacao } from "./FormularioTransacao";
 import { LinhaTransacao } from "./LinhaTransacao";
@@ -147,6 +147,9 @@ export function TelaFinanceiro() {
     setPainelAberto(true);
   }
 
+  // "Lançar no caixa" na grade do "+", vindo de outra tela ou desta (`#d241`).
+  useAcaoPedida("lancar", () => abrirPainel());
+
   function abrirPainelMeta() {
     setAberturasMeta((anterior) => anterior + 1);
     setPainelMetaAberto(true);
@@ -177,30 +180,19 @@ export function TelaFinanceiro() {
         recolhe
         descricao="O que entrou, o que saiu, e o que sobrou de verdade."
         acao={
+          // Só no desktop: no celular, "Lançar no caixa" mora na grade do "+"
+          // da navegação inferior (`DECISOES.md#d240`).
           !estadoVazioNaTela && (
-            <>
-              <Botao
-                variante="primaria"
-                onClick={() => abrirPainel()}
-                className="hidden lg:inline-flex"
-                iconeInicial={
-                  <Plus aria-hidden className="size-5" strokeWidth={2} />
-                }
-              >
-                Lançar
-              </Botao>
-              {/* Uma ação só: o "+" lança direto, sem bandeja (`#d151`). */}
-              <BotaoMais
-                rotulo="Lançar"
-                opcoes={[
-                  {
-                    rotulo: "Lançar",
-                    icone: Plus,
-                    onClick: () => abrirPainel(),
-                  },
-                ]}
-              />
-            </>
+            <Botao
+              variante="primaria"
+              onClick={() => abrirPainel()}
+              className="hidden lg:inline-flex"
+              iconeInicial={
+                <Plus aria-hidden className="size-5" strokeWidth={2} />
+              }
+            >
+              Lançar
+            </Botao>
           )
         }
       >

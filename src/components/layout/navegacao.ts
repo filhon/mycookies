@@ -24,25 +24,55 @@ export interface Destino {
 }
 
 /**
- * Cinco destinos, o teto do que cabe numa navegação inferior sem virar alvo
- * pequeno demais. Configuração não é um destino: é ajuste, e mora no cabeçalho.
+ * Os destinos. Configuração não é um destino: é ajuste, e mora no cabeçalho.
  */
-export const DESTINOS: Destino[] = [
-  { href: "/", rotulo: "Hoje", icone: Home },
-  { href: "/insumos", rotulo: "Materiais", icone: ShoppingBasket },
-  { href: "/fichas", rotulo: "Produtos", icone: BookOpen },
-  { href: "/pedidos", rotulo: "Pedidos", icone: ClipboardList },
-  { href: "/financeiro", rotulo: "Caixa", icone: Wallet },
-];
+const HOJE: Destino = { href: "/", rotulo: "Hoje", icone: Home };
+const MATERIAIS: Destino = {
+  href: "/insumos",
+  rotulo: "Materiais",
+  icone: ShoppingBasket,
+};
+const PRODUTOS: Destino = {
+  href: "/fichas",
+  rotulo: "Produtos",
+  icone: BookOpen,
+};
+const PEDIDOS: Destino = {
+  href: "/pedidos",
+  rotulo: "Pedidos",
+  icone: ClipboardList,
+};
+const CAIXA: Destino = { href: "/financeiro", rotulo: "Caixa", icone: Wallet };
+const COMPRAS: Destino = {
+  href: "/compras",
+  rotulo: "Compras",
+  icone: ShoppingCart,
+};
+const CLIENTES: Destino = {
+  href: "/clientes",
+  rotulo: "Clientes",
+  icone: Users,
+};
+
+export const DESTINOS: Destino[] = [HOJE, MATERIAIS, PRODUTOS, PEDIDOS, CAIXA];
 
 /**
  * O segundo grupo da barra lateral (`DECISOES.md#d236`). O teto de cinco é da
  * navegação inferior, onde cada alvo precisa de 56px; a barra tem a altura da
- * tela. No celular estes dois seguem pelos atalhos e pelos cartões da Hoje.
+ * tela.
  */
-export const DESTINOS_DA_BARRA: Destino[] = [
-  { href: "/compras", rotulo: "Compras", icone: ShoppingCart },
-  { href: "/clientes", rotulo: "Clientes", icone: Users },
+export const DESTINOS_DA_BARRA: Destino[] = [COMPRAS, CLIENTES];
+
+/**
+ * A navegação inferior (`DECISOES.md#d240`): três destinos à vista, com o "+"
+ * entre o segundo e o terceiro, e o resto na folha do ⋯.
+ */
+export const DESTINOS_DO_CELULAR: Destino[] = [HOJE, PEDIDOS, PRODUTOS];
+export const DESTINOS_DO_MAIS: Destino[] = [
+  MATERIAIS,
+  CAIXA,
+  COMPRAS,
+  CLIENTES,
 ];
 
 /** Os destinos de quem entrou: a ajudante fica sem "Caixa" (`DECISOES.md#d157`). */

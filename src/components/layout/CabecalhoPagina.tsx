@@ -17,19 +17,13 @@ const CAMPO_DE_DIGITAR =
 /**
  * Duas faixas no mesmo `<header>` grudento (`DECISOES.md#d128`).
  *
- * A de contexto é a tinta da marca, sangrando até a borda da área de conteúdo:
- * é o que separa "tela do Rende" de "página com uma barra ao lado". Sem filete
- * embaixo, a tinta é a borda. A de ferramentas (busca, pílulas, aviso) fica no
- * papel, e só existe quando há `children`.
- *
- * As ações vêm de fora e não sabem que estão sobre a tinta: `sobre-marca` é um
- * escopo de tokens (`globals.css`), e o botão secundário, o terciário, o link
- * de voltar e o ícone invertem sozinhos. O primário âmbar tem contraste
- * próprio e não muda.
+ * As duas no papel (`DECISOES.md#d243`): a tinta saiu da faixa de contexto,
+ * que era a única área cheia de marca no conteúdo. O `bg-canvas` fica porque o
+ * `<header>` é grudento e a lista passa por baixo. O filete embaixo é da
+ * última faixa: a de ferramentas quando há `children`, senão a de contexto.
  *
  * O selo de sincronização é do cabeçalho, e não da tela (`DECISOES.md#d234`):
- * em toda tela, no mesmo lugar, a linha da descrição. Ele também tem contraste
- * próprio sobre a tinta e não lê nenhum token de `sobre-marca`.
+ * em toda tela, no mesmo lugar, a linha da descrição.
  *
  * Com o teclado aberto (`apertado:`) o voltar some e o respiro encolhe: o botão
  * físico de voltar do Android existe e fecha o teclado antes de sair, e numa
@@ -37,12 +31,12 @@ const CAMPO_DE_DIGITAR =
  *
  * `pt` soma `env(safe-area-inset-top)` ao respiro de sempre: no iPhone
  * instalado, a barra de status é translúcida (`appleWebApp.statusBarStyle`
- * em `layout.tsx`) e mostra esta faixa por trás dela — sem o respiro extra,
- * o título ficaria atrás do relógio.
+ * em `layout.tsx`) — sem o respiro extra, o título ficaria atrás do relógio.
+ * Sob o relógio, que é branco, fica a tira de tinta do `AppShell`.
  *
  * Com `recolhe`, abaixo de `lg`, a faixa de contexto sai ao descer e volta ao
  * subir (`DECISOES.md#d237`): o `<header>` sobe pela altura dela menos a área
- * segura, e o que sobra da tinta é a tira sob a barra de status, com o
+ * segura, e o que sobra dela fica sob a tira de tinta do `AppShell`, com o
  * conteúdo apagado. A altura vem do `ResizeObserver`; a rolagem só lê
  * `scrollY`. Não recolhe sem rede, e com o foco dentro nada muda.
  */
@@ -159,8 +153,9 @@ export function CabecalhoPagina({
         // Tab até o "+" escondido traz a faixa de volta.
         onFocus={() => setRecolhido(false)}
         className={cn(
-          "sangria sobre-marca bg-brand-700 pb-3 pt-[calc(1rem+env(safe-area-inset-top))] apertado:pb-2 apertado:pt-[calc(0.5rem+env(safe-area-inset-top))] lg:pb-5 lg:pt-[calc(2rem+env(safe-area-inset-top))]",
-          // A tira que fica sob a barra de status é tinta, sem título.
+          "sangria bg-canvas pb-3 pt-[calc(1rem+env(safe-area-inset-top))] apertado:pb-2 apertado:pt-[calc(0.5rem+env(safe-area-inset-top))] lg:pb-5 lg:pt-[calc(2rem+env(safe-area-inset-top))]",
+          !children && "border-b border-line",
+          // O que sobra sob a barra de status fica sem título.
           "motion-safe:*:transition-opacity motion-safe:*:duration-220 motion-safe:*:ease-quart max-lg:group-data-recolhido/cabecalho:*:opacity-0",
         )}
       >
@@ -177,7 +172,7 @@ export function CabecalhoPagina({
           )}
         >
           <div className="min-w-0">
-            <h1 className="truncate font-display text-title font-semibold text-on-brand lg:text-display">
+            <h1 className="truncate font-display text-title font-semibold text-ink lg:text-display">
               {titulo}
             </h1>
             {/* O selo mora na linha da descrição, nunca ao lado do "+": em
@@ -187,7 +182,7 @@ export function CabecalhoPagina({
               {descricao && (
                 <p
                   className={cn(
-                    "mt-1 max-w-[52ch] text-label text-on-brand-muted lg:text-body",
+                    "mt-1 max-w-[52ch] text-label text-ink-muted lg:text-body",
                     !descricaoSempreVisivel && "hidden lg:block",
                   )}
                 >

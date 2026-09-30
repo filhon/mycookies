@@ -30,6 +30,7 @@ import { Realce } from "@/components/ui/Realce";
 import { RodapeFixo } from "@/components/ui/RodapeFixo";
 import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
 import { BlocoConfiguracao } from "./BlocoConfiguracao";
+import { BlocoTema } from "./BlocoTema";
 import { CustoPorHora } from "./CustoPorHora";
 import { FormularioFormaPagamento } from "./FormularioFormaPagamento";
 import { ListaFormasPagamento } from "./ListaFormasPagamento";
@@ -231,6 +232,9 @@ function ConfiguracaoDaAjudante() {
       <p className="mt-4 max-w-[60ch] text-body text-ink-muted">
         O preço e os custos são de quem é dona do negócio.
       </p>
+      <div className="mt-4">
+        <BlocoTema />
+      </div>
       <div className="mt-8 flex flex-col gap-2 lg:mt-12 lg:max-w-md">
         <LinhaSair />
       </div>
@@ -905,6 +909,8 @@ function ConfiguracaoDaDona() {
             </label>
           </div>
         </BlocoConfiguracao>
+
+        <BlocoTema />
       </div>
 
       {falha && (
