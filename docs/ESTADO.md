@@ -1,6 +1,8 @@
 # Estado do projeto
 
-Atualizado em 2026-09-30 (**a 060 codificada**, o cabeçalho dá passagem: nas seis listas do
+Atualizado em 2026-09-30 (**a foto da bancada na `/conheca`**, fora de spec: faixa larga entre o
+topo e a calculadora, decorativa, AVIF/WebP pelo `/_next/image` e fora do precache do Serwist,
+`#d238`; Lighthouse da `/conheca` por medir no deploy; **a 060 codificada**, o cabeçalho dá passagem: nas seis listas do
 celular a faixa de contexto sai ao descer e volta ao subir, e tocar na aba ativa volta ao topo,
 `#d237`; **a 059 codificada**, a barra diz de quem é: o nome do negócio sob o
 logotipo, Compras e Clientes como destinos da barra lateral, o prazo do teste no pé para a dona e

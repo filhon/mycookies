@@ -7040,3 +7040,36 @@ com a faixa recolhida: sem ele o `<header>` não vira bloco de contenção dos `
 **Consequência.** O `CabecalhoPagina` passa a ser `"use client"` (todas as telas que o usam já
 eram). O grupo é nomeado (`group/cabecalho`) para que um `group-hover:` de linha na faixa de
 ferramentas não case com o `<header>`.
+
+## D238 · A foto da bancada na `/conheca`, fora do precache
+
+**Status:** vigente · decidida e codificada em 2026-09-30, fora de spec, a pedido de quem conduz o projeto
+
+**Contexto.** A página de venda não tinha nenhuma imagem: as telas do mês esperam as capturas
+(`#d181`) e a foto do depoimento espera autorização (`#d175`). Veio uma foto gerada por IA da
+bancada: o cookie sendo ensacado, o adesivo, o gás aceso e a balança, que é a frase do topo ("o
+saquinho que ninguém soma, o gás que ninguém conta") em imagem. A página precisa continuar com 90+
+no Lighthouse.
+
+**Decisão.**
+
+- **Faixa larga entre o topo e "Agora a conta do seu cookie"**, sangrando até as bordas, altura
+  `min(75vw, 36rem)`, sem raio. No celular o corte fica nas mãos e no cookie (`object-[80%_65%]`);
+  no desktop, no centro. A foto é o separador: o filete do topo de `SuaConta` saiu.
+- **Não é o fundo do topo.** Viraria o LCP da página (hoje é o `h1`, texto), disputaria com a
+  `ContaAberta` e poria texto sobre foto. Abaixo da dobra ela carrega sob demanda e não pesa na nota.
+- **Decorativa**: `alt=""`, sem legenda. É imagem gerada; nunca é apresentada como a Maynara nem
+  como a cozinha da MyCookie's, e não ocupa o lugar da foto do depoimento (`#d175`).
+- **Arquivo**: `src/app/conheca/bancada.jpg`, 2400px, JPEG 80 (183 KB), importado estaticamente:
+  largura e altura vêm do import (sem salto de layout) e o `placeholder="blur"` sai de graça. O
+  `/_next/image` entrega AVIF ou WebP no tamanho da tela (`images.formats`).
+- **Fora do precache.** O Serwist põe no precache todo arquivo de `public/` e todo asset do
+  webpack, inclusive as imagens de `_next/static/media`. Uma foto que o app instalado nunca mostra
+  desceria em toda instalação. O `exclude` do `withSerwistInit` repete os dois padrões dele e tira
+  `/static/media/*.{jpg,png,webp,avif}` (o `next-image-loader` emite o nome com a barra na frente).
+  Por isso a foto não mora em `public/`.
+
+**Consequência.** Imagem importada em qualquer tela fica fora do precache: se um dia uma tela do
+app precisar de imagem offline, ela entra por `additionalPrecacheEntries` ou pelo cache de tempo de
+execução. A foto é de cookie; a página inteira já é (`EXEMPLO`), e o "Nada de biscoito" do
+`DESIGN.md` é sobre ícone e símbolo, não sobre fotografia.

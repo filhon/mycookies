@@ -22,6 +22,7 @@ import type { Centavos, Pacote } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 import { DESCRICAO } from "../descricao";
 import { URL_DO_SITE } from "../site";
+import bancada from "./bancada.jpg";
 
 /**
  * A página de venda (spec 036). Pública e indexável, fora de `(app)` e de
@@ -286,6 +287,18 @@ export default async function PaginaConheca() {
           <ContaAberta />
         </div>
 
+        {/* O saquinho, o adesivo e o gás da frase do topo, na bancada
+            (`DECISOES.md#d238`). Imagem gerada: decorativa, sem legenda e sem
+            nome, nunca a Maynara nem a MyCookie's (`#d175`). Abaixo da dobra,
+            carrega sob demanda; no celular o corte fica nas mãos e no cookie. */}
+        <Image
+          src={bancada}
+          alt=""
+          sizes="100vw"
+          placeholder="blur"
+          className="block h-[min(75vw,36rem)] w-full object-cover object-[80%_65%] lg:object-[center_65%]"
+        />
+
         <SuaConta />
 
         {temTelasDoMes && <DepoisDoPreco />}
@@ -337,7 +350,8 @@ function SuaConta() {
       aria-labelledby="sua-conta-titulo"
       className="mx-auto max-w-6xl scroll-mt-4 px-4 pb-16 lg:px-10 lg:pb-24"
     >
-      <div className="border-t border-line pt-16 lg:pt-24">
+      {/* Sem filete: a foto da bancada, logo acima, já separa. */}
+      <div className="pt-16 lg:pt-24">
         <h2
           id="sua-conta-titulo"
           className="max-w-[24ch] text-balance font-display text-[1.75rem] leading-[1.15] font-bold tracking-[-0.02em] text-ink lg:text-[2.375rem]"
