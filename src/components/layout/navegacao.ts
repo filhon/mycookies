@@ -4,6 +4,8 @@ import {
   ClipboardList,
   Home,
   ShoppingBasket,
+  ShoppingCart,
+  Users,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -33,11 +35,24 @@ export const DESTINOS: Destino[] = [
   { href: "/financeiro", rotulo: "Caixa", icone: Wallet },
 ];
 
+/**
+ * O segundo grupo da barra lateral (`DECISOES.md#d236`). O teto de cinco é da
+ * navegação inferior, onde cada alvo precisa de 56px; a barra tem a altura da
+ * tela. No celular estes dois seguem pelos atalhos e pelos cartões da Hoje.
+ */
+export const DESTINOS_DA_BARRA: Destino[] = [
+  { href: "/compras", rotulo: "Compras", icone: ShoppingCart },
+  { href: "/clientes", rotulo: "Clientes", icone: Users },
+];
+
 /** Os destinos de quem entrou: a ajudante fica sem "Caixa" (`DECISOES.md#d157`). */
-export function destinosDo(papel: PapelNaConta): Destino[] {
+export function destinosDo(
+  papel: PapelNaConta,
+  destinos: Destino[] = DESTINOS,
+): Destino[] {
   return papel === "DONA"
-    ? DESTINOS
-    : DESTINOS.filter((destino) => !rotaSoDaDona(destino.href));
+    ? destinos
+    : destinos.filter((destino) => !rotaSoDaDona(destino.href));
 }
 
 export function destinoAtivo(caminho: string, href: string): boolean {

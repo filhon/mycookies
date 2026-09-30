@@ -5,6 +5,15 @@ import { NavegacaoInferior } from "./NavegacaoInferior";
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh bg-canvas">
+      {/* O primeiro foco da página: sem ele, o teclado passa por toda a barra
+          antes do conteúdo (`DECISOES.md#d236`). */}
+      <a
+        href="#conteudo"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface focus:px-4 focus:py-3 focus:text-label focus:font-semibold focus:text-ink focus:shadow-overlay print:hidden"
+      >
+        Pular para o conteúdo
+      </a>
+
       <BarraLateral />
 
       {/* `overflow-x-clip` corta a sangria do cabeçalho (`sangria`, em
@@ -17,7 +26,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             (`DECISOES.md#d129`). A tabela de `/fichas` fica fora dele. */}
         {/* Na impressão o shell some e a folha do orçamento é a página inteira
             (`DECISOES.md#d106`). */}
-        <main className="px-4 pb-24 apertado:pb-4 lg:px-8 lg:pb-16 print:p-0">
+        <main
+          id="conteudo"
+          tabIndex={-1}
+          className="px-4 pb-24 outline-none apertado:pb-4 lg:px-8 lg:pb-16 print:p-0"
+        >
           {children}
         </main>
       </div>

@@ -105,13 +105,13 @@ tabIndex={-1}>`.
 
 ## Critérios de aceite
 
-- [ ] Nome do negócio no topo da barra.
-- [ ] Compras e Clientes como destinos da barra, filtrados pelo papel.
-- [ ] Prazo do teste no pé, só para a dona em teste.
-- [ ] Link de pular, primeiro foco da página.
-- [ ] `ModuloPendente` fora; nenhum link da barra com classes repetidas.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d236` escrito; `ESTADO.md` e a linha "Barra lateral" do `DESIGN.md` atualizados.
+- [x] Nome do negócio no topo da barra.
+- [x] Compras e Clientes como destinos da barra, filtrados pelo papel.
+- [x] Prazo do teste no pé, só para a dona em teste.
+- [x] Link de pular, primeiro foco da página.
+- [x] `ModuloPendente` fora; nenhum link da barra com classes repetidas.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d236` escrito; `ESTADO.md` e a linha "Barra lateral" do `DESIGN.md` atualizados.
 
 ---
 

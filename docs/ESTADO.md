@@ -1,6 +1,8 @@
 # Estado do projeto
 
-Atualizado em 2026-09-30 (**a 058 codificada**, o pedido que chegou: o número de pedidos do
+Atualizado em 2026-09-30 (**a 059 codificada**, a barra diz de quem é: o nome do negócio sob o
+logotipo, Compras e Clientes como destinos da barra lateral, o prazo do teste no pé para a dona e
+o link de pular para o conteúdo, `#d236`; **a 058 codificada**, o pedido que chegou: o número de pedidos do
 cardápio esperando em "Pedidos", na navegação inferior e na barra lateral, pela mesma
 `consultaAgenda` de `/pedidos` e da Hoje, `#d235`; **a 057 codificada**, o aparelho em toda tela: o selo de
 sincronização sai das onze telas e mora na linha da descrição do `CabecalhoPagina`, em toda tela,
@@ -4285,6 +4287,29 @@ Portão: lint e typecheck limpos, **795 testes**, `npm run build` passa.
 Portão: lint e typecheck limpos, **796 testes** (1 novo), `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 059 · A barra diz de quem é
+
+**Codificada em 2026-09-30** (`#d236`). Nenhum campo, consulta, regra ou dependência.
+
+- `src/components/layout/navegacao.ts`: `DESTINOS_DA_BARRA` (Compras, Clientes); `destinosDo`
+  aceita a lista, com `DESTINOS` de padrão.
+- `src/components/layout/BarraLateral.tsx`: `conta.nome` sob o logotipo; o segundo grupo depois
+  de 16px; o prazo do teste no pé, só a dona em `teste`; `ItemDaBarra` e `classesDoItem` para os
+  sete destinos, os dois links do pé e o "Sair". A `<nav>` rola se faltar altura.
+- `src/components/layout/AppShell.tsx`: "Pular para o conteúdo" e `<main id="conteudo">`.
+- `src/components/layout/ModuloPendente.tsx`: saiu.
+- `DESIGN.md`: a linha "Barra lateral".
+
+**Fora do que a spec desenhou** (no `#d236`): os links do pé ganharam `aria-current` como os
+destinos; a ajudante vê Compras e não Clientes, pelo `ROTAS_SO_DA_DONA` que já existia. O prazo
+usa `fraseDoTeste` ("Seu teste grátis acaba em N dias"), e não o "Faltam N dias" do roteiro.
+
+**Não rodou**: o roteiro de aparelho da spec (§ 4), inteiro. A altura foi estimada: na 768px, topo,
+sete destinos e pé com o prazo somam ~670px, sem rolar.
+
+Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -4294,6 +4319,10 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 059 está codificada** (seção acima). Publica depois da 058, que mexe na mesma barra; o portão
+é o roteiro da spec, com uma conta em teste e um login de ajudante. A próxima e última da crítica
+de layout é a 060 (o cabeçalho dá passagem).
 
 **A 058 está codificada** (seção acima). Publica sozinha; o portão é o roteiro da spec, com um
 pedido feito de outro aparelho, o TalkBack e o modo avião. A próxima da crítica de layout é a 059

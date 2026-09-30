@@ -6962,3 +6962,35 @@ Acima de 9, "9+".
 **Contraste no escuro.** No celular o `brand-700` fica escuro nos dois temas, e a pílula do número
 quase some sobre a superfície escura; o número em `on-brand` continua legível, e é ele que carrega
 o sentido. Aceito como a spec desenhou; um anel em volta só se o roteiro mostrar que não se vê.
+
+## D236 · A barra diz de quem é, e o teto de cinco é da navegação inferior
+
+**Status:** vigente · decidida em 2026-09-30, na spec `059-a-barra-diz-de-quem-e.md`; codificada em 2026-09-30
+
+**Contexto.** A barra lateral mostrava o logotipo e, no pé, o e-mail. O nome do negócio não
+aparecia no shell. Ela copiava o teto de cinco destinos da navegação inferior, e `/compras` e
+`/clientes` só se alcançavam no desktop por atalhos de cabeçalho. O prazo do teste só existia na
+Hoje, e o teclado passava por toda a barra antes do conteúdo.
+
+**Decisão.**
+
+- **Topo.** O logotipo continua sozinho na linha dele; embaixo, `conta.nome` (o negócio, e não
+  `proprietaria`) em `label` 600 `on-brand`, truncado, com `title`. É onde um seletor de conta
+  entraria no dia em que existir (`#d01`).
+- **Meio.** Dois grupos na mesma `<nav>`: os cinco `DESTINOS` e, depois de 16px sem título nem
+  filete, `DESTINOS_DA_BARRA` (Compras, Clientes), ao lado de `DESTINOS` em `navegacao.ts`. Os dois
+  passam por `destinosDo(papel, …)`: a ajudante vê Compras e não Clientes (`ROTAS_SO_DA_DONA`). A
+  navegação inferior não muda, o teto dela é físico (56px por alvo). Os atalhos do cabeçalho ficam:
+  são contextuais. A `<nav>` rola se a tela for baixa; o pé não.
+- **Pé.** Só a dona, só em `teste`: `Hourglass`, `fraseDoTeste(dias)` em `on-brand-muted` e
+  "Assinar" em `on-brand` 600 para `/assinatura`, acima de "Como funciona". Sem tom de atenção: a
+  urgência dos três últimos dias é da Hoje (`#d219`). Livre, assinante, vencida e ajudante: nada.
+- **Pular para o conteúdo.** Primeiro foco do `AppShell`, `sr-only` até o foco, leva a
+  `<main id="conteudo" tabIndex={-1}>`. O `main` não desenha anel: ele só recebe o ponto de partida
+  do próximo Tab.
+- **Limpeza.** `ModuloPendente` sai (ninguém o importava). Os itens saem de `ItemDaBarra`, e o
+  botão "Sair" usa as mesmas classes (`classesDoItem`).
+
+**Consequência.** A barra e a navegação inferior deixam de ter a mesma lista: quem mexer em
+destino confere as duas. O nome do negócio passa a ser lido no shell inteiro; um nome longo trunca
+e mostra o resto no `title`.
