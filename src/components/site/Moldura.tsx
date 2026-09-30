@@ -28,6 +28,13 @@ export function Topo({
 }) {
   return (
     <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-5 lg:px-10 lg:pt-7">
+      {/* O `main` de quem usa o topo tem `id="conteudo"`. */}
+      <a
+        href="#conteudo"
+        className="sr-only rounded-md bg-surface px-4 py-3 text-label font-medium text-ink shadow-raised focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50"
+      >
+        Pular para o conteúdo
+      </a>
       <Link
         href="/conheca"
         className="toque -mx-1 inline-flex items-center px-1"

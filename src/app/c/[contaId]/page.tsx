@@ -73,7 +73,12 @@ export default async function PaginaCardapio({ params }: Props) {
       <footer className="mx-4 mt-12 flex flex-col items-center gap-1 border-t border-line pt-6 text-label text-ink-muted lg:mx-0 lg:flex-row lg:justify-between">
         <p>
           {negocio.nome}
-          {negocio.instagram && ` · @${negocio.instagram}`}
+          {negocio.instagram && (
+            <>
+              {" · "}
+              <span translate="no">@{negocio.instagram}</span>
+            </>
+          )}
         </p>
         {negocio.feitoComRende && <p>Cardápio feito no Rende</p>}
       </footer>
@@ -103,6 +108,8 @@ function Topo({
         <img
           src={`${base}/capa?v=${negocio.capaVersao}`}
           alt=""
+          // Acima da dobra; a altura fixa da classe já guarda o lugar.
+          fetchPriority="high"
           className="h-44 w-full bg-sunken object-cover lg:mt-6 lg:h-65 lg:rounded-lg"
         />
       ) : (
@@ -115,7 +122,7 @@ function Topo({
           !temFaixa && "pt-10",
         )}
       >
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:gap-6">
+        <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-end lg:gap-6">
           {negocio.logoVersao !== undefined && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -131,10 +138,11 @@ function Topo({
           )}
           <div
             className={cn(
+              "min-w-0",
               temFaixa && negocio.logoVersao === undefined && "pt-6",
             )}
           >
-            <h1 className="text-balance font-display text-display font-semibold text-ink lg:text-[2.25rem]">
+            <h1 className="wrap-break-word text-balance font-display text-display font-semibold text-ink lg:text-[2.25rem]">
               {negocio.nome}
             </h1>
             {negocio.frase && (

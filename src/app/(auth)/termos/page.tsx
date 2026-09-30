@@ -19,9 +19,9 @@ const SECOES: SecaoDeTexto[] = [
   {
     titulo: "Quem presta o serviço",
     paragrafos: [
-      `O Rende é oferecido por ${RESPONSAVEL.nome}, pessoa física, inscrita no CPF sob o nº ${RESPONSAVEL.cpf}, com endereço para correspondência em ${RESPONSAVEL.endereco}. Neste texto, "nós" é essa pessoa, e "você" é quem cria uma conta no Rende.`,
+      `O Rende é oferecido por ${RESPONSAVEL.nome}, pessoa física, inscrita no CPF sob o nº ${RESPONSAVEL.cpf}, com endereço para correspondência em ${RESPONSAVEL.endereco}. Neste texto, “nós” é essa pessoa, e “você” é quem cria uma conta no Rende.`,
       `Para qualquer assunto destes termos, inclusive reclamação, cancelamento ou pedido de reembolso, o contato é ${RESPONSAVEL.email}. Respondemos em até cinco dias úteis.`,
-      'Ao marcar a caixa "Li e aceito" no cadastro, você declara que tem 18 anos ou mais, que leu estes termos e a política de privacidade, e que concorda com eles. Se usar o Rende em nome de um negócio, você declara que pode aceitá-los por ele.',
+      "Ao marcar a caixa “Li e aceito” no cadastro, você declara que tem 18 anos ou mais, que leu estes termos e a política de privacidade, e que concorda com eles. Se usar o Rende em nome de um negócio, você declara que pode aceitá-los por ele.",
     ],
   },
   {
@@ -76,7 +76,7 @@ const SECOES: SecaoDeTexto[] = [
     titulo: "Os dados são seus",
     paragrafos: [
       "Tudo o que você cadastra no Rende (receitas, preços, pedidos, clientes, caixa) é seu. Nós só o usamos para fazer o Rende funcionar para você, como explica a política de privacidade, e não o vendemos a ninguém.",
-      'A qualquer momento, inclusive com o teste vencido ou sem assinatura, você pode baixar tudo o que cadastrou em "Baixar meus dados", em Configuração ou na tela de assinatura. O arquivo sai completo, no formato em que o Rende guarda os dados (JSON).',
+      "A qualquer momento, inclusive com o teste vencido ou sem assinatura, você pode baixar tudo o que cadastrou em “Baixar meus dados”, em Configuração ou na tela de assinatura. O arquivo sai completo, no formato em que o Rende guarda os dados (JSON).",
     ],
   },
   {
@@ -92,7 +92,7 @@ const SECOES: SecaoDeTexto[] = [
   {
     titulo: "Encerramento, por qualquer lado",
     paragrafos: [
-      'Você pode encerrar a conta quando quiser, sozinha, em "Encerrar minha conta", em Configuração. Encerrar cancela a assinatura na mesma hora, sem nenhuma cobrança nova, tira o acesso seu e das ajudantes, e tira o cardápio do ar. Baixe seus dados antes: depois de encerrar, não é mais possível.',
+      "Você pode encerrar a conta quando quiser, sozinha, em “Encerrar minha conta”, em Configuração. Encerrar cancela a assinatura na mesma hora, sem nenhuma cobrança nova, tira o acesso seu e das ajudantes, e tira o cardápio do ar. Baixe seus dados antes: depois de encerrar, não é mais possível.",
       {
         destaque:
           "Encerrar a conta não dá reembolso proporcional do período já pago, ressalvado o direito de arrependimento da seção 5. Se preferir usar até o fim do período pago, cancele a assinatura pelo portal e encerre a conta depois.",

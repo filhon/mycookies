@@ -129,8 +129,9 @@ function RedefinirSenha() {
 /** O formulário antes do e-mail chegar: a forma dele, sem giro (`#d196`). */
 function Conferindo() {
   return (
-    <MolduraDeEntrada titulo="Senha nova" descricao="Conferindo o link.">
-      <div role="status" aria-label="Conferindo o link" className="mt-8">
+    <MolduraDeEntrada titulo="Senha nova" descricao="Conferindo o link…">
+      <div role="status" className="mt-8">
+        <span className="sr-only">Conferindo o link…</span>
         <Esqueleto className="h-4 w-24" />
         <Esqueleto className="mt-2.5 h-12 rounded-md" />
         <Esqueleto className="mt-2 h-4 w-40" />

@@ -44,11 +44,14 @@ export function PaginaDeTexto({
 
       <div className="mt-8 space-y-8">
         {secoes.map((secao, indice) => (
-          <section key={secao.titulo}>
+          // O texto remete à "seção 1": o número é lido, e a seção tem endereço.
+          <section
+            key={secao.titulo}
+            id={`secao-${indice + 1}`}
+            className="scroll-mt-6"
+          >
             <h2 className="text-heading font-semibold text-ink">
-              <span className="num mr-2 text-ink-subtle" aria-hidden>
-                {indice + 1}.
-              </span>
+              <span className="num mr-2 text-ink-subtle">{indice + 1}.</span>
               {secao.titulo}
             </h2>
             <div className="mt-3 space-y-3 text-body text-ink">
@@ -66,15 +69,17 @@ export function PaginaDeTexto({
         ))}
       </div>
 
+      {/* Chega-se aqui do cadastro, do login e do rodapé de `/conheca`: `/`
+          leva cada um ao seu lugar (o app, ou a página de venda). */}
       <div className="mt-12">
         <Link
-          href="/login"
+          href="/"
           className={classesBotao({
             variante: "terciaria",
             className: "-ml-4",
           })}
         >
-          Voltar
+          Ir para o início
         </Link>
       </div>
     </main>

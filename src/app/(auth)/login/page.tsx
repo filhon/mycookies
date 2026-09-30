@@ -260,15 +260,15 @@ export default function PaginaLogin() {
           </Botao>
 
           {/* A resposta é a mesma existindo ou não o cadastro, e nenhum
-              código do Firebase chega até aqui. */}
-          {avisoSenha && (
-            <p
-              aria-live="polite"
-              className="max-w-[42ch] text-center text-label text-ink-muted"
-            >
-              {avisoSenha}
-            </p>
-          )}
+              código do Firebase chega até aqui. A região vive montada: a que
+              nasce junto com o texto não é lida. */}
+          <div aria-live="polite">
+            {avisoSenha && (
+              <p className="max-w-[42ch] text-center text-label text-ink-muted">
+                {avisoSenha}
+              </p>
+            )}
+          </div>
         </div>
       </form>
 

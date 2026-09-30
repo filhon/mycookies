@@ -239,9 +239,9 @@ export default async function PaginaConheca() {
 
   return (
     <>
-      <main>
-        <Topo ancoras={ANCORAS} convite />
+      <Topo ancoras={ANCORAS} convite />
 
+      <main id="conteudo">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 pt-8 pb-16 lg:grid-cols-[1fr_28rem] lg:items-center lg:gap-16 lg:px-10 lg:pt-16 lg:pb-24">
           <section aria-labelledby="frase">
             <p className="text-label font-semibold text-ink-muted">
@@ -497,7 +497,7 @@ function QuemJaUsa() {
               <span className="font-semibold text-on-brand">
                 {DEPOIMENTO.nome}
               </span>
-              , MyCookie&apos;s
+              , MyCookie’s
               {DEPOIMENTO.cidade && ` · ${DEPOIMENTO.cidade}`}
             </figcaption>
           </figure>
@@ -535,9 +535,9 @@ function Preco({
         Dois planos. O teste tem tudo.
       </h2>
       <p className="mt-4 max-w-[60ch] text-body text-ink-muted">
-        Catorze dias grátis, sem cartão, com tudo aberto. No fim do teste você
-        escolhe. Se não escolher, seus dados ficam guardados e você continua
-        vendo tudo; só não edita.
+        {DIAS_DE_TESTE} dias grátis, sem cartão, com tudo aberto. No fim do
+        teste você escolhe. Se não escolher, seus dados ficam guardados e você
+        continua vendo tudo; só não edita.
       </p>
 
       <div className="mt-10 grid gap-4 md:grid-cols-2">
@@ -653,7 +653,8 @@ function Duvidas() {
 /** Só no celular, só CSS (`sticky`); ver o comentário do bloco que a contém. */
 function BarraDoCelular() {
   return (
-    <div className="rodape-seguro sticky bottom-0 border-t border-line bg-surface px-4 pt-3 lg:hidden">
+    // O foco que desce pela página para acima da barra, e não atrás dela.
+    <div className="rodape-seguro sticky bottom-0 border-t border-line bg-surface px-4 pt-3 lg:hidden [html:has(&)]:scroll-pb-28">
       <Link
         href="/cadastro"
         className={classesBotao({

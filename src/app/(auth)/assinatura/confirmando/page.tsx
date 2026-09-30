@@ -71,9 +71,12 @@ export default function PaginaConfirmandoAssinatura() {
 
   if (carregando || !usuario || !contaId) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-canvas">
+      <div
+        role="status"
+        className="flex min-h-dvh items-center justify-center bg-canvas"
+      >
         <Simbolo className="size-12 animate-pulse" />
-        <span className="sr-only">Carregando</span>
+        <span className="sr-only">Carregando…</span>
       </div>
     );
   }
@@ -83,7 +86,8 @@ export default function PaginaConfirmandoAssinatura() {
       titulo="Pagamento recebido"
       descricao="Liberando sua conta…"
     >
-      <div className="mt-8 flex flex-col items-center gap-4">
+      {/* Viva desde o início: o aviso dos 45 s é lido quando aparece. */}
+      <div aria-live="polite" className="mt-8 flex flex-col items-center gap-4">
         <Simbolo className="size-12 animate-pulse" />
 
         {mostrarBotao && (

@@ -173,7 +173,7 @@ export default function PaginaComoCalcular() {
     <>
       <Topo />
 
-      <main>
+      <main id="conteudo">
         <article className="mx-auto max-w-6xl px-4 pt-8 pb-16 lg:px-10 lg:pt-16 lg:pb-24">
           <header className="max-w-[68ch]">
             <h1 className="text-balance font-display text-[2.125rem] leading-[1.1] font-bold tracking-tight text-ink lg:text-[3rem] lg:leading-[1.05]">

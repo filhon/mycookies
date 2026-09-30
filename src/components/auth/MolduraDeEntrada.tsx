@@ -34,25 +34,6 @@ export function MolduraDeEntrada({
 }) {
   return (
     <div className="flex min-h-dvh bg-canvas">
-      {/* Painel de marca: tinta lisa, o logotipo em negativa e a tagline. Só
-          no desktop, e sem enfeite: o ponto do logotipo é a única peça âmbar. */}
-      <aside className="hidden w-[42%] shrink-0 bg-brand-800 lg:flex lg:flex-col lg:justify-between">
-        <div className="px-10 pt-12">
-          <Logotipo tamanho="lg" tom="negativa" />
-        </div>
-
-        {/* Notebook pequeno não pode empurrar a frase para fora. */}
-        {painel && (
-          <div className="px-10 [@media(max-height:719px)]:hidden">
-            {painel}
-          </div>
-        )}
-
-        <p className="max-w-[26ch] px-10 pb-14 font-display text-title font-semibold leading-snug text-on-brand">
-          O preço certo de cada doce, antes de mandar o orçamento.
-        </p>
-      </aside>
-
       <main className="flex flex-1 flex-col items-center px-6 py-12">
         <div className="my-auto w-full max-w-sm">
           <div className="mb-10 lg:hidden">
@@ -108,6 +89,27 @@ export function MolduraDeEntrada({
           </span>
         </footer>
       </main>
+
+      {/* Painel de marca: tinta lisa, o logotipo em negativa e a tagline. Só
+          no desktop, e sem enfeite: o ponto do logotipo é a única peça âmbar.
+          Depois do `main` no DOM e à esquerda pelo `order`: o `h2` da conta
+          do painel não passa à frente do `h1` da tela. */}
+      <aside className="order-first hidden w-[42%] shrink-0 bg-brand-800 lg:flex lg:flex-col lg:justify-between">
+        <div className="px-10 pt-12">
+          <Logotipo tamanho="lg" tom="negativa" />
+        </div>
+
+        {/* Notebook pequeno não pode empurrar a frase para fora. */}
+        {painel && (
+          <div className="px-10 [@media(max-height:719px)]:hidden">
+            {painel}
+          </div>
+        )}
+
+        <p className="max-w-[26ch] px-10 pb-14 font-display text-title font-semibold leading-snug text-on-brand">
+          O preço certo de cada doce, antes de mandar o orçamento.
+        </p>
+      </aside>
     </div>
   );
 }

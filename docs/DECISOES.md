@@ -7073,3 +7073,38 @@ no Lighthouse.
 app precisar de imagem offline, ela entra por `additionalPrecacheEntries` ou pelo cache de tempo de
 execução. A foto é de cookie; a página inteira já é (`EXEMPLO`), e o "Nada de biscoito" do
 `DESIGN.md` é sobre ícone e símbolo, não sobre fotografia.
+
+## D239 · A passada das diretrizes de interface nas páginas públicas
+
+**Status:** vigente · decidida e codificada em 2026-09-30, fora de spec, a pedido de quem conduz o projeto
+
+**Contexto.** As páginas públicas (`/conheca`, `/como-calcular-o-preco-do-cookie`, `/c/[contaId]`,
+`(auth)/*` e `/offline`) passaram pelas Web Interface Guidelines da Vercel. O que valia a pena
+corrigir foi corrigido; o que ficou de fora está listado abaixo, com o motivo.
+
+**Decisão.**
+
+- **O "Criar conta" do cadastro fica sempre ativo.** Antes ele ficava apagado até tudo estar
+  preenchido, sem dizer o que faltava. Agora ele valida no envio, põe o erro embaixo de cada campo
+  (e da caixa dos termos) e leva o foco ao primeiro, como o login já fazia. A caixa dos termos
+  virou um `<label>` inteiro: o contorno de 44px é o alvo, sem área morta.
+- **O cardápio guarda o que a cliente digitou antes de recarregar.** O `mudou`/`acabou` recarrega a
+  página em 3 s; antes, nome, WhatsApp, dia, entrega e recado se perdiam junto com o carrinho.
+  Agora vão para o `sessionStorage` (morre com a aba; o `localStorage` voltaria no celular
+  emprestado) e voltam preenchidos; o carrinho recomeça, porque é ele que mudou. A chave é lida uma
+  vez e apagada.
+- **O foco não cai no `body` no cardápio.** "Adicionar" vira `− 1 +` e o `−` no 1 volta a ser
+  "Adicionar": o foco vai para o último botão ativo do controle novo. Os rótulos viraram
+  "Diminuir/Aumentar {nome}", que não erram o gênero ("Mais um Dupla").
+- **O painel de marca da `MolduraDeEntrada` vem depois do `main` no DOM** e fica à esquerda pelo
+  `order-first`: o `h2` da `ContaAberta` do painel não passa à frente do `h1` da tela.
+- **Os termos e a privacidade leem o número da seção** (o texto remete à "seção 1") e cada seção
+  tem `id="secao-N"`. O "Voltar" fixo para `/login` virou "Ir para o início", em `/`, que manda cada
+  um ao seu lugar pelo guarda do `(app)`.
+- **As barras fixas do cardápio e da `/conheca` põem `scroll-padding` no `html`**, pela variante
+  `[html:has(&)]`, só enquanto existem: o foco do teclado para fora delas.
+
+**Ficaram de fora.** O dia "25/9" dos botões do cardápio continua montado à mão: o `Intl` em pt-BR
+dá "25/09", e o curto é de propósito. A capa do cardápio não ganha `width`/`height`: a proporção é a
+da foto dela, e a altura fixa da classe já guarda o lugar. O `theme-color` continua `brand-700`
+(`#d124`).

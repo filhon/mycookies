@@ -1,8 +1,15 @@
 "use client";
 
-import { useId, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { Check, MessageCircle, Minus, Plus, Tag } from "lucide-react";
-import { AreaTexto, Campo } from "@/components/ui/Campo";
+import { AreaTexto, Campo, focarPrimeiroErro } from "@/components/ui/Campo";
 import { Botao } from "@/components/ui/Botao";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Painel } from "@/components/ui/Painel";
@@ -92,6 +99,32 @@ function nomeDa(linha: LinhaSemQuantidade): string {
   });
 }
 
+/** O que ela digitou, sem o carrinho: é o que o recarregar do `mudou` guarda. */
+interface DadosDaCliente {
+  nome: string;
+  telefone: string;
+  data: string;
+  outroDia: boolean;
+  tipo: Tipo;
+  endereco: string;
+  observacoes: string;
+}
+
+const chaveDosDados = (contaId: string) => `rende:cardapio:${contaId}`;
+
+/**
+ * `sessionStorage`, e não `localStorage`: morre com a aba, então não volta no
+ * celular emprestado. No servidor, ou sem armazenamento, lança e sai vazio.
+ */
+function lerDados(contaId: string): Partial<DadosDaCliente> {
+  try {
+    const texto = sessionStorage.getItem(chaveDosDados(contaId));
+    return texto ? (JSON.parse(texto) as Partial<DadosDaCliente>) : {};
+  } catch {
+    return {};
+  }
+}
+
 interface Enviado {
   codigo: string | null;
   total: Centavos;
@@ -121,14 +154,26 @@ export function PedidoPeloCardapio({
   const [aberto, setAberto] = useState(false);
   const [montando, setMontando] = useState<ProdutoDoCardapio | null>(null);
 
-  const [nome, setNome] = useState("");
-  const [telefone, setTelefone] = useState("");
-  const [data, setData] = useState("");
-  const [outroDia, setOutroDia] = useState(false);
-  const [tipo, setTipo] = useState<Tipo>("RETIRADA");
-  const [endereco, setEndereco] = useState("");
-  const [observacoes, setObservacoes] = useState("");
+  // O formulário só existe no cliente (folha ou pedido ao lado, com carrinho):
+  // ler o armazenamento aqui não desencontra a hidratação.
+  const [guardado] = useState(() => lerDados(contaId));
+  const [nome, setNome] = useState(guardado.nome ?? "");
+  const [telefone, setTelefone] = useState(guardado.telefone ?? "");
+  const [data, setData] = useState(guardado.data ?? "");
+  const [outroDia, setOutroDia] = useState(guardado.outroDia ?? false);
+  const [tipo, setTipo] = useState<Tipo>(guardado.tipo ?? "RETIRADA");
+  const [endereco, setEndereco] = useState(guardado.endereco ?? "");
+  const [observacoes, setObservacoes] = useState(guardado.observacoes ?? "");
   const [site, setSite] = useState("");
+
+  // Lido uma vez: um recarregar qualquer depois deste não repõe nada.
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem(chaveDosDados(contaId));
+    } catch {
+      // Sem armazenamento, nada a apagar.
+    }
+  }, [contaId]);
 
   const [enviando, setEnviando] = useState(false);
   const [erroTelefone, setErroTelefone] = useState<string>();
@@ -207,6 +252,7 @@ export function PedidoPeloCardapio({
     if (enviando) return;
     if (!telefoneParaWhatsApp(telefone)) {
       setErroTelefone("Confira o número, com o DDD.");
+      focarPrimeiroErro();
       return;
     }
     setErroTelefone(undefined);
@@ -244,8 +290,26 @@ export function PedidoPeloCardapio({
       if (!resposta.ok) {
         const codigo = await falhaDa(resposta);
         setFalha(codigo);
-        // `acabou` é um `mudou`: a página renovada traz o que resta.
+        // `acabou` é um `mudou`: a página renovada traz o que resta. O carrinho
+        // recomeça, e o que ela digitou volta preenchido.
         if (codigo === "mudou" || codigo === "acabou") {
+          const dados: DadosDaCliente = {
+            nome,
+            telefone,
+            data,
+            outroDia,
+            tipo,
+            endereco,
+            observacoes,
+          };
+          try {
+            sessionStorage.setItem(
+              chaveDosDados(contaId),
+              JSON.stringify(dados),
+            );
+          } catch {
+            // Sem armazenamento: recarrega do mesmo jeito, sem os dados.
+          }
           setTimeout(() => location.reload(), 3000);
         }
         return;
@@ -541,7 +605,7 @@ export function PedidoPeloCardapio({
         larguraTotal
         carregando={enviando}
       >
-        {enviando ? "Enviando" : "Enviar pedido"}
+        {enviando ? "Enviando…" : "Enviar pedido"}
       </Botao>
       {falha ? (
         <div role="alert" className="mt-3 space-y-3">
@@ -585,7 +649,9 @@ export function PedidoPeloCardapio({
           {cardapio.secoes.length > 1 && (
             <nav
               aria-label="Categorias"
-              className="sticky top-0 z-20 -mx-4 border-b border-line bg-canvas px-4 py-2 lg:mx-0 lg:px-0"
+              // A página rola por baixo da barra: o foco e a âncora param
+              // abaixo dela, e não atrás.
+              className="sticky top-0 z-20 -mx-4 border-b border-line bg-canvas px-4 py-2 lg:mx-0 lg:px-0 [html:has(&)]:scroll-pt-16"
             >
               <div className="flex gap-2 overflow-x-auto">
                 {cardapio.secoes.map((secao, i) => (
@@ -607,7 +673,7 @@ export function PedidoPeloCardapio({
                 key={secao.categoria}
                 id={`secao-${i}`}
                 aria-label={secao.categoria}
-                className="scroll-mt-16 pt-4"
+                className="pt-4"
               >
                 <h2 className="font-display text-heading font-semibold text-ink">
                   {secao.categoria}
@@ -683,7 +749,7 @@ export function PedidoPeloCardapio({
       </div>
 
       {quantidadeTotal > 0 && (
-        <div className="area-segura-inferior fixed inset-x-0 bottom-0 z-30 border-t border-line bg-canvas px-4 pt-3 lg:hidden">
+        <div className="area-segura-inferior fixed inset-x-0 bottom-0 z-30 border-t border-line bg-canvas px-4 pt-3 lg:hidden [html:has(&)]:scroll-pb-24">
           <div className="mx-auto w-full max-w-xl pb-3">
             <button
               type="button"
@@ -974,6 +1040,27 @@ function Produto({
 }) {
   const esgotado = produto.restam === 0;
   const selo = seloDaPromocao(produto, hoje);
+
+  // "Adicionar" vira `− 1 +`, e o `−` no 1 volta a ser "Adicionar": o botão
+  // tocado some. O foco vai para o controle novo, e não para o `body`.
+  const controle = useRef<HTMLDivElement>(null);
+  const devolverFoco = useRef(false);
+  useEffect(() => {
+    if (!devolverFoco.current) return;
+    devolverFoco.current = false;
+    const botoes = controle.current?.querySelectorAll<HTMLElement>(
+      "button:not(:disabled)",
+    );
+    botoes?.[botoes.length - 1]?.focus();
+  }, [quantidade]);
+
+  const aoTocar = (passo: number) => {
+    if (!produto.escolhas && (quantidade === 0 || quantidade + passo === 0)) {
+      devolverFoco.current = true;
+    }
+    aoMudar(passo);
+  };
+
   return (
     <li className="py-4">
       <div className="flex gap-4">
@@ -1007,7 +1094,8 @@ function Produto({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={`/c/${encodeURIComponent(contaId)}/foto/${encodeURIComponent(produto.id)}?v=${produto.fotoVersao}`}
-            alt={produto.nome}
+            // O nome já está no título ao lado.
+            alt=""
             width={104}
             height={104}
             loading="lazy"
@@ -1017,7 +1105,10 @@ function Produto({
         )}
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-3">
+      <div
+        ref={controle}
+        className="mt-3 flex items-center justify-between gap-3"
+      >
         <div>
           <p className="flex flex-wrap items-baseline gap-x-1.5">
             {/* O riscado é o preço de sempre da ficha, e nunca um "de"
@@ -1064,7 +1155,7 @@ function Produto({
             <Botao
               tamanho="sm"
               disabled={!podeMais}
-              onClick={() => aoMudar(1)}
+              onClick={() => aoTocar(1)}
               aria-haspopup={produto.escolhas ? "dialog" : undefined}
               aria-label={`Adicionar ${produto.nome}`}
               iconeInicial={
@@ -1080,7 +1171,7 @@ function Produto({
             nome={produto.nome}
             quantidade={quantidade}
             podeMais={quantidade < 500 && podeMais}
-            aoMudar={aoMudar}
+            aoMudar={aoTocar}
             naCor
           />
         )}
@@ -1121,7 +1212,7 @@ function Passo({
         type="button"
         onClick={() => aoMudar(-1)}
         disabled={quantidade === 0}
-        aria-label={`Tirar um ${nome}`}
+        aria-label={`Diminuir ${nome}`}
         className={botao}
       >
         <Minus aria-hidden className="size-4" strokeWidth={2} />
@@ -1136,7 +1227,7 @@ function Passo({
         type="button"
         onClick={() => aoMudar(1)}
         disabled={!podeMais}
-        aria-label={`Mais um ${nome}`}
+        aria-label={`Aumentar ${nome}`}
         className={botao}
       >
         <Plus aria-hidden className="size-4" strokeWidth={2} />

@@ -213,6 +213,8 @@
 
   html {
     -webkit-tap-highlight-color: transparent;
+    /* Sem o zoom de dois toques; o de pinça continua. */
+    touch-action: manipulation;
   }
 
   body {

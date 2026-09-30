@@ -89,7 +89,7 @@ const SECOES: SecaoDeTexto[] = [
     titulo: "Os seus direitos",
     paragrafos: [
       "A LGPD (art. 18) garante a você: confirmar se tratamos dados seus e acessá-los; corrigir dados incompletos, inexatos ou desatualizados; pedir a anonimização, o bloqueio ou a eliminação de dados desnecessários, excessivos ou tratados em desacordo com a lei; a portabilidade dos seus dados; a eliminação dos dados; saber com quem os compartilhamos; e, quando o tratamento depender de consentimento, saber o que acontece se não consentir e revogá-lo.",
-      'No próprio app: a portabilidade e o acesso são "Baixar meus dados", em Configuração, que entrega tudo num arquivo; a eliminação é "Encerrar minha conta", no mesmo lugar; a correção é editar o dado onde ele está. Os demais, e qualquer dúvida, pelo e-mail da seção 1. Respondemos em até quinze dias, e podemos pedir que confirme a sua identidade antes de atender.',
+      "No próprio app: a portabilidade e o acesso são “Baixar meus dados”, em Configuração, que entrega tudo num arquivo; a eliminação é “Encerrar minha conta”, no mesmo lugar; a correção é editar o dado onde ele está. Os demais, e qualquer dúvida, pelo e-mail da seção 1. Respondemos em até quinze dias, e podemos pedir que confirme a sua identidade antes de atender.",
       "Se achar que seus direitos não foram respeitados, você também pode reclamar à Autoridade Nacional de Proteção de Dados (ANPD), em gov.br/anpd.",
     ],
   },

@@ -150,9 +150,12 @@ export default function PaginaAssinatura() {
 
   if (carregando || !usuario || !contaId || !situacao || semNadaAVer) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-canvas">
+      <div
+        role="status"
+        className="flex min-h-dvh items-center justify-center bg-canvas"
+      >
         <Simbolo className="size-12 animate-pulse" />
-        <span className="sr-only">Carregando</span>
+        <span className="sr-only">Carregando…</span>
       </div>
     );
   }
@@ -246,7 +249,7 @@ export default function PaginaAssinatura() {
           href="/"
           className={cn(classesBotao({ variante: "terciaria" }), "mt-4 w-full")}
         >
-          Voltar
+          Voltar para Hoje
         </Link>
       </>
     );
@@ -323,7 +326,7 @@ export default function PaginaAssinatura() {
           href="/configuracao"
           className={cn(classesBotao({ tamanho: "lg" }), "w-full")}
         >
-          Voltar
+          Voltar para Configuração
         </Link>
       </div>
     );

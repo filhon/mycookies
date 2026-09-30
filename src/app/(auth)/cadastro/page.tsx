@@ -8,9 +8,11 @@ import { BotaoGoogle } from "@/components/auth/BotaoGoogle";
 import { MolduraDeEntrada } from "@/components/auth/MolduraDeEntrada";
 import { ContaAberta } from "@/components/site/ContaAberta";
 import { Botao } from "@/components/ui/Botao";
-import { Campo, CampoSenha } from "@/components/ui/Campo";
+import { Campo, CampoSenha, focarPrimeiroErro } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
+import { cn } from "@/lib/utils/cn";
 import {
+  DIAS_DE_TESTE,
   MENSAGEM_FALHA_CADASTRO,
   TAMANHO_MAXIMO_NOME,
   type FalhaCadastro,
@@ -41,6 +43,12 @@ export default function PaginaCadastro() {
   const [negocio, setNegocio] = useState("");
   const [termos, setTermos] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [erros, setErros] = useState<{
+    email?: string;
+    senha?: string;
+    nome?: string;
+    termos?: string;
+  }>({});
   const [enviando, setEnviando] = useState(false);
   // O rascunho da calculadora pública (spec 040-B): a conta nasce sabendo de
   // onde veio, e a moldura diz que o cookie dela vai estar lá.
@@ -53,12 +61,30 @@ export default function PaginaCadastro() {
   // O login já existe quando o `POST` caiu no meio: o segundo estado.
   const terminando = !carregando && usuario !== null;
 
-  const pronto =
-    nome.trim().length > 0 && termos && (terminando || (!!email && !!senha));
-
   async function aoEnviar(evento: FormEvent) {
     evento.preventDefault();
     setErro(null);
+
+    // O botão fica ativo, e o que falta aparece no campo: um botão apagado
+    // não diz por quê.
+    const faltas = {
+      email: terminando || email.trim() ? undefined : "Escreva o seu e-mail.",
+      senha: terminando
+        ? undefined
+        : !senha
+          ? "Escreva uma senha."
+          : senha.length < 6
+            ? traduzirErroAuth({ code: "auth/weak-password" })
+            : undefined,
+      nome: nome.trim() ? undefined : "Escreva o seu nome.",
+      termos: termos ? undefined : "Marque a caixa para aceitar os termos.",
+    };
+    setErros(faltas);
+    if (Object.values(faltas).some(Boolean)) {
+      focarPrimeiroErro();
+      return;
+    }
+
     setEnviando(true);
 
     const auth = obterAuth();
@@ -115,7 +141,7 @@ export default function PaginaCadastro() {
   return (
     <MolduraDeEntrada
       titulo="Criar minha conta"
-      descricao={`Catorze dias grátis, sem cartão. Primeiro preço em dez minutos.${
+      descricao={`${DIAS_DE_TESTE} dias grátis, sem cartão. Primeiro preço em 10 minutos.${
         daCalculadora ? " O cookie que você calculou vai estar lá." : ""
       }`}
       painel={<ContaAberta parada className="max-w-md" />}
@@ -149,40 +175,56 @@ export default function PaginaCadastro() {
           <>
             <Campo
               rotulo="E-mail"
+              name="email"
               type="email"
               inputMode="email"
               autoComplete="username"
               autoCapitalize="none"
               spellCheck={false}
               required
+              erro={erros.email}
               value={email}
-              onChange={(evento) => setEmail(evento.target.value)}
+              onChange={(evento) => {
+                setEmail(evento.target.value);
+                setErros((e) => ({ ...e, email: undefined }));
+              }}
             />
 
             <CampoSenha
               rotulo="Senha"
+              name="senha"
               autoComplete="new-password"
               minLength={6}
               dica="Pelo menos 6 caracteres."
               required
+              erro={erros.senha}
               value={senha}
-              onChange={(evento) => setSenha(evento.target.value)}
+              onChange={(evento) => {
+                setSenha(evento.target.value);
+                setErros((e) => ({ ...e, senha: undefined }));
+              }}
             />
           </>
         )}
 
         <Campo
           rotulo="Seu nome"
+          name="nome"
           type="text"
           autoComplete="name"
           maxLength={TAMANHO_MAXIMO_NOME}
           required
+          erro={erros.nome}
           value={nome}
-          onChange={(evento) => setNome(evento.target.value)}
+          onChange={(evento) => {
+            setNome(evento.target.value);
+            setErros((e) => ({ ...e, nome: undefined }));
+          }}
         />
 
         <Campo
           rotulo="Nome do negócio"
+          name="negocio"
           type="text"
           autoComplete="organization"
           maxLength={TAMANHO_MAXIMO_NOME}
@@ -193,37 +235,54 @@ export default function PaginaCadastro() {
 
         {/* A caixa é o ato dela: é o que faz `termosAceitosEm` ser consentimento
             que se prova, e não uma linha de texto. Os links abrem em aba nova
-            para não perder o formulário. */}
-        <div className="flex min-h-11 items-start gap-3 rounded-md border border-line-strong px-3 py-3">
-          <input
-            id={idTermos}
-            type="checkbox"
-            required
-            checked={termos}
-            onChange={(evento) => setTermos(evento.target.checked)}
-            className="mt-0.5 size-5 shrink-0"
-          />
-          <label htmlFor={idTermos} className="text-label text-ink">
-            Li e aceito os{" "}
-            <a
-              href="/termos"
-              target="_blank"
-              rel="noopener"
-              className="font-medium text-brand-ink underline underline-offset-2"
-            >
-              termos de uso
-            </a>{" "}
-            e a{" "}
-            <a
-              href="/privacidade"
-              target="_blank"
-              rel="noopener"
-              className="font-medium text-brand-ink underline underline-offset-2"
-            >
-              política de privacidade
-            </a>
-            .
+            para não perder o formulário. A caixa inteira é o alvo do toque. */}
+        <div className="flex flex-col gap-1.5">
+          <label
+            className={cn(
+              "flex min-h-11 cursor-pointer items-start gap-3 rounded-md border px-3 py-3",
+              erros.termos ? "border-negative" : "border-line-strong",
+            )}
+          >
+            <input
+              type="checkbox"
+              name="termos"
+              required
+              checked={termos}
+              aria-invalid={erros.termos ? true : undefined}
+              aria-describedby={erros.termos ? idTermos : undefined}
+              onChange={(evento) => {
+                setTermos(evento.target.checked);
+                setErros((e) => ({ ...e, termos: undefined }));
+              }}
+              className="mt-0.5 size-5 shrink-0"
+            />
+            <span className="text-label text-ink">
+              Li e aceito os{" "}
+              <a
+                href="/termos"
+                target="_blank"
+                rel="noopener"
+                className="font-medium text-brand-ink underline underline-offset-2"
+              >
+                termos de uso
+              </a>{" "}
+              e a{" "}
+              <a
+                href="/privacidade"
+                target="_blank"
+                rel="noopener"
+                className="font-medium text-brand-ink underline underline-offset-2"
+              >
+                política de privacidade
+              </a>
+              .
+            </span>
           </label>
+          {erros.termos && (
+            <p id={idTermos} role="alert" className="text-label text-negative">
+              {erros.termos}
+            </p>
+          )}
         </div>
 
         {erro && (
@@ -238,7 +297,6 @@ export default function PaginaCadastro() {
           tamanho="lg"
           larguraTotal
           carregando={enviando}
-          disabled={!pronto}
         >
           {/* Depois do Google é a primeira vez, e não uma nova tentativa. */}
           {terminando && erro ? "Tentar de novo" : "Criar conta"}

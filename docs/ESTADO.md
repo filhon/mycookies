@@ -1,6 +1,10 @@
 # Estado do projeto
 
-Atualizado em 2026-09-30 (**a foto da bancada na `/conheca`**, fora de spec: faixa larga entre o
+Atualizado em 2026-09-30 (**as diretrizes de interface nas páginas públicas**, fora de spec:
+o cadastro valida no envio com erro por campo, o cardápio guarda o que a cliente digitou no
+recarregar do `mudou` e não perde o foco no "Adicionar", o link de pular nas páginas de venda,
+aspas, reticências e regiões `aria-live` montadas, `#d239`; roteiro de teclado e leitor de tela por
+rodar; **a foto da bancada na `/conheca`**, fora de spec: faixa larga entre o
 topo e a calculadora, decorativa, AVIF/WebP pelo `/_next/image` e fora do precache do Serwist,
 `#d238`; Lighthouse da `/conheca` por medir no deploy; **a 060 codificada**, o cabeçalho dá passagem: nas seis listas do
 celular a faixa de contexto sai ao descer e volta ao subir, e tocar na aba ativa volta ao topo,
