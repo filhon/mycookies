@@ -18,7 +18,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
-import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { FornadasRecentes } from "@/components/producao/FornadasRecentes";
 import { FraseCabeNoPedido } from "@/components/producao/FraseDaCapacidade";
 import {
@@ -898,19 +897,17 @@ export function FormularioPedido({
         titulo={titulo}
         descricao={pedido && <span className="num">{pedido.codigo}</span>}
         voltar={{ href: "/pedidos", rotulo: "Pedidos" }}
+        pendente={pendente}
         acao={
-          <div className="flex items-center gap-3">
-            <SeloSincronizacao pendente={pendente} />
-            {!soLeitura && (
-              <Botao
-                variante="primaria"
-                onClick={() => void salvar()}
-                carregando={salvando}
-              >
-                Salvar
-              </Botao>
-            )}
-          </div>
+          !soLeitura && (
+            <Botao
+              variante="primaria"
+              onClick={() => void salvar()}
+              carregando={salvando}
+            >
+              Salvar
+            </Botao>
+          )
         }
       />
 

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
-import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { Botao } from "@/components/ui/Botao";
 import { CampoBusca } from "@/components/ui/CampoBusca";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
@@ -52,6 +51,7 @@ export function ListaClientes() {
     <>
       <CabecalhoPagina
         titulo="Clientes"
+        pendente={pendente}
         descricao="Quem compra de você, quanto já deixou no caixa e quando foi a última vez. Pedido combinado e ainda não pago não entra na conta."
       >
         <CampoBusca
@@ -68,7 +68,6 @@ export function ListaClientes() {
             ? "Carregando"
             : `${visiveis.length} ${visiveis.length === 1 ? "cliente" : "clientes"}`}
         </p>
-        <SeloSincronizacao pendente={pendente} />
       </div>
 
       <div className="mt-2 overflow-hidden rounded-lg border border-line bg-surface">

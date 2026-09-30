@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Plus, ShoppingCart, TriangleAlert, Users, Wallet } from "lucide-react";
 import { useMemo, useState } from "react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
-import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { Botao } from "@/components/ui/Botao";
 import { BotaoMais } from "@/components/ui/BotaoMais";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
@@ -155,6 +154,7 @@ export function ListaPedidos() {
     <>
       <CabecalhoPagina
         titulo="Pedidos"
+        pendente={pendente}
         descricao="O que você combinou entregar, para quem, e quanto sobra de cada encomenda."
         acao={
           <div className="flex items-center gap-2">
@@ -228,7 +228,6 @@ export function ListaPedidos() {
                 historico.dados.length,
               )}
         </p>
-        <SeloSincronizacao pendente={pendente} />
       </div>
 
       {/* Somado sobre a agenda inteira mais os entregues em aberto, e não sobre

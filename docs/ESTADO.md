@@ -1,6 +1,15 @@
 # Estado do projeto
 
-Atualizado em 2026-09-28 (**a 056 codificada**, o que o mês diz do cardápio: acima da lista de
+Atualizado em 2026-09-30 (**a 057 codificada**, o aparelho em toda tela: o selo de
+sincronização sai das onze telas e mora na linha da descrição do `CabecalhoPagina`, em toda tela,
+com "Tudo enviado" depois de `waitForPendingWrites` quando a rede volta, `#d234`; **specs 057 a
+060 escritas**, 058 a 060 não codificadas: a crítica dos
+componentes de layout virou quatro specs de uma sessão cada, na ordem 057 (o aparelho em toda
+tela: o selo de sincronização sai das onze telas e mora no cabeçalho, com "Tudo enviado" na volta
+da rede), 058 (o pedido que chegou: o número de pedidos do cardápio esperando em "Pedidos"), 059
+(a barra diz de quem é: nome do negócio, Compras e Clientes, o prazo do teste no pé e o link de
+pular) e 060 (o cabeçalho dá passagem: a faixa de contexto recolhe ao descer nas listas do
+celular), com as decisões `#d234` a `#d237` reservadas; **a 056 codificada**, o que o mês diz do cardápio: acima da lista de
 produtos, até três frases de quanto vende × quanto deixa, com o "e se" em centavos e o nome que
 abre o produto, `<details>` fechado no celular, `#d232` e `#d233`; **a 055 codificada**, o que falta pra fazer: a falta de material vira
 uma faixa só acima da lista de produtos, com "Abrir a lista de compras", e a linha de produção
@@ -4229,6 +4238,29 @@ frase 1 só com lucro positivo e a 2 só com preço.
 Portão: lint e typecheck limpos, **795 testes** (6 novos), `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 057 · O aparelho em toda tela
+
+**Codificada em 2026-09-30** (`#d234`). Nenhum campo, consulta, regra ou dependência.
+
+- `src/components/layout/SeloSincronizacao.tsx`: a volta da rede espera `waitForPendingWrites`
+  com "Enviando" e diz "Tudo enviado" (positivo, `Check`) por 4 segundos.
+- `src/components/layout/CabecalhoPagina.tsx`: o selo sempre, na linha da descrição, dentro de
+  um `<span role="status">`; a prop `pendente`.
+- As onze telas (os dois editores, as duas contagens, `/insumos`, `/fichas`, `/clientes`,
+  `/pedidos`, `/financeiro`, `/compras`, `/configuracao`) passam `pendente` ao cabeçalho. A linha
+  vazia do Caixa saiu, e o corpo dele subiu de `mt-2` para `mt-4`, o respiro das outras telas.
+- `src/app/(app)/layout.tsx`: o comentário que dizia que o selo mostrava a recusa.
+
+**Fora do que a spec desenhou** (no `#d234`): o `role="status"` vai no `span` do selo, e não na
+linha inteira, para a descrição que muda com o dado não ser relida.
+
+**Não rodou**: o roteiro de aparelho da spec (§ 4), inteiro. O contraste no escuro foi conferido
+nos tokens: o texto `--attention` sobre `--attention-bg` passa folgado, e a pílula quase some sobre
+a faixa, sem problema (o texto e o ícone carregam o sentido).
+
+Portão: lint e typecheck limpos, **795 testes**, `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -4238,6 +4270,9 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 057 está codificada** (seção acima). Publica sozinha; o portão é o roteiro da spec, com o
+modo avião e o TalkBack. A próxima da crítica de layout é a 058 (o pedido que chegou).
 
 **A 056 está codificada** (seção acima), a última da crítica de Produtos. Publica depois da 053
 e da 054, que corrigem e trazem o lucro por produto que ela lê; o portão é o roteiro da spec, com

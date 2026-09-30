@@ -6,7 +6,6 @@ import { orderBy, query, where } from "firebase/firestore";
 import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { EntradaContagem } from "@/components/estoque/EntradaContagem";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
-import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { BotaoMais } from "@/components/ui/BotaoMais";
 import { CampoBusca } from "@/components/ui/CampoBusca";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
@@ -238,6 +237,7 @@ export function ListaFichas() {
     <>
       <CabecalhoPagina
         titulo="Produtos"
+        pendente={pendente}
         descricao="O produto, o custo real dele e o preço que fecha a sua margem."
         acao={
           <div className="flex items-center gap-2">
@@ -302,26 +302,21 @@ export function ListaFichas() {
             ? "Carregando"
             : `${visiveis.length} ${visiveis.length === 1 ? "produto" : "produtos"}${dona ? ` · vendas de ${rotuloMes(competencia)}` : ""}`}
         </p>
-        <div className="flex items-center gap-3">
-          {/* O `select` nativo: no celular o próprio aparelho abre a folha. */}
-          <Seletor
-            rotulo="Ordem"
-            value={ordem}
-            onChange={(evento) =>
-              mudarOrdem(evento.target.value as OrdemFichas)
-            }
-            className="flex-row items-center gap-2"
-          >
-            {ORDENS.filter((opcao) => dona || opcao.valor !== "DEIXOU").map(
-              (opcao) => (
-                <option key={opcao.valor} value={opcao.valor}>
-                  {opcao.rotulo}
-                </option>
-              ),
-            )}
-          </Seletor>
-          <SeloSincronizacao pendente={pendente} />
-        </div>
+        {/* O `select` nativo: no celular o próprio aparelho abre a folha. */}
+        <Seletor
+          rotulo="Ordem"
+          value={ordem}
+          onChange={(evento) => mudarOrdem(evento.target.value as OrdemFichas)}
+          className="flex-row items-center gap-2"
+        >
+          {ORDENS.filter((opcao) => dona || opcao.valor !== "DEIXOU").map(
+            (opcao) => (
+              <option key={opcao.valor} value={opcao.valor}>
+                {opcao.rotulo}
+              </option>
+            ),
+          )}
+        </Seletor>
       </div>
 
       {/* "Abrir a lista", e não "ver o que comprar": `/compras` monta a demanda

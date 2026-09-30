@@ -42,8 +42,8 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
   }, [carregando, usuario, router]);
 
   // O relógio aqui é o do aparelho; o que vale é o da regra (`DECISOES.md#d144`).
-  // Um relógio atrasado engana a tela e não a escrita: a escrita recusada
-  // aparece como `permission-denied` no `SeloSincronizacao`.
+  // Um relógio atrasado engana a tela e não a escrita: a escrita recusada volta
+  // como `permission-denied` e, hoje, não aparece em lugar nenhum (`#d234`).
   const situacao = conta
     ? situacaoDaConta(
         {

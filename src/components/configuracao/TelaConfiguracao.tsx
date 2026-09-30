@@ -16,7 +16,6 @@ import {
   Tag,
 } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
-import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { MeusDados } from "@/components/conta/MeusDados";
 import { QuemTeAjuda } from "@/components/conta/QuemTeAjuda";
 import { ANCORA_DO_CONTATO, SeuCardapio } from "@/components/conta/SeuCardapio";
@@ -480,6 +479,7 @@ function ConfiguracaoDaDona() {
       <CabecalhoPagina
         titulo="Configuração"
         descricao={DESCRICAO}
+        pendente={pendente}
         acao={
           <Botao
             variante="primaria"
@@ -505,7 +505,6 @@ function ConfiguracaoDaDona() {
                 ? "Tudo salvo."
                 : ""}
         </p>
-        <SeloSincronizacao pendente={pendente} />
       </div>
 
       {/* Mesma coluna de todas as telas: quem estreita é o campo dentro do

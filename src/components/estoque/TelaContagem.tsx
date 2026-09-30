@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { orderBy, query, where } from "firebase/firestore";
 import { Plus, ShoppingBasket } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
-import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { Pilulas } from "@/components/ui/Pilulas";
@@ -208,7 +207,7 @@ export function TelaContagem() {
             : "Digite só o que você conferir. Zero também é contagem: é você dizendo que acabou."
         }
         voltar={{ href: "/compras", rotulo: "Compras" }}
-        acao={<SeloSincronizacao pendente={pendente} />}
+        pendente={pendente}
       />
 
       {/* A oferta da compra: os campos já vêm somados, e cada linha diz de onde

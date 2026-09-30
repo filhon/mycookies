@@ -37,7 +37,6 @@ import { CampoImagem } from "@/components/ui/CampoImagem";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
-import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { EntradaContagemPronto } from "@/components/producao/EntradaContagemPronto";
 import { FornadasRecentes } from "@/components/producao/FornadasRecentes";
 import { FraseDoPronto } from "@/components/producao/FraseDaCapacidade";
@@ -724,17 +723,15 @@ export function FormularioFicha({
       <CabecalhoPagina
         titulo={titulo}
         voltar={{ href: "/fichas", rotulo: "Produtos" }}
+        pendente={pendente}
         acao={
-          <div className="flex items-center gap-3">
-            <SeloSincronizacao pendente={pendente} />
-            <Botao
-              variante="primaria"
-              onClick={() => void salvar()}
-              carregando={salvando}
-            >
-              Salvar
-            </Botao>
-          </div>
+          <Botao
+            variante="primaria"
+            onClick={() => void salvar()}
+            carregando={salvando}
+          >
+            Salvar
+          </Botao>
         }
       />
 

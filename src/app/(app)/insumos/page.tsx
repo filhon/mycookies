@@ -13,7 +13,6 @@ import {
 } from "react";
 import { BotaoBiblioteca } from "@/components/biblioteca/BotaoBiblioteca";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
-import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { FichaDoMaterial } from "@/components/insumos/FichaDoMaterial";
 import { FormularioInsumo } from "@/components/insumos/FormularioInsumo";
 import {
@@ -342,6 +341,7 @@ export default function PaginaInsumos() {
     <>
       <CabecalhoPagina
         titulo="Materiais"
+        pendente={pendente}
         descricao="Ingredientes e embalagens. É daqui que sai o custo de todo produto."
         acao={
           // No desktop as duas ações moram no cabeçalho; no celular só o "+",
@@ -456,24 +456,21 @@ export default function PaginaInsumos() {
               : `${visiveis.length} ${visiveis.length === 1 ? "material" : "materiais"}`}
           </p>
         )}
-        <div className="flex items-center gap-3">
-          {/* O `select` nativo: no celular o próprio aparelho abre a folha. */}
-          <Seletor
-            rotulo="Ordem"
-            value={ordem}
-            onChange={(evento) =>
-              mudarOrdem(evento.target.value as OrdemMateriais)
-            }
-            className="flex-row items-center gap-2"
-          >
-            {ORDENS.map((opcao) => (
-              <option key={opcao.valor} value={opcao.valor}>
-                {opcao.rotulo}
-              </option>
-            ))}
-          </Seletor>
-          <SeloSincronizacao pendente={pendente} />
-        </div>
+        {/* O `select` nativo: no celular o próprio aparelho abre a folha. */}
+        <Seletor
+          rotulo="Ordem"
+          value={ordem}
+          onChange={(evento) =>
+            mudarOrdem(evento.target.value as OrdemMateriais)
+          }
+          className="flex-row items-center gap-2"
+        >
+          {ORDENS.map((opcao) => (
+            <option key={opcao.valor} value={opcao.valor}>
+              {opcao.rotulo}
+            </option>
+          ))}
+        </Seletor>
       </div>
 
       {/* No desktop a tabela e a ficha do material selecionado dividem a

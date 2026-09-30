@@ -6885,3 +6885,47 @@ maquininha leva a parte dela do aumento. Produto sem preço (`precoVenda` 0) nã
 
 O Rende não sabe quanto a cliente aceita: a frase diz "com as mesmas vendas" e nunca "suba o
 preço". Reajuste em lote fica para outra spec.
+
+---
+
+## D234 · O selo de sincronização é do cabeçalho
+
+**Status:** vigente · decidida em 2026-09-30, na spec `057-o-aparelho-em-toda-tela.md`; codificada em 2026-09-30
+
+**Contexto.** O `SeloSincronizacao` era chamado em onze telas, em quatro lugares diferentes (nas
+ações do cabeçalho, na linha da contagem, numa linha própria de 32px que existia mesmo vazia no
+Caixa, dentro do período de `/compras`). A Hoje e o `/comecar` não o tinham. O `pendente` vinha do
+`hasPendingWrites` da coleção da tela, então a venda registrada em `/pedidos` sem rede sumia do
+selo ao voltar para a Hoje. E a volta da rede, o momento que prova que o "Salvo no aparelho" era
+verdade, não aparecia.
+
+**Decisão.** O `CabecalhoPagina` desenha o selo sempre, na linha da descrição, depois dela
+(`flex flex-wrap items-center gap-x-2`), e nunca ao lado do "+", que em 360px já disputa espaço
+com o título. No celular, onde a descrição some, o selo vazio não ocupa altura (`not-empty:mt-1`).
+A tela passa o `pendente` que já calcula pela prop nova `pendente?: boolean`; nenhuma tela desenha
+o selo por conta própria. As onze saíram; a linha vazia do Caixa saiu junto, e o corpo dele passou
+de `mt-2` para `mt-4`, o respiro das outras telas. As onze estavam todas sob um `CabecalhoPagina`
+(incluindo `/configuracao`), então nenhuma ficou de fora.
+
+**A volta.** Quando `useConexao` passa de `false` para `true`, o selo diz "Enviando" e chama
+`waitForPendingWrites(db)`, que espera **todas** as escritas do aparelho, e não só as da tela; ao
+resolver, "Tudo enviado" (tom `positivo`, ícone `Check`) por 4 segundos, depois some. Se a
+promessa falhar, o selo se cala. A transição é detectada durante a renderização (o estado guarda o
+`online` anterior), e não num efeito, para nascer no mesmo quadro. `ponytail:` a transição mora no
+componente: trocar de tela no meio da espera monta um selo que já nasce online e não diz "Tudo
+enviado". Aceito; guardar a volta fora dele só se o roteiro mostrar que isso engana.
+
+**Diferente da spec, e por quê.** A spec pedia `role="status"` na linha. Ele vai num `<span>` em
+volta do selo, dentro da linha, sempre montado: a descrição de algumas telas muda com o dado (o
+código do pedido, a data da Hoje), e um `status` na linha inteira a faria ser relida. A queda da
+rede ("Salvo no aparelho") e a volta ("Tudo enviado") são anunciadas do mesmo jeito.
+
+**Contraste.** O selo não lê nenhum token do escopo `sobre-marca` (`#d128`). No escuro, a pílula
+`--attention-bg` (#34280F) quase se funde com a faixa `brand-700` (#2A2C3A), mas o texto
+`--attention` (#E3B267) sobre ela passa folgado, e o ícone carrega o sentido junto; o mesmo vale
+para o positivo e o informativo.
+
+**A recusa continua muda.** O comentário de `(app)/layout.tsx` dizia que a escrita recusada por
+relógio atrasado aparecia como `permission-denied` no selo. O selo nunca leu erro; o comentário
+agora diz que ela não aparece em lugar nenhum. Mostrá-la é outra spec: precisa de um lugar que
+guarde o erro da mutação.

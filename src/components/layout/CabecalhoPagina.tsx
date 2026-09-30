@@ -1,5 +1,6 @@
 import type { Route } from "next";
 import type { ReactNode } from "react";
+import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { LinkVoltar } from "@/components/ui/LinkVoltar";
 import { cn } from "@/lib/utils/cn";
 
@@ -13,8 +14,12 @@ import { cn } from "@/lib/utils/cn";
  *
  * As ações vêm de fora e não sabem que estão sobre a tinta: `sobre-marca` é um
  * escopo de tokens (`globals.css`), e o botão secundário, o terciário, o link
- * de voltar e o ícone invertem sozinhos. O primário âmbar e o selo de
- * sincronização têm contraste próprio e não mudam.
+ * de voltar e o ícone invertem sozinhos. O primário âmbar tem contraste
+ * próprio e não muda.
+ *
+ * O selo de sincronização é do cabeçalho, e não da tela (`DECISOES.md#d234`):
+ * em toda tela, no mesmo lugar, a linha da descrição. Ele também tem contraste
+ * próprio sobre a tinta e não lê nenhum token de `sobre-marca`.
  *
  * Com o teclado aberto (`apertado:`) o voltar some e o respiro encolhe: o botão
  * físico de voltar do Android existe e fecha o teclado antes de sair, e numa
@@ -33,6 +38,7 @@ export function CabecalhoPagina({
   children,
   className,
   descricaoSempreVisivel = false,
+  pendente = false,
 }: {
   titulo: string;
   /** Nó, e não texto: o código do pedido vai em `num`. */
@@ -49,6 +55,11 @@ export function CabecalhoPagina({
    * data do dia, não uma explicação da tela, e vale a linha também lá.
    */
   descricaoSempreVisivel?: boolean;
+  /**
+   * O `hasPendingWrites` que a tela já calcula. A queda da rede e a volta o
+   * selo sabe sozinho; sem a prop, ele fala só delas (`DECISOES.md#d234`).
+   */
+  pendente?: boolean;
 }) {
   return (
     <header className={cn("sticky top-0 z-30", className)}>
@@ -69,16 +80,28 @@ export function CabecalhoPagina({
             <h1 className="truncate font-display text-title font-semibold text-on-brand lg:text-display">
               {titulo}
             </h1>
-            {descricao && (
-              <p
-                className={cn(
-                  "mt-1 max-w-[52ch] text-label text-on-brand-muted lg:text-body",
-                  !descricaoSempreVisivel && "hidden lg:block",
-                )}
-              >
-                {descricao}
-              </p>
-            )}
+            {/* O selo mora na linha da descrição, nunca ao lado do "+": em
+                360px o título já disputa espaço com ele. No celular, onde a
+                descrição some, a linha só ocupa altura quando o selo fala. */}
+            <div className="flex flex-wrap items-center gap-x-2">
+              {descricao && (
+                <p
+                  className={cn(
+                    "mt-1 max-w-[52ch] text-label text-on-brand-muted lg:text-body",
+                    !descricaoSempreVisivel && "hidden lg:block",
+                  )}
+                >
+                  {descricao}
+                </p>
+              )}
+              {/* O `status` só em volta do selo, e não da linha inteira: a
+                  descrição de algumas telas muda com o dado, e a leitora de
+                  tela não precisa ouvi-la de novo. Sempre montado, mesmo
+                  vazio, para a queda da rede ser anunciada. */}
+              <span role="status" className="not-empty:mt-1">
+                <SeloSincronizacao pendente={pendente} />
+              </span>
+            </div>
           </div>
           {acao && <div className="shrink-0">{acao}</div>}
         </div>

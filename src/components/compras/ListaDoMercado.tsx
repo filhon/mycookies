@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { EntradaContagem } from "@/components/estoque/EntradaContagem";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
-import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { AvisoLeituraSemRede } from "@/components/notas/EntradaLeitura";
 import { Botao } from "@/components/ui/Botao";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
@@ -292,6 +291,7 @@ export function ListaDoMercado({
     <>
       <CabecalhoPagina
         titulo="Lista de compras"
+        pendente={pendente}
         descricao="O que os pedidos já fechados e a reserva de fornadas vão exigir do mercado, em pacote e em reais."
         acao={
           // Em coluna no celular: as duas ações lado a lado espremeriam o
@@ -322,7 +322,6 @@ export function ListaDoMercado({
           hoje={hoje}
           periodoFim={periodoFim}
           pedidos={noPeriodo.length}
-          pendente={pendente}
         />
       </CabecalhoPagina>
 
@@ -611,14 +610,12 @@ function Periodo({
   hoje,
   periodoFim,
   pedidos,
-  pendente,
 }: {
   dias: number;
   aoMudar: (dias: number) => void;
   hoje: DataISO;
   periodoFim: DataISO;
   pedidos: number;
-  pendente: boolean;
 }) {
   return (
     <div>
@@ -633,21 +630,18 @@ function Periodo({
         aoMudar={aoMudar}
       />
 
-      <div className="mt-2 flex items-center justify-between gap-3">
-        <p className="num flex items-center gap-2 text-label text-ink-muted">
-          <CalendarRange
-            aria-hidden
-            className="size-4 shrink-0"
-            strokeWidth={1.75}
-          />
-          <span>
-            De {rotuloDia(hoje)} a {rotuloDia(periodoFim)}
-            <span className="mx-1.5 text-ink-subtle">·</span>
-            {pedidos} {pedidos === 1 ? "pedido" : "pedidos"} para produzir
-          </span>
-        </p>
-        <SeloSincronizacao pendente={pendente} />
-      </div>
+      <p className="num mt-2 flex items-center gap-2 text-label text-ink-muted">
+        <CalendarRange
+          aria-hidden
+          className="size-4 shrink-0"
+          strokeWidth={1.75}
+        />
+        <span>
+          De {rotuloDia(hoje)} a {rotuloDia(periodoFim)}
+          <span className="mx-1.5 text-ink-subtle">·</span>
+          {pedidos} {pedidos === 1 ? "pedido" : "pedidos"} para produzir
+        </span>
+      </p>
     </div>
   );
 }

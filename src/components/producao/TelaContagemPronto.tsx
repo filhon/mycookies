@@ -6,7 +6,6 @@ import { orderBy, query, where } from "firebase/firestore";
 import { Check, CookingPot, Plus } from "lucide-react";
 import { RodapeContagem } from "@/components/estoque/RodapeContagem";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
-import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { BASE_CONTROLE } from "@/components/ui/Campo";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
@@ -163,7 +162,7 @@ export function TelaContagemPronto() {
             : "Digite só o que você conferir. Zero também é contagem: é você dizendo que acabou."
         }`}
         voltar={{ href: "/fichas", rotulo: "Produtos" }}
-        acao={<SeloSincronizacao pendente={pendente} />}
+        pendente={pendente}
       />
 
       {semente && (

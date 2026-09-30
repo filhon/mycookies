@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { CircleAlert, Plus, RotateCcw } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
-import { SeloSincronizacao } from "@/components/layout/SeloSincronizacao";
 import { BlocoMeta } from "@/components/metas/BlocoMeta";
 import { FormularioMeta } from "@/components/metas/FormularioMeta";
 import { Botao } from "@/components/ui/Botao";
@@ -174,6 +173,7 @@ export function TelaFinanceiro() {
     <>
       <CabecalhoPagina
         titulo="Caixa"
+        pendente={pendente}
         descricao="O que entrou, o que saiu, e o que sobrou de verdade."
         acao={
           !estadoVazioNaTela && (
@@ -210,19 +210,15 @@ export function TelaFinanceiro() {
         />
       </CabecalhoPagina>
 
-      <div className="mt-4 flex min-h-8 items-center justify-end">
-        <SeloSincronizacao pendente={pendente} />
-      </div>
-
       {lancamentos.erro ? (
-        <div className="mt-2 overflow-hidden rounded-lg border border-line bg-surface">
+        <div className="mt-4 overflow-hidden rounded-lg border border-line bg-surface">
           <EstadoVazio
             titulo="Não deu para carregar este mês"
             descricao="Verifique a conexão. O que já foi aberto antes continua disponível offline."
           />
         </div>
       ) : carregando ? (
-        <div role="status" aria-label="Carregando" className="mt-2 space-y-4">
+        <div role="status" aria-label="Carregando" className="mt-4 space-y-4">
           <Esqueleto className="h-56 rounded-lg" />
           <Esqueleto className="h-48 rounded-lg" />
           <div className="overflow-hidden rounded-lg border border-line bg-surface">
@@ -230,7 +226,7 @@ export function TelaFinanceiro() {
           </div>
         </div>
       ) : !temMovimento ? (
-        <div className="mt-2 space-y-4">
+        <div className="mt-4 space-y-4">
           {/* A meta vem antes do convite a lançar: começo de mês é exatamente
               quando ela define quanto quer faturar, e o mês ainda está vazio. */}
           <BlocoMeta
@@ -261,7 +257,7 @@ export function TelaFinanceiro() {
           </div>
         </div>
       ) : (
-        <div className="mt-2 space-y-4">
+        <div className="mt-4 space-y-4">
           {divergente && (
             <AgregadoAtrasado
               entradasDaLista={conferencia.entradas}
