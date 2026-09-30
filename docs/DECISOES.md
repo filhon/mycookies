@@ -7245,3 +7245,23 @@ iluminada, ou o contrário.
 
 **Consequência.** A barra de status do Android continua `brand-700` (`#d124`), escura nos dois
 temas. As páginas públicas também seguem a escolha, porque o script está no layout raiz.
+
+---
+
+## D245 · A velocidade medida pela Vercel, sem pacote, no app inteiro
+
+**Status:** vigente · decidida em 2026-09-30, fora de spec
+
+**Contexto.** O Speed Insights foi ligado no painel da Vercel. Sem o script na página, ele não
+recebe nada.
+
+**Decisão.** Sem `@vercel/speed-insights`, pelo mesmo motivo da `#d180`: dependência de produção
+para o que duas tags fazem. `src/components/site/Desempenho.tsx` renderiza a fila `window.si` e
+`/_vercel/speed-insights/script.js` por `next/script` `afterInteractive`, só com
+`VERCEL_ENV === "production"`, no layout raiz. Ao contrário da visita, a velocidade vale no app
+inteiro: é no celular da confeiteira, na cozinha, que a lentidão pesa. O Speed Insights não
+identifica ninguém, só mede.
+
+**Consequência.** Sem o pacote não há "route support": `/c/[contaId]` e as telas com id na URL
+aparecem por caminho, um por conta, e não agrupadas. Se isso atrapalhar a leitura, a saída é
+`window.si("beforeSend", …)` reescrevendo `url`, ou o pacote, com aprovação.

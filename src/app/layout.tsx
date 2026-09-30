@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Figtree } from "next/font/google";
+import { Desempenho } from "@/components/site/Desempenho";
 import { SCRIPT_TEMA } from "@/lib/tema";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { DESCRICAO } from "./descricao";
@@ -77,6 +78,7 @@ export default function RootLayout({
       </head>
       <body>
         <AuthProvider>{children}</AuthProvider>
+        <Desempenho />
       </body>
     </html>
   );
