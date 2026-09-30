@@ -95,13 +95,13 @@ Produtos continua navegando para `/fichas`, como hoje.
 
 ## Critérios de aceite
 
-- [ ] Faixa de contexto recolhe ao descer e volta ao subir, só no celular, só nas seis listas.
-- [ ] Nunca recolhe com foco no cabeçalho.
-- [ ] Sem ler layout no evento de rolagem.
-- [ ] Movimento reduzido respeitado.
-- [ ] Toque na aba ativa volta ao topo.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d237` escrito; `ESTADO.md` e a linha "Cabeçalho de contexto" do `DESIGN.md` atualizados.
+- [x] Faixa de contexto recolhe ao descer e volta ao subir, só no celular, só nas seis listas.
+- [~] Nunca recolhe com foco no cabeçalho.
+- [x] Sem ler layout no evento de rolagem.
+- [x] Movimento reduzido respeitado.
+- [x] Toque na aba ativa volta ao topo.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d237` escrito; `ESTADO.md` e a linha "Cabeçalho de contexto" do `DESIGN.md` atualizados.
 
 ---
 

@@ -45,6 +45,20 @@ export function NavegacaoInferior() {
                 aria-label={rotulo}
                 title={rotulo}
                 aria-current={ativo ? "page" : undefined}
+                // A aba em que ela já está volta ao topo, o gesto de todo
+                // aplicativo (`DECISOES.md#d237`). Só no caminho exato:
+                // em `/fichas/contagem`, Produtos continua indo a `/fichas`.
+                onClick={(evento) => {
+                  if (caminho !== destino.href) return;
+                  evento.preventDefault();
+                  window.scrollTo({
+                    top: 0,
+                    behavior: matchMedia("(prefers-reduced-motion: reduce)")
+                      .matches
+                      ? "auto"
+                      : "smooth",
+                  });
+                }}
                 className={cn(
                   "flex min-h-14 items-center justify-center px-1",
                   "transition-colors duration-150 ease-quart",

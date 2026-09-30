@@ -238,6 +238,7 @@ export function ListaFichas() {
       <CabecalhoPagina
         titulo="Produtos"
         pendente={pendente}
+        recolhe
         descricao="O produto, o custo real dele e o preço que fecha a sua margem."
         acao={
           <div className="flex items-center gap-2">

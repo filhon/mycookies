@@ -155,6 +155,7 @@ export function ListaPedidos() {
       <CabecalhoPagina
         titulo="Pedidos"
         pendente={pendente}
+        recolhe
         descricao="O que você combinou entregar, para quem, e quanto sobra de cada encomenda."
         acao={
           <div className="flex items-center gap-2">

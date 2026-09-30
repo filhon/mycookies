@@ -342,6 +342,7 @@ export default function PaginaInsumos() {
       <CabecalhoPagina
         titulo="Materiais"
         pendente={pendente}
+        recolhe
         descricao="Ingredientes e embalagens. É daqui que sai o custo de todo produto."
         acao={
           // No desktop as duas ações moram no cabeçalho; no celular só o "+",

@@ -1,13 +1,15 @@
 # Estado do projeto
 
-Atualizado em 2026-09-30 (**a 059 codificada**, a barra diz de quem é: o nome do negócio sob o
+Atualizado em 2026-09-30 (**a 060 codificada**, o cabeçalho dá passagem: nas seis listas do
+celular a faixa de contexto sai ao descer e volta ao subir, e tocar na aba ativa volta ao topo,
+`#d237`; **a 059 codificada**, a barra diz de quem é: o nome do negócio sob o
 logotipo, Compras e Clientes como destinos da barra lateral, o prazo do teste no pé para a dona e
 o link de pular para o conteúdo, `#d236`; **a 058 codificada**, o pedido que chegou: o número de pedidos do
 cardápio esperando em "Pedidos", na navegação inferior e na barra lateral, pela mesma
 `consultaAgenda` de `/pedidos` e da Hoje, `#d235`; **a 057 codificada**, o aparelho em toda tela: o selo de
 sincronização sai das onze telas e mora na linha da descrição do `CabecalhoPagina`, em toda tela,
 com "Tudo enviado" depois de `waitForPendingWrites` quando a rede volta, `#d234`; **specs 057 a
-060 escritas**, 059 e 060 não codificadas: a crítica dos
+060 escritas**, as quatro codificadas: a crítica dos
 componentes de layout virou quatro specs de uma sessão cada, na ordem 057 (o aparelho em toda
 tela: o selo de sincronização sai das onze telas e mora no cabeçalho, com "Tudo enviado" na volta
 da rede), 058 (o pedido que chegou: o número de pedidos do cardápio esperando em "Pedidos"), 059
@@ -4310,6 +4312,31 @@ sete destinos e pé com o prazo somam ~670px, sem rolar.
 Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 060 · O cabeçalho dá passagem
+
+**Codificada em 2026-09-30** (`#d237`). Nenhum campo, consulta, regra ou dependência.
+
+- `src/components/layout/CabecalhoPagina.tsx`: `"use client"` e `recolhe`. Abaixo de `lg`, a
+  faixa de contexto sai ao descer (> 8px, além da altura dela) e volta ao subir ou perto do topo;
+  a tinta sobra só na área segura, com o conteúdo apagado. Altura por `ResizeObserver` em
+  `--altura-faixa`; rolagem `passive` por `requestAnimationFrame`. Congela com o foco num campo de digitar dentro (não na pílula), não
+  recolhe sem rede, volta com o foco na própria faixa; `motion-safe:` no deslize.
+- As seis listas passam `recolhe`: `/insumos`, `ListaFichas`, `ListaPedidos`, `ListaClientes`,
+  `TelaFinanceiro`, `ListaDoMercado`.
+- `src/components/layout/NavegacaoInferior.tsx`: tocar na aba do caminho exato rola ao topo
+  (`onClick` com `preventDefault`).
+- `DESIGN.md`: a linha "Cabeçalho de contexto".
+
+**Fora do que a spec desenhou** (no `#d237`): o foco que entra na faixa recolhida (Tab até o "+")
+a traz de volta; sem rede, a faixa recolhida volta, e não só deixa de recolher. O `Link` do Next
+para a mesma URL não foi testado no navegador: o `preventDefault` vale nos dois casos.
+
+**Não rodou**: o roteiro de aparelho da spec (§ 4), inteiro. O passo 4 (iPhone instalado) é o que
+mais importa: é ele que prova a tira da área segura.
+
+Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -4319,6 +4346,10 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 060 está codificada** (seção acima), e com ela as quatro specs da crítica de layout (057 a
+060). Publica sozinha; o portão é o roteiro da spec, com um iPhone instalado e o movimento
+reduzido ligado.
 
 **A 059 está codificada** (seção acima). Publica depois da 058, que mexe na mesma barra; o portão
 é o roteiro da spec, com uma conta em teste e um login de ajudante. A próxima e última da crítica

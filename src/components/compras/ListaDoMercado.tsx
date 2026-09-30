@@ -292,6 +292,7 @@ export function ListaDoMercado({
       <CabecalhoPagina
         titulo="Lista de compras"
         pendente={pendente}
+        recolhe
         descricao="O que os pedidos já fechados e a reserva de fornadas vão exigir do mercado, em pacote e em reais."
         acao={
           // Em coluna no celular: as duas ações lado a lado espremeriam o

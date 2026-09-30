@@ -52,6 +52,7 @@ export function ListaClientes() {
       <CabecalhoPagina
         titulo="Clientes"
         pendente={pendente}
+        recolhe
         descricao="Quem compra de você, quanto já deixou no caixa e quando foi a última vez. Pedido combinado e ainda não pago não entra na conta."
       >
         <CampoBusca

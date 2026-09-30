@@ -174,6 +174,7 @@ export function TelaFinanceiro() {
       <CabecalhoPagina
         titulo="Caixa"
         pendente={pendente}
+        recolhe
         descricao="O que entrou, o que saiu, e o que sobrou de verdade."
         acao={
           !estadoVazioNaTela && (

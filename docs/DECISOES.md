@@ -6994,3 +6994,49 @@ Hoje, e o teclado passava por toda a barra antes do conteúdo.
 **Consequência.** A barra e a navegação inferior deixam de ter a mesma lista: quem mexer em
 destino confere as duas. O nome do negócio passa a ser lido no shell inteiro; um nome longo trunca
 e mostra o resto no `title`.
+
+## D237 · O cabeçalho dá passagem nas listas do celular
+
+**Status:** vigente · decidida em 2026-09-30, na spec `060-o-cabecalho-da-passagem.md`; codificada em 2026-09-30
+
+**Contexto.** Em 360×640, na lista de materiais, as duas faixas do cabeçalho e a navegação inferior
+somavam ~186px fixos, 29% da altura. Descendo pela lista, o título repete a pílula da navegação
+inferior; o que ela usa enquanto rola é a busca e as pílulas, na faixa de ferramentas. E voltar ao
+topo de uma lista longa era arrastar a tela inteira.
+
+**Decisão.**
+
+- `CabecalhoPagina` ganha `recolhe`, passado só por `/insumos`, `/fichas`, `/pedidos`, `/clientes`,
+  `/financeiro` e `/compras`. Editores e contagens não: o voltar e o Salvar moram na faixa.
+- Abaixo de `lg`, descendo mais de 8px com a rolagem além da altura da faixa, o `<header>` sobe
+  (`translate`, a propriedade que o `translate-y-*` do Tailwind v4 escreve) pela altura da faixa
+  menos `env(safe-area-inset-top)`. Subindo mais de 8px, ou com a rolagem dentro da altura da
+  faixa, volta. No desktop as classes não valem (`max-lg:`), e nada muda.
+- **A tira da área segura.** O que sobra à vista da faixa são os últimos pixels dela, e não o
+  respiro de cima; por isso os filhos da faixa vão a `opacity-0` junto, e sob o relógio do iPhone
+  fica tinta lisa, nunca título cortado nem lista.
+- **A medida** vem de um `ResizeObserver` na faixa, que escreve `--altura-faixa` no `<header>`; o
+  ouvinte de rolagem é `passive`, passa por `requestAnimationFrame` e só lê `scrollY`.
+- **Não muda:** com o foco num campo de digitar dentro do cabeçalho (a busca aberta) a faixa
+  congela, nem sai nem volta, e o teclado que abre não a mexe. Só campo de digitar, e não qualquer
+  foco: a pílula de filtro é `<button>`, guarda o foco depois do toque, e congelar por ela deixava
+  a faixa recolhida presa até o foco sair, mesmo rolando para cima. Sem rede ela não recolhe, e volta se já estava recolhida: o
+  "Salvo no aparelho" precisa estar à vista (o `useConexao`, a mesma fonte do selo). O foco que
+  entra na própria faixa (Tab até o "+" escondido) a traz de volta.
+- **Movimento reduzido:** sai só o deslize (`motion-safe:` na transição); a faixa some e volta
+  igual.
+- O "+" sai junto com a faixa: subir um pouco o traz de volta, e levá-lo para a faixa de
+  ferramentas quebraria o lugar da ação primária (`#d151`).
+- **Tocar na aba ativa**, na `NavegacaoInferior`, com `href` igual ao caminho exato, rola a janela
+  ao topo (`smooth`, `auto` com movimento reduzido), por `onClick` com `preventDefault`. Não se
+  confiou no `Link` do Next para a mesma URL: o `preventDefault` evita a navegação à toa e deixa o
+  gesto igual em qualquer versão. Em `/fichas/contagem`, Produtos continua navegando.
+
+**Conferido antes do código.** A sangria não quebra: o `overflow-x: clip` do invólucro só corta no
+eixo x, e o deslize é no y. O `Painel` aberto trava `body` em `overflow: hidden` e rola por dentro
+com `overscroll-contain`, então a janela não rola e o recolher não dispara. O `translate` só existe
+com a faixa recolhida: sem ele o `<header>` não vira bloco de contenção dos `fixed` de dentro.
+
+**Consequência.** O `CabecalhoPagina` passa a ser `"use client"` (todas as telas que o usam já
+eram). O grupo é nomeado (`group/cabecalho`) para que um `group-hover:` de linha na faixa de
+ferramentas não case com o `<header>`.
