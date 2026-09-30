@@ -11,6 +11,7 @@ import {
   entregasAPagar,
   entregasEsquecidas,
   escolhasCompletas,
+  esperaDoCardapio,
   ofereceOPrecoDeHoje,
   passouDoDia,
   podeIrPara,
@@ -277,6 +278,21 @@ describe("transicoesPermitidas", () => {
     expect(
       passouDoDia({ dataEntregaISO: "2026-09-25", status: "CANCELADO" }, hoje),
     ).toBe(false);
+  });
+
+  it("espera do cardápio: orçamento que a cliente fez pelo link", () => {
+    expect(esperaDoCardapio({ status: "ORCAMENTO", origem: "CARDAPIO" })).toBe(
+      true,
+    );
+    // O orçamento que ela mesma anotou não chegou de fora.
+    expect(esperaDoCardapio({ status: "ORCAMENTO" })).toBe(false);
+    // Confirmar ou cancelar é a resposta: o número some.
+    expect(esperaDoCardapio({ status: "CONFIRMADO", origem: "CARDAPIO" })).toBe(
+      false,
+    );
+    expect(esperaDoCardapio({ status: "CANCELADO", origem: "CARDAPIO" })).toBe(
+      false,
+    );
   });
 });
 

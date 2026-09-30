@@ -7,8 +7,13 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
+import { useMemo } from "react";
 import { rotaSoDaDona } from "@/lib/domain/ajudante";
-import type { PapelNaConta } from "@/lib/types";
+import { esperaDoCardapio } from "@/lib/domain/pedido";
+import { consultaAgenda } from "@/lib/firebase/mutations/pedidos";
+import { useColecao } from "@/lib/hooks/useColecao";
+import type { PapelNaConta, Pedido } from "@/lib/types";
+import { useAuth } from "@/providers/AuthProvider";
 
 export interface Destino {
   href: Route;
@@ -38,6 +43,31 @@ export function destinosDo(papel: PapelNaConta): Destino[] {
 export function destinoAtivo(caminho: string, href: string): boolean {
   if (href === "/") return caminho === "/";
   return caminho === href || caminho.startsWith(`${href}/`);
+}
+
+/**
+ * Quantos pedidos do cardápio esperam resposta (`DECISOES.md#d235`). A mesma
+ * `consultaAgenda` de `/pedidos` e da Hoje: o SDK junta os ouvintes da mesma
+ * consulta num alvo só, e nenhuma leitura nova sai. Sem conta, zero.
+ */
+export function useEsperaDoCardapio(): number {
+  const { contaId } = useAuth();
+  const consulta = useMemo(
+    () => (contaId ? consultaAgenda(contaId) : null),
+    [contaId],
+  );
+  return useColecao<Pedido>(consulta).dados.filter(esperaDoCardapio).length;
+}
+
+/** O que o destino diz ao leitor de tela e no `title`, com a espera em "Pedidos". */
+export function rotuloDoDestino(destino: Destino, espera: number): string {
+  if (destino.href !== "/pedidos" || espera === 0) return destino.rotulo;
+  return `${destino.rotulo}, ${espera} ${espera === 1 ? "pedido do cardápio esperando" : "pedidos do cardápio esperando"}`;
+}
+
+/** O número da marca: acima de 9, "9+". */
+export function numeroDaEspera(espera: number): string {
+  return espera > 9 ? "9+" : String(espera);
 }
 
 /**

@@ -8,7 +8,12 @@ import { CalendarClock, HandCoins, Inbox } from "lucide-react";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { dataISODe, diaVizinho, rotuloAgenda } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
-import { aReceber, passouDoDia, resumoDosItens } from "@/lib/domain/pedido";
+import {
+  aReceber,
+  esperaDoCardapio,
+  passouDoDia,
+  resumoDosItens,
+} from "@/lib/domain/pedido";
 import {
   consultaAgenda,
   consultaEntreguesEmAberto,
@@ -45,9 +50,7 @@ export function EsperandoVoce() {
 
   // A agenda vem por data de entrega: o pedido do cardápio para hoje e amanhã
   // já chega no topo, sem ordenar de novo.
-  const peloCardapio = agenda.dados.filter(
-    (pedido) => pedido.status === "ORCAMENTO" && pedido.origem === "CARDAPIO",
-  );
+  const peloCardapio = agenda.dados.filter(esperaDoCardapio);
   // O orçamento esquecido não é "isso saiu?": continua só em `/pedidos`. O
   // mais recente primeiro, que é o que ela ainda lembra.
   const passaram = agenda.dados

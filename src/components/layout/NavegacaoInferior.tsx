@@ -3,12 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { usePapel } from "@/providers/AuthProvider";
-import { destinoAtivo, destinosDo, semNavegacaoInferior } from "./navegacao";
+import {
+  destinoAtivo,
+  destinosDo,
+  numeroDaEspera,
+  rotuloDoDestino,
+  semNavegacaoInferior,
+  useEsperaDoCardapio,
+} from "./navegacao";
 import { cn } from "@/lib/utils/cn";
 
 export function NavegacaoInferior() {
   const caminho = usePathname();
   const papel = usePapel();
+  const esperaDoCardapio = useEsperaDoCardapio();
 
   if (semNavegacaoInferior(caminho)) return null;
 
@@ -24,6 +32,8 @@ export function NavegacaoInferior() {
         {destinosDo(papel).map((destino) => {
           const ativo = destinoAtivo(caminho, destino.href);
           const Icone = destino.icone;
+          const espera = destino.href === "/pedidos" ? esperaDoCardapio : 0;
+          const rotulo = rotuloDoDestino(destino, espera);
 
           return (
             <li key={destino.href} className="flex-1">
@@ -32,8 +42,8 @@ export function NavegacaoInferior() {
                   diz "você está aqui". */}
               <Link
                 href={destino.href}
-                aria-label={destino.rotulo}
-                title={destino.rotulo}
+                aria-label={rotulo}
+                title={rotulo}
                 aria-current={ativo ? "page" : undefined}
                 className={cn(
                   "flex min-h-14 items-center justify-center px-1",
@@ -45,7 +55,7 @@ export function NavegacaoInferior() {
               >
                 <span
                   className={cn(
-                    "flex h-8 w-14 items-center justify-center rounded-full transition-colors duration-150 ease-quart",
+                    "relative flex h-8 w-14 items-center justify-center rounded-full transition-colors duration-150 ease-quart",
                     ativo && "bg-brand-100",
                   )}
                 >
@@ -54,6 +64,17 @@ export function NavegacaoInferior() {
                     className="size-6"
                     strokeWidth={ativo ? 2 : 1.75}
                   />
+                  {/* Começa onde o ícone de 24px termina (16 + 24 = 40px) e
+                      não o cobre; o "9+" cabe na coluna mesmo com cinco
+                      destinos em 360px (`#d235`). */}
+                  {espera > 0 && (
+                    <span
+                      aria-hidden
+                      className="absolute -top-1 left-10 flex min-h-4.5 min-w-4.5 items-center justify-center rounded-full bg-brand-700 px-1 text-micro font-semibold leading-none tabular-nums text-on-brand"
+                    >
+                      {numeroDaEspera(espera)}
+                    </span>
+                  )}
                 </span>
               </Link>
             </li>

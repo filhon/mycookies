@@ -6929,3 +6929,36 @@ para o positivo e o informativo.
 relógio atrasado aparecia como `permission-denied` no selo. O selo nunca leu erro; o comentário
 agora diz que ela não aparece em lugar nenhum. Mostrá-la é outra spec: precisa de um lugar que
 guarde o erro da mutação.
+
+---
+
+## D235 · "Pedidos" diz quantos esperam
+
+**Status:** vigente · decidida em 2026-09-30, na spec `058-o-pedido-que-chegou.md`; codificada em 2026-09-30
+
+**Contexto.** O pedido que a cliente faz pelo cardápio (031) só aparecia na Hoje ("Esperando
+você", `#d213`) e em `/pedidos`. Em qualquer outra tela nada mudava, e a navegação só com ícone
+(`#d150`) desenha Pedidos igual com zero ou com cinco esperando.
+
+**Decisão.** Um número em "Pedidos", na navegação inferior e na barra lateral, em toda tela do
+shell, para a dona e para a ajudante. Conta `esperaDoCardapio` (`domain/pedido.ts`): `status
+ORCAMENTO` e `origem CARDAPIO`, de qualquer data, o mesmo predicado da primeira linha de
+"Esperando você", que passou a lê-lo dali. Conta o que espera, e não o que é novo: não há "visto",
+nenhum campo, nenhum estado no aparelho. Some quando ela confirma ou cancela.
+
+**A fonte.** `useEsperaDoCardapio()` em `layout/navegacao.ts` assina `consultaAgenda(contaId)`, a
+mesma função (mesmos `where` e `orderBy`) de `/pedidos` e da Hoje: o SDK junta ouvintes de consultas
+iguais num alvo só, e nenhuma leitura nova sai. As duas navegações ficam montadas juntas (uma some
+por CSS), e são dois ouvintes do mesmo alvo. Sem `contaId`, a consulta é `null` e o número é zero.
+Sem rede, o número é o do cache.
+
+**A marca.** Celular: `micro` 600 `tabular-nums`, 18px de mínimo, `brand-700` com `on-brand`, raio
+cheio, com a borda esquerda em 40px da pílula de 32×56, onde o ícone de 24px termina: não o cobre,
+e o "9+" cabe na coluna de 72px de 360px com cinco destinos. Desktop: na ponta do item, `on-brand`
+com `brand-800`. Nem âmbar (é assinatura) nem vermelho (não é erro). O `aria-label` e o `title` do
+link dizem "Pedidos, 2 pedidos do cardápio esperando" (singular com 1); o número é `aria-hidden`.
+Acima de 9, "9+".
+
+**Contraste no escuro.** No celular o `brand-700` fica escuro nos dois temas, e a pílula do número
+quase some sobre a superfície escura; o número em `on-brand` continua legível, e é ele que carrega
+o sentido. Aceito como a spec desenhou; um anel em volta só se o roteiro mostrar que não se vê.

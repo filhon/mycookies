@@ -90,12 +90,12 @@ A ajudante vê o número: pedido é trabalho dela também.
 
 ## Critérios de aceite
 
-- [ ] Número em Pedidos, na navegação inferior e na barra lateral, com "9+" acima de 9.
-- [ ] `aria-label` e `title` com a contagem.
-- [ ] Predicado único em `domain/pedido.ts`, usado pelos dois.
-- [ ] Nenhuma consulta nova ao Firestore.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d235` escrito; `ESTADO.md` e as linhas "Navegação inferior" e "Barra lateral" do
+- [x] Número em Pedidos, na navegação inferior e na barra lateral, com "9+" acima de 9.
+- [x] `aria-label` e `title` com a contagem.
+- [x] Predicado único em `domain/pedido.ts`, usado pelos dois.
+- [x] Nenhuma consulta nova ao Firestore.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d235` escrito; `ESTADO.md` e as linhas "Navegação inferior" e "Barra lateral" do
       `DESIGN.md` atualizados.
 
 ---

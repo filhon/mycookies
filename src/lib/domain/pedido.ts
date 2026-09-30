@@ -322,6 +322,18 @@ export function passouDoDia(
   return pedido.dataEntregaISO < hoje && !ehConcluido(pedido.status);
 }
 
+/**
+ * A cliente pediu pelo cardápio e ela ainda não respondeu, de qualquer data: a
+ * primeira linha de "Esperando você" e o número em "Pedidos" (`#d235`). Sai
+ * quando ela confirma ou cancela.
+ */
+export function esperaDoCardapio(pedido: {
+  status: StatusPedido;
+  origem?: "CARDAPIO";
+}): boolean {
+  return pedido.status === "ORCAMENTO" && pedido.origem === "CARDAPIO";
+}
+
 export interface AReceber {
   total: Centavos;
   quantidade: number;

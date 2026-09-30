@@ -10,7 +10,13 @@ import {
   useAuth,
   usePapel,
 } from "@/providers/AuthProvider";
-import { destinoAtivo, destinosDo } from "./navegacao";
+import {
+  destinoAtivo,
+  destinosDo,
+  numeroDaEspera,
+  rotuloDoDestino,
+  useEsperaDoCardapio,
+} from "./navegacao";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -22,6 +28,7 @@ export function BarraLateral() {
   const caminho = usePathname();
   const { usuario, sair } = useAuth();
   const papel = usePapel();
+  const esperaDoCardapio = useEsperaDoCardapio();
   const [saindo, setSaindo] = useState(false);
   const [pendente, setPendente] = useState(false);
 
@@ -47,11 +54,16 @@ export function BarraLateral() {
           {destinosDo(papel).map((destino) => {
             const ativo = destinoAtivo(caminho, destino.href);
             const Icone = destino.icone;
+            const espera = destino.href === "/pedidos" ? esperaDoCardapio : 0;
+            const rotulo =
+              espera > 0 ? rotuloDoDestino(destino, espera) : undefined;
 
             return (
               <li key={destino.href}>
                 <Link
                   href={destino.href}
+                  aria-label={rotulo}
+                  title={rotulo}
                   aria-current={ativo ? "page" : undefined}
                   className={cn(
                     "toque flex items-center gap-3 rounded-md px-3 py-2.5 text-body",
@@ -67,6 +79,16 @@ export function BarraLateral() {
                     strokeWidth={1.75}
                   />
                   {destino.rotulo}
+                  {/* `on-brand` com tinta `brand-800`: lê igual sobre o item
+                      inativo e sobre o ativo (`#d235`). */}
+                  {espera > 0 && (
+                    <span
+                      aria-hidden
+                      className="ml-auto flex min-h-4.5 min-w-4.5 items-center justify-center rounded-full bg-on-brand px-1.5 text-micro font-semibold leading-none tabular-nums text-brand-800"
+                    >
+                      {numeroDaEspera(espera)}
+                    </span>
+                  )}
                 </Link>
               </li>
             );

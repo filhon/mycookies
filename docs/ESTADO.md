@@ -1,9 +1,11 @@
 # Estado do projeto
 
-Atualizado em 2026-09-30 (**a 057 codificada**, o aparelho em toda tela: o selo de
+Atualizado em 2026-09-30 (**a 058 codificada**, o pedido que chegou: o número de pedidos do
+cardápio esperando em "Pedidos", na navegação inferior e na barra lateral, pela mesma
+`consultaAgenda` de `/pedidos` e da Hoje, `#d235`; **a 057 codificada**, o aparelho em toda tela: o selo de
 sincronização sai das onze telas e mora na linha da descrição do `CabecalhoPagina`, em toda tela,
 com "Tudo enviado" depois de `waitForPendingWrites` quando a rede volta, `#d234`; **specs 057 a
-060 escritas**, 058 a 060 não codificadas: a crítica dos
+060 escritas**, 059 e 060 não codificadas: a crítica dos
 componentes de layout virou quatro specs de uma sessão cada, na ordem 057 (o aparelho em toda
 tela: o selo de sincronização sai das onze telas e mora no cabeçalho, com "Tudo enviado" na volta
 da rede), 058 (o pedido que chegou: o número de pedidos do cardápio esperando em "Pedidos"), 059
@@ -4261,6 +4263,28 @@ a faixa, sem problema (o texto e o ícone carregam o sentido).
 Portão: lint e typecheck limpos, **795 testes**, `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 058 · O pedido que chegou
+
+**Codificada em 2026-09-30** (`#d235`). Nenhum campo, consulta nova, regra ou dependência.
+
+- `src/lib/domain/pedido.ts`: `esperaDoCardapio`; um teste.
+- `src/components/pedidos/EsperandoVoce.tsx`: a primeira linha lê o predicado.
+- `src/components/layout/navegacao.ts`: `useEsperaDoCardapio` (a `consultaAgenda`, zero sem
+  conta), `rotuloDoDestino` e `numeroDaEspera` ("9+" acima de 9).
+- `src/components/layout/NavegacaoInferior.tsx`: o número no canto superior direito da pílula,
+  começando em 40px, onde o ícone termina; `aria-label` e `title` com a contagem.
+- `src/components/layout/BarraLateral.tsx`: o número na ponta do item, `on-brand` com `brand-800`;
+  `aria-label` e `title` só quando há espera.
+- `DESIGN.md`: as linhas "Navegação inferior" e "Barra lateral".
+
+**Fora do que a spec desenhou** (no `#d235`): nada no desenho; anotado que no escuro a pílula
+`brand-700` quase some sobre a superfície, e o número continua legível.
+
+**Não rodou**: o roteiro de aparelho da spec (§ 4), inteiro.
+
+Portão: lint e typecheck limpos, **796 testes** (1 novo), `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -4270,6 +4294,10 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 058 está codificada** (seção acima). Publica sozinha; o portão é o roteiro da spec, com um
+pedido feito de outro aparelho, o TalkBack e o modo avião. A próxima da crítica de layout é a 059
+(a barra diz de quem é), que mexe na mesma barra.
 
 **A 057 está codificada** (seção acima). Publica sozinha; o portão é o roteiro da spec, com o
 modo avião e o TalkBack. A próxima da crítica de layout é a 058 (o pedido que chegou).
