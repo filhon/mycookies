@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { CalculadoraDaPorta } from "@/components/site/CalculadoraDaPorta";
 import { ContaAberta } from "@/components/site/ContaAberta";
+import { LuzDaJanela } from "@/components/site/LuzDaJanela";
 import { Rodape, Topo } from "@/components/site/Moldura";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -236,12 +237,16 @@ export default async function PaginaConheca() {
     EXEMPLO.parametros,
   );
   const temDepoimento = !!DEPOIMENTO.texto;
+  const temChute =
+    sugerido.ok && EXEMPLO.precoPraticado !== sugerido.precoArredondado;
 
   return (
     <>
       <Topo ancoras={ANCORAS} convite />
 
-      <main id="conteudo">
+      {/* `clip` corta a luz da janela na borda da tela sem virar contêiner de
+          rolagem: a barra `sticky` do celular continua presa ao viewport. */}
+      <main id="conteudo" className="overflow-x-clip">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 pt-8 pb-16 lg:grid-cols-[1fr_28rem] lg:items-center lg:gap-16 lg:px-10 lg:pt-16 lg:pb-24">
           <section aria-labelledby="frase">
             <p className="text-label font-semibold text-ink-muted">
@@ -256,8 +261,26 @@ export default async function PaginaConheca() {
                 {formatarMoeda(EXEMPLO.custo.custoUnitario)}
               </span>
               . Você deveria cobrar{" "}
-              <span className="num">
-                {sugerido.ok && formatarMoeda(sugerido.precoArredondado)}
+              <span className="whitespace-nowrap">
+                {/* O preço que ela cobra hoje, corrigido à caneta (`#d255`).
+                    Fora da leitura: o cartão já diz o preço praticado. */}
+                {temChute && (
+                  <>
+                    <span aria-hidden className="num relative text-ink-muted">
+                      {formatarMoeda(EXEMPLO.precoPraticado)}
+                      <svg
+                        viewBox="0 0 100 10"
+                        preserveAspectRatio="none"
+                        className="chute-riscado absolute top-1/2 left-[-0.08em] h-[0.3em] w-[calc(100%+0.16em)] -translate-y-1/2 overflow-visible fill-none stroke-ink"
+                      >
+                        <path d="M2 7 C 22 5.5, 42 6.8, 62 4.6 S 88 3.2, 98 3.6" />
+                      </svg>
+                    </span>{" "}
+                  </>
+                )}
+                <span className="num">
+                  {sugerido.ok && formatarMoeda(sugerido.precoArredondado)}
+                </span>
               </span>
               .
             </h1>
@@ -284,7 +307,9 @@ export default async function PaginaConheca() {
             </p>
           </section>
 
-          <ContaAberta />
+          <LuzDaJanela>
+            <ContaAberta />
+          </LuzDaJanela>
         </div>
 
         {/* O saquinho, o adesivo e o gás da frase do topo, na bancada

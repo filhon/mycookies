@@ -3,8 +3,9 @@
 /* ============================================================
    Tokens brutos: os nomes de `docs/marca/rende/tokens.css`, para que o
    pacote da marca e o código se comparem com `diff`. Marca fixa em cima,
-   superfícies invertem no escuro. Três tokens são do código e não do pacote
-   (`--on-accent`, `--on-brand-muted`, o valor escuro de `--brand-100`). O
+   superfícies invertem no escuro. Quatro tokens são do código e não do pacote
+   (`--on-accent`, `--on-brand-muted`, o valor escuro de `--brand-100`,
+   `--luz-da-janela`). O
    tema segue o sistema, e `[data-theme]` passa por cima (`#d244`).
    Ver `DECISOES.md#d123`.
    ============================================================ */
@@ -33,6 +34,9 @@
   ); /* #6E4A12  âmbar como tinta, AA sobre canvas */
   /* A tinta do botão âmbar. O pacote cita o #231A08 e nunca o nomeia. */
   --on-accent: oklch(0.2 0.03 75); /* #231A08 */
+  /* A luz da janela no topo da página de venda (`#d255`). Do código, como o
+     `--on-accent`. No escuro é transparente: de noite não entra sol. */
+  --luz-da-janela: color-mix(in oklch, var(--accent-100) 80%, var(--canvas));
 
   /* ---------- superfícies · tema claro ---------- */
   --canvas: oklch(0.972 0.008 85); /* #F7F4EE */
@@ -122,6 +126,7 @@
     --accent-500: oklch(0.78 0.13 78); /* #E3A94F  âmbar sobe no escuro */
     --accent-ink: oklch(0.82 0.12 80); /* #EDB863 */
     --focus: var(--accent-500);
+    --luz-da-janela: transparent;
 
     --elevation-raised:
       0 1px 2px oklch(0 0 0 / 0.3), 0 4px 12px oklch(0 0 0 / 0.25);
@@ -161,6 +166,7 @@
   --accent-500: oklch(0.78 0.13 78); /* #E3A94F  âmbar sobe no escuro */
   --accent-ink: oklch(0.82 0.12 80); /* #EDB863 */
   --focus: var(--accent-500);
+  --luz-da-janela: transparent;
 
   --elevation-raised:
     0 1px 2px oklch(0 0 0 / 0.3), 0 4px 12px oklch(0 0 0 / 0.25);
@@ -470,11 +476,14 @@
 }
 
 /**
- * A conta abrindo, na página de venda (spec 036): os segmentos da faixa
- * crescem da esquerda, um depois do outro, e o ponto do preço chega por último.
- * É o único movimento da página, porque é o que ela diz. Só com
- * `no-preference`: com movimento reduzido nada se mexe, e nada fica escondido
- * esperando um atraso.
+ * O topo da página de venda se move em três coisas, com a regra no § Motion
+ * do `DESIGN.md` (`#d254`): a conta abrindo (spec 036), a luz da janela e o
+ * chute riscado (spec 067, `#d255`). O texto chega pronto. Tudo só com
+ * `no-preference`: com movimento reduzido nada se mexe, e o que fica é o
+ * quadro final, sem nada escondido esperando um atraso.
+ *
+ * A conta abrindo: os segmentos da faixa crescem da esquerda, um depois do
+ * outro, e o ponto do preço chega por último.
  */
 @media (prefers-reduced-motion: no-preference) {
   .conta-que-abre > span {
@@ -512,6 +521,82 @@
   from {
     opacity: 0;
     transform: scale(0.6);
+  }
+}
+
+/**
+ * A luz da janela: a mancha de sol atrás do cartão, com a sombra em cruz do
+ * caixilho de quatro vidros. As bordas suaves e a cruz são quatro gradientes
+ * de máscara em interseção (a máscara só lê o alfa, a cor dela não aparece).
+ * No celular ela começa abaixo do botão e sangra pelos lados; no desktop sobra
+ * para a direita e para baixo, longe da coluna do texto. O estado parado é o
+ * quadro do meio do laço.
+ */
+.luz-da-janela {
+  inset: -1.5rem -2rem -3rem;
+  background-color: var(--luz-da-janela);
+  transform: skewX(-8deg);
+  mask-image:
+    linear-gradient(to right, transparent, #000 18%, #000 82%, transparent),
+    linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent),
+    linear-gradient(to right, #000 47%, transparent 48.5% 50.5%, #000 52%),
+    linear-gradient(to bottom, #000 44%, transparent 45.5% 47.5%, #000 49%);
+  mask-composite: intersect;
+}
+
+@media (min-width: 64rem) {
+  .luz-da-janela {
+    inset: -12% -22% -14% -4%;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .luz-da-janela {
+    /* O laço começa no meio (o atraso negativo), que é o quadro parado. */
+    animation:
+      luz-da-janela-entra 1.2s var(--ease-quart) backwards,
+      luz-da-janela-tarde 15s cubic-bezier(0.37, 0, 0.63, 1) -7.5s infinite
+        alternate;
+  }
+
+  .chute-riscado {
+    animation: chute-riscado 600ms var(--ease-quart) 400ms backwards;
+  }
+}
+
+@keyframes luz-da-janela-entra {
+  from {
+    opacity: 0;
+  }
+}
+
+/* 15s para cada lado: a tarde inteira, ida e volta, em 30s. */
+@keyframes luz-da-janela-tarde {
+  from {
+    transform: translateX(-1.5%) skewX(-8deg) rotate(-0.4deg);
+  }
+  to {
+    transform: translateX(1.5%) skewX(-8deg) rotate(0.4deg);
+  }
+}
+
+/**
+ * O chute riscado: o traço da caneta sobre o preço que ela cobra hoje,
+ * desenhado da esquerda uma vez. Em `--ink` e nunca em âmbar: o ponto é o
+ * único âmbar do topo.
+ */
+.chute-riscado {
+  stroke-width: max(2.5px, 0.07em);
+  stroke-linecap: round;
+}
+/* A espessura em pixels da tela, e não esticada pelo `preserveAspectRatio`. */
+.chute-riscado path {
+  vector-effect: non-scaling-stroke;
+}
+
+@keyframes chute-riscado {
+  from {
+    clip-path: inset(0 100% 0 0);
   }
 }
 

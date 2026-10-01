@@ -7557,3 +7557,57 @@ quem pagou e quanto sobrou: é o uso de uma tabela, e Materiais e Produtos já e
   que `#d226` recusou.
 - A busca, as pílulas, a faixa "Me devem / Vai entrar", "Entregas a pagar" e as clientes
   sugeridas ficam acima, na largura da página; a ficha começa na altura da mesa.
+
+## D254 · Movimento decorativo é permitido, com lugar e ritmo
+
+**Status:** vigente · decidida em 2026-10-01, fora de spec, a pedido de quem conduz o projeto; sem
+código ainda
+
+**Contexto.** O `DESIGN.md` e o pacote da marca diziam "movimento comunica estado; nada
+decorativo", e a spec 036 deixou na página de venda um único movimento, a conta abrindo. O
+resultado foi julgado bonito, mas lavado: quase monocromático, papel cru e nada que se mexa. As
+páginas de venda que servem de referência (a do Stripe) têm algo sempre em movimento, e é isso
+que dá a elas acabamento e personalidade.
+
+**Decisão.** O § Motion do `DESIGN.md` passa a ter dois tipos de movimento. O de **estado** segue
+como era. O de **ambiente**, decorativo, é permitido: livre no site e nas telas de acesso, no
+app só em momento de pausa (estado vazio, meta batida, primeira abertura), nunca perto de um
+número que ela está lendo. É lento, feito do material da cozinha (luz, fotografia, traço, papel),
+não usa o ponto nem a faixa como enfeite (`#d126`), pausa fora da tela e sai inteiro com
+movimento reduzido. Onde este `DESIGN.md` e o do pacote divergem, vale este (`#d125`).
+
+**O que não muda.** A frase "o texto do topo não entra em cascata" da 036 continua valendo para o
+`h1`: o texto que vende chega pronto, sem esperar animação. A spec que mexer no topo de
+`/conheca` decide o resto do que se move ali.
+
+## D255 · A tarde na bancada: a luz da janela e o chute riscado
+
+**Status:** vigente · decidida em 2026-10-01, spec 067
+
+**Contexto.** Com `#d254`, o topo de `/conheca` pode ter movimento de ambiente, e a spec que
+mexesse nele decidiria o quê. O `DESIGN.md` parte de uma cena (a bancada às duas da tarde,
+cozinha iluminada) que a página nunca mostrou, e o título dizia o preço certo sem mostrar o
+que ele corrige.
+
+**Decisão.** Dois movimentos, e só eles, além da conta abrindo:
+
+- **A luz da janela**, atrás e em volta do cartão da conta, nunca atrás do texto: uma mancha de
+  sol com a sombra em cruz do caixilho, feita de cor e quatro gradientes de `mask` em
+  interseção, sem imagem. Entra em 1,2s e depois desliza 3% e gira menos de 1° em 30s, ida e
+  volta, na curva de seno. O laço começa no meio (atraso negativo), que é também o quadro
+  parado do movimento reduzido. A cor é `--luz-da-janela`, token do código: `--accent-100` a
+  80% sobre o papel no claro, **transparente no escuro**, porque o tema escuro é o da noite.
+  `LuzDaJanela` é o único componente cliente do topo, e só pausa o laço fora da tela.
+- **O chute riscado** no título: o `precoPraticado` do `EXEMPLO` em `--ink-muted`, riscado por
+  um traço de caneta em `--ink` que se desenha uma vez, 400ms depois da carga. O número chega
+  pronto com o resto do título (a 036 continua valendo); só o traço anda. O riscado é
+  `aria-hidden`, porque o cartão já diz o preço praticado. Some se o praticado for igual ao
+  sugerido ou se o sugerido não for `ok`. O traço não é âmbar: o ponto é o único âmbar do topo.
+
+**Consequência.** O `overflow-x: clip` foi para o `<main>` da página, e não para a grade do topo:
+cortada na grade, a luz batia numa borda reta dentro da tela no desktop largo. `clip` não cria
+contêiner de rolagem, e a barra `sticky` do celular segue presa ao viewport, como no `AppShell`
+(`#d128`).
+
+**Fora.** A luz pela hora do visitante, a foto da bancada no topo, movimento de ambiente no app
+e na página de `/como-calcular-o-preco-do-cookie` (a `ContaAberta` dela continua `parada`).

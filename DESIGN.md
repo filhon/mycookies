@@ -2,8 +2,8 @@
 
 Sistema visual do Rende. A regra de uso mora aqui; os valores vivem em `src/app/globals.css`,
 com os mesmos nomes de `docs/marca/rende/tokens.css`. Onde este arquivo e o pacote da marca
-divergem (escala, raio, dois componentes), **este é o que vale**: o motivo está na spec 033 e
-em `DECISOES.md#d125`.
+divergem (escala, raio, dois componentes, movimento), **este é o que vale**: o motivo está na
+spec 033 e em `DECISOES.md#d125` (o do movimento, em `#d254`).
 
 ## Visual Theme
 
@@ -271,13 +271,39 @@ de deslocamento.
 
 ## Motion
 
+Dois tipos de movimento, com regras diferentes. O de estado diz o que mudou; o de ambiente dá
+vida à página que a cor contida deixa quieta (`#d254`).
+
+### Estado
+
 - Transições de estado entre 150ms e 220ms. Entrada de painel e folha inferior em 260ms.
-- Curva única: `cubic-bezier(0.25, 1, 0.5, 1)` (`ease-quart`). Sem elástico, sem quique.
-- Movimento comunica estado: abertura de painel, confirmação de salvamento, progresso de meta.
-  Nada decorativo, nenhuma coreografia de carregamento de página. O PWA não tem tela de
-  abertura própria; o que existe é o `background_color` creme e o ícone.
+- Curva `cubic-bezier(0.25, 1, 0.5, 1)` (`ease-quart`). Sem elástico, sem quique.
+- Comunica estado: abertura de painel, confirmação de salvamento, progresso de meta. O app não
+  tem coreografia de carregamento de tela: ela está no meio de uma tarefa. O PWA não tem tela
+  de abertura própria; o que existe é o `background_color` creme e o ícone.
 - `prefers-reduced-motion: reduce` elimina translação e escala, preservando mudança de
   opacidade e de cor.
+
+### Ambiente
+
+Decorativo é permitido, com estas regras:
+
+- **Onde.** Livre nas páginas do site (`/conheca`, `/como-calcular-o-preco-do-cookie`) e nas telas
+  de acesso, incluindo uma entrada orquestrada no carregamento. No app, só em momento de pausa:
+  estado vazio, meta batida, primeira abertura. Nunca em lista, formulário, editor ou perto de
+  um número que ela está lendo: na bancada, o movimento disputa a atenção com o dado.
+- **Ritmo.** Lento e contínuo, nunca nervoso: ciclos de 4s a 30s, nada pisca, nada chama. Laço
+  em `cubic-bezier(0.37, 0, 0.63, 1)` (seno, ida e volta); entrada em `ease-quart`, a sequência
+  inteira em até 1,2s. Sem elástico, sem quique.
+- **Material.** O da cozinha e do papel: a luz da janela, a fotografia, o traço, a textura do
+  papel cru. O ponto âmbar e a faixa de composição continuam sendo dado e nunca enfeite
+  (`#d126`). Nada de confete, partícula, gradiente de SaaS ou do "fofo" que o `PRODUCT.md`
+  recusa (cupcake, rosa, emoji).
+- **Custo.** `transform` e `opacity`; `filter`, `mask` e `clip-path` só em área pequena. Pausa
+  fora da tela e com a aba oculta. O texto do topo chega pronto: nada atrasa o LCP. Biblioteca
+  de animação é dependência de produção e pede aprovação.
+- **Movimento reduzido.** O ambiente sai inteiro e fica o quadro final, parado. Nada fica
+  escondido esperando uma animação.
 
 ## Iconography
 
@@ -307,8 +333,9 @@ Duas camadas em `src/app/globals.css`:
 
 1. **`:root`, `@media (prefers-color-scheme: dark)` e `[data-theme]`** declaram os tokens com os **nomes do
    pacote** (`--brand-700`, `--canvas`, `--accent-ink`, `--positive-bg`…), para que
-   `docs/marca/rende/tokens.css` e o código se comparem com `diff`. Três tokens são do código e
-   não do pacote: `--on-accent`, `--on-brand-muted` e o valor escuro de `--brand-100`. O
+   `docs/marca/rende/tokens.css` e o código se comparem com `diff`. Quatro tokens são do código e
+   não do pacote: `--on-accent`, `--on-brand-muted`, o valor escuro de `--brand-100` e
+   `--luz-da-janela` (a luz do topo de `/conheca`, transparente no escuro, `#d255`). O
    escuro segue o padrão do pacote: o sistema decide, e `data-theme` no `<html>` passa por cima
    (`#d244`); os dois blocos escuros repetem os valores.
 2. **`@theme inline`** dá o **nome de uso** ao Tailwind: `brand-700`, `brand-ink`

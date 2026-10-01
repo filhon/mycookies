@@ -4358,6 +4358,30 @@ mais importa: é ele que prova a tira da área segura.
 Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 067 · A tarde na bancada
+
+**Codificada em 2026-10-01** (`#d255`, sobre `#d254`). Nenhum campo, consulta, regra ou
+dependência.
+
+- `src/components/site/LuzDaJanela.tsx`: novo, cliente. Envolve a `ContaAberta` com a luz atrás
+  (`-z-10` num `isolate`) e pausa o laço fora da tela com um `IntersectionObserver` próprio.
+- `src/app/conheca/page.tsx`: o `precoPraticado` riscado no `h1`, `aria-hidden`, junto com o
+  sugerido num `whitespace-nowrap`; o traço é um SVG fixo com `preserveAspectRatio="none"`.
+  O `<main>` ganhou `overflow-x-clip` (no `#d255`).
+- `src/app/globals.css`: o token `--luz-da-janela` (claro e os dois escuros), `.luz-da-janela`
+  com a máscara do caixilho, `.chute-riscado`, as três animações só em `no-preference`; o
+  comentário da `.conta-que-abre` diz agora o que se move no topo e onde está a regra.
+- `DESIGN.md` § Tokens no código: o quarto token do código.
+
+**Não rodou**: o roteiro de navegador da spec (§ 4), inteiro: não há navegador automatizado no
+projeto. O 2 (o título em quatro linhas a 390px, sem rolagem horizontal), o 1 (a luz não encosta
+no parágrafo a 1024px, onde a coluna do texto é mais estreita) e o 7 (LCP) são os que mais
+importam. A intensidade da luz (80% de `--accent-100`) e o tamanho do caixilho são palpite de
+mesa: ajuste no navegador, em `globals.css`.
+
+Portão: lint e typecheck limpos, **810 testes**, `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## A spec 066 · A mesa dos pedidos
 
 **Codificada em 2026-10-01** (`#d253`). Nenhum campo, consulta, regra ou dependência.
@@ -4498,7 +4522,9 @@ deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do 
 
 ## Próxima ação
 
-**A 066 está codificada** (seção acima), e com ela a crítica de Pedidos inteira. Só toca o desktop e publica junto com a 065 ou depois dela; o portão é o roteiro de navegador da spec, mais 1280px e 1440px com a ficha aberta. Nenhuma spec escrita espera depois dela.
+**A 067 está codificada** (seção acima): a luz da janela e o chute riscado no topo de `/conheca`, sobre `#d254`. Só toca a página de venda; o portão é o roteiro de navegador da spec, com o tema escuro pelas duas vias e o movimento reduzido. Nenhuma spec escrita espera depois dela.
+
+**A 066 está codificada** (seção acima), e com ela a crítica de Pedidos inteira. Só toca o desktop e publica junto com a 065 ou depois dela; o portão é o roteiro de navegador da spec, mais 1280px e 1440px com a ficha aberta.
 
 **A 065 está codificada** (seção acima). **Publique o índice antes do app** (`DEPLOY.md` § 13); o portão é o roteiro da spec, com o modo avião e uma cliente avulsa antiga. A próxima é a 066 (a mesa dos pedidos no desktop), a última da crítica de Pedidos.
 
