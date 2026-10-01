@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-10-01 (**a 065 codificada**, achar um pedido: a busca na faixa de ferramentas de `/pedidos`, em memória pelo nome da cliente, o produto e o código, e "Todos os pedidos de …" para a cliente cadastrada, pelo índice novo `arquivado + clienteId + dataEntregaISO desc`, **a publicar antes do app**, `#d252`; roteiro de aparelho por rodar; **a 064 codificada**, a hora da entrega: `horaEntrega` opcional em `"HH:MM"`, o dia da agenda ordenado pela hora com os sem hora no fim, o relógio na linha de `/pedidos` e da Hoje, "às 14:30" na ficha e no WhatsApp, `#d251`; roteiro de aparelho por rodar; **a 063 codificada**, a ficha do pedido: tocar lê, numa folha com o próximo passo, "Recebi" com "Desfazer", WhatsApp (cobrança no entregue não pago), ligar e mapa, e editar vira o botão do rodapé, `#d249` e `#d250`; roteiro de aparelho por rodar; **a 062 codificada**, quem me deve: quatro vistas no lugar das sete pílulas, com a vista na URL, a faixa em "Me devem" e "Vai entrar", a linha do que saiu só com a exceção e o dia com a sobra, `#d246` a `#d248`; roteiro de aparelho por rodar; **specs 062 a 066 escritas**: a crítica da tela
+Atualizado em 2026-10-01 (**a 066 codificada**, a mesa dos pedidos: no desktop `/pedidos` sai da coluna e vira tabela de sete colunas com o dia como linha de grupo, e a ficha da 063 acopla à direita; com a ficha aberta a tabela espera o `2xl`, e não o `xl` da spec, `#d253`; roteiro de navegador por rodar; **a crítica de Pedidos (062 a 066) está toda codificada**; **a 065 codificada**, achar um pedido: a busca na faixa de ferramentas de `/pedidos`, em memória pelo nome da cliente, o produto e o código, e "Todos os pedidos de …" para a cliente cadastrada, pelo índice novo `arquivado + clienteId + dataEntregaISO desc`, **a publicar antes do app**, `#d252`; roteiro de aparelho por rodar; **a 064 codificada**, a hora da entrega: `horaEntrega` opcional em `"HH:MM"`, o dia da agenda ordenado pela hora com os sem hora no fim, o relógio na linha de `/pedidos` e da Hoje, "às 14:30" na ficha e no WhatsApp, `#d251`; roteiro de aparelho por rodar; **a 063 codificada**, a ficha do pedido: tocar lê, numa folha com o próximo passo, "Recebi" com "Desfazer", WhatsApp (cobrança no entregue não pago), ligar e mapa, e editar vira o botão do rodapé, `#d249` e `#d250`; roteiro de aparelho por rodar; **a 062 codificada**, quem me deve: quatro vistas no lugar das sete pílulas, com a vista na URL, a faixa em "Me devem" e "Vai entrar", a linha do que saiu só com a exceção e o dia com a sobra, `#d246` a `#d248`; roteiro de aparelho por rodar; **specs 062 a 066 escritas**: a crítica da tela
 Pedidos sobre os prints do celular e do desktop virou cinco specs de uma sessão cada, na ordem 062
 (quem me deve: quatro vistas no lugar das sete pílulas, "A receber" dividido em "Me devem" e "Vai
 entrar", a linha do que saiu mostra só a exceção, o dia ganha a sobra; **vem antes de tudo**), 063
@@ -4358,6 +4358,36 @@ mais importa: é ele que prova a tira da área segura.
 Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 066 · A mesa dos pedidos
+
+**Codificada em 2026-10-01** (`#d253`). Nenhum campo, consulta, regra ou dependência.
+
+- `src/app/(app)/pedidos/page.tsx`: saiu de `(coluna)`, como `/insumos` e `/fichas`. A URL não
+  muda e a rota continua estática; `/pedidos/[id]` fica na coluna. O `recolhe` do cabeçalho mede
+  `window.scrollY` e não depende do grupo.
+- `src/components/pedidos/LinhaPedido.tsx`: o segundo arranjo, a linha da mesa (Hora · Cliente ·
+  Itens · Estado · Pagamento · Total · Sobra), com o rótulo de cada célula em `sr-only`;
+  `selecionado` e `comFicha`; `COLUNAS_PEDIDO` e `arranjoDaMesa`, as classes dos dois arranjos
+  num lugar só.
+- `src/components/pedidos/ListaPedidos.tsx`: o cabeçalho das colunas, o dia como linha de grupo
+  com total e sobra nas colunas deles, a mesa num cartão só, e a ficha acoplada com o foco de
+  volta à linha ao fechar.
+- `src/components/pedidos/FichaDoPedido.tsx`: `acoplada`, a mesma ficha numa `<aside>` ao lado
+  da mesa em vez do `Painel`. Fora da lista de arquivos da spec, e é o que evita uma segunda
+  ficha.
+- `DESIGN.md`: a linha "Tabela" lista Pedidos.
+
+**Diferente da spec:** com a ficha aberta a mesa vale a partir do `2xl` (1536px), e não do `xl`.
+Em 1280px sobravam menos de 40px para cliente e itens juntos (a conta está em `#d253`). Entre
+`lg` e `2xl`, com a ficha, a linha volta à do celular, que era o roteiro 3. Na mesa, "Pelo
+cardápio" e "Entrega" não têm coluna: ficam na ficha.
+
+**Não rodou**: o roteiro de navegador da spec (§ 4), inteiro. O passo 3 continua valendo em
+1100px; vale olhar também 1280px e 1440px com a ficha aberta.
+
+Portão: lint e typecheck limpos, **810 testes**, `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## A spec 065 · Achar um pedido
 
 **Codificada em 2026-10-01** (`#d252`). Um índice composto novo; nenhum campo, regra ou
@@ -4467,6 +4497,8 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 066 está codificada** (seção acima), e com ela a crítica de Pedidos inteira. Só toca o desktop e publica junto com a 065 ou depois dela; o portão é o roteiro de navegador da spec, mais 1280px e 1440px com a ficha aberta. Nenhuma spec escrita espera depois dela.
 
 **A 065 está codificada** (seção acima). **Publique o índice antes do app** (`DEPLOY.md` § 13); o portão é o roteiro da spec, com o modo avião e uma cliente avulsa antiga. A próxima é a 066 (a mesa dos pedidos no desktop), a última da crítica de Pedidos.
 

@@ -9,7 +9,7 @@ import {
   Plus,
   TriangleAlert,
 } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { Botao } from "@/components/ui/Botao";
 import { CampoBusca } from "@/components/ui/CampoBusca";
@@ -23,7 +23,8 @@ import { AtalhoParaCompras } from "@/components/compras/AtalhoParaCompras";
 import { AtalhoParaClientes } from "@/components/clientes/AtalhoParaClientes";
 import { EntregasAPagar } from "./EntregasAPagar";
 import { FichaDoPedido } from "./FichaDoPedido";
-import { LinhaPedido } from "./LinhaPedido";
+import { DESKTOP } from "@/components/fichas/LinhaFicha";
+import { arranjoDaMesa, COLUNAS_PEDIDO, LinhaPedido } from "./LinhaPedido";
 import { ID_PEDIDO_NOVO } from "./EditorPedido";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { dataISODe, rotuloAgenda } from "@/lib/domain/datas";
@@ -97,6 +98,11 @@ export function ListaPedidos() {
   // depois de fechar, para a folha descer com o conteúdo dentro.
   const [lendo, setLendo] = useState<Pedido | null>(null);
   const [fichaAberta, setFichaAberta] = useState(false);
+  // No desktop a ficha acopla ao lado da mesa (`#d253`). Guardado, e não
+  // derivado da lista como em Materiais: o pedido pago em "Me devem" sai da
+  // consulta, e a ficha precisa continuar nele para o "Desfazer".
+  const [selecionado, setSelecionado] = useState<Pedido | null>(null);
+  const mesa = useRef<HTMLDivElement>(null);
   // A busca atravessa as vistas (`#d252`): com texto no campo, a vista da URL
   // fica parada, e limpar o campo volta a ela.
   const [busca, setBusca] = useState("");
@@ -112,9 +118,23 @@ export function ListaPedidos() {
     setClienteEscolhida(null);
   }
 
+  /** No desktop, a ficha ao lado da mesa; abaixo de `lg`, a folha inferior. */
   function abrirPedido(pedido: Pedido) {
+    if (window.matchMedia(DESKTOP).matches) {
+      setSelecionado(pedido);
+      return;
+    }
     setLendo(pedido);
     setFichaAberta(true);
+  }
+
+  /** Fecha a ficha ao lado e devolve o foco à linha que estava marcada. */
+  function fecharFicha() {
+    const linha = mesa.current?.querySelector<HTMLElement>(
+      'button[aria-current="true"]',
+    );
+    setSelecionado(null);
+    linha?.focus();
   }
 
   // `replace`, e não `push`: trocar de vista não é ir a outro lugar, e o
@@ -253,6 +273,7 @@ export function ListaPedidos() {
   // Um botão primário por tela: enquanto o estado vazio ensina a tela, a ação
   // é dele, e o botão do cabeçalho e o "+" saem.
   const estadoVazioNaTela = !carregando && !erro && nadaGravado;
+  const arranjo = arranjoDaMesa(selecionado !== null);
 
   return (
     <>
@@ -387,109 +408,149 @@ export function ListaPedidos() {
         </ul>
       )}
 
-      {erro ? (
-        <Caixa>
-          <EstadoVazio
-            titulo="Não deu para carregar seus pedidos"
-            descricao="Verifique a conexão. O que já foi aberto antes continua disponível offline."
-          />
-        </Caixa>
-      ) : carregandoLista ? (
-        <Caixa>
-          <EsqueletoLista />
-        </Caixa>
-      ) : pedidosNaTela.length === 0 ? (
-        <Caixa>
-          {clienteEscolhida ? (
-            <EstadoVazio
-              titulo={`Nenhum pedido de ${clienteEscolhida.nome} ainda.`}
-              descricao="O pedido anotado sem escolher a cliente cadastrada se acha pelo nome, na busca."
-            />
-          ) : buscando ? (
-            <EstadoVazio
-              titulo={`Nada com “${busca.trim()}”.`}
-              descricao={
-                historicoAcabou
-                  ? "Procurei em todos os pedidos, pelo nome da cliente, do produto e pelo código."
-                  : "Nos pedidos abertos até agora, não. Os mais antigos ainda podem ter."
-              }
-            />
-          ) : nadaGravado ? (
-            <EstadoVazio
-              titulo="Nenhuma encomenda combinada."
-              descricao="Anote o pedido com o preço de hoje. Ele fica congelado mesmo se o chocolate subir amanhã."
-              acao={
-                <Link
-                  href={`/pedidos/${ID_PEDIDO_NOVO}`}
-                  className={classesBotao({
-                    variante: "primaria",
-                    tamanho: "lg",
-                  })}
-                >
-                  <Plus aria-hidden className="size-5" strokeWidth={2} />
-                  Anotar primeiro pedido
-                </Link>
-              }
-            />
+      {/* No desktop a mesa e a ficha do pedido marcado dividem a largura: sem
+          ficha, a mesa ocupa tudo (`#d253`, `#d225`). */}
+      <div className="lg:flex lg:items-start lg:gap-4">
+        <div ref={mesa} className="min-w-0 flex-1">
+          {erro ? (
+            <Caixa>
+              <EstadoVazio
+                titulo="Não deu para carregar seus pedidos"
+                descricao="Verifique a conexão. O que já foi aberto antes continua disponível offline."
+              />
+            </Caixa>
+          ) : carregandoLista ? (
+            <Caixa>
+              <EsqueletoLista />
+            </Caixa>
+          ) : pedidosNaTela.length === 0 ? (
+            <Caixa>
+              {clienteEscolhida ? (
+                <EstadoVazio
+                  titulo={`Nenhum pedido de ${clienteEscolhida.nome} ainda.`}
+                  descricao="O pedido anotado sem escolher a cliente cadastrada se acha pelo nome, na busca."
+                />
+              ) : buscando ? (
+                <EstadoVazio
+                  titulo={`Nada com “${busca.trim()}”.`}
+                  descricao={
+                    historicoAcabou
+                      ? "Procurei em todos os pedidos, pelo nome da cliente, do produto e pelo código."
+                      : "Nos pedidos abertos até agora, não. Os mais antigos ainda podem ter."
+                  }
+                />
+              ) : nadaGravado ? (
+                <EstadoVazio
+                  titulo="Nenhuma encomenda combinada."
+                  descricao="Anote o pedido com o preço de hoje. Ele fica congelado mesmo se o chocolate subir amanhã."
+                  acao={
+                    <Link
+                      href={`/pedidos/${ID_PEDIDO_NOVO}`}
+                      className={classesBotao({
+                        variante: "primaria",
+                        tamanho: "lg",
+                      })}
+                    >
+                      <Plus aria-hidden className="size-5" strokeWidth={2} />
+                      Anotar primeiro pedido
+                    </Link>
+                  }
+                />
+              ) : (
+                <VazioDaVista vista={vista} aoEscolher={escolherVista} />
+              )}
+            </Caixa>
           ) : (
-            <VazioDaVista vista={vista} aoEscolher={escolherVista} />
-          )}
-        </Caixa>
-      ) : (
-        <div className="mt-2 space-y-6">
-          {grupos.map((grupo) => (
-            <GrupoDoDia
-              key={grupo.dataISO}
-              dataISO={grupo.dataISO}
-              pedidos={grupo.pedidos}
-              hoje={hoje}
-              aoAbrir={abrirPedido}
-            />
-          ))}
+            <>
+              <div className={cn("mt-2 space-y-6", arranjo.mesa)}>
+                {/* O cabeçalho das colunas é para quem vê: cada célula da linha
+                    carrega o rótulo em `sr-only`. */}
+                <div
+                  aria-hidden
+                  className={cn(
+                    "hidden gap-x-3 px-4 py-2 text-micro font-semibold uppercase tracking-wide text-ink-muted",
+                    arranjo.grade,
+                    COLUNAS_PEDIDO,
+                  )}
+                >
+                  <span>Hora</span>
+                  <span>Cliente</span>
+                  <span>Itens</span>
+                  <span>Estado</span>
+                  <span>Pagamento</span>
+                  <span className="text-right">Total</span>
+                  <span className="text-right">Sobra</span>
+                </div>
+                {grupos.map((grupo) => (
+                  <GrupoDoDia
+                    key={grupo.dataISO}
+                    dataISO={grupo.dataISO}
+                    pedidos={grupo.pedidos}
+                    hoje={hoje}
+                    aoAbrir={abrirPedido}
+                    selecionadoId={selecionado?.id}
+                  />
+                ))}
+              </div>
 
-          {/* A agenda acaba aqui: o histórico não disputa a rolagem com ela. */}
-          {vista === "agenda" && !buscando && (
-            <Botao
-              variante="terciaria"
-              larguraTotal
-              onClick={() => escolherVista("ja-sairam")}
-            >
-              Ver o que já saiu
-            </Botao>
-          )}
+              <div className="mt-6 space-y-6 empty:hidden">
+                {/* A agenda acaba aqui: o histórico não disputa a rolagem com ela. */}
+                {vista === "agenda" && !buscando && (
+                  <Botao
+                    variante="terciaria"
+                    larguraTotal
+                    onClick={() => escolherVista("ja-sairam")}
+                  >
+                    Ver o que já saiu
+                  </Botao>
+                )}
 
-          {/* Um botão, e não rolagem infinita: é acessível e não dispara sem
+                {/* Um botão, e não rolagem infinita: é acessível e não dispara sem
               querer. A lista não pisca ao crescer — `useColecao` guarda a
               página anterior até o snapshot novo chegar do cache, no mesmo
               tique. */}
-          {vista === "ja-sairam" && !buscando && !historicoAcabou && (
-            <Botao
-              tamanho="lg"
-              larguraTotal
-              onClick={() => setLimite(limite + PAGINA_DO_HISTORICO)}
-            >
-              Mostrar mais antigos
-            </Botao>
+                {vista === "ja-sairam" && !buscando && !historicoAcabou && (
+                  <Botao
+                    tamanho="lg"
+                    larguraTotal
+                    onClick={() => setLimite(limite + PAGINA_DO_HISTORICO)}
+                  >
+                    Mostrar mais antigos
+                  </Botao>
+                )}
+              </div>
+            </>
           )}
-        </div>
-      )}
 
-      {/* A cliente avulsa não tem consulta própria: só se acha abrindo mais
+          {/* A cliente avulsa não tem consulta própria: só se acha abrindo mais
           páginas do histórico, e o filtro refaz sozinho (`#d252`). */}
-      {buscando &&
-        !clienteEscolhida &&
-        !carregando &&
-        !erro &&
-        !historicoAcabou && (
-          <Botao
-            tamanho="lg"
-            larguraTotal
-            className="mt-6"
-            onClick={() => setLimite(limite + PAGINA_DO_HISTORICO)}
-          >
-            Procurar nos mais antigos
-          </Botao>
+          {buscando &&
+            !clienteEscolhida &&
+            !carregando &&
+            !erro &&
+            !historicoAcabou && (
+              <Botao
+                tamanho="lg"
+                larguraTotal
+                className="mt-6"
+                onClick={() => setLimite(limite + PAGINA_DO_HISTORICO)}
+              >
+                Procurar nos mais antigos
+              </Botao>
+            )}
+        </div>
+
+        {selecionado && (
+          <FichaDoPedido
+            key={selecionado.id}
+            acoplada
+            aberto
+            aoFechar={fecharFicha}
+            pedido={selecionado}
+            hoje={hoje}
+          />
         )}
+      </div>
 
       {lendo && (
         <FichaDoPedido
@@ -683,55 +744,103 @@ function GrupoDoDia({
   pedidos,
   hoje,
   aoAbrir,
+  selecionadoId,
 }: {
   dataISO: DataISO;
   pedidos: Pedido[];
   hoje: DataISO;
   aoAbrir: (pedido: Pedido) => void;
+  /** O pedido na ficha ao lado; com ele a mesa espera o `2xl` (`#d253`). */
+  selecionadoId?: string;
 }) {
   const { total, sobra } = somaDoDia(pedidos);
   const atrasado = pedidos.some((pedido) => passouDoDia(pedido, hoje));
   const id = `dia-${dataISO}`;
+  const arranjo = arranjoDaMesa(selecionadoId !== undefined);
+
+  const dia = (
+    <>
+      {rotuloAgenda(dataISO, hoje)}
+      {atrasado && (
+        <Selo
+          tom="atencao"
+          icone={<TriangleAlert aria-hidden className="size-3.5" />}
+        >
+          Passou da data
+        </Selo>
+      )}
+    </>
+  );
+  const quantos = `${pedidos.length} ${pedidos.length === 1 ? "pedido" : "pedidos"}`;
+  const quantoSobra = (
+    <span
+      className={cn(
+        "inline-flex items-center justify-end gap-1",
+        sobra < 0 && "text-negative",
+      )}
+    >
+      {sobra < 0 && (
+        <TriangleAlert aria-hidden className="size-3.5" strokeWidth={2} />
+      )}
+      {sobra < 0
+        ? `perde ${formatarMoeda(Math.abs(sobra))}`
+        : `sobram ${formatarMoeda(sobra)}`}
+    </span>
+  );
 
   return (
     <section aria-labelledby={id}>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-1">
+      <div
+        className={cn(
+          "flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-1",
+          arranjo.celular,
+        )}
+      >
         <h2
           id={id}
           className="flex items-center gap-2 text-subheading font-semibold text-ink"
         >
-          {rotuloAgenda(dataISO, hoje)}
-          {atrasado && (
-            <Selo
-              tom="atencao"
-              icone={<TriangleAlert aria-hidden className="size-3.5" />}
-            >
-              Passou da data
-            </Selo>
-          )}
+          {dia}
         </h2>
         <p className="num text-label text-ink-muted">
-          {pedidos.length} {pedidos.length === 1 ? "pedido" : "pedidos"}
+          {quantos}
           <span className="mx-1.5 text-ink-subtle">·</span>
           {formatarMoeda(total)}
           <span className="mx-1.5 text-ink-subtle">·</span>
-          <span
-            className={cn(
-              "inline-flex items-center gap-1",
-              sobra < 0 && "text-negative",
-            )}
-          >
-            {sobra < 0 && (
-              <TriangleAlert aria-hidden className="size-3.5" strokeWidth={2} />
-            )}
-            {sobra < 0
-              ? `perde ${formatarMoeda(Math.abs(sobra))}`
-              : `sobram ${formatarMoeda(sobra)}`}
-          </span>
+          {quantoSobra}
         </p>
       </div>
 
-      <ul className="mt-2 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
+      {/* Na mesa, o dia é a linha do grupo: o total e a sobra caem nas
+          colunas de Total e Sobra (`#d253`). */}
+      <div
+        className={cn(
+          "hidden items-baseline gap-x-3 px-4 pb-2 pt-4",
+          arranjo.grade,
+          COLUNAS_PEDIDO,
+        )}
+      >
+        <div className="col-span-5 flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h2 className="flex items-center gap-2 text-subheading font-semibold text-ink">
+            {dia}
+          </h2>
+          <p className="num text-label text-ink-muted">{quantos}</p>
+        </div>
+        <p className="num text-right text-label font-semibold text-ink">
+          <span className="sr-only">total do dia </span>
+          {formatarMoeda(total)}
+        </p>
+        <p className="num text-right text-label font-semibold text-ink-muted">
+          {quantoSobra}
+        </p>
+      </div>
+
+      <ul
+        className={cn(
+          "mt-2 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface",
+          arranjo.lista,
+        )}
+      >
         {pedidos.map((pedido) => (
           <LinhaPedido
             key={pedido.id}
@@ -740,6 +849,8 @@ function GrupoDoDia({
             // status, e não pela vista: a busca mistura os dois (`#d252`).
             saiu={ehConcluido(pedido.status)}
             aoAbrir={aoAbrir}
+            selecionado={pedido.id === selecionadoId}
+            comFicha={selecionadoId !== undefined}
           />
         ))}
       </ul>

@@ -81,10 +81,11 @@ do mercado, é uma tabela com o estado do pagamento e o da entrega em colunas se
 
 ## Critérios de aceite
 
-- [ ] Tabela a partir de `lg`, com o grupo do dia.
-- [ ] Ficha acoplada, linha selecionada; volta à linha entre `lg` e `xl` com a ficha aberta.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d253` escrito; `ESTADO.md` e a linha "Tabela" do `DESIGN.md` (que lista as telas) atualizados.
+- [x] Tabela a partir de `lg`, com o grupo do dia.
+- [x] Ficha acoplada, linha selecionada; volta à linha entre `lg` e `2xl` com a ficha aberta (o `xl`
+      não cabia, `#d253`).
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d253` escrito; `ESTADO.md` e a linha "Tabela" do `DESIGN.md` (que lista as telas) atualizados.
 
 ---
 

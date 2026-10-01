@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import {
   BanknoteArrowUp,
   Check,
@@ -14,6 +21,7 @@ import {
   TriangleAlert,
   Undo2,
   Wallet,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { Botao } from "@/components/ui/Botao";
@@ -74,6 +82,10 @@ import { useContaId, usePapel } from "@/providers/AuthProvider";
  * ela e em que pé está o dinheiro. O rodapé tem o próximo passo e "Editar
  * pedido"; voltar um passo, cancelar e arquivar ficam no editor.
  *
+ * Na mesa do desktop (`acoplada`, `#d253`) a mesma ficha mora numa coluna ao
+ * lado da tabela, o arranjo de Materiais (`#d225`): sem fundo escuro, com a
+ * lista clicável ao lado, e o `Escape` fechando por aqui.
+ *
  * O pedido é lido pelo id, como o editor lê: o da lista é só o primeiro
  * quadro. Um pedido de "Me devem" pago aqui sai daquela consulta e pode não
  * estar entre os trinta do que saiu, e a ficha precisa continuar vendo o
@@ -84,11 +96,14 @@ export function FichaDoPedido({
   aoFechar,
   pedido: daLista,
   hoje,
+  acoplada = false,
 }: {
   aberto: boolean;
   aoFechar: () => void;
   pedido: Pedido;
   hoje: DataISO;
+  /** Na coluna ao lado da tabela, e não no `Painel`. Só no desktop. */
+  acoplada?: boolean;
 }) {
   const contaId = useContaId();
   // Receber é da dona (spec 030, `#d157`): o editor não mostra o bloco de
@@ -282,233 +297,316 @@ export function FichaDoPedido({
     </Botao>
   ) : null;
 
+  const rodape = (
+    <div className="flex gap-2">
+      {primario}
+      <Link
+        href={`/pedidos/${pedido.id}`}
+        className={classesBotao({
+          tamanho: "lg",
+          className: primario ? "shrink-0" : "flex-1",
+        })}
+      >
+        Editar pedido
+      </Link>
+    </div>
+  );
+
+  const conteudo = (
+    <div className="space-y-5">
+      <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+        <SeloStatus status={pedido.status} />
+        {pedido.origem === "CARDAPIO" && (
+          <Marcador
+            icone={
+              <Store aria-hidden className="size-3.5" strokeWidth={1.75} />
+            }
+          >
+            Pelo cardápio
+          </Marcador>
+        )}
+        <span className="num text-micro text-ink-muted">{pedido.codigo}</span>
+      </p>
+
+      <section aria-label="O que ela pediu">
+        <ul className="divide-y divide-line">
+          {pedido.itens.map((item, indice) => (
+            <li
+              key={`${item.fichaTecnicaId}-${indice}`}
+              className="flex items-start justify-between gap-3 py-2.5 first:pt-0"
+            >
+              <div className="min-w-0">
+                <p className="text-body text-ink">
+                  <span className="num font-semibold">
+                    {quantidadeEmTexto(item.quantidade)} ×
+                  </span>{" "}
+                  {item.nomeSnapshot}
+                </p>
+                {/* A composição inteira: é o que ela separa na bancada. */}
+                {item.escolhas?.length ? (
+                  <p className="num mt-0.5 text-label text-ink-muted">
+                    {resumoDasEscolhas(item.escolhas)}
+                  </p>
+                ) : null}
+              </div>
+              <Dinheiro centavos={item.subtotal} className="shrink-0" />
+            </li>
+          ))}
+        </ul>
+
+        {/* O par obrigatório: o total e o que sobra dele. */}
+        <div className="mt-1 flex items-start justify-between gap-3 border-t border-line pt-3">
+          <p className="num text-label text-ink-muted">
+            Total
+            {pedido.desconto > 0 &&
+              ` · com ${formatarMoeda(pedido.desconto)} de desconto`}
+          </p>
+          <div className="text-right">
+            <Dinheiro centavos={pedido.total} tamanho="lg" />
+            <p
+              className={cn(
+                "num mt-0.5 flex items-center justify-end gap-1 text-label",
+                noPrejuizo ? "text-negative" : "text-ink-muted",
+              )}
+            >
+              {noPrejuizo && (
+                <TriangleAlert
+                  aria-hidden
+                  className="size-3.5"
+                  strokeWidth={2}
+                />
+              )}
+              {noPrejuizo
+                ? `perde ${formatarMoeda(Math.abs(pedido.lucroEstimado))}`
+                : `sobram ${formatarMoeda(pedido.lucroEstimado)} pra você`}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <div className="divide-y divide-line border-y border-line">
+        <Fato icone={pedido.entrega.tipo === "ENTREGA" ? Truck : Store}>
+          {pedido.entrega.tipo === "ENTREGA" ? (
+            <>
+              <p className="num text-body text-ink">
+                Entrega
+                {pedido.entrega.taxa > 0 &&
+                  ` · ${formatarMoeda(pedido.entrega.taxa)}`}
+              </p>
+              {endereco && (
+                <p className="text-label text-ink-muted">{endereco}</p>
+              )}
+            </>
+          ) : (
+            <p className="text-body text-ink">Retirada</p>
+          )}
+          {endereco && pedido.entrega.tipo === "ENTREGA" && (
+            <Acoes>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endereco)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={classesBotao({ tamanho: "sm" })}
+              >
+                <MapPin aria-hidden className="size-4" strokeWidth={1.75} />
+                Abrir no mapa
+              </a>
+            </Acoes>
+          )}
+        </Fato>
+
+        {pedido.clienteTelefone?.trim() && (
+          <Fato icone={Phone}>
+            <p className="num text-body text-ink">{pedido.clienteTelefone}</p>
+            {/* Sem número discável, o número fica como texto (`#d249`). */}
+            {numero && (
+              <Acoes>
+                {/* Um `<a>`, e não `window.open` (`#d77`). */}
+                <a
+                  href={linkDoWhatsApp(numero, mensagem)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={classesBotao({ tamanho: "sm" })}
+                >
+                  <MessageCircle
+                    aria-hidden
+                    className="size-4"
+                    strokeWidth={1.75}
+                  />
+                  WhatsApp
+                  <span className="sr-only">
+                    {cobrar ? ", com a cobrança escrita" : ", com o resumo"}
+                  </span>
+                </a>
+                <a
+                  href={`tel:+${numero}`}
+                  className={classesBotao({ tamanho: "sm" })}
+                >
+                  <Phone aria-hidden className="size-4" strokeWidth={1.75} />
+                  Ligar
+                </a>
+              </Acoes>
+            )}
+          </Fato>
+        )}
+
+        {pedido.observacoes?.trim() && (
+          <Fato icone={NotebookPen}>
+            <p className="max-w-[60ch] whitespace-pre-line text-body text-ink">
+              {pedido.observacoes}
+            </p>
+          </Fato>
+        )}
+
+        <Fato icone={Wallet}>
+          <p className="flex flex-wrap items-center gap-1.5 text-body text-ink">
+            {pedido.pago && (
+              <Check
+                aria-hidden
+                className="size-4 text-positive"
+                strokeWidth={2.5}
+              />
+            )}
+            {[forma?.nome, linhaDoPagamento(pedido, hoje)]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+
+          {escolherForma && (
+            <div className="mt-3 space-y-2">
+              <p className="text-label text-ink-muted">Como ela pagou?</p>
+              <Pilulas
+                rotulo="Forma de pagamento"
+                opcoes={formasAtivas.map((item) => ({
+                  valor: item.id,
+                  rotulo: item.nome,
+                }))}
+                valor={formaEscolhida ?? ""}
+                aoMudar={setFormaEscolhida}
+              />
+              {taxaDaEscolhida > 0 && (
+                <p className="num text-label text-ink-muted">
+                  A maquininha fica com {formatarMoeda(taxaDaEscolhida)}.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Errar o toque tem volta no mesmo lugar, enquanto a ficha fica
+                aberta. Depois, desfazer é do editor, com a confirmação. */}
+          {dona && pedido.pago && pagoAqui === pedido.id && (
+            <Acoes>
+              <Botao
+                variante="terciaria"
+                tamanho="sm"
+                disabled={ocupado}
+                onClick={() => void desfazer()}
+                iconeInicial={
+                  <Undo2 aria-hidden className="size-4" strokeWidth={1.75} />
+                }
+              >
+                Desfazer
+              </Botao>
+            </Acoes>
+          )}
+        </Fato>
+      </div>
+
+      {falha && (
+        <p role="alert" className="text-label text-negative">
+          {falha}
+        </p>
+      )}
+    </div>
+  );
+
+  if (acoplada) {
+    return (
+      <FichaAcoplada
+        id={pedido.id}
+        titulo={pedido.clienteNome}
+        descricao={linhaDoDia(pedido, hoje)}
+        aoFechar={fechar}
+        rodape={rodape}
+      >
+        {conteudo}
+      </FichaAcoplada>
+    );
+  }
+
   return (
     <Painel
       aberto={aberto}
       aoFechar={fechar}
       titulo={pedido.clienteNome}
       descricao={linhaDoDia(pedido, hoje)}
-      rodape={
-        <div className="flex gap-2">
-          {primario}
-          <Link
-            href={`/pedidos/${pedido.id}`}
-            className={classesBotao({
-              tamanho: "lg",
-              className: primario ? "shrink-0" : "flex-1",
-            })}
-          >
-            Editar pedido
-          </Link>
-        </div>
-      }
+      rodape={rodape}
     >
-      <div className="space-y-5">
-        <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-          <SeloStatus status={pedido.status} />
-          {pedido.origem === "CARDAPIO" && (
-            <Marcador
-              icone={
-                <Store aria-hidden className="size-3.5" strokeWidth={1.75} />
-              }
-            >
-              Pelo cardápio
-            </Marcador>
-          )}
-          <span className="num text-micro text-ink-muted">{pedido.codigo}</span>
-        </p>
-
-        <section aria-label="O que ela pediu">
-          <ul className="divide-y divide-line">
-            {pedido.itens.map((item, indice) => (
-              <li
-                key={`${item.fichaTecnicaId}-${indice}`}
-                className="flex items-start justify-between gap-3 py-2.5 first:pt-0"
-              >
-                <div className="min-w-0">
-                  <p className="text-body text-ink">
-                    <span className="num font-semibold">
-                      {quantidadeEmTexto(item.quantidade)} ×
-                    </span>{" "}
-                    {item.nomeSnapshot}
-                  </p>
-                  {/* A composição inteira: é o que ela separa na bancada. */}
-                  {item.escolhas?.length ? (
-                    <p className="num mt-0.5 text-label text-ink-muted">
-                      {resumoDasEscolhas(item.escolhas)}
-                    </p>
-                  ) : null}
-                </div>
-                <Dinheiro centavos={item.subtotal} className="shrink-0" />
-              </li>
-            ))}
-          </ul>
-
-          {/* O par obrigatório: o total e o que sobra dele. */}
-          <div className="mt-1 flex items-start justify-between gap-3 border-t border-line pt-3">
-            <p className="num text-label text-ink-muted">
-              Total
-              {pedido.desconto > 0 &&
-                ` · com ${formatarMoeda(pedido.desconto)} de desconto`}
-            </p>
-            <div className="text-right">
-              <Dinheiro centavos={pedido.total} tamanho="lg" />
-              <p
-                className={cn(
-                  "num mt-0.5 flex items-center justify-end gap-1 text-label",
-                  noPrejuizo ? "text-negative" : "text-ink-muted",
-                )}
-              >
-                {noPrejuizo && (
-                  <TriangleAlert
-                    aria-hidden
-                    className="size-3.5"
-                    strokeWidth={2}
-                  />
-                )}
-                {noPrejuizo
-                  ? `perde ${formatarMoeda(Math.abs(pedido.lucroEstimado))}`
-                  : `sobram ${formatarMoeda(pedido.lucroEstimado)} pra você`}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <div className="divide-y divide-line border-y border-line">
-          <Fato icone={pedido.entrega.tipo === "ENTREGA" ? Truck : Store}>
-            {pedido.entrega.tipo === "ENTREGA" ? (
-              <>
-                <p className="num text-body text-ink">
-                  Entrega
-                  {pedido.entrega.taxa > 0 &&
-                    ` · ${formatarMoeda(pedido.entrega.taxa)}`}
-                </p>
-                {endereco && (
-                  <p className="text-label text-ink-muted">{endereco}</p>
-                )}
-              </>
-            ) : (
-              <p className="text-body text-ink">Retirada</p>
-            )}
-            {endereco && pedido.entrega.tipo === "ENTREGA" && (
-              <Acoes>
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endereco)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={classesBotao({ tamanho: "sm" })}
-                >
-                  <MapPin aria-hidden className="size-4" strokeWidth={1.75} />
-                  Abrir no mapa
-                </a>
-              </Acoes>
-            )}
-          </Fato>
-
-          {pedido.clienteTelefone?.trim() && (
-            <Fato icone={Phone}>
-              <p className="num text-body text-ink">{pedido.clienteTelefone}</p>
-              {/* Sem número discável, o número fica como texto (`#d249`). */}
-              {numero && (
-                <Acoes>
-                  {/* Um `<a>`, e não `window.open` (`#d77`). */}
-                  <a
-                    href={linkDoWhatsApp(numero, mensagem)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={classesBotao({ tamanho: "sm" })}
-                  >
-                    <MessageCircle
-                      aria-hidden
-                      className="size-4"
-                      strokeWidth={1.75}
-                    />
-                    WhatsApp
-                    <span className="sr-only">
-                      {cobrar ? ", com a cobrança escrita" : ", com o resumo"}
-                    </span>
-                  </a>
-                  <a
-                    href={`tel:+${numero}`}
-                    className={classesBotao({ tamanho: "sm" })}
-                  >
-                    <Phone aria-hidden className="size-4" strokeWidth={1.75} />
-                    Ligar
-                  </a>
-                </Acoes>
-              )}
-            </Fato>
-          )}
-
-          {pedido.observacoes?.trim() && (
-            <Fato icone={NotebookPen}>
-              <p className="max-w-[60ch] whitespace-pre-line text-body text-ink">
-                {pedido.observacoes}
-              </p>
-            </Fato>
-          )}
-
-          <Fato icone={Wallet}>
-            <p className="flex flex-wrap items-center gap-1.5 text-body text-ink">
-              {pedido.pago && (
-                <Check
-                  aria-hidden
-                  className="size-4 text-positive"
-                  strokeWidth={2.5}
-                />
-              )}
-              {[forma?.nome, linhaDoPagamento(pedido, hoje)]
-                .filter(Boolean)
-                .join(" · ")}
-            </p>
-
-            {escolherForma && (
-              <div className="mt-3 space-y-2">
-                <p className="text-label text-ink-muted">Como ela pagou?</p>
-                <Pilulas
-                  rotulo="Forma de pagamento"
-                  opcoes={formasAtivas.map((item) => ({
-                    valor: item.id,
-                    rotulo: item.nome,
-                  }))}
-                  valor={formaEscolhida ?? ""}
-                  aoMudar={setFormaEscolhida}
-                />
-                {taxaDaEscolhida > 0 && (
-                  <p className="num text-label text-ink-muted">
-                    A maquininha fica com {formatarMoeda(taxaDaEscolhida)}.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Errar o toque tem volta no mesmo lugar, enquanto a ficha fica
-                aberta. Depois, desfazer é do editor, com a confirmação. */}
-            {dona && pedido.pago && pagoAqui === pedido.id && (
-              <Acoes>
-                <Botao
-                  variante="terciaria"
-                  tamanho="sm"
-                  disabled={ocupado}
-                  onClick={() => void desfazer()}
-                  iconeInicial={
-                    <Undo2 aria-hidden className="size-4" strokeWidth={1.75} />
-                  }
-                >
-                  Desfazer
-                </Botao>
-              </Acoes>
-            )}
-          </Fato>
-        </div>
-
-        {falha && (
-          <p role="alert" className="text-label text-negative">
-            {falha}
-          </p>
-        )}
-      </div>
+      {conteudo}
     </Painel>
+  );
+}
+
+/**
+ * A coluna ao lado da tabela (`#d253`), a de `FichaAcoplada` de Materiais:
+ * foco nela ao abrir e ao trocar de pedido, para o `Escape` ter de onde sair.
+ */
+function FichaAcoplada({
+  id,
+  titulo,
+  descricao,
+  aoFechar,
+  rodape,
+  children,
+}: {
+  id: string;
+  titulo: string;
+  descricao: string;
+  aoFechar: () => void;
+  rodape: ReactNode;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    ref.current?.focus();
+  }, [id]);
+
+  function aoTeclar(evento: KeyboardEvent<HTMLElement>) {
+    if (evento.key !== "Escape") return;
+    evento.stopPropagation();
+    aoFechar();
+  }
+
+  return (
+    <aside
+      ref={ref}
+      tabIndex={-1}
+      aria-label={titulo}
+      onKeyDown={aoTeclar}
+      className="mt-2 hidden w-104 shrink-0 flex-col rounded-lg border border-line bg-surface outline-none lg:flex"
+    >
+      <header className="flex items-start gap-3 border-b border-line px-5 pb-4 pt-5">
+        <div className="min-w-0 flex-1">
+          <h2 className="font-display text-title font-semibold text-ink">
+            {titulo}
+          </h2>
+          <p className="mt-1 text-label text-ink-muted">{descricao}</p>
+        </div>
+        <button
+          type="button"
+          onClick={aoFechar}
+          aria-label="Fechar"
+          className="toque -mr-2 -mt-1 flex items-center justify-center rounded-md text-ink-muted transition-colors duration-150 ease-quart hover:bg-sunken hover:text-ink"
+        >
+          <X aria-hidden className="size-5" strokeWidth={1.75} />
+        </button>
+      </header>
+
+      <div className="px-5 py-5">{children}</div>
+
+      <footer className="border-t border-line px-5 py-4">{rodape}</footer>
+    </aside>
   );
 }
 

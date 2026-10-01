@@ -7511,3 +7511,49 @@ normal: um serviço de busca seria dependência nova e dado da cliente fora do F
   responde do cache sozinha.
 - O campo mora na faixa de ferramentas, acima das pílulas, como em `/insumos`: fica quando o
   cabeçalho recolhe, e o foco nele congela a faixa (`#d237`), sem código novo.
+
+---
+
+## D253 · Pedidos no desktop é mesa, com a ficha do pedido acoplada
+
+**Status:** vigente · decidida em 2026-10-01, na spec `066-a-mesa-dos-pedidos.md`; codificada em 2026-10-01
+
+**Contexto.** No desktop a lista ocupava a coluna de 1024px no meio da tela, com o nome numa borda
+e o valor na outra, e cada pedido em duas ou três linhas. À noite, sentada, ela compara dias,
+quem pagou e quanto sobrou: é o uso de uma tabela, e Materiais e Produtos já eram (`#d225`,
+`#d228`).
+
+**Decisão.**
+
+- `/pedidos/page.tsx` saiu de `(coluna)`, como `/insumos` e `/fichas`; `/pedidos/[id]` ficou. A
+  URL é a mesma, e o `recolhe` do cabeçalho lê `window.scrollY`, sem depender do grupo.
+- **A partir de `lg`**, a `<li>` da `LinhaPedido` ganha o segundo arranjo, no padrão de
+  `LinhaInsumo`: Hora · Cliente · Itens · Estado · Pagamento · Total · Sobra. Itens é o resumo
+  curto da 062, truncado, com o resumo inteiro no `title`. Estado é o selo, **sempre**; Pagamento
+  é "Pago" com `Check`, "Falta receber" com `HandCoins` no entregue não pago, e vazio no resto.
+  Na linha do celular o que saiu mostra só a exceção (`#d248`) porque tudo divide uma faixa;
+  na mesa cada coisa tem coluna, e a exceção salta da coluna. Sobra com sinal "−", cor e ícone no
+  prejuízo. Cabeçalho `aria-hidden`, rótulo em `sr-only` em cada célula.
+- **"Pelo cardápio" e "Entrega" não têm coluna.** A spec não os listava, e um oitavo e um nono
+  campo devolviam a linha às três alturas que a mesa veio tirar. Ficam na ficha.
+- **O dia continua sendo o grupo**: na mesa, uma linha com o dia, o "Passou da data" e a contagem
+  nas cinco primeiras colunas, e o total e a sobra do dia (`somaDoDia`, `#d248`) nas colunas de
+  Total e Sobra. A mesa é um cartão só, com os dias separados por linha; no celular continuam
+  cartões por dia. As classes dos dois arranjos moram em `arranjoDaMesa(comFicha)`, inteiras,
+  para o Tailwind achá-las.
+- **A ficha acopla à direita**, a `FichaDoPedido` da 063 com `acoplada`: a mesma ficha numa
+  `<aside>` de 26rem, e não uma segunda. Foco nela ao abrir e ao trocar de pedido, `Escape` e
+  "×" devolvem o foco à linha, a linha marcada em `surface-sunken` com `aria-current`. O pedido
+  marcado é **guardado**, e não derivado da lista como em Materiais: pago em "Me devem", ele sai
+  daquela consulta, e a ficha precisa continuar nele para o "Desfazer" (`#d250`). Abaixo de `lg`,
+  a folha de sempre.
+- **Com a ficha aberta, a mesa espera o `2xl`, e não o `xl`** que a spec pedia. Em 1280px, tirados
+  a barra lateral (15rem), a margem, os 26rem da ficha e os vãos, sobram uns 440px para sete
+  colunas; com o piso que o selo, "Falta receber", o total e a sobra pedem, cliente e itens
+  dividiam menos de 40px. Em 1536px sobram uns 200px para os dois, o mesmo que a mesa sem ficha
+  tem em 1024px. Entre `lg` e `2xl`, com a ficha, a linha volta à do celular, a mesma regra de
+  Produtos com outro limite.
+- **Sem escolha de ordem.** A ordem é a data e, no dia, a hora (`#d251`); clique no cabeçalho é o
+  que `#d226` recusou.
+- A busca, as pílulas, a faixa "Me devem / Vai entrar", "Entregas a pagar" e as clientes
+  sugeridas ficam acima, na largura da página; a ficha começa na altura da mesa.
