@@ -10,6 +10,7 @@ import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { Marcador } from "@/components/ui/Selo";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { ID_PEDIDO_NOVO } from "./EditorPedido";
+import { MarcadorHora } from "./LinhaPedido";
 import { SeloStatus } from "./SeloStatus";
 import { LinhaDoCardapioHoje } from "@/components/conta/LinhaDoCardapioHoje";
 import {
@@ -18,7 +19,11 @@ import {
   rotuloAgenda,
   rotuloDiaPorExtenso,
 } from "@/lib/domain/datas";
-import { ehConcluido, resumoDosItens } from "@/lib/domain/pedido";
+import {
+  agruparPorEntrega,
+  ehConcluido,
+  resumoDosItens,
+} from "@/lib/domain/pedido";
 import { colPedidos } from "@/lib/firebase/colecoes";
 import { useColecao } from "@/lib/hooks/useColecao";
 import type { DataISO, Pedido } from "@/lib/types";
@@ -69,7 +74,10 @@ export function AgendaHoje() {
 
   // Hoje primeiro. Sem nada hoje, a semana — que é a pergunta seguinte, e não
   // um consolo pela lista vazia.
-  const naAgenda = deHoje.length > 0 ? deHoje : daSemana;
+  // Dentro do dia, pela hora, como em `/pedidos` (`#d251`).
+  const naAgenda = agruparPorEntrega(
+    deHoje.length > 0 ? deHoje : daSemana,
+  ).flatMap((grupo) => grupo.pedidos);
   const titulo = deHoje.length > 0 ? "Entregas de hoje" : "Os próximos dias";
 
   return (
@@ -189,10 +197,12 @@ function CartaoDaAgenda({ pedido, hoje }: { pedido: Pedido; hoje: DataISO }) {
 
       {/* Mesma regra da lista de pedidos: uma pílula, o resto em marcador. */}
       <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-        <SeloStatus status={pedido.status} />
+        {/* O dia e a hora juntos abrem a linha: "Amanhã 14:30". */}
         {pedido.dataEntregaISO !== hoje && (
           <Marcador>{rotuloAgenda(pedido.dataEntregaISO, hoje)}</Marcador>
         )}
+        {pedido.horaEntrega && <MarcadorHora hora={pedido.horaEntrega} />}
+        <SeloStatus status={pedido.status} />
         {pedido.entrega.tipo === "ENTREGA" && (
           <Marcador
             icone={

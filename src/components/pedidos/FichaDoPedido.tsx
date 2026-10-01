@@ -241,6 +241,7 @@ export function FichaDoPedido({
         entrega: {
           tipo: pedido.entrega.tipo,
           dataISO: pedido.dataEntregaISO,
+          hora: pedido.horaEntrega,
           endereco: pedido.entrega.endereco ?? undefined,
         },
         formaNome: forma?.nome,
@@ -535,12 +536,13 @@ function Acoes({ children }: { children: ReactNode }) {
   return <div className="mt-2 flex flex-wrap gap-2">{children}</div>;
 }
 
-/** "Hoje, quinta-feira, 1 de outubro · o preço vale até 03 de out." */
+/** "Hoje, quinta-feira, 1 de outubro, às 14:30 · o preço vale até 03 de out." */
 function linhaDoDia(pedido: Pedido, hoje: DataISO): string {
   const agenda = rotuloAgenda(pedido.dataEntregaISO, hoje);
   const extenso = rotuloDiaPorExtenso(pedido.dataEntregaISO);
-  const dia =
+  const data =
     agenda.toLowerCase() === extenso ? agenda : `${agenda}, ${extenso}`;
+  const dia = pedido.horaEntrega ? `${data}, às ${pedido.horaEntrega}` : data;
   return pedido.status === "ORCAMENTO" && pedido.validoAteISO
     ? `${dia} · o preço vale até ${rotuloDia(pedido.validoAteISO)}`
     : dia;
@@ -584,6 +586,7 @@ function dadosComForma(
     itens: pedido.itens,
     status: pedido.status,
     dataEntregaISO: pedido.dataEntregaISO,
+    horaEntrega: pedido.horaEntrega,
     entrega: {
       tipo: pedido.entrega.tipo,
       taxa: pedido.entrega.taxa,

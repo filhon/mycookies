@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-10-01 (**a 063 codificada**, a ficha do pedido: tocar lê, numa folha com o próximo passo, "Recebi" com "Desfazer", WhatsApp (cobrança no entregue não pago), ligar e mapa, e editar vira o botão do rodapé, `#d249` e `#d250`; roteiro de aparelho por rodar; **a 062 codificada**, quem me deve: quatro vistas no lugar das sete pílulas, com a vista na URL, a faixa em "Me devem" e "Vai entrar", a linha do que saiu só com a exceção e o dia com a sobra, `#d246` a `#d248`; roteiro de aparelho por rodar; **specs 062 a 066 escritas**: a crítica da tela
+Atualizado em 2026-10-01 (**a 064 codificada**, a hora da entrega: `horaEntrega` opcional em `"HH:MM"`, o dia da agenda ordenado pela hora com os sem hora no fim, o relógio na linha de `/pedidos` e da Hoje, "às 14:30" na ficha e no WhatsApp, `#d251`; roteiro de aparelho por rodar; **a 063 codificada**, a ficha do pedido: tocar lê, numa folha com o próximo passo, "Recebi" com "Desfazer", WhatsApp (cobrança no entregue não pago), ligar e mapa, e editar vira o botão do rodapé, `#d249` e `#d250`; roteiro de aparelho por rodar; **a 062 codificada**, quem me deve: quatro vistas no lugar das sete pílulas, com a vista na URL, a faixa em "Me devem" e "Vai entrar", a linha do que saiu só com a exceção e o dia com a sobra, `#d246` a `#d248`; roteiro de aparelho por rodar; **specs 062 a 066 escritas**: a crítica da tela
 Pedidos sobre os prints do celular e do desktop virou cinco specs de uma sessão cada, na ordem 062
 (quem me deve: quatro vistas no lugar das sete pílulas, "A receber" dividido em "Me devem" e "Vai
 entrar", a linha do que saiu mostra só a exceção, o dia ganha a sobra; **vem antes de tudo**), 063
@@ -4358,6 +4358,27 @@ mais importa: é ele que prova a tira da área segura.
 Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 064 · A hora da entrega
+
+**Codificada em 2026-10-01** (`#d251`). Um campo opcional novo, `Pedido.horaEntrega`, compatível
+e confirmado antes do código; nenhuma consulta, regra ou dependência.
+
+- `src/lib/types/vendas.ts`: o campo, com o porquê.
+- `src/lib/domain/pedido.ts`: `ehHoraValida`; `agruparPorEntrega` ordena o dia pela hora, os sem
+  hora no fim. `schemas.ts`: `horaEntrega` no esquema do pedido. `whatsapp.ts`: "…, às 14:30".
+  Testes dos três.
+- `src/lib/firebase/mutations/pedidos.ts`: a chave só vai com hora; `atualizarPedido` apaga com
+  `deleteField`. `DadosPedido.horaEntrega` é obrigatório no objeto, porque `undefined` apaga.
+- `src/components/pedidos/FormularioPedido.tsx`: "Hora (opcional)" nativo, com "Sem hora".
+- `LinhaPedido.tsx` (`MarcadorHora`), `AgendaHoje.tsx` (ordem e marcador) e `FichaDoPedido.tsx`
+  (a linha do dia, a mensagem, e a hora levada no "Recebi" com forma, senão ele a apagaria).
+
+**Não rodou**: o roteiro de aparelho da spec (§ 4), inteiro. O 2 e o 3 (salvar um pedido antigo
+sem gravar nada, e tirar a hora sumindo com o campo) se conferem no console do Firestore.
+
+Portão: lint e typecheck limpos, **806 testes**, `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## A spec 063 · A ficha do pedido
 
 **Codificada em 2026-10-01** (`#d249`, `#d250`). Nenhum campo, consulta, regra ou dependência.
@@ -4422,6 +4443,8 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 064 está codificada** (seção acima). Publica depois da 063, ou junto; o portão é o roteiro da spec, com o modo avião e um pedido pelo cardápio. A próxima é a 065 (achar um pedido), que traz um índice novo.
 
 **A 063 está codificada** (seção acima). Publica depois da 062, de onde a ficha mais abre; o portão é o roteiro da spec, com um pedido antigo em Me devem, o modo avião e um login de ajudante. A próxima é a 064 (a hora da entrega), que **pede confirmação do schema** antes de começar.
 

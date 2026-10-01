@@ -100,6 +100,14 @@ export interface Pedido extends DocumentoBase {
    * (`DECISOES.md#d36`).
    */
   competencia: CompetenciaMensal;
+  /**
+   * "HH:MM", 24 horas, no fuso do aparelho, como `dataEntregaISO`. Ausente é
+   * "sem hora", o estado de todo pedido de antes da spec 064.
+   *
+   * Campo ao lado, e não dentro de `dataEntrega`: ela é meia-noite, e a agenda e
+   * `competencia` estão presas a isso. Só ordena o dia (`DECISOES.md#d251`).
+   */
+  horaEntrega?: string;
 
   entrega: {
     tipo: "RETIRADA" | "ENTREGA";

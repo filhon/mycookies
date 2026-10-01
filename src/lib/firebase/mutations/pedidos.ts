@@ -84,6 +84,11 @@ export interface DadosPedido {
   itens: ItemDoPedido[];
   status: StatusPedido;
   dataEntregaISO: DataISO;
+  /**
+   * Obrigatório no objeto, mesmo vazio: `undefined` **apaga** a hora gravada
+   * (`#d251`). Quem esquecesse de passá-la tiraria a hora do pedido.
+   */
+  horaEntrega: string | undefined;
 
   entrega: {
     tipo: "RETIRADA" | "ENTREGA";
@@ -232,6 +237,9 @@ function corpoDoPedido(dados: DadosPedido) {
     dataEntrega: Timestamp.fromDate(dataDeISO(dados.dataEntregaISO)),
     dataEntregaISO: dados.dataEntregaISO,
     competencia: competenciaDeISO(dados.dataEntregaISO),
+    // Ausente fica ausente, e não `null` como os textos acima: o pedido sem
+    // hora é o de sempre. Apagar é `deleteField`, em `atualizarPedido`.
+    ...(dados.horaEntrega ? { horaEntrega: dados.horaEntrega } : {}),
 
     entrega: {
       tipo: dados.entrega.tipo,
@@ -375,6 +383,9 @@ export async function atualizarPedido(
   despachar(
     updateDoc(docPedido(contaId, anterior.id), {
       ...resto,
+      // Sem hora na tela tira o campo do documento (`#d251`); no pedido que
+      // nunca teve, não muda nada.
+      horaEntrega: resto.horaEntrega ?? deleteField(),
       "entrega.tipo": entrega.tipo,
       "entrega.taxa": entrega.taxa,
       "entrega.endereco": entrega.endereco,

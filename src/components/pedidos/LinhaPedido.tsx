@@ -1,6 +1,7 @@
 import {
   Check,
   ChevronRight,
+  Clock,
   HandCoins,
   Store,
   Truck,
@@ -13,6 +14,18 @@ import { formatarMoeda } from "@/lib/domain/money";
 import { resumoDosItens } from "@/lib/domain/pedido";
 import type { Pedido } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
+
+/** "14:30", com o relógio. Também na agenda da tela Hoje. */
+export function MarcadorHora({ hora }: { hora: string }) {
+  return (
+    <Marcador
+      className="num"
+      icone={<Clock aria-hidden className="size-3.5" strokeWidth={1.75} />}
+    >
+      {hora}
+    </Marcador>
+  );
+}
 
 /**
  * Um pedido na lista: para quem, o que é, quanto, e em que pé está.
@@ -58,6 +71,8 @@ export function LinhaPedido({
           {/* Uma pílula só, a do status. Pago e entrega são marcadores sem
               fundo: em 360px três pílulas quebravam em duas linhas de cor. */}
           <span className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+            {/* A hora abre a linha: é o que diz o que sai primeiro (`#d251`). */}
+            {pedido.horaEntrega && <MarcadorHora hora={pedido.horaEntrega} />}
             {(!saiu || pedido.status === "CANCELADO") && (
               <SeloStatus status={pedido.status} />
             )}

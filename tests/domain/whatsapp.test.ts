@@ -95,6 +95,17 @@ describe("mensagemDoPedido", () => {
     expect(texto).not.toContain("Entrega em");
   });
 
+  it("diz a hora depois do dia, quando foi combinada", () => {
+    const texto = mensagemDoPedido({
+      ...PEDIDO,
+      entrega: { ...PEDIDO.entrega, hora: "14:30" },
+    });
+
+    expect(texto).toContain(
+      "Entrega em terça-feira, 15 de setembro, às 14:30 — Rua das Acácias, 120",
+    );
+  });
+
   it("não diz o endereço quando a entrega não tem um", () => {
     const texto = mensagemDoPedido({
       ...PEDIDO,

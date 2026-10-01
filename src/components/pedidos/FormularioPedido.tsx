@@ -133,6 +133,8 @@ interface ValoresPedido {
   clienteNome: string;
   clienteTelefone: string;
   dataEntregaISO: DataISO;
+  /** Vazio é "sem hora" (`#d251`). */
+  horaEntrega: string;
   /** Vazio é "sem prazo". */
   validoAteISO: string;
   tipoEntrega: TipoEntrega;
@@ -214,6 +216,7 @@ function valoresIniciais(
       // Hoje é o palpite honesto: a maioria das encomendas é combinada para os
       // próximos dias, e mudar a data é um toque.
       dataEntregaISO: hoje,
+      horaEntrega: "",
       // Vazio no pedido novo: o bloco do orçamento só aparece em pedido que
       // existe, e sugestão que ela não viu não vira dado (`#d17`).
       validoAteISO: "",
@@ -232,6 +235,7 @@ function valoresIniciais(
     clienteNome: pedido.clienteNome,
     clienteTelefone: pedido.clienteTelefone ?? "",
     dataEntregaISO: pedido.dataEntregaISO,
+    horaEntrega: pedido.horaEntrega ?? "",
     // Sem validade, o campo nasce com a sugestão só enquanto é orçamento:
     // pedido confirmado sem validade fica sem (`DECISOES.md#d110`).
     validoAteISO:
@@ -670,6 +674,7 @@ export function FormularioPedido({
       entrega: {
         tipo: valores.tipoEntrega,
         dataISO: valores.dataEntregaISO,
+        hora: valores.horaEntrega || undefined,
         endereco: valores.endereco || undefined,
       },
       formaNome: forma?.nome,
@@ -686,6 +691,7 @@ export function FormularioPedido({
       itens: itensResolvidos,
       status,
       dataEntregaISO: valores.dataEntregaISO,
+      horaEntrega: valores.horaEntrega || undefined,
       entrega: {
         tipo: valores.tipoEntrega,
         taxa: taxaEntrega,
@@ -704,6 +710,7 @@ export function FormularioPedido({
       clienteNome: valores.clienteNome,
       clienteTelefone: valores.clienteTelefone || undefined,
       dataEntregaISO: valores.dataEntregaISO,
+      horaEntrega: valores.horaEntrega || undefined,
       validoAteISO: valores.validoAteISO || undefined,
       status,
       tipoEntrega: valores.tipoEntrega,
@@ -1260,6 +1267,29 @@ export function FormularioPedido({
                 definir("dataEntregaISO", evento.target.value)
               }
             />
+            {/* O seletor do aparelho, e não um nosso: no celular ele já é o
+                melhor (`#d251`). A hora só ordena o dia. */}
+            <div className="flex items-end gap-2">
+              <Campo
+                rotulo="Hora (opcional)"
+                type="time"
+                step={900}
+                className="flex-1"
+                value={valores.horaEntrega}
+                erro={erros.horaEntrega}
+                onChange={(evento) =>
+                  definir("horaEntrega", evento.target.value)
+                }
+              />
+              {valores.horaEntrega && (
+                <Botao
+                  variante="terciaria"
+                  onClick={() => definir("horaEntrega", "")}
+                >
+                  Sem hora
+                </Botao>
+              )}
+            </div>
           </div>
 
           <fieldset>

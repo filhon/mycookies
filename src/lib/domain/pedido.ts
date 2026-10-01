@@ -608,14 +608,22 @@ export interface GrupoDeEntrega<T> {
   pedidos: T[];
 }
 
+/** "HH:MM", 24 horas, como o `<input type="time">` entrega (`#d251`). */
+export function ehHoraValida(hora: string): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(hora);
+}
+
 /**
  * A agenda: os pedidos reunidos por dia de entrega, do mais próximo para o
  * mais distante. Data de entrega, e nunca data de pagamento — o dinheiro é
  * outro assunto, e ele mora no caixa.
+ *
+ * Dentro do dia, a hora manda (`#d251`): o que sai primeiro vem primeiro. Sem
+ * hora vai para o fim, na ordem em que chegou. "HH:MM" ordena como texto.
  */
-export function agruparPorEntrega<T extends { dataEntregaISO: DataISO }>(
-  pedidos: T[],
-): GrupoDeEntrega<T>[] {
+export function agruparPorEntrega<
+  T extends { dataEntregaISO: DataISO; horaEntrega?: string },
+>(pedidos: T[]): GrupoDeEntrega<T>[] {
   const grupos = new Map<DataISO, T[]>();
 
   for (const pedido of pedidos) {
@@ -624,8 +632,16 @@ export function agruparPorEntrega<T extends { dataEntregaISO: DataISO }>(
     else grupos.set(pedido.dataEntregaISO, [pedido]);
   }
 
+  // `sort` é estável: os sem hora, empatados entre si, ficam na ordem de chegada.
+  const pelaHora = (a: T, b: T) => {
+    if (a.horaEntrega === b.horaEntrega) return 0;
+    if (!a.horaEntrega) return 1;
+    if (!b.horaEntrega) return -1;
+    return a.horaEntrega < b.horaEntrega ? -1 : 1;
+  };
+
   return [...grupos.entries()]
-    .map(([dataISO, lista]) => ({ dataISO, pedidos: lista }))
+    .map(([dataISO, lista]) => ({ dataISO, pedidos: lista.sort(pelaHora) }))
     .sort((a, b) => a.dataISO.localeCompare(b.dataISO));
 }
 

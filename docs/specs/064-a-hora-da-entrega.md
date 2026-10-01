@@ -84,12 +84,12 @@ disso. Aqui é o único dado de agenda que falta.
 
 ## Critérios de aceite
 
-- [ ] Campo opcional, validado em `domain/`, com teste.
-- [ ] Ordem do dia pela hora, sem hora no fim, com teste.
-- [ ] Hora na linha da lista, na Hoje e no WhatsApp.
-- [ ] Apagar a hora remove o campo.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d251` escrito; `ESTADO.md` atualizado.
+- [x] Campo opcional, validado em `domain/`, com teste.
+- [x] Ordem do dia pela hora, sem hora no fim, com teste.
+- [x] Hora na linha da lista, na Hoje e no WhatsApp.
+- [x] Apagar a hora remove o campo.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d251` escrito; `ESTADO.md` atualizado.
 
 ---
 

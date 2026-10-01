@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { PERDA_MAXIMA } from "./custoInsumo";
+import { ehHoraValida } from "./pedido";
 
 /** Mensagens na língua da confeitaria, não na do validador. */
 export const esquemaInsumo = z.object({
@@ -309,6 +310,10 @@ export const esquemaPedido = z.object({
   validoAteISO: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  horaEntrega: z
+    .string()
+    .refine(ehHoraValida, "Escolha a hora, ou deixe sem hora.")
     .optional(),
   status: z.enum([
     "ORCAMENTO",

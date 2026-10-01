@@ -69,6 +69,8 @@ export interface ResumoParaCliente {
   entrega: {
     tipo: "RETIRADA" | "ENTREGA";
     dataISO: DataISO;
+    /** "HH:MM", quando foi combinada (`#d251`). */
+    hora?: string;
     endereco?: string;
   };
   /** O nome da forma escolhida, quando houver. Nunca a taxa dela. */
@@ -130,7 +132,9 @@ export function mensagemDoPedido(resumo: ResumoParaCliente): string {
     `*Total: ${formatarMoeda(resumo.total)}*`,
   ];
 
-  const dia = rotuloDiaPorExtenso(resumo.entrega.dataISO);
+  const dia = resumo.entrega.hora
+    ? `${rotuloDiaPorExtenso(resumo.entrega.dataISO)}, às ${resumo.entrega.hora}`
+    : rotuloDiaPorExtenso(resumo.entrega.dataISO);
   const endereco =
     resumo.entrega.tipo === "ENTREGA" && resumo.entrega.endereco
       ? ` — ${resumo.entrega.endereco}`

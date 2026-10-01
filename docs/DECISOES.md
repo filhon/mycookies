@@ -7425,3 +7425,41 @@ aparelho, é uma spec do `Painel`, para as telas todas, e não um remendo na fic
   mesmo lugar). Ele vive enquanto a ficha fica aberta; fechar o esquece.
 - A cliente vinculada é lida por `docCliente(pedido.clienteId)`, só para a dona; arquivada
   conta como nenhuma, porque o editor só a acha entre as não arquivadas.
+
+## D251 · A hora da entrega é texto ao lado da data
+
+**Status:** vigente · decidida em 2026-10-01, na spec `064-a-hora-da-entrega.md`; codificada em 2026-10-01
+
+**Contexto.** O dia da agenda tinha a ordem do banco, e a hora combinada morava na conversa do
+WhatsApp ou nas observações. "Hoje · 2 pedidos" não dizia o que sai primeiro.
+
+**Decisão.**
+
+- `Pedido.horaEntrega?: string`, `"HH:MM"`, 24 horas, no fuso do aparelho, como
+  `dataEntregaISO`. Ausente é "sem hora", o estado de todo pedido de antes. `VERSAO_SCHEMA`
+  fica em 1, como ficou para `validoAteISO` e `origem`. Confirmado com o Filipe antes do
+  código.
+- **Ao lado, e não dentro de `dataEntrega`:** ela é meia-noite, e `competencia` e as consultas
+  da agenda estão presas a isso. A hora só ordena o dia; o dia continua sendo o grupo.
+- **Gravar:** o corpo do pedido só leva a chave quando há hora, e não `null` como os textos
+  (`clienteTelefone`, `endereco`): o pedido sem hora fica igual ao de sempre. `atualizarPedido`
+  grava `deleteField()` quando a tela não tem hora, então tirar a hora tira o campo, e salvar um
+  pedido antigo sem mexer não grava nada novo.
+- **`DadosPedido.horaEntrega` é obrigatório no objeto (`string | undefined`)**, ao contrário de
+  `validoAteISO`: como `undefined` apaga, quem montasse os dados sem a hora a tiraria do pedido.
+  O "Recebi" da ficha com forma escolhida (`#d250`) passa pelo mesmo `atualizarPedido`, e o
+  tipo obriga `dadosComForma` a levar a hora junto.
+- **Formulário:** "Hora (opcional)" ao lado da data no desktop e logo abaixo no celular,
+  `<input type="time" step="900">` nativo, e "Sem hora" (terciário) só quando há hora. A forma
+  é validada por `ehHoraValida` no esquema do pedido. O `step` não bloqueia o salvar: o editor
+  não é `<form>`, e uma hora fora do passo de 15 minutos é hora válida.
+- **Ordem:** `agruparPorEntrega` ordena cada dia pela hora, os sem hora no fim na ordem de
+  chegada (`sort` estável). A comparação é `<` de texto, e não `localeCompare`, que põe símbolo
+  antes de dígito. A Hoje usa a mesma função, achatada.
+- **Linha:** `MarcadorHora` (relógio e "14:30") abre a linha dos marcadores em `/pedidos`; na
+  Hoje vem depois do dia ("Amanhã 14:30") e antes do selo, para dia e hora ficarem juntos. A
+  ficha diz "…, às 14:30" na linha do dia.
+- **WhatsApp:** `mensagemDoPedido` diz "Entrega em quinta-feira, 1 de outubro, às 14:30". A
+  cobrança (`mensagemDeCobranca`) não muda: o doce já foi entregue.
+- **O cardápio público não pede hora**, e `/api/cardapio/pedido` continua sem gravar o campo.
+  A cliente escolhendo horário seria uma promessa que ela não fez.

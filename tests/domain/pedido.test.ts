@@ -8,6 +8,7 @@ import {
   derivarPedido,
   descricaoDoRepasse,
   ehConcluido,
+  ehHoraValida,
   entregasAPagar,
   entregasEsquecidas,
   escolhasCompletas,
@@ -330,6 +331,41 @@ describe("agruparPorEntrega", () => {
 
   it("sem pedido nenhum não inventa grupo", () => {
     expect(agruparPorEntrega([])).toEqual([]);
+  });
+
+  it("dentro do dia ordena pela hora, e os sem hora vão para o fim na ordem de chegada", () => {
+    const [dia] = agruparPorEntrega([
+      { id: "sem-1", dataEntregaISO: "2026-09-20" },
+      { id: "14h30", dataEntregaISO: "2026-09-20", horaEntrega: "14:30" },
+      { id: "sem-2", dataEntregaISO: "2026-09-20" },
+      { id: "10h", dataEntregaISO: "2026-09-20", horaEntrega: "10:00" },
+      { id: "9h", dataEntregaISO: "2026-09-20", horaEntrega: "09:00" },
+    ]);
+
+    expect(dia?.pedidos.map((pedido) => pedido.id)).toEqual([
+      "9h",
+      "10h",
+      "14h30",
+      "sem-1",
+      "sem-2",
+    ]);
+  });
+});
+
+describe("ehHoraValida", () => {
+  it("aceita HH:MM de 24 horas", () => {
+    expect(ehHoraValida("00:00")).toBe(true);
+    expect(ehHoraValida("09:15")).toBe(true);
+    expect(ehHoraValida("23:59")).toBe(true);
+  });
+
+  it("recusa o que não é hora do relógio", () => {
+    expect(ehHoraValida("")).toBe(false);
+    expect(ehHoraValida("24:00")).toBe(false);
+    expect(ehHoraValida("12:60")).toBe(false);
+    expect(ehHoraValida("9:15")).toBe(false);
+    expect(ehHoraValida("14:30:00")).toBe(false);
+    expect(ehHoraValida("14h30")).toBe(false);
   });
 });
 
