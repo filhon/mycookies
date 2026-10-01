@@ -1,4 +1,5 @@
 import Script from "next/script";
+import { PAGINAS_DO_PRECO } from "@/app/site";
 
 /**
  * A visita contada pela Vercel, sem pacote (spec 038, `DECISOES.md#d180`): a
@@ -10,7 +11,7 @@ import Script from "next/script";
  */
 const CAMINHOS_MEDIDOS = [
   "/conheca",
-  "/como-calcular-o-preco-do-cookie",
+  ...PAGINAS_DO_PRECO.map((p) => p.endereco),
   "/cadastro",
 ];
 

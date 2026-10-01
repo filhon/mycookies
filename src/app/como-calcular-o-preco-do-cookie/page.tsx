@@ -1,13 +1,21 @@
 import { TrendingDown } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
+import {
+  CabecalhoDoArtigo,
+  Convite,
+  Formula,
+  fracao,
+  OutrosDoces,
+  type Passo,
+  Passos,
+  Perguntas,
+  TITULO_H2,
+  Valor,
+} from "@/components/site/Artigo";
 import { CalculadoraDaPorta } from "@/components/site/CalculadoraDaPorta";
 import { ContaAberta } from "@/components/site/ContaAberta";
 import { Rodape, Topo } from "@/components/site/Moldura";
 import { Dinheiro } from "@/components/ui/Dinheiro";
-import { classesBotao } from "@/components/ui/estilosBotao";
-import { DIAS_DE_TESTE } from "@/lib/domain/cadastro";
-import { ROTULO_PARCELA } from "@/lib/domain/custoFicha";
 import { ERRO_COMUM, EXEMPLO } from "@/lib/domain/exemplo";
 import { formatarMoeda, formatarPercentual } from "@/lib/domain/money";
 import {
@@ -15,8 +23,6 @@ import {
   somaTaxas,
   verificarPreco,
 } from "@/lib/domain/precificacao";
-import type { Centavos } from "@/lib/types";
-import { cn } from "@/lib/utils/cn";
 
 /**
  * A resposta para "como calcular o preço do meu cookie" (spec 037,
@@ -29,9 +35,9 @@ import { cn } from "@/lib/utils/cn";
 /** A data que a página mostra, e que diz ao robô que a conta não é antiga. */
 const ATUALIZADO_EM = "2026-09-24";
 
-const ENDERECO = "/como-calcular-o-preco-do-cookie";
+const ENDERECO = "/como-calcular-o-preco-do-cookie" as const;
 
-const { custo, parametros, rende } = EXEMPLO;
+const { custo, parametros } = EXEMPLO;
 const TAXAS = somaTaxas(parametros);
 const SUGERIDO = calcularPrecoSugerido(custo.custoUnitario, parametros);
 const ERRADO = calcularPrecoSugerido(custo.custoUnitario, ERRO_COMUM);
@@ -42,12 +48,6 @@ const PRECO_ETIQUETA = SUGERIDO.ok ? SUGERIDO.precoArredondado : 0;
 const PRECO_ERRADO = ERRADO.ok ? ERRADO.precoSugerido : 0;
 const NA_CONTA_CERTA = verificarPreco(PRECO_CERTO, custo.custoUnitario, TAXAS);
 const NO_ERRO = verificarPreco(PRECO_ERRADO, custo.custoUnitario, TAXAS);
-
-const porUnidade = (chave: keyof typeof ROTULO_PARCELA) =>
-  Math.round(custo[chave] / rende);
-
-const fracao = (percentual: number) =>
-  (percentual / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
 
 const DESCRICAO_DA_PAGINA = `Some ingredientes, embalagem, sua hora, gás e despesas fixas; divida por 1 menos margem e maquininha. Um cookie de ${formatarMoeda(custo.custoUnitario)} sai a ${formatarMoeda(PRECO_ETIQUETA)}.`;
 
@@ -69,20 +69,7 @@ export const metadata: Metadata = {
   },
 };
 
-/** Dinheiro no meio da frase: tabular, em peso de número. */
-function Valor({ centavos }: { centavos: Centavos }) {
-  return (
-    <span className="num font-semibold whitespace-nowrap text-ink">
-      {formatarMoeda(centavos)}
-    </span>
-  );
-}
-
-const PASSOS: {
-  parcela: keyof typeof ROTULO_PARCELA;
-  titulo: string;
-  texto: React.ReactNode[];
-}[] = [
+const PASSOS: Passo[] = [
   {
     parcela: "custoInsumos",
     titulo: "Ingredientes: o custo da receita dividido pelo que ela rende",
@@ -160,39 +147,26 @@ const PERGUNTAS: { pergunta: string; resposta: React.ReactNode }[] = [
   },
 ];
 
-const TITULO_H2 =
-  "text-balance font-display text-title font-bold tracking-[-0.02em] text-ink lg:text-[1.75rem] lg:leading-[1.2]";
-
 export default function PaginaComoCalcular() {
-  const atualizado = new Date(`${ATUALIZADO_EM}T12:00:00Z`).toLocaleDateString(
-    "pt-BR",
-    { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" },
-  );
-
   return (
     <>
       <Topo />
 
       <main id="conteudo">
         <article className="mx-auto max-w-6xl px-4 pt-8 pb-16 lg:px-10 lg:pt-16 lg:pb-24">
-          <header className="max-w-[68ch]">
-            <h1 className="text-balance font-display text-[2.125rem] leading-[1.1] font-bold tracking-tight text-ink lg:text-[3rem] lg:leading-[1.05]">
-              Como calcular o preço do seu cookie
-            </h1>
-            <p className="mt-3 text-label text-ink-muted">
-              Atualizado em <time dateTime={ATUALIZADO_EM}>{atualizado}</time>
-            </p>
-            <p className="mt-6 text-pretty text-body text-ink lg:text-heading lg:leading-normal lg:font-normal">
-              Some o que cada cookie custa: ingredientes, embalagem, sua hora de
-              trabalho, gás e energia e uma fatia das despesas fixas. Depois
-              divida esse custo por 1 menos a margem que você quer e menos a
-              taxa da maquininha. Um cookie que custa{" "}
-              <Valor centavos={custo.custoUnitario} />, com{" "}
-              {parametros.margemDesejada}% de margem e{" "}
-              {parametros.taxaCartaoConsiderada}% de maquininha, sai a{" "}
-              <Valor centavos={PRECO_ETIQUETA} />.
-            </p>
-          </header>
+          <CabecalhoDoArtigo
+            titulo="Como calcular o preço do seu cookie"
+            atualizadoEm={ATUALIZADO_EM}
+          >
+            Some o que cada cookie custa: ingredientes, embalagem, sua hora de
+            trabalho, gás e energia e uma fatia das despesas fixas. Depois
+            divida esse custo por 1 menos a margem que você quer e menos a taxa
+            da maquininha. Um cookie que custa{" "}
+            <Valor centavos={custo.custoUnitario} />, com{" "}
+            {parametros.margemDesejada}% de margem e{" "}
+            {parametros.taxaCartaoConsiderada}% de maquininha, sai a{" "}
+            <Valor centavos={PRECO_ETIQUETA} />.
+          </CabecalhoDoArtigo>
 
           {/* A conta vem logo depois da resposta no celular; no desktop ela
               acompanha a leitura, grudada ao lado dos passos que a explicam. */}
@@ -202,46 +176,7 @@ export default function PaginaComoCalcular() {
             </div>
 
             <div className="max-w-[68ch] lg:col-start-1 lg:row-start-1">
-              <ol className="flex flex-col gap-12">
-                {PASSOS.map((passo, i) => (
-                  <li key={passo.parcela}>
-                    <section aria-labelledby={`passo-${i + 1}`}>
-                      <p
-                        aria-hidden
-                        className="num font-display text-title font-bold text-ink-muted"
-                      >
-                        {i + 1}
-                      </p>
-                      <h2
-                        id={`passo-${i + 1}`}
-                        className={cn(TITULO_H2, "mt-1")}
-                      >
-                        {passo.titulo}
-                      </h2>
-                      {passo.texto.map((t, j) => (
-                        <p key={j} className="mt-4 text-body text-ink">
-                          {t}
-                        </p>
-                      ))}
-                      <p className="mt-4 text-label text-ink-muted">
-                        No exemplo,{" "}
-                        <span
-                          className={cn(
-                            "font-semibold",
-                            passo.parcela === "custoMaoDeObra"
-                              ? "text-accent-ink"
-                              : "text-ink",
-                          )}
-                        >
-                          {ROTULO_PARCELA[passo.parcela]}
-                        </span>
-                        : <Valor centavos={porUnidade(passo.parcela)} /> por
-                        cookie.
-                      </p>
-                    </section>
-                  </li>
-                ))}
-              </ol>
+              <Passos passos={PASSOS} exemplo={EXEMPLO} sufixo=" por cookie." />
 
               <section aria-labelledby="margem" className="mt-16">
                 <h2 id="margem" className={TITULO_H2}>
@@ -252,19 +187,7 @@ export default function PaginaComoCalcular() {
                   E a maquininha tira a parte dela do preço, não do custo. As
                   duas saem do preço de venda, então as duas entram na divisão:
                 </p>
-                <div className="mt-6 rounded-lg bg-sunken px-5 py-5">
-                  <p className="text-heading font-semibold text-ink">
-                    preço = custo ÷ (1 − margem − maquininha)
-                  </p>
-                  <p className="num mt-3 text-body text-ink">
-                    <Valor centavos={custo.custoUnitario} /> ÷ (1 −{" "}
-                    {fracao(parametros.margemDesejada)} −{" "}
-                    {fracao(parametros.taxaCartaoConsiderada)}) ={" "}
-                    <Valor centavos={custo.custoUnitario} /> ÷{" "}
-                    {fracao(100 - parametros.margemDesejada - TAXAS)} ={" "}
-                    <Valor centavos={PRECO_CERTO} />
-                  </p>
-                </div>
+                <Formula exemplo={EXEMPLO} preco={PRECO_CERTO} />
                 <p className="mt-6 text-body text-ink">
                   Confira de volta: dos <Valor centavos={PRECO_CERTO} />, a
                   maquininha leva <Valor centavos={NA_CONTA_CERTA.custoTaxas} />{" "}
@@ -362,60 +285,17 @@ export default function PaginaComoCalcular() {
                 </p>
               </section>
 
-              <section aria-labelledby="perguntas" className="mt-16">
-                <h2 id="perguntas" className={TITULO_H2}>
-                  Perguntas parecidas
-                </h2>
-                <ul className="mt-6 divide-y divide-line border-y border-line">
-                  {PERGUNTAS.map((p) => (
-                    <li key={p.pergunta} className="flex flex-col gap-2 py-6">
-                      <h3 className="text-subheading font-semibold text-ink">
-                        {p.pergunta}
-                      </h3>
-                      <p className="text-body text-ink">{p.resposta}</p>
-                    </li>
-                  ))}
-                </ul>
-              </section>
+              <Perguntas perguntas={PERGUNTAS} />
+
+              <OutrosDoces endereco={ENDERECO} />
             </div>
           </div>
         </article>
 
-        {/* Depois da conta, fora do artigo. Sem barra fixa no celular: é
-            leitura, e ela cobriria o texto. */}
-        <section
-          aria-labelledby="convite"
-          className="mx-auto max-w-6xl px-4 pb-16 lg:px-10 lg:pb-24"
-        >
-          <div className="max-w-[68ch] border-t border-line pt-10">
-            <h2 id="convite" className={TITULO_H2}>
-              O Rende faz essa conta pra cada doce seu, e refaz quando o preço
-              da farinha muda.
-            </h2>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Link
-                href="/cadastro"
-                className={classesBotao({
-                  variante: "primaria",
-                  tamanho: "lg",
-                  className: "w-full sm:w-auto lg:h-14 lg:px-6",
-                })}
-              >
-                Começar o teste de {DIAS_DE_TESTE} dias
-              </Link>
-              <Link
-                href="/conheca"
-                className={classesBotao({
-                  variante: "terciaria",
-                  tamanho: "lg",
-                  className: "w-full sm:w-auto",
-                })}
-              >
-                Ver como o Rende funciona
-              </Link>
-            </div>
-          </div>
-        </section>
+        <Convite>
+          O Rende faz essa conta pra cada doce seu, e refaz quando o preço da
+          farinha muda.
+        </Convite>
       </main>
 
       <Rodape />

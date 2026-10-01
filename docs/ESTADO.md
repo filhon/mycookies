@@ -1,6 +1,15 @@
 # Estado do projeto
 
-Atualizado em 2026-10-01 (**a 066 codificada**, a mesa dos pedidos: no desktop `/pedidos` sai da coluna e vira tabela de sete colunas com o dia como linha de grupo, e a ficha da 063 acopla à direita; com a ficha aberta a tabela espera o `2xl`, e não o `xl` da spec, `#d253`; roteiro de navegador por rodar; **a crítica de Pedidos (062 a 066) está toda codificada**; **a 065 codificada**, achar um pedido: a busca na faixa de ferramentas de `/pedidos`, em memória pelo nome da cliente, o produto e o código, e "Todos os pedidos de …" para a cliente cadastrada, pelo índice novo `arquivado + clienteId + dataEntregaISO desc`, **a publicar antes do app**, `#d252`; roteiro de aparelho por rodar; **a 064 codificada**, a hora da entrega: `horaEntrega` opcional em `"HH:MM"`, o dia da agenda ordenado pela hora com os sem hora no fim, o relógio na linha de `/pedidos` e da Hoje, "às 14:30" na ficha e no WhatsApp, `#d251`; roteiro de aparelho por rodar; **a 063 codificada**, a ficha do pedido: tocar lê, numa folha com o próximo passo, "Recebi" com "Desfazer", WhatsApp (cobrança no entregue não pago), ligar e mapa, e editar vira o botão do rodapé, `#d249` e `#d250`; roteiro de aparelho por rodar; **a 062 codificada**, quem me deve: quatro vistas no lugar das sete pílulas, com a vista na URL, a faixa em "Me devem" e "Vai entrar", a linha do que saiu só com a exceção e o dia com a sobra, `#d246` a `#d248`; roteiro de aparelho por rodar; **specs 062 a 066 escritas**: a crítica da tela
+Atualizado em 2026-10-01 (**a 068-A codificada**, as peças e o brigadeiro: as peças do artigo
+em `site/Artigo.tsx` com o HTML do cookie igual salvo "Outros doces", `PAGINAS_DO_PRECO` lida pelo
+sitemap, pelo `llms.txt` e pela medição, e `/como-calcular-o-preco-do-brigadeiro` no ar no build,
+`#d256` a `#d258`; roteiro de navegador por rodar; B, C e D por codificar; **spec 068 escrita**, a pergunta de cada doce:
+três páginas do preço novas (brigadeiro pelo cento, bolo por quilo, bolo de pote) e a de doces
+que reúne as quatro, em quatro sessões A a D, com as peças do artigo saindo da página do cookie e
+`PAGINAS_DO_PRECO` como lista única do sitemap, do `llms.txt` e da medição; sem esperar o gatilho
+da 037, a pedido, e com as decisões `#d256` a `#d259` reservadas; achado de carona, fora de
+escopo: ficha com rendimento em gramas arredonda o custo por grama ao centavo, até R$ 5,00 por
+quilo; **a 066 codificada**, a mesa dos pedidos: no desktop `/pedidos` sai da coluna e vira tabela de sete colunas com o dia como linha de grupo, e a ficha da 063 acopla à direita; com a ficha aberta a tabela espera o `2xl`, e não o `xl` da spec, `#d253`; roteiro de navegador por rodar; **a crítica de Pedidos (062 a 066) está toda codificada**; **a 065 codificada**, achar um pedido: a busca na faixa de ferramentas de `/pedidos`, em memória pelo nome da cliente, o produto e o código, e "Todos os pedidos de …" para a cliente cadastrada, pelo índice novo `arquivado + clienteId + dataEntregaISO desc`, **a publicar antes do app**, `#d252`; roteiro de aparelho por rodar; **a 064 codificada**, a hora da entrega: `horaEntrega` opcional em `"HH:MM"`, o dia da agenda ordenado pela hora com os sem hora no fim, o relógio na linha de `/pedidos` e da Hoje, "às 14:30" na ficha e no WhatsApp, `#d251`; roteiro de aparelho por rodar; **a 063 codificada**, a ficha do pedido: tocar lê, numa folha com o próximo passo, "Recebi" com "Desfazer", WhatsApp (cobrança no entregue não pago), ligar e mapa, e editar vira o botão do rodapé, `#d249` e `#d250`; roteiro de aparelho por rodar; **a 062 codificada**, quem me deve: quatro vistas no lugar das sete pílulas, com a vista na URL, a faixa em "Me devem" e "Vai entrar", a linha do que saiu só com a exceção e o dia com a sobra, `#d246` a `#d248`; roteiro de aparelho por rodar; **specs 062 a 066 escritas**: a crítica da tela
 Pedidos sobre os prints do celular e do desktop virou cinco specs de uma sessão cada, na ordem 062
 (quem me deve: quatro vistas no lugar das sete pílulas, "A receber" dividido em "Me devem" e "Vai
 entrar", a linha do que saiu mostra só a exceção, o dia ganha a sobra; **vem antes de tudo**), 063
@@ -4358,6 +4367,50 @@ mais importa: é ele que prova a tira da área segura.
 Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 068 · A pergunta de cada doce — sessão A, as peças e o brigadeiro
+
+**Codificada em 2026-10-01** (`#d256` a `#d258`). Nenhum campo, regra, índice ou dependência.
+
+- `src/components/site/Artigo.tsx`: novo. `Valor`, `TITULO_H2`, `fracao`, `CabecalhoDoArtigo`,
+  `Passos`, `Formula`, `Perguntas`, `OutrosDoces` e `Convite`, tirados da página do cookie, que
+  agora monta as peças.
+- `src/components/site/ContaAberta.tsx`: `exemplo` (padrão, o cookie) e `unidade`. "rende 1
+  cento" usa o singular.
+- `src/lib/domain/exemplo.ts`: `ExemploDePagina`, `EXEMPLO_BRIGADEIRO` (o cento, `rende: 1`) e
+  `HORA_DO_BRIGADEIRO` (2 horas a R$ 20,00, de onde sai a parcela do trabalho).
+- `src/app/como-calcular-o-preco-do-brigadeiro/`: a página e a prévia. Descrição com 134
+  caracteres.
+- `src/app/site.ts`: `PAGINAS_DO_PRECO`, com o cookie e o brigadeiro; `sitemap.ts`,
+  `llms.txt/route.ts` e `Medicao.tsx` leem dela. O rodapé continua apontando para o cookie até a D.
+- `tests/domain/exemplo.test.ts`: o `describe` do cento, com cada número que a página mostra.
+
+**Os números, pelas funções:** o cento custa R$ 97,00 e sai a R$ 176,50 (R$ 176,36 antes do meio
+real, sobrando R$ 70,54, 40%); no preço da vizinha, R$ 150,00, sobram R$ 45,50 (30%). Sem a hora,
+R$ 104,00, e sobram R$ 1,80 (2%), que parecem R$ 41,80 a quem esqueceu a hora. O avulso sai a
+R$ 2,00, 13% acima do cento por cem (R$ 1,77); o meio real sobe R$ 0,14 no cento e R$ 0,24 no
+avulso. Com 10% de desconto, R$ 158,85, e o que sobra cai de R$ 70,67 para R$ 53,91. Todos batem
+com a spec.
+
+**Diferente da spec:** ela dizia "o trabalho como a maior parcela", e com os números dela os
+ingredientes (43%) passam o trabalho (41%). Os números ficaram; o passo 3 diz "o trabalho pesa
+quase o mesmo que a receita" (`#d256`). Na seção do erro, a spec dizia "R$ 1,80 pelas duas horas";
+o certo é R$ 1,80 **depois de pagar** as duas horas, porque a hora já está no custo de R$ 97,00. A
+página diz isso, e mostra os R$ 41,80 que parecem os 40% a quem esqueceu a hora.
+
+**Pesquisa (2.4):** as cinco primeiras para "quanto cobrar o cento de brigadeiro" contam a mão de
+obra; nenhuma põe a maquininha na conta, mede o custo de esquecer a hora ou explica o avulso.
+
+**Conferido no HTML do build:** o da página do cookie antes e depois, sem `<script>` e quebrado
+por tag, só difere no bloco "Outros doces"; o de `/conheca` é idêntico. A página nova é estática,
+com `index, follow`, `canonical`, `og:type article`, prévia e um `h1`; o sitemap e o `llms.txt`
+com as duas páginas. Nenhum hex nem travessão nos arquivos novos.
+
+**Não rodou:** o roteiro de navegador (§ 4), a 390 e 1280 nos dois temas: o 2 (sem JavaScript; o
+HTML do build tem o texto inteiro), o 5 (os links de "Outros doces") e o 7 (Lighthouse).
+
+Portão: lint e typecheck limpos, **817 testes**, `npm run build` com a página nova estática.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## A spec 067 · A tarde na bancada
 
 **Codificada em 2026-10-01** (`#d255`, sobre `#d254`). Nenhum campo, consulta, regra ou
@@ -4624,8 +4677,8 @@ seis passos da spec, com o 5 (o link colado no WhatsApp mostrando a imagem) no p
 passos, com o 3 (nada contado no app) sendo o que prova o filtro. **Uma vez por mês, antes de a
 janela do Hobby apagar o mês**, uma linha aqui:
 
-| Mês | `/conheca` | Página do preço | `/cadastro` | Contas (`metricas`) | As três origens que mais trouxeram gente |
-| --- | ---------- | --------------- | ----------- | ------------------- | ---------------------------------------- |
+| Mês | `/conheca` | Página do preço (cookie) | Brigadeiro | `/cadastro` | Contas (`metricas`) | As três origens que mais trouxeram gente |
+| --- | ---------- | ------------------------ | ---------- | ----------- | ------------------- | ---------------------------------------- |
 
 Número bruto, não só a porcentagem: com dezenas de visitas por mês, a taxa oscila. `/cadastro`
 ÷ páginas diz se a página convence; contas ÷ `/cadastro` diz se o formulário atrapalha.

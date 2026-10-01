@@ -317,7 +317,7 @@ Isto é de quem conduz o projeto, depois de publicar, e é o que decide o result
 
 - **Uma página por doce** (brigadeiro, bolo de pote, pão de mel, salgado). Volta quando o Search
   Console mostrar a página do cookie recebendo impressões: aí se sabe que o formato funciona, e as
-  consultas dizem qual doce vem depois.
+  consultas dizem qual doce vem depois. **Feito na 068, sem o gatilho, `#d256`.**
 - **Calculadora pública, sem login.** A página com campos onde a visitante põe o custo dela e vê
   o preço. É o passo seguinte mais forte (ferramenta ranqueia e converte melhor que texto), e é
   uma spec inteira: componente de cliente, validação, o que fazer com o número depois. Escrita

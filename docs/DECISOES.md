@@ -7611,3 +7611,61 @@ contêiner de rolagem, e a barra `sticky` do celular segue presa ao viewport, co
 
 **Fora.** A luz pela hora do visitante, a foto da bancada no topo, movimento de ambiente no app
 e na página de `/como-calcular-o-preco-do-cookie` (a `ContaAberta` dela continua `parada`).
+
+## D256 · Três doces agora, cada um com a conta e o erro dele
+
+**Status:** vigente · decidida em 2026-10-01, spec 068 (sessão A codificada)
+
+**Contexto.** A 037 deixou "uma página por doce" fora, com gatilho: voltar quando o Search Console
+mostrasse a página do cookie recebendo impressões. O Search Console nem foi ligado, e quem conduz o
+projeto decidiu não esperar. O risco é o Google tratar páginas quase iguais como página-porta e
+rebaixar o site inteiro.
+
+**Decisão.** Três doces, escolhidos pelo que a conta deles tem de diferente, e não por volume de
+busca: o brigadeiro (vende o cento), o bolo (vende o quilo) e o bolo de pote (a embalagem e o
+aplicativo). Cada página tem uma seção que só ela tem, e o texto da conta é reescrito para o doce,
+nunca colado. Antes de escrever, a sessão lê as cinco primeiras respostas da busca principal.
+
+**Na sessão A**, as cinco primeiras para "quanto cobrar o cento de brigadeiro" contam a mão de
+obra, mas nenhuma põe a maquininha na conta, nenhuma mostra o que o esquecimento da hora custa e
+nenhuma explica por que o avulso sai mais caro. São as duas seções próprias da página.
+
+**Consequência.** O que a 037 queria aprender com uma página passa a ser aprendido com quatro. O
+exemplo da spec dizia "o trabalho é a maior parcela" do brigadeiro; com os números dela, os
+ingredientes (R$ 42,00, 43%) passam o trabalho (R$ 40,00, 41%). Os números ficaram, e a página diz
+"o trabalho pesa quase o mesmo que a receita".
+
+## D257 · As peças do artigo e a lista das páginas do preço
+
+**Status:** vigente · decidida em 2026-10-01, spec 068
+
+**Contexto.** A página do cookie tinha dentro dela tudo o que as outras repetiriam. Copiar a página
+três vezes desalinha na primeira mudança de estilo; um componente-página configurável vira um
+formulário de opções, porque cada doce tem uma seção que os outros não têm.
+
+**Decisão.** Peças pequenas em `src/components/site/Artigo.tsx` (`Valor`, `TITULO_H2`, `fracao`,
+`CabecalhoDoArtigo`, `Passos`, `Formula`, `Perguntas`, `OutrosDoces`, `Convite`), e cada página
+monta as dela na ordem dela. A prova da extração foi o HTML do `build`: o da página do cookie saiu
+igual, salvo o bloco "Outros doces", e o de `/conheca` saiu idêntico. Para isso as peças guardam os
+mesmos nós de texto que a 037 tinha (o React marca com `<!-- -->` a fronteira entre dois textos
+vizinhos, e um `{" "}` a mais muda o HTML).
+
+`PAGINAS_DO_PRECO`, em `src/app/site.ts`, é a única lista: o sitemap, o `llms.txt`, o
+`CAMINHOS_MEDIDOS` da `Medicao` e "Outros doces" leem dela. Cada linha tem `endereco`, `titulo`
+(o texto do link no `llms.txt`), `doce` e `resumo`.
+
+## D258 · O exemplo de cada doce na unidade em que ele se vende
+
+**Status:** vigente · decidida em 2026-10-01, spec 068
+
+**Decisão.** Como no `#d173`, todo número de dinheiro das páginas novas sai de
+`calcularPrecoSugerido`, `verificarPreco` e `composicaoDoLote` sobre um objeto em
+`src/lib/domain/exemplo.ts`, e `tests/domain/exemplo.test.ts` prende. O lote do exemplo é a
+unidade de venda: o cento de brigadeiro tem `rende: 1`, e a `ContaAberta` mostra as parcelas e o
+preço do cento sem dividir e remultiplicar por 100. A `ContaAberta` recebe `exemplo` (o cookie é
+o padrão) e `unidade` (`{ singular, plural }`), e `ExemploDePagina` é o tipo que os exemplos
+satisfazem. O avulso é `calcularPrecoSugerido(Math.round(custo / 100))`.
+
+**Fora.** O app conta bolo em gramas, e `derivarFicha` arredonda o custo por grama ao centavo:
+até R$ 5,00 por quilo de diferença entre a página do bolo e o app. Spec própria, de domínio, com
+aprovação de schema; até lá a página do bolo não diz "cadastre em gramas".

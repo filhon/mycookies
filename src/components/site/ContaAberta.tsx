@@ -4,7 +4,7 @@ import {
 } from "@/components/fichas/FaixaDeComposicao";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { composicaoDoLote } from "@/lib/domain/custoFicha";
-import { EXEMPLO } from "@/lib/domain/exemplo";
+import { EXEMPLO, type ExemploDePagina } from "@/lib/domain/exemplo";
 import { formatarMoeda } from "@/lib/domain/money";
 import {
   calcularPrecoSugerido,
@@ -15,19 +15,25 @@ import { cn } from "@/lib/utils/cn";
 
 /**
  * O bloco "O custo do lote" do editor, com o cookie da página de venda
- * (`DECISOES.md#d173`). Todo número sai das funções do app sobre `EXEMPLO`;
- * nenhum é escrito aqui. A faixa e o ponto convivem porque é a reprodução do
- * editor, o único lugar em que o `MARCA.md` § 2.4 deixa (`#d126`).
+ * (`DECISOES.md#d173`) ou o doce de uma página do preço (spec 068). Todo
+ * número sai das funções do app sobre o exemplo; nenhum é escrito aqui. A
+ * faixa e o ponto convivem porque é a reprodução do editor, o único lugar em
+ * que o `MARCA.md` § 2.4 deixa (`#d126`).
  */
 export function ContaAberta({
   className,
   parada = false,
+  exemplo = EXEMPLO,
+  unidade = { singular: "unidade", plural: "unidades" },
 }: {
   className?: string;
+  exemplo?: ExemploDePagina;
+  /** A unidade em que o doce se vende: o cento, o quilo, o pote. */
+  unidade?: { singular: string; plural: string };
   /** Sem o movimento da `.conta-que-abre`: onde a conta é ilustração, e não abertura de página. */
   parada?: boolean;
 }) {
-  const { custo, parametros, rende, precoPraticado } = EXEMPLO;
+  const { custo, parametros, rende, precoPraticado } = exemplo;
   const segmentos = composicaoDoLote(custo);
   const sugerido = calcularPrecoSugerido(custo.custoUnitario, parametros);
   const { lucroUnitario } = verificarPreco(
@@ -50,10 +56,11 @@ export function ContaAberta({
           id="conta-titulo"
           className="text-subheading font-semibold text-ink"
         >
-          Exemplo · {EXEMPLO.nome}
+          Exemplo · {exemplo.nome}
         </h2>
         <p className="shrink-0 text-label text-ink-muted">
-          rende {rende} unidades
+          rende {rende}
+          {` ${rende === 1 ? unidade.singular : unidade.plural}`}
         </p>
       </div>
 
@@ -76,7 +83,7 @@ export function ContaAberta({
 
         <div className="mt-4 flex items-baseline justify-between gap-4">
           <p className="text-label font-medium text-ink-muted">
-            Custo por unidade
+            {`Custo por ${unidade.singular}`}
           </p>
           <Dinheiro centavos={custo.custoUnitario} tamanho="xl" />
         </div>
@@ -108,7 +115,7 @@ export function ContaAberta({
             <span className="num font-semibold text-ink">
               {formatarMoeda(lucroUnitario)}
             </span>{" "}
-            pra você, por unidade, depois da maquininha.
+            {`pra você, por ${unidade.singular}, depois da maquininha.`}
           </p>
         </div>
       )}

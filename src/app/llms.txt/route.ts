@@ -1,6 +1,6 @@
 import { DIAS_DE_TESTE } from "@/lib/domain/cadastro";
 import { DESCRICAO } from "../descricao";
-import { URL_DO_SITE } from "../site";
+import { PAGINAS_DO_PRECO, URL_DO_SITE } from "../site";
 
 /**
  * O `llms.txt` (llmstxt.org): convenção proposta, que alguns agentes leem
@@ -19,9 +19,7 @@ preço sugerido, pedidos e caixa. Funciona no celular, sem internet. Teste de ${
 
 ## Páginas
 
-- [Como calcular o preço do cookie](${URL_DO_SITE}/como-calcular-o-preco-do-cookie): a conta
-  passo a passo, com exemplo
-- [O Rende](${URL_DO_SITE}/conheca): o que faz, os planos e as dúvidas
+${PAGINAS_DO_PRECO.map((p) => `- [${p.titulo}](${URL_DO_SITE}${p.endereco}): ${p.resumo}\n`).join("")}- [O Rende](${URL_DO_SITE}/conheca): o que faz, os planos e as dúvidas
 `;
 
   return new Response(texto, {
