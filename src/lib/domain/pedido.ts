@@ -6,6 +6,7 @@ import type {
   FormaPagamento,
   StatusPedido,
 } from "@/lib/types";
+import { chaveDeBusca } from "./custoInsumo";
 import { taxaCobrada } from "./custosOperacionais";
 import { rotuloDia } from "./datas";
 import { novoId } from "@/lib/utils/id";
@@ -657,6 +658,36 @@ export function somaDoDia(
     total: valem.reduce((soma, pedido) => soma + pedido.total, 0),
     sobra: valem.reduce((soma, pedido) => soma + pedido.lucroEstimado, 0),
   };
+}
+
+/**
+ * A busca de `/pedidos` sobre o que a tela já tem (`#d252`): o nome da
+ * cliente, o nome dos produtos (as escolhas do combo também) e o código, sem
+ * acento e sem caixa, pelo mesmo normalizador do `nomeBusca`. Texto vazio não
+ * filtra nada.
+ */
+export function filtrarPedidos<
+  T extends {
+    clienteNome: string;
+    codigo: string;
+    itens: {
+      nomeSnapshot: string;
+      escolhas?: { nomeSnapshot: string }[];
+    }[];
+  },
+>(pedidos: T[], texto: string): T[] {
+  const termo = chaveDeBusca(texto);
+  if (!termo) return pedidos;
+  return pedidos.filter((pedido) =>
+    [
+      pedido.clienteNome,
+      pedido.codigo,
+      ...pedido.itens.flatMap((item) => [
+        item.nomeSnapshot,
+        ...(item.escolhas ?? []).map((escolha) => escolha.nomeSnapshot),
+      ]),
+    ].some((campo) => chaveDeBusca(campo).includes(termo)),
+  );
 }
 
 /** Números com vírgula, como o teclado brasileiro os escreve. */

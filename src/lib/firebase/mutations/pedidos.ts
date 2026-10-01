@@ -171,6 +171,22 @@ export function consultaHistorico(
   );
 }
 
+/**
+ * Todos os pedidos de uma cliente cadastrada, o mais recente primeiro: a busca
+ * de `/pedidos` (`#d252`). Sem teto: uma cliente é dezenas de pedidos, e cada
+ * um é uma leitura só na primeira vez. O pedido avulso, sem `clienteId`, não
+ * entra; ele se acha na busca em memória. Índice
+ * `arquivado + clienteId + dataEntregaISO DESC`.
+ */
+export function consultaPedidosDaCliente(contaId: string, clienteId: string) {
+  return query(
+    colPedidos(contaId),
+    where("arquivado", "==", false),
+    where("clienteId", "==", clienteId),
+    orderBy("dataEntregaISO", "desc"),
+  );
+}
+
 /** A mesma ficha pode aparecer em duas linhas do pedido. */
 function idsUnicos(ids: string[]): string[] {
   return [...new Set(ids)];

@@ -86,12 +86,12 @@ O Firestore não busca por pedaço de texto, e offline é o estado normal. A bus
 
 ## Critérios de aceite
 
-- [ ] Busca em memória por cliente, produto e código, com teste.
-- [ ] Clientes cadastradas sugeridas, com todos os pedidos pelo índice novo.
-- [ ] "Procurar nos mais antigos" para a avulsa.
-- [ ] Frase honesta sem rede.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d252` escrito; `ESTADO.md` e `DEPLOY.md` (o índice) atualizados.
+- [x] Busca em memória por cliente, produto e código, com teste.
+- [x] Clientes cadastradas sugeridas, com todos os pedidos pelo índice novo.
+- [x] "Procurar nos mais antigos" para a avulsa.
+- [x] Frase honesta sem rede.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d252` escrito; `ESTADO.md` e `DEPLOY.md` (o índice) atualizados.
 
 ---
 

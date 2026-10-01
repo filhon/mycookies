@@ -7463,3 +7463,51 @@ WhatsApp ou nas observações. "Hoje · 2 pedidos" não dizia o que sai primeiro
   cobrança (`mensagemDeCobranca`) não muda: o doce já foi entregue.
 - **O cardápio público não pede hora**, e `/api/cardapio/pedido` continua sem gravar o campo.
   A cliente escolhendo horário seria uma promessa que ela não fez.
+
+## D252 · Achar um pedido: a memória da tela e a cliente cadastrada
+
+**Status:** vigente · decidida em 2026-10-01, na spec `065-achar-um-pedido.md`; codificada em 2026-10-01
+
+**Contexto.** "A Janessa quer repetir o pedido do dia 23" era rolar o histórico de 30 em 30,
+procurando um nome com o olho. O Firestore não busca por pedaço de texto, e offline é o estado
+normal: um serviço de busca seria dependência nova e dado da cliente fora do Firestore.
+
+**Decisão.**
+
+- **Duas fontes, sem servidor de busca.** A primeira é `filtrarPedidos` (`domain/pedido.ts`)
+  sobre tudo o que a tela já tem, a agenda, os entregues em aberto e as páginas do histórico,
+  sem repetir id (o mesmo conjunto de "Entregas a pagar"): nome da cliente, nome dos produtos,
+  as escolhas do combo inclusive ("pistache" acha o combo com Cookie Pistache), e o código, por
+  `chaveDeBusca`, o normalizador do `nomeBusca`, e `includes`, como em `/insumos`.
+- **A segunda é a cliente cadastrada.** Com dois caracteres ou mais, `consultaClientes` (a do
+  editor de pedido, no mesmo cache) é assinada e até três clientes cujo nome tem uma palavra
+  começando pelo texto aparecem no topo, "Todos os pedidos de Janessa Domingos". Começo de
+  palavra, e não `includes`: "an" acharia metade das clientes. Abaixo de dois caracteres a
+  consulta nem existe, e abrir `/pedidos` sem buscar não lê cliente nenhuma.
+- **Tocar assina `consultaPedidosDaCliente`**, `arquivado == false`, `clienteId == id`,
+  `orderBy("dataEntregaISO", "desc")`, sem teto: uma cliente é dezenas de pedidos, uma leitura
+  cada na primeira vez. Índice composto novo `arquivado + clienteId + dataEntregaISO DESC`
+  (`DEPLOY.md` § 13). A linha acima da lista diz "12 pedidos de Janessa Domingos" com "Voltar à
+  busca"; mudar o texto também solta a cliente.
+- **A sugestão não leva a contagem** que a spec desenhou ("· 12"). O único número sem consulta
+  é `Cliente.totalPedidos`, e ele anda com o **pagamento** (`clientes.ts`): a Janessa com um
+  pedido na agenda diria 11 e mostraria 12. A contagem exata aparece depois do toque, na linha.
+- **A ajudante usa as duas fontes.** A regra deixa (`pedidos` e `clientes` não são
+  `doDinheiro`), e o editor já assina as clientes para ela. O nome não é faturamento; o que é
+  da dona em Clientes (`#d157`) é o total gasto, e ele não aparece aqui.
+- **A cliente avulsa** (sem `clienteId`) só se acha pela primeira fonte. Enquanto o histórico
+  não acabou, o resultado termina em "Procurar nos mais antigos", que é o "Mostrar mais
+  antigos" (`limite + 30`) com outra frase, e o filtro refaz sozinho. O fim do histórico é o de
+  sempre: só com o servidor.
+- **O resultado ignora a vista.** Com texto no campo as pílulas ficam todas desmarcadas
+  (`Pilulas` aceita `valor: null`), a vista da URL fica parada e limpar o campo volta a ela.
+  Tocar numa pílula limpa a busca. O resultado vem do mais recente para trás, como Saíram, e a
+  linha mostra a exceção pelo **status** do pedido (`ehConcluido`), e não pela vista: a busca
+  mistura agenda e histórico. Nas quatro vistas o efeito é o mesmo de antes, porque cada uma é
+  toda de um lado.
+- **A faixa "Me devem / Vai entrar" e "Entregas a pagar" continuam**, com os mesmos números.
+- **Sem rede**, `useConexao` falso e texto no campo: "Sem internet, a busca olha só o que já foi
+  aberto neste aparelho.", em `info` com o ícone, nunca em atenção. A consulta da cliente
+  responde do cache sozinha.
+- O campo mora na faixa de ferramentas, acima das pílulas, como em `/insumos`: fica quando o
+  cabeçalho recolhe, e o foco nele congela a faixa (`#d237`), sem código novo.

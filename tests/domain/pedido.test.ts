@@ -13,6 +13,7 @@ import {
   entregasEsquecidas,
   escolhasCompletas,
   esperaDoCardapio,
+  filtrarPedidos,
   ofereceOPrecoDeHoje,
   passouDoDia,
   podeIrPara,
@@ -416,6 +417,44 @@ describe("resumoDosItens", () => {
         { soNome: true },
       ),
     ).toBe("1 × Combo dupla · 1 × Cookie tradicional");
+  });
+});
+
+describe("filtrarPedidos", () => {
+  const janessa = {
+    clienteNome: "Janessa Domingos",
+    codigo: "P-260923-K3F",
+    itens: [{ nomeSnapshot: "Cookie Pistache" }],
+  };
+  const ana = {
+    clienteNome: "Ana Beatriz",
+    codigo: "P-260915-A1B",
+    itens: [
+      {
+        nomeSnapshot: "Combo dupla",
+        escolhas: [{ nomeSnapshot: "Cookie de Maçã" }],
+      },
+    ],
+  };
+  const pedidos = [janessa, ana];
+
+  it("acha pelo nome da cliente, sem caixa", () => {
+    expect(filtrarPedidos(pedidos, "JAN")).toEqual([janessa]);
+  });
+
+  it("acha pelo produto, inclusive o escolhido no combo, sem acento", () => {
+    expect(filtrarPedidos(pedidos, "pistache")).toEqual([janessa]);
+    expect(filtrarPedidos(pedidos, "maca")).toEqual([ana]);
+  });
+
+  it("acha pelo código, inteiro ou em parte", () => {
+    expect(filtrarPedidos(pedidos, "p-260923-k3f")).toEqual([janessa]);
+    expect(filtrarPedidos(pedidos, "A1B")).toEqual([ana]);
+  });
+
+  it("texto vazio não filtra, e o que não casa não volta", () => {
+    expect(filtrarPedidos(pedidos, "  ")).toEqual(pedidos);
+    expect(filtrarPedidos(pedidos, "brigadeiro")).toEqual([]);
   });
 });
 

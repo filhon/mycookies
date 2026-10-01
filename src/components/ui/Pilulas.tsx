@@ -23,7 +23,8 @@ export function Pilulas<V extends string | number | boolean>({
   className,
 }: {
   opcoes: readonly OpcaoPilula<V>[];
-  valor: V;
+  /** `null` deixa todas desmarcadas: a busca de `/pedidos` (`#d252`). */
+  valor: V | null;
   aoMudar: (valor: V) => void;
   /** O nome do grupo para o leitor de tela. */
   rotulo: string;

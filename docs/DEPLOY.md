@@ -388,6 +388,20 @@ São Paulo), e a Vercel só roda cron em produção (`#d205`).
 7. **Depois do deploy:** Vercel → Settings → Cron Jobs mostra o agendamento, e o log do primeiro
    dia termina com `{ enviados, repetidos, falhas: 0 }`.
 
+## 13 · Ao publicar a 065: o índice dos pedidos da cliente
+
+A busca de `/pedidos` (`DECISOES.md#d252`) consulta os pedidos de uma cliente cadastrada por
+`arquivado + clienteId + dataEntregaISO desc`, um índice composto novo em
+`firestore.indexes.json`. **Publique o índice antes do app**, e espere ele sair de "Criando"
+no console (Firestore → Índices):
+
+```bash
+firebase deploy --only firestore:indexes
+```
+
+Sem ele, tocar em "Todos os pedidos de …" mostra "Não deu para carregar seus pedidos"; o resto
+de `/pedidos`, a busca em memória inclusive, segue funcionando. A regra não muda.
+
 ## Limites conhecidos
 
 **O arquivo da nota tem dois tetos, e o menor não é o nosso.** `LIMITE_ARQUIVO_BYTES` é 8 MB

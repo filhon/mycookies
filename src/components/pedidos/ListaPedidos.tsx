@@ -2,10 +2,17 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { HandCoins, Plus, TriangleAlert } from "lucide-react";
+import {
+  ChevronRight,
+  HandCoins,
+  Info,
+  Plus,
+  TriangleAlert,
+} from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { Botao } from "@/components/ui/Botao";
+import { CampoBusca } from "@/components/ui/CampoBusca";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
@@ -18,22 +25,28 @@ import { EntregasAPagar } from "./EntregasAPagar";
 import { FichaDoPedido } from "./FichaDoPedido";
 import { LinhaPedido } from "./LinhaPedido";
 import { ID_PEDIDO_NOVO } from "./EditorPedido";
+import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { dataISODe, rotuloAgenda } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
 import {
   agruparPorEntrega,
   aReceber,
+  ehConcluido,
+  filtrarPedidos,
   passouDoDia,
   somaDoDia,
   STATUS_CONCLUIDOS,
 } from "@/lib/domain/pedido";
+import { consultaClientes } from "@/lib/firebase/mutations/clientes";
 import {
   consultaAgenda,
   consultaEntreguesEmAberto,
   consultaHistorico,
+  consultaPedidosDaCliente,
 } from "@/lib/firebase/mutations/pedidos";
 import { useColecao } from "@/lib/hooks/useColecao";
-import type { DataISO, Pedido } from "@/lib/types";
+import { useConexao } from "@/lib/hooks/useDispositivo";
+import type { Cliente, DataISO, Pedido } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 import { useContaId, usePapel } from "@/providers/AuthProvider";
 
@@ -52,6 +65,9 @@ function vistaDa(parametro: string | null, dona: boolean): Vista {
 
 /** Quantos concluídos cada "Mostrar mais antigos" traz. */
 const PAGINA_DO_HISTORICO = 30;
+
+/** Quantas clientes cadastradas a busca sugere; digitar mais estreita. */
+const CLIENTES_SUGERIDAS = 3;
 
 /**
  * A agenda de encomendas, por data de entrega.
@@ -81,6 +97,20 @@ export function ListaPedidos() {
   // depois de fechar, para a folha descer com o conteúdo dentro.
   const [lendo, setLendo] = useState<Pedido | null>(null);
   const [fichaAberta, setFichaAberta] = useState(false);
+  // A busca atravessa as vistas (`#d252`): com texto no campo, a vista da URL
+  // fica parada, e limpar o campo volta a ela.
+  const [busca, setBusca] = useState("");
+  const [clienteEscolhida, setClienteEscolhida] = useState<Cliente | null>(
+    null,
+  );
+  const termo = chaveDeBusca(busca);
+  const buscando = termo !== "";
+  const online = useConexao();
+
+  function mudarBusca(texto: string) {
+    setBusca(texto);
+    setClienteEscolhida(null);
+  }
 
   function abrirPedido(pedido: Pedido) {
     setLendo(pedido);
@@ -90,6 +120,7 @@ export function ListaPedidos() {
   // `replace`, e não `push`: trocar de vista não é ir a outro lugar, e o
   // voltar do navegador leva para onde ela estava antes de `/pedidos`.
   function escolherVista(valor: Vista) {
+    mudarBusca("");
     router.replace(valor === "agenda" ? "/pedidos" : `/pedidos?vista=${valor}`);
   }
 
@@ -107,9 +138,30 @@ export function ListaPedidos() {
   const entreguesEmAberto = useColecao<Pedido>(consultaDosEntregues);
   const historico = useColecao<Pedido>(consultaDoHistorico);
 
+  // As clientes só são assinadas com dois caracteres no campo: abrir
+  // `/pedidos` sem buscar não paga leitura por elas. É a consulta do editor,
+  // e cai no mesmo cache.
+  const sugereClientes = termo.length >= 2;
+  const consultaDasClientes = useMemo(
+    () => (sugereClientes ? consultaClientes(contaId) : null),
+    [sugereClientes, contaId],
+  );
+  const clientes = useColecao<Cliente>(consultaDasClientes);
+  const consultaDaCliente = useMemo(
+    () =>
+      clienteEscolhida
+        ? consultaPedidosDaCliente(contaId, clienteEscolhida.id)
+        : null,
+    [clienteEscolhida, contaId],
+  );
+  const daCliente = useColecao<Pedido>(consultaDaCliente);
+
   const carregando =
     agenda.carregando || entreguesEmAberto.carregando || historico.carregando;
-  const erro = agenda.erro ?? entreguesEmAberto.erro ?? historico.erro;
+  // Só a lista espera pelos pedidos da cliente; a faixa não pisca.
+  const carregandoLista = carregando || daCliente.carregando;
+  const erro =
+    agenda.erro ?? entreguesEmAberto.erro ?? historico.erro ?? daCliente.erro;
   const pendente =
     agenda.pendente || entreguesEmAberto.pendente || historico.pendente;
 
@@ -123,8 +175,6 @@ export function ListaPedidos() {
     "me-devem": entreguesEmAberto.dados,
     "ja-sairam": historico.dados,
   }[vista];
-  // No que já saiu a linha mostra só a exceção (`#d248`).
-  const saiu = vista === "me-devem" || vista === "ja-sairam";
 
   const vistas: OpcaoPilula<Vista>[] = [
     { valor: "agenda", rotulo: "Agenda" },
@@ -165,10 +215,32 @@ export function ListaPedidos() {
     return [...porId.values()];
   }, [agenda.dados, entreguesEmAberto.dados, historico.dados]);
 
+  // A busca olha tudo o que a tela tem, sem repetir (`#d252`); com uma
+  // cliente escolhida, os pedidos dela, que vêm do banco.
+  const resultado = useMemo(
+    () => filtrarPedidos(paraEntregas, busca),
+    [paraEntregas, busca],
+  );
+  const pedidosNaTela = clienteEscolhida
+    ? daCliente.dados
+    : buscando
+      ? resultado
+      : pedidosDaVista;
+
+  // Começa por qualquer palavra do nome: "jan" e "domingos" acham a Janessa
+  // Domingos, "ssa" não.
+  const sugeridas =
+    sugereClientes && !clienteEscolhida
+      ? clientes.dados
+          .filter((cliente) => ` ${cliente.nomeBusca}`.includes(` ${termo}`))
+          .slice(0, CLIENTES_SUGERIDAS)
+      : [];
+
   // "Já saíram" corre ao contrário: o que interessa de um pedido entregue é
-  // que ele é o mais recente. "Me devem" não: a dívida mais antiga primeiro.
-  const grupos = agruparPorEntrega(pedidosDaVista);
-  if (vista === "ja-sairam") grupos.reverse();
+  // que ele é o mais recente. A busca também: ela procura o que já aconteceu.
+  // "Me devem" não: a dívida mais antiga primeiro.
+  const grupos = agruparPorEntrega(pedidosNaTela);
+  if (vista === "ja-sairam" || buscando) grupos.reverse();
 
   // O fim da lista só se sabe com o servidor: do cache, a lista pode estar
   // mais curta que ele, e esconder o botão seria dizer "acabou" sem saber.
@@ -215,19 +287,63 @@ export function ListaPedidos() {
           </div>
         }
       >
-        <Pilulas
-          rotulo="Vista"
-          opcoes={vistas}
-          valor={vista}
-          aoMudar={escolherVista}
-        />
+        <div className="space-y-3">
+          <CampoBusca
+            rotulo="Buscar pedido"
+            placeholder="Cliente, produto ou código"
+            value={busca}
+            onChange={(evento) => mudarBusca(evento.target.value)}
+          />
+          {/* Com texto no campo nenhuma vista está escolhida: o resultado é
+              de todas (`#d252`). */}
+          <Pilulas
+            rotulo="Vista"
+            opcoes={vistas}
+            valor={buscando ? null : vista}
+            aoMudar={escolherVista}
+          />
+        </div>
       </CabecalhoPagina>
 
       <div className="mt-4 flex min-h-8 items-center justify-between gap-3">
-        <p className="num text-label text-ink-muted" aria-live="polite">
-          {carregando ? "Carregando" : linhaDeContagem(vista, pedidosDaVista)}
-        </p>
+        {clienteEscolhida ? (
+          <p className="flex flex-wrap items-center gap-x-1 text-label text-ink-muted">
+            <span className="num" aria-live="polite">
+              {carregandoLista
+                ? "Carregando"
+                : `${contagem(pedidosNaTela.length)} de ${clienteEscolhida.nome}`}
+            </span>
+            <span aria-hidden>·</span>
+            <button
+              type="button"
+              onClick={() => setClienteEscolhida(null)}
+              className="toque -my-2 rounded-md px-2 font-semibold text-brand-ink transition-colors duration-150 ease-quart hover:bg-brand-100"
+            >
+              Voltar à busca
+            </button>
+          </p>
+        ) : (
+          <p className="num text-label text-ink-muted" aria-live="polite">
+            {carregando
+              ? "Carregando"
+              : buscando
+                ? `${contagem(resultado.length)} no que está aberto`
+                : linhaDeContagem(vista, pedidosDaVista)}
+          </p>
+        )}
       </div>
+
+      {/* Informativo, e não alerta: a busca em memória funciona igual. */}
+      {buscando && !online && (
+        <p className="mt-2 flex items-start gap-2.5 rounded-lg border border-info/30 bg-info-soft px-3 py-2.5 text-label text-ink">
+          <Info
+            aria-hidden
+            className="mt-0.5 size-4 shrink-0 text-info"
+            strokeWidth={1.75}
+          />
+          Sem internet, a busca olha só o que já foi aberto neste aparelho.
+        </p>
+      )}
 
       {/* Somado sobre a agenda inteira mais os entregues em aberto, e não sobre
           a vista da vez nem sobre a página: o que devem é fato. */}
@@ -245,6 +361,32 @@ export function ListaPedidos() {
         <EntregasAPagar pedidos={paraEntregas} hoje={hoje} />
       )}
 
+      {/* A cliente cadastrada no topo: os pedidos dela vêm do banco, e não
+          só das páginas abertas (`#d252`). */}
+      {sugeridas.length > 0 && (
+        <ul className="mt-4 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
+          {sugeridas.map((cliente) => (
+            <li key={cliente.id}>
+              <button
+                type="button"
+                onClick={() => setClienteEscolhida(cliente)}
+                className="flex min-h-13 w-full items-center gap-3 px-4 py-3 text-left text-body text-ink transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken"
+              >
+                <span className="min-w-0 flex-1 truncate">
+                  Todos os pedidos de{" "}
+                  <span className="font-medium">{cliente.nome}</span>
+                </span>
+                <ChevronRight
+                  aria-hidden
+                  className="size-5 shrink-0 text-ink-subtle"
+                  strokeWidth={1.75}
+                />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
       {erro ? (
         <Caixa>
           <EstadoVazio
@@ -252,13 +394,27 @@ export function ListaPedidos() {
             descricao="Verifique a conexão. O que já foi aberto antes continua disponível offline."
           />
         </Caixa>
-      ) : carregando ? (
+      ) : carregandoLista ? (
         <Caixa>
           <EsqueletoLista />
         </Caixa>
-      ) : pedidosDaVista.length === 0 ? (
+      ) : pedidosNaTela.length === 0 ? (
         <Caixa>
-          {nadaGravado ? (
+          {clienteEscolhida ? (
+            <EstadoVazio
+              titulo={`Nenhum pedido de ${clienteEscolhida.nome} ainda.`}
+              descricao="O pedido anotado sem escolher a cliente cadastrada se acha pelo nome, na busca."
+            />
+          ) : buscando ? (
+            <EstadoVazio
+              titulo={`Nada com “${busca.trim()}”.`}
+              descricao={
+                historicoAcabou
+                  ? "Procurei em todos os pedidos, pelo nome da cliente, do produto e pelo código."
+                  : "Nos pedidos abertos até agora, não. Os mais antigos ainda podem ter."
+              }
+            />
+          ) : nadaGravado ? (
             <EstadoVazio
               titulo="Nenhuma encomenda combinada."
               descricao="Anote o pedido com o preço de hoje. Ele fica congelado mesmo se o chocolate subir amanhã."
@@ -287,13 +443,12 @@ export function ListaPedidos() {
               dataISO={grupo.dataISO}
               pedidos={grupo.pedidos}
               hoje={hoje}
-              saiu={saiu}
               aoAbrir={abrirPedido}
             />
           ))}
 
           {/* A agenda acaba aqui: o histórico não disputa a rolagem com ela. */}
-          {vista === "agenda" && (
+          {vista === "agenda" && !buscando && (
             <Botao
               variante="terciaria"
               larguraTotal
@@ -307,7 +462,7 @@ export function ListaPedidos() {
               querer. A lista não pisca ao crescer — `useColecao` guarda a
               página anterior até o snapshot novo chegar do cache, no mesmo
               tique. */}
-          {vista === "ja-sairam" && !historicoAcabou && (
+          {vista === "ja-sairam" && !buscando && !historicoAcabou && (
             <Botao
               tamanho="lg"
               larguraTotal
@@ -318,6 +473,23 @@ export function ListaPedidos() {
           )}
         </div>
       )}
+
+      {/* A cliente avulsa não tem consulta própria: só se acha abrindo mais
+          páginas do histórico, e o filtro refaz sozinho (`#d252`). */}
+      {buscando &&
+        !clienteEscolhida &&
+        !carregando &&
+        !erro &&
+        !historicoAcabou && (
+          <Botao
+            tamanho="lg"
+            larguraTotal
+            className="mt-6"
+            onClick={() => setLimite(limite + PAGINA_DO_HISTORICO)}
+          >
+            Procurar nos mais antigos
+          </Botao>
+        )}
 
       {lendo && (
         <FichaDoPedido
@@ -418,6 +590,12 @@ function comContagem(rotulo: string, quantidade: number): string {
   return quantidade > 0 ? `${rotulo} ${quantidade}` : rotulo;
 }
 
+/** "1 pedido", "12 pedidos", "nenhum pedido". */
+function contagem(n: number): string {
+  if (n === 0) return "nenhum pedido";
+  return `${n} ${n === 1 ? "pedido" : "pedidos"}`;
+}
+
 /**
  * A contagem acima da lista segue a vista, e conta só o que é exato: o total
  * do histórico não existe sem `getCountFromServer`, que exige rede.
@@ -504,13 +682,11 @@ function GrupoDoDia({
   dataISO,
   pedidos,
   hoje,
-  saiu,
   aoAbrir,
 }: {
   dataISO: DataISO;
   pedidos: Pedido[];
   hoje: DataISO;
-  saiu: boolean;
   aoAbrir: (pedido: Pedido) => void;
 }) {
   const { total, sobra } = somaDoDia(pedidos);
@@ -560,7 +736,9 @@ function GrupoDoDia({
           <LinhaPedido
             key={pedido.id}
             pedido={pedido}
-            saiu={saiu}
+            // No que já saiu a linha mostra só a exceção (`#d248`). Pelo
+            // status, e não pela vista: a busca mistura os dois (`#d252`).
+            saiu={ehConcluido(pedido.status)}
             aoAbrir={aoAbrir}
           />
         ))}

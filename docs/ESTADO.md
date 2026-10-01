@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-10-01 (**a 064 codificada**, a hora da entrega: `horaEntrega` opcional em `"HH:MM"`, o dia da agenda ordenado pela hora com os sem hora no fim, o relógio na linha de `/pedidos` e da Hoje, "às 14:30" na ficha e no WhatsApp, `#d251`; roteiro de aparelho por rodar; **a 063 codificada**, a ficha do pedido: tocar lê, numa folha com o próximo passo, "Recebi" com "Desfazer", WhatsApp (cobrança no entregue não pago), ligar e mapa, e editar vira o botão do rodapé, `#d249` e `#d250`; roteiro de aparelho por rodar; **a 062 codificada**, quem me deve: quatro vistas no lugar das sete pílulas, com a vista na URL, a faixa em "Me devem" e "Vai entrar", a linha do que saiu só com a exceção e o dia com a sobra, `#d246` a `#d248`; roteiro de aparelho por rodar; **specs 062 a 066 escritas**: a crítica da tela
+Atualizado em 2026-10-01 (**a 065 codificada**, achar um pedido: a busca na faixa de ferramentas de `/pedidos`, em memória pelo nome da cliente, o produto e o código, e "Todos os pedidos de …" para a cliente cadastrada, pelo índice novo `arquivado + clienteId + dataEntregaISO desc`, **a publicar antes do app**, `#d252`; roteiro de aparelho por rodar; **a 064 codificada**, a hora da entrega: `horaEntrega` opcional em `"HH:MM"`, o dia da agenda ordenado pela hora com os sem hora no fim, o relógio na linha de `/pedidos` e da Hoje, "às 14:30" na ficha e no WhatsApp, `#d251`; roteiro de aparelho por rodar; **a 063 codificada**, a ficha do pedido: tocar lê, numa folha com o próximo passo, "Recebi" com "Desfazer", WhatsApp (cobrança no entregue não pago), ligar e mapa, e editar vira o botão do rodapé, `#d249` e `#d250`; roteiro de aparelho por rodar; **a 062 codificada**, quem me deve: quatro vistas no lugar das sete pílulas, com a vista na URL, a faixa em "Me devem" e "Vai entrar", a linha do que saiu só com a exceção e o dia com a sobra, `#d246` a `#d248`; roteiro de aparelho por rodar; **specs 062 a 066 escritas**: a crítica da tela
 Pedidos sobre os prints do celular e do desktop virou cinco specs de uma sessão cada, na ordem 062
 (quem me deve: quatro vistas no lugar das sete pílulas, "A receber" dividido em "Me devem" e "Vai
 entrar", a linha do que saiu mostra só a exceção, o dia ganha a sobra; **vem antes de tudo**), 063
@@ -4358,6 +4358,30 @@ mais importa: é ele que prova a tira da área segura.
 Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 065 · Achar um pedido
+
+**Codificada em 2026-10-01** (`#d252`). Um índice composto novo; nenhum campo, regra ou
+dependência.
+
+- `src/lib/domain/pedido.ts`: `filtrarPedidos`, por cliente, produto (escolhas do combo
+  inclusive) e código, com `chaveDeBusca`. Teste.
+- `src/lib/firebase/mutations/pedidos.ts`: `consultaPedidosDaCliente`.
+- `firestore.indexes.json`: `arquivado + clienteId + dataEntregaISO DESC`. `DEPLOY.md` § 13.
+- `src/components/pedidos/ListaPedidos.tsx`: o campo acima das pílulas; até três clientes
+  sugeridas a partir de dois caracteres; "Procurar nos mais antigos"; a frase sem internet; a
+  linha do pedido mostra a exceção pelo status, e não mais pela vista.
+- `src/components/ui/Pilulas.tsx`: `valor` aceita `null` (todas desmarcadas). Fora da lista de
+  arquivos da spec, uma linha de tipo.
+
+**Diferente da spec:** a sugestão sai sem a contagem ("· 12"): `Cliente.totalPedidos` conta só
+os pagos. A contagem exata vem na linha depois do toque (`#d252`).
+
+**Não rodou**: o roteiro de aparelho da spec (§ 4), inteiro. O passo 1 depende do índice
+publicado.
+
+Portão: lint e typecheck limpos, **810 testes**, `npm run build` passa.
+`package.json` e `firestore.rules` intocados.
+
 ## A spec 064 · A hora da entrega
 
 **Codificada em 2026-10-01** (`#d251`). Um campo opcional novo, `Pedido.horaEntrega`, compatível
@@ -4443,6 +4467,8 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 065 está codificada** (seção acima). **Publique o índice antes do app** (`DEPLOY.md` § 13); o portão é o roteiro da spec, com o modo avião e uma cliente avulsa antiga. A próxima é a 066 (a mesa dos pedidos no desktop), a última da crítica de Pedidos.
 
 **A 064 está codificada** (seção acima). Publica depois da 063, ou junto; o portão é o roteiro da spec, com o modo avião e um pedido pelo cardápio. A próxima é a 065 (achar um pedido), que traz um índice novo.
 
