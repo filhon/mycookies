@@ -7353,3 +7353,75 @@ dizendo quanto sobra e o dia não somando. A composição do combo cortava o res
   `TriangleAlert` em `--negative`, como na linha. `somaDoDia` soma total e `lucroEstimado` sem o
   cancelado; antes o cancelado entrava no total do dia. A contagem de pedidos segue contando as
   linhas do dia, cancelado incluído: a spec tirou o cancelado das duas somas, não da contagem.
+
+## D249 · Tocar no pedido lê; editar é o botão do rodapé
+
+**Status:** vigente · decidida em 2026-10-01, na spec `063-a-ficha-do-pedido.md`; codificada em 2026-10-01
+
+**Contexto.** Toda ação passava pelo editor inteiro: marcar entregue era abrir o formulário de
+1.500 linhas, rolar até "Em que pé está", tocar, voltar. Ler o pedido na bancada era entrar num
+formulário com campos vivos, e o telefone e o endereço não levavam a lugar nenhum.
+
+**Decisão.**
+
+- Tocar numa linha de `/pedidos` abre o `Painel` com `FichaDoPedido`, pelo arranjo da 050
+  (`#d222`): estado da tela, sem URL; o pedido fica depois de fechar para a folha descer com o
+  conteúdo. "Novo pedido" e o "+" continuam indo direto ao editor. A `LinhaPedido` virou
+  `<button>` com `aoAbrir`.
+- **O pedido é lido pelo id** (`useDocumento(docPedido)`), com o da lista como primeiro quadro.
+  A spec pedia a assinatura da lista, e ela não basta: um pedido de "Me devem" pago pela ficha
+  sai de `consultaEntreguesEmAberto` e, sendo a dívida mais antiga, quase nunca está entre os
+  trinta mais recentes do histórico. A ficha ficaria com o pedido de antes do pagamento e o
+  "Desfazer" não teria o que desfazer. É o que o editor já faz, e cai no mesmo cache.
+- A ficha: selo, "Pelo cardápio" e o código; os itens com a composição inteira em linha
+  própria (`resumoDasEscolhas`), o subtotal gravado de cada um; o total com o desconto escrito e
+  a sobra gravada ("sobram R$ 27,58 pra você", ou "perde" com o triângulo); entrega ou
+  retirada; telefone; observações; pagamento.
+- **Mapa, WhatsApp e ligar são `<a>`** (`#d77`): `google.com/maps/search/?api=1&query=` com o
+  endereço codificado, `linkDoWhatsApp` e `tel:+55…`. Sem telefone discável, o número fica como
+  texto e os dois botões não existem; sem telefone nenhum, a linha some.
+- **A mensagem depende do pé do pedido.** Entregue e não pago: `mensagemDeCobranca`, "Oi, Ana!
+  Passando pra lembrar do pedido de 27/9, R$ 13,00. Obrigada!", o dia da entrega em `d/m`. Os
+  dados para pagar não entram (não há chave Pix na configuração). Qualquer outro:
+  `mensagemDoPedido` sobre o **gravado**, e não sobre a tela como no editor (`#d78`): aqui não
+  há tela editável, o gravado é o que ela vê.
+- **O primário é o "adiante" da fila** (`FLUXO_PEDIDO`, o mesmo de `transicoesPermitidas`), com
+  `ACAO_STATUS_PEDIDO`; entregue e não pago, "Recebi" (só a dona); entregue e pago, ou
+  cancelado, nenhum. "Editar pedido" é o secundário ao lado, e na largura toda quando não há
+  primário. Mudar o status não fecha a folha.
+- **Voltar um passo, cancelar e arquivar ficam no editor.**
+- **Ajudante:** o editor deixa ela mover o status e não mostra o bloco de pagamento; a ficha
+  oferece o próximo passo e não oferece "Recebi" nem "Desfazer". A linha do pagamento aparece
+  como texto, como o "Pago" que ela já vê na lista. A cliente vinculada nem é assinada.
+
+**O que o roteiro pede e o painel não faz.** O roteiro de aparelho (passo 1) diz que arrastar
+para baixo e o voltar do aparelho fecham a folha. O `Painel` não faz nenhum dos dois em tela
+nenhuma, e a 050, de onde a spec manda copiar, também não. Ficou como lá: o voltar sai de
+`/pedidos`, e a folha fecha pelo X, pelo véu e pelo `Escape`. Se o passo 1 incomodar no
+aparelho, é uma spec do `Painel`, para as telas todas, e não um remendo na ficha.
+
+## D250 · "Recebi" fora do editor
+
+**Status:** vigente · decidida em 2026-10-01, na spec `063-a-ficha-do-pedido.md`; codificada em 2026-10-01
+
+**Decisão.**
+
+- `useContextoPagamento(contaId, competencia)` saiu de `FormularioPedido` para
+  `src/lib/hooks/`, usado pelo editor e pela ficha. Competência nula não assina nada e devolve
+  contexto nulo: é o caso da ajudante. No editor isso trocou o contexto da ajudante de um
+  objeto vazio por `null`; nenhum caminho dela chega a uma mutação que o leia (pagar não
+  aparece, e o pedido pago abre só para leitura). As mutações não mudaram.
+- "Recebi" grava com o dia de hoje e a forma do pedido, e fica desativado enquanto o resumo do
+  mês carrega, como o "Marcar como pago" do editor. Outro dia de pagamento é coisa do editor.
+- **Sem forma no pedido**, a ficha mostra as formas ativas em pílulas, com "Recebi" desativado
+  até escolher, e diz quanto a maquininha fica quando a escolhida cobra taxa. `marcarPedidoPago`
+  não recalcula a taxa nem a sobra; por isso a forma entra antes pelo mesmo `atualizarPedido`
+  do "Salvar" do editor (o corpo refaz `custoTaxaPagamento` e `lucroEstimado` pela
+  `derivarPedido`), e o pagamento lança com os derivados novos já no objeto, porque a
+  assinatura ainda não os trouxe. Pedido **com** forma não oferece trocar: muda a sobra, e
+  isso é do editor. Sem nenhuma forma ativa na conta, "Recebi" grava sem forma, como o editor.
+- Depois de pago pela ficha, a linha diz "Pix · pago hoje" com o terciário **"Desfazer"**
+  (`desfazerPagamento`, sem a confirmação do editor: o toque errado acabou de acontecer, no
+  mesmo lugar). Ele vive enquanto a ficha fica aberta; fechar o esquece.
+- A cliente vinculada é lida por `docCliente(pedido.clienteId)`, só para a dona; arquivada
+  conta como nenhuma, porque o editor só a acha entre as não arquivadas.

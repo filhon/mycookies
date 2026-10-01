@@ -15,6 +15,7 @@ import { classesBotao } from "@/components/ui/estilosBotao";
 import { AtalhoParaCompras } from "@/components/compras/AtalhoParaCompras";
 import { AtalhoParaClientes } from "@/components/clientes/AtalhoParaClientes";
 import { EntregasAPagar } from "./EntregasAPagar";
+import { FichaDoPedido } from "./FichaDoPedido";
 import { LinhaPedido } from "./LinhaPedido";
 import { ID_PEDIDO_NOVO } from "./EditorPedido";
 import { dataISODe, rotuloAgenda } from "@/lib/domain/datas";
@@ -76,6 +77,15 @@ export function ListaPedidos() {
   const vista = vistaDa(useSearchParams().get("vista"), dona);
   const [hoje] = useState(() => dataISODe(new Date()));
   const [limite, setLimite] = useState(PAGINA_DO_HISTORICO);
+  // Tocar lê (`#d249`), pelo arranjo de Materiais (`#d222`): o pedido fica
+  // depois de fechar, para a folha descer com o conteúdo dentro.
+  const [lendo, setLendo] = useState<Pedido | null>(null);
+  const [fichaAberta, setFichaAberta] = useState(false);
+
+  function abrirPedido(pedido: Pedido) {
+    setLendo(pedido);
+    setFichaAberta(true);
+  }
 
   // `replace`, e não `push`: trocar de vista não é ir a outro lugar, e o
   // voltar do navegador leva para onde ela estava antes de `/pedidos`.
@@ -278,6 +288,7 @@ export function ListaPedidos() {
               pedidos={grupo.pedidos}
               hoje={hoje}
               saiu={saiu}
+              aoAbrir={abrirPedido}
             />
           ))}
 
@@ -306,6 +317,15 @@ export function ListaPedidos() {
             </Botao>
           )}
         </div>
+      )}
+
+      {lendo && (
+        <FichaDoPedido
+          aberto={fichaAberta}
+          aoFechar={() => setFichaAberta(false)}
+          pedido={lendo}
+          hoje={hoje}
+        />
       )}
     </>
   );
@@ -485,11 +505,13 @@ function GrupoDoDia({
   pedidos,
   hoje,
   saiu,
+  aoAbrir,
 }: {
   dataISO: DataISO;
   pedidos: Pedido[];
   hoje: DataISO;
   saiu: boolean;
+  aoAbrir: (pedido: Pedido) => void;
 }) {
   const { total, sobra } = somaDoDia(pedidos);
   const atrasado = pedidos.some((pedido) => passouDoDia(pedido, hoje));
@@ -535,7 +557,12 @@ function GrupoDoDia({
 
       <ul className="mt-2 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
         {pedidos.map((pedido) => (
-          <LinhaPedido key={pedido.id} pedido={pedido} saiu={saiu} />
+          <LinhaPedido
+            key={pedido.id}
+            pedido={pedido}
+            saiu={saiu}
+            aoAbrir={aoAbrir}
+          />
         ))}
       </ul>
     </section>

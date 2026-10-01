@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   Check,
   ChevronRight,
@@ -30,17 +29,21 @@ import { cn } from "@/lib/utils/cn";
 export function LinhaPedido({
   pedido,
   saiu = false,
+  aoAbrir,
 }: {
   pedido: Pedido;
   saiu?: boolean;
+  /** Tocar lê: abre a ficha do pedido (`#d249`). */
+  aoAbrir: (pedido: Pedido) => void;
 }) {
   const noPrejuizo = pedido.lucroEstimado < 0;
   const faltaReceber = saiu && pedido.status === "ENTREGUE" && !pedido.pago;
 
   return (
     <li>
-      <Link
-        href={`/pedidos/${pedido.id}`}
+      <button
+        type="button"
+        onClick={() => aoAbrir(pedido)}
         className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken"
       >
         <div className="min-w-0 flex-1">
@@ -132,7 +135,7 @@ export function LinhaPedido({
           className="size-5 shrink-0 text-ink-subtle"
           strokeWidth={1.75}
         />
-      </Link>
+      </button>
     </li>
   );
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { formatarMoeda } from "@/lib/domain/money";
 import {
   linkDoWhatsApp,
+  mensagemDeCobranca,
   mensagemDoPedido,
   telefoneParaWhatsApp,
   type ResumoParaCliente,
@@ -257,5 +258,39 @@ describe("linkDoWhatsApp", () => {
 
   it("faz a quebra de linha viajar como %0A", () => {
     expect(linkDoWhatsApp(null, "uma\noutra")).toContain("uma%0Aoutra");
+  });
+});
+
+describe("mensagemDeCobranca", () => {
+  it("lembra o dia da entrega e o valor, pelo primeiro nome", () => {
+    expect(
+      mensagemDeCobranca({
+        clienteNome: "Ana Beatriz",
+        dataEntregaISO: "2026-09-27",
+        total: 1300,
+      }),
+    ).toBe(
+      `Oi, Ana! Passando pra lembrar do pedido de 27/9, ${dinheiro(1300)}. Obrigada!`,
+    );
+  });
+
+  it("escreve o dia e o mês sem zero à esquerda", () => {
+    expect(
+      mensagemDeCobranca({
+        clienteNome: "Ana",
+        dataEntregaISO: "2026-10-05",
+        total: 500,
+      }),
+    ).toContain("pedido de 5/10,");
+  });
+
+  it("sem nome, cumprimenta sem vírgula sobrando", () => {
+    expect(
+      mensagemDeCobranca({
+        clienteNome: "  ",
+        dataEntregaISO: "2026-09-27",
+        total: 500,
+      }),
+    ).toMatch(/^Oi! Passando/);
   });
 });

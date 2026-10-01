@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-10-01 (**a 062 codificada**, quem me deve: quatro vistas no lugar das sete pílulas, com a vista na URL, a faixa em "Me devem" e "Vai entrar", a linha do que saiu só com a exceção e o dia com a sobra, `#d246` a `#d248`; roteiro de aparelho por rodar; **specs 062 a 066 escritas**: a crítica da tela
+Atualizado em 2026-10-01 (**a 063 codificada**, a ficha do pedido: tocar lê, numa folha com o próximo passo, "Recebi" com "Desfazer", WhatsApp (cobrança no entregue não pago), ligar e mapa, e editar vira o botão do rodapé, `#d249` e `#d250`; roteiro de aparelho por rodar; **a 062 codificada**, quem me deve: quatro vistas no lugar das sete pílulas, com a vista na URL, a faixa em "Me devem" e "Vai entrar", a linha do que saiu só com a exceção e o dia com a sobra, `#d246` a `#d248`; roteiro de aparelho por rodar; **specs 062 a 066 escritas**: a crítica da tela
 Pedidos sobre os prints do celular e do desktop virou cinco specs de uma sessão cada, na ordem 062
 (quem me deve: quatro vistas no lugar das sete pílulas, "A receber" dividido em "Me devem" e "Vai
 entrar", a linha do que saiu mostra só a exceção, o dia ganha a sobra; **vem antes de tudo**), 063
@@ -4358,6 +4358,32 @@ mais importa: é ele que prova a tira da área segura.
 Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 063 · A ficha do pedido
+
+**Codificada em 2026-10-01** (`#d249`, `#d250`). Nenhum campo, consulta, regra ou dependência.
+
+- `src/components/pedidos/FichaDoPedido.tsx`: novo. O `Painel` com o pedido lido pelo id, os
+  itens com a composição, total e sobra, entrega com "Abrir no mapa", telefone com WhatsApp e
+  Ligar, observações, pagamento; no rodapé o próximo passo ou "Recebi", e "Editar pedido". Sem
+  forma no pedido, as formas ativas em pílulas antes de "Recebi"; depois de pago, "Desfazer".
+- `src/components/pedidos/ListaPedidos.tsx` e `LinhaPedido.tsx`: a linha é `<button>` e abre a
+  ficha.
+- `src/lib/hooks/useContextoPagamento.ts`: novo, extraído de `FormularioPedido`, que passou a
+  usá-lo. A única diferença no editor é o contexto da ajudante, agora `null` (no `#d250`).
+- `src/lib/domain/whatsapp.ts`: `mensagemDeCobranca`, com três testes.
+
+**Fora do que a spec desenhou** (no `#d249`): o pedido é lido pelo id, e não só pela assinatura
+da lista, para o "Desfazer" de um pedido de Me devem continuar vendo o documento; arrastar para
+baixo e o voltar do aparelho **não** fecham a folha, porque o `Painel` não faz isso em tela
+nenhuma e a 050 também não (o passo 1 do roteiro vai falhar nesses dois pontos).
+
+**Não rodou**: o roteiro de aparelho da spec (§ 4), inteiro. O 3 e o 4 ("Recebi" e "Desfazer"
+num pedido antigo de Me devem, com e sem rede) e o 10 (o editor sem regressão) são os que mais
+importam.
+
+Portão: lint e typecheck limpos, **802 testes**, `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## A spec 062 · Quem me deve
 
 **Codificada em 2026-10-01** (`#d246` a `#d248`). Nenhum campo, consulta, regra ou dependência.
@@ -4396,6 +4422,8 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 063 está codificada** (seção acima). Publica depois da 062, de onde a ficha mais abre; o portão é o roteiro da spec, com um pedido antigo em Me devem, o modo avião e um login de ajudante. A próxima é a 064 (a hora da entrega), que **pede confirmação do schema** antes de começar.
 
 **A 062 está codificada** (seção acima), a primeira da crítica da tela Pedidos. Publica
 sozinha; o portão é o roteiro da spec, com um login de ajudante e os dois temas. A próxima é a

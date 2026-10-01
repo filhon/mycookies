@@ -137,12 +137,12 @@ sem rede, `#d29`), das formas de pagamento e da cliente vinculada. Hoje isso mor
 
 ## Critérios de aceite
 
-- [ ] Tocar na linha lê; "Editar pedido" leva ao editor.
-- [ ] Próximo passo e "Recebi" pela ficha, com "Desfazer".
-- [ ] WhatsApp, ligar e mapa como `<a>`; cobrança com teste.
-- [ ] `useContextoPagamento` usado pelo editor e pela ficha; editor sem regressão.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] `#d249` e `#d250` escritos; `ESTADO.md` atualizado.
+- [x] Tocar na linha lê; "Editar pedido" leva ao editor.
+- [x] Próximo passo e "Recebi" pela ficha, com "Desfazer".
+- [x] WhatsApp, ligar e mapa como `<a>`; cobrança com teste.
+- [x] `useContextoPagamento` usado pelo editor e pela ficha; editor sem regressão.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] `#d249` e `#d250` escritos; `ESTADO.md` atualizado.
 
 ---
 

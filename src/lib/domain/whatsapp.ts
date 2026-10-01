@@ -84,6 +84,24 @@ function primeiroNome(nome: string): string {
 }
 
 /**
+ * A cobrança do pedido entregue e não pago (`DECISOES.md#d249`): curta, com o
+ * dia da entrega e o valor, sem lista de itens. Ela já recebeu o doce; o que
+ * falta lembrar é o quanto. Os dados para pagar não entram: não existe chave
+ * Pix na configuração (spec 063).
+ */
+export function mensagemDeCobranca(pedido: {
+  clienteNome: string;
+  dataEntregaISO: DataISO;
+  total: Centavos;
+}): string {
+  const nome = primeiroNome(pedido.clienteNome);
+  // '2026-09-27' → '27/9': é como se escreve o dia numa conversa.
+  const [, mes, dia] = pedido.dataEntregaISO.split("-").map(Number);
+  const oi = nome ? `Oi, ${nome}!` : "Oi!";
+  return `${oi} Passando pra lembrar do pedido de ${dia}/${mes}, ${formatarMoeda(pedido.total)}. Obrigada!`;
+}
+
+/**
  * O resumo do pedido, pronto para colar na conversa.
  *
  * Zero é ausência, a mesma regra do painel financeiro: uma linha

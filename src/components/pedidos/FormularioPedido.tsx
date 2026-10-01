@@ -65,11 +65,9 @@ import {
   desfazerPagamento,
   marcarPedidoPago,
   mudarStatusPedido,
-  type ContextoPagamento,
   type DadosPedido,
   type ItemDoPedido,
 } from "@/lib/firebase/mutations/pedidos";
-import { parcelasDoResumo } from "@/lib/domain/caixa";
 import { competenciaDeISO } from "@/lib/domain/datas";
 import {
   capacidadeDaFicha,
@@ -77,8 +75,7 @@ import {
   prontosLivres,
   vendaveis,
 } from "@/lib/domain/producao";
-import { docMeta, docResumoMensal } from "@/lib/firebase/colecoes";
-import { useDocumento } from "@/lib/hooks/useColecao";
+import { useContextoPagamento } from "@/lib/hooks/useContextoPagamento";
 import { contextoDaCapacidade } from "@/lib/hooks/useDespensaParaProduzir";
 import { BlocoOrcamento } from "./BlocoOrcamento";
 import { BlocoPagamento } from "./BlocoPagamento";
@@ -94,9 +91,7 @@ import type {
   FichaTecnica,
   Fornada,
   Insumo,
-  Meta,
   Pedido,
-  ResumoMensal,
   StatusPedido,
 } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
@@ -443,32 +438,14 @@ export function FormularioPedido({
   const competenciaPagamento =
     pedido?.competenciaPagamento ?? competenciaDeISO(pagoEmISO);
 
-  // A tela assina os dois documentos para que a mutação não leia nada: o
-  // espelho da meta e o ticket médio são escritos por valor, e lançar precisa
-  // funcionar sem rede (`DECISOES.md#d29`).
   // Para a ajudante, `null`: a assinatura nem nasce, e o `permission-denied`
-  // também não — é o arranjo do `AuthProvider` com a conta.
-  const referenciaResumo = useMemo(
-    () => (ajudante ? null : docResumoMensal(contaId, competenciaPagamento)),
-    [ajudante, contaId, competenciaPagamento],
+  // também não. Nenhum caminho dela chega a uma mutação que leia o contexto:
+  // pagar não aparece, e o pedido pago abre só para leitura.
+  const pagamento = useContextoPagamento(
+    contaId,
+    ajudante ? null : competenciaPagamento,
   );
-  const referenciaMeta = useMemo(
-    () => (ajudante ? null : docMeta(contaId, competenciaPagamento)),
-    [ajudante, contaId, competenciaPagamento],
-  );
-
-  const resumoDoPagamento = useDocumento<ResumoMensal>(referenciaResumo);
-  const metaDoPagamento = useDocumento<Meta>(referenciaMeta);
-
-  const parcelasDoPagamento = parcelasDoResumo(resumoDoPagamento.dado);
-
-  const contextoPagamento: ContextoPagamento = {
-    competencia: competenciaPagamento,
-    meta: metaDoPagamento.dado,
-    entradas: parcelasDoPagamento.entradas,
-    receitaPedidos: parcelasDoPagamento.receitaPedidos,
-    qtdPedidos: parcelasDoPagamento.qtdPedidos,
-  };
+  const contextoPagamento = pagamento.contexto;
 
   /** Os agregados da cliente só andam quando o pedido aponta para um cadastro. */
   const clienteDoPedido = clienteVinculado
@@ -1404,7 +1381,7 @@ export function FormularioPedido({
                 aoPagar={() => void pagar()}
                 aoDesfazer={() => void desfazer()}
                 ocupado={salvando}
-                semAgregado={resumoDoPagamento.carregando}
+                semAgregado={pagamento.carregando}
               />
             )}
           </>
