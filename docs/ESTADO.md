@@ -1,6 +1,13 @@
 # Estado do projeto
 
-Atualizado em 2026-09-30 (**o seletor de tema**, fora de spec, a pedido: bloco "Tema" na
+Atualizado em 2026-10-01 (**a 062 codificada**, quem me deve: quatro vistas no lugar das sete pílulas, com a vista na URL, a faixa em "Me devem" e "Vai entrar", a linha do que saiu só com a exceção e o dia com a sobra, `#d246` a `#d248`; roteiro de aparelho por rodar; **specs 062 a 066 escritas**: a crítica da tela
+Pedidos sobre os prints do celular e do desktop virou cinco specs de uma sessão cada, na ordem 062
+(quem me deve: quatro vistas no lugar das sete pílulas, "A receber" dividido em "Me devem" e "Vai
+entrar", a linha do que saiu mostra só a exceção, o dia ganha a sobra; **vem antes de tudo**), 063
+(a ficha do pedido: tocar lê, com próximo passo, "Recebi", WhatsApp, ligar e mapa), 064 (a hora da
+entrega: campo opcional, **pede confirmação do schema**), 065 (achar um pedido: busca em memória e
+pela cliente, um índice novo) e 066 (a mesa dos pedidos no desktop, a de menor retorno), com as
+decisões `#d246` a `#d253` reservadas; **o seletor de tema**, fora de spec, a pedido: bloco "Tema" na
 Configuração com Do aparelho · Claro · Escuro, guardado no aparelho e aplicado antes da
 primeira pintura, `#d244`; **a 061 escrita e codificada**, o "+" na mão: no celular a barra
 passa a Hoje · Pedidos · "+" · Produtos · ⋯, o "+" abre a grade das sete ações de registrar
@@ -4351,6 +4358,35 @@ mais importa: é ele que prova a tira da área segura.
 Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 062 · Quem me deve
+
+**Codificada em 2026-10-01** (`#d246` a `#d248`). Nenhum campo, consulta, regra ou dependência.
+
+- `src/components/pedidos/ListaPedidos.tsx`: as pílulas Agenda · Orçamentos · Me devem · Saíram,
+  com contagem no rótulo; a vista em `?vista=`, por `router.replace`; Me devem e a assinatura dos
+  entregues em aberto só para a dona; a contagem acima da lista por vista; o vazio de cada vista;
+  "Ver o que já saiu" no fim da agenda; a faixa `AReceber` em duas quantias com "Ver quem"; o
+  cabeçalho do dia com a sobra e sem o cancelado.
+- `src/app/(app)/(coluna)/pedidos/page.tsx`: `<Suspense>` em volta da lista, por causa do
+  `useSearchParams`. A rota continua estática.
+- `src/components/pedidos/LinhaPedido.tsx`: `saiu`, "Falta receber", resumo sem a composição.
+- `src/components/pedidos/EntregasAPagar.tsx`: a frase de uma linha. `PainelEntregas` já dizia o
+  "o que você cobrou é o que você paga"; ficou como estava.
+- `src/components/pedidos/EsperandoVoce.tsx`: o "falta receber" leva a `/pedidos?vista=me-devem`.
+- `src/lib/domain/pedido.ts`: `totalEntregue` em `aReceber`, `{ soNome }` em `resumoDosItens`,
+  `somaDoDia`. Testes dos três.
+- `DESIGN.md`: a linha "Pílula de filtro" ganha a contagem.
+
+**Fora do que a spec desenhou** (no `#d246`): a pílula já nasce "Saíram", porque nem com quatro
+cabe em 360px pela conta; o histórico segue assinado em todas as vistas, porque "Entregas a pagar"
+soma sobre ele.
+
+**Não rodou**: o roteiro de aparelho da spec (§ 4), inteiro. O passo 1 (a faixa e o primeiro
+pedido sem rolar em 360×640) e o 8 (ajudante) são os que mais importam.
+
+Portão: lint e typecheck limpos, **799 testes**, `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## Os termos e a privacidade — o texto (2026-09-24, fora de spec)
 
 `/termos` (12 seções) e `/privacidade` (11 seções) escritos sob a lei brasileira, com o
@@ -4360,6 +4396,10 @@ e-mail em `src/app/(auth)/responsavel.ts`, e a data "vigente desde" nas duas pá
 deploy, a revisão de um advogado**, com a lista de pontos a conferir no fim do `#d171`.
 
 ## Próxima ação
+
+**A 062 está codificada** (seção acima), a primeira da crítica da tela Pedidos. Publica
+sozinha; o portão é o roteiro da spec, com um login de ajudante e os dois temas. A próxima é a
+063 (a ficha do pedido).
 
 **A 060 está codificada** (seção acima), e com ela as quatro specs da crítica de layout (057 a
 060). Publica sozinha; o portão é o roteiro da spec, com um iPhone instalado e o movimento

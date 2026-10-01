@@ -121,6 +121,10 @@ de **teste** primeiro:
 3. **Um endpoint de webhook** apontando para `https://<host>/api/stripe/webhook`, com os três
    eventos `customer.subscription.created`, `customer.subscription.updated` e
    `customer.subscription.deleted`. Anotar o `whsec_…` → `STRIPE_WEBHOOK_SECRET`.
+   **O host é o canônico, `www.rendeapp.com.br`.** O domínio sem `www` responde 308, e o
+   Stripe não segue redirecionamento: conta como falha, o documento nunca vira assinante e
+   quem pagou fica presa em "Pagamento recebido" (aconteceu em 2026-09-30). Conferir com
+   `curl -X POST https://<host>/api/stripe/webhook` → tem de dar 400, não 3xx.
 4. **Para o `npm run dev`**, o Stripe CLI substitui o passo 3:
    `stripe listen --forward-to localhost:3000/api/stripe/webhook` imprime um segredo local,
    diferente do de produção.

@@ -63,7 +63,7 @@ export function EntregasAPagar({
       >
         {quantidade === 0
           ? "Nenhuma entrega esperando acerto agora."
-          : `${quantidade} ${quantidade === 1 ? "entrega já feita" : "entregas já feitas"} que você ainda não acertou com o entregador. O que você cobrou é o que você paga.`}
+          : `${quantidade} ${quantidade === 1 ? "entrega feita, ainda não acertada" : "entregas feitas, ainda não acertadas"} com o entregador.`}
       </FaixaResumo>
 
       <PainelEntregas

@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { Check, ChevronRight, Store, Truck, TriangleAlert } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  HandCoins,
+  Store,
+  Truck,
+  TriangleAlert,
+} from "lucide-react";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Marcador } from "@/components/ui/Selo";
 import { SeloStatus } from "./SeloStatus";
@@ -14,9 +21,21 @@ import { cn } from "@/lib/utils/cn";
  * O total nunca aparece sozinho: embaixo dele vem o que sobra do pedido, que é
  * a pergunta que este sistema existe para responder. O status vai como texto e
  * ícone, e não como cor de linha.
+ *
+ * No que já saiu (`saiu`), a linha mostra só a exceção (`DECISOES.md#d248`):
+ * "Entregue · Pago" repetido em trinta linhas escondia as duas que não
+ * pagaram. Ali o selo só aparece no cancelado, e o não pago diz "Falta
+ * receber". Na agenda tudo fica: o status é o que ela lê ali.
  */
-export function LinhaPedido({ pedido }: { pedido: Pedido }) {
+export function LinhaPedido({
+  pedido,
+  saiu = false,
+}: {
+  pedido: Pedido;
+  saiu?: boolean;
+}) {
   const noPrejuizo = pedido.lucroEstimado < 0;
+  const faltaReceber = saiu && pedido.status === "ENTREGUE" && !pedido.pago;
 
   return (
     <li>
@@ -30,16 +49,33 @@ export function LinhaPedido({ pedido }: { pedido: Pedido }) {
           </p>
 
           <p className="num mt-0.5 truncate text-label text-ink-muted">
-            {resumoDosItens(pedido.itens)}
+            {resumoDosItens(pedido.itens, 2, { soNome: true })}
           </p>
 
           {/* Uma pílula só, a do status. Pago e entrega são marcadores sem
               fundo: em 360px três pílulas quebravam em duas linhas de cor. */}
           <span className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-            <SeloStatus status={pedido.status} />
+            {(!saiu || pedido.status === "CANCELADO") && (
+              <SeloStatus status={pedido.status} />
+            )}
+            {/* Ícone e palavra, e não só o ocre: ele divide matiz com o âmbar. */}
+            {faltaReceber && (
+              <Marcador
+                className="text-attention"
+                icone={
+                  <HandCoins
+                    aria-hidden
+                    className="size-3.5"
+                    strokeWidth={1.75}
+                  />
+                }
+              >
+                Falta receber
+              </Marcador>
+            )}
             {/* O marcador de pago é o que separa a agenda do caixa: sem ele, "a
                 receber" seria um número sem nenhuma linha que o explique. */}
-            {pedido.pago && (
+            {!saiu && pedido.pago && (
               <Marcador
                 icone={
                   <Check

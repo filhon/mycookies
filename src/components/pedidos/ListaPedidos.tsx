@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, TriangleAlert, Wallet } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { HandCoins, Plus, TriangleAlert } from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { Botao } from "@/components/ui/Botao";
+import { Dinheiro } from "@/components/ui/Dinheiro";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { Pilulas, type OpcaoPilula } from "@/components/ui/Pilulas";
@@ -13,7 +15,6 @@ import { classesBotao } from "@/components/ui/estilosBotao";
 import { AtalhoParaCompras } from "@/components/compras/AtalhoParaCompras";
 import { AtalhoParaClientes } from "@/components/clientes/AtalhoParaClientes";
 import { EntregasAPagar } from "./EntregasAPagar";
-import { FaixaResumo } from "./FaixaResumo";
 import { LinhaPedido } from "./LinhaPedido";
 import { ID_PEDIDO_NOVO } from "./EditorPedido";
 import { dataISODe, rotuloAgenda } from "@/lib/domain/datas";
@@ -21,9 +22,8 @@ import { formatarMoeda } from "@/lib/domain/money";
 import {
   agruparPorEntrega,
   aReceber,
-  ehConcluido,
   passouDoDia,
-  ROTULO_STATUS_PEDIDO,
+  somaDoDia,
   STATUS_CONCLUIDOS,
 } from "@/lib/domain/pedido";
 import {
@@ -32,18 +32,22 @@ import {
   consultaHistorico,
 } from "@/lib/firebase/mutations/pedidos";
 import { useColecao } from "@/lib/hooks/useColecao";
-import type { DataISO, Pedido, StatusPedido } from "@/lib/types";
+import type { DataISO, Pedido } from "@/lib/types";
+import { cn } from "@/lib/utils/cn";
 import { useContaId, usePapel } from "@/providers/AuthProvider";
 
-const FILTROS: OpcaoPilula<StatusPedido | "TODOS">[] = [
-  { valor: "TODOS", rotulo: "Todos" },
-  { valor: "ORCAMENTO", rotulo: "Orçamentos" },
-  { valor: "CONFIRMADO", rotulo: "Confirmados" },
-  { valor: "EM_PRODUCAO", rotulo: "Em produção" },
-  { valor: "PRONTO", rotulo: "Prontos" },
-  { valor: "ENTREGUE", rotulo: "Entregues" },
-  { valor: "CANCELADO", rotulo: "Cancelados" },
-];
+/**
+ * As perguntas que ela faz à tela, e não os status do banco (`#d246`). Mora
+ * na URL, `?vista=…`, para a Hoje poder apontar para "Me devem"; a agenda é a
+ * ausência do parâmetro.
+ */
+type Vista = "agenda" | "orcamentos" | "me-devem" | "ja-sairam";
+
+function vistaDa(parametro: string | null, dona: boolean): Vista {
+  if (parametro === "orcamentos" || parametro === "ja-sairam") return parametro;
+  if (parametro === "me-devem" && dona) return parametro;
+  return "agenda";
+}
 
 /** Quantos concluídos cada "Mostrar mais antigos" traz. */
 const PAGINA_DO_HISTORICO = 30;
@@ -54,41 +58,40 @@ const PAGINA_DO_HISTORICO = 30;
  * Três assinaturas, e não uma (`DECISOES.md#d105`): a **agenda** inteira — o
  * que ainda não saiu do forno, de qualquer data, finita porque ela fecha os
  * pedidos —, o **histórico** em páginas de trinta, dos mais recentes para
- * trás, e os **entregues em aberto**, completa e pequena, para a faixa "A
- * receber" não somar só a primeira página. O índice `arquivado + status +
- * dataEntregaISO` nasceu para isso. O filtro de status vai para a consulta do
- * histórico, e na agenda é filtrado em memória.
+ * trás, e os **entregues em aberto**, completa e pequena, para a faixa não
+ * somar só a primeira página. O índice `arquivado + status + dataEntregaISO`
+ * nasceu para isso.
+ *
+ * As quatro vistas (`#d246`) só escolhem qual delas aparece: nenhuma
+ * assinatura depende da vista, e trocar de vista não reabre nenhuma. O
+ * histórico fica assinado fora de "Já saíram" porque "Entregas a pagar" soma
+ * sobre ele, como somava com "Todos".
  */
 export function ListaPedidos() {
   const contaId = useContaId();
-  // Clientes é faturamento por pessoa e o acerto das entregas é saída no
-  // caixa: os dois são da dona (spec 030, `DECISOES.md#d157`).
+  // Clientes é faturamento por pessoa, o acerto das entregas é saída no caixa
+  // e "Me devem" é dinheiro: os três são da dona (`#d157`, `#d213`).
   const dona = usePapel() === "DONA";
-  const [filtro, setFiltro] = useState<StatusPedido | "TODOS">("TODOS");
+  const router = useRouter();
+  const vista = vistaDa(useSearchParams().get("vista"), dona);
   const [hoje] = useState(() => dataISODe(new Date()));
   const [limite, setLimite] = useState(PAGINA_DO_HISTORICO);
 
-  function escolherFiltro(valor: StatusPedido | "TODOS") {
-    setFiltro(valor);
-    setLimite(PAGINA_DO_HISTORICO);
+  // `replace`, e não `push`: trocar de vista não é ir a outro lugar, e o
+  // voltar do navegador leva para onde ela estava antes de `/pedidos`.
+  function escolherVista(valor: Vista) {
+    router.replace(valor === "agenda" ? "/pedidos" : `/pedidos?vista=${valor}`);
   }
 
   const consultaDaAgenda = useMemo(() => consultaAgenda(contaId), [contaId]);
   const consultaDosEntregues = useMemo(
-    () => consultaEntreguesEmAberto(contaId),
-    [contaId],
+    () => (dona ? consultaEntreguesEmAberto(contaId) : null),
+    [dona, contaId],
   );
-  // Com um status da agenda na pílula não há histórico a assinar: `null`
-  // desliga a assinatura, e só a agenda aparece.
-  const consultaDoHistorico = useMemo(() => {
-    const status =
-      filtro === "TODOS"
-        ? STATUS_CONCLUIDOS
-        : ehConcluido(filtro)
-          ? [filtro]
-          : null;
-    return status ? consultaHistorico(contaId, status, limite) : null;
-  }, [contaId, filtro, limite]);
+  const consultaDoHistorico = useMemo(
+    () => consultaHistorico(contaId, STATUS_CONCLUIDOS, limite),
+    [contaId, limite],
+  );
 
   const agenda = useColecao<Pedido>(consultaDaAgenda);
   const entreguesEmAberto = useColecao<Pedido>(consultaDosEntregues);
@@ -100,18 +103,39 @@ export function ListaPedidos() {
   const pendente =
     agenda.pendente || entreguesEmAberto.pendente || historico.pendente;
 
-  // A agenda não tem status concluído, então com "Entregues" na pílula ela
-  // esvazia sozinha; o histórico já vem filtrado pela consulta.
-  const abertosVisiveis = useMemo(
-    () =>
-      filtro === "TODOS"
-        ? agenda.dados
-        : agenda.dados.filter((pedido) => pedido.status === filtro),
-    [agenda.dados, filtro],
+  const orcamentos = useMemo(
+    () => agenda.dados.filter((pedido) => pedido.status === "ORCAMENTO"),
+    [agenda.dados],
   );
+  const pedidosDaVista = {
+    agenda: agenda.dados,
+    orcamentos,
+    "me-devem": entreguesEmAberto.dados,
+    "ja-sairam": historico.dados,
+  }[vista];
+  // No que já saiu a linha mostra só a exceção (`#d248`).
+  const saiu = vista === "me-devem" || vista === "ja-sairam";
+
+  const vistas: OpcaoPilula<Vista>[] = [
+    { valor: "agenda", rotulo: "Agenda" },
+    {
+      valor: "orcamentos",
+      rotulo: comContagem("Orçamentos", orcamentos.length),
+    },
+    ...(dona
+      ? [
+          {
+            valor: "me-devem" as const,
+            rotulo: comContagem("Me devem", entreguesEmAberto.dados.length),
+          },
+        ]
+      : []),
+    // "Já saíram" não cabia com as outras três em 360px (spec 062).
+    { valor: "ja-sairam", rotulo: "Saíram" },
+  ];
 
   // A agenda e os entregues em aberto não se cruzam (status diferentes) e os
-  // dois são completos: "A receber" continua exata em qualquer página.
+  // dois são completos: a faixa continua exata em qualquer página.
   const paraReceber = useMemo(
     () => [...agenda.dados, ...entreguesEmAberto.dados],
     [agenda.dados, entreguesEmAberto.dados],
@@ -131,16 +155,15 @@ export function ListaPedidos() {
     return [...porId.values()];
   }, [agenda.dados, entreguesEmAberto.dados, historico.dados]);
 
-  const gruposAbertos = agruparPorEntrega(abertosVisiveis);
-  // Os concluídos correm ao contrário: o que interessa de um pedido entregue é
-  // que ele é o mais recente, e não que ele é o mais próximo.
-  const gruposConcluidos = agruparPorEntrega(historico.dados).reverse();
+  // "Já saíram" corre ao contrário: o que interessa de um pedido entregue é
+  // que ele é o mais recente. "Me devem" não: a dívida mais antiga primeiro.
+  const grupos = agruparPorEntrega(pedidosDaVista);
+  if (vista === "ja-sairam") grupos.reverse();
 
   // O fim da lista só se sabe com o servidor: do cache, a lista pode estar
   // mais curta que ele, e esconder o botão seria dizer "acabou" sem saber.
   const historicoAcabou = historico.dados.length < limite && !historico.doCache;
 
-  const visiveis = abertosVisiveis.length + historico.dados.length;
   const nadaGravado =
     agenda.dados.length === 0 &&
     entreguesEmAberto.dados.length === 0 &&
@@ -183,28 +206,29 @@ export function ListaPedidos() {
         }
       >
         <Pilulas
-          rotulo="Status"
-          opcoes={FILTROS}
-          valor={filtro}
-          aoMudar={escolherFiltro}
+          rotulo="Vista"
+          opcoes={vistas}
+          valor={vista}
+          aoMudar={escolherVista}
         />
       </CabecalhoPagina>
 
       <div className="mt-4 flex min-h-8 items-center justify-between gap-3">
-        <p className="text-label text-ink-muted" aria-live="polite">
-          {carregando
-            ? "Carregando"
-            : linhaDeContagem(
-                filtro,
-                abertosVisiveis.length,
-                historico.dados.length,
-              )}
+        <p className="num text-label text-ink-muted" aria-live="polite">
+          {carregando ? "Carregando" : linhaDeContagem(vista, pedidosDaVista)}
         </p>
       </div>
 
       {/* Somado sobre a agenda inteira mais os entregues em aberto, e não sobre
-          o filtro da vez nem sobre a página: o que está a receber é fato. */}
-      {!carregando && <AReceber pedidos={paraReceber} />}
+          a vista da vez nem sobre a página: o que devem é fato. */}
+      {!carregando && (
+        <AReceber
+          pedidos={paraReceber}
+          aoVerQuem={
+            vista === "me-devem" ? undefined : () => escolherVista("me-devem")
+          }
+        />
+      )}
 
       {/* O outro lado da entrega, sobre tudo o que a tela tem na mão. */}
       {!carregando && dona && (
@@ -222,7 +246,7 @@ export function ListaPedidos() {
         <Caixa>
           <EsqueletoLista />
         </Caixa>
-      ) : visiveis === 0 ? (
+      ) : pedidosDaVista.length === 0 ? (
         <Caixa>
           {nadaGravado ? (
             <EstadoVazio
@@ -242,58 +266,44 @@ export function ListaPedidos() {
               }
             />
           ) : (
-            <EstadoVazio
-              titulo="Nada com esse filtro"
-              descricao="Nenhum pedido está nesse pé agora. Volte para todos e veja a agenda inteira."
-              acao={
-                <Botao onClick={() => escolherFiltro("TODOS")}>Ver todos</Botao>
-              }
-            />
+            <VazioDaVista vista={vista} aoEscolher={escolherVista} />
           )}
         </Caixa>
       ) : (
         <div className="mt-2 space-y-6">
-          {gruposAbertos.map((grupo) => (
+          {grupos.map((grupo) => (
             <GrupoDoDia
-              key={`abertos-${grupo.dataISO}`}
-              prefixo="abertos"
+              key={grupo.dataISO}
               dataISO={grupo.dataISO}
               pedidos={grupo.pedidos}
               hoje={hoje}
+              saiu={saiu}
             />
           ))}
 
-          {gruposConcluidos.length > 0 && (
-            <div className="space-y-6">
-              {gruposAbertos.length > 0 && (
-                <h2 className="border-t border-line pt-5 text-label font-medium text-ink-muted">
-                  Já saíram da agenda
-                </h2>
-              )}
-              {gruposConcluidos.map((grupo) => (
-                <GrupoDoDia
-                  key={`concluidos-${grupo.dataISO}`}
-                  prefixo="concluidos"
-                  dataISO={grupo.dataISO}
-                  pedidos={grupo.pedidos}
-                  hoje={hoje}
-                />
-              ))}
+          {/* A agenda acaba aqui: o histórico não disputa a rolagem com ela. */}
+          {vista === "agenda" && (
+            <Botao
+              variante="terciaria"
+              larguraTotal
+              onClick={() => escolherVista("ja-sairam")}
+            >
+              Ver o que já saiu
+            </Botao>
+          )}
 
-              {/* Um botão, e não rolagem infinita: é acessível e não dispara
-                  sem querer. A lista não pisca ao crescer — `useColecao`
-                  guarda a página anterior até o snapshot novo chegar do
-                  cache, no mesmo tique. */}
-              {!historicoAcabou && (
-                <Botao
-                  tamanho="lg"
-                  larguraTotal
-                  onClick={() => setLimite(limite + PAGINA_DO_HISTORICO)}
-                >
-                  Mostrar mais antigos
-                </Botao>
-              )}
-            </div>
+          {/* Um botão, e não rolagem infinita: é acessível e não dispara sem
+              querer. A lista não pisca ao crescer — `useColecao` guarda a
+              página anterior até o snapshot novo chegar do cache, no mesmo
+              tique. */}
+          {vista === "ja-sairam" && !historicoAcabou && (
+            <Botao
+              tamanho="lg"
+              larguraTotal
+              onClick={() => setLimite(limite + PAGINA_DO_HISTORICO)}
+            >
+              Mostrar mais antigos
+            </Botao>
           )}
         </div>
       )}
@@ -302,50 +312,159 @@ export function ListaPedidos() {
 }
 
 /**
- * O dinheiro combinado que ainda não entrou.
+ * O dinheiro combinado que ainda não entrou, em duas quantias (`#d247`): o que
+ * já devem, de pedido entregue, e o que vai entrar, do que está combinado. A
+ * primeira pede cobrança; a segunda, só espera.
  *
  * Existe porque o painel financeiro é regime de caixa: um pedido entregue e não
- * pago não aparece no resultado do mês, e sem esta linha ele não apareceria em
- * lugar nenhum — o painel mentiria por omissão (`DECISOES.md#d36`).
+ * pago não aparece no resultado do mês, e sem esta faixa ele não apareceria em
+ * lugar nenhum (`DECISOES.md#d36`).
  *
- * O desenho é o de `FaixaResumo`, dividido com "Entregas a pagar".
+ * O desenho é o de `FaixaResumo`, com duas linhas de valor no lugar de uma.
  */
-function AReceber({ pedidos }: { pedidos: Pedido[] }) {
-  const { total, quantidade, entregues } = aReceber(pedidos);
+function AReceber({
+  pedidos,
+  aoVerQuem,
+}: {
+  pedidos: Pedido[];
+  /** Sem ele o "Ver quem" some: é a própria vista "Me devem". */
+  aoVerQuem?: () => void;
+}) {
+  const { total, quantidade, entregues, totalEntregue } = aReceber(pedidos);
   if (quantidade === 0) return null;
+  const combinados = quantidade - entregues;
 
   return (
-    <FaixaResumo id="a-receber" icone={Wallet} titulo="A receber" valor={total}>
-      {quantidade === 1
-        ? "1 pedido combinado que ainda não entrou no caixa"
-        : `${quantidade} pedidos combinados que ainda não entraram no caixa`}
-      {entregues > 0 &&
-        (entregues === 1
-          ? ", e um deles já foi entregue"
-          : `, e ${entregues} deles já foram entregues`)}
-      . Enquanto o pedido não estiver marcado como pago, esse dinheiro não conta
-      no resultado do mês.
-    </FaixaResumo>
+    <section
+      aria-label="A receber"
+      className="mt-2 rounded-lg border border-line bg-sunken px-4 py-3 sm:flex sm:items-center sm:justify-between sm:gap-4"
+    >
+      <div className="flex min-w-0 gap-2">
+        <HandCoins
+          aria-hidden
+          className="mt-0.5 size-4 shrink-0 text-ink-muted"
+          strokeWidth={1.75}
+        />
+        <div className="min-w-0 space-y-1">
+          {entregues > 0 && (
+            <Quantia rotulo="Me devem" valor={totalEntregue}>
+              {entregues === 1
+                ? "1 entregue sem pagar"
+                : `${entregues} entregues sem pagar`}
+            </Quantia>
+          )}
+          {combinados > 0 && (
+            <Quantia rotulo="Vai entrar" valor={total - totalEntregue}>
+              {combinados === 1 ? "1 combinado" : `${combinados} combinados`}
+            </Quantia>
+          )}
+          <p className="text-label text-ink-muted">
+            Só entra no resultado do mês quando você marca como pago.
+          </p>
+        </div>
+      </div>
+
+      {entregues > 0 && aoVerQuem && (
+        <div className="mt-3 shrink-0 sm:mt-0">
+          <Botao tamanho="sm" onClick={aoVerQuem}>
+            Ver quem
+          </Botao>
+        </div>
+      )}
+    </section>
   );
 }
 
+function Quantia({
+  rotulo,
+  valor,
+  children,
+}: {
+  rotulo: string;
+  valor: number;
+  children: ReactNode;
+}) {
+  return (
+    <p className="flex flex-wrap items-baseline gap-x-2 text-label text-ink-muted">
+      <span className="font-medium">{rotulo}</span>
+      <Dinheiro centavos={valor} />
+      <span className="num">· {children}</span>
+    </p>
+  );
+}
+
+/** "Me devem 3": o número só quando passa de zero. */
+function comContagem(rotulo: string, quantidade: number): string {
+  return quantidade > 0 ? `${rotulo} ${quantidade}` : rotulo;
+}
+
 /**
- * "12 na agenda" ou "os 30 entregues mais recentes": conta só o que é exato.
- * O total do histórico não existe sem `getCountFromServer`, que exige rede.
+ * A contagem acima da lista segue a vista, e conta só o que é exato: o total
+ * do histórico não existe sem `getCountFromServer`, que exige rede.
  */
-function linhaDeContagem(
-  filtro: StatusPedido | "TODOS",
-  naAgenda: number,
-  noHistorico: number,
-): string {
-  if (filtro === "TODOS" || !ehConcluido(filtro)) {
-    return `${naAgenda} na agenda`;
+function linhaDeContagem(vista: Vista, pedidos: Pedido[]): string {
+  const n = pedidos.length;
+  switch (vista) {
+    case "agenda":
+      return `${n} na agenda`;
+    case "orcamentos":
+      if (n === 0) return "nenhum orçamento";
+      return `${n} ${n === 1 ? "orçamento" : "orçamentos"}`;
+    case "me-devem":
+      if (n === 0) return "nenhum pedido";
+      return `${n} ${n === 1 ? "pedido" : "pedidos"} · ${formatarMoeda(pedidos.reduce((soma, pedido) => soma + pedido.total, 0))}`;
+    case "ja-sairam":
+      if (n === 0) return "nenhum pedido";
+      return n === 1 ? "o mais recente" : `os ${n} mais recentes`;
   }
-  const singular = ROTULO_STATUS_PEDIDO[filtro].toLowerCase();
-  const plural = `${singular}s`;
-  if (noHistorico === 0) return `nenhum ${singular}`;
-  if (noHistorico === 1) return `o ${singular} mais recente`;
-  return `os ${noHistorico} ${plural} mais recentes`;
+}
+
+/** Cada vista vazia com a sua frase. */
+function VazioDaVista({
+  vista,
+  aoEscolher,
+}: {
+  vista: Vista;
+  aoEscolher: (vista: Vista) => void;
+}) {
+  switch (vista) {
+    case "agenda":
+      return (
+        <EstadoVazio
+          titulo="Nada na agenda agora"
+          descricao="Nenhum pedido esperando para sair. O que já foi entregue continua no que saiu."
+          acao={
+            <Botao onClick={() => aoEscolher("ja-sairam")}>
+              Ver o que já saiu
+            </Botao>
+          }
+        />
+      );
+    case "orcamentos":
+      return (
+        <EstadoVazio
+          titulo="Nenhum orçamento esperando resposta."
+          descricao="O orçamento que você anotar, ou que a cliente pedir pelo cardápio, espera aqui."
+        />
+      );
+    case "me-devem":
+      return (
+        <EstadoVazio
+          titulo="Ninguém te deve nada."
+          descricao="Todo pedido entregue já foi pago."
+        />
+      );
+    case "ja-sairam":
+      return (
+        <EstadoVazio
+          titulo="Nada saiu da agenda ainda"
+          descricao="Os pedidos entregues e os cancelados aparecem aqui."
+          acao={
+            <Botao onClick={() => aoEscolher("agenda")}>Ver a agenda</Botao>
+          }
+        />
+      );
+  }
 }
 
 function Caixa({ children }: { children: React.ReactNode }) {
@@ -357,24 +476,24 @@ function Caixa({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Um dia da agenda: o cabeçalho diz que dia é e quanto sai dele, e a lista
- * carrega os pedidos. O total do dia é o que responde "dá para dar conta?"
- * antes de abrir pedido por pedido.
+ * Um dia da lista: o cabeçalho diz que dia é, quanto sai dele e quanto sobra,
+ * e a lista carrega os pedidos. O total responde "dá para dar conta?"; a
+ * sobra, "valeu o domingo?" (`#d248`).
  */
 function GrupoDoDia({
-  prefixo,
   dataISO,
   pedidos,
   hoje,
+  saiu,
 }: {
-  prefixo: string;
   dataISO: DataISO;
   pedidos: Pedido[];
   hoje: DataISO;
+  saiu: boolean;
 }) {
-  const total = pedidos.reduce((soma, pedido) => soma + pedido.total, 0);
+  const { total, sobra } = somaDoDia(pedidos);
   const atrasado = pedidos.some((pedido) => passouDoDia(pedido, hoje));
-  const id = `dia-${prefixo}-${dataISO}`;
+  const id = `dia-${dataISO}`;
 
   return (
     <section aria-labelledby={id}>
@@ -397,12 +516,26 @@ function GrupoDoDia({
           {pedidos.length} {pedidos.length === 1 ? "pedido" : "pedidos"}
           <span className="mx-1.5 text-ink-subtle">·</span>
           {formatarMoeda(total)}
+          <span className="mx-1.5 text-ink-subtle">·</span>
+          <span
+            className={cn(
+              "inline-flex items-center gap-1",
+              sobra < 0 && "text-negative",
+            )}
+          >
+            {sobra < 0 && (
+              <TriangleAlert aria-hidden className="size-3.5" strokeWidth={2} />
+            )}
+            {sobra < 0
+              ? `perde ${formatarMoeda(Math.abs(sobra))}`
+              : `sobram ${formatarMoeda(sobra)}`}
+          </span>
         </p>
       </div>
 
       <ul className="mt-2 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
         {pedidos.map((pedido) => (
-          <LinhaPedido key={pedido.id} pedido={pedido} />
+          <LinhaPedido key={pedido.id} pedido={pedido} saiu={saiu} />
         ))}
       </ul>
     </section>

@@ -339,6 +339,11 @@ export interface AReceber {
   quantidade: number;
   /** Dos que estão a receber, quantos já foram entregues. */
   entregues: number;
+  /**
+   * Quanto, do total, é de entregue não pago: o que já devem, e não o que vai
+   * entrar (`DECISOES.md#d247`).
+   */
+  totalEntregue: Centavos;
 }
 
 /**
@@ -364,10 +369,13 @@ export function aReceber(
       pedido.status !== "CANCELADO",
   );
 
+  const entregues = abertos.filter((pedido) => pedido.status === "ENTREGUE");
+
   return {
     total: abertos.reduce((soma, pedido) => soma + pedido.total, 0),
     quantidade: abertos.length,
-    entregues: abertos.filter((pedido) => pedido.status === "ENTREGUE").length,
+    entregues: entregues.length,
+    totalEntregue: entregues.reduce((soma, pedido) => soma + pedido.total, 0),
   };
 }
 
@@ -621,6 +629,20 @@ export function agruparPorEntrega<T extends { dataEntregaISO: DataISO }>(
     .sort((a, b) => a.dataISO.localeCompare(b.dataISO));
 }
 
+/**
+ * O que um dia da lista vale: quanto entra e quanto sobra (`#d248`). O
+ * cancelado não entra em nenhum dos dois: não saiu, e não deixou nada.
+ */
+export function somaDoDia(
+  pedidos: { status: StatusPedido; total: Centavos; lucroEstimado: Centavos }[],
+): { total: Centavos; sobra: Centavos } {
+  const valem = pedidos.filter((pedido) => pedido.status !== "CANCELADO");
+  return {
+    total: valem.reduce((soma, pedido) => soma + pedido.total, 0),
+    sobra: valem.reduce((soma, pedido) => soma + pedido.lucroEstimado, 0),
+  };
+}
+
 /** Números com vírgula, como o teclado brasileiro os escreve. */
 export function quantidadeEmTexto(quantidade: number): string {
   return String(quantidade).replace(".", ",");
@@ -630,6 +652,9 @@ export function quantidadeEmTexto(quantidade: number): string {
  * "20 × Cookie tradicional · 2 × Caixa com 6" — o que é o pedido, em uma linha.
  * Passando de `maximo` itens, o resto vira contagem: a linha da lista é uma
  * linha, e não um resumo do pedido inteiro.
+ *
+ * `soNome` deixa a composição do combo de fora: na lista de pedidos ela
+ * empurrava o resto para fora da linha, e é do pedido aberto (`#d248`).
  */
 export function resumoDosItens(
   itens: {
@@ -638,6 +663,7 @@ export function resumoDosItens(
     escolhas?: { quantidade: number; nomeSnapshot: string }[];
   }[],
   maximo = 2,
+  { soNome = false }: { soNome?: boolean } = {},
 ): string {
   if (itens.length === 0) return "Sem itens";
 
@@ -645,7 +671,7 @@ export function resumoDosItens(
     .slice(0, maximo)
     .map(
       (item) =>
-        `${quantidadeEmTexto(item.quantidade)} × ${nomeComEscolhas(item)}`,
+        `${quantidadeEmTexto(item.quantidade)} × ${soNome ? item.nomeSnapshot : nomeComEscolhas(item)}`,
     )
     .join(" · ");
 

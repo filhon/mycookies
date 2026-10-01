@@ -20,6 +20,7 @@ import {
   resumoDoRepasse,
   resumoDosItens,
   ROTULO_STATUS_PEDIDO,
+  somaDoDia,
   STATUS_CONCLUIDOS,
   STATUS_NA_AGENDA,
   subtotalDoItem,
@@ -363,6 +364,35 @@ describe("resumoDosItens", () => {
       ]),
     ).toBe("3 × Combo dupla (1 Cookie tradicional + 1 Cookie de nutella)");
   });
+
+  it("com soNome, deixa a composição do combo para o pedido aberto", () => {
+    expect(
+      resumoDosItens(
+        [
+          {
+            quantidade: 1,
+            nomeSnapshot: "Combo dupla",
+            escolhas: ESCOLHA_DUPLA,
+          },
+          { quantidade: 1, nomeSnapshot: "Cookie tradicional" },
+        ],
+        2,
+        { soNome: true },
+      ),
+    ).toBe("1 × Combo dupla · 1 × Cookie tradicional");
+  });
+});
+
+describe("somaDoDia", () => {
+  it("soma total e sobra, e o cancelado fica de fora dos dois", () => {
+    expect(
+      somaDoDia([
+        { status: "ENTREGUE", total: 5000, lucroEstimado: 2000 },
+        { status: "ENTREGUE", total: 0, lucroEstimado: -681 },
+        { status: "CANCELADO", total: 9000, lucroEstimado: 4000 },
+      ]),
+    ).toEqual({ total: 5000, sobra: 1319 });
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -520,6 +550,7 @@ describe("aReceber", () => {
       total: 38900,
       quantidade: 3,
       entregues: 1,
+      totalEntregue: 6900,
     });
   });
 
@@ -527,11 +558,22 @@ describe("aReceber", () => {
     expect(aReceber(AGENDA).entregues).toBe(1);
   });
 
+  it("separa o que já devem do que vai entrar", () => {
+    const { total, totalEntregue } = aReceber([
+      ...AGENDA,
+      { status: "ENTREGUE", pago: false, total: 2100 },
+      { status: "ENTREGUE", pago: true, total: 9900 },
+    ]);
+    expect(totalEntregue).toBe(9000);
+    expect(total - totalEntregue).toBe(32000);
+  });
+
   it("agenda sem nada a receber devolve zero, e não uma linha de R$ 0,00", () => {
-    expect(aReceber([])).toEqual({ total: 0, quantidade: 0, entregues: 0 });
+    const zero = { total: 0, quantidade: 0, entregues: 0, totalEntregue: 0 };
+    expect(aReceber([])).toEqual(zero);
     expect(
       aReceber([{ status: "ENTREGUE", pago: true, total: 24000 }]),
-    ).toEqual({ total: 0, quantidade: 0, entregues: 0 });
+    ).toEqual(zero);
   });
 });
 

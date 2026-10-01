@@ -104,7 +104,7 @@ export function EsperandoVoce() {
         {receber.total > 0 && (
           <li>
             <Linha
-              href="/pedidos"
+              href="/pedidos?vista=me-devem"
               icone={
                 <HandCoins
                   aria-hidden

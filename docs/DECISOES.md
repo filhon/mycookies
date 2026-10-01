@@ -7265,3 +7265,91 @@ identifica ninguém, só mede.
 **Consequência.** Sem o pacote não há "route support": `/c/[contaId]` e as telas com id na URL
 aparecem por caminho, um por conta, e não agrupadas. Se isso atrapalhar a leitura, a saída é
 `window.si("beforeSend", …)` reescrevendo `url`, ou o pacote, com aprovação.
+
+---
+
+## D246 · Pedidos em quatro vistas, e não em sete status
+
+**Status:** vigente · decidida em 2026-10-01, na spec `062-quem-me-deve.md`; codificada em 2026-10-01
+
+**Contexto.** As sete pílulas de `/pedidos` eram os status do banco. Em "Todos", 4 pedidos na
+agenda e 35 que já saíram: no celular a agenda acabava na primeira tela e as nove seguintes eram
+histórico. "Em produção" e "Prontos" filtravam uma agenda que o olho lê inteira, e três pílulas
+ficavam fora da tela.
+
+**Decisão.**
+
+- **Quatro vistas, nesta ordem:** Agenda (o que não fechou, orçamentos inclusive), Orçamentos (a
+  agenda filtrada em memória), Me devem (`consultaEntreguesEmAberto`, a mais antiga primeiro) e
+  Saíram (`consultaHistorico(STATUS_CONCLUIDOS)`, em páginas de 30, a mais recente primeiro).
+  Nenhuma consulta nova. A agenda termina num botão terciário "Ver o que já saiu".
+- **A vista mora na URL**, `?vista=orcamentos|me-devem|ja-sairam`; a agenda é a ausência. Trocar
+  de vista é `router.replace`, e não `push`: o voltar do navegador leva para onde ela estava antes
+  de `/pedidos` (a Hoje, quando veio do "falta receber"). Valor desconhecido, ou `me-devem` para a
+  ajudante, cai na agenda. `useSearchParams` pediu um `<Suspense>` na página; `/pedidos` continua
+  estática no build.
+- **Me devem só para a dona**, pela regra do `#d213`. A `ListaPedidos` assinava
+  `consultaEntreguesEmAberto` também para a ajudante; deixou de assinar.
+- **As assinaturas não dependem da vista.** O histórico fica assinado em todas, como ficava com
+  "Todos": "Entregas a pagar" soma sobre ele (`#d105`), e assim trocar de vista não reabre nada.
+  O limite da página não volta a 30 ao trocar de vista.
+- **Contagem no rótulo** ("Orçamentos 2", "Me devem 3"), só acima de zero. `Pilulas` não aceita
+  contagem e não ganhou prop para isso. A linha acima da lista segue a vista: "4 na agenda",
+  "2 orçamentos", "3 pedidos · R$ 63,00", "os 30 mais recentes".
+- **"Já saíram" virou "Saíram" na pílula**, pela regra da própria spec: as quatro não cabem em
+  360px. Na conta (rótulo de 14px, 16px de cada lado, 8px entre elas) somam uns 420px para 328
+  úteis; mesmo encurtada, a última fica parcialmente fora e a fila rola de lado, como as sete
+  rolavam. No resto da tela o nome continua "o que já saiu".
+- "Em produção", "Prontos", "Entregues" e "Cancelados" saem das pílulas; o selo continua na linha,
+  e o cancelado vive em Saíram.
+
+**Consequência.** O "falta receber" de `EsperandoVoce` leva a `/pedidos?vista=me-devem`.
+
+## D247 · "A receber" em duas quantias: o que já devem e o que vai entrar
+
+**Status:** vigente · decidida em 2026-10-01, na spec `062-quem-me-deve.md`; codificada em 2026-10-01
+
+**Contexto.** "A receber R$ 3.118,00" somava R$ 3.042,00 de um pedido para novembro com R$ 63,00
+de três pedidos entregues e não pagos. A parte que pede ação aparecia como "3 deles já foram
+entregues", sem valor e sem caminho até eles.
+
+**Decisão.**
+
+- `aReceber` devolve também `totalEntregue`, os centavos dos entregues não pagos. "Vai entrar" é
+  `total − totalEntregue`.
+- A faixa tem uma linha por quantia, "Me devem R$ 63,00 · 3 entregues sem pagar" e "Vai entrar
+  R$ 3.055,00 · 2 combinados", e uma frase só: "Só entra no resultado do mês quando você marca
+  como pago." O resto da explicação está no `#d36`. Sem entregue em aberto a primeira linha some;
+  sem nenhum dos dois, a faixa some.
+- **"Ver quem"** troca para a vista Me devem, e some nela.
+- A faixa não usa `FaixaResumo`, que tem um valor só: repete as classes dela (`bg-sunken`, borda,
+  a ação à direita no desktop) com duas linhas de valor.
+- A faixa é a mesma em todas as vistas: o que devem é fato, não filtro. Para a ajudante a
+  primeira linha nunca aparece, porque os entregues em aberto não são assinados (`#d246`).
+- "Entregas a pagar" fica com "1 entrega feita, ainda não acertada com o entregador." O "o que
+  você cobrou é o que você paga" já estava na descrição do `PainelEntregas`, onde o valor é
+  conferido; nada mudou lá.
+
+## D248 · A linha do que saiu mostra a exceção, e o dia diz quanto sobrou
+
+**Status:** vigente · decidida em 2026-10-01, na spec `062-quem-me-deve.md`; codificada em 2026-10-01
+
+**Contexto.** No histórico, 33 linhas repetiam "Entregue · Pago", e as duas que não pagaram se
+reconheciam pela falta do "Pago". O cabeçalho do dia dizia "2 pedidos · R$ 73,00" com cada linha
+dizendo quanto sobra e o dia não somando. A composição do combo cortava o resto da linha.
+
+**Decisão.**
+
+- `LinhaPedido` ganha `saiu`, verdadeiro em Me devem e Saíram. Ali o selo de status só aparece no
+  cancelado, o "Pago" sai, e o entregue não pago leva o marcador **"Falta receber"**, `HandCoins`
+  e tinta `--attention`: ícone e palavra, nunca só o ocre. A mão com moedas, e não o triângulo que
+  o `DESIGN.md` pede para atenção, porque é dinheiro a cobrar e não algo errado; é o mesmo ícone
+  da faixa e do "falta receber" da Hoje. "Pelo cardápio" e "Entrega" continuam. Na agenda nada
+  sai.
+- `resumoDosItens` ganha `{ soNome }`: usa `nomeSnapshot` e não `nomeComEscolhas`. A
+  `LinhaPedido` usa nas duas vistas. A Hoje, a lista de compras e o "Esperando você" continuam com
+  a composição: fora do escopo da spec.
+- **Cabeçalho do dia:** "2 pedidos · R$ 73,00 · sobram R$ 39,65", ou "perde R$ 6,81" com
+  `TriangleAlert` em `--negative`, como na linha. `somaDoDia` soma total e `lucroEstimado` sem o
+  cancelado; antes o cancelado entrava no total do dia. A contagem de pedidos segue contando as
+  linhas do dia, cancelado incluído: a spec tirou o cancelado das duas somas, não da contagem.
