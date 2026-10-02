@@ -33,4 +33,10 @@ export const PAGINAS_DO_PRECO = [
     resumo:
       "O custo do quilo, e a caixa e a decoração que não crescem com o peso.",
   },
+  {
+    endereco: "/como-calcular-o-preco-do-bolo-de-pote",
+    titulo: "Como calcular o preço do bolo de pote",
+    doce: "Bolo de pote",
+    resumo: "O pote, a embalagem que pesa e o preço no aplicativo de entrega.",
+  },
 ] as const;

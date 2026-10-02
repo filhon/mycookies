@@ -124,6 +124,46 @@ export function boloDe(quilos: number): ExemploDePagina {
   };
 }
 
+/** O tempo do lote de potes e o valor da hora: assar uma vez, montar dez. */
+export const HORA_DO_BOLO_DE_POTE = { minutos: 90, valor: 2000 } as const;
+
+/**
+ * O bolo de pote (spec 068, `DECISOES.md#d258`). O lote é de 10 potes, e a
+ * unidade de venda é o pote. A embalagem (pote, tampa, colher e etiqueta, R$
+ * 1,45 cada) é a parcela que mais engana. Parâmetros do cookie: o balcão.
+ */
+export const EXEMPLO_BOLO_DE_POTE = {
+  nome: "Bolo de pote de ninho com morango",
+  rende: 10,
+  /** Massa, creme e fruta; dez potes montados; o forno; as fixas. */
+  custo: {
+    custoInsumos: 4200,
+    custoEmbalagem: 1450,
+    custoComponentes: 0,
+    custoEscolhas: 0,
+    custoMaoDeObra:
+      (HORA_DO_BOLO_DE_POTE.minutos / 60) * HORA_DO_BOLO_DE_POTE.valor,
+    custoEnergiaGas: 250,
+    custoIndireto: 200,
+    custoTotalLote: 9100,
+    custoUnitario: 910,
+  },
+  parametros: EXEMPLO.parametros,
+  /** O pote "pelo preço da feira". */
+  precoPraticado: 1500,
+} as const satisfies ExemploDePagina;
+
+/**
+ * O mesmo pote vendido por aplicativo de entrega: a maquininha sai, porque
+ * quem cobra é o aplicativo, e a comissão e o pagamento online entram somados
+ * em `outrasTaxas`. Os 20% são número de exemplo, de nenhuma empresa.
+ */
+export const NO_APLICATIVO = {
+  ...EXEMPLO.parametros,
+  taxaCartaoConsiderada: 0,
+  outrasTaxas: 20,
+} as const satisfies ParametrosPreco;
+
 /**
  * "Custo + 45%": a margem e a maquininha do `EXEMPLO` somadas em cima do
  * custo, o erro que `/como-calcular-o-preco-do-cookie` mostra (spec 037). É o

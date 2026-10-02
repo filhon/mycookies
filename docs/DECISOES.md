@@ -7635,6 +7635,12 @@ peso e aplicam a margem, duas delas multiplicando; nenhuma põe a maquininha, e 
 caixa, a base e a decoração (por bolo) do que cresce com o peso, nem diz que o quilo do bolo
 pequeno custa mais. É a seção própria da página, com a tabela de 1, 2 e 3 kg.
 
+**Na sessão C**, as primeiras para "como precificar bolo de pote" somam embalagem e mão de obra,
+duas multiplicando o custo por um markup; nenhuma põe a maquininha ou a comissão do aplicativo na
+divisão, e o blog de parceiros do próprio iFood cita a comissão e manda "comparar com a
+concorrência". É a seção própria da página: a comissão no lugar da maquininha, o preço do
+aplicativo e o pote do balcão vendido nele.
+
 **Consequência.** O que a 037 queria aprender com uma página passa a ser aprendido com quatro. O
 exemplo da spec dizia "o trabalho é a maior parcela" do brigadeiro; com os números dela, os
 ingredientes (R$ 42,00, 43%) passam o trabalho (R$ 40,00, 41%). Os números ficaram, e a página diz

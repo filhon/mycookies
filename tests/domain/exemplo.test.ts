@@ -4,7 +4,9 @@ import {
   boloDe,
   ERRO_COMUM,
   EXEMPLO,
+  EXEMPLO_BOLO_DE_POTE,
   EXEMPLO_BRIGADEIRO,
+  NO_APLICATIVO,
 } from "@/lib/domain/exemplo";
 import { percentualDe } from "@/lib/domain/money";
 import {
@@ -257,5 +259,88 @@ describe("o bolo por quilo", () => {
   // A fatia de 100 g: 6450 ÷ 10 = 645.
   it("a fatia de 100 g custa R$ 6,45", () => {
     expect(Math.round(custo.custoUnitario / 10)).toBe(645);
+  });
+});
+
+// A página do bolo de pote (spec 068, sessão C). O lote é de 10 potes; o
+// balcão usa os parâmetros do cookie, o aplicativo troca a maquininha por
+// 20% de comissão e pagamento online.
+describe("o bolo de pote", () => {
+  const { custo, parametros, precoPraticado } = EXEMPLO_BOLO_DE_POTE;
+  const taxas = somaTaxas(parametros);
+  const taxasDoApp = somaTaxas(NO_APLICATIVO);
+
+  // 4200 + 1450 + 3000 + 250 + 200 = 9100, o pote a 910. Por pote: 420 +
+  // 145 + 300 + 25 + 20. A embalagem, 1450 de 9100, são 16%: mais que o
+  // forno e as fixas juntos (450).
+  it("custa R$ 9,10 o pote, e a embalagem pesa 16%", () => {
+    const segmentos = composicaoDoLote(custo);
+    expect(segmentos.reduce((s, x) => s + x.centavos, 0)).toBe(9100);
+    expect(custo.custoTotalLote).toBe(9100);
+    expect(custo.custoUnitario).toBe(910);
+    expect(segmentos.map((s) => Math.round(s.centavos / 10))).toEqual([
+      420, 145, 300, 25, 20,
+    ]);
+    expect(
+      segmentos.map((s) => [s.rotulo, Math.round(s.fracao * 100)]),
+    ).toEqual([
+      ["Materiais", 46],
+      ["Embalagem", 16],
+      ["Seu trabalho", 33],
+      ["Energia e gás", 3],
+      ["Fatia das despesas fixas", 2],
+    ]);
+  });
+
+  // 910 ÷ 0,55 = 1654,5 → 1655; o meio real sobe a 1700. Antes de
+  // arredondar: 5% de 1655 = 82,75 → 83; 1655 − 910 − 83 = 662, 40%. Na
+  // etiqueta: 5% de 1700 = 85; 1700 − 910 − 85 = 705, 41,47%.
+  it("pede R$ 17,00 no balcão, e sobram R$ 7,05", () => {
+    expect(calcularPrecoSugerido(910, parametros)).toEqual({
+      ok: true,
+      precoSugerido: 1655,
+      precoArredondado: 1700,
+    });
+    expect(verificarPreco(1655, 910, taxas)).toMatchObject({
+      custoTaxas: 83,
+      lucroUnitario: 662,
+      margemReal: 40,
+    });
+    expect(verificarPreco(1700, 910, taxas)).toMatchObject({
+      custoTaxas: 85,
+      lucroUnitario: 705,
+      margemReal: 41.47,
+    });
+  });
+
+  // No preço da feira: 5% de 1500 = 75; 1500 − 910 − 75 = 515.
+  it("deixa R$ 5,15 no pote de R$ 15,00", () => {
+    expect(verificarPreco(precoPraticado, 910, taxas).lucroUnitario).toBe(515);
+  });
+
+  // 910 ÷ (1 − 0,40 − 0,20) = 910 ÷ 0,40 = 2275; o meio real sobe a 2300.
+  // 20% de 2300 = 460; 2300 − 910 − 460 = 930, 40,43%.
+  it("pede R$ 23,00 no aplicativo, e sobram R$ 9,30", () => {
+    expect(taxasDoApp).toBe(20);
+    expect(calcularPrecoSugerido(910, NO_APLICATIVO)).toEqual({
+      ok: true,
+      precoSugerido: 2275,
+      precoArredondado: 2300,
+    });
+    expect(verificarPreco(2300, 910, taxasDoApp)).toMatchObject({
+      custoTaxas: 460,
+      lucroUnitario: 930,
+      margemReal: 40.43,
+    });
+  });
+
+  // O pote do balcão no aplicativo: 20% de 1700 = 340; 1700 − 910 − 340 =
+  // 450, 26,47% em vez de 40%.
+  it("o pote de R$ 17,00 no aplicativo deixa R$ 4,50, 26%", () => {
+    expect(verificarPreco(1700, 910, taxasDoApp)).toMatchObject({
+      custoTaxas: 340,
+      lucroUnitario: 450,
+      margemReal: 26.47,
+    });
   });
 });

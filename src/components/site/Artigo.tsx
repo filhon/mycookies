@@ -131,21 +131,25 @@ export function Passos({
 export function Formula({
   exemplo,
   preco,
+  taxas = "maquininha",
 }: {
   exemplo: ExemploDePagina;
   /** O preço antes do meio real, o que a divisão dá. */
   preco: Centavos;
+  /** O nome do que sai do preço além da margem: "comissão e taxas" no aplicativo. */
+  taxas?: string;
 }) {
   const { custo, parametros } = exemplo;
   return (
     <div className="mt-6 rounded-lg bg-sunken px-5 py-5">
       <p className="text-heading font-semibold text-ink">
-        preço = custo ÷ (1 − margem − maquininha)
+        {/* Um nó de texto só: o HTML das outras páginas sai igual. */}
+        {`preço = custo ÷ (1 − margem − ${taxas})`}
       </p>
       <p className="num mt-3 text-body text-ink">
         <Valor centavos={custo.custoUnitario} /> ÷ (1 −{" "}
         {fracao(parametros.margemDesejada)} −{" "}
-        {fracao(parametros.taxaCartaoConsiderada)}) ={" "}
+        {fracao(parametros.taxaCartaoConsiderada + parametros.outrasTaxas)}) ={" "}
         <Valor centavos={custo.custoUnitario} /> ÷{" "}
         {fracao(100 - parametros.margemDesejada - somaTaxas(parametros))} ={" "}
         <Valor centavos={preco} />

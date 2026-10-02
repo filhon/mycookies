@@ -1,6 +1,9 @@
 # Estado do projeto
 
-Atualizado em 2026-10-02 (**a 068-B codificada**, o bolo por quilo: `boloDe(quilos)` com uma
+Atualizado em 2026-10-02 (**a 068-C codificada**, o bolo de pote: `EXEMPLO_BOLO_DE_POTE` e
+`NO_APLICATIVO`, e `/como-calcular-o-preco-do-bolo-de-pote` no ar no build, com o balcão, o
+aplicativo e o pote do balcão vendido no aplicativo lado a lado; roteiro de navegador por rodar;
+D por codificar; **a 068-B codificada**, o bolo por quilo: `boloDe(quilos)` com uma
 parte fixa por bolo e uma por quilo, e `/como-calcular-o-preco-do-bolo-por-quilo` no ar no build,
 com a tabela do quilo em três tamanhos; roteiro de navegador por rodar; C e D por codificar;
 **a 068-A codificada**, as peças e o brigadeiro: as peças do artigo
@@ -4370,6 +4373,51 @@ mais importa: é ele que prova a tira da área segura.
 Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 068 · A pergunta de cada doce — sessão C, o bolo de pote
+
+**Codificada em 2026-10-02** (sob `#d256` e `#d258`; decisão nova nenhuma). Nenhum campo, regra,
+índice ou dependência.
+
+- `src/lib/domain/exemplo.ts`: `HORA_DO_BOLO_DE_POTE` (90 minutos a R$ 20,00),
+  `EXEMPLO_BOLO_DE_POTE` (o lote de 10, `rende: 10`) e `NO_APLICATIVO` (maquininha 0%,
+  `outrasTaxas` 20%).
+- `src/components/site/Artigo.tsx`: a `Formula` ganha `taxas` (o nome do que sai do preço,
+  padrão "maquininha") e o número das taxas passa a ser `taxaCartaoConsiderada + outrasTaxas`,
+  para a fórmula do aplicativo dizer "comissão e taxas" e 0,20. Nas três páginas de antes
+  `outrasTaxas` é 0: o HTML do build delas, comparado por `diff` com o da sessão B, só ganhou a
+  linha do bolo de pote em "Outros doces".
+- `src/app/como-calcular-o-preco-do-bolo-de-pote/`: a página e a prévia. Descrição com 152
+  caracteres. A seção do aplicativo tem a fórmula com a comissão e um `dl` de três colunas
+  (balcão, aplicativo, o preço do balcão no aplicativo, este com o ícone de queda), que vira
+  pilha abaixo de `sm`.
+- `src/app/site.ts`: a linha do pote em `PAGINAS_DO_PRECO`; sitemap, `llms.txt`, medição e
+  "Outros doces" das quatro páginas a pegaram sem outra mudança. A tabela mensal ganhou a
+  coluna.
+- `tests/domain/exemplo.test.ts`: o `describe` do pote.
+
+**Os números, pelas funções:** todos batem com a spec. O pote custa R$ 9,10, a embalagem é 16%
+dele (R$ 1,45, mais que forno e fixas juntos); no balcão sai a R$ 17,00 (R$ 16,55 antes do meio
+real, sobrando R$ 6,62, 40%) e sobram R$ 7,05 (41%); no preço da feira, R$ 15,00, R$ 5,15. No
+aplicativo, 910 ÷ 0,40 = R$ 22,75, R$ 23,00 na etiqueta, e sobram R$ 9,30 (40%). O pote de R$
+17,00 vendido no aplicativo: o aplicativo leva R$ 3,40 e sobram R$ 4,50 (26%).
+
+**Além da spec:** a resposta do topo diz também o preço no aplicativo, numa frase, porque é o que
+só esta página tem; a mensalidade do aplicativo vai no passo das fixas, e não na comissão. A
+pergunta do iFood não atribui percentual a empresa nenhuma; "Quanto tempo dura" ficou fora.
+
+**Pesquisa (2.4):** as primeiras para "como precificar bolo de pote" (custoporprato,
+confeitarparavender, doceriagourmetdesucesso, o blog de parceiros do iFood) somam ingredientes,
+embalagem e mão de obra; duas multiplicam o custo por um markup, uma divide pela margem, e
+nenhuma põe a maquininha ou a comissão do aplicativo na divisão. O blog do iFood cita a comissão
+e manda "comparar". O ângulo da spec ficou.
+
+**Não rodou:** o roteiro de navegador (§ 4), a 390 e 1280 nos dois temas: o 2 (sem JavaScript; o
+HTML do build tem o texto e os três preços), o 5 (os links de "Outros doces", agora quatro
+páginas) e o 7 (Lighthouse). Vale olhar o `dl` de três colunas entre 640 e 1024px.
+
+Portão: lint e typecheck limpos, **828 testes**, `npm run build` com a página nova estática.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## A spec 068 · A pergunta de cada doce — sessão B, o bolo por quilo
 
 **Codificada em 2026-10-02** (sob `#d256` e `#d258`; decisão nova nenhuma). Nenhum campo, regra,
@@ -4716,8 +4764,8 @@ seis passos da spec, com o 5 (o link colado no WhatsApp mostrando a imagem) no p
 passos, com o 3 (nada contado no app) sendo o que prova o filtro. **Uma vez por mês, antes de a
 janela do Hobby apagar o mês**, uma linha aqui:
 
-| Mês | `/conheca` | Página do preço (cookie) | Brigadeiro | Bolo por quilo | `/cadastro` | Contas (`metricas`) | As três origens que mais trouxeram gente |
-| --- | ---------- | ------------------------ | ---------- | -------------- | ----------- | ------------------- | ---------------------------------------- |
+| Mês | `/conheca` | Página do preço (cookie) | Brigadeiro | Bolo por quilo | Bolo de pote | `/cadastro` | Contas (`metricas`) | As três origens que mais trouxeram gente |
+| --- | ---------- | ------------------------ | ---------- | -------------- | ------------ | ----------- | ------------------- | ---------------------------------------- |
 
 Número bruto, não só a porcentagem: com dezenas de visitas por mês, a taxa oscila. `/cadastro`
 ÷ páginas diz se a página convence; contas ÷ `/cadastro` diz se o formulário atrapalha.
