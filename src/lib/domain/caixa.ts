@@ -571,6 +571,79 @@ export function rendimentoDoMes(parcelas: ParcelasDoAgregado): RendimentoDoMes {
   };
 }
 
+export interface MesDaFaixa {
+  competencia: CompetenciaMensal;
+  /** Mês sem documento de agregado: barra de altura 0, mas a etiqueta fica. */
+  temAgregado: boolean;
+  entradas: Centavos;
+  /** `null` sem pedido pago, como em `rendimentoDoMes`. */
+  rendeu: Centavos | null;
+}
+
+export interface NoAno {
+  entradas: Centavos;
+  /** Soma dos meses com pedido; `null` se nenhum teve. */
+  rendeu: Centavos | null;
+  /** Algum mês do ano ficou fora do rendeu, por não ter pedido pago. */
+  faltouMes: boolean;
+}
+
+type AgregadoComId = Partial<ParcelasDoAgregado> & { id: string };
+
+function mesDe(
+  porId: Map<string, AgregadoComId>,
+  competencia: CompetenciaMensal,
+): MesDaFaixa {
+  const doc = porId.get(competencia);
+  return {
+    competencia,
+    temAgregado: doc !== undefined,
+    entradas: doc?.entradas ?? 0,
+    rendeu: rendimentoDoMes(parcelasDoResumo(doc)).rendeu,
+  };
+}
+
+/**
+ * O ano civil de `ate`, de janeiro até ele (`#d265`). Mês sem pedido soma 0
+ * no rendeu, e `faltouMes` diz ao rótulo que é "nos meses com pedido".
+ */
+export function noAno(
+  agregados: AgregadoComId[],
+  ate: CompetenciaMensal,
+): NoAno {
+  const porId = new Map(agregados.map((a) => [a.id, a]));
+  const meses = Array.from({ length: Number(ate.slice(5, 7)) }, (_, i) =>
+    mesDe(porId, `${ate.slice(0, 4)}-${String(i + 1).padStart(2, "0")}`),
+  );
+  const comPedido = meses.filter((m) => m.rendeu !== null);
+  return {
+    entradas: meses.reduce((soma, m) => soma + m.entradas, 0),
+    rendeu:
+      comPedido.length > 0
+        ? comPedido.reduce((soma, m) => soma + (m.rendeu ?? 0), 0)
+        : null,
+    faltouMes: comPedido.length > 0 && comPedido.length < meses.length,
+  };
+}
+
+/**
+ * Os doze meses terminando em `ate`, do mais antigo ao mais novo, e o ano de
+ * `ate` (`#d265`). Procura por competência: o `global`, se vier junto, nunca
+ * é procurado.
+ */
+export function mesesDaFaixa(
+  agregados: AgregadoComId[],
+  ate: CompetenciaMensal,
+): { meses: MesDaFaixa[]; ano: NoAno } {
+  const porId = new Map(agregados.map((a) => [a.id, a]));
+  return {
+    meses: Array.from({ length: 12 }, (_, i) =>
+      mesDe(porId, competenciaVizinha(ate, i - 11)),
+    ),
+    ano: noAno(agregados, ate),
+  };
+}
+
 /**
  * Os pedidos que contam no "Deve entrar" do mês (`#d262`): os marcados para
  * este mês, pela data da entrega, e os entregues não pagos de qualquer data,

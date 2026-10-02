@@ -126,13 +126,13 @@ ignorado.
 
 ## Critérios de aceite
 
-- [ ] `Comparacao` em arquivo próprio; a Hoje diz exatamente o que dizia.
-- [ ] Uma consulta por id, sem índice; `firestore.indexes.json` intocado.
-- [ ] `mesesDaFaixa` testada com os quatro casos.
-- [ ] Nenhuma cor solta; a barra selecionada não depende só de cor (etiqueta em 600 e
+- [x] `Comparacao` em arquivo próprio; a Hoje diz exatamente o que dizia.
+- [x] Uma consulta por id, sem índice; `firestore.indexes.json` intocado.
+- [x] `mesesDaFaixa` testada com os quatro casos.
+- [x] Nenhuma cor solta; a barra selecionada não depende só de cor (etiqueta em 600 e
       `aria-current`).
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d264` e `#d265` escritos; `ESTADO.md` atualizado.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d264` e `#d265` escritos; `ESTADO.md` atualizado.
 
 ---
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Check, ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
+import { Check, ChevronRight, TrendingDown } from "lucide-react";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { diaEmQueBateu } from "@/lib/domain/avisos";
@@ -23,9 +23,7 @@ import { useDocumento } from "@/lib/hooks/useColecao";
 import type { CompetenciaMensal, ResumoMensal } from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
 import { cn } from "@/lib/utils/cn";
-
-/** Abaixo disto, "a mais" e "a menos" são arredondamento: é igual (`#d211`). */
-const DIFERENCA_QUE_CONTA = 100;
+import { Comparacao } from "./Comparacao";
 
 /**
  * O mês na tela que abre de manhã (spec 045, `DECISOES.md#d210`).
@@ -148,48 +146,6 @@ export function CartaoDoMes() {
         mes={mes}
       />
     </Cartao>
-  );
-}
-
-/**
- * Seta e palavra, nunca vermelho: vender menos que o mês passado até aqui não
- * é erro, e o alarme não é a voz da marca (`#d211`).
- */
-function Comparacao({
-  diferenca,
-  mesAnterior,
-  dia,
-}: {
-  diferenca: number;
-  mesAnterior: string;
-  dia: number;
-}) {
-  const ate = `até o dia ${dia}`;
-
-  if (Math.abs(diferenca) < DIFERENCA_QUE_CONTA) {
-    return (
-      <p className="mt-1 text-label text-ink-muted">
-        Entrou igual a {mesAnterior} {ate}
-      </p>
-    );
-  }
-
-  const aMais = diferenca > 0;
-  const Icone = aMais ? TrendingUp : TrendingDown;
-
-  return (
-    <p
-      className={cn(
-        "mt-1 flex items-center gap-1.5 text-label",
-        aMais ? "text-positive" : "text-ink-muted",
-      )}
-    >
-      <Icone aria-hidden className="size-4 shrink-0" strokeWidth={2} />
-      <span>
-        Entrou <span className="num">{formatarMoeda(Math.abs(diferenca))}</span>{" "}
-        {aMais ? "a mais" : "a menos"} que {mesAnterior} {ate}
-      </span>
-    </p>
   );
 }
 

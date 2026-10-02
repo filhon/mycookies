@@ -7804,3 +7804,46 @@ app não cumpria.
   `modelo`), com a data calculada. "Parou de repetir" é desmarcar a caixa no lançamento antigo.
 - Só um mês para trás, só no mês corrente. Sem `recorrenciaId`: o par por descrição erra de
   forma visível, e o id seria campo novo.
+
+---
+
+## D264 · A comparação mora no topo, igual nas duas telas
+
+**Status:** vigente · decidida em 2026-10-02, spec `071-o-mes-contra-os-outros.md`
+
+**Contexto.** A Hoje comparava o mês com o anterior na mesma altura (`#d211`); o Caixa, a tela do
+dinheiro, mostrava o mês sozinho.
+
+**Decisão.** `Comparacao` sai de `CartaoDoMes` para `components/financeiro/Comparacao.tsx`, sem
+mudar o texto, e entra na faixa "No caixa" de `ResultadoDoMes`. No mês corrente compara até o dia
+de hoje, por `entradasAteODia`; no fechado (e no futuro), o mês inteiro contra o anterior inteiro,
+sem "até o dia". Continua sobre **entradas**: o rendeu do mês anterior até o dia N não existe
+gravado (`porDia` não tem custo). Seta e palavra, nunca vermelho. Sem agregado do mês anterior, a
+linha não aparece. O mês anterior vem da mesma assinatura da faixa (`#d265`), e não de um
+`useDocumento` a mais.
+
+---
+
+## D265 · Os doze meses numa faixa de entradas
+
+**Status:** vigente · decidida em 2026-10-02, spec `071-o-mes-contra-os-outros.md`
+
+**Decisão.** `DozeMeses`, depois da meta: uma barra de entradas por mês, os doze terminando no
+mês **corrente** (abrir março não encolhe a faixa), o aberto em `--brand-ink` com a etiqueta em
+600 e `aria-current`. O rendeu vai no `sr-only` e no `title`, não numa segunda série. Cada coluna
+é um `<button>` que abre o mês. Mês sem agregado é barra de altura zero com a etiqueta; com menos
+de dois meses com agregado, a seção não existe. A faixa aparece também no mês em branco: tocar
+num buraco não pode tirar a faixa da tela.
+
+**O ano** é o civil do mês aberto, até ele (`noAno`): entradas somadas, e o rendeu somado nos
+meses com pedido, com "nos meses com pedido" no rótulo quando algum ficou fora. O rótulo diz o
+ano e o mês em que para ("Em 2026 até junho"), porque "No ano" leria como o ano inteiro.
+
+**Como.** `consultaAgregadosDoPeriodo` por `documentId()` entre duas competências: sem índice
+composto, e o `global` fica fora porque `'g' > '2'`. A tela assina uma faixa só, larga o bastante
+para os doze meses, o janeiro do ano aberto e o mês anterior a ele. `mesesDaFaixa` procura por
+competência, e por isso ignora qualquer outro id. Mês sem pedido pago tem `rendeu: null`, não
+zero, para a barra dizer "sem pedido pago".
+
+**Consequência.** Se o rendeu se mostrar estável nos dados reais, a faixa passa a ser dele. Comparar
+com o mesmo mês do ano passado espera existir ano passado.

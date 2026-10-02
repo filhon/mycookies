@@ -1,14 +1,22 @@
 import {
+  documentId,
+  endAt,
   getDocs,
   increment,
   orderBy,
   query,
   setDoc,
+  startAt,
   Timestamp,
   where,
   type FieldValue,
 } from "firebase/firestore";
-import { colPedidos, colTransacoes, docResumoMensal } from "../colecoes";
+import {
+  colAgregados,
+  colPedidos,
+  colTransacoes,
+  docResumoMensal,
+} from "../colecoes";
 import {
   agregarMes,
   ticketMedioDe,
@@ -54,6 +62,20 @@ export function consultaTransacoesDoMes(
     where("arquivado", "==", false),
     where("competencia", "==", competencia),
     orderBy("data", "desc"),
+  );
+}
+
+/** Os agregados de `de` a `ate`, por id. `global` fica fora porque 'g' > '2'. */
+export function consultaAgregadosDoPeriodo(
+  contaId: string,
+  de: CompetenciaMensal,
+  ate: CompetenciaMensal,
+) {
+  return query(
+    colAgregados(contaId),
+    orderBy(documentId()),
+    startAt(de),
+    endAt(ate),
   );
 }
 

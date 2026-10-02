@@ -11,6 +11,7 @@ import {
   eSeCobrasseMais,
   leituraDoCardapio,
   mesDaLeitura,
+  mesesDaFaixa,
   PARCELAS_ZERADAS,
   parcelasDoResumo,
   pedidosQueEntramNoMes,
@@ -1258,5 +1259,77 @@ describe("contasQueRepetemPendentes", () => {
         [],
       ),
     ).toHaveLength(1);
+  });
+});
+
+describe("mesesDaFaixa (#d265)", () => {
+  // Um mês com pedido: entrou 1000, vendeu 1000 em pedido, custou 400.
+  const mes = (id: string, entradas = 1000, comPedido = true) => ({
+    id,
+    entradas,
+    qtdPedidos: comPedido ? 1 : 0,
+    receitaPedidos: comPedido ? entradas : 0,
+    custoDoVendido: comPedido ? 400 : 0,
+  });
+
+  it("vira o ano: doze meses de novembro a outubro, em ordem", () => {
+    const { meses, ano } = mesesDaFaixa(
+      [mes("2025-11"), mes("2025-12"), mes("2026-01"), mes("2026-10")],
+      "2026-10",
+    );
+    expect(meses.map((m) => m.competencia)).toEqual([
+      "2025-11",
+      "2025-12",
+      "2026-01",
+      "2026-02",
+      "2026-03",
+      "2026-04",
+      "2026-05",
+      "2026-06",
+      "2026-07",
+      "2026-08",
+      "2026-09",
+      "2026-10",
+    ]);
+    // O ano é 2026 até outubro: novembro e dezembro de 2025 ficam fora.
+    expect(ano.entradas).toBe(2000);
+    expect(ano.rendeu).toBe(1200);
+  });
+
+  it("mês faltando no meio é zero sem agregado, e o rendeu diz que faltou mês", () => {
+    const { meses, ano } = mesesDaFaixa(
+      [mes("2026-08", 1000), mes("2026-10", 3000), mes("2026-09", 500, false)],
+      "2026-10",
+    );
+    const julho = meses.find((m) => m.competencia === "2026-07")!;
+    expect(julho).toEqual({
+      competencia: "2026-07",
+      temAgregado: false,
+      entradas: 0,
+      rendeu: null,
+    });
+    expect(meses.find((m) => m.competencia === "2026-09")!.rendeu).toBeNull();
+    expect(ano).toEqual({
+      entradas: 4500,
+      rendeu: 600 + 2600,
+      faltouMes: true,
+    });
+  });
+
+  it("ate em janeiro: o ano tem um mês só", () => {
+    const { ano } = mesesDaFaixa(
+      [mes("2025-12", 9000), mes("2026-01", 1000)],
+      "2026-01",
+    );
+    expect(ano).toEqual({ entradas: 1000, rendeu: 600, faltouMes: false });
+  });
+
+  it("o agregado global na entrada é ignorado", () => {
+    const { meses, ano } = mesesDaFaixa(
+      [mes("2026-01"), { id: "global", entradas: 999999 }],
+      "2026-01",
+    );
+    expect(meses.filter((m) => m.temAgregado)).toHaveLength(1);
+    expect(ano.entradas).toBe(1000);
   });
 });

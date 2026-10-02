@@ -7,6 +7,7 @@ import {
   type ParcelasDoAgregado,
 } from "@/lib/domain/caixa";
 import { formatarMoeda, formatarPercentual } from "@/lib/domain/money";
+import { Comparacao } from "./Comparacao";
 
 /**
  * O mês em duas respostas, a que decide primeiro (`DECISOES.md#d260`).
@@ -18,15 +19,25 @@ import { formatarMoeda, formatarPercentual } from "@/lib/domain/money";
  * a ser o caixa, com a frase que diz por quê.
  *
  * "Saiu" leva a maquininha, como na Hoje (`#d209`), para que entrou menos saiu
- * feche com o "No caixa" nas duas telas.
+ * feche com o "No caixa" nas duas telas. A comparação com o mês anterior
+ * mora junto, como na Hoje (`#d264`); sem o agregado dele, não vem.
  */
-export function ResultadoDoMes({ parcelas }: { parcelas: ParcelasDoAgregado }) {
+export function ResultadoDoMes({
+  parcelas,
+  comparacao,
+}: {
+  parcelas: ParcelasDoAgregado;
+  comparacao?: React.ComponentProps<typeof Comparacao>;
+}) {
   const r = rendimentoDoMes(parcelas);
   const caixa = (
-    <p className="num mt-1 text-label text-ink-muted">
-      Entrou {formatarMoeda(parcelas.entradas)} · Saiu{" "}
-      {formatarMoeda(parcelas.saidas + parcelas.custoTaxasPagamento)}
-    </p>
+    <>
+      <p className="num mt-1 text-label text-ink-muted">
+        Entrou {formatarMoeda(parcelas.entradas)} · Saiu{" "}
+        {formatarMoeda(parcelas.saidas + parcelas.custoTaxasPagamento)}
+      </p>
+      {comparacao && <Comparacao {...comparacao} />}
+    </>
   );
 
   if (r.rendeu === null) {

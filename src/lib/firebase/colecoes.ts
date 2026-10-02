@@ -111,6 +111,10 @@ export const docVitrine = (contaId: string) =>
     conversor<VitrineDoCardapio>(),
   );
 
+/** Tipada como mês: quem lista lê por faixa de id, e o `global` fica fora dela. */
+export const colAgregados = (contaId: string) =>
+  col<ResumoMensal>(caminhos.agregados(contaId));
+
 export const docResumoMensal = (contaId: string, competencia: string) =>
   doc(obterDb(), caminhos.resumoMensal(contaId, competencia)).withConverter(
     conversor<ResumoMensal>(),

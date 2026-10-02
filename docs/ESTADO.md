@@ -1,6 +1,10 @@
 # Estado do projeto
 
-Atualizado em 2026-10-02 (**a 070 codificada**, o que vem até o fim do mês: `previsaoDoMes`,
+Atualizado em 2026-10-02 (**a 071 codificada**, o mês contra os outros: a `Comparacao` da
+Hoje em arquivo próprio e na faixa "No caixa" de `/financeiro` (até o dia no mês corrente, o mês
+inteiro no fechado), `consultaAgregadosDoPeriodo` por id, `mesesDaFaixa` e `noAno` em
+`domain/caixa.ts` com teste, e `DozeMeses` depois da meta, `#d264` e `#d265`; nenhum campo,
+regra, índice ou dependência; roteiro de navegador da seção 4 por rodar; **a 070 codificada**, o que vem até o fim do mês: `previsaoDoMes`,
 `pedidosQueEntramNoMes` e `contasQueRepetemPendentes` em `domain/caixa.ts` com teste,
 `AteOFimDoMes` (deve entrar, deve sair, onde o caixa fecha) e `ContasQueRepetem` ("Lançar" por
 `criarTransacao`, "Desfazer" por 5 s, o nome abre o formulário preenchido) em `/financeiro`, só
@@ -4396,6 +4400,36 @@ para a mesma URL não foi testado no navegador: o `preventDefault` vale nos dois
 mais importa: é ele que prova a tira da área segura.
 
 Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
+## A spec 071 · O mês contra os outros
+
+**Codificada em 2026-10-02** (`#d264`, `#d265`). Nenhum campo, regra, índice ou dependência.
+
+- `src/components/financeiro/Comparacao.tsx`: saiu do `CartaoDoMes` com o texto igual; `dia`
+  opcional, e sem ele a frase não diz "até o dia".
+- `ResultadoDoMes` ganha `comparacao` e a mostra sob "Entrou · Saiu" da faixa "No caixa" (e do
+  display, no mês sem pedido pago).
+- `src/lib/firebase/colecoes.ts`: `colAgregados`, tipada como `ResumoMensal`.
+  `consultaAgregadosDoPeriodo` em `mutations/agregado.ts`, por `documentId()`.
+- `src/lib/domain/caixa.ts`: `mesesDaFaixa(agregados, ate)` (doze `MesDaFaixa` e o ano de `ate`)
+  e `noAno(agregados, ate)`. Os quatro casos da spec em `tests/domain/caixa.test.ts`.
+- `src/components/financeiro/DozeMeses.tsx`: a faixa; também no mês em branco, acima do estado
+  vazio, para que um buraco aberto pela faixa tenha a faixa para voltar.
+- `TelaFinanceiro`: uma assinatura de agregados, do menor entre "corrente − 11" e "dezembro
+  anterior ao ano aberto" até o maior entre o corrente e o aberto. Serve a faixa, o ano do mês
+  aberto e o mês anterior da comparação. O dia de hoje é lido na montagem, junto com o mês
+  corrente.
+
+**Diferente da spec:** o mês sem pedido tem `rendeu: null`, e não zero, para que a barra diga
+"sem pedido pago" em vez de "rendeu R$ 0,00"; o ano soma 0 por ele, como a spec pede. O rótulo
+do ano é "Em 2026 até junho" no lugar de "No ano", porque o ano é o do mês aberto e para nele; o
+"nos meses com pedido" só aparece quando algum mês do ano ficou fora do rendeu.
+
+**Não rodou:** o roteiro de navegador (§ 4), inteiro: a comparação de outubro igual à da Hoje,
+setembro contra agosto, o toque em junho, as doze barras a 390 px e o leitor de tela.
+
+Portão: lint e typecheck limpos, **859 testes**, `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
 ## A spec 069 · O que o mês rendeu

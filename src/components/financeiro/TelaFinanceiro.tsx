@@ -11,6 +11,9 @@ import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import {
   conferirAgregado,
   contasQueRepetemPendentes,
+  entradasAteODia,
+  mesesDaFaixa,
+  noAno,
   parcelasDoResumo,
   pedidosQueEntramNoMes,
   previsaoDoMes,
@@ -23,6 +26,7 @@ import {
   competenciaVizinha,
   dataISODe,
   rotuloCompetencia,
+  rotuloMes,
 } from "@/lib/domain/datas";
 import {
   docConfiguracao,
@@ -31,6 +35,7 @@ import {
 } from "@/lib/firebase/colecoes";
 import type { ContextoMeta } from "@/lib/firebase/mutations/metas";
 import {
+  consultaAgregadosDoPeriodo,
   consultaTransacoesDoMes,
   recalcularMes,
 } from "@/lib/firebase/mutations/agregado";
@@ -51,6 +56,7 @@ import { useAcaoPedida } from "@/lib/acaoPedida";
 import { useContaId } from "@/providers/AuthProvider";
 import { AteOFimDoMes } from "./AteOFimDoMes";
 import { ContasQueRepetem } from "./ContasQueRepetem";
+import { DozeMeses } from "./DozeMeses";
 import { FormularioTransacao } from "./FormularioTransacao";
 import { LinhaTransacao } from "./LinhaTransacao";
 import { MovimentoPorDia } from "./MovimentoPorDia";
@@ -64,7 +70,8 @@ export function TelaFinanceiro() {
 
   // O mês corrente é lido uma vez, na montagem: recalculá-lo a cada render
   // faria a tela depender do relógio no meio do desenho.
-  const [mesCorrente] = useState(() => competenciaAtual());
+  const [hoje] = useState(() => new Date());
+  const mesCorrente = competenciaAtual(hoje);
   const [competencia, setCompetencia] =
     useState<CompetenciaMensal>(mesCorrente);
 
@@ -117,7 +124,22 @@ export function TelaFinanceiro() {
     [contaId, ehMesCorrente, mesCorrente],
   );
 
+  // Uma assinatura para a faixa dos doze meses, o ano do mês aberto e o mês
+  // anterior da comparação (`#d264`, `#d265`). A faixa termina no corrente;
+  // abrir março não a encolhe.
+  const anoAberto = `${competencia.slice(0, 4)}-01`;
+  const deAgregado = [
+    competenciaVizinha(mesCorrente, -11),
+    competenciaVizinha(anoAberto, -1),
+  ].sort()[0]!;
+  const ateAgregado = competencia > mesCorrente ? competencia : mesCorrente;
+  const consultaDosAgregados = useMemo(
+    () => consultaAgregadosDoPeriodo(contaId, deAgregado, ateAgregado),
+    [contaId, deAgregado, ateAgregado],
+  );
+
   const lancamentos = useColecao<Transacao>(consulta);
+  const agregados = useColecao<ResumoMensal>(consultaDosAgregados);
   const agenda = useColecao<Pedido>(consultaDaAgenda);
   const devem = useColecao<Pedido>(consultaDosQueDevem);
   const mesAnterior = useColecao<Transacao>(consultaDoMesAnterior);
@@ -163,6 +185,27 @@ export function TelaFinanceiro() {
     contasQueRepetem: contasPendentes.map((p) => p.conta),
   });
   const temPrevisao = receber.quantidade > 0 || contasPendentes.length > 0;
+
+  // No corrente, até o dia de hoje; no fechado, o mês inteiro (`#d264`).
+  const anterior = agregados.dados.find(
+    (a) => a.id === competenciaVizinha(competencia, -1),
+  );
+  const comparacao = anterior && {
+    diferenca: ehMesCorrente
+      ? entradasAteODia(parcelas.porDia, hoje.getDate()) -
+        entradasAteODia(anterior.porDia ?? {}, hoje.getDate())
+      : parcelas.entradas - (anterior.entradas ?? 0),
+    mesAnterior: rotuloMes(competenciaVizinha(competencia, -1)),
+    dia: ehMesCorrente ? hoje.getDate() : undefined,
+  };
+  const dozeMeses = (
+    <DozeMeses
+      meses={mesesDaFaixa(agregados.dados, mesCorrente).meses}
+      aberto={competencia}
+      ano={noAno(agregados.dados, competencia)}
+      aoAbrir={setCompetencia}
+    />
+  );
   const pendente = lancamentos.pendente || resumo.pendente || meta.pendente;
 
   // O mês existe se ele tem lançamento, e não se o documento de agregado
@@ -320,6 +363,9 @@ export function TelaFinanceiro() {
             aoAbrir={abrirPainelMeta}
           />
 
+          {/* Um buraco aberto pela faixa precisa da faixa para voltar. */}
+          {dozeMeses}
+
           <div className="overflow-hidden rounded-lg border border-line bg-surface">
             <EstadoVazio
               titulo="O mês está em branco."
@@ -351,7 +397,7 @@ export function TelaFinanceiro() {
             />
           )}
 
-          <ResultadoDoMes parcelas={parcelas} />
+          <ResultadoDoMes parcelas={parcelas} comparacao={comparacao} />
 
           {aoFimDoMes}
 
@@ -363,6 +409,8 @@ export function TelaFinanceiro() {
             deveEntrar={previsao.deveEntrar}
             aoAbrir={abrirPainelMeta}
           />
+
+          {dozeMeses}
 
           <MovimentoPorDia competencia={competencia} porDia={parcelas.porDia} />
 
