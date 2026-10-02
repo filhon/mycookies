@@ -7706,3 +7706,47 @@ ligada às fundas, e elas ligadas de volta.
 pelas irmãs e pelo sitemap. A coluna que a spec chamava "a parcela que mais pesa" virou "O que
 pesa": pela conta, os ingredientes são a maior parcela dos quatro doces, e a coluna mostra a
 parcela que cada página ensina a não esquecer.
+
+---
+
+## D260 · O mês tem duas respostas, e a que decide vem primeiro
+
+**Status:** vigente · decidida em 2026-10-02, spec `069-o-que-o-mes-rendeu.md`
+
+**Contexto.** O topo de `/financeiro` chamava o caixa (entrou menos saiu) de "o que sobrou de
+verdade". Com o material comprado em setembro, outubro parecia só lucro e setembro parecia
+prejuízo; o que as vendas deixaram acima do custo de fazer não estava escrito em lugar nenhum.
+
+**Decisão.** O display de `ResultadoDoMes` e do `CartaoDoMes` é "o que o mês rendeu"
+(`rendimentoDoMes`, `#d261`), com o ponto âmbar só no positivo; negativo é "perdeu", `comSinal`,
+`TrendingDown`, sem ponto. O caixa (`lucro` do agregado) desce para a faixa rebaixada como "No
+caixa", com uma frase que diz por que os dois diferem. "Saiu" inclui a maquininha nas duas telas
+(`#d209`), para que Entrou − Saiu = No caixa sempre. Mês sem pedido pago não tem rendeu: o display
+volta a ser o caixa, sem ponto, na mesma roupa da Hoje (tinta, sinal só no negativo), com a frase
+que diz por quê. "Ticket médio" sai da interface ("cada pedido sai a"); `VendasPorPedido` foi
+absorvido.
+
+**Consequência.** Se as entrevistas mostrarem que "rendeu" é lido como "dinheiro na conta",
+troca-se a ordem dos dois, não a conta. O e-mail do mês (`#d209`) continua com o caixa até spec
+própria.
+
+---
+
+## D261 · A conta do que rendeu
+
+**Status:** vigente · decidida em 2026-10-02, spec `069-o-que-o-mes-rendeu.md`
+
+**Decisão.** `rendeu = receitaPedidos − custoDoVendido − custoTaxasPagamento − saídas fora da
+ficha`, só com pedido pago no mês (`null` sem ele). Fora da ficha são `ENTREGA` (o acerto com o
+entregador; a taxa cobrada está no total do pedido), `MARKETING`, `IMPOSTO`, `TAXA_PAGAMENTO`
+(avulsa) e `OUTRO`. Não descontam `COMPRA_INSUMO`, `EMBALAGEM` e `DESPESA_FIXA`, que já estão no
+custo de fazer pela ficha, `PRO_LABORE` (a hora dela já está no custo) e `EQUIPAMENTO`
+(investimento, aparece no caixa). Lê só campos escalares do agregado.
+
+**A maquininha inteira desconta**, a da venda de balcão também, que não está em `receitaPedidos`:
+separar pediria a lista de lançamentos, que a Hoje não assina. `OUTRO` desconta pelo mesmo motivo:
+o erro é pequeno e para baixo, nunca para cima. O balcão (`entradas − receitaPedidos`, nunca
+negativo) fica fora do rendeu, porque não diz o que custou, e a tela diz quanto foi.
+
+**Consequência.** O rendeu é tão bom quanto as fichas: preço de material velho infla o número.
+"Custou fazer" leva a "Ver meus produtos".

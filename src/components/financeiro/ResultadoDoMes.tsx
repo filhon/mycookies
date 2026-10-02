@@ -1,85 +1,154 @@
 import Link from "next/link";
-import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  CreditCard,
-  TriangleAlert,
-} from "lucide-react";
+import { TrendingDown } from "lucide-react";
 import { Dinheiro } from "@/components/ui/Dinheiro";
-import type { ParcelasDoAgregado } from "@/lib/domain/caixa";
-import { formatarMoeda } from "@/lib/domain/money";
+import {
+  rendimentoDoMes,
+  ticketMedioDe,
+  type ParcelasDoAgregado,
+} from "@/lib/domain/caixa";
+import { formatarMoeda, formatarPercentual } from "@/lib/domain/money";
 
 /**
- * O resultado do mês, na ordem em que a pergunta é feita: primeiro o que
- * sobrou, que é o que a Maynara veio saber, e só depois as duas parcelas que
- * produziram esse número.
+ * O mês em duas respostas, a que decide primeiro (`DECISOES.md#d260`).
  *
- * Não são três cartões iguais lado a lado. Entrou e saiu não são irmãos de
- * sobrou: são as contas que levam até ele, e a hierarquia da tela precisa dizer
- * isso antes que ela leia qualquer cifra (`PRODUCT.md`, princípio 5).
+ * O display é o que as vendas deixaram acima do custo de fazer
+ * (`rendimentoDoMes`); o caixa, entrou menos saiu, desce para a faixa
+ * rebaixada. Os dois só batem quando ela compra e vende no mesmo mês, e é isso
+ * que a faixa diz. Mês sem pedido pago não tem custo conhecido: o display volta
+ * a ser o caixa, com a frase que diz por quê.
+ *
+ * "Saiu" leva a maquininha, como na Hoje (`#d209`), para que entrou menos saiu
+ * feche com o "No caixa" nas duas telas.
  */
 export function ResultadoDoMes({ parcelas }: { parcelas: ParcelasDoAgregado }) {
-  const { entradas, saidas, lucro, custoTaxasPagamento } = parcelas;
-  const noPrejuizo = lucro < 0;
+  const r = rendimentoDoMes(parcelas);
+  const caixa = (
+    <p className="num mt-1 text-label text-ink-muted">
+      Entrou {formatarMoeda(parcelas.entradas)} · Saiu{" "}
+      {formatarMoeda(parcelas.saidas + parcelas.custoTaxasPagamento)}
+    </p>
+  );
+
+  if (r.rendeu === null) {
+    return (
+      <section
+        aria-labelledby="resultado-do-mes"
+        className="rounded-lg border border-line bg-surface px-5 py-5"
+      >
+        <h2
+          id="resultado-do-mes"
+          className="text-label font-medium text-ink-muted"
+        >
+          No caixa
+        </h2>
+        {/* A mesma roupa da Hoje: tinta, e sinal só no negativo. */}
+        <p className="mt-1 flex items-center gap-2">
+          {parcelas.lucro < 0 ? (
+            <>
+              <Dinheiro centavos={parcelas.lucro} tamanho="xl" comSinal />
+              <Queda />
+            </>
+          ) : (
+            <Dinheiro
+              centavos={parcelas.lucro}
+              tamanho="xl"
+              className="text-ink"
+            />
+          )}
+        </p>
+        {caixa}
+        <p className="mt-3 max-w-[60ch] text-label text-ink-muted">
+          Sem pedido pago neste mês. Venda lançada à mão não diz o que custou,
+          então o que o mês rendeu não dá pra saber.
+        </p>
+      </section>
+    );
+  }
+
+  const perdeu = r.rendeu < 0;
+  const { qtdPedidos, qtdItensVendidos, receitaPedidos } = parcelas;
 
   return (
     <section
       aria-labelledby="resultado-do-mes"
       className="overflow-hidden rounded-lg border border-line bg-surface"
     >
-      <div className="px-5 pb-5 pt-5">
+      <div className="px-5 pt-5">
         <h2
           id="resultado-do-mes"
           className="text-label font-medium text-ink-muted"
         >
-          {noPrejuizo ? "O que faltou no mês" : "O que sobrou no mês"}
+          {perdeu ? "O que o mês perdeu" : "O que o mês rendeu"}
         </h2>
 
-        <p className="mt-1 flex items-center gap-2">
-          <Dinheiro centavos={lucro} tamanho="xl" comSinal />
-          {/* O sinal e a cor não bastam: o prejuízo carrega ícone também. */}
-          {noPrejuizo && (
-            <TriangleAlert
+        {perdeu ? (
+          <p className="mt-1 flex items-center gap-2">
+            <Dinheiro centavos={r.rendeu} tamanho="xl" comSinal />
+            <Queda />
+          </p>
+        ) : (
+          <p className="mt-1 flex items-baseline gap-2">
+            <Dinheiro centavos={r.rendeu} tamanho="xl" className="text-ink" />
+            {/* O ponto marca o número que decide; prejuízo não se enfeita. */}
+            <span
               aria-hidden
-              className="size-5 shrink-0 text-negative"
-              strokeWidth={2}
+              className="inline-block size-2.5 shrink-0 rounded-full bg-accent-500"
             />
+          </p>
+        )}
+
+        <p className="mt-1.5 max-w-[60ch] text-label text-ink-muted">
+          {perdeu
+            ? `O custo de fazer, a maquininha${r.outrasSaidas > 0 ? " e as outras saídas" : ""} passaram do que você vendeu em pedido.`
+            : `${formatarPercentual(r.percentual ?? 0, 0)} do que você vendeu em pedido, já sem o custo de fazer${r.outrasSaidas > 0 ? ", a maquininha e as outras saídas" : " e a maquininha"}.`}{" "}
+          Sua hora já está paga dentro do custo.
+        </p>
+
+        <dl
+          className={
+            r.outrasSaidas > 0
+              ? "mt-4 grid grid-cols-2 gap-4 border-t border-line pt-4 sm:grid-cols-4"
+              : "mt-4 grid grid-cols-2 gap-4 border-t border-line pt-4 sm:grid-cols-3"
+          }
+        >
+          <Parcela rotulo="Vendeu em pedido" valor={r.vendeuEmPedido} />
+          <Parcela rotulo="Custou fazer" valor={r.custouFazer}>
+            <Link
+              href="/fichas"
+              className="inline-flex min-h-11 items-center text-label font-medium text-brand-ink underline underline-offset-2"
+            >
+              Ver meus produtos
+            </Link>
+          </Parcela>
+          <Parcela rotulo="Maquininha" valor={r.maquininha} />
+          {r.outrasSaidas > 0 && (
+            <Parcela rotulo="Outras saídas" valor={r.outrasSaidas} />
           )}
-        </p>
+        </dl>
 
-        <p className="mt-1.5 max-w-[46ch] text-label text-ink-muted">
-          {noPrejuizo
-            ? "Saiu mais do que entrou. A conta já desconta a taxa da maquininha."
-            : "É o que ficou depois de tudo que saiu e da taxa da maquininha."}
+        <p className="num mb-5 mt-2 max-w-[60ch] text-label text-ink-muted">
+          {qtdPedidos} {qtdPedidos === 1 ? "pedido" : "pedidos"} ·{" "}
+          {qtdItensVendidos} {qtdItensVendidos === 1 ? "doce" : "doces"} · cada
+          pedido sai a{" "}
+          {formatarMoeda(ticketMedioDe(receitaPedidos, qtdPedidos))}
+          {r.deBalcao > 0 &&
+            `, e ${formatarMoeda(r.deBalcao)} de balcão, fora desta conta porque não diz o que custou`}
         </p>
       </div>
 
-      <div className="grid grid-cols-2 divide-x divide-line border-t border-line">
-        <Parcela
-          rotulo="Entrou"
-          valor={entradas}
-          icone={
-            <ArrowDownLeft
-              aria-hidden
-              className="size-4 text-positive"
-              strokeWidth={2}
-            />
-          }
-        />
-        <Parcela
-          rotulo="Saiu"
-          valor={saidas}
-          icone={
-            <ArrowUpRight
-              aria-hidden
-              className="size-4 text-negative"
-              strokeWidth={2}
-            />
-          }
-        />
+      <div className="border-t border-line bg-sunken px-5 py-4">
+        <h3 className="text-label font-medium text-ink-muted">No caixa</h3>
+        <p className="mt-0.5 flex items-center gap-2">
+          <Dinheiro centavos={parcelas.lucro} tamanho="lg" comSinal />
+          {parcelas.lucro < 0 && <Queda />}
+        </p>
+        {caixa}
+        <p className="mt-2 max-w-[60ch] text-label text-ink-muted">
+          O caixa conta o dinheiro que entrou e saiu. O que rendeu conta o que
+          cada venda deixou. Os dois só batem quando você compra e vende no
+          mesmo mês.
+        </p>
       </div>
-
-      <MaquininhaComeu valor={custoTaxasPagamento} houveVenda={entradas > 0} />
     </section>
   );
 }
@@ -87,76 +156,30 @@ export function ResultadoDoMes({ parcelas }: { parcelas: ParcelasDoAgregado }) {
 function Parcela({
   rotulo,
   valor,
-  icone,
+  children,
 }: {
   rotulo: string;
   valor: number;
-  icone: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
-    <div className="px-5 py-4">
-      <p className="flex items-center gap-1.5 text-label font-medium text-ink-muted">
-        {icone}
-        {rotulo}
-      </p>
-      <p className="mt-0.5">
-        <Dinheiro centavos={valor} tamanho="lg" />
-      </p>
+    <div className="min-w-0">
+      <dt className="text-label font-medium text-ink-muted">{rotulo}</dt>
+      <dd>
+        <Dinheiro centavos={valor} tamanho="md" />
+        {children && <div>{children}</div>}
+      </dd>
     </div>
   );
 }
 
-/**
- * O número que ninguém calcula sozinha.
- *
- * O Módulo 2 inteiro existe para tornar essa taxa visível na hora de dar o
- * preço; aqui ela aparece somada no mês, com linha própria em vez de dissolvida
- * entre aluguel e farinha (`DECISOES.md#d24`).
- */
-function MaquininhaComeu({
-  valor,
-  houveVenda,
-}: {
-  valor: number;
-  houveVenda: boolean;
-}) {
+/** Sinal e cor não bastam: todo negativo leva o ícone. */
+function Queda() {
   return (
-    <div className="flex items-start gap-3 border-t border-line bg-sunken px-5 py-4">
-      <CreditCard
-        aria-hidden
-        className="mt-0.5 size-5 shrink-0 text-ink-muted"
-        strokeWidth={1.75}
-      />
-      <div className="min-w-0">
-        <h3 className="text-label font-medium text-ink-muted">
-          O que a maquininha comeu
-        </h3>
-
-        {valor > 0 ? (
-          <>
-            <p className="num mt-0.5 text-heading font-semibold text-ink">
-              {formatarMoeda(valor)}
-            </p>
-            <p className="mt-1 max-w-[52ch] text-label text-ink-muted">
-              Sai da taxa de cada forma de pagamento e já está descontada do
-              resultado acima. É por isso que ela entra no preço dos seus
-              produtos.{" "}
-              <Link
-                href="/configuracao"
-                className="font-medium text-brand-ink underline underline-offset-2"
-              >
-                Ver minhas taxas
-              </Link>
-            </p>
-          </>
-        ) : (
-          <p className="mt-1 max-w-[52ch] text-label text-ink-muted">
-            {houveVenda
-              ? "Nenhuma venda deste mês passou por cartão, então a maquininha não ficou com nada."
-              : "Assim que você lançar uma venda no cartão, o que a maquininha fica aparece aqui."}
-          </p>
-        )}
-      </div>
-    </div>
+    <TrendingDown
+      aria-hidden
+      className="size-5 shrink-0 text-negative"
+      strokeWidth={2}
+    />
   );
 }

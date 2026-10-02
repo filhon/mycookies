@@ -5,6 +5,7 @@ import type {
   DataISO,
   FichaTecnica,
   FormaPagamento,
+  Percentual,
   ResumoDia,
   ResumoProduto,
   TipoTransacao,
@@ -500,6 +501,66 @@ export function ticketMedioDe(
   qtdPedidos: number,
 ): Centavos {
   return qtdPedidos > 0 ? Math.round(receitaPedidos / qtdPedidos) : 0;
+}
+
+/**
+ * As saídas que o custo de fazer não carrega (`#d261`). Insumo, embalagem,
+ * despesa fixa e a hora dela já estão na ficha de cada pedido; retirada e
+ * equipamento não são custo do mês. `OUTRO` desconta: na dúvida a conta erra
+ * pra baixo, nunca pra cima.
+ */
+const SAIDAS_FORA_DA_FICHA: CategoriaTransacao[] = [
+  "ENTREGA",
+  "MARKETING",
+  "IMPOSTO",
+  "TAXA_PAGAMENTO",
+  "OUTRO",
+];
+
+export interface RendimentoDoMes {
+  /** `null` quando não há pedido pago: sem custo conhecido, não há resposta. */
+  rendeu: Centavos | null;
+  vendeuEmPedido: Centavos;
+  custouFazer: Centavos;
+  /** A maquininha inteira, a do balcão junto (`#d261`). */
+  maquininha: Centavos;
+  outrasSaidas: Centavos;
+  /** O que entrou fora de pedido; nunca negativo. */
+  deBalcao: Centavos;
+  /** `rendeu` ÷ `vendeuEmPedido`, em %. `null` junto com `rendeu`. */
+  percentual: Percentual | null;
+}
+
+/**
+ * O que as vendas do mês deixaram acima do custo de fazer (`#d260`, `#d261`).
+ * É a pergunta do produto; o caixa (`lucro`) é a outra, e as duas só batem
+ * quando ela compra e vende no mesmo mês.
+ */
+export function rendimentoDoMes(parcelas: ParcelasDoAgregado): RendimentoDoMes {
+  const vendeuEmPedido = parcelas.receitaPedidos;
+  const custouFazer = parcelas.custoDoVendido;
+  const maquininha = parcelas.custoTaxasPagamento;
+  const outrasSaidas = SAIDAS_FORA_DA_FICHA.reduce(
+    (soma, categoria) => soma + (parcelas.porCategoriaSaida[categoria] ?? 0),
+    0,
+  );
+  const rendeu =
+    parcelas.qtdPedidos > 0
+      ? vendeuEmPedido - custouFazer - maquininha - outrasSaidas
+      : null;
+
+  return {
+    rendeu,
+    vendeuEmPedido,
+    custouFazer,
+    maquininha,
+    outrasSaidas,
+    deBalcao: Math.max(0, parcelas.entradas - vendeuEmPedido),
+    percentual:
+      rendeu !== null && vendeuEmPedido > 0
+        ? (rendeu / vendeuEmPedido) * 100
+        : null,
+  };
 }
 
 /**

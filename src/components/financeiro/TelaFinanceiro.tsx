@@ -46,7 +46,6 @@ import { ProdutosDoMes } from "./ProdutosDoMes";
 import { ResultadoDoMes } from "./ResultadoDoMes";
 import { SaidasPorCategoria } from "./SaidasPorCategoria";
 import { SeletorMes } from "./SeletorMes";
-import { VendasPorPedido } from "./VendasPorPedido";
 
 export function TelaFinanceiro() {
   const contaId = useContaId();
@@ -178,7 +177,7 @@ export function TelaFinanceiro() {
         titulo="Caixa"
         pendente={pendente}
         recolhe
-        descricao="O que entrou, o que saiu, e o que sobrou de verdade."
+        descricao="O que o mês rendeu, e o que passou pelo caixa."
         acao={
           // Só no desktop: no celular, "Lançar no caixa" mora na grade do "+"
           // da navegação inferior (`DECISOES.md#d240`).
@@ -271,12 +270,10 @@ export function TelaFinanceiro() {
             aoAbrir={abrirPainelMeta}
           />
 
-          {/* As duas seções de pedido somem sozinhas em mês sem pedido pago:
-              zero ali é ausência, e ausência não vira linha de R$ 0,00. */}
-          <VendasPorPedido parcelas={parcelas} />
-
           <MovimentoPorDia competencia={competencia} porDia={parcelas.porDia} />
 
+          {/* Some sozinho em mês sem pedido pago: zero ali é ausência, e
+              ausência não vira linha de R$ 0,00. */}
           <ProdutosDoMes produtos={parcelas.produtos} />
 
           <SaidasPorCategoria

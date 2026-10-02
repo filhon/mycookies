@@ -6,7 +6,11 @@ import { Check, ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { diaEmQueBateu } from "@/lib/domain/avisos";
-import { entradasAteODia, parcelasDoResumo } from "@/lib/domain/caixa";
+import {
+  entradasAteODia,
+  parcelasDoResumo,
+  rendimentoDoMes,
+} from "@/lib/domain/caixa";
 import {
   competenciaAtual,
   competenciaVizinha,
@@ -26,9 +30,10 @@ const DIFERENCA_QUE_CONTA = 100;
 /**
  * O mês na tela que abre de manhã (spec 045, `DECISOES.md#d210`).
  *
- * O "sobrou" é o `lucro` de `parcelasDoResumo`, o mesmo número do
- * `ResultadoDoMes` em `/financeiro`, e a meta mora dentro do bloco, porque ela
- * é uma pergunta sobre o mesmo dinheiro. O mês anterior é uma segunda leitura
+ * O display é o "rendeu" de `rendimentoDoMes`, o mesmo número do
+ * `ResultadoDoMes` em `/financeiro` (`#d260`); no mês sem pedido pago, o caixa,
+ * sem ponto. A meta mora dentro do bloco, porque ela é uma pergunta sobre o
+ * mesmo dinheiro. O mês anterior é uma segunda leitura
  * que não segura o bloco: a comparação aparece quando chega.
  */
 export function CartaoDoMes() {
@@ -52,8 +57,10 @@ export function CartaoDoMes() {
   }
 
   const mes = rotuloMes(competencia);
-  const { entradas, saidas, custoTaxasPagamento, lucro, porDia } =
-    parcelasDoResumo(atual.dado);
+  const parcelas = parcelasDoResumo(atual.dado);
+  const { entradas, saidas, custoTaxasPagamento, lucro, porDia } = parcelas;
+  const { rendeu } = rendimentoDoMes(parcelas);
+  const valor = rendeu ?? lucro;
 
   // Um R$ 0,00 em display é o número mais triste do produto: uma linha basta.
   if (entradas === 0 && saidas === 0) {
@@ -69,7 +76,7 @@ export function CartaoDoMes() {
     );
   }
 
-  const noPrejuizo = lucro < 0;
+  const noPrejuizo = valor < 0;
 
   return (
     <Cartao>
@@ -86,7 +93,7 @@ export function CartaoDoMes() {
       >
         {noPrejuizo ? (
           <>
-            <Dinheiro centavos={lucro} tamanho="xl" comSinal />
+            <Dinheiro centavos={valor} tamanho="xl" comSinal />
             <TrendingDown
               aria-hidden
               className="size-5 shrink-0 text-negative"
@@ -95,17 +102,24 @@ export function CartaoDoMes() {
           </>
         ) : (
           <>
-            <Dinheiro centavos={lucro} tamanho="xl" className="text-ink" />
-            {/* O ponto marca o número que decide; prejuízo não se enfeita. */}
-            <span
-              aria-hidden
-              className="inline-block size-2.5 shrink-0 rounded-full bg-accent-500"
-            />
+            <Dinheiro centavos={valor} tamanho="xl" className="text-ink" />
+            {/* O ponto marca o número que decide; prejuízo não se enfeita, e
+                o caixa do mês sem pedido não é o número que decide. */}
+            {rendeu !== null && (
+              <span
+                aria-hidden
+                className="inline-block size-2.5 shrink-0 rounded-full bg-accent-500"
+              />
+            )}
           </>
         )}
       </p>
       <p className="text-label font-medium text-ink">
-        {noPrejuizo ? "faltou no mês" : "sobrou pra você"}
+        {rendeu === null
+          ? "no caixa"
+          : noPrejuizo
+            ? "perdeu no mês"
+            : "rendeu pra você"}
       </p>
 
       {/* A maquininha entra no que saiu, como no e-mail do mês (`#d209`):

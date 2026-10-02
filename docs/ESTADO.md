@@ -1,6 +1,21 @@
 # Estado do projeto
 
-Atualizado em 2026-10-02 (**a 068-D codificada, e com ela a 068 inteira**, a página de doces e o
+Atualizado em 2026-10-02 (**a 069 codificada**, o que o mês rendeu: `rendimentoDoMes` em
+`domain/caixa.ts`, o topo de `/financeiro` refeito com o "rendeu" no display e o caixa na faixa
+rebaixada, `VendasPorPedido` apagado, e o `CartaoDoMes` da Hoje lendo a mesma função, `#d260` e
+`#d261`; **o passo 2.1 (conferir o agregado de outubro) não rodou**: pede "Recalcular o mês" na
+conta real, e é a próxima ação antes da 070; roteiro de navegador por rodar; **specs 069 a 074 escritas**: a crítica da tela Caixa sobre os prints
+de celular e desktop virou seis specs de uma sessão cada, na ordem 069 (o que o mês rendeu: o
+display passa a ser vendas de pedido menos o custo de fazer, a maquininha e as saídas fora da
+ficha, e o caixa desce para a faixa de baixo; Hoje e Caixa leem a mesma função; **vem antes de
+tudo**, e a sessão começa conferindo o agregado de outubro, cujo ranking soma R$ 37,00 de R$
+138,00 e cujo gráfico não mostra o dia 1), 070 (o que vem até o fim do mês: deve entrar, deve
+sair, onde o caixa fecha, e as contas que repetem com "Lançar"), 071 (o mês contra os outros: a
+comparação da Hoje no Caixa e os últimos doze meses por uma consulta por id), 072 (a lista do
+mês: o nome da cliente primeiro, o dia como grupo, Entrou · Saiu, busca e filtro pela categoria),
+073 (o caixa com peso: dois cartões só, duas colunas a partir de `xl`, o gráfico até hoje e
+levando ao dia, o traço no lugar do fundo do ranking) e 074 (o relatório do MEI para imprimir e o
+limite do ano), com as decisões `#d260` a `#d270` reservadas; nenhuma pede aprovação; **a 068-D codificada, e com ela a 068 inteira**, a página de doces e o
 rodapé: `/como-calcular-o-preco-de-doces` no ar no build, com a tabela do que muda de doce pra
 doce (lista de definições no celular), entrando por último em `PAGINAS_DO_PRECO` e primeiro no
 `llms.txt`, e o "Como calcular o preço" do rodapé apontando para ela, `#d259`; roteiros de
@@ -4375,6 +4390,39 @@ para a mesma URL não foi testado no navegador: o `preventDefault` vale nos dois
 mais importa: é ele que prova a tira da área segura.
 
 Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
+## A spec 069 · O que o mês rendeu
+
+**Codificada em 2026-10-02** (`#d260`, `#d261`). Nenhum campo, consulta, regra, índice ou
+dependência.
+
+- `src/lib/domain/caixa.ts`: `rendimentoDoMes(parcelas)` e `RendimentoDoMes`. Rendeu é vendeu
+  em pedido menos custo de fazer, maquininha inteira e as saídas fora da ficha (Entrega,
+  Divulgação, Imposto, Custo de maquininha avulso, Outro); `null` sem pedido pago. O percentual é
+  `null` também quando os pedidos pagos somam zero.
+- `tests/domain/caixa.test.ts`: os seis casos da spec, com cada uma das dez categorias de saída.
+- `src/components/financeiro/ResultadoDoMes.tsx`: refeito. Display "O que o mês rendeu" (ou
+  "perdeu", com `TrendingDown` e sem ponto); `dl` de três ou quatro parcelas (duas colunas no
+  celular, "Outras saídas" só acima de zero), "Ver meus produtos" em "Custou fazer"; a linha da
+  contagem com "cada pedido sai a" e o balcão; a faixa "No caixa" com `comSinal` e "Saiu" com a
+  maquininha. Sem pedido pago: "No caixa" no display, na roupa da Hoje (tinta, sinal só no
+  negativo), e a frase de por quê.
+- `VendasPorPedido.tsx` apagado; a descrição do cabeçalho de `/financeiro` trocada.
+- `src/components/financeiro/CartaoDoMes.tsx`: o display é `rendeu ?? lucro`, rótulo "rendeu pra
+  você", "perdeu no mês" ou "no caixa"; o ponto só no rendeu positivo.
+
+**Diferente da spec:** o "O que a maquininha comeu" e o "Ver minhas taxas" saem com o bloco
+antigo: a maquininha virou parcela. O estado vazio de `/financeiro` ainda diz "o que sobrou de
+verdade"; a spec só troca a descrição do cabeçalho.
+
+**Não rodou:** o passo 2.1. Esta sessão não tem credencial nem a conta logada; quem conduz o
+projeto aperta "Recalcular o mês" em outubro na conta da MyCookie's e compara o ranking e o
+"Movimento por dia" com a lista (três lançamentos no dia 1, R$ 138,00, 5 pedidos, 6 doces). Se
+baterem depois, foi deriva de incremento e vira spec própria; se não, para antes da 070. E o
+roteiro de navegador (§ 4), a 390 e 1280 nos dois temas.
+
+Portão: lint e typecheck limpos, **846 testes**, `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
 ## A spec 068 · A pergunta de cada doce — sessão D, a página de doces e o rodapé

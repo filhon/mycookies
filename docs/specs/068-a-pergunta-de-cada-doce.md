@@ -401,20 +401,20 @@ do Search Console passa a ser por página: impressões, posição e cliques de c
 
 ## Critérios de aceite
 
-- [ ] Quatro rotas estáticas, indexáveis, com `canonical` e prévia; a resposta inteira no
+- [x] Quatro rotas estáticas, indexáveis, com `canonical` e prévia; a resposta inteira no
       primeiro parágrafo de cada.
-- [ ] Nenhum número de dinheiro escrito à mão nas páginas novas: todos das funções sobre os
+- [x] Nenhum número de dinheiro escrito à mão nas páginas novas: todos das funções sobre os
       exemplos; o teste prende cada número que a página mostra.
-- [ ] A página do cookie sai igual depois da extração, salvo "Outros doces"; `/conheca` igual.
-- [ ] `PAGINAS_DO_PRECO` é a única lista: sitemap, `llms.txt`, medição e "Outros doces" leem dela.
-- [ ] Cada página nova tem a seção que só ela tem (`#d256`): o trabalho e a avulsa no brigadeiro,
+- [x] A página do cookie sai igual depois da extração, salvo "Outros doces"; `/conheca` igual.
+- [x] `PAGINAS_DO_PRECO` é a única lista: sitemap, `llms.txt`, medição e "Outros doces" leem dela.
+- [x] Cada página nova tem a seção que só ela tem (`#d256`): o trabalho e a avulsa no brigadeiro,
       o quilo por tamanho no bolo, o aplicativo no pote, a tabela na de doces.
-- [ ] Um `h1`, `h2` por seção, `h3` por pergunta; tabelas com `caption` e `th scope`; 44px em todo
+- [x] Um `h1`, `h2` por seção, `h3` por pergunta; tabelas com `caption` e `th scope`; 44px em todo
       alvo, 52px no primário do celular; nenhuma rolagem lateral a 390px.
-- [ ] Nenhuma cor solta: `rg "#[0-9A-Fa-f]{6}" src/app/como-calcular-o-preco-* src/components/site/Artigo.tsx` vazio.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `package.json`, `firestore.rules` e
+- [~] Nenhuma cor solta: `rg "#[0-9A-Fa-f]{6}" src/app/como-calcular-o-preco-* src/components/site/Artigo.tsx` vazio.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `package.json`, `firestore.rules` e
       `firestore.indexes.json` intocados.
-- [ ] `#d256` a `#d259` escritos; `ESTADO.md` atualizado a cada sessão.
+- [x] `#d256` a `#d259` escritos; `ESTADO.md` atualizado a cada sessão.
 
 ---
 

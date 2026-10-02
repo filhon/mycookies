@@ -13,6 +13,7 @@ import {
   PARCELAS_ZERADAS,
   parcelasDoResumo,
   produtosOrdenados,
+  rendimentoDoMes,
   saidasOrdenadas,
   somarParcelas,
   taxaDaEntrada,
@@ -1059,5 +1060,102 @@ describe("leituraDoCardapio", () => {
     expect(mesDaLeitura(new Date(2026, 8, 9))).toBe("2026-08");
     expect(mesDaLeitura(new Date(2026, 8, 10))).toBe("2026-09");
     expect(mesDaLeitura(new Date(2026, 0, 3))).toBe("2025-12");
+  });
+});
+
+describe("rendimentoDoMes (#d261)", () => {
+  // O mês dos prints de 2026-10-02: R$ 138,00 em 5 pedidos, R$ 67,56 de custo.
+  const outubro: ParcelasDoAgregado = {
+    ...PARCELAS_ZERADAS,
+    entradas: 13800,
+    lucro: 13800,
+    qtdPedidos: 5,
+    qtdItensVendidos: 6,
+    receitaPedidos: 13800,
+    custoDoVendido: 6756,
+  };
+
+  function comSaida(
+    base: ParcelasDoAgregado,
+    categoria: TransacaoAgregavel["categoria"],
+    valor: number,
+  ): ParcelasDoAgregado {
+    return somarParcelas(
+      base,
+      deltaDaTransacao(
+        {
+          tipo: "SAIDA",
+          categoria,
+          valor,
+          dataISO: "2026-10-02",
+          custoTaxa: 0,
+        },
+        1,
+      ),
+    );
+  }
+
+  it("mês só de pedido: vendeu menos o custo de fazer", () => {
+    const r = rendimentoDoMes(outubro);
+    expect(r.rendeu).toBe(7044);
+    expect(r.deBalcao).toBe(0);
+    expect(Math.round(r.percentual!)).toBe(51);
+  });
+
+  it("pedido e balcão: o balcão fica fora, mas a maquininha inteira desconta", () => {
+    const r = rendimentoDoMes({
+      ...outubro,
+      entradas: 17800,
+      custoTaxasPagamento: 300,
+    });
+    expect(r.deBalcao).toBe(4000);
+    expect(r.maquininha).toBe(300);
+    expect(r.rendeu).toBe(13800 - 6756 - 300);
+  });
+
+  it("mês sem pedido pago não tem resposta", () => {
+    const r = rendimentoDoMes({ ...PARCELAS_ZERADAS, entradas: 5000 });
+    expect(r.rendeu).toBeNull();
+    expect(r.percentual).toBeNull();
+    expect(r.deBalcao).toBe(5000);
+  });
+
+  it.each([
+    "ENTREGA",
+    "MARKETING",
+    "IMPOSTO",
+    "TAXA_PAGAMENTO",
+    "OUTRO",
+  ] as const)("a saída de %s desconta", (categoria) => {
+    const r = rendimentoDoMes(comSaida(outubro, categoria, 1000));
+    expect(r.outrasSaidas).toBe(1000);
+    expect(r.rendeu).toBe(7044 - 1000);
+  });
+
+  it.each([
+    "COMPRA_INSUMO",
+    "EMBALAGEM",
+    "DESPESA_FIXA",
+    "PRO_LABORE",
+    "EQUIPAMENTO",
+  ] as const)(
+    "a saída de %s não desconta: já está na ficha ou não é custo",
+    (categoria) => {
+      const r = rendimentoDoMes(comSaida(outubro, categoria, 1000));
+      expect(r.outrasSaidas).toBe(0);
+      expect(r.rendeu).toBe(7044);
+    },
+  );
+
+  it("rendeu negativo quando o custo passa da venda", () => {
+    const r = rendimentoDoMes({ ...outubro, custoDoVendido: 15000 });
+    expect(r.rendeu).toBe(-1200);
+    expect(r.percentual!).toBeLessThan(0);
+  });
+
+  it("deBalcao nunca é negativo, nem com o pedido estornado no mês seguinte", () => {
+    // O pagamento foi desfeito em novembro: a entrada saiu, o pedido ainda conta.
+    const r = rendimentoDoMes({ ...outubro, entradas: 8000 });
+    expect(r.deBalcao).toBe(0);
   });
 });
