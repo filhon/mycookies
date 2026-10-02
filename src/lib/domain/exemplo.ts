@@ -73,6 +73,57 @@ export const EXEMPLO_BRIGADEIRO = {
   precoPraticado: 15000,
 } as const satisfies ExemploDePagina;
 
+/** O que um bolo leva por inteiro, pese o que pesar: caixa, base e o tempo de decorar. */
+export const POR_BOLO = {
+  custoEmbalagem: 1300,
+  custoMaoDeObra: 2000,
+  custoIndireto: 200,
+} as const;
+
+/** O que cresce com o peso: massa, recheio, cobertura, o forno e o tempo de cada camada. */
+export const POR_QUILO = {
+  custoInsumos: 2800,
+  custoMaoDeObra: 1500,
+  custoEnergiaGas: 300,
+  custoIndireto: 100,
+} as const;
+
+/**
+ * O bolo de brigadeiro com ninho de `quilos` kg (spec 068, `DECISOES.md#d258`).
+ * A unidade de venda é o quilo: `rende` são os quilos, e `custoUnitario` o
+ * custo de um quilo. A parte fixa por bolo é o que faz o quilo do bolo pequeno
+ * custar mais. A única soma de exemplo que precisa de função.
+ */
+export function boloDe(quilos: number): ExemploDePagina {
+  const custo = {
+    custoInsumos: POR_QUILO.custoInsumos * quilos,
+    custoEmbalagem: POR_BOLO.custoEmbalagem,
+    custoComponentes: 0,
+    custoEscolhas: 0,
+    custoMaoDeObra: POR_BOLO.custoMaoDeObra + POR_QUILO.custoMaoDeObra * quilos,
+    custoEnergiaGas: POR_QUILO.custoEnergiaGas * quilos,
+    custoIndireto: POR_BOLO.custoIndireto + POR_QUILO.custoIndireto * quilos,
+  };
+  const custoTotalLote =
+    custo.custoInsumos +
+    custo.custoEmbalagem +
+    custo.custoMaoDeObra +
+    custo.custoEnergiaGas +
+    custo.custoIndireto;
+  return {
+    nome: "Bolo de brigadeiro com ninho",
+    rende: quilos,
+    custo: {
+      ...custo,
+      custoTotalLote,
+      custoUnitario: Math.round(custoTotalLote / quilos),
+    },
+    parametros: EXEMPLO.parametros,
+    /** O quilo "pelo preço da padaria". */
+    precoPraticado: 10000,
+  };
+}
+
 /**
  * "Custo + 45%": a margem e a maquininha do `EXEMPLO` somadas em cima do
  * custo, o erro que `/como-calcular-o-preco-do-cookie` mostra (spec 037). É o

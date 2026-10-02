@@ -1,6 +1,9 @@
 # Estado do projeto
 
-Atualizado em 2026-10-01 (**a 068-A codificada**, as peças e o brigadeiro: as peças do artigo
+Atualizado em 2026-10-02 (**a 068-B codificada**, o bolo por quilo: `boloDe(quilos)` com uma
+parte fixa por bolo e uma por quilo, e `/como-calcular-o-preco-do-bolo-por-quilo` no ar no build,
+com a tabela do quilo em três tamanhos; roteiro de navegador por rodar; C e D por codificar;
+**a 068-A codificada**, as peças e o brigadeiro: as peças do artigo
 em `site/Artigo.tsx` com o HTML do cookie igual salvo "Outros doces", `PAGINAS_DO_PRECO` lida pelo
 sitemap, pelo `llms.txt` e pela medição, e `/como-calcular-o-preco-do-brigadeiro` no ar no build,
 `#d256` a `#d258`; roteiro de navegador por rodar; B, C e D por codificar; **spec 068 escrita**, a pergunta de cada doce:
@@ -4367,6 +4370,42 @@ mais importa: é ele que prova a tira da área segura.
 Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 068 · A pergunta de cada doce — sessão B, o bolo por quilo
+
+**Codificada em 2026-10-02** (sob `#d256` e `#d258`; decisão nova nenhuma). Nenhum campo, regra,
+índice ou dependência.
+
+- `src/lib/domain/exemplo.ts`: `POR_BOLO`, `POR_QUILO` e `boloDe(quilos)`, que devolve um
+  `ExemploDePagina` com `rende: quilos` e `custoUnitario` como o custo do quilo.
+- `src/app/como-calcular-o-preco-do-bolo-por-quilo/`: a página e a prévia. Descrição com 133
+  caracteres. A tabela do erro é a primeira `<table>` do projeto: quatro colunas curtas com
+  `caption`, `th scope="col"` e `th scope="row"`, sem virar lista no celular (cabe em 358px pela
+  conta; conferir no roteiro).
+- `src/app/site.ts`: a linha do bolo em `PAGINAS_DO_PRECO`; sitemap, `llms.txt`, medição e
+  "Outros doces" das três páginas a pegaram sem outra mudança.
+- `tests/domain/exemplo.test.ts`: o `describe` do bolo, com os três tamanhos.
+
+**Os números, pelas funções:** todos batem com a spec. O bolo de 2 kg custa R$ 129,00, o quilo
+R$ 64,50 e sai a R$ 117,50 (R$ 117,27 antes do meio real, sobrando R$ 46,91, 40%); no quilo da
+padaria, R$ 100,00, sobram R$ 30,50. Os três tamanhos: R$ 149,50, R$ 117,50 e R$ 107,00 o quilo.
+O de 1 kg a R$ 117,50 deixa R$ 29,62 (25%); o de 3 kg, no mesmo quilo, 45%, que a página diz
+também. A fatia de 100 g custa R$ 6,45.
+
+**Além da spec:** a margem de 45% do bolo de 3 kg no preço único, uma frase, para o erro mostrar
+os dois lados; na pergunta do peso, o aro (como a spec pede em "fáceis de rejeitar").
+
+**Pesquisa (2.4):** as primeiras para "como calcular o preço do bolo por kg" (meslo, patroa.ai,
+reidodelivery) dividem o custo pelo peso; duas multiplicam o custo pela margem, nenhuma põe a
+maquininha, e nenhuma separa o que é por bolo do que é por quilo nem diz que o quilo do bolo
+pequeno custa mais. O ângulo da spec ficou.
+
+**Não rodou:** o roteiro de navegador (§ 4), a 390 e 1280 nos dois temas: o 2 (sem JavaScript; o
+HTML do build tem o texto e a tabela), o 5 (os links de "Outros doces", agora três páginas) e o 7
+(Lighthouse). Vale olhar a tabela a 360px.
+
+Portão: lint e typecheck limpos, **823 testes**, `npm run build` com a página nova estática.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## A spec 068 · A pergunta de cada doce — sessão A, as peças e o brigadeiro
 
 **Codificada em 2026-10-01** (`#d256` a `#d258`). Nenhum campo, regra, índice ou dependência.
@@ -4677,8 +4716,8 @@ seis passos da spec, com o 5 (o link colado no WhatsApp mostrando a imagem) no p
 passos, com o 3 (nada contado no app) sendo o que prova o filtro. **Uma vez por mês, antes de a
 janela do Hobby apagar o mês**, uma linha aqui:
 
-| Mês | `/conheca` | Página do preço (cookie) | Brigadeiro | `/cadastro` | Contas (`metricas`) | As três origens que mais trouxeram gente |
-| --- | ---------- | ------------------------ | ---------- | ----------- | ------------------- | ---------------------------------------- |
+| Mês | `/conheca` | Página do preço (cookie) | Brigadeiro | Bolo por quilo | `/cadastro` | Contas (`metricas`) | As três origens que mais trouxeram gente |
+| --- | ---------- | ------------------------ | ---------- | -------------- | ----------- | ------------------- | ---------------------------------------- |
 
 Número bruto, não só a porcentagem: com dezenas de visitas por mês, a taxa oscila. `/cadastro`
 ÷ páginas diz se a página convence; contas ÷ `/cadastro` diz se o formulário atrapalha.

@@ -26,4 +26,11 @@ export const PAGINAS_DO_PRECO = [
     doce: "Brigadeiro",
     resumo: "O preço do cento, a hora de enrolar e o brigadeiro avulso.",
   },
+  {
+    endereco: "/como-calcular-o-preco-do-bolo-por-quilo",
+    titulo: "Como calcular o preço do bolo por quilo",
+    doce: "Bolo por quilo",
+    resumo:
+      "O custo do quilo, e a caixa e a decoração que não crescem com o peso.",
+  },
 ] as const;

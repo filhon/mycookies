@@ -7630,6 +7630,11 @@ nunca colado. Antes de escrever, a sessão lê as cinco primeiras respostas da b
 obra, mas nenhuma põe a maquininha na conta, nenhuma mostra o que o esquecimento da hora custa e
 nenhuma explica por que o avulso sai mais caro. São as duas seções próprias da página.
 
+**Na sessão B**, as primeiras para "como calcular o preço do bolo por kg" dividem o custo pelo
+peso e aplicam a margem, duas delas multiplicando; nenhuma põe a maquininha, e nenhuma separa a
+caixa, a base e a decoração (por bolo) do que cresce com o peso, nem diz que o quilo do bolo
+pequeno custa mais. É a seção própria da página, com a tabela de 1, 2 e 3 kg.
+
 **Consequência.** O que a 037 queria aprender com uma página passa a ser aprendido com quatro. O
 exemplo da spec dizia "o trabalho é a maior parcela" do brigadeiro; com os números dela, os
 ingredientes (R$ 42,00, 43%) passam o trabalho (R$ 40,00, 41%). Os números ficaram, e a página diz

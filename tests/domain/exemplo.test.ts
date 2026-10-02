@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { composicaoDoLote } from "@/lib/domain/custoFicha";
-import { ERRO_COMUM, EXEMPLO, EXEMPLO_BRIGADEIRO } from "@/lib/domain/exemplo";
+import {
+  boloDe,
+  ERRO_COMUM,
+  EXEMPLO,
+  EXEMPLO_BRIGADEIRO,
+} from "@/lib/domain/exemplo";
 import { percentualDe } from "@/lib/domain/money";
 import {
   calcularPrecoSugerido,
@@ -164,5 +169,93 @@ describe("o cento de brigadeiro", () => {
     // sobe 17650 − 17636 = 14 no cento e 200 − 176 = 24 no avulso.
     expect(Math.round(17636 / 100)).toBe(176);
     expect([17650 - 17636, 200 - 176]).toEqual([14, 24]);
+  });
+});
+
+// A página do bolo por quilo (spec 068, sessão B). A unidade é o quilo; o
+// bolo é uma parte fixa (caixa, base, decorar: 1300 + 2000 + 200 = 3500)
+// mais uma parte por quilo (2800 + 1500 + 300 + 100 = 4700).
+describe("o bolo por quilo", () => {
+  const { custo, parametros, precoPraticado } = boloDe(2);
+  const taxas = somaTaxas(parametros);
+
+  // 3500 + 4700 × 1 = 8200; × 2 = 12900, o quilo a 6450; × 3 = 17600, o
+  // quilo a 5866,7 → 5867. Os preços: 8200 ÷ 0,55 = 14909,1 → 14909 → 14950;
+  // 6450 ÷ 0,55 = 11727,3 → 11727 → 11750; 5867 ÷ 0,55 = 10667,3 → 10667
+  // → 10700.
+  it("o quilo do bolo pequeno custa mais: R$ 149,50, R$ 117,50 e R$ 107,00", () => {
+    const tabela = [1, 2, 3].map((quilos) => {
+      const bolo = boloDe(quilos);
+      const preco = calcularPrecoSugerido(bolo.custo.custoUnitario, parametros);
+      return [
+        bolo.rende,
+        bolo.custo.custoTotalLote,
+        bolo.custo.custoUnitario,
+        preco.ok && preco.precoArredondado,
+      ];
+    });
+    expect(tabela).toEqual([
+      [1, 8200, 8200, 14950],
+      [2, 12900, 6450, 11750],
+      [3, 17600, 5867, 10700],
+    ]);
+  });
+
+  // Por quilo no de 2 kg: 2800 + 650 + 2500 + 300 + 200 = 6450, a soma do
+  // que a `ContaAberta` e os passos mostram. Do bolo: 5600 de 12900 são 43%,
+  // a caixa 10%, o trabalho 39%, o forno 5%, as fixas 3%.
+  it("abre em cinco parcelas que somam o custo do quilo", () => {
+    const segmentos = composicaoDoLote(custo);
+    expect(segmentos.map((s) => Math.round(s.centavos / 2))).toEqual([
+      2800, 650, 2500, 300, 200,
+    ]);
+    expect(
+      segmentos.map((s) => [s.rotulo, Math.round(s.fracao * 100)]),
+    ).toEqual([
+      ["Materiais", 43],
+      ["Embalagem", 10],
+      ["Seu trabalho", 39],
+      ["Energia e gás", 5],
+      ["Fatia das despesas fixas", 3],
+    ]);
+  });
+
+  // Antes do meio real: 5% de 11727 = 586,35 → 586; 11727 − 6450 − 586 =
+  // 4691, 40% do preço.
+  it("deixa 40% no preço certo antes de arredondar", () => {
+    expect(verificarPreco(11727, 6450, taxas)).toMatchObject({
+      custoTaxas: 586,
+      lucroUnitario: 4691,
+      margemReal: 40,
+    });
+  });
+
+  // No quilo da padaria: 5% de 10000 = 500; 10000 − 6450 − 500 = 3050.
+  it("deixa R$ 30,50 no quilo de R$ 100,00", () => {
+    expect(verificarPreco(precoPraticado, 6450, taxas)).toMatchObject({
+      custoTaxas: 500,
+      lucroUnitario: 3050,
+      margemReal: 30.5,
+    });
+  });
+
+  // O quilo do bolo de 2 kg no de 1 kg: 5% de 11750 = 587,5 → 588;
+  // 11750 − 8200 − 588 = 2962, 25,21%. No de 3 kg: 11750 − 5867 − 588 =
+  // 5295, 45,06%.
+  it("um preço de quilo pra qualquer tamanho deixa 25% no bolo de 1 kg e 45% no de 3", () => {
+    expect(verificarPreco(11750, 8200, taxas)).toMatchObject({
+      custoTaxas: 588,
+      lucroUnitario: 2962,
+      margemReal: 25.21,
+    });
+    expect(verificarPreco(11750, 5867, taxas)).toMatchObject({
+      lucroUnitario: 5295,
+      margemReal: 45.06,
+    });
+  });
+
+  // A fatia de 100 g: 6450 ÷ 10 = 645.
+  it("a fatia de 100 g custa R$ 6,45", () => {
+    expect(Math.round(custo.custoUnitario / 10)).toBe(645);
   });
 });
