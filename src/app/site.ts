@@ -39,4 +39,13 @@ export const PAGINAS_DO_PRECO = [
     doce: "Bolo de pote",
     resumo: "O pote, a embalagem que pesa e o preço no aplicativo de entrega.",
   },
+  // A porta das outras (`#d259`): última aqui para fechar "Outros doces", e
+  // primeira no `llms.txt`.
+  {
+    endereco: "/como-calcular-o-preco-de-doces",
+    titulo: "Como calcular o preço de doces",
+    doce: "A conta pra qualquer doce",
+    resumo:
+      "A conta que serve pra todos, e o que muda do cookie ao bolo de pote.",
+  },
 ] as const;

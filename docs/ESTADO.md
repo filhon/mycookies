@@ -1,6 +1,10 @@
 # Estado do projeto
 
-Atualizado em 2026-10-02 (**a 068-C codificada**, o bolo de pote: `EXEMPLO_BOLO_DE_POTE` e
+Atualizado em 2026-10-02 (**a 068-D codificada, e com ela a 068 inteira**, a página de doces e o
+rodapé: `/como-calcular-o-preco-de-doces` no ar no build, com a tabela do que muda de doce pra
+doce (lista de definições no celular), entrando por último em `PAGINAS_DO_PRECO` e primeiro no
+`llms.txt`, e o "Como calcular o preço" do rodapé apontando para ela, `#d259`; roteiros de
+navegador das quatro sessões por rodar; **a 068-C codificada**, o bolo de pote: `EXEMPLO_BOLO_DE_POTE` e
 `NO_APLICATIVO`, e `/como-calcular-o-preco-do-bolo-de-pote` no ar no build, com o balcão, o
 aplicativo e o pote do balcão vendido no aplicativo lado a lado; roteiro de navegador por rodar;
 D por codificar; **a 068-B codificada**, o bolo por quilo: `boloDe(quilos)` com uma
@@ -4373,6 +4377,47 @@ mais importa: é ele que prova a tira da área segura.
 Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
+## A spec 068 · A pergunta de cada doce — sessão D, a página de doces e o rodapé
+
+**Codificada em 2026-10-02** (`#d259`). Nenhum campo, regra, índice ou dependência. Fecha a 068.
+
+- `src/app/como-calcular-o-preco-de-doces/`: a página e a prévia (sem número, como a resposta).
+  Descrição com 153 caracteres, com o cento de brigadeiro como número. Sem `ContaAberta` e sem
+  "Outros doces". A tabela tem cinco colunas (doce, vende por, o que pesa, o erro, o preço do
+  exemplo), com `caption` e `th scope`, a partir de `md`; abaixo dele, a mesma coisa como uma
+  lista de definições por doce. As duas formas estão no HTML; a escondida sai por `display: none`.
+- `O_QUE_MUDA`, na página, é um `Record` pelos endereços de `PAGINAS_DO_PRECO` menos o dela:
+  página nova na lista sem linha na tabela não compila.
+- `src/app/site.ts`: a linha da página de doces, **a última** da lista, para fechar "Outros doces"
+  das quatro irmãs como "A conta pra qualquer doce". O `llms.txt` a põe primeiro.
+- `src/components/site/Moldura.tsx`: "Como calcular o preço" do rodapé aponta para a de doces.
+- `tests/domain/exemplo.test.ts`: o `describe` da tabela, com o que pesa, os quatro preços e o que
+  sobra em cada erro. A tabela mensal ganhou a coluna.
+
+**Os números, pelas funções:** os preços são os das quatro páginas (R$ 8,50, R$ 176,50, R$ 117,50
+no bolo de 2 kg, R$ 17,00 no balcão). "O que pesa": ingredientes 71% do cookie, o trabalho 41% do
+cento, a parte por bolo (caixa, base, decorar e a fatia fixa por bolo) 27% do bolo de 2 kg, a
+embalagem 16% do pote. O que sobra em cada erro: 26%, 2%, 25% e 26% do preço.
+
+**Diferente da spec:** a coluna "a parcela que mais pesa" virou "O que pesa": pela conta, os
+ingredientes são a maior parcela dos quatro, e a coluna diria a mesma coisa quatro vezes. Ela
+mostra a parcela que cada página ensina a não esquecer, com o quanto pesa. A coluna do erro diz
+também o que sobra do preço quando ele acontece.
+
+**Pesquisa (2.4):** as primeiras para "como precificar doces" (precificafacil, receitorio,
+preconamedida, confeitariaonline, cestanobre) somam ingredientes, embalagem, mão de obra e fixas
+e dividem por 1 menos a margem ou multiplicam; uma dá "30% a 100%" de margem como faixa ideal.
+Nenhuma põe a maquininha na divisão, nenhuma compara a unidade de venda ou o erro de cada doce. O
+ângulo da spec ficou, e a pergunta da margem diz que a página não dá média de mercado.
+
+**Não rodou:** o roteiro de navegador (§ 4) das quatro páginas, a 390 e 1280 nos dois temas. Nesta:
+o 2 (sem JavaScript; o HTML do build tem a tabela e a lista), o 5 (cada linha da tabela leva à
+página do doce, e o rodapé de todas as páginas públicas leva aqui) e o 7 (Lighthouse). Vale olhar a
+tabela entre 768 e 1024px, onde as cinco colunas são mais apertadas.
+
+Portão: lint e typecheck limpos, **831 testes**, `npm run build` com a página nova estática.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
 ## A spec 068 · A pergunta de cada doce — sessão C, o bolo de pote
 
 **Codificada em 2026-10-02** (sob `#d256` e `#d258`; decisão nova nenhuma). Nenhum campo, regra,
@@ -4764,8 +4809,8 @@ seis passos da spec, com o 5 (o link colado no WhatsApp mostrando a imagem) no p
 passos, com o 3 (nada contado no app) sendo o que prova o filtro. **Uma vez por mês, antes de a
 janela do Hobby apagar o mês**, uma linha aqui:
 
-| Mês | `/conheca` | Página do preço (cookie) | Brigadeiro | Bolo por quilo | Bolo de pote | `/cadastro` | Contas (`metricas`) | As três origens que mais trouxeram gente |
-| --- | ---------- | ------------------------ | ---------- | -------------- | ------------ | ----------- | ------------------- | ---------------------------------------- |
+| Mês | `/conheca` | Página do preço (cookie) | Brigadeiro | Bolo por quilo | Bolo de pote | Doces | `/cadastro` | Contas (`metricas`) | As três origens que mais trouxeram gente |
+| --- | ---------- | ------------------------ | ---------- | -------------- | ------------ | ----- | ----------- | ------------------- | ---------------------------------------- |
 
 Número bruto, não só a porcentagem: com dezenas de visitas por mês, a taxa oscila. `/cadastro`
 ÷ páginas diz se a página convence; contas ÷ `/cadastro` diz se o formulário atrapalha.

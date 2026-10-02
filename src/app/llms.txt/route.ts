@@ -9,6 +9,14 @@ import { PAGINAS_DO_PRECO, URL_DO_SITE } from "../site";
  */
 export const dynamic = "force-static";
 
+/** A de doces vem primeiro, e as de cada doce embaixo, pela lista (`#d259`). */
+const ehAPorta = (p: (typeof PAGINAS_DO_PRECO)[number]) =>
+  p.endereco === "/como-calcular-o-preco-de-doces";
+const PAGINAS = [
+  ...PAGINAS_DO_PRECO.filter(ehAPorta),
+  ...PAGINAS_DO_PRECO.filter((p) => !ehAPorta(p)),
+];
+
 export function GET() {
   const texto = `# Rende
 
@@ -19,7 +27,7 @@ preço sugerido, pedidos e caixa. Funciona no celular, sem internet. Teste de ${
 
 ## Páginas
 
-${PAGINAS_DO_PRECO.map((p) => `- [${p.titulo}](${URL_DO_SITE}${p.endereco}): ${p.resumo}\n`).join("")}- [O Rende](${URL_DO_SITE}/conheca): o que faz, os planos e as dúvidas
+${PAGINAS.map((p) => `- [${p.titulo}](${URL_DO_SITE}${p.endereco}): ${p.resumo}\n`).join("")}- [O Rende](${URL_DO_SITE}/conheca): o que faz, os planos e as dúvidas
 `;
 
   return new Response(texto, {

@@ -7680,3 +7680,29 @@ satisfazem. O avulso é `calcularPrecoSugerido(Math.round(custo / 100))`.
 **Fora.** O app conta bolo em gramas, e `derivarFicha` arredonda o custo por grama ao centavo:
 até R$ 5,00 por quilo de diferença entre a página do bolo e o app. Spec própria, de domínio, com
 aprovação de schema; até lá a página do bolo não diz "cadastre em gramas".
+
+## D259 · A página de doces como porta das outras
+
+**Status:** vigente · decidida em 2026-10-02, spec 068 (sessão D codificada)
+
+**Contexto.** "Como precificar doces" tem mais gente perguntando que qualquer doce sozinho. Uma
+página larga que repetisse os cinco passos com outros números seria a quinta cópia da mesma
+conta, que é o que a 068 evita (`#d256`).
+
+**Decisão.** `/como-calcular-o-preco-de-doces` diz a conta em um parágrafo, sem número, cada
+parcela em um parágrafo curto, a fórmula sem exemplo, e mostra numa tabela o que muda de doce pra
+doce: a unidade de venda, o que pesa, o erro e o que sobra nele, e o preço do exemplo, com o nome
+do doce levando à página dele. No celular, a tabela vira uma lista de definições por doce. Sem
+`ContaAberta` e sem "Outros doces": a página inteira é a lista deles.
+
+A página é **a última linha** de `PAGINAS_DO_PRECO`, para fechar o "Outros doces" das irmãs como
+"A conta pra qualquer doce", e **a primeira** do `llms.txt`, que reordena a lista. As linhas da
+tabela são um `Record` pelos endereços da lista, e página nova sem linha não compila.
+
+O "Como calcular o preço" do rodapé aponta para ela, e não mais para a do cookie: uma página larga
+ligada às fundas, e elas ligadas de volta.
+
+**Consequência.** A página do cookie perde o link direto do rodapé; continua achável pela de doces,
+pelas irmãs e pelo sitemap. A coluna que a spec chamava "a parcela que mais pesa" virou "O que
+pesa": pela conta, os ingredientes são a maior parcela dos quatro doces, e a coluna mostra a
+parcela que cada página ensina a não esquecer.

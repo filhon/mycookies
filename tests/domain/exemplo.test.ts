@@ -7,6 +7,7 @@ import {
   EXEMPLO_BOLO_DE_POTE,
   EXEMPLO_BRIGADEIRO,
   NO_APLICATIVO,
+  POR_BOLO,
 } from "@/lib/domain/exemplo";
 import { percentualDe } from "@/lib/domain/money";
 import {
@@ -342,5 +343,67 @@ describe("o bolo de pote", () => {
       lucroUnitario: 450,
       margemReal: 26.47,
     });
+  });
+});
+
+// A página de doces (spec 068, sessão D): a tabela dos quatro exemplos.
+describe("a tabela da página de doces", () => {
+  const taxas = somaTaxas(EXEMPLO.parametros);
+  const parte = (valor: number, total: number) =>
+    Math.round((valor / total) * 100);
+
+  // 7488 ÷ 10584 = 70,7% · 4000 ÷ 9700 = 41,2% · a parte fixa do bolo,
+  // 1300 + 2000 + 200 = 3500, sobre 12900 = 27,1% · 1450 ÷ 9100 = 15,9%.
+  it("o que pesa: 71%, 41%, 27% e 16%", () => {
+    const fixoDoBolo =
+      POR_BOLO.custoEmbalagem +
+      POR_BOLO.custoMaoDeObra +
+      POR_BOLO.custoIndireto;
+    expect(fixoDoBolo).toBe(3500);
+    expect([
+      parte(EXEMPLO.custo.custoInsumos, EXEMPLO.custo.custoTotalLote),
+      parte(
+        EXEMPLO_BRIGADEIRO.custo.custoMaoDeObra,
+        EXEMPLO_BRIGADEIRO.custo.custoTotalLote,
+      ),
+      parte(fixoDoBolo, boloDe(2).custo.custoTotalLote),
+      parte(
+        EXEMPLO_BOLO_DE_POTE.custo.custoEmbalagem,
+        EXEMPLO_BOLO_DE_POTE.custo.custoTotalLote,
+      ),
+    ]).toEqual([71, 41, 27, 16]);
+  });
+
+  // 441 ÷ 0,55 → 850 · 9700 ÷ 0,55 → 17650 · 6450 ÷ 0,55 → 11750 ·
+  // 910 ÷ 0,55 → 1700, todos no meio real.
+  it("os preços: R$ 8,50, R$ 176,50, R$ 117,50 e R$ 17,00", () => {
+    const etiqueta = (custo: number) => {
+      const r = calcularPrecoSugerido(custo, EXEMPLO.parametros);
+      return r.ok && r.precoArredondado;
+    };
+    expect([
+      etiqueta(EXEMPLO.custo.custoUnitario),
+      etiqueta(EXEMPLO_BRIGADEIRO.custo.custoUnitario),
+      etiqueta(boloDe(2).custo.custoUnitario),
+      etiqueta(EXEMPLO_BOLO_DE_POTE.custo.custoUnitario),
+    ]).toEqual([850, 17650, 11750, 1700]);
+  });
+
+  // Cookie: 639 com custo 441 deixa 166, 25,98%. Brigadeiro: 10400 com
+  // custo 9700 deixa 180, 1,73%. Bolo: 11750 com o quilo do de 1 kg, 8200,
+  // deixa 11750 − 8200 − 588 = 2962, 25,21%. Pote: 1700 no aplicativo deixa
+  // 1700 − 910 − 340 = 450, 26,47%. Na página, sem casas: 26, 2, 25 e 26.
+  it("o que sobra no erro: 26%, 2%, 25% e 26%", () => {
+    const cookie = calcularPrecoSugerido(441, ERRO_COMUM);
+    expect(cookie.ok && cookie.precoArredondado).toBe(639);
+    const semHora = calcularPrecoSugerido(5700, EXEMPLO.parametros);
+    expect(semHora.ok && semHora.precoArredondado).toBe(10400);
+    expect(boloDe(1).custo.custoUnitario).toBe(8200);
+    expect([
+      verificarPreco(639, 441, taxas).margemReal,
+      verificarPreco(10400, 9700, taxas).margemReal,
+      verificarPreco(11750, 8200, taxas).margemReal,
+      verificarPreco(1700, 910, somaTaxas(NO_APLICATIVO)).margemReal,
+    ]).toEqual([25.98, 1.73, 25.21, 26.47]);
   });
 });

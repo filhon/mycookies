@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils/cn";
 
 /**
  * O topo e o rodapé das páginas públicas do Rende: `/conheca` (spec 036) e
- * `/como-calcular-o-preco-do-cookie` (spec 037).
+ * as páginas do preço (specs 037 e 068).
  */
 
 const ALVO_LINK =
@@ -84,10 +84,11 @@ export function Topo({
 
 export function Rodape() {
   const links = [
-    // Sem este link o robô que entra por `/conheca` não acha a página do
-    // preço (spec 037, 3.3).
+    // Sem este link o robô que entra por `/conheca` não acha as páginas do
+    // preço (spec 037, 3.3). Aponta para a de doces, a porta das outras
+    // (`#d259`); a do cookie se acha por ela e pelas irmãs.
     {
-      href: "/como-calcular-o-preco-do-cookie",
+      href: "/como-calcular-o-preco-de-doces",
       rotulo: "Como calcular o preço",
     },
     { href: "/conheca#duvidas", rotulo: "Dúvidas" },
