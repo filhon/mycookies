@@ -7750,3 +7750,57 @@ negativo) fica fora do rendeu, porque não diz o que custou, e a tela diz quanto
 
 **Consequência.** O rendeu é tão bom quanto as fichas: preço de material velho infla o número.
 "Custou fazer" leva a "Ver meus produtos".
+
+---
+
+## D262 · Até o fim do mês, em dinheiro e com o caminho
+
+**Status:** vigente · decidida em 2026-10-02, spec `070-o-que-vem-ate-o-fim-do-mes.md`
+
+**Contexto.** `/financeiro` só olhava para trás. A tela Pedidos sabia o que vai entrar e o que
+já devem (`#d247`); o Caixa, onde ela pensa em dinheiro, não.
+
+**Decisão.** Bloco "Até o fim de {mês}", só no mês corrente, entre o topo (`#d260`) e a meta:
+
+- **Deve entrar** = `aReceber` sobre `pedidosQueEntramNoMes(agenda + entregues em aberto)`: os
+  da agenda com `dataEntregaISO` neste mês e os entregues não pagos de qualquer data. Bate com
+  "Vai entrar" + "Me devem" de `/pedidos`, menos os pedidos de outro mês. **O atrasado da agenda
+  (marcado para um mês que passou e não entregue) fica fora**: a regra é a data, e ele já está
+  em `/pedidos` com "Passou da data". A linha leva a "Me devem" quando há quem deva, senão à
+  Agenda.
+- **Deve sair** = as contas que repetem pendentes (`#d263`); a linha rola até a lista.
+- **Onde fecha** = `lucro` do agregado + deve entrar − deve sair, sem descontar maquininha do que
+  deve entrar (a forma ainda não existe). A frase é condicional: "Se tudo isso acontecer, o caixa
+  fecha o mês em…". Negativo: `TriangleAlert` em `--attention` e "no negativo", tinta, nunca
+  vermelho.
+- Linha com zero não aparece; sem nada a prever, o bloco não aparece. As três assinaturas
+  (agenda, entregues em aberto, mês anterior) só existem no mês corrente e não seguram a tela:
+  enquanto carregam ou se falham, o bloco não aparece, sem esqueleto.
+- **Também no mês em branco**, acima da meta: o começo do mês é quando o aluguel ainda não foi
+  lançado e a pergunta "o mês vai fechar?" é mais aberta.
+- A meta ganha "Com os pedidos marcados, você chega a N% da meta.", `(entradas + deve entrar) ÷
+alvo`, só com deve entrar acima de zero e meta não batida. Os doces por semana continuam do que
+  já entrou.
+
+## D263 · As contas que repetem viram uma lista com "Lançar"
+
+**Status:** vigente · decidida em 2026-10-02, spec `070-o-que-vem-ate-o-fim-do-mes.md`
+
+**Contexto.** `recorrente` era gravado e nunca lido: "repete todo mês" era uma promessa que o
+app não cumpria.
+
+**Decisão.**
+
+- `contasQueRepetemPendentes(anterior, atual)`: as `recorrente: true` do mês anterior sem par
+  neste. **Par** é mesmo `tipo`, mesma `categoria` e mesma descrição por `chaveDeBusca` (sem
+  acento, minúscula, espaços colapsados), com qualquer valor. A mesma conta duas vezes no
+  anterior é uma pendência só. A data é o mesmo dia no mês seguinte, preso ao último dia.
+- **"Lançar"** passa por `criarTransacao` com tipo, categoria, descrição, valor, forma e
+  `recorrente: true` (sem observações), e o `contextoMeta` da tela: agregado e meta andam como
+  num lançamento à mão. A linha fica cinco segundos como "Lançada no dia N" com "Desfazer", que
+  chama `arquivarTransacao` com a reversível montada no aparelho (a taxa por `taxaDaEntrada`, a
+  mesma conta de `corpoDaTransacao`), sem ler nada: funciona offline.
+- **Tocar no nome** abre o `FormularioTransacao` como lançamento novo já preenchido (prop
+  `modelo`), com a data calculada. "Parou de repetir" é desmarcar a caixa no lançamento antigo.
+- Só um mês para trás, só no mês corrente. Sem `recorrenciaId`: o par por descrição erra de
+  forma visível, e o id seria campo novo.

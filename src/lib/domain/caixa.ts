@@ -10,8 +10,16 @@ import type {
   ResumoProduto,
   TipoTransacao,
 } from "@/lib/types";
+import { chaveDeBusca } from "./custoInsumo";
 import { taxaCobrada } from "./custosOperacionais";
-import { competenciaDe, competenciaVizinha, diaDeISO } from "./datas";
+import {
+  competenciaDe,
+  competenciaDeISO,
+  competenciaVizinha,
+  diaDeISO,
+  diasNoMes,
+} from "./datas";
+import type { AReceber } from "./pedido";
 import { somaTaxas } from "./precificacao";
 
 /**
@@ -561,6 +569,95 @@ export function rendimentoDoMes(parcelas: ParcelasDoAgregado): RendimentoDoMes {
         ? (rendeu / vendeuEmPedido) * 100
         : null,
   };
+}
+
+/**
+ * Os pedidos que contam no "Deve entrar" do mês (`#d262`): os marcados para
+ * este mês, pela data da entrega, e os entregues não pagos de qualquer data,
+ * que já devem. Pedido da agenda de outro mês fica fora, o atrasado também: ele
+ * está em `/pedidos` com "Passou da data". Quem tira orçamento, cancelado e
+ * pago é `aReceber`.
+ */
+export function pedidosQueEntramNoMes<
+  P extends { status: string; dataEntregaISO: DataISO },
+>(pedidos: P[], competencia: CompetenciaMensal): P[] {
+  return pedidos.filter(
+    (pedido) =>
+      pedido.status === "ENTREGUE" ||
+      competenciaDeISO(pedido.dataEntregaISO) === competencia,
+  );
+}
+
+export interface PrevisaoDoMes {
+  deveEntrar: Centavos;
+  deveSair: Centavos;
+  /** Onde o caixa fecha se tudo acontecer. Sem a maquininha do que deve entrar. */
+  fechaEm: Centavos;
+}
+
+/**
+ * Onde o caixa fecha o mês se tudo isso acontecer (`#d262`). Previsão de caixa,
+ * não de resultado: a maquininha do que deve entrar não é descontada, porque a
+ * forma de pagamento de pedido não pago ainda não existe.
+ */
+export function previsaoDoMes(entrada: {
+  noCaixa: Centavos;
+  /** Já filtrado por `pedidosQueEntramNoMes`. */
+  aReceber: AReceber;
+  contasQueRepetem: { valor: Centavos }[];
+}): PrevisaoDoMes {
+  const deveEntrar = entrada.aReceber.total;
+  const deveSair = entrada.contasQueRepetem.reduce(
+    (soma, conta) => soma + conta.valor,
+    0,
+  );
+  return {
+    deveEntrar,
+    deveSair,
+    fechaEm: entrada.noCaixa + deveEntrar - deveSair,
+  };
+}
+
+type LancamentoQueRepete = {
+  tipo: TipoTransacao;
+  categoria: CategoriaTransacao;
+  descricao: string;
+  dataISO: DataISO;
+  recorrente: boolean;
+};
+
+function chaveDaConta(lancamento: LancamentoQueRepete): string {
+  return `${lancamento.tipo}|${lancamento.categoria}|${chaveDeBusca(lancamento.descricao)}`;
+}
+
+/**
+ * As contas que repetem do mês anterior que ainda não têm par neste
+ * (`#d263`). Par é o lançamento deste mês com o mesmo tipo, a mesma categoria e
+ * a mesma descrição normalizada, com qualquer valor. `dataISO` é o mesmo dia no
+ * mês seguinte ao do lançamento, preso ao último dia (31 vira 30).
+ */
+export function contasQueRepetemPendentes<T extends LancamentoQueRepete>(
+  anterior: T[],
+  atual: LancamentoQueRepete[],
+): { conta: T; dataISO: DataISO }[] {
+  const vistas = new Set(atual.map(chaveDaConta));
+  const pendentes: { conta: T; dataISO: DataISO }[] = [];
+
+  for (const conta of anterior) {
+    const chave = chaveDaConta(conta);
+    if (!conta.recorrente || vistas.has(chave)) continue;
+    // A mesma conta duas vezes no anterior é uma pendência só.
+    vistas.add(chave);
+
+    const mes = competenciaVizinha(competenciaDeISO(conta.dataISO), 1);
+    const dia = Math.min(Number(diaDeISO(conta.dataISO)), diasNoMes(mes));
+    pendentes.push({
+      conta,
+      dataISO: `${mes}-${String(dia).padStart(2, "0")}`,
+    });
+  }
+
+  return pendentes.sort((a, b) => a.dataISO.localeCompare(b.dataISO));
 }
 
 /**

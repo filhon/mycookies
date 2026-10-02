@@ -10,12 +10,17 @@ import { EsqueletoLista, Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import {
   conferirAgregado,
+  contasQueRepetemPendentes,
   parcelasDoResumo,
+  pedidosQueEntramNoMes,
+  previsaoDoMes,
   ticketMedioDe,
 } from "@/lib/domain/caixa";
+import { aReceber } from "@/lib/domain/pedido";
 import { formatarMoeda } from "@/lib/domain/money";
 import {
   competenciaAtual,
+  competenciaVizinha,
   dataISODe,
   rotuloCompetencia,
 } from "@/lib/domain/datas";
@@ -29,16 +34,23 @@ import {
   consultaTransacoesDoMes,
   recalcularMes,
 } from "@/lib/firebase/mutations/agregado";
+import {
+  consultaAgenda,
+  consultaEntreguesEmAberto,
+} from "@/lib/firebase/mutations/pedidos";
 import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
 import type {
   CompetenciaMensal,
   ConfiguracaoGeral,
   Meta,
+  Pedido,
   ResumoMensal,
   Transacao,
 } from "@/lib/types";
 import { useAcaoPedida } from "@/lib/acaoPedida";
 import { useContaId } from "@/providers/AuthProvider";
+import { AteOFimDoMes } from "./AteOFimDoMes";
+import { ContasQueRepetem } from "./ContasQueRepetem";
 import { FormularioTransacao } from "./FormularioTransacao";
 import { LinhaTransacao } from "./LinhaTransacao";
 import { MovimentoPorDia } from "./MovimentoPorDia";
@@ -59,6 +71,7 @@ export function TelaFinanceiro() {
   const [transacaoEmEdicao, setTransacaoEmEdicao] = useState<Transacao | null>(
     null,
   );
+  const [modelo, setModelo] = useState<Transacao | null>(null);
   const [painelAberto, setPainelAberto] = useState(false);
   const [aberturas, setAberturas] = useState(0);
 
@@ -85,7 +98,29 @@ export function TelaFinanceiro() {
     [contaId],
   );
 
+  // O que vem até o fim do mês só existe no mês corrente (`#d262`): fora
+  // dele, as três assinaturas ficam desligadas.
+  const ehMesCorrente = competencia === mesCorrente;
+  const consultaDaAgenda = useMemo(
+    () => (ehMesCorrente ? consultaAgenda(contaId) : null),
+    [contaId, ehMesCorrente],
+  );
+  const consultaDosQueDevem = useMemo(
+    () => (ehMesCorrente ? consultaEntreguesEmAberto(contaId) : null),
+    [contaId, ehMesCorrente],
+  );
+  const consultaDoMesAnterior = useMemo(
+    () =>
+      ehMesCorrente
+        ? consultaTransacoesDoMes(contaId, competenciaVizinha(mesCorrente, -1))
+        : null,
+    [contaId, ehMesCorrente, mesCorrente],
+  );
+
   const lancamentos = useColecao<Transacao>(consulta);
+  const agenda = useColecao<Pedido>(consultaDaAgenda);
+  const devem = useColecao<Pedido>(consultaDosQueDevem);
+  const mesAnterior = useColecao<Transacao>(consultaDoMesAnterior);
   const resumo = useDocumento<ResumoMensal>(referenciaResumo);
   const meta = useDocumento<Meta>(referenciaMeta);
   const configuracao = useDocumento<ConfiguracaoGeral>(referenciaConfiguracao);
@@ -108,6 +143,26 @@ export function TelaFinanceiro() {
   );
   const carregando =
     lancamentos.carregando || resumo.carregando || meta.carregando;
+
+  // Acréscimo, não resposta: nenhuma das três segura a tela, e enquanto
+  // carregam (ou se falham) o bloco não aparece, sem esqueleto.
+  const previsaoPronta =
+    ehMesCorrente &&
+    ![agenda, devem, mesAnterior].some((c) => c.carregando || c.erro);
+  const contasPendentes = previsaoPronta
+    ? contasQueRepetemPendentes(mesAnterior.dados, lancamentos.dados)
+    : [];
+  const receber = aReceber(
+    previsaoPronta
+      ? pedidosQueEntramNoMes([...agenda.dados, ...devem.dados], competencia)
+      : [],
+  );
+  const previsao = previsaoDoMes({
+    noCaixa: parcelasDoResumo(resumo.dado).lucro,
+    aReceber: receber,
+    contasQueRepetem: contasPendentes.map((p) => p.conta),
+  });
+  const temPrevisao = receber.quantidade > 0 || contasPendentes.length > 0;
   const pendente = lancamentos.pendente || resumo.pendente || meta.pendente;
 
   // O mês existe se ele tem lançamento, e não se o documento de agregado
@@ -142,12 +197,45 @@ export function TelaFinanceiro() {
 
   function abrirPainel(transacao?: Transacao) {
     setTransacaoEmEdicao(transacao ?? null);
+    setModelo(null);
     setAberturas((anterior) => anterior + 1);
     setPainelAberto(true);
   }
 
   // "Lançar no caixa" na grade do "+", vindo de outra tela ou desta (`#d241`).
   useAcaoPedida("lancar", () => abrirPainel());
+
+  /** A conta que repete com outro valor: lançamento novo já preenchido. */
+  function abrirModelo({
+    conta,
+    dataISO,
+  }: {
+    conta: Transacao;
+    dataISO: string;
+  }) {
+    setTransacaoEmEdicao(null);
+    setModelo({ ...conta, dataISO });
+    setAberturas((anterior) => anterior + 1);
+    setPainelAberto(true);
+  }
+
+  const aoFimDoMes = temPrevisao && (
+    <>
+      <AteOFimDoMes
+        competencia={competencia}
+        previsao={previsao}
+        receber={receber}
+        qtdContas={contasPendentes.length}
+      />
+      <ContasQueRepetem
+        pendentes={contasPendentes}
+        contaId={contaId}
+        formas={formas}
+        contextoMeta={contextoMeta}
+        aoAbrir={abrirModelo}
+      />
+    </>
+  );
 
   function abrirPainelMeta() {
     setAberturasMeta((anterior) => anterior + 1);
@@ -219,6 +307,8 @@ export function TelaFinanceiro() {
         </div>
       ) : !temMovimento ? (
         <div className="mt-4 space-y-4">
+          {aoFimDoMes}
+
           {/* A meta vem antes do convite a lançar: começo de mês é exatamente
               quando ela define quanto quer faturar, e o mês ainda está vazio. */}
           <BlocoMeta
@@ -226,6 +316,7 @@ export function TelaFinanceiro() {
             meta={meta.dado}
             realizado={parcelas.entradas}
             ticketMedio={ticketMedio}
+            deveEntrar={previsao.deveEntrar}
             aoAbrir={abrirPainelMeta}
           />
 
@@ -262,11 +353,14 @@ export function TelaFinanceiro() {
 
           <ResultadoDoMes parcelas={parcelas} />
 
+          {aoFimDoMes}
+
           <BlocoMeta
             competencia={competencia}
             meta={meta.dado}
             realizado={parcelas.entradas}
             ticketMedio={ticketMedio}
+            deveEntrar={previsao.deveEntrar}
             aoAbrir={abrirPainelMeta}
           />
 
@@ -346,6 +440,7 @@ export function TelaFinanceiro() {
         aoFechar={() => setPainelAberto(false)}
         contaId={contaId}
         transacao={transacaoEmEdicao ?? undefined}
+        modelo={modelo ?? undefined}
         formas={formas}
         contextoMeta={contextoMeta}
         dataPadrao={

@@ -1,10 +1,16 @@
 # Estado do projeto
 
-Atualizado em 2026-10-02 (**a 069 codificada**, o que o mês rendeu: `rendimentoDoMes` em
+Atualizado em 2026-10-02 (**a 070 codificada**, o que vem até o fim do mês: `previsaoDoMes`,
+`pedidosQueEntramNoMes` e `contasQueRepetemPendentes` em `domain/caixa.ts` com teste,
+`AteOFimDoMes` (deve entrar, deve sair, onde o caixa fecha) e `ContasQueRepetem` ("Lançar" por
+`criarTransacao`, "Desfazer" por 5 s, o nome abre o formulário preenchido) em `/financeiro`, só
+no mês corrente e também no mês em branco, e a linha "Com os pedidos marcados…" no `BlocoMeta`,
+`#d262` e `#d263`; nenhuma regra, índice ou dependência; roteiro de navegador da seção 4 por
+rodar; **o passo 2.1 da 069 rodou e bateu** ("Recalcular o mês" de outubro na conta real, em
+2026-10-02); **a 069 codificada**, o que o mês rendeu: `rendimentoDoMes` em
 `domain/caixa.ts`, o topo de `/financeiro` refeito com o "rendeu" no display e o caixa na faixa
 rebaixada, `VendasPorPedido` apagado, e o `CartaoDoMes` da Hoje lendo a mesma função, `#d260` e
-`#d261`; **o passo 2.1 (conferir o agregado de outubro) não rodou**: pede "Recalcular o mês" na
-conta real, e é a próxima ação antes da 070; roteiro de navegador por rodar; **specs 069 a 074 escritas**: a crítica da tela Caixa sobre os prints
+`#d261`; o passo 2.1 (conferir o agregado de outubro) rodou depois, na conta real, e bateu; roteiro de navegador por rodar; **specs 069 a 074 escritas**: a crítica da tela Caixa sobre os prints
 de celular e desktop virou seis specs de uma sessão cada, na ordem 069 (o que o mês rendeu: o
 display passa a ser vendas de pedido menos o custo de fazer, a maquininha e as saídas fora da
 ficha, e o caixa desce para a faixa de baixo; Hoje e Caixa leem a mesma função; **vem antes de

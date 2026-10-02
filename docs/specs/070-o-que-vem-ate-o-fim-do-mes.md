@@ -153,13 +153,13 @@ A linha "Com os pedidos marcados…", recebendo `deveEntrar` por prop; `0` não 
 
 ## Critérios de aceite
 
-- [ ] As três funções puras testadas.
-- [ ] "Deve entrar" = "Vai entrar" + "Me devem" de `/pedidos`, menos os pedidos de outro mês.
-- [ ] "Lançar" passa por `criarTransacao`; o agregado e a meta andam como num lançamento à mão.
-- [ ] Previsão negativa com ícone e palavra, nunca vermelho.
-- [ ] Nada aparece em mês que não é o corrente.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`; regras, índices e `package.json` intocados.
-- [ ] `#d262` e `#d263` escritos; `ESTADO.md` atualizado.
+- [x] As três funções puras testadas.
+- [x] "Deve entrar" = "Vai entrar" + "Me devem" de `/pedidos`, menos os pedidos de outro mês.
+- [x] "Lançar" passa por `criarTransacao`; o agregado e a meta andam como num lançamento à mão.
+- [x] Previsão negativa com ícone e palavra, nunca vermelho.
+- [x] Nada aparece em mês que não é o corrente.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`; regras, índices e `package.json` intocados.
+- [x] `#d262` e `#d263` escritos; `ESTADO.md` atualizado.
 
 ---
 

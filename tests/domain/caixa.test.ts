@@ -4,6 +4,7 @@ import {
   agregarPedidos,
   agregarTransacoes,
   conferirAgregado,
+  contasQueRepetemPendentes,
   deltaDaTransacao,
   deltaDoPedido,
   entradasAteODia,
@@ -12,6 +13,8 @@ import {
   mesDaLeitura,
   PARCELAS_ZERADAS,
   parcelasDoResumo,
+  pedidosQueEntramNoMes,
+  previsaoDoMes,
   produtosOrdenados,
   rendimentoDoMes,
   saidasOrdenadas,
@@ -23,6 +26,7 @@ import {
   type TransacaoAgregavel,
 } from "@/lib/domain/caixa";
 import { competenciaDeISO } from "@/lib/domain/datas";
+import { aReceber } from "@/lib/domain/pedido";
 import type { FichaTecnica, FormaPagamento, ResumoProduto } from "@/lib/types";
 
 function forma(
@@ -1157,5 +1161,102 @@ describe("rendimentoDoMes (#d261)", () => {
     // O pagamento foi desfeito em novembro: a entrada saiu, o pedido ainda conta.
     const r = rendimentoDoMes({ ...outubro, entradas: 8000 });
     expect(r.deBalcao).toBe(0);
+  });
+});
+
+describe("pedidosQueEntramNoMes", () => {
+  it("marcados no mês e entregues não pagos de qualquer data; outro mês fica fora", () => {
+    const pedidos = [
+      { id: "a", status: "CONFIRMADO", dataEntregaISO: "2026-10-20" },
+      { id: "b", status: "CONFIRMADO", dataEntregaISO: "2026-11-03" },
+      { id: "c", status: "ENTREGUE", dataEntregaISO: "2026-09-12" },
+      { id: "d", status: "PRONTO", dataEntregaISO: "2026-09-30" },
+    ];
+    expect(pedidosQueEntramNoMes(pedidos, "2026-10").map((p) => p.id)).toEqual([
+      "a",
+      "c",
+    ]);
+  });
+});
+
+describe("previsaoDoMes", () => {
+  it("o caixa mais o que deve entrar menos as contas que repetem", () => {
+    expect(
+      previsaoDoMes({
+        noCaixa: 13800,
+        aReceber: aReceber([
+          { status: "CONFIRMADO", pago: false, total: 30000 },
+          { status: "ENTREGUE", pago: false, total: 11200 },
+          { status: "ORCAMENTO", pago: false, total: 99900 },
+        ]),
+        contasQueRepetem: [{ valor: 70000 }, { valor: 25000 }],
+      }),
+    ).toEqual({ deveEntrar: 41200, deveSair: 95000, fechaEm: -40000 });
+  });
+});
+
+describe("contasQueRepetemPendentes", () => {
+  const aluguel = {
+    tipo: "SAIDA" as const,
+    categoria: "DESPESA_FIXA" as const,
+    descricao: "Aluguel da Cozinha",
+    dataISO: "2026-09-05",
+    recorrente: true,
+  };
+
+  it("sem par neste mês, aparece no mesmo dia", () => {
+    expect(contasQueRepetemPendentes([aluguel], [])).toEqual([
+      { conta: aluguel, dataISO: "2026-10-05" },
+    ]);
+  });
+
+  it("par pela descrição com acento, caixa e espaços diferentes", () => {
+    const lancado = {
+      ...aluguel,
+      descricao: "  aluguel  da cozínha",
+      dataISO: "2026-10-04",
+    };
+    expect(contasQueRepetemPendentes([aluguel], [lancado])).toEqual([]);
+  });
+
+  it("par com valor diferente", () => {
+    const gas = { ...aluguel, descricao: "Gás", valor: 13000 };
+    const gasDeOutubro = { ...gas, valor: 14500, dataISO: "2026-10-10" };
+    expect(contasQueRepetemPendentes([gas], [gasDeOutubro])).toEqual([]);
+  });
+
+  it("categoria diferente não é par", () => {
+    const outra = {
+      ...aluguel,
+      categoria: "OUTRO" as const,
+      dataISO: "2026-10-05",
+    };
+    expect(contasQueRepetemPendentes([aluguel], [outra])).toHaveLength(1);
+  });
+
+  it("o que não repetia no anterior não entra", () => {
+    expect(
+      contasQueRepetemPendentes([{ ...aluguel, recorrente: false }], []),
+    ).toEqual([]);
+  });
+
+  it("dia 31 cai no último dia do mês de 30", () => {
+    const internet = {
+      ...aluguel,
+      descricao: "Internet",
+      dataISO: "2026-10-31",
+    };
+    expect(contasQueRepetemPendentes([internet], [])[0]?.dataISO).toBe(
+      "2026-11-30",
+    );
+  });
+
+  it("a mesma conta duas vezes no anterior é uma pendência só", () => {
+    expect(
+      contasQueRepetemPendentes(
+        [aluguel, { ...aluguel, dataISO: "2026-09-06" }],
+        [],
+      ),
+    ).toHaveLength(1);
   });
 });

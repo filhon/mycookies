@@ -104,6 +104,7 @@ export function FormularioTransacao({
   aoFechar,
   contaId,
   transacao,
+  modelo,
   formas,
   contextoMeta,
   dataPadrao,
@@ -114,6 +115,11 @@ export function FormularioTransacao({
   contaId: string;
   /** Ausente = lançamento novo. */
   transacao?: Transacao;
+  /**
+   * Lançamento novo já preenchido a partir deste, com a data dele: a conta que
+   * repete com o valor que mudou (`DECISOES.md#d263`).
+   */
+  modelo?: Transacao;
   formas: FormaPagamento[];
   /**
    * O que a meta do mês exibido precisa para andar junto com o dinheiro. Vem
@@ -131,9 +137,14 @@ export function FormularioTransacao({
 }) {
   const idRecorrente = useId();
 
-  const [estado, setEstado] = useState<EstadoLancamento>(() =>
-    transacao ? daTransacao(transacao) : novoLancamento(dataPadrao, formas),
-  );
+  const inicial = (): EstadoLancamento =>
+    transacao
+      ? daTransacao(transacao)
+      : modelo
+        ? { ...daTransacao(modelo), observacoes: "" }
+        : novoLancamento(dataPadrao, formas);
+
+  const [estado, setEstado] = useState<EstadoLancamento>(() => inicial());
   const [erros, setErros] = useState<Record<string, string>>({});
   const [falha, setFalha] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -144,9 +155,7 @@ export function FormularioTransacao({
   const [chave, setChave] = useState(chaveAtual);
   if (chave !== chaveAtual) {
     setChave(chaveAtual);
-    setEstado(
-      transacao ? daTransacao(transacao) : novoLancamento(dataPadrao, formas),
-    );
+    setEstado(inicial());
     setErros({});
     setFalha(null);
     setConfirmandoArquivo(false);

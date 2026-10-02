@@ -32,6 +32,7 @@ export function BlocoMeta({
   meta,
   realizado,
   ticketMedio,
+  deveEntrar = 0,
   aoAbrir,
 }: {
   competencia: CompetenciaMensal;
@@ -44,6 +45,12 @@ export function BlocoMeta({
    * não houver pedido pago, e aí a linha de pedidos não aparece.
    */
   ticketMedio: Centavos;
+  /**
+   * O que os pedidos do mês ainda devem trazer (`DECISOES.md#d262`). Só vem no
+   * mês corrente; zero não mostra a linha. Não mexe nos doces por semana, que
+   * continuam do que já entrou.
+   */
+  deveEntrar?: Centavos;
   aoAbrir: () => void;
 }) {
   // O dia é lido uma vez, na montagem: o ritmo não pode mudar no meio de um
@@ -152,6 +159,20 @@ export function BlocoMeta({
           noRitmo={medida.noRitmo}
           diasRestantes={medida.diasRestantes}
         />
+
+        {deveEntrar > 0 && !medida.batida && medida.faturamentoAlvo > 0 && (
+          <p className="mt-1.5 max-w-[52ch] text-label text-ink-muted">
+            Com os pedidos marcados, você chega a{" "}
+            <strong className="num font-semibold text-ink">
+              {formatarPercentual(
+                ((medida.realizado + deveEntrar) / medida.faturamentoAlvo) *
+                  100,
+                0,
+              )}
+            </strong>{" "}
+            da meta.
+          </p>
+        )}
       </div>
 
       <div className="border-t border-line bg-sunken px-5 py-4">
