@@ -177,14 +177,20 @@ export function consultaHistorico(
  * de `/pedidos` (`#d252`). Sem teto: uma cliente é dezenas de pedidos, e cada
  * um é uma leitura só na primeira vez. O pedido avulso, sem `clienteId`, não
  * entra; ele se acha na busca em memória. Índice
- * `arquivado + clienteId + dataEntregaISO DESC`.
+ * `arquivado + clienteId + dataEntregaISO DESC`. Com `limite`, os últimos: o
+ * "Repetir" do pedido novo lê três (`#d276`), no mesmo índice.
  */
-export function consultaPedidosDaCliente(contaId: string, clienteId: string) {
+export function consultaPedidosDaCliente(
+  contaId: string,
+  clienteId: string,
+  limite?: number,
+) {
   return query(
     colPedidos(contaId),
     where("arquivado", "==", false),
     where("clienteId", "==", clienteId),
     orderBy("dataEntregaISO", "desc"),
+    ...(limite ? [limit(limite)] : []),
   );
 }
 

@@ -118,14 +118,14 @@ O resto, no mesmo bloco:
 
 ## Critérios de aceite
 
-- [ ] Pílulas só com três ou mais produtos, sem leitura nova.
-- [ ] −/+ com 44px, parando em 1.
-- [ ] Repetir copia com o preço de hoje e diz o que ficou fora.
-- [ ] Nota por item gravada em `observacao` e mostrada na ficha e no WhatsApp.
-- [ ] `maisPedidos` e `itensParaRepetir` com teste.
-- [ ] Nenhum campo, regra, índice ou dependência.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d275` e `#d276` escritos; `ESTADO.md` atualizado.
+- [x] Pílulas só com três ou mais produtos, sem leitura nova.
+- [x] −/+ com 44px, parando em 1.
+- [x] Repetir copia com o preço de hoje e diz o que ficou fora.
+- [x] Nota por item gravada em `observacao` e mostrada na ficha e no WhatsApp.
+- [x] `maisPedidos` e `itensParaRepetir` com teste.
+- [x] Nenhum campo, regra, índice ou dependência.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d275` e `#d276` escritos; `ESTADO.md` atualizado.
 
 ---
 

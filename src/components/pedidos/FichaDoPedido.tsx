@@ -346,6 +346,11 @@ export function FichaDoPedido({
                     {resumoDasEscolhas(item.escolhas)}
                   </p>
                 ) : null}
+                {item.observacao && (
+                  <p className="mt-0.5 text-label text-ink-muted">
+                    {item.observacao}
+                  </p>
+                )}
               </div>
               <Dinheiro centavos={item.subtotal} className="shrink-0" />
             </li>

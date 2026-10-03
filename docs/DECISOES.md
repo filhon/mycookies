@@ -8152,3 +8152,66 @@ cada lado, e o total e a sobra moravam no rodapé fixo, longe dos itens que os e
 
 **Consequência.** O editor de produto pode ganhar a mesma coluna em spec própria (fora de escopo
 da 077).
+
+---
+
+## D275 · Os que estão saindo, em pílula acima da busca
+
+**Status:** vigente · decidida em 2026-10-03, spec `078-o-pedido-de-sempre.md`
+
+**Contexto.** Pôr um produto no pedido era só busca: tocar, digitar "coo", tocar no resultado. Na
+feira, em pé e com uma mão, para o produto que é metade das vendas. Reconhecer é mais rápido que
+lembrar.
+
+**Decisão.**
+
+- Acima da busca, o grupo "Saindo bastante" (`role="group"` com esse nome) com até **seis
+  pílulas** de 44px (`+` e o nome, borda `--border-strong`, o desenho das sugestões de cliente).
+  Tocar adiciona com 1, como a busca.
+- A fila é `maisPedidos(pedidosAbertos)` em `domain/pedido.ts`: unidades por `fichaTecnicaId`
+  nos pedidos do horizonte que `useDespensaParaProduzir` já carregava, sem `CANCELADO`, o combo
+  contado como combo. **Nenhuma leitura nova**: funciona sem rede e para a ajudante.
+- Só entram as fichas ativas e as que a busca ofereceria agora (`opcoesFicha`): a pílula do
+  produto que já está no pedido sai, e a próxima da fila sobe.
+- Com **menos de três produtos** contados (ativos), nenhuma pílula: três tiradas de quase nada
+  são sorteio.
+- Os pedidos abertos são os dos próximos 30 dias, e não o agregado do mês: o agregado é da dona e
+  do pagamento; os abertos já estão na tela e mostram o que está saindo agora. A ordem muda entre
+  aberturas, e a busca continua.
+- `maisPedidos` devolve a fila inteira, sem o `n` da spec: o corte em seis depende do filtro da
+  busca, que é da tela.
+
+**Consequência.** O −/+ da quantidade (mesma spec) usa o desenho do `EscolhaDoCombo`, cujas classes
+passaram a ser exportadas (`CLASSES_PASSO`). O campo ficou com 64px para caber o par em 360px.
+
+---
+
+## D276 · Repetir o último pedido da cliente, com o preço de hoje
+
+**Status:** vigente · decidida em 2026-10-03, spec `078-o-pedido-de-sempre.md`
+
+**Contexto.** "A Janessa quer repetir o pedido do dia 23" (`#d252`) era achar o pedido na lista e
+remontar item por item.
+
+**Decisão.**
+
+- No pedido **novo**, com cliente **vinculada** e **nenhum item**, abaixo do selo do cadastro:
+  "Último pedido: {dia} · {itens} · {total}" e "Repetir", secundário. Some quando o pedido ganha
+  itens.
+- A leitura é `consultaPedidosDaCliente(contaId, clienteId, 3)`, a consulta da 065 com `limit`, no
+  mesmo índice; o primeiro não `CANCELADO`. Só assina com vínculo; sem rede, aparece se estiver no
+  cache e não aparece se não estiver, sem erro.
+- **Copia** os itens (ficha, quantidade, escolhas do combo, nota), a forma de pagamento (se ainda
+  existir na configuração) e a entrega (tipo, taxa, endereço). **Não copia** data, hora, desconto,
+  status nem observações: são do combinado de hoje.
+- **Com o preço e o custo de hoje** (`itensParaRepetir` em `domain/pedido.ts`): o item entra agora,
+  e é ao entrar que o preço congela (`#d08`). No combo, a base de hoje mais as receitas escolhidas
+  pelo custo de hoje; a receita que sumiu fica com o gravado, e `escolhasCompletas` acusa na
+  linha, como sempre.
+- O item cuja ficha foi arquivada ou desativada fica fora, e uma linha em ocre com o triângulo diz
+  qual: "Brownie não está mais à venda e ficou fora."
+
+**Consequência.** A nota por item, que o schema tinha e nenhuma tela escrevia, nasceu na mesma
+spec: "Anotar neste item" sob a linha, gravada em `ItemPedido.observacao`, lida na ficha do pedido
+e no WhatsApp (entre parênteses depois do nome). A folha do orçamento e a lista de produção ficam
+sem ela (fora de escopo).

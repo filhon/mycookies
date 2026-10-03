@@ -5,7 +5,9 @@ import type {
   EscolhaFeita,
   FormaPagamento,
   StatusPedido,
+  TipoFicha,
 } from "@/lib/types";
+import { temEscolhas } from "./custoFicha";
 import { chaveDeBusca } from "./custoInsumo";
 import { taxaCobrada } from "./custosOperacionais";
 import { rotuloDia } from "./datas";
@@ -224,6 +226,115 @@ export function nomeComEscolhas(item: {
   return item.escolhas?.length
     ? `${item.nomeSnapshot} (${resumoDasEscolhas(item.escolhas)})`
     : item.nomeSnapshot;
+}
+
+/**
+ * Os produtos que estão saindo, do mais pedido para o menos (`#d275`): unidades
+ * por `fichaTecnicaId` nos pedidos que a tela já tem, sem os cancelados. O
+ * combo conta como o combo, e não pelas receitas escolhidas: é ele que se
+ * vende. Empate fica na ordem em que apareceu.
+ */
+export function maisPedidos(
+  pedidos: {
+    status: StatusPedido;
+    itens: { fichaTecnicaId: string; quantidade: number }[];
+  }[],
+): string[] {
+  const unidades = new Map<string, number>();
+  for (const pedido of pedidos) {
+    if (pedido.status === "CANCELADO") continue;
+    for (const item of pedido.itens) {
+      unidades.set(
+        item.fichaTecnicaId,
+        (unidades.get(item.fichaTecnicaId) ?? 0) + quantidadeUtil(item),
+      );
+    }
+  }
+  return [...unidades.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([fichaId]) => fichaId);
+}
+
+/** A ficha de hoje, no que repetir um item precisa ler dela. */
+export interface FichaParaRepetir {
+  id: string;
+  nome: string;
+  ativo: boolean;
+  tipo: TipoFicha;
+  escolhas?: EscolhaDoKit[];
+  custoUnitario: Centavos;
+  custoEscolhas?: Centavos;
+  precificacao: { precoVenda: Centavos };
+}
+
+export interface ItemRepetido {
+  fichaTecnicaId: string;
+  nomeSnapshot: string;
+  quantidade: number;
+  precoUnitario: Centavos;
+  custoUnitarioSnapshot: Centavos;
+  /** O par da base do combo (`#d100`), da ficha de hoje. */
+  custoDoKit: { custoUnitario: Centavos; custoEscolhas: Centavos };
+  escolhas: EscolhaFeita[];
+  observacao?: string;
+}
+
+/**
+ * O último pedido da cliente, de novo (`#d276`): cada item com o preço e o
+ * custo de **hoje**, porque é ao entrar que o preço congela (`#d08`). As
+ * receitas escolhidas do combo também vão pelo custo de hoje; a que sumiu fica
+ * com o gravado, e `escolhasCompletas` acusa na linha. O item cuja ficha não
+ * está mais à venda (arquivada, ou desativada) fica fora, pelo nome.
+ */
+export function itensParaRepetir(
+  pedido: {
+    itens: {
+      fichaTecnicaId: string;
+      nomeSnapshot: string;
+      quantidade: number;
+      escolhas?: EscolhaFeita[];
+      observacao?: string;
+    }[];
+  },
+  fichas: FichaParaRepetir[],
+): { entram: ItemRepetido[]; fora: string[] } {
+  const porId = new Map(fichas.map((ficha) => [ficha.id, ficha]));
+  const entram: ItemRepetido[] = [];
+  const fora: string[] = [];
+
+  for (const item of pedido.itens) {
+    const ficha = porId.get(item.fichaTecnicaId);
+    if (!ficha?.ativo) {
+      fora.push(item.nomeSnapshot);
+      continue;
+    }
+    const escolhas = temEscolhas(ficha)
+      ? (item.escolhas ?? []).map((escolha) => ({
+          ...escolha,
+          custoUnitarioSnapshot:
+            porId.get(escolha.fichaTecnicaId)?.custoUnitario ??
+            escolha.custoUnitarioSnapshot,
+        }))
+      : [];
+    const custoDoKit = {
+      custoUnitario: ficha.custoUnitario,
+      custoEscolhas: ficha.custoEscolhas ?? 0,
+    };
+    entram.push({
+      fichaTecnicaId: ficha.id,
+      nomeSnapshot: ficha.nome,
+      quantidade: item.quantidade,
+      precoUnitario: ficha.precificacao.precoVenda,
+      custoUnitarioSnapshot: temEscolhas(ficha)
+        ? custoDoComboMontado(custoDoKit, escolhas)
+        : ficha.custoUnitario,
+      custoDoKit,
+      escolhas,
+      ...(item.observacao ? { observacao: item.observacao } : {}),
+    });
+  }
+
+  return { entram, fora };
 }
 
 /** Quantos caracteres do id entram no código. Três bastam para ela ler em voz alta. */

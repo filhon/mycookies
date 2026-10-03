@@ -61,6 +61,8 @@ export interface ResumoParaCliente {
     precoUnitario: Centavos;
     /** O que foi escolhido num combo: entra entre parênteses, é o que ela confere. */
     escolhas?: { quantidade: number; nomeSnapshot: string }[];
+    /** A nota deste item (spec 078): entra entre parênteses, depois do nome. */
+    observacao?: string;
   }[];
   subtotal: Centavos;
   desconto: Centavos;
@@ -116,7 +118,7 @@ export function mensagemDoPedido(resumo: ResumoParaCliente): string {
 
   const itens = resumo.itens.map(
     (item) =>
-      `• ${quantidadeEmTexto(item.quantidade)} × ${nomeComEscolhas(item)} — ${formatarMoeda(
+      `• ${quantidadeEmTexto(item.quantidade)} × ${nomeComEscolhas(item)}${item.observacao ? ` (${item.observacao})` : ""} — ${formatarMoeda(
         subtotalDoItem(item),
       )}`,
   );

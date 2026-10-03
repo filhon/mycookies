@@ -168,6 +168,24 @@ describe("mensagemDoPedido", () => {
     expect(texto).toContain("Já está pago. Obrigada!");
   });
 
+  it("diz a nota do item entre parênteses, depois do nome", () => {
+    const texto = mensagemDoPedido({
+      ...PEDIDO,
+      itens: [
+        {
+          quantidade: 1,
+          nomeSnapshot: "Bolo de chocolate",
+          precoUnitario: 9000,
+          observacao: "Feliz 30 anos",
+        },
+      ],
+    });
+
+    expect(texto).toContain(
+      `• 1 × Bolo de chocolate (Feliz 30 anos) — ${dinheiro(9000)}`,
+    );
+  });
+
   it("sem dados para pagar, a mensagem é a mesma de sempre", () => {
     expect(mensagemDoPedido({ ...PEDIDO, formaInstrucoes: "  " })).toBe(
       mensagemDoPedido(PEDIDO),

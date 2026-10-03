@@ -2,7 +2,7 @@
 
 import type { Route } from "next";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Archive,
@@ -11,8 +11,11 @@ import {
   Check,
   CookingPot,
   MessageCircle,
+  Plus,
   Receipt,
+  Repeat,
   Store,
+  TriangleAlert,
   Truck,
   Unlink,
   UserPlus,
@@ -56,9 +59,12 @@ import {
   derivarPedido,
   escolhasCompletas,
   FLUXO_PEDIDO,
+  itensParaRepetir,
+  maisPedidos,
   ofereceOPrecoDeHoje,
   proximoPasso,
   resumoDasEscolhas,
+  resumoDosItens,
   ROTULO_STATUS_PEDIDO,
 } from "@/lib/domain/pedido";
 import {
@@ -69,6 +75,7 @@ import {
 import {
   arquivarPedido,
   atualizarPedido,
+  consultaPedidosDaCliente,
   criarPedido,
   desfazerPagamento,
   marcarPedidoPago,
@@ -76,13 +83,14 @@ import {
   type DadosPedido,
   type ItemDoPedido,
 } from "@/lib/firebase/mutations/pedidos";
-import { competenciaDeISO } from "@/lib/domain/datas";
+import { competenciaDeISO, rotuloDia } from "@/lib/domain/datas";
 import {
   capacidadeDaFicha,
   projecaoDoPronto,
   prontosLivres,
   vendaveis,
 } from "@/lib/domain/producao";
+import { useColecao } from "@/lib/hooks/useColecao";
 import { useContextoPagamento } from "@/lib/hooks/useContextoPagamento";
 import { contextoDaCapacidade } from "@/lib/hooks/useDespensaParaProduzir";
 import { BlocoOrcamento } from "./BlocoOrcamento";
@@ -125,6 +133,8 @@ interface LinhaItemForm {
    */
   custoDoKit: { custoUnitario: Centavos; custoEscolhas: Centavos };
   escolhas: EscolhaFeita[];
+  /** A nota deste item (spec 078). Vazio é "sem nota". */
+  observacao: string;
 }
 
 /** O que as escolhas gravadas somam no custo da linha. */
@@ -265,6 +275,7 @@ function valoresIniciais(
         custoEscolhas: custoDasEscolhasFeitas(item.escolhas ?? []),
       },
       escolhas: item.escolhas ?? [],
+      observacao: item.observacao ?? "",
     })),
     desconto: pedido.desconto,
     formaPagamentoId: pedido.formaPagamentoId ?? "",
@@ -489,6 +500,7 @@ export function FormularioPedido({
     precoUnitario: linha.precoUnitario,
     custoUnitarioSnapshot: linha.custoUnitarioSnapshot,
     ...(linha.escolhas.length > 0 ? { escolhas: linha.escolhas } : {}),
+    ...(linha.observacao.trim() ? { observacao: linha.observacao.trim() } : {}),
   }));
 
   // Retirada não tem taxa: o campo some, e o número some com ele.
@@ -518,6 +530,40 @@ export function FormularioPedido({
       nomeBusca: ficha.nomeBusca,
       detalhe: `${formatarMoeda(ficha.precificacao.precoVenda)} por unidade`,
     }));
+
+  // Os que estão saindo, em um toque (`#d275`): dos pedidos do horizonte que a
+  // tela já tem, só os que a busca ofereceria. Com menos de três contados, a
+  // fila é sorteio, e não aparece.
+  const ranking = useMemo(
+    () => maisPedidos(pedidosAbertos).filter((id) => mapaFichas.get(id)?.ativo),
+    [pedidosAbertos, mapaFichas],
+  );
+  const naBusca = new Set(opcoesFicha.map((opcao) => opcao.id));
+  const saindo =
+    ranking.length < 3
+      ? []
+      : ranking
+          .filter((id) => naBusca.has(id))
+          .slice(0, 6)
+          .flatMap((id) => mapaFichas.get(id) ?? []);
+  const idSaindo = useId();
+
+  // O último pedido da cliente vinculada, só no pedido novo (`#d276`). Sem
+  // vínculo, nenhuma leitura; sem rede e sem cache, nada aparece.
+  const consultaDosUltimos = useMemo(
+    () =>
+      !pedido && valores.clienteId
+        ? consultaPedidosDaCliente(contaId, valores.clienteId, 3)
+        : null,
+    [pedido, valores.clienteId, contaId],
+  );
+  const ultimos = useColecao<Pedido>(consultaDosUltimos);
+  const ultimoPedido = ultimos.dados.find(
+    (anterior) =>
+      anterior.clienteId === valores.clienteId &&
+      anterior.status !== "CANCELADO",
+  );
+  const [foraDoRepetir, setForaDoRepetir] = useState<string[]>([]);
 
   const termoCliente = chaveDeBusca(valores.clienteNome);
   const sugestoesCliente =
@@ -552,6 +598,7 @@ export function FormularioPedido({
             custoEscolhas: ficha.custoEscolhas ?? 0,
           },
           escolhas: [],
+          observacao: "",
         },
       ],
     }));
@@ -605,6 +652,43 @@ export function FormularioPedido({
       itens: anterior.itens.map((linha) =>
         linha.chave === chave ? { ...linha, quantidade } : linha,
       ),
+    }));
+  }
+
+  function mudarNota(chave: string, observacao: string) {
+    setValores((anterior) => ({
+      ...anterior,
+      itens: anterior.itens.map((linha) =>
+        linha.chave === chave ? { ...linha, observacao } : linha,
+      ),
+    }));
+  }
+
+  /**
+   * O último pedido da cliente, de novo (`#d276`): os itens com o preço de
+   * hoje, a forma e a entrega. Data, hora, desconto, status e observações são
+   * do combinado de hoje, e ficam como estão.
+   */
+  function repetir(anterior: Pedido) {
+    const { entram, fora } = itensParaRepetir(anterior, fichas);
+    setForaDoRepetir(fora);
+    setValores((atual) => ({
+      ...atual,
+      itens: entram.map((item) => ({
+        ...item,
+        chave: novoId(),
+        quantidade: texto(item.quantidade),
+        observacao: item.observacao ?? "",
+      })),
+      // A forma que sumiu da configuração não volta: fica a de hoje.
+      formaPagamentoId: formas.some(
+        (opcao) => opcao.id === anterior.formaPagamentoId,
+      )
+        ? (anterior.formaPagamentoId ?? "")
+        : atual.formaPagamentoId,
+      tipoEntrega: anterior.entrega.tipo,
+      taxaEntrega: anterior.entrega.taxa,
+      endereco: anterior.entrega.endereco ?? "",
     }));
   }
 
@@ -1123,31 +1207,75 @@ export function FormularioPedido({
             </div>
 
             {clienteVinculado ? (
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <Selo
-                  tom="marca"
-                  icone={<UserRound aria-hidden className="size-3.5" />}
-                >
-                  Cadastro de {clienteVinculado.nome}
-                </Selo>
-                <Botao
-                  tamanho="sm"
-                  variante="terciaria"
-                  onClick={() =>
-                    setCadastro({ aberto: true, chave: `editar-${novoId()}` })
-                  }
-                >
-                  Editar cadastro
-                </Botao>
-                <button
-                  type="button"
-                  onClick={() => definir("clienteId", "")}
-                  className="toque inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-ink-muted transition-colors duration-150 ease-quart hover:bg-sunken hover:text-ink"
-                >
-                  <Unlink aria-hidden className="size-4" strokeWidth={1.75} />
-                  Desvincular
-                </button>
-              </div>
+              <>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <Selo
+                    tom="marca"
+                    icone={<UserRound aria-hidden className="size-3.5" />}
+                  >
+                    Cadastro de {clienteVinculado.nome}
+                  </Selo>
+                  <Botao
+                    tamanho="sm"
+                    variante="terciaria"
+                    onClick={() =>
+                      setCadastro({ aberto: true, chave: `editar-${novoId()}` })
+                    }
+                  >
+                    Editar cadastro
+                  </Botao>
+                  <button
+                    type="button"
+                    onClick={() => definir("clienteId", "")}
+                    className="toque inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-ink-muted transition-colors duration-150 ease-quart hover:bg-sunken hover:text-ink"
+                  >
+                    <Unlink aria-hidden className="size-4" strokeWidth={1.75} />
+                    Desvincular
+                  </button>
+                </div>
+
+                {!pedido && ultimoPedido && valores.itens.length === 0 && (
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line pt-3">
+                    <p className="num min-w-0 text-label text-ink-muted">
+                      <span className="font-medium text-ink">
+                        Último pedido:
+                      </span>{" "}
+                      {rotuloDia(ultimoPedido.dataEntregaISO)} ·{" "}
+                      {resumoDosItens(ultimoPedido.itens, 2, { soNome: true })}{" "}
+                      · {formatarMoeda(ultimoPedido.total)}
+                    </p>
+                    <Botao
+                      tamanho="sm"
+                      onClick={() => repetir(ultimoPedido)}
+                      iconeInicial={
+                        <Repeat
+                          aria-hidden
+                          className="size-4"
+                          strokeWidth={1.75}
+                        />
+                      }
+                    >
+                      Repetir
+                    </Botao>
+                  </div>
+                )}
+
+                {!pedido && foraDoRepetir.length > 0 && (
+                  <p className="flex items-start gap-1.5 text-label text-attention">
+                    <TriangleAlert
+                      aria-hidden
+                      className="mt-0.5 size-4 shrink-0"
+                      strokeWidth={1.75}
+                    />
+                    <span className="min-w-0">
+                      {new Intl.ListFormat("pt-BR").format(foraDoRepetir)}{" "}
+                      {foraDoRepetir.length === 1
+                        ? "não está mais à venda e ficou fora."
+                        : "não estão mais à venda e ficaram fora."}
+                    </span>
+                  </p>
+                )}
+              </>
             ) : (
               <div className="space-y-2">
                 {sugestoesCliente.length > 0 && (
@@ -1208,7 +1336,35 @@ export function FormularioPedido({
             descricao="O preço entra congelado: mudar o produto depois não mexe neste pedido."
             recuado={false}
           >
-            <div className="lg:ml-8">
+            <div className="space-y-3 lg:ml-8">
+              {saindo.length > 0 && (
+                <div role="group" aria-labelledby={idSaindo}>
+                  <p
+                    id={idSaindo}
+                    className="text-label font-medium text-ink-muted"
+                  >
+                    Saindo bastante
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-2">
+                    {saindo.map((ficha) => (
+                      <button
+                        key={ficha.id}
+                        type="button"
+                        onClick={() => adicionarFicha(ficha.id)}
+                        aria-label={`Adicionar ${ficha.nome}`}
+                        className="toque inline-flex max-w-full items-center gap-1.5 rounded-full border border-line-strong px-3 text-label font-medium text-ink transition-colors duration-150 ease-quart hover:bg-sunken"
+                      >
+                        <Plus
+                          aria-hidden
+                          className="size-4 shrink-0 text-brand-ink"
+                          strokeWidth={2}
+                        />
+                        <span className="truncate">{ficha.nome}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <BuscaItem
                 rotulo="Adicionar produto"
                 placeholder="Buscar produto"
@@ -1285,6 +1441,8 @@ export function FormularioPedido({
                         precoUnitario={linha.precoUnitario}
                         subtotal={derivado.linhas[indice]?.subtotal ?? 0}
                         precoDeHoje={oferecer ? precoDaFicha : undefined}
+                        nota={linha.observacao}
+                        aoMudarNota={(nota) => mudarNota(linha.chave, nota)}
                         aoMudarQuantidade={(valor) =>
                           mudarLinha(linha.chave, valor)
                         }

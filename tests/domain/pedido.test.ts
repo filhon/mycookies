@@ -14,6 +14,8 @@ import {
   escolhasCompletas,
   esperaDoCardapio,
   filtrarPedidos,
+  itensParaRepetir,
+  maisPedidos,
   ofereceOPrecoDeHoje,
   passouDoDia,
   podeIrPara,
@@ -879,5 +881,138 @@ describe("repassesFeitos", () => {
 
   it("o que ainda não foi acertado não aparece", () => {
     expect(repassesFeitos([AGENDA[3]!])).toEqual([]);
+  });
+});
+
+describe("maisPedidos", () => {
+  const pedido = (status: StatusPedido, ...itens: [string, number][]) => ({
+    status,
+    itens: itens.map(([fichaTecnicaId, quantidade]) => ({
+      fichaTecnicaId,
+      quantidade,
+    })),
+  });
+
+  it("ordena por unidades somadas entre os pedidos", () => {
+    expect(
+      maisPedidos([
+        pedido("CONFIRMADO", ["brownie", 2], ["cookie", 6]),
+        pedido("ORCAMENTO", ["bolo", 1], ["cookie", 12]),
+        pedido("ENTREGUE", ["brownie", 3]),
+      ]),
+    ).toEqual(["cookie", "brownie", "bolo"]);
+  });
+
+  it("deixa o cancelado de fora", () => {
+    expect(
+      maisPedidos([
+        pedido("CANCELADO", ["bolo", 50]),
+        pedido("CONFIRMADO", ["cookie", 1]),
+      ]),
+    ).toEqual(["cookie"]);
+  });
+
+  it("sem pedidos, nada", () => {
+    expect(maisPedidos([])).toEqual([]);
+  });
+});
+
+describe("itensParaRepetir", () => {
+  const ficha = (
+    id: string,
+    precoVenda: number,
+    custoUnitario: number,
+    extra: Partial<Parameters<typeof itensParaRepetir>[1][number]> = {},
+  ) => ({
+    id,
+    nome: id,
+    ativo: true,
+    tipo: "SIMPLES" as const,
+    custoUnitario,
+    precificacao: { precoVenda },
+    ...extra,
+  });
+
+  it("repete com o preço e o custo de hoje, e a nota junto", () => {
+    const { entram, fora } = itensParaRepetir(
+      {
+        itens: [
+          {
+            fichaTecnicaId: "bolo",
+            nomeSnapshot: "Bolo antigo",
+            quantidade: 2,
+            observacao: "Feliz 30 anos",
+          },
+        ],
+      },
+      [ficha("bolo", 9000, 3100)],
+    );
+    expect(fora).toEqual([]);
+    expect(entram).toEqual([
+      {
+        fichaTecnicaId: "bolo",
+        nomeSnapshot: "bolo",
+        quantidade: 2,
+        precoUnitario: 9000,
+        custoUnitarioSnapshot: 3100,
+        custoDoKit: { custoUnitario: 3100, custoEscolhas: 0 },
+        escolhas: [],
+        observacao: "Feliz 30 anos",
+      },
+    ]);
+  });
+
+  it("deixa fora o que não está mais à venda, pelo nome", () => {
+    const { entram, fora } = itensParaRepetir(
+      {
+        itens: [
+          {
+            fichaTecnicaId: "arquivada",
+            nomeSnapshot: "Brownie",
+            quantidade: 1,
+          },
+          { fichaTecnicaId: "parada", nomeSnapshot: "Torta", quantidade: 1 },
+          { fichaTecnicaId: "cookie", nomeSnapshot: "Cookie", quantidade: 6 },
+        ],
+      },
+      [ficha("parada", 100, 50, { ativo: false }), ficha("cookie", 690, 441)],
+    );
+    expect(fora).toEqual(["Brownie", "Torta"]);
+    expect(entram.map((item) => item.fichaTecnicaId)).toEqual(["cookie"]);
+  });
+
+  it("no combo, refaz o custo com a base e as receitas de hoje", () => {
+    const escolha = (fichaTecnicaId: string, custo: number): EscolhaFeita => ({
+      fichaTecnicaId,
+      nomeSnapshot: fichaTecnicaId,
+      quantidade: 1,
+      custoUnitarioSnapshot: custo,
+    });
+    const { entram } = itensParaRepetir(
+      {
+        itens: [
+          {
+            fichaTecnicaId: "dupla",
+            nomeSnapshot: "Dupla",
+            quantidade: 3,
+            escolhas: [escolha("nutella", 500), escolha("sumiu", 400)],
+          },
+        ],
+      },
+      [
+        ficha("dupla", 1500, 1000, {
+          tipo: "KIT",
+          custoEscolhas: 800,
+          escolhas: [{ categoria: "Cookie", quantidade: 2 }],
+        }),
+        ficha("nutella", 800, 520),
+      ],
+    );
+    // Base 1000 − 800 = 200; nutella pelo custo de hoje (520), a que sumiu
+    // pelo gravado (400).
+    expect(entram[0]?.custoUnitarioSnapshot).toBe(200 + 520 + 400);
+    expect(entram[0]?.escolhas.map((e) => e.custoUnitarioSnapshot)).toEqual([
+      520, 400,
+    ]);
   });
 });

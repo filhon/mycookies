@@ -9,7 +9,8 @@ import { formatarMoeda } from "@/lib/domain/money";
 import type { Centavos, EscolhaDoKit, EscolhaFeita } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
-const CLASSES_PASSO = cn(
+/** O −/+ de 44px: o mesmo aqui e na quantidade da linha (spec 078). */
+export const CLASSES_PASSO = cn(
   "toque flex items-center justify-center rounded-md border border-line-strong text-ink",
   "transition-colors duration-150 ease-quart hover:bg-sunken",
   "disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent",
