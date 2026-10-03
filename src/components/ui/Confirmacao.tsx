@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Botao } from "./Botao";
 
 /**
@@ -18,6 +18,7 @@ export function Confirmacao({
   aoConfirmar,
   aoCancelar,
   carregandoConfirmar = false,
+  children,
 }: {
   aberto: boolean;
   titulo: string;
@@ -28,6 +29,8 @@ export function Confirmacao({
   aoCancelar: () => void;
   /** A confirmação chama um servidor que ainda não respondeu: carrega o botão em vez de fechar cedo. */
   carregandoConfirmar?: boolean;
+  /** Uma escolha que a confirmação pergunta, entre a descrição e os botões. */
+  children?: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
 
@@ -55,6 +58,7 @@ export function Confirmacao({
       <p id="confirmacao-descricao" className="mt-2 text-body text-ink-muted">
         {descricao}
       </p>
+      {children && <div className="mt-4">{children}</div>}
       <div className="mt-5 flex gap-3">
         <Botao
           autoFocus

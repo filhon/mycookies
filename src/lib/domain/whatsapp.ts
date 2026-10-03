@@ -2,7 +2,12 @@ import type { Centavos, DataISO } from "@/lib/types";
 import { rotuloDiaPorExtenso } from "./datas";
 import { formatarMoeda } from "./money";
 import { brCodePix, type DadosPix } from "./pix";
-import { nomeComEscolhas, quantidadeEmTexto, subtotalDoItem } from "./pedido";
+import {
+  faltaPagar,
+  nomeComEscolhas,
+  quantidadeEmTexto,
+  subtotalDoItem,
+} from "./pedido";
 
 /**
  * O caminho do pedido até a conversa em que ele nasceu.
@@ -86,6 +91,8 @@ export interface ResumoParaCliente {
    */
   formaPix?: DadosPix;
   pago: boolean;
+  /** O sinal já recebido (`#d279`): o resumo diz quanto falta, e o Pix é disso. */
+  sinal?: Centavos;
 }
 
 /** 'Ana Beatriz' → 'Ana'. É como ela cumprimenta na conversa. */
@@ -103,12 +110,17 @@ export function mensagemDeCobranca(pedido: {
   clienteNome: string;
   dataEntregaISO: DataISO;
   total: Centavos;
+  sinal?: { valor: Centavos } | null;
 }): string {
   const nome = primeiroNome(pedido.clienteNome);
   // '2026-09-27' → '27/9': é como se escreve o dia numa conversa.
   const [, mes, dia] = pedido.dataEntregaISO.split("-").map(Number);
   const oi = nome ? `Oi, ${nome}!` : "Oi!";
-  return `${oi} Passando pra lembrar do pedido de ${dia}/${mes}, ${formatarMoeda(pedido.total)}. Obrigada!`;
+  // Com sinal, cobra o que falta, e diz que o sinal já entrou (`#d279`).
+  const quanto = pedido.sinal
+    ? `: o sinal de ${formatarMoeda(pedido.sinal.valor)} já entrou, faltam ${formatarMoeda(faltaPagar({ ...pedido, pago: false }))}`
+    : `, ${formatarMoeda(pedido.total)}`;
+  return `${oi} Passando pra lembrar do pedido de ${dia}/${mes}${quanto}. Obrigada!`;
 }
 
 /**
@@ -121,6 +133,10 @@ export function mensagemDeCobranca(pedido: {
  */
 export function mensagemDoPedido(resumo: ResumoParaCliente): string {
   const nome = primeiroNome(resumo.clienteNome);
+  const falta = faltaPagar({
+    ...resumo,
+    sinal: resumo.sinal ? { valor: resumo.sinal } : null,
+  });
 
   const itens = resumo.itens.map(
     (item) =>
@@ -156,6 +172,11 @@ export function mensagemDoPedido(resumo: ResumoParaCliente): string {
     // Linha própria, e não um caso dentro da linha da forma: duas afirmações
     // independentes valem mais que uma frase com dois estados dentro.
     ...(resumo.pago ? ["Já está pago. Obrigada!"] : []),
+    ...(!resumo.pago && resumo.sinal
+      ? [
+          `Sinal recebido: ${formatarMoeda(resumo.sinal)}. Falta: ${formatarMoeda(falta)}.`,
+        ]
+      : []),
   ];
 
   // Os dados para pagar são bloco próprio, e só enquanto há o que pagar: chave
@@ -164,10 +185,10 @@ export function mensagemDoPedido(resumo: ResumoParaCliente): string {
   // para a cliente copiar sem levar texto junto (`#d278`).
   const instrucoes = resumo.formaInstrucoes?.trim();
   const pix =
-    resumo.formaPix && resumo.total > 0
+    resumo.formaPix && falta > 0
       ? brCodePix({
           ...resumo.formaPix,
-          valor: resumo.total,
+          valor: falta,
           identificador: resumo.codigo,
         })
       : undefined;

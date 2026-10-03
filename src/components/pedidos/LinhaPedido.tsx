@@ -11,7 +11,7 @@ import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Marcador } from "@/components/ui/Selo";
 import { SeloStatus } from "./SeloStatus";
 import { formatarMoeda } from "@/lib/domain/money";
-import { resumoDosItens } from "@/lib/domain/pedido";
+import { faltaPagar, resumoDosItens } from "@/lib/domain/pedido";
 import type { Pedido } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -93,6 +93,11 @@ export function LinhaPedido({
   const noPrejuizo = pedido.lucroEstimado < 0;
   const naoPago = pedido.status === "ENTREGUE" && !pedido.pago;
   const arranjo = arranjoDaMesa(comFicha);
+  // O sinal na linha enquanto falta o resto (`#d279`); cancelado não deve nada.
+  const sinal =
+    pedido.sinal && !pedido.pago && pedido.status !== "CANCELADO"
+      ? `Sinal ${formatarMoeda(pedido.sinal.valor)} · faltam ${formatarMoeda(faltaPagar(pedido))}`
+      : null;
 
   // Ícone e palavra, e não só o ocre: ele divide matiz com o âmbar.
   const faltaReceber = (
@@ -100,7 +105,14 @@ export function LinhaPedido({
       className="text-attention"
       icone={<HandCoins aria-hidden className="size-3.5" strokeWidth={1.75} />}
     >
-      Falta receber
+      {sinal ?? "Falta receber"}
+    </Marcador>
+  );
+  const comSinal = sinal && (
+    <Marcador
+      icone={<HandCoins aria-hidden className="size-3.5" strokeWidth={1.75} />}
+    >
+      {sinal}
     </Marcador>
   );
   const pago = (
@@ -153,6 +165,7 @@ export function LinhaPedido({
               {/* O marcador de pago é o que separa a agenda do caixa: sem ele,
                   "a receber" seria um número sem nenhuma linha que o explique. */}
               {!saiu && pedido.pago && pago}
+              {!saiu && comSinal}
               {/* Marcador, e não pílula, pela mesma razão do pago (spec 031). */}
               {pedido.origem === "CARDAPIO" && (
                 <Marcador
@@ -250,10 +263,10 @@ export function LinhaPedido({
           </div>
 
           <div className="min-w-0">
-            {(pedido.pago || naoPago) && (
+            {(pedido.pago || naoPago || sinal) && (
               <span className="sr-only">pagamento: </span>
             )}
-            {pedido.pago ? pago : naoPago && faltaReceber}
+            {pedido.pago ? pago : naoPago ? faltaReceber : comSinal}
           </div>
 
           <p className="text-right">

@@ -33,6 +33,7 @@ import {
   agruparPorEntrega,
   aReceber,
   ehConcluido,
+  faltaPagar,
   filtrarPedidos,
   passouDoDia,
   somaDoDia,
@@ -671,7 +672,7 @@ function linhaDeContagem(vista: Vista, pedidos: Pedido[]): string {
       return `${n} ${n === 1 ? "orçamento" : "orçamentos"}`;
     case "me-devem":
       if (n === 0) return "nenhum pedido";
-      return `${n} ${n === 1 ? "pedido" : "pedidos"} · ${formatarMoeda(pedidos.reduce((soma, pedido) => soma + pedido.total, 0))}`;
+      return `${n} ${n === 1 ? "pedido" : "pedidos"} · ${formatarMoeda(pedidos.reduce((soma, pedido) => soma + faltaPagar(pedido), 0))}`;
     case "ja-sairam":
       if (n === 0) return "nenhum pedido";
       return n === 1 ? "o mais recente" : `os ${n} mais recentes`;

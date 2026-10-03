@@ -42,6 +42,7 @@ import {
   Seletor,
 } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
+import { Confirmacao } from "@/components/ui/Confirmacao";
 import { Pilulas } from "@/components/ui/Pilulas";
 import { Selo } from "@/components/ui/Selo";
 import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
@@ -60,7 +61,9 @@ import {
   cargaDoDia,
   custoDoComboMontado,
   derivarPedido,
+  erroDoTotalComSinal,
   escolhasCompletas,
+  faltaPagar,
   FLUXO_PEDIDO,
   itensParaRepetir,
   maisPedidos,
@@ -79,16 +82,20 @@ import {
 import {
   arquivarPedido,
   atualizarPedido,
+  cancelarPedidoComSinal,
   consultaPedidosDaCliente,
   criarPedido,
   desfazerPagamento,
+  desfazerSinal,
   marcarPedidoPago,
   mudarStatusPedido,
+  registrarSinal,
   type DadosPedido,
   type ItemDoPedido,
 } from "@/lib/firebase/mutations/pedidos";
 import {
   competenciaDeISO,
+  dataISODe,
   diaVizinho,
   rotuloDia,
   rotuloDiaCurto,
@@ -364,6 +371,11 @@ export function FormularioPedido({
   const [falha, setFalha] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [confirmandoArquivo, setConfirmandoArquivo] = useState(false);
+  /** Cancelar com sinal pergunta o destino dele (`#d280`); "ficou" é o padrão. */
+  const [cancelandoComSinal, setCancelandoComSinal] = useState(false);
+  const [destinoDoSinal, setDestinoDoSinal] = useState<"FICOU" | "DEVOLVI">(
+    "FICOU",
+  );
   const [cadastro, setCadastro] = useState<{ aberto: boolean; chave: string }>({
     aberto: false,
     chave: "fechado",
@@ -493,6 +505,12 @@ export function FormularioPedido({
     ajudante ? null : competenciaPagamento,
   );
   const contextoPagamento = pagamento.contexto;
+  // O mês do sinal, que pode não ser o do pagamento: desfazer o sinal (e
+  // devolvê-lo ao cancelar) mexe nele. Registrar usa o do dia escolhido.
+  const pagamentoDoSinal = useContextoPagamento(
+    contaId,
+    ajudante ? null : (pedido?.sinal?.competencia ?? null),
+  );
 
   /** Os agregados da cliente só andam quando o pedido aponta para um cadastro. */
   const clienteDoPedido = clienteVinculado
@@ -522,6 +540,13 @@ export function FormularioPedido({
     desconto: valores.desconto,
     taxaEntrega,
     forma,
+    // Com sinal, a taxa é a dos dois pagamentos, como a gravada (`#d279`).
+    sinal: pedido?.sinal,
+  });
+  const faltaNaTela = faltaPagar({
+    pago: false,
+    total: derivado.total,
+    sinal: pedido?.sinal,
   });
 
   // A mesma ficha não entra duas vezes — exceto o combo à escolha, em que
@@ -815,6 +840,7 @@ export function FormularioPedido({
       formaInstrucoes: forma?.instrucoes,
       formaPix: forma?.pix,
       pago: salvo.pago,
+      sinal: salvo.sinal?.valor,
     };
   }
 
@@ -878,8 +904,19 @@ export function FormularioPedido({
       if (!completas) errosEscolha[indice] = fraseDoQueFalta(faltam);
     });
 
-    if (!resultado.success || Object.keys(errosEscolha).length > 0) {
-      setErros(resultado.success ? {} : errosPorCampo(resultado.error));
+    // O pedido com sinal não fica menor que ele (`#d279`): a frase vai na
+    // lista de itens, que é onde ela ajusta.
+    const erroDoSinal = erroDoTotalComSinal(derivado.total, pedido?.sinal);
+
+    if (
+      !resultado.success ||
+      Object.keys(errosEscolha).length > 0 ||
+      erroDoSinal
+    ) {
+      setErros({
+        ...(resultado.success ? {} : errosPorCampo(resultado.error)),
+        ...(erroDoSinal ? { itens: erroDoSinal } : {}),
+      });
       setErrosItens({
         ...(resultado.success ? {} : errosDeLinha(resultado.error, "itens")),
         ...errosEscolha,
@@ -938,6 +975,78 @@ export function FormularioPedido({
       setFalha(
         "Não foi possível marcar como pago agora. Tente de novo em instantes.",
       );
+      setSalvando(false);
+    }
+  }
+
+  /** Rejeita na falha, para o bloco manter o valor escrito. */
+  async function registrarOSinal(valor: Centavos) {
+    if (!pedido) return;
+    setFalha(null);
+    setSalvando(true);
+    try {
+      await registrarSinal(
+        contaId,
+        pedido,
+        valor,
+        pagoEmISO,
+        formas,
+        contextoPagamento,
+      );
+    } catch (erro) {
+      setFalha(
+        "Não foi possível registrar o sinal agora. Tente de novo em instantes.",
+      );
+      throw erro;
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function desfazerOSinal() {
+    if (!pedido) return;
+    setFalha(null);
+    setSalvando(true);
+    try {
+      await desfazerSinal(contaId, pedido, formas, pagamentoDoSinal.contexto);
+    } catch {
+      setFalha(
+        "Não foi possível desfazer o sinal agora. Tente de novo em instantes.",
+      );
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  /**
+   * Cancelar com sinal (`#d280`): o pagamento do resto, se houver, sai antes,
+   * como em `mover`; depois o sinal fica ou é devolvido.
+   */
+  async function cancelarComSinal() {
+    if (!pedido) return;
+    setFalha(null);
+    setSalvando(true);
+    try {
+      if (pedido.pago) {
+        await desfazerPagamento(
+          contaId,
+          pedido,
+          contextoPagamento,
+          clienteDoPedido,
+        );
+      }
+      await cancelarPedidoComSinal(
+        contaId,
+        { ...pedido, status, pago: false },
+        destinoDoSinal,
+        formas,
+        pagamentoDoSinal.contexto,
+      );
+      setStatus("CANCELADO");
+      setCancelandoComSinal(false);
+    } catch {
+      setFalha("Não foi possível cancelar o pedido agora.");
+    } finally {
       setSalvando(false);
     }
   }
@@ -1689,12 +1798,12 @@ export function FormularioPedido({
 
             {/* O Pix com o valor da tela, como o resumo do WhatsApp (`#d278`):
               só no pedido gravado, que tem código, e enquanto há o que pagar. */}
-            {pedido && !pedido.pago && forma?.pix && derivado.total > 0 && (
+            {pedido && !pedido.pago && forma?.pix && faltaNaTela > 0 && (
               <BotaoCopiar
-                rotulo={`Copiar o Pix de ${formatarMoeda(derivado.total)}`}
+                rotulo={`Copiar o Pix de ${formatarMoeda(faltaNaTela)}`}
                 texto={brCodePix({
                   ...forma.pix,
-                  valor: derivado.total,
+                  valor: faltaNaTela,
                   identificador: pedido.codigo,
                 })}
               />
@@ -1721,8 +1830,11 @@ export function FormularioPedido({
                 aoMudarData={setPagoEmISO}
                 aoPagar={() => void pagar()}
                 aoDesfazer={() => void desfazer()}
+                aoRegistrarSinal={registrarOSinal}
+                aoDesfazerSinal={() => void desfazerOSinal()}
                 ocupado={salvando}
                 semAgregado={pagamento.carregando}
+                semAgregadoDoSinal={pagamentoDoSinal.carregando}
                 primario={passoEhPrimario && passo === "RECEBER"}
               />
             )}
@@ -1791,7 +1903,11 @@ export function FormularioPedido({
                     variante="perigo"
                     tamanho="sm"
                     disabled={salvando}
-                    onClick={() => void mover("CANCELADO")}
+                    onClick={() => {
+                      if (!pedido.sinal) return void mover("CANCELADO");
+                      setDestinoDoSinal("FICOU");
+                      setCancelandoComSinal(true);
+                    }}
                     iconeInicial={
                       <Ban aria-hidden className="size-4" strokeWidth={1.75} />
                     }
@@ -1843,6 +1959,35 @@ export function FormularioPedido({
           hoje={hoje}
           pedido={{ id: pedido.id, clienteNome: pedido.clienteNome }}
         />
+      )}
+
+      {pedido?.sinal && (
+        <Confirmacao
+          aberto={cancelandoComSinal}
+          titulo="Cancelar o pedido?"
+          descricao={`Ele sai da agenda.${pedido.pago ? " O pagamento do resto é desfeito antes." : ""} E o sinal de ${formatarMoeda(pedido.sinal.valor)} que ela pagou?`}
+          rotuloCancelar="Deixar como está"
+          rotuloConfirmar="Cancelar o pedido"
+          carregandoConfirmar={salvando}
+          aoCancelar={() => setCancelandoComSinal(false)}
+          aoConfirmar={() => void cancelarComSinal()}
+        >
+          <fieldset className="grid gap-2">
+            <legend className="sr-only">O que aconteceu com o sinal</legend>
+            <Escolha
+              ativo={destinoDoSinal === "FICOU"}
+              titulo="Ficou com o sinal"
+              explicacao={`O caixa não muda: os ${formatarMoeda(pedido.sinal.valor)} continuam como receita sua.`}
+              aoEscolher={() => setDestinoDoSinal("FICOU")}
+            />
+            <Escolha
+              ativo={destinoDoSinal === "DEVOLVI"}
+              titulo="Devolvi o sinal"
+              explicacao={`Os ${formatarMoeda(pedido.sinal.valor)} saem do caixa do dia ${rotuloDia(dataISODe(pedido.sinal.pagoEm.toDate()))}.`}
+              aoEscolher={() => setDestinoDoSinal("DEVOLVI")}
+            />
+          </fieldset>
+        </Confirmacao>
       )}
 
       {guarda.dialogo}

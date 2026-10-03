@@ -8350,6 +8350,13 @@ MEI e "a receber" estão certos; só a decomposição do "rendeu" fica torta no 
 da quitação. Consertar pede um campo no agregado (os sinais do mês), que é schema e fica para
 quando incomodar.
 
+**Nas telas (081-B).** O dia do sinal é o mesmo campo "Dia em que o dinheiro entrou" do bloco
+Pagamento, e não um segundo campo de data: um dia só por vez, e o contexto do mês que a tela já
+assina serve aos dois. Desfazer o sinal assina o mês dele à parte (`pedido.sinal.competencia`),
+que pode não ser o do dia escolhido. O formulário do sinal troca de lugar com "Marcar como pago"
+enquanto está aberto, para o âmbar continuar um só (`#d271`). Na ficha, "Recebi" vira "Recebi o
+resto". O Pix copia e cola e a cobrança do WhatsApp passam a ser do que falta.
+
 ## D280 · Cancelar com sinal pergunta o destino dele, e "ficou" é o padrão
 
 **Status:** vigente · decidida em 2026-10-03, spec `081-o-sinal.md` (sessão A).
@@ -8359,6 +8366,11 @@ quando incomodar.
 desfazer o pagamento antes). "Ficou com o sinal" não mexe no caixa: o sinal é receita dela, e o
 pedido cancelado continua com o campo. "Devolvi o sinal" é `desfazerSinal`. O padrão da
 confirmação (081-B) é "Ficou", o combinado comum na confeitaria.
+
+**Na tela (081-B).** A pergunta mora na `Confirmacao` (modal, porque cancelar é destrutivo), que
+ganhou `children` para as duas escolhas entre a descrição e os botões; só o pedido com sinal a
+abre, o sem sinal cancela como antes. Pedido pago com sinal desfaz o pagamento do resto primeiro,
+como o cancelamento de pedido pago sempre fez.
 
 **Consequência.** Pedido cancelado com sinal fica fora de "a receber" como todo cancelado, e o
 sinal continua no caixa e no relatório do MEI do mês dele.

@@ -110,14 +110,14 @@ transacaoId: string; custoTaxa: Centavos }`**. Um só: o caso real é sinal e re
 
 ## Critérios de aceite
 
-- [ ] Aprovação registrada antes do código.
-- [ ] Um sinal só; transação própria; `writeBatch`, sem transação.
-- [ ] O pedido no agregado continua na quitação; o caixa conta o dinheiro quando entrou.
-- [ ] "A receber" desconta o sinal em toda tela.
-- [ ] Cancelar pergunta o destino do sinal.
-- [ ] "Recalcular o mês" bate nos dois meses.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`, nas duas sessões.
-- [ ] `#d279` e `#d280` escritos; `ESTADO.md` atualizado.
+- [x] Aprovação registrada antes do código.
+- [~] Um sinal só; transação própria; `writeBatch`, sem transação.
+- [x] O pedido no agregado continua na quitação; o caixa conta o dinheiro quando entrou.
+- [x] "A receber" desconta o sinal em toda tela.
+- [x] Cancelar pergunta o destino do sinal.
+- [~] "Recalcular o mês" bate nos dois meses.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`, nas duas sessões.
+- [x] `#d279` e `#d280` escritos; `ESTADO.md` atualizado.
 
 ---
 

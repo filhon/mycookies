@@ -44,8 +44,10 @@ import { brCodePix } from "@/lib/domain/pix";
 import {
   ACAO_STATUS_PEDIDO,
   derivarPedido,
+  faltaPagar,
   proximoPasso,
   quantidadeEmTexto,
+  quitacao,
   resumoDasEscolhas,
 } from "@/lib/domain/pedido";
 import {
@@ -263,14 +265,18 @@ export function FichaDoPedido({
         formaInstrucoes: forma?.instrucoes,
         formaPix: forma?.pix,
         pago: pedido.pago,
+        sinal: pedido.sinal?.valor,
       });
 
   const endereco = pedido.entrega.endereco?.trim();
   const noPrejuizo = pedido.lucroEstimado < 0;
+  // Com sinal, a taxa do que falta: é o que este "Recebi" lança (`#d279`).
   const taxaDaEscolhida =
     escolherForma && formaParaPagar
-      ? derivadosCom(pedido, formaParaPagar).custoTaxaPagamento
+      ? quitacao({ ...pedido, ...derivadosCom(pedido, formaParaPagar) })
+          .custoTaxa
       : 0;
+  const falta = faltaPagar(pedido);
 
   const primario = receber ? (
     <Botao
@@ -284,7 +290,7 @@ export function FichaDoPedido({
         <BanknoteArrowUp aria-hidden className="size-5" strokeWidth={1.75} />
       }
     >
-      Recebi
+      {pedido.sinal ? "Recebi o resto" : "Recebi"}
     </Botao>
   ) : proximo ? (
     <Botao
@@ -480,13 +486,13 @@ export function FichaDoPedido({
 
           {/* A cobrança com o Pix na mão (`#d278`): colado na conversa, ou
                 onde ela quiser, já com o valor e o código do pedido. */}
-          {!pedido.pago && forma?.pix && pedido.total > 0 && (
+          {!pedido.pago && forma?.pix && falta > 0 && (
             <div className="mt-3">
               <BotaoCopiar
-                rotulo={`Copiar o Pix de ${formatarMoeda(pedido.total)}`}
+                rotulo={`Copiar o Pix de ${formatarMoeda(falta)}`}
                 texto={brCodePix({
                   ...forma.pix,
-                  valor: pedido.total,
+                  valor: falta,
                   identificador: pedido.codigo,
                 })}
               />
@@ -668,6 +674,10 @@ function linhaDoDia(pedido: Pedido, hoje: DataISO): string {
 }
 
 function linhaDoPagamento(pedido: Pedido, hoje: DataISO): string {
+  if (!pedido.pago && pedido.sinal) {
+    const dia = dataISODe(pedido.sinal.pagoEm.toDate());
+    return `sinal de ${formatarMoeda(pedido.sinal.valor)} ${dia === hoje ? "hoje" : `em ${rotuloDia(dia)}`} · faltam ${formatarMoeda(faltaPagar(pedido))}`;
+  }
   if (!pedido.pago) return "ainda não pago";
   if (!pedido.pagoEm) return "pago";
   const dia = dataISODe(pedido.pagoEm.toDate());
@@ -681,6 +691,7 @@ function derivadosCom(pedido: Pedido, forma: FormaPagamento) {
     desconto: pedido.desconto,
     taxaEntrega: pedido.entrega.taxa,
     forma,
+    sinal: pedido.sinal,
   });
   return {
     formaPagamentoId: forma.id,

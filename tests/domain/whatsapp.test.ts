@@ -207,6 +207,23 @@ describe("mensagemDoPedido", () => {
     expect(texto).not.toContain("br.gov.bcb.pix");
   });
 
+  it("com sinal, diz o que entrou e o que falta, e o Pix é do que falta", () => {
+    const texto = mensagemDoPedido({
+      ...PEDIDO,
+      formaPix: DADOS_PIX,
+      sinal: 12000,
+    });
+
+    expect(texto).toContain(
+      `Pagamento: Cartão de crédito
+Sinal recebido: ${dinheiro(12000)}. Falta: ${dinheiro(12000)}.`,
+    );
+    expect(texto).toContain("5406120.00");
+    expect(
+      mensagemDoPedido({ ...PEDIDO, sinal: 12000, pago: true }),
+    ).not.toContain("Sinal recebido");
+  });
+
   it("diz a nota do item entre parênteses, depois do nome", () => {
     const texto = mensagemDoPedido({
       ...PEDIDO,
@@ -339,6 +356,19 @@ describe("mensagemDeCobranca", () => {
       }),
     ).toBe(
       `Oi, Ana! Passando pra lembrar do pedido de 27/9, ${dinheiro(1300)}. Obrigada!`,
+    );
+  });
+
+  it("com sinal, cobra o que falta", () => {
+    expect(
+      mensagemDeCobranca({
+        clienteNome: "Ana",
+        dataEntregaISO: "2026-09-27",
+        total: 10000,
+        sinal: { valor: 5000 },
+      }),
+    ).toBe(
+      `Oi, Ana! Passando pra lembrar do pedido de 27/9: o sinal de ${dinheiro(5000)} já entrou, faltam ${dinheiro(5000)}. Obrigada!`,
     );
   });
 
