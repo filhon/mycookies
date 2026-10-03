@@ -37,10 +37,7 @@ export function DozeMeses({
   }
 
   return (
-    <section
-      aria-labelledby="doze-meses"
-      className="rounded-lg border border-line bg-surface px-4 py-5 lg:px-5"
-    >
+    <section aria-labelledby="doze-meses">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 id="doze-meses" className="text-subheading font-semibold text-ink">
           O que entrou nos últimos 12 meses
@@ -50,7 +47,7 @@ export function DozeMeses({
         </p>
       </div>
 
-      <ul role="list" className="mt-4 flex">
+      <ul role="list" className="mt-3 flex">
         {meses.map((mes) => {
           const selecionado = mes.competencia === aberto;
           const leitura = leituraDoMes(mes);

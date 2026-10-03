@@ -7887,3 +7887,71 @@ achar o gás do mês nem ver quais lançamentos somavam "Despesa fixa".
 
 **Consequência.** Se a descrição de venda mudar de forma, o teste quebra antes da tela. Os
 lançamentos antigos com descrição editada continuam lidos como antes.
+
+---
+
+## D267 · Cartão para o mês e a meta; seção no papel para o resto; duas colunas no largo
+
+**Status:** vigente · decidida em 2026-10-02, spec `073-o-caixa-com-peso.md`
+
+**Contexto.** `/financeiro` empilhava sete caixas com a mesma borda, o mesmo raio e o mesmo
+respiro, e no desktop largo a coluna única deixava metade da tela vazia. No ranking, o fundo
+`sunken` atrás da linha, na largura da receita, lia como linha selecionada.
+
+**Decisão.**
+
+- **Cartão** só em `ResultadoDoMes` e `BlocoMeta`. O resto é **seção no papel**: `h2` em
+  `subheading` sobre o `--canvas`, sem caixa, e a lista em `--surface` com divisórias. A lista
+  mantém o filete e o raio, como "Esperando você" e a agenda da Hoje (`#d213`): superfície sem
+  contorno sobre o papel claro não tem borda que se leia. O que não é linha (os dois gráficos, a
+  busca e as pílulas da lista, a nota do ranking) fica direto no papel. 32 px entre grupos, 16 px
+  dentro ("Até o fim do mês" e "Contas que repetem").
+- **A pilha**, até `xl`: o mês, até o fim do mês, a meta, os lançamentos, o movimento, o ranking
+  e as saídas, os doze meses. Os lançamentos sobem para o quarto lugar.
+- **A partir de `xl`**, `minmax(0,7fr) minmax(0,5fr)`, `gap-6`: à esquerda "O mês" (o mês, até o
+  fim do mês, os lançamentos), à direita "Em perspectiva" (a meta, os doze meses, o movimento, o
+  ranking e as saídas), as duas como `<section>` com rótulo escondido, a da direita sem
+  `sticky`. Um DOM só, como a Hoje: as seções são `contents` na pilha e cada filho leva `order-N`
+  (`xl:order-none`). O teclado e o leitor de tela seguem o DOM, coluna por coluna; na pilha isso
+  quer dizer que a meta é lida depois dos lançamentos, embora apareça antes. A tela continua no
+  grupo `(coluna)`.
+- **O traço**: a medida do ranking e de "Para onde o dinheiro foi" é um traço de 4 px sob o
+  nome, trilha `--surface-sunken` e preenchimento `--ink-subtle`, raio cheio, na largura da
+  coluna do nome (`Traco`, em `ProdutosDoMes`). A linha fica em `--surface`.
+- **O pé** perde o parágrafo que explicava o agregado; fica o botão terciário "Refazer as contas
+  do mês" com o aviso `aria-live`. O `AgregadoAtrasado` continua com "Recalcular o mês".
+
+**Diferente da spec.** A nota do ranking ("A sobra de cada produto…") saiu da faixa `sunken` de
+dentro da lista para o papel, e termina em "é o que o mês rendeu" no lugar de "a sobra do mês, lá
+em cima": no desktop o mês está na outra coluna.
+
+**Consequência.** O mês em branco ganha só o respiro novo; nele continua a pilha.
+
+---
+
+## D268 · O gráfico mede o que já passou e leva ao dia
+
+**Status:** vigente · decidida em 2026-10-02, spec `073-o-caixa-com-peso.md`
+
+**Decisão.**
+
+- **Mês corrente**: o eixo vai do dia 1 a `max(hoje, 7, último dia com movimento)`, preso ao
+  fim do mês, com o título "Movimento até hoje". O último dia com movimento é acréscimo à spec:
+  um lançamento com data adiante (o aluguel lançado no dia 2 para o dia 10) não pode sumir do
+  gráfico. Mês fechado ou futuro: o mês inteiro, "Movimento por dia".
+- **Altura**: 96 px com até 7 dias com movimento; 128 px (160 no `lg`) a partir de 8.
+- **Com até 10 colunas**, cada uma mostra o próprio número; acima disso, o 1, os múltiplos de 5
+  e o dia escolhido.
+- **Tocar num dia filtra a lista** por ele: `dia` entra em `FiltroDaLista` e casa com entrada e
+  saída; a pílula "1 de out. ×" aparece ao lado da categoria e a tela rola até a lista. O dia e a
+  categoria vivem juntos em `TelaFinanceiro`, presos ao mês. Dia sem lançamento também é botão,
+  e a lista diz "Nada lançado em 3 de out." com "Ver tudo".
+- **O alvo**: cada coluna é um `<button>` com o `sr-only` de antes como rótulo, `title` e
+  `aria-pressed`; o dia escolhido ganha fundo `sunken` e o número em 600. As colunas cobrem a
+  largura sem fresta, barra e número juntos, e por isso o toque cai sempre no dia mais próximo. A
+  sobreposição invisível de 44 px que a spec descrevia dá o mesmo resultado (uma partição pelo
+  ponto médio entre colunas), sem camada a mais; a coluna de um mês de 31 dias continua com
+  ~11 px de largura no celular, e o roteiro confere se isso basta.
+
+**Consequência.** Se o roteiro mostrar que a coluna estreita erra o dia, o próximo passo é um
+alvo maior que a coluna, não um gráfico mais largo.

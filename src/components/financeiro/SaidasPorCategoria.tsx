@@ -1,5 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import { Dinheiro } from "@/components/ui/Dinheiro";
+import { Traco } from "./ProdutosDoMes";
 import {
   ROTULO_CATEGORIA_TRANSACAO,
   saidasOrdenadas,
@@ -10,10 +11,10 @@ import type { CategoriaTransacao, Centavos } from "@/lib/types";
 /**
  * Para onde o dinheiro foi, do maior gasto para o menor.
  *
- * Lista com divisórias, e não grade de cartões: são linhas comparáveis, e a
- * barra atrás de cada uma é a comparação (`DESIGN.md`, Cartões). A barra é uma
- * medida em neutro, e não um alerta — comprar insumo é o negócio funcionando,
- * não um erro a ser pintado de vermelho.
+ * Seção no papel com lista com divisórias: são linhas comparáveis, e o traço
+ * sob cada nome é a comparação (`#d267`). O traço é uma medida em neutro, e não
+ * um alerta — comprar insumo é o negócio funcionando, não um erro a ser
+ * pintado de vermelho.
  *
  * Tocar numa linha filtra a lista do mês por ela (`#d266`): "Despesa fixa R$
  * 950,00" mostra quais lançamentos somam isso.
@@ -33,42 +34,35 @@ export function SaidasPorCategoria({
   const maior = linhas[0]?.valor ?? 0;
 
   return (
-    <section
-      aria-labelledby="saidas-por-categoria"
-      className="overflow-hidden rounded-lg border border-line bg-surface"
-    >
+    <section aria-labelledby="saidas-por-categoria">
       <h2
         id="saidas-por-categoria"
-        className="border-b border-line px-4 pb-3 pt-4 text-subheading font-semibold text-ink lg:px-5"
+        className="text-subheading font-semibold text-ink"
       >
         Para onde o dinheiro foi
       </h2>
 
-      <ul className="divide-y divide-line">
+      <ul className="mt-3 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
         {linhas.map((linha) => {
           const fatia = saidas > 0 ? (linha.valor / saidas) * 100 : 0;
 
           return (
-            <li key={linha.categoria} className="relative">
-              <span
-                aria-hidden
-                style={{
-                  width: `${maior > 0 ? (linha.valor / maior) * 100 : 0}%`,
-                }}
-                className="absolute inset-y-0 left-0 bg-sunken"
-              />
+            <li key={linha.categoria}>
               <button
                 type="button"
                 onClick={() => aoFiltrar(linha.categoria)}
-                className="relative flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:px-5"
+                className="flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:px-5"
               >
-                <span className="min-w-0 flex-1 text-body text-ink">
-                  <span className="truncate font-medium">
-                    {ROTULO_CATEGORIA_TRANSACAO[linha.categoria]}
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline text-body text-ink">
+                    <span className="min-w-0 truncate font-medium">
+                      {ROTULO_CATEGORIA_TRANSACAO[linha.categoria]}
+                    </span>
+                    <span className="num ml-2 text-label text-ink-muted">
+                      {formatarPercentual(fatia, 0)}
+                    </span>
                   </span>
-                  <span className="num ml-2 text-label text-ink-muted">
-                    {formatarPercentual(fatia, 0)}
-                  </span>
+                  <Traco fracao={maior > 0 ? linha.valor / maior : 0} />
                 </span>
                 <Dinheiro centavos={linha.valor} />
                 <ChevronRight

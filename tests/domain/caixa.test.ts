@@ -1412,7 +1412,12 @@ describe("filtrarLancamentos e agruparPorDia (#d266)", () => {
   ];
   const nomeDaForma = (id: string) => (id === "pix" ? "Pix" : undefined);
   const ids = (l: { id: string }[]) => l.map((x) => x.id);
-  const filtro = { tipo: "TUDO" as const, texto: "", categoria: null };
+  const filtro = {
+    tipo: "TUDO" as const,
+    texto: "",
+    categoria: null,
+    dia: null,
+  };
 
   it("sem filtro, tudo", () => {
     expect(ids(filtrarLancamentos(lista, filtro))).toEqual([
@@ -1444,6 +1449,17 @@ describe("filtrarLancamentos e agruparPorDia (#d266)", () => {
     expect(
       ids(filtrarLancamentos(lista, { ...filtro, categoria: "OUTRO" })),
     ).toEqual(["d"]);
+  });
+
+  it("o dia do gráfico casa com entrada e saída, e combina com a pílula (#d268)", () => {
+    const doDia1 = { ...filtro, dia: "2026-10-01" };
+    expect(ids(filtrarLancamentos(lista, doDia1))).toEqual(["b", "c", "d"]);
+    expect(
+      ids(filtrarLancamentos(lista, { ...doDia1, tipo: "ENTRADA" })),
+    ).toEqual(["c"]);
+    expect(
+      ids(filtrarLancamentos(lista, { ...filtro, dia: "2026-10-03" })),
+    ).toEqual([]);
   });
 
   it("agrupa por dia, do mais recente, com o saldo do dia", () => {

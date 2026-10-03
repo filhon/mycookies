@@ -117,11 +117,11 @@ export function ContasQueRepetem({
     <section
       id="contas-que-repetem"
       aria-labelledby="contas-que-repetem-titulo"
-      className="scroll-mt-24 overflow-hidden rounded-lg border border-line bg-surface"
+      className="scroll-mt-24"
     >
       <h2
         id="contas-que-repetem-titulo"
-        className="flex items-baseline justify-between gap-3 border-b border-line px-4 pb-3 pt-4 text-subheading font-semibold text-ink lg:px-5"
+        className="flex items-baseline justify-between gap-3 text-subheading font-semibold text-ink"
       >
         Contas que repetem
         {pendentes.length > 0 && (
@@ -131,7 +131,7 @@ export function ContasQueRepetem({
         )}
       </h2>
 
-      <ul className="divide-y divide-line">
+      <ul className="mt-3 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
         {linhas.map(({ conta, dataISO, criada }) => (
           <li
             key={conta.id}
@@ -188,7 +188,7 @@ export function ContasQueRepetem({
       </ul>
 
       {falha && (
-        <p role="alert" className="px-4 py-3 text-label text-negative lg:px-5">
+        <p role="alert" className="mt-2 text-label text-negative">
           {falha}
         </p>
       )}

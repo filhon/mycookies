@@ -37,69 +37,68 @@ export function AteOFimDoMes({
   const negativo = previsao.fechaEm < 0;
 
   return (
-    <section
-      aria-labelledby="ate-o-fim-do-mes"
-      className="overflow-hidden rounded-lg border border-line bg-surface"
-    >
+    <section aria-labelledby="ate-o-fim-do-mes">
       <h2
         id="ate-o-fim-do-mes"
-        className="px-4 pt-4 text-subheading font-semibold text-ink lg:px-5"
+        className="text-subheading font-semibold text-ink"
       >
         Até o fim de {rotuloMes(competencia)}
       </h2>
 
-      <ul className="mt-2 divide-y divide-line border-y border-line">
-        {previsao.deveEntrar > 0 && (
-          <Linha
-            href={
-              receber.entregues > 0 ? "/pedidos?vista=me-devem" : "/pedidos"
-            }
-            rotulo="Deve entrar"
-            valor={previsao.deveEntrar}
-            detalhe={detalheEntrar}
-            icone={
-              <ChevronRight
-                aria-hidden
-                className="size-5 text-ink-subtle"
-                strokeWidth={1.75}
-              />
-            }
-          />
-        )}
-        {previsao.deveSair > 0 && (
-          <Linha
-            href="#contas-que-repetem"
-            rotulo="Deve sair"
-            valor={previsao.deveSair}
-            detalhe={`${qtdContas} ${qtdContas === 1 ? "conta que repete" : "contas que repetem"}`}
-            icone={
-              <ArrowDown
-                aria-hidden
-                className="size-5 text-ink-subtle"
-                strokeWidth={1.75}
-              />
-            }
-          />
-        )}
-      </ul>
+      <div className="mt-3 overflow-hidden rounded-lg border border-line bg-surface">
+        <ul className="divide-y divide-line border-b border-line">
+          {previsao.deveEntrar > 0 && (
+            <Linha
+              href={
+                receber.entregues > 0 ? "/pedidos?vista=me-devem" : "/pedidos"
+              }
+              rotulo="Deve entrar"
+              valor={previsao.deveEntrar}
+              detalhe={detalheEntrar}
+              icone={
+                <ChevronRight
+                  aria-hidden
+                  className="size-5 text-ink-subtle"
+                  strokeWidth={1.75}
+                />
+              }
+            />
+          )}
+          {previsao.deveSair > 0 && (
+            <Linha
+              href="#contas-que-repetem"
+              rotulo="Deve sair"
+              valor={previsao.deveSair}
+              detalhe={`${qtdContas} ${qtdContas === 1 ? "conta que repete" : "contas que repetem"}`}
+              icone={
+                <ArrowDown
+                  aria-hidden
+                  className="size-5 text-ink-subtle"
+                  strokeWidth={1.75}
+                />
+              }
+            />
+          )}
+        </ul>
 
-      <p className="flex items-start gap-2 bg-sunken px-4 py-4 text-label text-ink lg:px-5">
-        {negativo && (
-          <TriangleAlert
-            aria-hidden
-            className="mt-0.5 size-4 shrink-0 text-attention"
-            strokeWidth={1.75}
-          />
-        )}
-        <span className="max-w-[60ch]">
-          Se tudo isso acontecer, o caixa fecha o mês em{" "}
-          <strong className="num whitespace-nowrap font-semibold">
-            {negativo ? "−" : ""}
-            {formatarMoeda(Math.abs(previsao.fechaEm))}
-          </strong>
-          {negativo ? ", no negativo." : "."}
-        </span>
-      </p>
+        <p className="flex items-start gap-2 bg-sunken px-4 py-4 text-label text-ink lg:px-5">
+          {negativo && (
+            <TriangleAlert
+              aria-hidden
+              className="mt-0.5 size-4 shrink-0 text-attention"
+              strokeWidth={1.75}
+            />
+          )}
+          <span className="max-w-[60ch]">
+            Se tudo isso acontecer, o caixa fecha o mês em{" "}
+            <strong className="num whitespace-nowrap font-semibold">
+              {negativo ? "−" : ""}
+              {formatarMoeda(Math.abs(previsao.fechaEm))}
+            </strong>
+            {negativo ? ", no negativo." : "."}
+          </span>
+        </p>
+      </div>
     </section>
   );
 }

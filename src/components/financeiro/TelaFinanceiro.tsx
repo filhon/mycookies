@@ -48,6 +48,7 @@ import type {
   CategoriaTransacao,
   CompetenciaMensal,
   ConfiguracaoGeral,
+  DataISO,
   Meta,
   Pedido,
   ResumoMensal,
@@ -264,7 +265,7 @@ export function TelaFinanceiro() {
   }
 
   const aoFimDoMes = temPrevisao && (
-    <>
+    <div className="flex flex-col gap-4">
       <AteOFimDoMes
         competencia={competencia}
         previsao={previsao}
@@ -278,22 +279,39 @@ export function TelaFinanceiro() {
         contextoMeta={contextoMeta}
         aoAbrir={abrirModelo}
       />
-    </>
+    </div>
   );
 
-  // A categoria de "Para onde o dinheiro foi" filtrando a lista, presa ao mês
-  // em que foi tocada: trocar de mês a solta sem efeito.
-  const [filtroCategoria, setFiltroCategoria] = useState<{
+  // A categoria de "Para onde o dinheiro foi" e o dia de "Movimento por dia"
+  // filtrando a lista, presos ao mês em que foram tocados: trocar de mês os
+  // solta sem efeito (`#d266`, `#d268`).
+  const [filtroDeFora, setFiltroDeFora] = useState<{
     competencia: CompetenciaMensal;
-    categoria: CategoriaTransacao;
+    categoria: CategoriaTransacao | null;
+    dia: DataISO | null;
   } | null>(null);
-  const categoria =
-    filtroCategoria?.competencia === competencia
-      ? filtroCategoria.categoria
-      : null;
+  const deFora =
+    filtroDeFora?.competencia === competencia
+      ? filtroDeFora
+      : { competencia, categoria: null, dia: null };
+
+  function filtrarDeFora(
+    mudanca: Partial<Pick<typeof deFora, "categoria" | "dia">>,
+  ) {
+    setFiltroDeFora({ ...deFora, ...mudanca });
+  }
 
   function filtrarPorCategoria(categoria: CategoriaTransacao) {
-    setFiltroCategoria({ competencia, categoria });
+    filtrarDeFora({ categoria });
+    rolarAteALista();
+  }
+
+  function filtrarPorDia(dia: DataISO) {
+    filtrarDeFora({ dia });
+    rolarAteALista();
+  }
+
+  function rolarAteALista() {
     document.getElementById(ID_LISTA_DO_MES)?.scrollIntoView({
       behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
         ? "auto"
@@ -370,7 +388,7 @@ export function TelaFinanceiro() {
           </div>
         </div>
       ) : !temMovimento ? (
-        <div className="mt-4 space-y-4">
+        <div className="mt-4 flex flex-col gap-8">
           {aoFimDoMes}
 
           {/* A meta vem antes do convite a lançar: começo de mês é exatamente
@@ -407,73 +425,117 @@ export function TelaFinanceiro() {
           </div>
         </div>
       ) : (
-        <div className="mt-4 space-y-4">
-          {divergente && (
-            <AgregadoAtrasado
-              entradasDaLista={conferencia.entradas}
-              saidasDaLista={conferencia.saidas}
-              parcelas={parcelas}
-              recalculando={recalculando}
-              aoRecalcular={() => void recalcular()}
-            />
-          )}
+        <div className="mt-4 flex flex-col gap-8">
+          {/* Uma estrutura só, dois arranjos (`#d267`, como a Hoje no `#d212`):
+              na pilha, o mês, até o fim do mês, a meta, os lançamentos, o
+              movimento, o ranking e os doze meses; a partir de `xl`, o mês em
+              movimento à esquerda e em perspectiva à direita, sem `sticky`. As
+              duas seções são `contents` na pilha, e o `order` intercala os
+              filhos; o leitor de tela e o teclado seguem o DOM, coluna por
+              coluna. */}
+          <div className="flex flex-col gap-8 xl:grid xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] xl:items-start xl:gap-6">
+            <section
+              aria-labelledby="caixa-o-mes"
+              className="contents xl:col-start-1 xl:row-start-1 xl:flex xl:flex-col xl:gap-8"
+            >
+              <h2 id="caixa-o-mes" className="sr-only">
+                O mês
+              </h2>
 
-          <ResultadoDoMes parcelas={parcelas} comparacao={comparacao} />
+              {divergente && (
+                <AgregadoAtrasado
+                  entradasDaLista={conferencia.entradas}
+                  saidasDaLista={conferencia.saidas}
+                  parcelas={parcelas}
+                  recalculando={recalculando}
+                  aoRecalcular={() => void recalcular()}
+                />
+              )}
 
-          {aoFimDoMes}
+              <div className="order-1 xl:order-none">
+                <ResultadoDoMes parcelas={parcelas} comparacao={comparacao} />
+              </div>
 
-          <BlocoMeta
-            competencia={competencia}
-            meta={meta.dado}
-            realizado={parcelas.entradas}
-            ticketMedio={ticketMedio}
-            deveEntrar={previsao.deveEntrar}
-            aoAbrir={abrirPainelMeta}
-          />
+              <div className="order-2 empty:hidden xl:order-none">
+                {aoFimDoMes}
+              </div>
 
-          {dozeMeses}
+              <div className="order-4 xl:order-none">
+                {/* Remonta a cada mês: trocar de mês limpa o filtro (`#d266`). */}
+                <ListaDoMes
+                  key={competencia}
+                  lancamentos={lancamentos.dados}
+                  competencia={competencia}
+                  formaPorId={formaPorId}
+                  categoria={deFora.categoria}
+                  aoTirarCategoria={() => filtrarDeFora({ categoria: null })}
+                  dia={deFora.dia}
+                  aoTirarDia={() => filtrarDeFora({ dia: null })}
+                  aoAbrir={abrirPainel}
+                />
+              </div>
+            </section>
 
-          <MovimentoPorDia competencia={competencia} porDia={parcelas.porDia} />
+            <section
+              aria-labelledby="caixa-em-perspectiva"
+              className="contents xl:col-start-2 xl:row-start-1 xl:flex xl:flex-col xl:gap-8"
+            >
+              <h2 id="caixa-em-perspectiva" className="sr-only">
+                Em perspectiva
+              </h2>
 
-          {/* Some sozinho em mês sem pedido pago: zero ali é ausência, e
-              ausência não vira linha de R$ 0,00. */}
-          <ProdutosDoMes produtos={parcelas.produtos} />
+              <div className="order-3 xl:order-none">
+                <BlocoMeta
+                  competencia={competencia}
+                  meta={meta.dado}
+                  realizado={parcelas.entradas}
+                  ticketMedio={ticketMedio}
+                  deveEntrar={previsao.deveEntrar}
+                  aoAbrir={abrirPainelMeta}
+                />
+              </div>
 
-          <SaidasPorCategoria
-            porCategoriaSaida={parcelas.porCategoriaSaida}
-            saidas={parcelas.saidas}
-            aoFiltrar={filtrarPorCategoria}
-          />
+              <div className="order-7 empty:hidden xl:order-none">
+                {dozeMeses}
+              </div>
 
-          {/* Remonta a cada mês: trocar de mês limpa o filtro (`#d266`). */}
-          <ListaDoMes
-            key={competencia}
-            lancamentos={lancamentos.dados}
-            competencia={competencia}
-            formaPorId={formaPorId}
-            categoria={categoria}
-            aoTirarCategoria={() => setFiltroCategoria(null)}
-            aoAbrir={abrirPainel}
-          />
+              <div className="order-5 empty:hidden xl:order-none">
+                <MovimentoPorDia
+                  competencia={competencia}
+                  porDia={parcelas.porDia}
+                  hoje={ehMesCorrente ? hoje.getDate() : undefined}
+                  diaEscolhido={deFora.dia}
+                  aoEscolherDia={filtrarPorDia}
+                />
+              </div>
 
-          {/* A rede de segurança, e não o caminho normal: fica no pé da tela,
-              onde não disputa atenção com o que ela veio ver. */}
-          <div className="border-t border-line pt-5">
-            <p className="max-w-[60ch] text-label text-ink-muted">
-              Os números acima são somados a cada lançamento. Se algum deles
-              parecer estranho, refazer o mês inteiro a partir da lista põe tudo
-              no lugar.
-            </p>
+              {/* O ranking some sozinho em mês sem pedido pago: zero ali é
+                  ausência, e ausência não vira linha de R$ 0,00. */}
+              <div className="order-6 flex flex-col gap-8 empty:hidden xl:order-none">
+                <ProdutosDoMes produtos={parcelas.produtos} />
+                <SaidasPorCategoria
+                  porCategoriaSaida={parcelas.porCategoriaSaida}
+                  saidas={parcelas.saidas}
+                  aoFiltrar={filtrarPorCategoria}
+                />
+              </div>
+            </section>
+          </div>
+
+          {/* A rede de segurança, e não o caminho normal: no pé, onde não
+              disputa atenção. Quem fala quando o número está errado de fato é
+              o `AgregadoAtrasado` (`#d81`). */}
+          <div>
             <Botao
+              variante="terciaria"
               tamanho="sm"
-              className="mt-3"
               carregando={recalculando}
               onClick={() => void recalcular()}
               iconeInicial={
                 <RotateCcw aria-hidden className="size-4" strokeWidth={1.75} />
               }
             >
-              Recalcular o mês
+              Refazer as contas do mês
             </Botao>
             <p
               aria-live="polite"

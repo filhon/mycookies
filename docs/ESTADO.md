@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-10-02 (**a 072 codificada**, a lista do mês: o nome da cliente no título da linha e o código no detalhe (`tituloDoLancamento`, com `descricaoDaVenda` mudada para o domínio), os lançamentos por dia com o saldo do dia, Tudo · Entrou · Saiu, a busca e a categoria de "Para onde o dinheiro foi" filtrando a lista, em `ListaDoMes`, `#d266`; nenhum campo, consulta, regra ou dependência; roteiro de navegador da seção 4 por rodar; **a 071 codificada**, o mês contra os outros: a `Comparacao` da
+Atualizado em 2026-10-02 (**a 073 codificada**, o caixa com peso: só o mês e a meta como cartão, o resto como seção no papel, os lançamentos em quarto na pilha e duas colunas a partir de `xl` ("O mês" e "Em perspectiva", sem `sticky`), o traço de 4 px no lugar do fundo do ranking e das saídas, o pé só com "Refazer as contas do mês", e o gráfico até `max(hoje, 7)` com cada dia como botão que filtra a lista (`dia` em `filtrarLancamentos`), `#d267` e `#d268`; nenhum campo, consulta, regra ou dependência; roteiro de navegador da seção 4 por rodar; **a 072 codificada**, a lista do mês: o nome da cliente no título da linha e o código no detalhe (`tituloDoLancamento`, com `descricaoDaVenda` mudada para o domínio), os lançamentos por dia com o saldo do dia, Tudo · Entrou · Saiu, a busca e a categoria de "Para onde o dinheiro foi" filtrando a lista, em `ListaDoMes`, `#d266`; nenhum campo, consulta, regra ou dependência; roteiro de navegador da seção 4 por rodar; **a 071 codificada**, o mês contra os outros: a `Comparacao` da
 Hoje em arquivo próprio e na faixa "No caixa" de `/financeiro` (até o dia no mês corrente, o mês
 inteiro no fechado), `consultaAgregadosDoPeriodo` por id, `mesesDaFaixa` e `noAno` em
 `domain/caixa.ts` com teste, e `DozeMeses` depois da meta, `#d264` e `#d265`; nenhum campo,
@@ -4400,6 +4400,41 @@ para a mesma URL não foi testado no navegador: o `preventDefault` vale nos dois
 mais importa: é ele que prova a tira da área segura.
 
 Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
+## A spec 073 · O caixa com peso
+
+**Codificada em 2026-10-02** (`#d267`, `#d268`). Nenhum campo, consulta, regra, índice ou
+dependência.
+
+- `TelaFinanceiro`: a pilha na ordem da spec (o mês, até o fim do mês, a meta, os lançamentos,
+  o movimento, o ranking e as saídas, os doze meses), 32 px entre grupos; a partir de `xl`, duas
+  `<section>` com rótulo escondido, "O mês" (`7fr`) e "Em perspectiva" (`5fr`), por `contents` +
+  `order-N` na pilha, como a Hoje. O dia e a categoria que filtram a lista vivem juntos,
+  presos ao mês. O pé ficou só com o botão terciário "Refazer as contas do mês" e o `aria-live`.
+- `AteOFimDoMes`, `ContasQueRepetem`, `ListaDoMes`, `ProdutosDoMes`, `SaidasPorCategoria`,
+  `DozeMeses` e `MovimentoPorDia` viraram seção no papel: `h2` sobre o `--canvas`, a lista em
+  `--surface` com filete e raio, os gráficos, a busca e as pílulas direto no papel.
+  `ResultadoDoMes` e `BlocoMeta` são os dois cartões.
+- `ProdutosDoMes` exporta `Traco`, a medida de 4 px sob o nome; `SaidasPorCategoria` a usa.
+- `MovimentoPorDia`: eixo até `max(hoje, 7, último dia com movimento)` no mês corrente, "Movimento
+  até hoje"; 96 px com até 7 dias com movimento, 128/160 px depois; cada coluna é `<button>` com
+  `aria-pressed`, e tocar filtra a lista e rola até ela.
+- `src/lib/domain/caixa.ts`: `dia` em `FiltroDaLista`. Um caso novo em `tests/domain/caixa.test.ts`.
+- `ListaDoMes`: a pílula "1 de out. ×" (`PilulaDeFora`, a mesma da categoria) e "Nada lançado em
+  3 de out." para o dia sem lançamento.
+- `DESIGN.md`: a linha "Seção no papel".
+
+**Diferente da spec** (no `#d267` e no `#d268`): a lista da seção no papel mantém filete e raio,
+como na Hoje; o eixo do mês corrente vai também até o último dia com movimento, para não esconder
+lançamento com data adiante; o alvo de 44 px por sobreposição virou colunas sem fresta, que
+dão o mesmo "dia mais próximo vence"; a nota do ranking saiu para o papel e diz "o que o mês
+rendeu" no lugar de "lá em cima".
+
+**Não rodou:** o roteiro de navegador (§ 4), inteiro, a 390, 1024, 1280 e 1864 px nos dois
+temas. O passo 4 (dia 2, tocar no dia 1) é o que confere o alvo da coluna estreita.
+
+Portão: lint e typecheck limpos, **868 testes** (1 novo), `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
 ## A spec 072 · A lista do mês

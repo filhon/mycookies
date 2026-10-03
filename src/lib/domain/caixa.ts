@@ -1005,12 +1005,15 @@ export interface FiltroDaLista {
   texto: string;
   /** Uma linha de "Para onde o dinheiro foi": só saídas dela. */
   categoria: CategoriaTransacao | null;
+  /** Uma coluna de "Movimento por dia" (`#d268`). */
+  dia: DataISO | null;
 }
 
 type LancamentoNaLista = {
   tipo: TipoTransacao;
   categoria: CategoriaTransacao;
   descricao: string;
+  dataISO: DataISO;
   formaPagamentoId?: string;
 };
 
@@ -1018,7 +1021,8 @@ type LancamentoNaLista = {
  * A lista do mês filtrada em memória. O texto procura na descrição (o nome da
  * cliente e o código estão nela), no nome da categoria e no da forma, sem
  * acento e sem caixa. A categoria vem das saídas por categoria, e por isso só
- * casa com saída: "Outro" de entrada não está naquele total.
+ * casa com saída: "Outro" de entrada não está naquele total. O dia vem do
+ * gráfico e casa com os dois.
  */
 export function filtrarLancamentos<T extends LancamentoNaLista>(
   lista: T[],
@@ -1029,6 +1033,7 @@ export function filtrarLancamentos<T extends LancamentoNaLista>(
   return lista.filter(
     (lancamento) =>
       (filtro.tipo === "TUDO" || lancamento.tipo === filtro.tipo) &&
+      (!filtro.dia || lancamento.dataISO === filtro.dia) &&
       (!filtro.categoria ||
         (lancamento.tipo === "SAIDA" &&
           lancamento.categoria === filtro.categoria)) &&
