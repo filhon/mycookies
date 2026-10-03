@@ -8120,3 +8120,35 @@ chegar nele, achar o pedido na lista, abrir e rolar.
 
 **Consequência.** O "+" da barra (061) herda o comportamento, porque abre o mesmo
 `/pedidos/novo`.
+
+---
+
+## D274 · O resumo do pedido vira coluna a partir de `2xl`, e salvar ganha `⌘S`
+
+**Status:** vigente · decidida em 2026-10-03, spec `077-a-coluna-do-pedido.md`
+
+**Contexto.** No desktop largo o editor de pedido ocupava a coluna de 1024px com ~300px vazios de
+cada lado, e o total e a sobra moravam no rodapé fixo, longe dos itens que os explicam.
+
+**Decisão.**
+
+- `/pedidos/[id]` saiu de `(coluna)` e põe a própria largura: `max-w-5xl` abaixo de `2xl`
+  (igual a antes) e `max-w-324` (1296px) a partir dele. A folha do orçamento
+  (`/pedidos/[id]/orcamento`) ficou em `(coluna)`, com a impressão de sempre (`#d106`).
+- **A partir de `2xl`**, uma grade `minmax(0,59rem) 20rem`: o formulário até 944px (encolhe
+  na janela de 1536px, onde o `px-8` do shell tira 64px) e o resumo de 320px, `sticky` em
+  `--fundo-cabecalho + 1rem`, com altura máxima da janela e rolagem própria se o pedido for longo.
+  O cabeçalho fica fora da grade e o título alinha com o formulário.
+- **`PainelPedido` desenha os dois arranjos** da mesma `derivarPedido`: o `RodapeFixo` com
+  `2xl:hidden` e a `<aside>` com `hidden 2xl:block`. A frase da sobra, do prejuízo e do desconto
+  limitado é um elemento só, usado nos dois. A coluna lista os itens (quantidade, nome, a
+  composição do combo em segunda linha, subtotal), depois subtotal, desconto, entrega e o total
+  em `xl`; sem itens, a lista some e fica a frase de hoje.
+- **Nenhum botão na coluna**: WhatsApp, folha e pagar continuam no formulário (`#d271`).
+- **`Ctrl+S` / `⌘S`** no `keydown` da janela, em qualquer largura: com "Salvar" no cabeçalho,
+  `preventDefault` e `salvar`; com "Salvo", só o `preventDefault` (não abre o "salvar página" do
+  navegador num editor); em `soLeitura`, sem botão, o atalho do navegador fica. O `title` do
+  "Salvar" diz o atalho.
+
+**Consequência.** O editor de produto pode ganhar a mesma coluna em spec própria (fora de escopo
+da 077).

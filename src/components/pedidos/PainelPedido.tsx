@@ -5,7 +5,11 @@ import type { ReactNode } from "react";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { RodapeFixo } from "@/components/ui/RodapeFixo";
 import { formatarMoeda } from "@/lib/domain/money";
-import type { DerivadosPedido } from "@/lib/domain/pedido";
+import {
+  quantidadeEmTexto,
+  resumoDasEscolhas,
+  type DerivadosPedido,
+} from "@/lib/domain/pedido";
 import type { Centavos } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -50,8 +54,22 @@ function Parcela({
  * "quanto sobra deste pedido?" — não pode depender de rolar a lista de itens.
  * Subtotal, desconto e entrega ficam do lado do total porque um total sozinho
  * não presta contas de como chegou ali.
+ *
+ * Dois arranjos da mesma conta (`#d274`): o rodapé abaixo de `2xl` e, a partir
+ * dele, a coluna à direita do formulário, com o que ela pediu em cima.
  */
-export function PainelPedido({ derivado }: { derivado: DerivadosPedido }) {
+export function PainelPedido({
+  derivado,
+  itens,
+}: {
+  derivado: DerivadosPedido;
+  /** Na mesma ordem de `derivado.linhas`: o subtotal de cada um vem de lá. */
+  itens: {
+    quantidade: number;
+    nomeSnapshot: string;
+    escolhas?: { quantidade: number; nomeSnapshot: string }[];
+  }[];
+}) {
   const semItens = derivado.linhas.length === 0;
   const lucro = derivado.lucroEstimado;
 
@@ -127,66 +145,160 @@ export function PainelPedido({ derivado }: { derivado: DerivadosPedido }) {
 
   const { tom, icone, mensagem } = explicar();
 
-  return (
-    // `noPe`: o editor não tem navegação inferior no celular (`#d152`).
-    <RodapeFixo noPe>
-      <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 px-4 py-3 lg:px-5">
-        <div className="flex flex-wrap gap-x-5 gap-y-2">
-          <Parcela rotulo="Subtotal" valor={derivado.subtotal} />
-          {derivado.desconto > 0 && (
-            <Parcela rotulo="Desconto" valor={derivado.desconto} prefixo="−" />
-          )}
-          {derivado.taxaEntrega > 0 && (
-            <Parcela rotulo="Entrega" valor={derivado.taxaEntrega} />
-          )}
-        </div>
-
-        <div className="text-right">
-          <p className="text-micro font-medium uppercase tracking-wide text-ink-subtle">
-            Total do pedido
-          </p>
-          <p className="mt-0.5">
-            <Dinheiro centavos={derivado.total} tamanho="lg" />
-          </p>
-        </div>
-      </div>
-
-      {/* Mesma regra do painel de preço: a frase some com o teclado aberto
-            quando é boa notícia. O desconto limitado é o segundo gatilho que a
-            mantém viva — ele conta um dado que ela não pediu, o desconto que
-            entrou menor do que ela digitou. Ver `DECISOES.md#d75`. */}
-      <div
+  // Mesma regra do painel de preço: a frase some com o teclado aberto quando
+  // é boa notícia. O desconto limitado é o segundo gatilho que a mantém viva —
+  // ele conta um dado que ela não pediu, o desconto que entrou menor do que
+  // ela digitou. Ver `DECISOES.md#d75`.
+  const nota = (
+    <div
+      className={cn(
+        "border-t px-4 py-2.5 text-label lg:px-5",
+        TONS[derivado.descontoLimitado ? "atencao" : tom],
+        !derivado.descontoLimitado && tom !== "atencao" && "apertado:hidden",
+      )}
+    >
+      {derivado.descontoLimitado && (
+        <p className="flex items-start gap-2.5">
+          <TriangleAlert
+            aria-hidden
+            className="mt-0.5 size-4 shrink-0 text-attention"
+            strokeWidth={1.75}
+          />
+          <span className="max-w-[64ch]">
+            O desconto não cabia no pedido e entrou como{" "}
+            <Realce>{formatarMoeda(derivado.desconto)}</Realce>: mais do que
+            isso deixaria o total negativo.
+          </span>
+        </p>
+      )}
+      <p
         className={cn(
-          "border-t px-4 py-2.5 text-label lg:px-5",
-          TONS[derivado.descontoLimitado ? "atencao" : tom],
-          !derivado.descontoLimitado && tom !== "atencao" && "apertado:hidden",
+          "flex items-start gap-2.5",
+          derivado.descontoLimitado && "mt-1.5",
         )}
       >
-        {derivado.descontoLimitado && (
-          <p className="flex items-start gap-2.5">
-            <TriangleAlert
-              aria-hidden
-              className="mt-0.5 size-4 shrink-0 text-attention"
-              strokeWidth={1.75}
-            />
-            <span className="max-w-[64ch]">
-              O desconto não cabia no pedido e entrou como{" "}
-              <Realce>{formatarMoeda(derivado.desconto)}</Realce>: mais do que
-              isso deixaria o total negativo.
-            </span>
-          </p>
+        {icone}
+        <span className="max-w-[64ch]">{mensagem}</span>
+      </p>
+    </div>
+  );
+
+  return (
+    <>
+      {/* `noPe`: o editor não tem navegação inferior no celular (`#d152`). */}
+      <RodapeFixo noPe className="2xl:hidden">
+        <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 px-4 py-3 lg:px-5">
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            <Parcela rotulo="Subtotal" valor={derivado.subtotal} />
+            {derivado.desconto > 0 && (
+              <Parcela
+                rotulo="Desconto"
+                valor={derivado.desconto}
+                prefixo="−"
+              />
+            )}
+            {derivado.taxaEntrega > 0 && (
+              <Parcela rotulo="Entrega" valor={derivado.taxaEntrega} />
+            )}
+          </div>
+
+          <div className="text-right">
+            <p className="text-micro font-medium uppercase tracking-wide text-ink-subtle">
+              Total do pedido
+            </p>
+            <p className="mt-0.5">
+              <Dinheiro centavos={derivado.total} tamanho="lg" />
+            </p>
+          </div>
+        </div>
+        {nota}
+      </RodapeFixo>
+
+      {/* O arranjo de coluna, a partir de `2xl` (`#d274`): o que ela pediu,
+          as parcelas e o total de cima para baixo, preso logo abaixo do
+          cabeçalho. Sem botões: as ações ficam no formulário. */}
+      <aside
+        aria-label="Resumo do pedido"
+        className="sticky top-[calc(var(--fundo-cabecalho,0px)+1rem)] mt-4 hidden max-h-[calc(100dvh-var(--fundo-cabecalho,0px)-2rem)] overflow-y-auto rounded-lg border border-line bg-surface 2xl:block"
+      >
+        {!semItens && (
+          <div className="px-5 pb-4 pt-4">
+            <h2 className="text-micro font-medium uppercase tracking-wide text-ink-subtle">
+              O que ela pediu
+            </h2>
+            <ul className="mt-2 space-y-2">
+              {itens.map((item, indice) => (
+                <li
+                  key={indice}
+                  className="flex items-baseline justify-between gap-3 text-label"
+                >
+                  <span className="min-w-0 text-ink">
+                    <span className="num text-ink-muted">
+                      {quantidadeEmTexto(item.quantidade)}×
+                    </span>{" "}
+                    {item.nomeSnapshot || "Item sem nome"}
+                    {item.escolhas?.length ? (
+                      <span className="block text-micro text-ink-muted">
+                        {resumoDasEscolhas(item.escolhas)}
+                      </span>
+                    ) : null}
+                  </span>
+                  <Dinheiro
+                    centavos={derivado.linhas[indice]?.subtotal ?? 0}
+                    tamanho="sm"
+                  />
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
-        <p
+
+        <dl
           className={cn(
-            "flex items-start gap-2.5",
-            derivado.descontoLimitado && "mt-1.5",
+            "space-y-1.5 px-5 py-4 text-label",
+            !semItens && "border-t border-line",
           )}
         >
-          {icone}
-          <span className="max-w-[64ch]">{mensagem}</span>
-        </p>
-      </div>
-    </RodapeFixo>
+          <LinhaDoResumo rotulo="Subtotal">
+            <Dinheiro centavos={derivado.subtotal} tamanho="sm" />
+          </LinhaDoResumo>
+          {derivado.desconto > 0 && (
+            <LinhaDoResumo rotulo="Desconto">
+              <span className="num font-semibold text-ink">−</span>
+              <Dinheiro centavos={derivado.desconto} tamanho="sm" />
+            </LinhaDoResumo>
+          )}
+          {derivado.taxaEntrega > 0 && (
+            <LinhaDoResumo rotulo="Entrega">
+              <Dinheiro centavos={derivado.taxaEntrega} tamanho="sm" />
+            </LinhaDoResumo>
+          )}
+          <div className="flex items-baseline justify-between gap-3 pt-2">
+            <dt className="font-medium text-ink">Total do pedido</dt>
+            <dd>
+              <Dinheiro centavos={derivado.total} tamanho="xl" />
+            </dd>
+          </div>
+        </dl>
+
+        {nota}
+      </aside>
+    </>
+  );
+}
+
+function LinhaDoResumo({
+  rotulo,
+  children,
+}: {
+  rotulo: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <dt className="text-ink-muted">{rotulo}</dt>
+      <dd className="inline-flex items-baseline gap-0.5">{children}</dd>
+    </div>
   );
 }
 

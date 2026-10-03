@@ -906,6 +906,21 @@ export function FormularioPedido({
   // "Mandar o resumo" da faixa do pedido anotado (`#d273`), o próximo passo da
   // trilha, ou o "Marcar como pago" do entregue não pago.
   const salvarEhPrimario = !pedido || (sujo && !soLeitura);
+
+  // `Ctrl+S` / `⌘S` onde há "Salvar" no cabeçalho (spec 077). Com "Salvo" o
+  // atalho é engolido sem fazer nada; sem botão (`soLeitura`) fica o do
+  // navegador. O efeito roda a cada render para ler o `salvar` da vez.
+  useEffect(() => {
+    if (soLeitura) return;
+    const aoTeclar = (evento: KeyboardEvent) => {
+      if (evento.key.toLowerCase() !== "s") return;
+      if (!(evento.ctrlKey || evento.metaKey) || evento.altKey) return;
+      evento.preventDefault();
+      if (salvarEhPrimario && !salvando) void salvar();
+    };
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  });
   const passoEhPrimario = !salvarEhPrimario && !anotado;
   const passo = pedido
     ? proximoPasso({ status, pago: pedido.pago })
@@ -932,6 +947,7 @@ export function FormularioPedido({
             <Botao
               variante="primaria"
               className="min-w-24"
+              title="Salvar (Ctrl+S ou ⌘S)"
               onClick={() => void salvar()}
               carregando={salvando}
             >
@@ -952,617 +968,640 @@ export function FormularioPedido({
         }
       />
 
-      {/* Espaço no pé para o rodapé de totais não cobrir o último bloco. */}
-      <div className="mt-4 space-y-4 pb-36 apertado:pb-32 lg:pb-44">
-        {pedido && anotado && (
-          <FaixaAnotado
-            pedido={pedido}
-            resumo={resumoParaCliente(pedido)}
-            telefone={valores.clienteTelefone}
-            hoje={hoje}
-            aoFechar={() => setAnotado(false)}
-          />
-        )}
+      {/* A partir de `2xl` o resumo é a coluna à direita, presa (`#d274`). */}
+      <div className="2xl:grid 2xl:grid-cols-[minmax(0,59rem)_20rem] 2xl:items-start 2xl:gap-8">
+        {/* Espaço no pé para o rodapé de totais não cobrir o último bloco. */}
+        <div className="mt-4 space-y-4 pb-36 apertado:pb-32 lg:pb-44 2xl:pb-8">
+          {pedido && anotado && (
+            <FaixaAnotado
+              pedido={pedido}
+              resumo={resumoParaCliente(pedido)}
+              telefone={valores.clienteTelefone}
+              hoje={hoje}
+              aoFechar={() => setAnotado(false)}
+            />
+          )}
 
-        {pedido ? (
-          <section aria-label="Em que pé está" className="space-y-4">
-            {status === "CANCELADO" ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <SeloStatus status={status} />
-                {seloCardapio}
-              </div>
-            ) : (
-              <div className="flex items-start gap-3">
-                <div className="min-w-0 flex-1">
-                  <TrilhaDoPedido status={status} />
-                </div>
-                {seloCardapio}
-              </div>
-            )}
-
-            {/* O avanço sozinho, e o destrutivo lá no pé (`#d272`). */}
-            <div className="flex flex-wrap items-center gap-2">
+          {pedido ? (
+            <section aria-label="Em que pé está" className="space-y-4">
               {status === "CANCELADO" ? (
-                <Botao
-                  disabled={salvando}
-                  onClick={() => void mover("ORCAMENTO")}
-                >
-                  Reabrir como orçamento
-                </Botao>
+                <div className="flex flex-wrap items-center gap-2">
+                  <SeloStatus status={status} />
+                  {seloCardapio}
+                </div>
               ) : (
-                <>
-                  {adiante && (
-                    <Botao
-                      tamanho="lg"
-                      variante={passoEhPrimario ? "primaria" : "secundaria"}
-                      disabled={salvando}
-                      onClick={() => void mover(adiante)}
-                    >
-                      {ACAO_STATUS_PEDIDO[adiante]}
-                    </Botao>
-                  )}
-                  {atras && (
-                    <Botao
-                      variante="terciaria"
-                      disabled={salvando}
-                      onClick={() => void mover(atras)}
-                    >
-                      Voltar para{" "}
-                      {ROTULO_STATUS_PEDIDO[atras].toLocaleLowerCase("pt-BR")}
-                    </Botao>
-                  )}
-                </>
+                <div className="flex items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <TrilhaDoPedido status={status} />
+                  </div>
+                  {seloCardapio}
+                </div>
               )}
-            </div>
 
-            {/* A fornada não é o status (`DECISOES.md#d92`): registrar não
+              {/* O avanço sozinho, e o destrutivo lá no pé (`#d272`). */}
+              <div className="flex flex-wrap items-center gap-2">
+                {status === "CANCELADO" ? (
+                  <Botao
+                    disabled={salvando}
+                    onClick={() => void mover("ORCAMENTO")}
+                  >
+                    Reabrir como orçamento
+                  </Botao>
+                ) : (
+                  <>
+                    {adiante && (
+                      <Botao
+                        tamanho="lg"
+                        variante={passoEhPrimario ? "primaria" : "secundaria"}
+                        disabled={salvando}
+                        onClick={() => void mover(adiante)}
+                      >
+                        {ACAO_STATUS_PEDIDO[adiante]}
+                      </Botao>
+                    )}
+                    {atras && (
+                      <Botao
+                        variante="terciaria"
+                        disabled={salvando}
+                        onClick={() => void mover(atras)}
+                      >
+                        Voltar para{" "}
+                        {ROTULO_STATUS_PEDIDO[atras].toLocaleLowerCase("pt-BR")}
+                      </Botao>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* A fornada não é o status (`DECISOES.md#d92`): registrar não
                 move o pedido, e mover não registra. O atalho abre a folha já
                 preenchida pelo que o pedido pede, e um atalho não é um
                 acoplamento. */}
-            {podeAssar && (
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-4">
+              {podeAssar && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-4">
+                  <Botao
+                    tamanho="sm"
+                    variante="terciaria"
+                    onClick={() =>
+                      setFornada({ aberto: true, chave: `fornada-${novoId()}` })
+                    }
+                    iconeInicial={
+                      <CookingPot
+                        aria-hidden
+                        className="size-4"
+                        strokeWidth={1.75}
+                      />
+                    }
+                  >
+                    Registrar fornada
+                  </Botao>
+                  <p className="max-w-[48ch] text-label text-ink-muted">
+                    A massa que você fez para este pedido sai da despensa e da
+                    lista de compras.
+                  </p>
+                </div>
+              )}
+
+              {/* As deste pedido, com o desfazer. Aparecem mesmo quando o pedido
+                não pode mais receber massa: o registro errado precisa poder
+                sair de qualquer jeito. */}
+              {fornadasDoPedido.length > 0 && (
+                <FornadasRecentes
+                  contaId={contaId}
+                  fornadas={fornadasDoPedido}
+                />
+              )}
+            </section>
+          ) : (
+            <div>
+              <Pilulas
+                rotulo="Como este pedido nasce"
+                opcoes={NASCIMENTOS.map(({ valor, titulo }) => ({
+                  valor,
+                  rotulo: titulo,
+                }))}
+                valor={status}
+                aoMudar={setStatus}
+              />
+              <p className="mt-2 text-label text-ink-muted">
+                {
+                  NASCIMENTOS.find((opcao) => opcao.valor === status)
+                    ?.explicacao
+                }
+              </p>
+            </div>
+          )}
+
+          <Bloco icone={UserRound} titulo="Para quem é">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Campo
+                rotulo="Nome da cliente"
+                required
+                autoFocus={!pedido}
+                placeholder="Ana Beatriz"
+                value={valores.clienteNome}
+                erro={erros.clienteNome}
+                onChange={(evento) => {
+                  definir("clienteNome", evento.target.value);
+                  // Mudar o nome à mão desfaz o vínculo: o cadastro aponta para
+                  // outra pessoa a partir daqui.
+                  if (valores.clienteId) definir("clienteId", "");
+                }}
+              />
+
+              <Campo
+                rotulo="Telefone"
+                type="tel"
+                inputMode="tel"
+                placeholder="(11) 90000-0000"
+                dica="Opcional. É por onde a encomenda foi combinada."
+                value={valores.clienteTelefone}
+                onChange={(evento) =>
+                  definir("clienteTelefone", evento.target.value)
+                }
+              />
+            </div>
+
+            {clienteVinculado ? (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <Selo
+                  tom="marca"
+                  icone={<UserRound aria-hidden className="size-3.5" />}
+                >
+                  Cadastro de {clienteVinculado.nome}
+                </Selo>
                 <Botao
                   tamanho="sm"
                   variante="terciaria"
                   onClick={() =>
-                    setFornada({ aberto: true, chave: `fornada-${novoId()}` })
+                    setCadastro({ aberto: true, chave: `editar-${novoId()}` })
+                  }
+                >
+                  Editar cadastro
+                </Botao>
+                <button
+                  type="button"
+                  onClick={() => definir("clienteId", "")}
+                  className="toque inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-ink-muted transition-colors duration-150 ease-quart hover:bg-sunken hover:text-ink"
+                >
+                  <Unlink aria-hidden className="size-4" strokeWidth={1.75} />
+                  Desvincular
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {sugestoesCliente.length > 0 && (
+                  <div>
+                    <p className="text-label text-ink-muted">
+                      Já cadastradas com esse nome:
+                    </p>
+                    <div className="mt-1.5 flex flex-wrap gap-2">
+                      {sugestoesCliente.map((candidata) => (
+                        <button
+                          key={candidata.id}
+                          type="button"
+                          onClick={() =>
+                            vincularCliente({
+                              id: candidata.id,
+                              nome: candidata.nome,
+                              telefone: candidata.telefone ?? "",
+                            })
+                          }
+                          className="toque inline-flex items-center gap-2 rounded-full border border-line-strong px-3 text-label font-medium text-ink transition-colors duration-150 ease-quart hover:bg-sunken"
+                        >
+                          <Check
+                            aria-hidden
+                            className="size-4 text-brand-ink"
+                            strokeWidth={2}
+                          />
+                          {candidata.nome}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <Botao
+                  tamanho="sm"
+                  variante="terciaria"
+                  disabled={valores.clienteNome.trim().length < 2}
+                  onClick={() =>
+                    setCadastro({ aberto: true, chave: `novo-${novoId()}` })
                   }
                   iconeInicial={
-                    <CookingPot
+                    <UserPlus
                       aria-hidden
                       className="size-4"
                       strokeWidth={1.75}
                     />
                   }
                 >
-                  Registrar fornada
+                  Cadastrar esta cliente
                 </Botao>
-                <p className="max-w-[48ch] text-label text-ink-muted">
-                  A massa que você fez para este pedido sai da despensa e da
-                  lista de compras.
-                </p>
               </div>
             )}
+          </Bloco>
 
-            {/* As deste pedido, com o desfazer. Aparecem mesmo quando o pedido
-                não pode mais receber massa: o registro errado precisa poder
-                sair de qualquer jeito. */}
-            {fornadasDoPedido.length > 0 && (
-              <FornadasRecentes contaId={contaId} fornadas={fornadasDoPedido} />
-            )}
-          </section>
-        ) : (
-          <div>
-            <Pilulas
-              rotulo="Como este pedido nasce"
-              opcoes={NASCIMENTOS.map(({ valor, titulo }) => ({
-                valor,
-                rotulo: titulo,
-              }))}
-              valor={status}
-              aoMudar={setStatus}
-            />
-            <p className="mt-2 text-label text-ink-muted">
-              {NASCIMENTOS.find((opcao) => opcao.valor === status)?.explicacao}
-            </p>
-          </div>
-        )}
-
-        <Bloco icone={UserRound} titulo="Para quem é">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Campo
-              rotulo="Nome da cliente"
-              required
-              autoFocus={!pedido}
-              placeholder="Ana Beatriz"
-              value={valores.clienteNome}
-              erro={erros.clienteNome}
-              onChange={(evento) => {
-                definir("clienteNome", evento.target.value);
-                // Mudar o nome à mão desfaz o vínculo: o cadastro aponta para
-                // outra pessoa a partir daqui.
-                if (valores.clienteId) definir("clienteId", "");
-              }}
-            />
-
-            <Campo
-              rotulo="Telefone"
-              type="tel"
-              inputMode="tel"
-              placeholder="(11) 90000-0000"
-              dica="Opcional. É por onde a encomenda foi combinada."
-              value={valores.clienteTelefone}
-              onChange={(evento) =>
-                definir("clienteTelefone", evento.target.value)
-              }
-            />
-          </div>
-
-          {clienteVinculado ? (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <Selo
-                tom="marca"
-                icone={<UserRound aria-hidden className="size-3.5" />}
-              >
-                Cadastro de {clienteVinculado.nome}
-              </Selo>
-              <Botao
-                tamanho="sm"
-                variante="terciaria"
-                onClick={() =>
-                  setCadastro({ aberto: true, chave: `editar-${novoId()}` })
-                }
-              >
-                Editar cadastro
-              </Botao>
-              <button
-                type="button"
-                onClick={() => definir("clienteId", "")}
-                className="toque inline-flex items-center gap-1.5 rounded-md px-2 text-label font-medium text-ink-muted transition-colors duration-150 ease-quart hover:bg-sunken hover:text-ink"
-              >
-                <Unlink aria-hidden className="size-4" strokeWidth={1.75} />
-                Desvincular
-              </button>
+          <Bloco
+            icone={Receipt}
+            titulo="O que ela pediu"
+            descricao="O preço entra congelado: mudar o produto depois não mexe neste pedido."
+            recuado={false}
+          >
+            <div className="lg:ml-8">
+              <BuscaItem
+                rotulo="Adicionar produto"
+                placeholder="Buscar produto"
+                opcoes={opcoesFicha}
+                aoEscolher={adicionarFicha}
+                semResultado="Nenhum produto com esse nome. Só o que já está precificado pode entrar em um pedido."
+              />
             </div>
-          ) : (
-            <div className="space-y-2">
-              {sugestoesCliente.length > 0 && (
-                <div>
-                  <p className="text-label text-ink-muted">
-                    Já cadastradas com esse nome:
-                  </p>
-                  <div className="mt-1.5 flex flex-wrap gap-2">
-                    {sugestoesCliente.map((candidata) => (
-                      <button
-                        key={candidata.id}
-                        type="button"
-                        onClick={() =>
-                          vincularCliente({
-                            id: candidata.id,
-                            nome: candidata.nome,
-                            telefone: candidata.telefone ?? "",
-                          })
+
+            <div className="-mx-4 lg:-mx-5">
+              {valores.itens.length === 0 ? (
+                <p className="px-4 text-label text-ink-muted lg:px-5">
+                  Nenhum produto ainda. Busque acima e toque para adicionar.
+                </p>
+              ) : (
+                <ul className="divide-y divide-line border-y border-line">
+                  {valores.itens.map((linha, indice) => {
+                    const ficha = mapaFichas.get(linha.fichaTecnicaId);
+                    const precoDaFicha = ficha?.precificacao.precoVenda;
+                    const oferecer = ofereceOPrecoDeHoje(
+                      status,
+                      linha.precoUnitario,
+                      precoDaFicha,
+                    );
+                    const combo = !!ficha && temEscolhas(ficha);
+                    // Quem responde "dá?": a própria ficha ou, num combo à
+                    // escolha, cada receita escolhida com a quantidade dela
+                    // vezes a da linha (`#d103`). A capacidade é aritmética
+                    // pura sobre o que a tela já tem, refeita a cada tecla: é
+                    // assim que a resposta acompanha a quantidade enquanto ela
+                    // digita.
+                    // ponytail: `jaFeitas` e `prontos` são por ficha, e a mesma
+                    // receita pode estar em duas linhas (solta e num combo);
+                    // cada linha vê o total. Se confundir, o abate passa a ser
+                    // por linha, na ordem.
+                    const quantidadeDaLinha = parseParaNumero(linha.quantidade);
+                    const perguntas =
+                      !despensaPronta || !ficha
+                        ? []
+                        : combo
+                          ? linha.escolhas.flatMap((escolha) => {
+                              const receita = mapaFichas.get(
+                                escolha.fichaTecnicaId,
+                              );
+                              return receita
+                                ? [
+                                    {
+                                      receita,
+                                      unidades:
+                                        escolha.quantidade * quantidadeDaLinha,
+                                      nome: receita.nome,
+                                    },
+                                  ]
+                                : [];
+                            })
+                          : [
+                              {
+                                receita: ficha,
+                                unidades: quantidadeDaLinha,
+                                nome: undefined,
+                              },
+                            ];
+
+                    return (
+                      <LinhaItemPedido
+                        key={linha.chave}
+                        nome={linha.nomeSnapshot}
+                        detalhe={
+                          linha.escolhas.length > 0
+                            ? resumoDasEscolhas(linha.escolhas)
+                            : undefined
                         }
-                        className="toque inline-flex items-center gap-2 rounded-full border border-line-strong px-3 text-label font-medium text-ink transition-colors duration-150 ease-quart hover:bg-sunken"
+                        quantidade={linha.quantidade}
+                        precoUnitario={linha.precoUnitario}
+                        subtotal={derivado.linhas[indice]?.subtotal ?? 0}
+                        precoDeHoje={oferecer ? precoDaFicha : undefined}
+                        aoMudarQuantidade={(valor) =>
+                          mudarLinha(linha.chave, valor)
+                        }
+                        aoUsarPrecoDeHoje={() => usarPrecoDeHoje(linha.chave)}
+                        aoRemover={() => removerLinha(linha.chave)}
+                        erro={errosItens[indice]}
                       >
-                        <Check
-                          aria-hidden
-                          className="size-4 text-brand-ink"
-                          strokeWidth={2}
-                        />
-                        {candidata.nome}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <Botao
-                tamanho="sm"
-                variante="terciaria"
-                disabled={valores.clienteNome.trim().length < 2}
-                onClick={() =>
-                  setCadastro({ aberto: true, chave: `novo-${novoId()}` })
-                }
-                iconeInicial={
-                  <UserPlus aria-hidden className="size-4" strokeWidth={1.75} />
-                }
-              >
-                Cadastrar esta cliente
-              </Botao>
-            </div>
-          )}
-        </Bloco>
-
-        <Bloco
-          icone={Receipt}
-          titulo="O que ela pediu"
-          descricao="O preço entra congelado: mudar o produto depois não mexe neste pedido."
-          recuado={false}
-        >
-          <div className="lg:ml-8">
-            <BuscaItem
-              rotulo="Adicionar produto"
-              placeholder="Buscar produto"
-              opcoes={opcoesFicha}
-              aoEscolher={adicionarFicha}
-              semResultado="Nenhum produto com esse nome. Só o que já está precificado pode entrar em um pedido."
-            />
-          </div>
-
-          <div className="-mx-4 lg:-mx-5">
-            {valores.itens.length === 0 ? (
-              <p className="px-4 text-label text-ink-muted lg:px-5">
-                Nenhum produto ainda. Busque acima e toque para adicionar.
-              </p>
-            ) : (
-              <ul className="divide-y divide-line border-y border-line">
-                {valores.itens.map((linha, indice) => {
-                  const ficha = mapaFichas.get(linha.fichaTecnicaId);
-                  const precoDaFicha = ficha?.precificacao.precoVenda;
-                  const oferecer = ofereceOPrecoDeHoje(
-                    status,
-                    linha.precoUnitario,
-                    precoDaFicha,
-                  );
-                  const combo = !!ficha && temEscolhas(ficha);
-                  // Quem responde "dá?": a própria ficha ou, num combo à
-                  // escolha, cada receita escolhida com a quantidade dela
-                  // vezes a da linha (`#d103`). A capacidade é aritmética
-                  // pura sobre o que a tela já tem, refeita a cada tecla: é
-                  // assim que a resposta acompanha a quantidade enquanto ela
-                  // digita.
-                  // ponytail: `jaFeitas` e `prontos` são por ficha, e a mesma
-                  // receita pode estar em duas linhas (solta e num combo);
-                  // cada linha vê o total. Se confundir, o abate passa a ser
-                  // por linha, na ordem.
-                  const quantidadeDaLinha = parseParaNumero(linha.quantidade);
-                  const perguntas =
-                    !despensaPronta || !ficha
-                      ? []
-                      : combo
-                        ? linha.escolhas.flatMap((escolha) => {
-                            const receita = mapaFichas.get(
-                              escolha.fichaTecnicaId,
-                            );
-                            return receita
-                              ? [
-                                  {
-                                    receita,
-                                    unidades:
-                                      escolha.quantidade * quantidadeDaLinha,
-                                    nome: receita.nome,
-                                  },
-                                ]
-                              : [];
-                          })
-                        : [
-                            {
-                              receita: ficha,
-                              unidades: quantidadeDaLinha,
-                              nome: undefined,
-                            },
-                          ];
-
-                  return (
-                    <LinhaItemPedido
-                      key={linha.chave}
-                      nome={linha.nomeSnapshot}
-                      detalhe={
-                        linha.escolhas.length > 0
-                          ? resumoDasEscolhas(linha.escolhas)
-                          : undefined
-                      }
-                      quantidade={linha.quantidade}
-                      precoUnitario={linha.precoUnitario}
-                      subtotal={derivado.linhas[indice]?.subtotal ?? 0}
-                      precoDeHoje={oferecer ? precoDaFicha : undefined}
-                      aoMudarQuantidade={(valor) =>
-                        mudarLinha(linha.chave, valor)
-                      }
-                      aoUsarPrecoDeHoje={() => usarPrecoDeHoje(linha.chave)}
-                      aoRemover={() => removerLinha(linha.chave)}
-                      erro={errosItens[indice]}
-                    >
-                      {/* A escolha abre embaixo da linha, sem painel e sem
+                        {/* A escolha abre embaixo da linha, sem painel e sem
                           modal: em 360px é uma lista curta com −/+. */}
-                      {combo && ficha && (
-                        <EscolhaDoCombo
-                          kit={ficha}
-                          escolhas={linha.escolhas}
-                          fichas={fichas}
-                          aoMudar={(receita, delta) =>
-                            mudarEscolha(linha.chave, receita, delta)
-                          }
-                        />
-                      )}
-                      {perguntas.map(({ receita, unidades, nome }) => {
-                        const capacidade = capacidadeDaFicha(
-                          receita,
-                          fichas,
-                          insumos,
-                          contextoDaDespensa.consumo,
-                          hoje,
-                          contextoDaDespensa.prometido,
-                        );
-                        return (
-                          capacidade && (
-                            <FraseCabeNoPedido
-                              key={receita.id}
-                              nome={nome}
-                              capacidade={capacidade}
-                              unidades={unidades}
-                              jaFeitas={jaFeitasPorFicha.get(receita.id) ?? 0}
-                              // O que está pronto, sem o que já é dos outros
-                              // pedidos; o que é deste, a frase tira sozinha.
-                              prontos={prontosLivres(
-                                projecaoDoPronto(fornadas, receita, hoje),
-                                contextoDaDespensa.reservado.get(receita.id) ??
-                                  0,
-                              )}
-                            />
-                          )
-                        );
-                      })}
-                    </LinhaItemPedido>
-                  );
-                })}
-              </ul>
-            )}
+                        {combo && ficha && (
+                          <EscolhaDoCombo
+                            kit={ficha}
+                            escolhas={linha.escolhas}
+                            fichas={fichas}
+                            aoMudar={(receita, delta) =>
+                              mudarEscolha(linha.chave, receita, delta)
+                            }
+                          />
+                        )}
+                        {perguntas.map(({ receita, unidades, nome }) => {
+                          const capacidade = capacidadeDaFicha(
+                            receita,
+                            fichas,
+                            insumos,
+                            contextoDaDespensa.consumo,
+                            hoje,
+                            contextoDaDespensa.prometido,
+                          );
+                          return (
+                            capacidade && (
+                              <FraseCabeNoPedido
+                                key={receita.id}
+                                nome={nome}
+                                capacidade={capacidade}
+                                unidades={unidades}
+                                jaFeitas={jaFeitasPorFicha.get(receita.id) ?? 0}
+                                // O que está pronto, sem o que já é dos outros
+                                // pedidos; o que é deste, a frase tira sozinha.
+                                prontos={prontosLivres(
+                                  projecaoDoPronto(fornadas, receita, hoje),
+                                  contextoDaDespensa.reservado.get(
+                                    receita.id,
+                                  ) ?? 0,
+                                )}
+                              />
+                            )
+                          );
+                        })}
+                      </LinhaItemPedido>
+                    );
+                  })}
+                </ul>
+              )}
 
-            {erroDaLista && (
-              <p
-                role="alert"
-                className="mt-3 px-4 text-label text-negative lg:px-5"
-              >
-                {erroDaLista}
-              </p>
-            )}
-          </div>
-
-          {/* Sob os itens: quem anota "sem nozes" quer ver isso ao lado do
-              que vai produzir (`#d272`). */}
-          <div className="lg:ml-8">
-            <AreaTexto
-              rotulo="Para lembrar na produção"
-              value={valores.observacoes}
-              placeholder="Sem nozes. Laço vinho. Entregar depois das 18h."
-              onChange={(evento) => definir("observacoes", evento.target.value)}
-            />
-          </div>
-        </Bloco>
-
-        <Bloco
-          icone={CalendarDays}
-          titulo="Quando e como"
-          descricao="A data manda na agenda e na tela Hoje."
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Campo
-              rotulo="Data da entrega"
-              type="date"
-              required
-              value={valores.dataEntregaISO}
-              erro={erros.dataEntregaISO}
-              onChange={(evento) =>
-                definir("dataEntregaISO", evento.target.value)
-              }
-            />
-            {/* O seletor do aparelho, e não um nosso: no celular ele já é o
-                melhor (`#d251`). A hora só ordena o dia. */}
-            <div className="flex items-end gap-2">
-              <Campo
-                rotulo="Hora (opcional)"
-                type="time"
-                step={900}
-                className="flex-1"
-                value={valores.horaEntrega}
-                erro={erros.horaEntrega}
-                onChange={(evento) =>
-                  definir("horaEntrega", evento.target.value)
-                }
-              />
-              {valores.horaEntrega && (
-                <Botao
-                  variante="terciaria"
-                  onClick={() => definir("horaEntrega", "")}
+              {erroDaLista && (
+                <p
+                  role="alert"
+                  className="mt-3 px-4 text-label text-negative lg:px-5"
                 >
-                  Sem hora
-                </Botao>
+                  {erroDaLista}
+                </p>
               )}
             </div>
-          </div>
 
-          <fieldset>
-            <legend className="text-label font-medium text-ink">
-              Como ela recebe
-            </legend>
-            <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
-              {ENTREGAS.map((opcao) => (
-                <Escolha
-                  key={opcao.valor}
-                  ativo={valores.tipoEntrega === opcao.valor}
-                  titulo={opcao.titulo}
-                  explicacao={opcao.explicacao}
-                  icone={opcao.icone}
-                  aoEscolher={() => trocarEntrega(opcao.valor)}
-                />
-              ))}
+            {/* Sob os itens: quem anota "sem nozes" quer ver isso ao lado do
+              que vai produzir (`#d272`). */}
+            <div className="lg:ml-8">
+              <AreaTexto
+                rotulo="Para lembrar na produção"
+                value={valores.observacoes}
+                placeholder="Sem nozes. Laço vinho. Entregar depois das 18h."
+                onChange={(evento) =>
+                  definir("observacoes", evento.target.value)
+                }
+              />
             </div>
-          </fieldset>
+          </Bloco>
 
-          {valores.tipoEntrega === "ENTREGA" && (
+          <Bloco
+            icone={CalendarDays}
+            titulo="Quando e como"
+            descricao="A data manda na agenda e na tela Hoje."
+          >
             <div className="grid gap-4 sm:grid-cols-2">
-              <CampoMoeda
-                rotulo="Taxa de entrega"
-                valor={valores.taxaEntrega}
-                aoMudar={(centavos) => definir("taxaEntrega", centavos)}
-                erro={erros.taxaEntrega}
-                dica="Entra no total e não é custo: é dinheiro que você recebe."
-              />
               <Campo
-                rotulo="Endereço"
-                placeholder="Rua das Acácias, 120, apto 42"
-                value={valores.endereco}
-                onChange={(evento) => definir("endereco", evento.target.value)}
+                rotulo="Data da entrega"
+                type="date"
+                required
+                value={valores.dataEntregaISO}
+                erro={erros.dataEntregaISO}
+                onChange={(evento) =>
+                  definir("dataEntregaISO", evento.target.value)
+                }
+              />
+              {/* O seletor do aparelho, e não um nosso: no celular ele já é o
+                melhor (`#d251`). A hora só ordena o dia. */}
+              <div className="flex items-end gap-2">
+                <Campo
+                  rotulo="Hora (opcional)"
+                  type="time"
+                  step={900}
+                  className="flex-1"
+                  value={valores.horaEntrega}
+                  erro={erros.horaEntrega}
+                  onChange={(evento) =>
+                    definir("horaEntrega", evento.target.value)
+                  }
+                />
+                {valores.horaEntrega && (
+                  <Botao
+                    variante="terciaria"
+                    onClick={() => definir("horaEntrega", "")}
+                  >
+                    Sem hora
+                  </Botao>
+                )}
+              </div>
+            </div>
+
+            <fieldset>
+              <legend className="text-label font-medium text-ink">
+                Como ela recebe
+              </legend>
+              <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
+                {ENTREGAS.map((opcao) => (
+                  <Escolha
+                    key={opcao.valor}
+                    ativo={valores.tipoEntrega === opcao.valor}
+                    titulo={opcao.titulo}
+                    explicacao={opcao.explicacao}
+                    icone={opcao.icone}
+                    aoEscolher={() => trocarEntrega(opcao.valor)}
+                  />
+                ))}
+              </div>
+            </fieldset>
+
+            {valores.tipoEntrega === "ENTREGA" && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <CampoMoeda
+                  rotulo="Taxa de entrega"
+                  valor={valores.taxaEntrega}
+                  aoMudar={(centavos) => definir("taxaEntrega", centavos)}
+                  erro={erros.taxaEntrega}
+                  dica="Entra no total e não é custo: é dinheiro que você recebe."
+                />
+                <Campo
+                  rotulo="Endereço"
+                  placeholder="Rua das Acácias, 120, apto 42"
+                  value={valores.endereco}
+                  onChange={(evento) =>
+                    definir("endereco", evento.target.value)
+                  }
+                />
+              </div>
+            )}
+          </Bloco>
+
+          <Bloco
+            icone={Wallet}
+            titulo="Pagamento"
+            descricao="A taxa da maquininha sai do seu lucro, então ela aparece no total antes de você fechar o combinado."
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Seletor
+                rotulo="Como ela vai pagar"
+                value={valores.formaPagamentoId}
+                onChange={(evento) =>
+                  definir("formaPagamentoId", evento.target.value)
+                }
+              >
+                <option value="">Ainda não sei</option>
+                {formasVisiveis.map((opcao) => (
+                  <option key={opcao.id} value={opcao.id}>
+                    {opcao.nome}
+                  </option>
+                ))}
+              </Seletor>
+
+              <CampoMoeda
+                rotulo="Desconto"
+                valor={valores.desconto}
+                aoMudar={(centavos) => definir("desconto", centavos)}
+                erro={erros.desconto}
+                dica="O arredondamento que você deu para a cliente."
               />
             </div>
-          )}
-        </Bloco>
 
-        <Bloco
-          icone={Wallet}
-          titulo="Pagamento"
-          descricao="A taxa da maquininha sai do seu lucro, então ela aparece no total antes de você fechar o combinado."
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Seletor
-              rotulo="Como ela vai pagar"
-              value={valores.formaPagamentoId}
-              onChange={(evento) =>
-                definir("formaPagamentoId", evento.target.value)
-              }
-            >
-              <option value="">Ainda não sei</option>
-              {formasVisiveis.map((opcao) => (
-                <option key={opcao.id} value={opcao.id}>
-                  {opcao.nome}
-                </option>
-              ))}
-            </Seletor>
+            {derivado.custoTaxaPagamento > 0 && (
+              <p className="num text-label text-ink-muted">
+                A maquininha fica com{" "}
+                {formatarMoeda(derivado.custoTaxaPagamento)} deste pedido, e
+                sobram{" "}
+                {formatarMoeda(derivado.total - derivado.custoTaxaPagamento)}{" "}
+                para você.
+              </p>
+            )}
 
-            <CampoMoeda
-              rotulo="Desconto"
-              valor={valores.desconto}
-              aoMudar={(centavos) => definir("desconto", centavos)}
-              erro={erros.desconto}
-              dica="O arredondamento que você deu para a cliente."
-            />
-          </div>
+            {formasVisiveis.length === 0 && (
+              <p className="text-label text-ink-muted">
+                Você ainda não cadastrou formas de pagamento.{" "}
+                <Link
+                  href="/configuracao"
+                  className="font-medium text-brand-ink underline underline-offset-2"
+                >
+                  Cadastrar agora
+                </Link>
+              </p>
+            )}
 
-          {derivado.custoTaxaPagamento > 0 && (
-            <p className="num text-label text-ink-muted">
-              A maquininha fica com {formatarMoeda(derivado.custoTaxaPagamento)}{" "}
-              deste pedido, e sobram{" "}
-              {formatarMoeda(derivado.total - derivado.custoTaxaPagamento)} para
-              você.
-            </p>
-          )}
-
-          {formasVisiveis.length === 0 && (
-            <p className="text-label text-ink-muted">
-              Você ainda não cadastrou formas de pagamento.{" "}
-              <Link
-                href="/configuracao"
-                className="font-medium text-brand-ink underline underline-offset-2"
-              >
-                Cadastrar agora
-              </Link>
-            </p>
-          )}
-
-          {/* O que vem depois do combinado: receber. O pedido que ainda não
+            {/* O que vem depois do combinado: receber. O pedido que ainda não
               existe não tem o que pagar. */}
-          {pedido && !ajudante && (
-            <BlocoPagamento
-              pedido={pedido}
-              pagoEmISO={pagoEmISO}
-              aoMudarData={setPagoEmISO}
-              aoPagar={() => void pagar()}
-              aoDesfazer={() => void desfazer()}
-              ocupado={salvando}
-              semAgregado={pagamento.carregando}
-              primario={passoEhPrimario && passo === "RECEBER"}
-            />
-          )}
-        </Bloco>
+            {pedido && !ajudante && (
+              <BlocoPagamento
+                pedido={pedido}
+                pagoEmISO={pagoEmISO}
+                aoMudarData={setPagoEmISO}
+                aoPagar={() => void pagar()}
+                aoDesfazer={() => void desfazer()}
+                ocupado={salvando}
+                semAgregado={pagamento.carregando}
+                primario={passoEhPrimario && passo === "RECEBER"}
+              />
+            )}
+          </Bloco>
 
-        {/* Um resumo sem código não é um pedido, é uma proposta
+          {/* Um resumo sem código não é um pedido, é uma proposta
             (`DECISOES.md#d78`): mandar só existe no pedido gravado. A folha lê
             o gravado (`#d107`), o WhatsApp lê a tela (`#d78`). */}
-        {pedido && (
-          <Bloco
-            icone={MessageCircle}
-            titulo="Mandar pra cliente"
-            descricao="Você confere e envia: nada sai daqui sozinho."
-          >
-            <BlocoWhatsApp
-              resumo={resumoParaCliente(pedido)}
-              telefone={valores.clienteTelefone}
-            />
-            <BlocoOrcamento
-              pedidoId={pedido.id}
-              validoAteISO={valores.validoAteISO}
-              aoMudarValidade={(iso) => definir("validoAteISO", iso)}
-              hoje={hoje}
-              temItens={itensResolvidos.length > 0}
-            />
-          </Bloco>
-        )}
+          {pedido && (
+            <Bloco
+              icone={MessageCircle}
+              titulo="Mandar pra cliente"
+              descricao="Você confere e envia: nada sai daqui sozinho."
+            >
+              <BlocoWhatsApp
+                resumo={resumoParaCliente(pedido)}
+                telefone={valores.clienteTelefone}
+              />
+              <BlocoOrcamento
+                pedidoId={pedido.id}
+                validoAteISO={valores.validoAteISO}
+                aoMudarValidade={(iso) => definir("validoAteISO", iso)}
+                hoje={hoje}
+                temItens={itensResolvidos.length > 0}
+              />
+            </Bloco>
+          )}
 
-        {falha && (
-          <p role="alert" className="text-label text-negative">
-            {falha}
-          </p>
-        )}
+          {falha && (
+            <p role="alert" className="text-label text-negative">
+              {falha}
+            </p>
+          )}
 
-        {pedido &&
-          (confirmandoArquivo ? (
-            <div className="rounded-lg border border-negative/30 bg-negative-soft p-4">
-              <p className="text-label text-ink">
-                Arquivar este pedido? Ele sai da agenda e não volta na lista.
-                Para dizer que a encomenda não vai acontecer, o certo é{" "}
-                <strong className="font-semibold">cancelar</strong>: arquivar é
-                para o pedido que foi anotado duas vezes.
-              </p>
-              <div className="mt-3 flex gap-2">
-                <Botao
-                  tamanho="sm"
-                  onClick={() => setConfirmandoArquivo(false)}
-                  disabled={salvando}
-                >
-                  Deixar como está
-                </Botao>
-                <Botao
-                  tamanho="sm"
-                  variante="perigo"
-                  carregando={salvando}
-                  onClick={() => void arquivar()}
-                >
-                  Arquivar mesmo assim
-                </Botao>
+          {pedido &&
+            (confirmandoArquivo ? (
+              <div className="rounded-lg border border-negative/30 bg-negative-soft p-4">
+                <p className="text-label text-ink">
+                  Arquivar este pedido? Ele sai da agenda e não volta na lista.
+                  Para dizer que a encomenda não vai acontecer, o certo é{" "}
+                  <strong className="font-semibold">cancelar</strong>: arquivar
+                  é para o pedido que foi anotado duas vezes.
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <Botao
+                    tamanho="sm"
+                    onClick={() => setConfirmandoArquivo(false)}
+                    disabled={salvando}
+                  >
+                    Deixar como está
+                  </Botao>
+                  <Botao
+                    tamanho="sm"
+                    variante="perigo"
+                    carregando={salvando}
+                    onClick={() => void arquivar()}
+                  >
+                    Arquivar mesmo assim
+                  </Botao>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2 border-t border-line pt-5">
-              {podeCancelar && (
+            ) : (
+              <div className="flex flex-wrap gap-2 border-t border-line pt-5">
+                {podeCancelar && (
+                  <Botao
+                    variante="perigo"
+                    tamanho="sm"
+                    disabled={salvando}
+                    onClick={() => void mover("CANCELADO")}
+                    iconeInicial={
+                      <Ban aria-hidden className="size-4" strokeWidth={1.75} />
+                    }
+                  >
+                    {ACAO_STATUS_PEDIDO.CANCELADO}
+                  </Botao>
+                )}
                 <Botao
                   variante="perigo"
                   tamanho="sm"
-                  disabled={salvando}
-                  onClick={() => void mover("CANCELADO")}
+                  onClick={() => setConfirmandoArquivo(true)}
                   iconeInicial={
-                    <Ban aria-hidden className="size-4" strokeWidth={1.75} />
+                    <Archive
+                      aria-hidden
+                      className="size-4"
+                      strokeWidth={1.75}
+                    />
                   }
                 >
-                  {ACAO_STATUS_PEDIDO.CANCELADO}
+                  Arquivar pedido
                 </Botao>
-              )}
-              <Botao
-                variante="perigo"
-                tamanho="sm"
-                onClick={() => setConfirmandoArquivo(true)}
-                iconeInicial={
-                  <Archive aria-hidden className="size-4" strokeWidth={1.75} />
-                }
-              >
-                Arquivar pedido
-              </Botao>
-            </div>
-          ))}
-      </div>
+              </div>
+            ))}
+        </div>
 
-      <PainelPedido derivado={derivado} />
+        <PainelPedido derivado={derivado} itens={itensResolvidos} />
+      </div>
 
       <PainelCliente
         aberto={cadastro.aberto}

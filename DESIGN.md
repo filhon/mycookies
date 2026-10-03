@@ -202,8 +202,10 @@ Uma estrutura só, dois arranjos. A quebra é estrutural, nunca tipográfica.
 A **coluna de leitura** (1024px, centrada) é escolha da tela, e não do shell (`#d129`):
 formulário, prosa e lista de linhas entram nela (o grupo de rota `(coluna)`); a tela cuja
 lista virou tabela fica fora e ocupa a largura que tem, com o detalhe do item selecionado em
-coluna acoplada à direita. O cabeçalho de contexto sangra até a borda da área de conteúdo nos
-dois casos, e o título alinha com a coluna da tela.
+coluna acoplada à direita. O editor de pedido em `2xl` também sai: o formulário à esquerda e o
+resumo (itens, total, sobra) numa coluna de 320px à direita, presa sob o cabeçalho, no lugar
+do rodapé fixo, e sem botões (`#d274`). O cabeçalho de contexto sangra até a borda da área de
+conteúdo nos dois casos, e o título alinha com a coluna da tela.
 
 ### Raios
 

@@ -92,13 +92,13 @@ encontrar, e o espaço já está sobrando na tela.
 
 ## Critérios de aceite
 
-- [ ] Duas colunas só a partir de `2xl`; abaixo, sem diferença.
-- [ ] O resumo e o rodapé saem do mesmo componente e da mesma `derivarPedido`.
-- [ ] Nenhuma ação duplicada na coluna.
-- [ ] Atalho de salvar com `preventDefault`, só onde há "Salvar".
-- [ ] Nenhum campo, regra, índice ou dependência.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d274` escrito; `DESIGN.md` e `ESTADO.md` atualizados.
+- [x] Duas colunas só a partir de `2xl`; abaixo, sem diferença.
+- [x] O resumo e o rodapé saem do mesmo componente e da mesma `derivarPedido`.
+- [x] Nenhuma ação duplicada na coluna.
+- [x] Atalho de salvar com `preventDefault`, só onde há "Salvar".
+- [x] Nenhum campo, regra, índice ou dependência.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d274` escrito; `DESIGN.md` e `ESTADO.md` atualizados.
 
 ---
 
