@@ -1,11 +1,16 @@
 import {
   deleteField,
   doc,
+  getDocs,
   increment,
+  query,
   setDoc,
   Timestamp,
   updateDoc,
+  where,
+  writeBatch,
 } from "firebase/firestore";
+import { obterDb } from "../client";
 import { colFichas, docFicha, docResumoGlobal } from "../colecoes";
 import { despachar } from "./despachar";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
@@ -13,6 +18,7 @@ import {
   custoLinhaComponente,
   custoLinhaItem,
   derivarFicha,
+  refazerCustoPelaConfiguracao,
   type RateioOperacional,
 } from "@/lib/domain/custoFicha";
 import type { ParametrosPreco } from "@/lib/domain/precificacao";
@@ -260,4 +266,46 @@ export async function arquivarFicha(
       { merge: true },
     ),
   );
+}
+
+/**
+ * A configuração mudou a hora, a energia, o gás ou as despesas (`#d281`): a
+ * receita é refeita com os números novos e o mesmo `precoVenda`; o kit só é
+ * marcado, porque o custo dele vem das receitas que acabaram de mudar, e o
+ * editor do kit já refaz a cascata.
+ *
+ * Sem rede, `getDocs` responde do cache, como em `marcarFichasDesatualizadas`.
+ * Devolve quantas refez e quantos kits marcou.
+ */
+export async function refazerFichasPelaConfiguracao(
+  contaId: string,
+  operacional: RateioOperacional,
+): Promise<{ refeitas: number; kits: number }> {
+  const fichas = await getDocs(
+    query(colFichas(contaId), where("arquivado", "==", false)),
+  );
+
+  // ponytail: um lote só, e um `writeBatch` aceita 500 operações; com mais
+  // de 500 fichas, partir em lotes de 500.
+  const lote = writeBatch(obterDb());
+  const momento = agora();
+  let kits = 0;
+  fichas.forEach((retrato) => {
+    const ficha = retrato.data();
+    // Pelo tipo, e não por `componenteIds`: o combo só de escolhas tem a
+    // lista vazia e o custo vindo das receitas do mesmo jeito.
+    if (ficha.tipo === "KIT") {
+      kits += 1;
+      lote.update(retrato.ref, { v: VERSAO_SCHEMA, custoDesatualizado: true });
+      return;
+    }
+    lote.update(retrato.ref, {
+      ...refazerCustoPelaConfiguracao(ficha, operacional),
+      v: VERSAO_SCHEMA,
+      custoCalculadoEm: momento,
+    });
+  });
+  if (!fichas.empty) despachar(lote.commit());
+
+  return { refeitas: fichas.size - kits, kits };
 }

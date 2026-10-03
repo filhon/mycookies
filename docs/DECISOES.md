@@ -8374,3 +8374,46 @@ como o cancelamento de pedido pago sempre fez.
 
 **Consequência.** Pedido cancelado com sinal fica fora de "a receber" como todo cancelado, e o
 sinal continua no caixa e no relatório do MEI do mês dele.
+
+## D281 · Salvar a configuração refaz o que é dela nas fichas
+
+**Status:** vigente · decidida em 2026-10-03, spec `082-o-que-muda-nos-produtos.md` (sessão A).
+
+**Contexto.** A ficha grava `invisiveis`, `custoTotalLote`, `custoUnitario` e a `precificacao`
+derivada com a configuração do dia em que foi salva (`#d04`). Mudar a hora de R$ 25 para R$ 30
+não mudava produto nenhum e nada avisava: o "sobra R$ 2,10" continuava lá até ela abrir e salvar
+cada ficha.
+
+**Decisão.**
+
+- `salvar` da Configuração compara o rateio novo (hora, energia, gás e `custoIndiretoPorHora`,
+  que é o que a ficha consome) com o gravado. Se mudou, ou se é a primeira gravação (que troca o
+  sugerido do `#d114` pelo dela), chama `refazerFichasPelaConfiguracao` depois de
+  `salvarConfiguracao`. Mudar despesas e horas de um jeito que dá a mesma fatia por hora não
+  refaz: a ficha não muda. Preço padrão, formas e folha nunca refazem.
+- **Receita** (`tipo: "SIMPLES"`): `refazerCustoPelaConfiguracao` em `domain/custoFicha.ts`
+  passa por `derivarFicha`, a mesma conta do editor, com as somas de material gravadas
+  (`custoInsumos`, `custoEmbalagem`, `custoComponentes`, `custoEscolhas`) e o
+  `tempoProducaoMinutos` de sempre. Regrava `invisiveis`, `custoTotalLote`, `custoUnitario` e, na
+  `precificacao`, `precoSugerido`, `lucroUnitario`, `margemReal` e `markupReal`. **`precoVenda`
+  fica**: o preço é decisão dela. `custoDesatualizado` fica como estava: material velho continua
+  dito. O teste salva a R$ 25, refaz a R$ 30 e compara com o editor salvando a R$ 30, nos dois
+  métodos.
+- **Kit** (`tipo: "KIT"`): só `custoDesatualizado: true`. O custo vem das receitas de dentro, que
+  acabaram de mudar; o editor do kit refaz a cascata.
+- Um `writeBatch` despachado, `v: VERSAO_SCHEMA`, e `custoCalculadoEm: Timestamp.now()` só na
+  receita refeita (o kit não foi calculado). `getDocs` das fichas não arquivadas, que sem rede
+  responde do cache, como `marcarFichasDesatualizadas`.
+
+**Fora do que a spec desenhou.**
+
+- O kit é reconhecido pelo **tipo**, e não por `componenteIds` não vazio: o combo só de escolhas
+  (`#d99`) tem `componenteIds` vazio e o custo vindo das receitas do mesmo jeito; pela regra da
+  spec, ele seria refeito com o `custoEscolhas` velho e sairia sem o selo.
+- Os materiais entram como uma linha por soma gravada, e não linha a linha pelos `itens`: o
+  `custoUnidadeBaseCorrigido` não está gravado na linha, e `custoLinhaItem` de um inteiro × 1
+  devolve o inteiro, então a soma de antes entra exata.
+
+**Consequência.** Mais de 500 fichas estouram o lote (comentário `ponytail:` no código; a saída
+são lotes de 500). A taxa da maquininha gravada em cada ficha (`taxaCartaoConsiderada`) não muda
+com a Configuração; é outra pergunta.

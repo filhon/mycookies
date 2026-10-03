@@ -64,6 +64,8 @@ import {
   type DadosConfiguracao,
 } from "@/lib/firebase/mutations/configuracao";
 import { definirAvisosPorEmail } from "@/lib/firebase/mutations/conta";
+import { refazerFichasPelaConfiguracao } from "@/lib/firebase/mutations/fichas";
+import type { RateioOperacional } from "@/lib/domain/custoFicha";
 import { useDocumento } from "@/lib/hooks/useColecao";
 import type {
   ConfiguracaoGeral,
@@ -457,10 +459,29 @@ function ConfiguracaoDaDona() {
       return;
     }
 
+    // O que a ficha consome da configuração (`#d281`). A primeira gravação
+    // troca o sugerido (`#d114`) pelo dela, e refaz mesmo sem diferença.
+    const rateio: RateioOperacional = {
+      valorHoraTrabalho: dados.operacional.valorHoraTrabalho,
+      custoEnergiaHora: dados.operacional.custoEnergiaHora,
+      custoGasHora: dados.operacional.custoGasHora,
+      custoIndiretoPorHora: custoIndiretoPorHora(
+        dados.operacional.despesasFixasMensais,
+        dados.operacional.horasProdutivasMes,
+      ),
+    };
+    const gravado = dado?.operacional;
+    const rateioMudou =
+      !gravado ||
+      (Object.keys(rateio) as (keyof RateioOperacional)[]).some(
+        (chave) => rateio[chave] !== gravado[chave],
+      );
+
     setErros({});
     setSalvando(true);
     try {
       await salvarConfiguracao(contaId, dados);
+      if (rateioMudou) await refazerFichasPelaConfiguracao(contaId, rateio);
       // A base passa a ser o que foi gravado. O nome entra por atualização
       // funcional para não desfazer o que ela tenha digitado durante a escrita.
       setEstado((anterior) =>

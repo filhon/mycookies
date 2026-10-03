@@ -448,6 +448,83 @@ export function derivarFicha(entrada: EntradaFicha): DerivadosFicha {
   };
 }
 
+/** O que `refazerCustoPelaConfiguracao` lê da ficha gravada. `FichaTecnica` serve. */
+export type FichaParaRefazer = Pick<
+  FichaTecnica,
+  | "custoInsumos"
+  | "custoEmbalagem"
+  | "custoComponentes"
+  | "custoEscolhas"
+  | "rendimento"
+  | "invisiveis"
+  | "precificacao"
+>;
+
+/**
+ * A ficha simples refeita com a configuração nova (`#d281`): os materiais como
+ * ela os gravou, o tempo de sempre, a hora, a energia, o gás e as despesas de
+ * agora. Passa por `derivarFicha`, a mesma conta do editor, com o `precoVenda`
+ * gravado: o preço é decisão dela, a sobra é que muda. Devolve só o que muda;
+ * `custoDesatualizado` não é desta conta.
+ */
+export function refazerCustoPelaConfiguracao(
+  ficha: FichaParaRefazer,
+  operacional: RateioOperacional,
+) {
+  const p = ficha.precificacao;
+  const derivado = derivarFicha({
+    // Uma linha por soma gravada: `custoLinhaItem` de um inteiro × 1 devolve
+    // o inteiro, e a soma de antes entra exata, sem refazer linha a linha.
+    itens: [
+      {
+        categoria: "INGREDIENTE",
+        custoUnidadeBaseCorrigido: ficha.custoInsumos,
+        quantidade: 1,
+      },
+      {
+        categoria: "EMBALAGEM",
+        custoUnidadeBaseCorrigido: ficha.custoEmbalagem,
+        quantidade: 1,
+      },
+    ],
+    componentes: [
+      { custoUnitarioSnapshot: ficha.custoComponentes, quantidade: 1 },
+    ],
+    custoEscolhas: ficha.custoEscolhas,
+    tempoProducaoMinutos: ficha.invisiveis.tempoProducaoMinutos,
+    rendimento: ficha.rendimento,
+    operacional,
+    // `arredondamento` só muda o preço de vitrine, e o `precoVenda` vem dado.
+    precificacao: {
+      metodo: p.metodo,
+      markup: p.markup ?? 0,
+      margemDesejada: p.margemDesejada ?? 0,
+      taxaCartaoConsiderada: p.taxaCartaoConsiderada,
+      outrasTaxas: p.outrasTaxas,
+      arredondamento: "NENHUM",
+    },
+    precoVenda: p.precoVenda,
+  });
+
+  return {
+    invisiveis: {
+      tempoProducaoMinutos: ficha.invisiveis.tempoProducaoMinutos,
+      custoMaoDeObra: derivado.custo.custoMaoDeObra,
+      custoEnergiaGas: derivado.custo.custoEnergiaGas,
+      custoIndireto: derivado.custo.custoIndireto,
+    },
+    custoTotalLote: derivado.custo.custoTotalLote,
+    custoUnitario: derivado.custo.custoUnitario,
+    precificacao: {
+      ...p,
+      precoSugerido: derivado.precoSugerido ?? 0,
+      lucroUnitario: derivado.verificacao.lucroUnitario,
+      margemReal: derivado.verificacao.margemReal,
+      markupReal: derivado.verificacao.markupReal,
+    },
+  };
+}
+
 /** O que a conta de hoje precisa de um material vivo. `Insumo` serve. */
 export type MaterialDeHoje = Pick<
   Insumo,

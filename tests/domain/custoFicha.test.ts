@@ -7,6 +7,8 @@ import {
   custoGravado,
   custoLinhaItem,
   custosDeHoje,
+  derivarFicha,
+  refazerCustoPelaConfiguracao,
   efeitoDoPrecoNovo,
   ehEmbalagem,
   kitDividido,
@@ -19,6 +21,8 @@ import {
   temEscolhas,
   usoDoMaterial,
   type EntradaCustoFicha,
+  type EntradaFicha,
+  type FichaParaRefazer,
   type FichaParaEscolha,
   type MaterialDeHoje,
   type RateioOperacional,
@@ -1182,4 +1186,98 @@ describe("ordenarFichas", () => {
       "alfajor",
     ]);
   });
+});
+
+describe("refazerCustoPelaConfiguracao", () => {
+  const entrada = (
+    valorHoraTrabalho: number,
+    metodo: "MARGEM" | "MARKUP",
+  ): EntradaFicha => ({
+    itens: [
+      // Linhas com fração de centavo: a soma gravada é que tem de entrar igual.
+      {
+        categoria: "INGREDIENTE",
+        custoUnidadeBaseCorrigido: 1.3158,
+        quantidade: 30,
+      },
+      {
+        categoria: "INGREDIENTE",
+        custoUnidadeBaseCorrigido: 2.7,
+        quantidade: 125,
+      },
+      {
+        categoria: "EMBALAGEM",
+        custoUnidadeBaseCorrigido: 45.5,
+        quantidade: 12,
+      },
+    ],
+    componentes: [],
+    tempoProducaoMinutos: 95,
+    rendimento: 12,
+    operacional: { ...OPERACIONAL, valorHoraTrabalho },
+    precificacao: {
+      metodo,
+      markup: 2.5,
+      margemDesejada: 30,
+      taxaCartaoConsiderada: 3.5,
+      outrasTaxas: 4,
+      arredondamento: "MEIO_REAL",
+    },
+    precoVenda: 900,
+  });
+
+  /** O que `corpoDaFicha` grava, só os campos que a conta lê. */
+  function gravada(e: EntradaFicha): FichaParaRefazer {
+    const d = derivarFicha(e);
+    return {
+      custoInsumos: d.custo.custoInsumos,
+      custoEmbalagem: d.custo.custoEmbalagem,
+      custoComponentes: d.custo.custoComponentes,
+      custoEscolhas: d.custo.custoEscolhas,
+      rendimento: e.rendimento,
+      invisiveis: {
+        tempoProducaoMinutos: e.tempoProducaoMinutos,
+        custoMaoDeObra: d.custo.custoMaoDeObra,
+        custoEnergiaGas: d.custo.custoEnergiaGas,
+        custoIndireto: d.custo.custoIndireto,
+      },
+      precificacao: {
+        metodo: e.precificacao.metodo,
+        markup: e.precificacao.markup,
+        margemDesejada: e.precificacao.margemDesejada,
+        taxaCartaoConsiderada: e.precificacao.taxaCartaoConsiderada,
+        outrasTaxas: e.precificacao.outrasTaxas,
+        precoSugerido: d.precoSugerido ?? 0,
+        precoVenda: d.precoVenda,
+        lucroUnitario: d.verificacao.lucroUnitario,
+        margemReal: d.verificacao.margemReal,
+        markupReal: d.verificacao.markupReal,
+      },
+    };
+  }
+
+  it.each(["MARGEM", "MARKUP"] as const)(
+    "salva a R$ 25 e refeita a R$ 30 dá o que o editor gravaria a R$ 30 (%s)",
+    (metodo) => {
+      const refeita = refazerCustoPelaConfiguracao(
+        gravada(entrada(2500, metodo)),
+        { ...OPERACIONAL, valorHoraTrabalho: 3000 },
+      );
+      const doEditor = gravada(entrada(3000, metodo));
+
+      expect(refeita.invisiveis).toEqual(doEditor.invisiveis);
+      expect(refeita.custoUnitario).toBe(
+        derivarFicha(entrada(3000, metodo)).custo.custoUnitario,
+      );
+      expect(refeita.custoTotalLote).toBe(
+        derivarFicha(entrada(3000, metodo)).custo.custoTotalLote,
+      );
+      expect(refeita.precificacao).toEqual(doEditor.precificacao);
+      // O preço é dela: a sobra cai, o preço fica.
+      expect(refeita.precificacao.precoVenda).toBe(900);
+      expect(refeita.precificacao.lucroUnitario).toBeLessThan(
+        gravada(entrada(2500, metodo)).precificacao.lucroUnitario,
+      );
+    },
+  );
 });
