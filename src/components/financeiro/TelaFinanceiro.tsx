@@ -1,13 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
-import { CircleAlert, Plus, RotateCcw } from "lucide-react";
+import { CircleAlert, FileText, Plus, RotateCcw } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { BlocoMeta } from "@/components/metas/BlocoMeta";
 import { FormularioMeta } from "@/components/metas/FormularioMeta";
 import { Botao } from "@/components/ui/Botao";
 import { EsqueletoLista, Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
+import { classesBotao } from "@/components/ui/estilosBotao";
+import { limiteDoAno } from "@/lib/domain/mei";
 import {
   conferirAgregado,
   contasQueRepetemPendentes,
@@ -63,6 +66,7 @@ import { FormularioTransacao } from "./FormularioTransacao";
 import { ID_LISTA_DO_MES, ListaDoMes } from "./ListaDoMes";
 import { MovimentoPorDia } from "./MovimentoPorDia";
 import { ProdutosDoMes } from "./ProdutosDoMes";
+import { LimiteDoAnoMei } from "./RelatorioMei";
 import { ResultadoDoMes } from "./ResultadoDoMes";
 import { SaidasPorCategoria } from "./SaidasPorCategoria";
 import { SeletorMes } from "./SeletorMes";
@@ -209,6 +213,39 @@ export function TelaFinanceiro() {
     />
   );
   const pendente = lancamentos.pendente || resumo.pendente || meta.pendente;
+
+  // Do dia 1 ao 20 do mês corrente, o relatório que ela precisa preencher é o
+  // do mês anterior (`#d269`). O limite lê os agregados que a tela já assina.
+  const relatorioDoAnterior = ehMesCorrente && hoje.getDate() <= 20;
+  const mesDoRelatorio = relatorioDoAnterior
+    ? competenciaVizinha(competencia, -1)
+    : competencia;
+  const peDoMei = (
+    <div className="flex flex-col gap-4">
+      <Link
+        href={`/financeiro/relatorio-mei/${mesDoRelatorio}`}
+        className={classesBotao({
+          variante: "terciaria",
+          tamanho: "sm",
+          className: "self-start",
+        })}
+      >
+        <FileText aria-hidden className="size-4" strokeWidth={1.75} />
+        Relatório do MEI de {rotuloMes(mesDoRelatorio)}
+        {relatorioDoAnterior && ", até o dia 20"}
+      </Link>
+      <div className="max-w-md">
+        <LimiteDoAnoMei
+          compacto
+          limite={limiteDoAno(agregados.dados, competencia)}
+          competencia={competencia}
+          soVenda={lancamentos.dados.every(
+            (l) => l.tipo !== "ENTRADA" || l.categoria === "VENDA",
+          )}
+        />
+      </div>
+    </div>
+  );
 
   // O mês existe se ele tem lançamento, e não se o documento de agregado
   // existe: um mês em que tudo foi arquivado não tem resultado a mostrar.
@@ -423,6 +460,8 @@ export function TelaFinanceiro() {
               }
             />
           </div>
+
+          {peDoMei}
         </div>
       ) : (
         <div className="mt-4 flex flex-col gap-8">
@@ -452,15 +491,15 @@ export function TelaFinanceiro() {
                 />
               )}
 
-              <div className="order-1 xl:order-none">
+              <div className="order-1 xl:order-0">
                 <ResultadoDoMes parcelas={parcelas} comparacao={comparacao} />
               </div>
 
-              <div className="order-2 empty:hidden xl:order-none">
+              <div className="order-2 empty:hidden xl:order-0">
                 {aoFimDoMes}
               </div>
 
-              <div className="order-4 xl:order-none">
+              <div className="order-4 xl:order-0">
                 {/* Remonta a cada mês: trocar de mês limpa o filtro (`#d266`). */}
                 <ListaDoMes
                   key={competencia}
@@ -484,7 +523,7 @@ export function TelaFinanceiro() {
                 Em perspectiva
               </h2>
 
-              <div className="order-3 xl:order-none">
+              <div className="order-3 xl:order-0">
                 <BlocoMeta
                   competencia={competencia}
                   meta={meta.dado}
@@ -495,11 +534,9 @@ export function TelaFinanceiro() {
                 />
               </div>
 
-              <div className="order-7 empty:hidden xl:order-none">
-                {dozeMeses}
-              </div>
+              <div className="order-7 empty:hidden xl:order-0">{dozeMeses}</div>
 
-              <div className="order-5 empty:hidden xl:order-none">
+              <div className="order-5 empty:hidden xl:order-0">
                 <MovimentoPorDia
                   competencia={competencia}
                   porDia={parcelas.porDia}
@@ -511,7 +548,7 @@ export function TelaFinanceiro() {
 
               {/* O ranking some sozinho em mês sem pedido pago: zero ali é
                   ausência, e ausência não vira linha de R$ 0,00. */}
-              <div className="order-6 flex flex-col gap-8 empty:hidden xl:order-none">
+              <div className="order-6 flex flex-col gap-8 empty:hidden xl:order-0">
                 <ProdutosDoMes produtos={parcelas.produtos} />
                 <SaidasPorCategoria
                   porCategoriaSaida={parcelas.porCategoriaSaida}
@@ -525,6 +562,7 @@ export function TelaFinanceiro() {
           {/* A rede de segurança, e não o caminho normal: no pé, onde não
               disputa atenção. Quem fala quando o número está errado de fato é
               o `AgregadoAtrasado` (`#d81`). */}
+          {peDoMei}
           <div>
             <Botao
               variante="terciaria"

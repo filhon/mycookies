@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-10-02 (**a 073 codificada**, o caixa com peso: só o mês e a meta como cartão, o resto como seção no papel, os lançamentos em quarto na pilha e duas colunas a partir de `xl` ("O mês" e "Em perspectiva", sem `sticky`), o traço de 4 px no lugar do fundo do ranking e das saídas, o pé só com "Refazer as contas do mês", e o gráfico até `max(hoje, 7)` com cada dia como botão que filtra a lista (`dia` em `filtrarLancamentos`), `#d267` e `#d268`; nenhum campo, consulta, regra ou dependência; roteiro de navegador da seção 4 por rodar; **a 072 codificada**, a lista do mês: o nome da cliente no título da linha e o código no detalhe (`tituloDoLancamento`, com `descricaoDaVenda` mudada para o domínio), os lançamentos por dia com o saldo do dia, Tudo · Entrou · Saiu, a busca e a categoria de "Para onde o dinheiro foi" filtrando a lista, em `ListaDoMes`, `#d266`; nenhum campo, consulta, regra ou dependência; roteiro de navegador da seção 4 por rodar; **a 071 codificada**, o mês contra os outros: a `Comparacao` da
+Atualizado em 2026-10-02 (**a 074 codificada, e com ela a crítica do Caixa (069 a 074) inteira**, o relatório do MEI: `/financeiro/relatorio-mei/[competencia]` monta o Relatório Mensal das Receitas Brutas das entradas `VENDA` do mês, no modelo do portal conferido no dia, com indústria ou comércio e a nota emitida guardados no aparelho, para imprimir como o orçamento; o limite do ano (R$ 81.000,00, conferido) com o ritmo e os avisos em ocre no topo da tela e compacto no pé de `/financeiro`, cujo link aponta para o mês anterior do dia 1 ao 20, `#d269` e `#d270`; nenhum campo, consulta, regra, índice ou dependência; roteiro de navegador da seção 4 por rodar; **a 073 codificada**, o caixa com peso: só o mês e a meta como cartão, o resto como seção no papel, os lançamentos em quarto na pilha e duas colunas a partir de `xl` ("O mês" e "Em perspectiva", sem `sticky`), o traço de 4 px no lugar do fundo do ranking e das saídas, o pé só com "Refazer as contas do mês", e o gráfico até `max(hoje, 7)` com cada dia como botão que filtra a lista (`dia` em `filtrarLancamentos`), `#d267` e `#d268`; nenhum campo, consulta, regra ou dependência; roteiro de navegador da seção 4 por rodar; **a 072 codificada**, a lista do mês: o nome da cliente no título da linha e o código no detalhe (`tituloDoLancamento`, com `descricaoDaVenda` mudada para o domínio), os lançamentos por dia com o saldo do dia, Tudo · Entrou · Saiu, a busca e a categoria de "Para onde o dinheiro foi" filtrando a lista, em `ListaDoMes`, `#d266`; nenhum campo, consulta, regra ou dependência; roteiro de navegador da seção 4 por rodar; **a 071 codificada**, o mês contra os outros: a `Comparacao` da
 Hoje em arquivo próprio e na faixa "No caixa" de `/financeiro` (até o dia no mês corrente, o mês
 inteiro no fechado), `consultaAgregadosDoPeriodo` por id, `mesesDaFaixa` e `noAno` em
 `domain/caixa.ts` com teste, e `DozeMeses` depois da meta, `#d264` e `#d265`; nenhum campo,
@@ -4400,6 +4400,42 @@ para a mesma URL não foi testado no navegador: o `preventDefault` vale nos dois
 mais importa: é ele que prova a tira da área segura.
 
 Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
+## A spec 074 · O relatório do MEI
+
+**Codificada em 2026-10-02** (`#d269`, `#d270`). Nenhum campo, consulta nova, regra, índice ou
+dependência.
+
+- **Passo 2.1 conferido no dia**: o modelo é o PDF do Portal do Empreendedor
+  (`relatorio-mensal-das-receitas-brutas-1.pdf`, Anexo X da Resolução CGSN 140/2018), linha por
+  linha; o limite segue R$ 81.000,00 em 2026 (R$ 6.750,00 por mês no ano de abertura), com o
+  PLP 186/2026 ainda por votar.
+- `src/lib/domain/mei.ts`: `LIMITE_MEI_ANUAL` (data e fonte no comentário), `LIMITE_MEI_POR_MES`,
+  `relatorioMei` e `limiteDoAno`. Sete casos em `tests/domain/mei.test.ts`.
+- `src/app/(app)/(coluna)/financeiro/relatorio-mei/[competencia]/page.tsx`: competência fora de
+  `AAAA-MM` dá 404; `key` pela competência. A ajudante é recusada pelo `ROTAS_SO_DA_DONA`, que
+  já casa filhas de `/financeiro`.
+- `src/components/financeiro/RelatorioMei.tsx`: o cabeçalho com "Caixa" de volta e o
+  `SeletorMes` trocando a URL por `replace`; o limite do ano; "Antes de imprimir" com Indústria ·
+  Comércio e a nota emitida no mês (no aparelho, `rende:mei-atividade` e `rende:mei-nota:AAAA-MM`,
+  em `try/catch`); a linha das outras entradas que ficaram fora; "Imprimir ou salvar em PDF"; e a
+  `FolhaMei`, uma `<table>` na classe `.folha` da 017. `LimiteDoAnoMei` é exportado para o pé do
+  Caixa.
+- `TelaFinanceiro`: no pé, acima de "Refazer as contas do mês", o link terciário "Relatório do MEI
+  de {mês}" (do dia 1 ao 20 do mês corrente, o anterior, ", até o dia 20") e o limite compacto,
+  lido dos agregados que a tela já assina. Também no mês em branco, onde não há pé: é o caso do
+  dia 5.
+
+**Diferente da spec** (no `#d269` e no `#d270`): o anexo segue o portal (dois itens) e corrige o
+"ANEXADOS E ESTE" dele para "A ESTE"; as linhas VII e VIII aparecem inteiras; o verbo do limite é
+"Você faturou" ou "Entrou" num rótulo sobre o número; o campo da nota diz "Emiti nota fiscal em
+outubro, no total de".
+
+**Não rodou:** o roteiro de navegador (§ 4), inteiro. O passo 5 (uma página A4 no Chrome e no
+Safari do iPhone) é estimado: o conteúdo soma ~195 mm dos 265 mm úteis.
+
+Portão: lint e typecheck limpos, **875 testes** (7 novos), `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
 ## A spec 073 · O caixa com peso

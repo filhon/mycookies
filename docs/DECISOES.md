@@ -7955,3 +7955,70 @@ em cima": no desktop o mês está na outra coluna.
 
 **Consequência.** Se o roteiro mostrar que a coluna estreita erra o dia, o próximo passo é um
 alvo maior que a coluna, não um gráfico mais largo.
+
+---
+
+## D269 · O relatório do MEI sai das vendas do mês, e ela só confere
+
+**Status:** vigente · decidida em 2026-10-02, spec `074-o-relatorio-do-mei.md`
+
+**Contexto.** A confeiteira MEI deve preencher o Relatório Mensal das Receitas Brutas até o dia
+20 do mês seguinte. O Rende tem cada venda com data e valor bruto, e ela copiava à mão.
+
+**Decisão.**
+
+- **A rota** é `/financeiro/relatorio-mei/[competencia]`, na coluna, com o `SeletorMes` trocando a
+  URL por `replace` (o voltar do aparelho vai ao Caixa). Competência fora de `AAAA-MM` dá 404.
+  Só a dona: o `ROTAS_SO_DA_DONA` já casa as filhas de `/financeiro`.
+- **A receita bruta** é a soma das entradas `VENDA` do mês, pelo valor bruto (antes da
+  maquininha), lida da lista do mês (`consultaTransacoesDoMes`), e não do agregado, que não
+  separa entrada por categoria. `relatorioMei` em `domain/mei.ts`. Entrada de outra categoria
+  fica fora, e a tela diz quanto: "R$ 500,00 de outras entradas ficaram fora: só venda é receita."
+- **Tudo na linha IV** por padrão (indústria, sem documento fiscal). "Minha atividade no MEI é"
+  Indústria · Comércio move as vendas para I e II; "Emiti nota fiscal em {mês}, no total de" tira
+  o valor de IV (ou I) e põe em V (ou II), cortado no total. As duas escolhas moram no aparelho
+  (`rende:mei-atividade` e `rende:mei-nota:AAAA-MM`), em `try/catch`; sem elas, o padrão.
+  Prestação de serviço (VII a IX) fica zerada.
+- **O papel** é a `FolhaMei`, uma `<table>` na classe `.folha` da 017: A4, tinta sobre branco,
+  números tabulares à direita, a fonte da UI, nenhum logotipo, uma linha de rodapé apagada
+  ("Somado das vendas lançadas no Rende em …"), `#d127`. CNPJ e nome ficam em linha para ela
+  escrever. O PDF é o navegador imprimindo, como o orçamento (`#d106`).
+
+**Conferido no dia.** O modelo é o PDF do Portal do Empreendedor (Anexo X da Resolução CGSN
+140/2018), e o papel o segue linha por linha. Duas diferenças do esboço da spec: as linhas VII e
+VIII aparecem inteiras, e os anexos são os dois itens do portal ("Os documentos fiscais
+comprobatórios das entradas…" e "As notas fiscais relativas às operações…"). O título dos anexos
+corrige o "ANEXADOS E ESTE RELATÓRIO" do portal para "A ESTE".
+
+**Consequência.** Venda lançada fora de `VENDA` some do relatório; a linha das outras entradas é a
+única defesa. Trocar de aparelho perde as duas escolhas; se o relatório for usado, elas vão para a
+conta com o CNPJ.
+
+---
+
+## D270 · O limite do ano, com a conta e sem alarme
+
+**Status:** vigente · decidida em 2026-10-02, spec `074-o-relatorio-do-mei.md`
+
+**Decisão.**
+
+- **`LIMITE_MEI_ANUAL`** = R$ 81.000,00, em `domain/mei.ts`, com a data da conferência
+  (2026-10-02) e a fonte no comentário; `LIMITE_MEI_POR_MES` = R$ 6.750,00, o proporcional do ano
+  de abertura. Conferido no dia: o valor vale para 2026, e o PLP 186/2026 (R$ 110 mil em 2027)
+  ainda não foi votado.
+- **O ano** é a soma de `entradas` dos agregados de janeiro até o mês aberto (`limiteDoAno`, por
+  id, como `noAno`). Conta entrada que não é venda: erra pra cima, o lado seguro de um limite.
+  O rótulo sobre o número é "Você faturou" quando o mês aberto só tem entrada `VENDA`, e
+  "Entrou" quando não; nesse caso a tela do relatório explica que a conta erra pra cima.
+- **O ritmo** é a média dos meses com agregado vezes doze, numa frase; some em dezembro.
+- **Estados**, pelos centavos e não pelo percentual: abaixo de 80%, tinta e preenchimento
+  `brand-ink`; de 80% a 100%, preenchimento `--attention`, `TriangleAlert` e "Perto do limite do
+  MEI. Vale conversar com um contador antes de dezembro."; acima de 100%, o mesmo, com o texto do
+  desenquadramento e "Fale com um contador". O texto fica em tinta; o ocre é só ícone e barra.
+  Nunca vermelho.
+- **Onde**: no topo da tela do relatório, completo (com o ritmo e "Abriu o MEI este ano?"), e no
+  pé de `/financeiro`, compacto, acima de "Refazer as contas do mês", com o link "Relatório do MEI
+  de {mês}". Do dia 1 ao 20 do mês corrente, o link aponta para o mês anterior (", até o dia
+  20"). O pé do MEI aparece também no mês em branco, que é como o mês corrente está no dia 5.
+
+**Consequência.** Se a lei mudar o limite, muda uma constante; o comentário diz onde conferir.

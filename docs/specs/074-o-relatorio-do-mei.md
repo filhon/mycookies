@@ -154,13 +154,13 @@ No ritmo deste ano, você fecha dezembro perto de R$ 25.800,00.
 
 ## Critérios de aceite
 
-- [ ] O papel segue o modelo do portal, linha por linha, conferido no dia.
-- [ ] Só `VENDA` de `ENTRADA` soma no relatório; o limite soma `entradas` do agregado.
-- [ ] Escolhas no aparelho, com `try/catch`; a tela funciona sem elas.
-- [ ] Estados do limite com ícone e palavra, sem vermelho.
-- [ ] Nenhum campo novo, nenhuma regra, nenhum índice.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d269` e `#d270` escritos; `ESTADO.md` atualizado.
+- [x] O papel segue o modelo do portal, linha por linha, conferido no dia.
+- [x] Só `VENDA` de `ENTRADA` soma no relatório; o limite soma `entradas` do agregado.
+- [x] Escolhas no aparelho, com `try/catch`; a tela funciona sem elas.
+- [x] Estados do limite com ícone e palavra, sem vermelho.
+- [x] Nenhum campo novo, nenhuma regra, nenhum índice.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d269` e `#d270` escritos; `ESTADO.md` atualizado.
 
 ---
 

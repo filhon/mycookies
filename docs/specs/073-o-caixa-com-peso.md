@@ -134,12 +134,12 @@ A 390, 1024, 1280 e 1864 px, nos dois temas.
 
 ## Critérios de aceite
 
-- [ ] Só o bloco do mês e a meta com borda e raio de cartão.
-- [ ] Duas colunas a partir de `xl`, mesma ordem de leitura para teclado e leitor de tela.
-- [ ] Gráfico até `max(hoje, 7)` no mês corrente; colunas são botões com rótulo.
-- [ ] Nenhum fundo de linha inteira usado como medida.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d267` e `#d268` escritos; o `DESIGN.md` ganha a linha "Seção no papel" na tabela de
+- [x] Só o bloco do mês e a meta com borda e raio de cartão.
+- [x] Duas colunas a partir de `xl`, mesma ordem de leitura para teclado e leitor de tela.
+- [x] Gráfico até `max(hoje, 7)` no mês corrente; colunas são botões com rótulo.
+- [x] Nenhum fundo de linha inteira usado como medida.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d267` e `#d268` escritos; o `DESIGN.md` ganha a linha "Seção no papel" na tabela de
       componentes; `ESTADO.md` atualizado.
 
 ---
