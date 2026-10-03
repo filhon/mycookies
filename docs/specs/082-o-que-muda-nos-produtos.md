@@ -99,12 +99,12 @@ de cada produto. **Nenhum campo, nenhuma regra, nenhum índice, nenhuma dependê
 
 ## Critérios de aceite
 
-- [ ] Salvar com `operacional` mudado refaz as fichas simples e marca os kits; `precoVenda`
+- [x] Salvar com `operacional` mudado refaz as fichas simples e marca os kits; `precoVenda`
       intocado.
-- [ ] `refazerCustoPelaConfiguracao` com teste contra o resultado do editor.
-- [ ] Prévia só com diferença, com prejuízo dito por ícone, cor e palavra.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d281` e `#d282` escritos; `ESTADO.md` atualizado.
+- [x] `refazerCustoPelaConfiguracao` com teste contra o resultado do editor.
+- [x] Prévia só com diferença, com prejuízo dito por ícone, cor e palavra.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d281` e `#d282` escritos; `ESTADO.md` atualizado.
 
 ---
 

@@ -35,6 +35,10 @@ import { CustoPorHora } from "./CustoPorHora";
 import { FormularioFormaPagamento } from "./FormularioFormaPagamento";
 import { ListaFormasPagamento } from "./ListaFormasPagamento";
 import {
+  OQueMudaNosProdutos,
+  type ReciboDosProdutos,
+} from "./OQueMudaNosProdutos";
+import {
   custoDeMinutos,
   custoIndiretoPorHora,
   FORNADA_EXEMPLO_MINUTOS,
@@ -345,6 +349,7 @@ function ConfiguracaoDaDona() {
   const [erros, setErros] = useState<Record<string, string>>({});
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
+  const [recibo, setRecibo] = useState<ReciboDosProdutos | null>(null);
   const [falha, setFalha] = useState<string | null>(null);
   const [formaEmEdicao, setFormaEmEdicao] = useState<FormaPagamento>();
   const [painelAberto, setPainelAberto] = useState(false);
@@ -414,6 +419,22 @@ function ConfiguracaoDaDona() {
   );
   const energiaGas = operacional.custoEnergiaHora + operacional.custoGasHora;
 
+  // O que a ficha consome da configuração (`#d281`). Diz se o salvar refaz os
+  // produtos e se a prévia aparece (`#d282`). A primeira gravação troca o
+  // sugerido (`#d114`) pelo dela, e refaz mesmo sem diferença.
+  const rateio: RateioOperacional = {
+    valorHoraTrabalho: operacional.valorHoraTrabalho,
+    custoEnergiaHora: operacional.custoEnergiaHora,
+    custoGasHora: operacional.custoGasHora,
+    custoIndiretoPorHora: indireto,
+  };
+  const gravado = dado?.operacional;
+  const rateioMudou =
+    !gravado ||
+    (Object.keys(rateio) as (keyof RateioOperacional)[]).some(
+      (chave) => rateio[chave] !== gravado[chave],
+    );
+
   function trocarForma(forma: FormaPagamento) {
     setSalvo(false);
     setEstado((anterior) => {
@@ -459,29 +480,15 @@ function ConfiguracaoDaDona() {
       return;
     }
 
-    // O que a ficha consome da configuração (`#d281`). A primeira gravação
-    // troca o sugerido (`#d114`) pelo dela, e refaz mesmo sem diferença.
-    const rateio: RateioOperacional = {
-      valorHoraTrabalho: dados.operacional.valorHoraTrabalho,
-      custoEnergiaHora: dados.operacional.custoEnergiaHora,
-      custoGasHora: dados.operacional.custoGasHora,
-      custoIndiretoPorHora: custoIndiretoPorHora(
-        dados.operacional.despesasFixasMensais,
-        dados.operacional.horasProdutivasMes,
-      ),
-    };
-    const gravado = dado?.operacional;
-    const rateioMudou =
-      !gravado ||
-      (Object.keys(rateio) as (keyof RateioOperacional)[]).some(
-        (chave) => rateio[chave] !== gravado[chave],
-      );
-
     setErros({});
     setSalvando(true);
     try {
       await salvarConfiguracao(contaId, dados);
-      if (rateioMudou) await refazerFichasPelaConfiguracao(contaId, rateio);
+      setRecibo(
+        rateioMudou
+          ? await refazerFichasPelaConfiguracao(contaId, rateio)
+          : null,
+      );
       // A base passa a ser o que foi gravado. O nome entra por atualização
       // funcional para não desfazer o que ela tenha digitado durante a escrita.
       setEstado((anterior) =>
@@ -651,6 +658,12 @@ function ConfiguracaoDaDona() {
         </BlocoConfiguracao>
 
         <CustoPorHora operacional={operacional} />
+
+        {/* O recibo só enquanto "Tudo salvo": a primeira alteração o tira. */}
+        <OQueMudaNosProdutos
+          rateio={rateioMudou ? rateio : null}
+          recibo={salvo ? recibo : null}
+        />
 
         <BlocoConfiguracao
           icone={CreditCard}

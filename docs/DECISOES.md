@@ -8417,3 +8417,37 @@ cada ficha.
 **Consequência.** Mais de 500 fichas estouram o lote (comentário `ponytail:` no código; a saída
 são lotes de 500). A taxa da maquininha gravada em cada ficha (`taxaCartaoConsiderada`) não muda
 com a Configuração; é outra pergunta.
+
+## D282 · A prévia do que muda nos produtos, e o recibo no lugar dela
+
+**Status:** vigente · decidida em 2026-10-03, spec `082-o-que-muda-nos-produtos.md` (sessão B).
+
+**Contexto.** Com a `#d281`, salvar a Configuração refaz as receitas, mas ela mudava o número no
+escuro: a faixa de cada bloco diz o efeito numa fornada de exemplo, nunca nos doces dela.
+
+**Decisão.**
+
+- `OQueMudaNosProdutos` (em `components/configuracao/`), logo abaixo de "Cada hora de produção
+  custa". Aparece pela **mesma comparação do salvar**: o rateio da tela (hora, energia, gás e a
+  fatia das despesas por hora) contra o gravado, ou a primeira gravação. O rateio e a comparação
+  saíram do `salvar` para o corpo da tela, e os dois os leem de lá: a prévia nunca promete o que
+  o salvar não faz.
+- Cada receita passa por `refazerCustoPelaConfiguracao` **contra o que ela gravou**, e não contra o
+  rateio de antes: é exatamente o que o salvar vai gravar, inclusive na ficha salva com uma
+  configuração mais antiga. Receita cujo custo por unidade não muda (sem tempo de produção) fica
+  fora da frase e da lista.
+- A frase conta mais caros e mais baratos em separado (fichas salvas em dias diferentes podem ir
+  para lados opostos), com a faixa por unidade, ou o valor só, quando é um.
+- A linha usa `fraseSetaSobra` de `LinhaFicha` ("sobram R$ 2,10 → R$ 1,80"; cruzando o zero,
+  "sobram R$ 0,07 → perde R$ 0,43"). Sobra nova negativa: `TrendingDown`, `text-negative`, e
+  ", passa a dar prejuízo" quando a de antes não era.
+- As fichas vêm da consulta de `/fichas` (não arquivadas, por `nomeBusca`), assinada pelo
+  componente, que está sempre montado: o cache já a tem, e a prévia aparece na primeira tecla.
+- O recibo vem do que `refazerFichasPelaConfiguracao` devolve, em `role="status"`, com "Ver os
+  produtos" para `/fichas`. Vive enquanto vive o "Tudo salvo": a primeira alteração o tira.
+  Salvar sem rateio mudado não mostra recibo.
+- Seção no papel: `h2` em `subheading`, lista com divisórias em `surface`; nenhum cartão novo,
+  nenhum âmbar. Sem `aria-live` na prévia, como a faixa dos blocos (muda a cada tecla).
+
+**Consequência.** A conta da prévia roda a cada render da tela, sobre dezenas de fichas; com
+centenas, memorizar pelo rateio.
