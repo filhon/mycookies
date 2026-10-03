@@ -86,13 +86,13 @@ BR Code do Banco Central), sem servidor e sem internet.
 
 ## Critérios de aceite
 
-- [ ] `brCodePix` com teste, incluindo o exemplo do manual e o CRC.
-- [ ] Valor em centavos até virar texto.
-- [ ] Pix só enquanto há o que pagar.
-- [ ] Forma sem `pix` funciona como hoje.
-- [ ] Nenhuma regra, índice ou dependência.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d278` escrito; `ESTADO.md` atualizado.
+- [x] `brCodePix` com teste, incluindo o exemplo do manual e o CRC.
+- [x] Valor em centavos até virar texto.
+- [x] Pix só enquanto há o que pagar.
+- [x] Forma sem `pix` funciona como hoje.
+- [x] Nenhuma regra, índice ou dependência.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d278` escrito; `ESTADO.md` atualizado.
 
 ---
 

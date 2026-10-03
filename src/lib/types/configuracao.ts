@@ -32,6 +32,12 @@ export interface FormaPagamento {
    * Ausente quando não há o que dizer — dinheiro, cartão na entrega.
    */
   instrucoes?: string;
+  /**
+   * Só em `tipo: "PIX"` (spec 080, `DECISOES.md#d278`): com os três, o resumo
+   * do WhatsApp leva o Pix copia e cola com o valor no lugar das `instrucoes`.
+   * A chave já vem arrumada (`chavePix`); nome e cidade como ela escreveu.
+   */
+  pix?: { chave: string; nome: string; cidade: string };
 }
 
 /**

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Botao } from "@/components/ui/Botao";
 import { AreaTexto, Campo, Seletor } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
+import { BotaoCopiar } from "@/components/ui/BotaoCopiar";
 import { Painel } from "@/components/ui/Painel";
 import {
   liquidoRecebido,
@@ -14,6 +15,7 @@ import {
   VENDA_EXEMPLO,
 } from "@/lib/domain/custosOperacionais";
 import { formatarMoeda, parseParaNumero } from "@/lib/domain/money";
+import { brCodePix, chavePix } from "@/lib/domain/pix";
 import { errosPorCampo, esquemaFormaPagamento } from "@/lib/domain/schemas";
 import type { FormaPagamento, TipoPagamento } from "@/lib/types";
 import { novoId } from "@/lib/utils/id";
@@ -40,6 +42,9 @@ interface EstadoForma {
   taxaFixa: number;
   prazoRecebimentoDias: string;
   instrucoes: string;
+  chavePix: string;
+  nomePix: string;
+  cidadePix: string;
   ativo: boolean;
 }
 
@@ -52,6 +57,9 @@ function nova(tipo: TipoPagamento = "PIX"): EstadoForma {
     taxaFixa: 0,
     prazoRecebimentoDias: String(sugestao.prazoRecebimentoDias),
     instrucoes: "",
+    chavePix: "",
+    nomePix: "",
+    cidadePix: "",
     ativo: true,
   };
 }
@@ -64,6 +72,9 @@ function daForma(forma: FormaPagamento): EstadoForma {
     taxaFixa: forma.taxaFixa,
     prazoRecebimentoDias: String(forma.prazoRecebimentoDias),
     instrucoes: forma.instrucoes ?? "",
+    chavePix: forma.pix?.chave ?? "",
+    nomePix: forma.pix?.nome ?? "",
+    cidadePix: forma.pix?.cidade ?? "",
     ativo: forma.ativo,
   };
 }
@@ -127,6 +138,15 @@ export function FormularioFormaPagamento({
   const cobrado = taxaCobrada(VENDA_EXEMPLO, taxas);
   const prazo = Math.trunc(parseParaNumero(estado.prazoRecebimentoDias));
 
+  // O Pix com o valor só existe na forma Pix, e com os três dados (`#d278`).
+  const ehPix = estado.tipo === "PIX";
+  const pix = {
+    chave: chavePix(estado.chavePix),
+    nome: estado.nomePix.trim(),
+    cidade: estado.cidadePix.trim(),
+  };
+  const pixCompleto = ehPix && !!pix.chave && !!pix.nome && !!pix.cidade;
+
   function confirmar() {
     const resultado = esquemaFormaPagamento.safeParse({
       nome: estado.nome,
@@ -135,6 +155,13 @@ export function FormularioFormaPagamento({
       taxaFixa: estado.taxaFixa,
       prazoRecebimentoDias: prazo,
       instrucoes: estado.instrucoes,
+      ...(ehPix
+        ? {
+            chavePix: estado.chavePix,
+            nomePix: estado.nomePix,
+            cidadePix: estado.cidadePix,
+          }
+        : {}),
     });
 
     if (!resultado.success) {
@@ -143,12 +170,24 @@ export function FormularioFormaPagamento({
     }
 
     setErros({});
-    const { instrucoes, ...dados } = resultado.data;
+    const {
+      nome,
+      tipo,
+      taxaPercentual,
+      taxaFixa,
+      prazoRecebimentoDias,
+      instrucoes,
+    } = resultado.data;
     aoConfirmar({
       id: forma?.id ?? novoId(),
-      ...dados,
+      nome,
+      tipo,
+      taxaPercentual,
+      taxaFixa,
+      prazoRecebimentoDias,
       // Vazio é ausência: o campo não vai para o documento em branco.
       ...(instrucoes ? { instrucoes } : {}),
+      ...(pixCompleto ? { pix } : {}),
       ativo: estado.ativo,
     });
     aoFechar();
@@ -235,6 +274,68 @@ export function FormularioFormaPagamento({
           }
           onChange={(evento) => definir("instrucoes", evento.target.value)}
         />
+
+        {ehPix && (
+          <div
+            role="group"
+            aria-labelledby="titulo-pix"
+            className="space-y-4 border-t border-line pt-5"
+          >
+            <div>
+              <h3 id="titulo-pix" className="text-label font-semibold text-ink">
+                Pix com o valor
+              </h3>
+              <p className="mt-1 max-w-[56ch] text-label text-ink-muted">
+                Com os três, o resumo do WhatsApp leva o Pix copia e cola já com
+                o valor do pedido. A cliente cola no banco e só confirma.
+              </p>
+            </div>
+            <Campo
+              rotulo="Chave Pix"
+              value={estado.chavePix}
+              erro={erros.chavePix}
+              autoComplete="off"
+              dica="Telefone com DDD, CPF, CNPJ, e-mail ou a chave aleatória."
+              onChange={(evento) => definir("chavePix", evento.target.value)}
+            />
+            <Campo
+              rotulo="Nome de quem recebe (como aparece no banco)"
+              value={estado.nomePix}
+              erro={erros.nomePix}
+              autoComplete="name"
+              onChange={(evento) => definir("nomePix", evento.target.value)}
+            />
+            <Campo
+              rotulo="Cidade"
+              value={estado.cidadePix}
+              erro={erros.cidadePix}
+              autoComplete="address-level2"
+              onChange={(evento) => definir("cidadePix", evento.target.value)}
+            />
+
+            {pixCompleto && (
+              <div className="space-y-2 rounded-lg bg-sunken px-4 py-4">
+                <p className="max-w-[56ch] wrap-break-word text-label text-ink">
+                  O Pix vai para <strong>{pix.nome}</strong>, chave{" "}
+                  <strong>{pix.chave}</strong>.
+                </p>
+                <p className="max-w-[56ch] text-label text-ink-muted">
+                  Pague um real a você mesma antes de mandar para uma cliente: é
+                  no banco que você vê se o nome e a chave estão certos.
+                </p>
+                <BotaoCopiar
+                  variante="terciaria"
+                  rotulo="Copiar um Pix de R$ 1,00 para testar"
+                  texto={brCodePix({
+                    ...pix,
+                    valor: 100,
+                    identificador: "TESTE",
+                  })}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="rounded-lg bg-sunken px-4 py-4">
           <p className="text-label font-medium text-ink-muted">

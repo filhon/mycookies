@@ -25,6 +25,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Botao } from "@/components/ui/Botao";
+import { BotaoCopiar } from "@/components/ui/BotaoCopiar";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Painel } from "@/components/ui/Painel";
 import { Pilulas } from "@/components/ui/Pilulas";
@@ -39,6 +40,7 @@ import {
   rotuloDiaPorExtenso,
 } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
+import { brCodePix } from "@/lib/domain/pix";
 import {
   ACAO_STATUS_PEDIDO,
   derivarPedido,
@@ -259,6 +261,7 @@ export function FichaDoPedido({
         },
         formaNome: forma?.nome,
         formaInstrucoes: forma?.instrucoes,
+        formaPix: forma?.pix,
         pago: pedido.pago,
       });
 
@@ -474,6 +477,21 @@ export function FichaDoPedido({
               .filter(Boolean)
               .join(" · ")}
           </p>
+
+          {/* A cobrança com o Pix na mão (`#d278`): colado na conversa, ou
+                onde ela quiser, já com o valor e o código do pedido. */}
+          {!pedido.pago && forma?.pix && pedido.total > 0 && (
+            <div className="mt-3">
+              <BotaoCopiar
+                rotulo={`Copiar o Pix de ${formatarMoeda(pedido.total)}`}
+                texto={brCodePix({
+                  ...forma.pix,
+                  valor: pedido.total,
+                  identificador: pedido.codigo,
+                })}
+              />
+            </div>
+          )}
 
           {escolherForma && (
             <div className="mt-3 space-y-2">

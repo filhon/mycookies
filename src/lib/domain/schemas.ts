@@ -32,28 +32,50 @@ export type EntradaInsumo = z.infer<typeof esquemaInsumo>;
 /** Um mês tem 744 horas no maior dos casos. Acima disso é dedo errado. */
 const HORAS_MAXIMAS_MES = 744;
 
-export const esquemaFormaPagamento = z.object({
-  nome: z.string().trim().min(2, "Dê um nome a esta forma de pagamento."),
-  tipo: z.enum([
-    "PIX",
-    "DINHEIRO",
-    "DEBITO",
-    "CREDITO",
-    "CREDITO_PARCELADO",
-    "TRANSFERENCIA",
-  ]),
-  taxaPercentual: z
-    .number()
-    .min(0, "A taxa não pode ser negativa.")
-    .max(99, "Uma taxa de 100% não deixaria nada para você."),
-  taxaFixa: z.number().int().min(0, "A taxa fixa não pode ser negativa."),
-  prazoRecebimentoDias: z
-    .number()
-    .int("O prazo é em dias inteiros.")
-    .min(0, "O prazo não pode ser negativo.")
-    .max(365, "Um prazo maior que um ano não é forma de pagamento."),
-  instrucoes: z.string().trim().optional(),
-});
+export const esquemaFormaPagamento = z
+  .object({
+    nome: z.string().trim().min(2, "Dê um nome a esta forma de pagamento."),
+    tipo: z.enum([
+      "PIX",
+      "DINHEIRO",
+      "DEBITO",
+      "CREDITO",
+      "CREDITO_PARCELADO",
+      "TRANSFERENCIA",
+    ]),
+    taxaPercentual: z
+      .number()
+      .min(0, "A taxa não pode ser negativa.")
+      .max(99, "Uma taxa de 100% não deixaria nada para você."),
+    taxaFixa: z.number().int().min(0, "A taxa fixa não pode ser negativa."),
+    prazoRecebimentoDias: z
+      .number()
+      .int("O prazo é em dias inteiros.")
+      .min(0, "O prazo não pode ser negativo.")
+      .max(365, "Um prazo maior que um ano não é forma de pagamento."),
+    instrucoes: z.string().trim().optional(),
+    // Os três do Pix com valor (`#d278`): os três ou nenhum.
+    chavePix: z
+      .string()
+      .trim()
+      .max(77, "Uma chave Pix tem no máximo 77 caracteres.")
+      .optional(),
+    nomePix: z.string().trim().optional(),
+    cidadePix: z.string().trim().optional(),
+  })
+  .superRefine((forma, contexto) => {
+    const campos = [
+      ["chavePix", "Falta a chave."],
+      ["nomePix", "Falta o nome de quem recebe."],
+      ["cidadePix", "Falta a cidade."],
+    ] as const;
+    if (campos.every(([campo]) => !forma[campo])) return;
+    for (const [campo, mensagem] of campos) {
+      if (!forma[campo]) {
+        contexto.addIssue({ code: "custom", path: [campo], message: mensagem });
+      }
+    }
+  });
 
 export type EntradaFormaPagamento = z.infer<typeof esquemaFormaPagamento>;
 

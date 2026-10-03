@@ -1,6 +1,7 @@
 import type { Centavos, DataISO } from "@/lib/types";
 import { rotuloDiaPorExtenso } from "./datas";
 import { formatarMoeda } from "./money";
+import { brCodePix, type DadosPix } from "./pix";
 import { nomeComEscolhas, quantidadeEmTexto, subtotalDoItem } from "./pedido";
 
 /**
@@ -79,6 +80,11 @@ export interface ResumoParaCliente {
   formaNome?: string;
   /** Os dados para pagar por essa forma (`FormaPagamento.instrucoes`). */
   formaInstrucoes?: string;
+  /**
+   * O Pix da forma (`FormaPagamento.pix`), quando ela tem os três dados: o
+   * resumo leva o copia e cola com o total no lugar das instruções (`#d278`).
+   */
+  formaPix?: DadosPix;
   pago: boolean;
 }
 
@@ -90,8 +96,8 @@ function primeiroNome(nome: string): string {
 /**
  * A cobrança do pedido entregue e não pago (`DECISOES.md#d249`): curta, com o
  * dia da entrega e o valor, sem lista de itens. Ela já recebeu o doce; o que
- * falta lembrar é o quanto. Os dados para pagar não entram: não existe chave
- * Pix na configuração (spec 063).
+ * falta lembrar é o quanto. Os dados para pagar não entram: o Pix com o valor
+ * vai pelo "Copiar o Pix" da ficha, colado onde ela quiser (spec 080).
  */
 export function mensagemDeCobranca(pedido: {
   clienteNome: string;
@@ -153,9 +159,25 @@ export function mensagemDoPedido(resumo: ResumoParaCliente): string {
   ];
 
   // Os dados para pagar são bloco próprio, e só enquanto há o que pagar: chave
-  // Pix embaixo de "Já está pago" é um convite a pagar de novo.
+  // Pix embaixo de "Já está pago" é um convite a pagar de novo. Com o Pix da
+  // forma, o copia e cola entra no lugar das instruções, numa linha só dele,
+  // para a cliente copiar sem levar texto junto (`#d278`).
   const instrucoes = resumo.formaInstrucoes?.trim();
-  const paraPagar = instrucoes && !resumo.pago ? [instrucoes] : [];
+  const pix =
+    resumo.formaPix && resumo.total > 0
+      ? brCodePix({
+          ...resumo.formaPix,
+          valor: resumo.total,
+          identificador: resumo.codigo,
+        })
+      : undefined;
+  const paraPagar = resumo.pago
+    ? []
+    : pix
+      ? [`Pix copia e cola (já com o valor):\n${pix}`]
+      : instrucoes
+        ? [instrucoes]
+        : [];
 
   return [
     // Conta que nunca salvou a configuração não tem nome de negócio, e um

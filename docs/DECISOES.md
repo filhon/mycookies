@@ -8251,3 +8251,43 @@ já tinha quatro pedidos.
 
 **Consequência.** A capacidade do dia ("você faz no máximo 80") fica para quando houver o campo e
 a pergunta; a agenda de `/pedidos` continua sendo o calendário com a carga de cada dia.
+
+## D278 · O Pix montado no aparelho, com o valor
+
+**Status:** vigente · decidida em 2026-10-03, spec `080-o-pix-com-valor.md`
+
+**Contexto.** O resumo do WhatsApp levava `FormaPagamento.instrucoes`, texto livre ("Pix: 81
+99679-6370"). A cliente copiava a chave, abria o banco, digitava o valor e, muitas vezes, pagava
+depois ou pagava errado. O equivalente brasileiro do link de pagamento, sem gateway, sem taxa e
+sem cadastro, é o Pix copia e cola com valor: um texto montado por regra pública.
+
+**Decisão.**
+
+- `FormaPagamento.pix?: { chave, nome, cidade }`, só em `tipo: "PIX"`, **os três ou nenhum**.
+  Três campos, e não a chave lida das `instrucoes`: texto livre não é confiável para dinheiro.
+  As `instrucoes` continuam, e continuam indo na folha do orçamento.
+- `brCodePix` em `domain/pix.ts` monta o BR Code estático. Conferido no dia no **Manual de
+  Padrões para Iniciação do Pix, v2.10.0**: campos, tamanhos e o exemplo (`…63041D3D`), que é
+  teste. Nenhuma divergência da spec. O `01` (Point of Initiation Method) fica fora, como no
+  exemplo estático do manual: o mesmo código pode ser pago de novo, e é o caso do teste de R$ 1,00.
+- O valor vai dos centavos para "68.00" por divisão inteira, sem float. Nome até 25 e cidade até
+  15, sem acento e só ASCII: o tamanho de cada campo é contado em caracteres, e acento quebraria a
+  contagem e o CRC. O identificador `62-05` é o código do pedido sem o hífen, só `[A-Za-z0-9]`,
+  até 25; vazio vira `***`, o "sem identificador" do manual.
+- **A chave é arrumada antes de gravar** (`chavePix`), fora do que a spec desenhou: ela escreve o
+  telefone como telefone, e o banco só acha `+55…`. Arruma só o que não é ambíguo: e-mail e chave
+  aleatória em minúsculas, `+` com dígitos, telefone com parêntese ou espaço e 10 ou 11 dígitos
+  ganha `+55`, CPF e CNPJ pontuados viram só os números. Onze dígitos soltos ficam como estão,
+  porque podem ser um CPF. A conferência mostra a chave já arrumada.
+- Aparece **só enquanto há o que pagar** (não pago e total acima de zero) e a forma do pedido tem
+  `pix`: no resumo do WhatsApp, "Pix copia e cola (já com o valor):" e o código na linha de baixo,
+  no lugar das instruções; no bloco Pagamento do editor (com o total da tela, como o resumo,
+  `#d78`, e só no pedido gravado, que tem código) e na ficha do pedido, "Copiar o Pix de R$ …"
+  secundário, com "Copiado" por 2 s em `aria-live` e, sem permissão de área de transferência, o
+  código selecionável na tela (`ui/BotaoCopiar`).
+- A cobrança curta da ficha (`mensagemDeCobranca`) continua sem o Pix: o botão da ficha o leva.
+- O valor é o total do pedido. Com a 081, passa a ser o que falta pagar.
+
+**Consequência.** O QR em imagem fica fora enquanto pedir biblioteca. Chave errada é dinheiro na
+conta de outra pessoa: a conferência e o Pix de R$ 1,00 da Configuração existem por isso, e só o
+roteiro em banco de verdade prova o código.

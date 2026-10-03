@@ -33,6 +33,7 @@ import {
 import { PainelCliente } from "@/components/clientes/PainelCliente";
 import { Bloco } from "@/components/ui/Bloco";
 import { Botao } from "@/components/ui/Botao";
+import { BotaoCopiar } from "@/components/ui/BotaoCopiar";
 import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
 import {
   AreaTexto,
@@ -53,6 +54,7 @@ import { TrilhaDoPedido } from "./TrilhaDoPedido";
 import { podeSerComponente, temEscolhas } from "@/lib/domain/custoFicha";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { formatarMoeda, parseParaNumero } from "@/lib/domain/money";
+import { brCodePix } from "@/lib/domain/pix";
 import {
   ACAO_STATUS_PEDIDO,
   cargaDoDia,
@@ -811,6 +813,7 @@ export function FormularioPedido({
       },
       formaNome: forma?.nome,
       formaInstrucoes: forma?.instrucoes,
+      formaPix: forma?.pix,
       pago: salvo.pago,
     };
   }
@@ -1682,6 +1685,19 @@ export function FormularioPedido({
                 {formatarMoeda(derivado.total - derivado.custoTaxaPagamento)}{" "}
                 para você.
               </p>
+            )}
+
+            {/* O Pix com o valor da tela, como o resumo do WhatsApp (`#d278`):
+              só no pedido gravado, que tem código, e enquanto há o que pagar. */}
+            {pedido && !pedido.pago && forma?.pix && derivado.total > 0 && (
+              <BotaoCopiar
+                rotulo={`Copiar o Pix de ${formatarMoeda(derivado.total)}`}
+                texto={brCodePix({
+                  ...forma.pix,
+                  valor: derivado.total,
+                  identificador: pedido.codigo,
+                })}
+              />
             )}
 
             {formasVisiveis.length === 0 && (

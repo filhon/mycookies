@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { formatarMoeda } from "@/lib/domain/money";
+import { brCodePix } from "@/lib/domain/pix";
 import {
   linkDoWhatsApp,
   mensagemDeCobranca,
@@ -166,6 +167,44 @@ describe("mensagemDoPedido", () => {
 
     expect(texto).not.toContain("Chave Pix");
     expect(texto).toContain("Já está pago. Obrigada!");
+  });
+
+  const DADOS_PIX = {
+    chave: "+5581996796370",
+    nome: "Maynara Honório",
+    cidade: "Recife",
+  };
+
+  it("com o Pix da forma, leva o copia e cola com o total no lugar das instruções", () => {
+    const texto = mensagemDoPedido({
+      ...PEDIDO,
+      formaNome: "Pix",
+      formaInstrucoes: PIX,
+      formaPix: DADOS_PIX,
+    });
+    const codigo = brCodePix({
+      ...DADOS_PIX,
+      valor: 24000,
+      identificador: "P-260915-K3F",
+    });
+
+    expect(texto).not.toContain("Chave Pix");
+    expect(texto).toContain(
+      `Pagamento: Pix\n\nPix copia e cola (já com o valor):\n${codigo}\n\nQualquer ajuste é só me chamar.`,
+    );
+    expect(codigo).toContain("5406240.00");
+    expect(codigo).toContain("0510P260915K3F");
+  });
+
+  it("não leva o Pix quando já está pago", () => {
+    const texto = mensagemDoPedido({
+      ...PEDIDO,
+      formaPix: DADOS_PIX,
+      pago: true,
+    });
+
+    expect(texto).not.toContain("copia e cola");
+    expect(texto).not.toContain("br.gov.bcb.pix");
   });
 
   it("diz a nota do item entre parênteses, depois do nome", () => {
