@@ -64,6 +64,17 @@ export interface ItemPedido {
   escolhas?: EscolhaFeita[];
 }
 
+/** O sinal de um pedido: uma entrada própria no caixa, no dia em que entrou. */
+export interface SinalDoPedido {
+  valor: Centavos;
+  pagoEm: Timestamp;
+  /** 'YYYY-MM' de `pagoEm`: o mês do agregado que a entrada moveu. */
+  competencia: CompetenciaMensal;
+  transacaoId: string;
+  /** A taxa da maquininha deste pagamento, congelada (`#d24`). */
+  custoTaxa: Centavos;
+}
+
 export interface Pedido extends DocumentoBase {
   /**
    * Código curto gerado no cliente (ex.: 'P-260901-K3F').
@@ -130,7 +141,11 @@ export interface Pedido extends DocumentoBase {
   total: Centavos;
 
   formaPagamentoId?: string;
-  /** Taxa da maquininha em centavos, já calculada sobre o total. */
+  /**
+   * Taxa da maquininha em centavos, já calculada sobre o total. Com `sinal`, é
+   * a soma das taxas dos dois pagamentos, cada um com a sua taxa fixa
+   * (`taxaDoPedido`, `DECISOES.md#d279`).
+   */
   custoTaxaPagamento: Centavos;
 
   // Resultado financeiro do pedido, pronto para o dashboard.
@@ -150,6 +165,14 @@ export interface Pedido extends DocumentoBase {
   competenciaPagamento?: CompetenciaMensal;
   /** Vínculo com a entrada no fluxo de caixa, criada quando o pedido é pago. */
   transacaoId?: string;
+
+  /**
+   * O que entrou antes da quitação (spec 081, `DECISOES.md#d279`). Ausente é
+   * "sem sinal", o estado de todo pedido de antes da spec. Um só: o sinal e o
+   * resto. Com ele, `pago` continua dizendo "quitado", e a quitação recebe
+   * `total − sinal.valor`.
+   */
+  sinal?: SinalDoPedido;
 
   /**
    * Até quando o preço deste orçamento vale, no fuso do aparelho. Gravado

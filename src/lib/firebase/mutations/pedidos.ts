@@ -41,9 +41,14 @@ import {
   codigoDoPedido,
   derivarPedido,
   descricaoDoRepasse,
+  erroDoSinal,
+  erroDoTotalComSinal,
   podeIrPara,
+  quitacao,
   ROTULO_STATUS_PEDIDO,
   STATUS_NA_AGENDA,
+  taxaDoPedido,
+  type SinalParaConta,
   type EntregaAPagar,
   type PedidoParaEntrega,
   type RepasseFeito,
@@ -57,6 +62,7 @@ import type {
   FormaPagamento,
   ItemPedido,
   Pedido,
+  SinalDoPedido,
   StatusPedido,
 } from "@/lib/types";
 
@@ -199,6 +205,16 @@ function idsUnicos(ids: string[]): string[] {
   return [...new Set(ids)];
 }
 
+/** A forma do pedido entre as da conta, ativa ou não, como o editor a acha. */
+function formaDoPedido(
+  formaPagamentoId: string | null | undefined,
+  formas: FormaPagamento[],
+): FormaPagamento | undefined {
+  return formaPagamentoId
+    ? formas.find((item) => item.id === formaPagamentoId)
+    : undefined;
+}
+
 /** Campo apagado vira `null`, e não campo ausente. Ver `corpoDoPedido`. */
 function texto(valor: string | undefined): string | null {
   const limpo = valor?.trim();
@@ -215,16 +231,15 @@ function texto(valor: string | undefined): string | null {
  * corpo serve às duas escritas: em `updateDoc`, uma chave ausente mantém o
  * valor antigo, e o endereço que ela apagou continuaria lá.
  */
-function corpoDoPedido(dados: DadosPedido) {
-  const forma = dados.formaPagamentoId
-    ? dados.formasPagamento.find((item) => item.id === dados.formaPagamentoId)
-    : undefined;
+function corpoDoPedido(dados: DadosPedido, sinal?: SinalDoPedido) {
+  const forma = formaDoPedido(dados.formaPagamentoId, dados.formasPagamento);
 
   const derivado = derivarPedido({
     itens: dados.itens,
     desconto: dados.desconto,
     taxaEntrega: dados.entrega.taxa,
     forma,
+    sinal,
   });
 
   const itens: ItemPedido[] = dados.itens.map((item, indice) => ({
@@ -350,7 +365,10 @@ function ticketMedioApos(
 }
 
 /** O que a contribuição no caixa precisa saber do pedido. Nada além disso. */
-type PedidoPago = PedidoNoCaixa & { custoTaxaPagamento: Centavos };
+type PedidoPago = PedidoNoCaixa & {
+  custoTaxaPagamento: Centavos;
+  sinal?: SinalParaConta | null;
+};
 
 /**
  * A contribuição do pedido pago no agregado: a do lançamento e a do pedido.
@@ -362,6 +380,10 @@ type PedidoPago = PedidoNoCaixa & { custoTaxaPagamento: Centavos };
  * O lançamento é reconstruído a partir do próprio pedido, e não lido do banco:
  * os dois nasceram do mesmo número no pagamento, então o pedido sabe exatamente
  * o que reverter — e reverter sem ler é o que permite desfazer sem rede.
+ *
+ * Com sinal, o lançamento é o da quitação (`quitacao`), e o pedido entra com o
+ * total: o sinal já moveu o caixa do mês dele, e o pedido conta uma vez só, na
+ * quitação (`#d279`).
  */
 function contribuicaoDoPedidoPago(
   pedido: PedidoPago,
@@ -373,9 +395,8 @@ function contribuicaoDoPedidoPago(
       {
         tipo: "ENTRADA",
         categoria: "VENDA",
-        valor: pedido.total,
+        ...quitacao(pedido),
         dataISO: pagoEmISO,
-        custoTaxa: pedido.custoTaxaPagamento,
       },
       sinal,
     ),
@@ -391,7 +412,11 @@ export async function atualizarPedido(
   contexto: ContextoPagamento | null = null,
   cliente: ClienteAgregavel | null = null,
 ): Promise<void> {
-  const corpo = corpoDoPedido(dados);
+  const corpo = corpoDoPedido(dados, anterior.sinal);
+
+  // O sinal fica quando o pedido muda; menor que ele, o pedido não salva.
+  const erro = erroDoTotalComSinal(corpo.total, anterior.sinal);
+  if (erro) throw new Error(erro);
 
   // O mapa `entrega` vai por **caminho pontilhado**, e não inteiro: gravá-lo
   // inteiro apagaria `repassadoEm` e `repasseTransacaoId`, e a entrega já
@@ -420,10 +445,11 @@ export async function atualizarPedido(
   const competencia =
     anterior.competenciaPagamento ?? competenciaDeISO(pagoEmISO);
 
+  const atual = { ...corpo, sinal: anterior.sinal };
+
   if (anterior.transacaoId) {
     await corrigirValorDaTransacao(contaId, anterior.transacaoId, {
-      valor: corpo.total,
-      custoTaxa: corpo.custoTaxaPagamento,
+      ...quitacao(atual),
       descricao: descricaoDaVenda({
         codigo: anterior.codigo,
         clienteNome: corpo.clienteNome,
@@ -433,7 +459,7 @@ export async function atualizarPedido(
 
   const parcelas = somarParcelas(
     contribuicaoDoPedidoPago(anterior, pagoEmISO, -1),
-    contribuicaoDoPedidoPago(corpo, pagoEmISO, 1),
+    contribuicaoDoPedidoPago(atual, pagoEmISO, 1),
   );
 
   await aplicarNoAgregado(
@@ -464,6 +490,8 @@ export async function atualizarPedido(
  * A data que manda é a do **pagamento**, e não a da entrega: o painel é regime
  * de caixa, e um pedido entregue em 30/09 e pago em 02/10 conta em outubro
  * (`DECISOES.md#d36`).
+ *
+ * Com sinal, o lançamento é do que falta, com a taxa do que falta (`#d279`).
  */
 export async function marcarPedidoPago(
   contaId: string,
@@ -484,14 +512,13 @@ export async function marcarPedidoPago(
       tipo: "ENTRADA",
       categoria: "VENDA",
       descricao: descricaoDaVenda(pedido),
-      valor: pedido.total,
       dataISO: pagoEmISO,
       formaPagamentoId: pedido.formaPagamentoId ?? undefined,
       recorrente: false,
       pedidoId: pedido.id,
       // A taxa do pedido e a do lançamento precisam ser o mesmo número, e o
       // número que vale é o que o rodapé mostrou para ela (`#d24`).
-      custoTaxa: pedido.custoTaxaPagamento,
+      ...quitacao(pedido),
     },
     formas,
   );
@@ -574,6 +601,137 @@ export async function desfazerPagamento(
       { pedidos: -1, gasto: -pedido.total },
       null,
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// O sinal (spec 081, `DECISOES.md#d279` e `#d280`)
+// ---------------------------------------------------------------------------
+
+/** O lançamento do sinal, reconstruído do pedido para reverter sem ler. */
+function lancamentoDoSinal(sinal: SinalDoPedido) {
+  return {
+    id: sinal.transacaoId,
+    competencia: sinal.competencia,
+    tipo: "ENTRADA" as const,
+    categoria: "VENDA" as const,
+    valor: sinal.valor,
+    dataISO: dataISODe(sinal.pagoEm.toDate()),
+    custoTaxa: sinal.custoTaxa,
+  };
+}
+
+/**
+ * O sinal entra no caixa no dia em que entrou: uma `ENTRADA`/`VENDA` própria,
+ * que move só a metade da transação do agregado do mês dele. A metade do
+ * pedido (receita, custo, produtos) espera a quitação, com o total.
+ *
+ * O pedido guarda o sinal e passa a taxa de dois pagamentos (`taxaDoPedido`),
+ * com o lucro junto. Escritas despachadas, como em `marcarPedidoPago` (`#d80`).
+ *
+ * `contexto` é o do mês do sinal.
+ */
+export async function registrarSinal(
+  contaId: string,
+  pedido: Pedido,
+  valor: Centavos,
+  pagoEmISO: DataISO,
+  formas: FormaPagamento[],
+  contexto: ContextoMeta | null,
+): Promise<void> {
+  if (pedido.pago || pedido.sinal || pedido.status === "CANCELADO") return;
+
+  const erro = erroDoSinal(valor, pedido.total);
+  if (erro) throw new Error(erro);
+
+  const forma = formaDoPedido(pedido.formaPagamentoId, formas);
+  const custoTaxa = taxaDoPedido(valor, forma);
+
+  const transacaoId = await criarTransacao(
+    contaId,
+    {
+      tipo: "ENTRADA",
+      categoria: "VENDA",
+      descricao: `${descricaoDaVenda(pedido)} · sinal`,
+      valor,
+      dataISO: pagoEmISO,
+      formaPagamentoId: pedido.formaPagamentoId ?? undefined,
+      recorrente: false,
+      pedidoId: pedido.id,
+      custoTaxa,
+    },
+    formas,
+    contexto,
+  );
+
+  const sinal: SinalDoPedido = {
+    valor,
+    pagoEm: Timestamp.fromDate(dataDeISO(pagoEmISO)),
+    competencia: competenciaDeISO(pagoEmISO),
+    transacaoId,
+    custoTaxa,
+  };
+  const custoTaxaPagamento = taxaDoPedido(pedido.total, forma, sinal);
+
+  despachar(
+    updateDoc(docPedido(contaId, pedido.id), {
+      sinal,
+      custoTaxaPagamento,
+      lucroEstimado:
+        pedido.total - pedido.custoTotalEstimado - custoTaxaPagamento,
+      atualizadoEm: agora(),
+    }),
+  );
+}
+
+/**
+ * O sinal sai: o lançamento é **arquivado** e sai do mês dele, o campo some, e
+ * a taxa do pedido volta a ser a de um pagamento só. Só sem quitação: quitado,
+ * desfazer o pagamento vem antes.
+ *
+ * `contexto` é o do mês do sinal.
+ */
+export async function desfazerSinal(
+  contaId: string,
+  pedido: Pedido,
+  formas: FormaPagamento[],
+  contexto: ContextoMeta | null,
+): Promise<void> {
+  if (pedido.pago || !pedido.sinal) return;
+
+  await arquivarTransacao(contaId, lancamentoDoSinal(pedido.sinal), contexto);
+
+  const custoTaxaPagamento = taxaDoPedido(
+    pedido.total,
+    formaDoPedido(pedido.formaPagamentoId, formas),
+  );
+
+  despachar(
+    updateDoc(docPedido(contaId, pedido.id), {
+      sinal: deleteField(),
+      custoTaxaPagamento,
+      lucroEstimado:
+        pedido.total - pedido.custoTotalEstimado - custoTaxaPagamento,
+      atualizadoEm: agora(),
+    }),
+  );
+}
+
+/**
+ * Cancelar um pedido com sinal (`#d280`). "Ficou com o sinal" não mexe no
+ * caixa: o sinal é receita dela. "Devolvi o sinal" é `desfazerSinal`. O status
+ * vai primeiro, porque é ele que confere se o cancelamento vale.
+ */
+export async function cancelarPedidoComSinal(
+  contaId: string,
+  pedido: Pedido,
+  destino: "FICOU" | "DEVOLVI",
+  formas: FormaPagamento[],
+  contexto: ContextoMeta | null,
+): Promise<void> {
+  await mudarStatusPedido(contaId, pedido, "CANCELADO");
+  if (destino === "DEVOLVI") {
+    await desfazerSinal(contaId, pedido, formas, contexto);
   }
 }
 

@@ -8291,3 +8291,74 @@ sem cadastro, é o Pix copia e cola com valor: um texto montado por regra públi
 **Consequência.** O QR em imagem fica fora enquanto pedir biblioteca. Chave errada é dinheiro na
 conta de outra pessoa: a conferência e o Pix de R$ 1,00 da Configuração existem por isso, e só o
 roteiro em banco de verdade prova o código.
+
+## D279 · Um sinal por pedido, como entrada própria, e o pedido conta na quitação
+
+**Status:** vigente · decidida em 2026-10-03, spec `081-o-sinal.md` (sessão A). Schema aprovado
+por quem conduz o projeto antes do código.
+
+**Contexto.** O pedido tinha `pago: boolean`. Com o sinal na mão, ela escolhia entre tirar o
+pedido de "Me devem" cedo demais ou pôr o sinal de setembro no caixa de outubro, e o relatório
+do MEI (`#d269`), que é regime de caixa, saía errado.
+
+**Decisão.**
+
+- `Pedido.sinal?: { valor, pagoEm, competencia, transacaoId, custoTaxa }`. **Um só**: sinal e
+  resto. Ausente é "sem sinal", o estado de todo pedido antigo, e nada muda para ele. `pago`
+  continua querendo dizer "quitado". `VERSAO_SCHEMA` fica 1: o campo novo é o próprio
+  discriminante, e nenhum campo de pedido sem sinal mudou de sentido.
+- **Registrar** (`registrarSinal`): pedido não pago, não cancelado e sem sinal; valor acima de
+  zero e abaixo do total (`erroDoSinal`: o sinal do valor todo é pagamento). Cria uma
+  `ENTRADA`/`VENDA` com `pedidoId`, descrição `Pedido P-… · Nome · sinal`, por `criarTransacao`:
+  só a metade da transação do agregado do mês do sinal se move. Nasce com `sinalSugerido(total)`,
+  metade arredondada ao real.
+- **O pedido no agregado continua na quitação**, com o total: `receitaPedidos`, `custoDoVendido`,
+  `produtos` e `qtdPedidos` no mês de `pagoEm`. A quitação (`marcarPedidoPago`) lança
+  `quitacao(pedido)`: `total − sinal.valor`, com a taxa do resto. "Recalcular o mês" não mudou: lê
+  os lançamentos do mês (o sinal num, a quitação no outro) e os pedidos quitados nele. O roteiro
+  de dados (sinal em setembro, quitação em outubro, deltas contra a reconstrução dos dois meses)
+  é teste em `tests/domain/sinal.test.ts`.
+- **A taxa da maquininha é por pagamento**, com a taxa fixa uma vez em cada. Fora do que a spec
+  desenhou: com sinal, `custoTaxaPagamento` do pedido passa a ser **a soma das duas taxas**
+  (`taxaDoPedido`: a do sinal, congelada nele, mais a do resto pela forma do pedido), e o
+  `lucroEstimado` vai junto. É o que deixa a quitação saber a própria taxa
+  (`custoTaxaPagamento − sinal.custoTaxa`) sem ler o lançamento, e desfazer sem rede (`#d80`), e
+  é o lucro verdadeiro do pedido. `registrarSinal`, `desfazerSinal` e `atualizarPedido` regravam
+  os dois. O sinal usa a forma do pedido; não há forma própria do sinal.
+- **"A receber"** é `faltaPagar`: `total − sinal`, e zero quitado. `aReceber` soma isso, e com
+  ele "Me devem", "Vai entrar" e a previsão do mês.
+- **Desfazer o pagamento** reverte só a quitação; o sinal fica. **`desfazerSinal`**, só sem
+  quitação, arquiva o lançamento do sinal (reconstruído do campo, sem ler) e tira o campo.
+- **Mudar o total depois do sinal**: o sinal fica; menor que ele, `atualizarPedido` recusa com
+  "O sinal (R$ 50,00) é maior que o pedido. Desfaça o sinal ou ajuste os itens."
+  (`erroDoTotalComSinal`). Igual ao sinal salva, e a quitação seria de R$ 0,00.
+- **Escritas despachadas lado a lado, e não `writeBatch`.** A spec pedia `writeBatch` "como
+  `marcarPedidoPago` faz", mas `marcarPedidoPago` despacha cada escrita (`gravarTransacao`,
+  `updateDoc`, `aplicarNoAgregado`); o sinal faz igual, para não ter dois arranjos de escrita do
+  mesmo dinheiro. Nenhuma `runTransaction`. Se uma escrita se perder, "Recalcular o mês" conserta
+  o agregado.
+
+**Consequência.** A tela (081-B) passa o sinal a `derivarPedido` para o rodapé mostrar a taxa
+gravada. Mais de um pagamento parcial seria uma lista no lugar de `sinal`, e uma mudança de
+`VERSAO_SCHEMA`.
+
+**Achado, sem conserto aqui.** `rendimentoDoMes` tira o "de balcão" de `entradas −
+receitaPedidos`. Com o pedido de R$ 100,00 e sinal de R$ 50,00 em meses diferentes, o mês do
+sinal mostra R$ 50,00 "de balcão", e o da quitação esconde até R$ 50,00 de balcão de verdade (o
+`max(0, …)` engole a diferença). A taxa do sinal também sai do "rendeu" do mês dele. O caixa, o
+MEI e "a receber" estão certos; só a decomposição do "rendeu" fica torta no mês do sinal e no
+da quitação. Consertar pede um campo no agregado (os sinais do mês), que é schema e fica para
+quando incomodar.
+
+## D280 · Cancelar com sinal pergunta o destino dele, e "ficou" é o padrão
+
+**Status:** vigente · decidida em 2026-10-03, spec `081-o-sinal.md` (sessão A).
+
+**Decisão.** `cancelarPedidoComSinal(…, "FICOU" | "DEVOLVI", …)`: o status vai primeiro, porque
+`mudarStatusPedido` é que confere se o cancelamento vale (pedido quitado continua exigindo
+desfazer o pagamento antes). "Ficou com o sinal" não mexe no caixa: o sinal é receita dela, e o
+pedido cancelado continua com o campo. "Devolvi o sinal" é `desfazerSinal`. O padrão da
+confirmação (081-B) é "Ficou", o combinado comum na confeitaria.
+
+**Consequência.** Pedido cancelado com sinal fica fora de "a receber" como todo cancelado, e o
+sinal continua no caixa e no relatório do MEI do mês dele.

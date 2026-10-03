@@ -11,6 +11,7 @@ import { temEscolhas } from "./custoFicha";
 import { chaveDeBusca } from "./custoInsumo";
 import { taxaCobrada } from "./custosOperacionais";
 import { rotuloDia } from "./datas";
+import { formatarMoeda } from "./money";
 import { novoId } from "@/lib/utils/id";
 
 /**
@@ -43,6 +44,15 @@ export interface EntradaPedido {
   taxaEntrega: Centavos;
   /** A forma escolhida, ou nada enquanto ela não escolheu. */
   forma?: TaxasDaForma | null;
+  /** O sinal já recebido, que muda a taxa do pedido (`taxaDoPedido`). */
+  sinal?: SinalParaConta | null;
+}
+
+/** O que a conta do sinal lê dele. `Timestamp` não atravessa para cá. */
+export interface SinalParaConta {
+  valor: Centavos;
+  /** A taxa do pagamento do sinal, congelada quando ele entrou. */
+  custoTaxa: Centavos;
 }
 
 export interface LinhaDoPedido {
@@ -118,9 +128,7 @@ export function derivarPedido(entrada: EntradaPedido): DerivadosPedido {
   const taxaEntrega = Math.max(0, Math.round(entrada.taxaEntrega || 0));
 
   const total = subtotal - desconto + taxaEntrega;
-  const custoTaxaPagamento = entrada.forma
-    ? taxaCobrada(total, entrada.forma)
-    : 0;
+  const custoTaxaPagamento = taxaDoPedido(total, entrada.forma, entrada.sinal);
 
   return {
     linhas,
@@ -138,6 +146,76 @@ export function derivarPedido(entrada: EntradaPedido): DerivadosPedido {
       0,
     ),
   };
+}
+
+// ---------------------------------------------------------------------------
+// O sinal (spec 081, `DECISOES.md#d279`)
+// ---------------------------------------------------------------------------
+
+/**
+ * O que a maquininha fica do pedido inteiro. Sem sinal, a taxa sobre o total.
+ * Com sinal, a do sinal, congelada, mais a do resto: a taxa fixa sai uma vez
+ * por pagamento, que é como a maquininha cobra. É o `custoTaxaPagamento`
+ * gravado, e por isso a quitação sabe a sua taxa sem ler o lançamento.
+ */
+export function taxaDoPedido(
+  total: Centavos,
+  forma: TaxasDaForma | null | undefined,
+  sinal?: SinalParaConta | null,
+): Centavos {
+  const resto = total - (sinal?.valor ?? 0);
+  return (sinal?.custoTaxa ?? 0) + (forma ? taxaCobrada(resto, forma) : 0);
+}
+
+/** O que a quitação recebe: o resto e a taxa dele. Sem sinal, o pedido todo. */
+export function quitacao(pedido: {
+  total: Centavos;
+  custoTaxaPagamento: Centavos;
+  sinal?: SinalParaConta | null;
+}): { valor: Centavos; custoTaxa: Centavos } {
+  return {
+    valor: pedido.total - (pedido.sinal?.valor ?? 0),
+    custoTaxa: Math.max(
+      0,
+      pedido.custoTaxaPagamento - (pedido.sinal?.custoTaxa ?? 0),
+    ),
+  };
+}
+
+/** O que ainda falta entrar deste pedido. Quitado, nada. */
+export function faltaPagar(pedido: {
+  pago: boolean;
+  total: Centavos;
+  sinal?: { valor: Centavos } | null;
+}): Centavos {
+  return pedido.pago
+    ? 0
+    : Math.max(0, pedido.total - (pedido.sinal?.valor ?? 0));
+}
+
+/** Metade do total, arredondada ao real: o sinal de quase toda encomenda. */
+export function sinalSugerido(total: Centavos): Centavos {
+  return Math.round(total / 200) * 100;
+}
+
+/**
+ * Por que este sinal não pode ser registrado, ou `null`. Sinal do valor todo é
+ * pagamento, e "marcar como pago" é o caminho dele.
+ */
+export function erroDoSinal(valor: Centavos, total: Centavos): string | null {
+  if (valor <= 0) return "Digite quanto ela pagou de sinal.";
+  if (valor >= total)
+    return "O sinal é o pedido todo. Marque o pedido como pago.";
+  return null;
+}
+
+/** O pedido com sinal não fica menor que ele (`#d279`). */
+export function erroDoTotalComSinal(
+  total: Centavos,
+  sinal: { valor: Centavos } | null | undefined,
+): string | null {
+  if (!sinal || total >= sinal.valor) return null;
+  return `O sinal (${formatarMoeda(sinal.valor)}) é maior que o pedido. Desfaça o sinal ou ajuste os itens.`;
 }
 
 // ---------------------------------------------------------------------------
@@ -524,9 +602,16 @@ export interface AReceber {
  *
  * Soma em memória sobre os pedidos que a tela já carregou: nenhum agregado
  * novo, nenhuma consulta nova.
+ *
+ * O que soma é `faltaPagar`: o sinal já está no caixa do mês dele (`#d279`).
  */
 export function aReceber(
-  pedidos: { status: StatusPedido; pago: boolean; total: Centavos }[],
+  pedidos: {
+    status: StatusPedido;
+    pago: boolean;
+    total: Centavos;
+    sinal?: { valor: Centavos } | null;
+  }[],
 ): AReceber {
   const abertos = pedidos.filter(
     (pedido) =>
@@ -538,10 +623,13 @@ export function aReceber(
   const entregues = abertos.filter((pedido) => pedido.status === "ENTREGUE");
 
   return {
-    total: abertos.reduce((soma, pedido) => soma + pedido.total, 0),
+    total: abertos.reduce((soma, pedido) => soma + faltaPagar(pedido), 0),
     quantidade: abertos.length,
     entregues: entregues.length,
-    totalEntregue: entregues.reduce((soma, pedido) => soma + pedido.total, 0),
+    totalEntregue: entregues.reduce(
+      (soma, pedido) => soma + faltaPagar(pedido),
+      0,
+    ),
   };
 }
 
