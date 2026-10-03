@@ -291,6 +291,21 @@ export function transicoesPermitidas(status: StatusPedido): StatusPedido[] {
   ];
 }
 
+/**
+ * O que falta fazer neste pedido: o passo adiante da fila ou, entregue e não
+ * pago, receber. Cancelado não está na fila; entregue e pago acabou. A ficha
+ * (`#d249`) e o editor (`#d271`) põem o âmbar aqui. Receber é da dona: quem
+ * chama confere o papel.
+ */
+export function proximoPasso(pedido: {
+  status: StatusPedido;
+  pago: boolean;
+}): StatusPedido | "RECEBER" | undefined {
+  if (pedido.status === "ENTREGUE") return pedido.pago ? undefined : "RECEBER";
+  const posicao = FLUXO_PEDIDO.indexOf(pedido.status);
+  return posicao >= 0 ? FLUXO_PEDIDO[posicao + 1] : undefined;
+}
+
 export function podeIrPara(de: StatusPedido, para: StatusPedido): boolean {
   return transicoesPermitidas(de).includes(para);
 }

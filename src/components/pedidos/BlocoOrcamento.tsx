@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { FileText, TriangleAlert } from "lucide-react";
-import { Bloco } from "@/components/ui/Bloco";
 import { Campo } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { diasEntre, rotuloDataCompleta } from "@/lib/domain/datas";
@@ -32,11 +31,10 @@ export function BlocoOrcamento({
   const situacao = situacaoDaValidade(validoAteISO || undefined, hoje);
 
   return (
-    <Bloco
-      icone={FileText}
-      titulo="Orçamento para empresa"
-      descricao="Uma folha com o logotipo, o que está incluído e a assinatura, pronta para virar PDF."
-    >
+    <div className="space-y-4 border-t border-line pt-4">
+      <h3 className="text-label font-semibold text-ink">
+        Orçamento para empresa
+      </h3>
       <div className="grid gap-4 sm:grid-cols-2">
         <Campo
           rotulo="Válido até"
@@ -71,7 +69,7 @@ export function BlocoOrcamento({
         <div>
           <Link
             href={`/pedidos/${pedidoId}/orcamento`}
-            className={classesBotao({ variante: "primaria", tamanho: "lg" })}
+            className={classesBotao({ variante: "secundaria", tamanho: "lg" })}
           >
             <FileText aria-hidden className="size-5" strokeWidth={1.75} />
             Abrir a folha do orçamento
@@ -85,7 +83,7 @@ export function BlocoOrcamento({
           Adicione o que a empresa pediu. A folha precisa ter o que orçar.
         </p>
       )}
-    </Bloco>
+    </div>
   );
 }
 

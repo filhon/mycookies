@@ -1,5 +1,4 @@
 import { MessageCircle } from "lucide-react";
-import { Bloco } from "@/components/ui/Bloco";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
   linkDoWhatsApp,
@@ -33,11 +32,7 @@ export function BlocoWhatsApp({
   const digitado = telefone?.trim();
 
   return (
-    <Bloco
-      icone={MessageCircle}
-      titulo="Mandar o resumo pra cliente"
-      descricao="Abre o WhatsApp com o pedido escrito. Você confere e envia: nada sai daqui sozinho."
-    >
+    <>
       {resumo.itens.length === 0 ? (
         <p className="max-w-[60ch] text-label text-ink-muted">
           Adicione o que ela pediu: o resumo precisa ter o que confirmar.
@@ -48,7 +43,7 @@ export function BlocoWhatsApp({
             href={linkDoWhatsApp(numero, mensagemDoPedido(resumo))}
             target="_blank"
             rel="noopener noreferrer"
-            className={classesBotao({ variante: "primaria", tamanho: "lg" })}
+            className={classesBotao({ variante: "secundaria", tamanho: "lg" })}
           >
             <MessageCircle aria-hidden className="size-5" strokeWidth={1.75} />
             Abrir o WhatsApp com o resumo
@@ -73,6 +68,6 @@ export function BlocoWhatsApp({
           </p>
         </div>
       )}
-    </Bloco>
+    </>
   );
 }

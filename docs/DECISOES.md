@@ -8022,3 +8022,69 @@ conta com o CNPJ.
   20"). O pé do MEI aparece também no mês em branco, que é como o mês corrente está no dia 5.
 
 **Consequência.** Se a lei mudar o limite, muda uma constante; o comentário diz onde conferir.
+
+---
+
+## D271 · Um âmbar por vez no editor de pedido, e ele vai para o que falta fazer
+
+**Status:** vigente · decidida em 2026-10-03, spec `075-um-ambar-por-vez.md`
+
+**Contexto.** O pedido confirmado mostrava quatro botões âmbar ao mesmo tempo ("Salvar", "Abrir a
+folha do orçamento", "Abrir o WhatsApp com o resumo", "Marcar como pago"), e nenhum dizia qual era
+o próximo passo.
+
+**Decisão.**
+
+- **Pedido novo**, ou **gravado com alteração por salvar** (`sujo`): "Salvar" é o primário; tudo o
+  mais é secundário. Salvar antes de andar; andar com alteração continua possível, sem bloqueio.
+- **Gravado e sem alteração**: o botão do cabeçalho vira "Salvo", secundário, desabilitado, com
+  `Check` e a mesma largura mínima (`min-w-24`), para o título não pular. O âmbar vai para o
+  próximo passo: `proximoPasso(pedido)` em `domain/pedido.ts`, o passo adiante de `FLUXO_PEDIDO`
+  ou, entregue e não pago, `"RECEBER"`, que é o "Marcar como pago" de `BlocoPagamento`. Receber é
+  da dona: para a ajudante, no entregue não pago, não há âmbar.
+- A ficha do pedido (`#d249`) lê a mesma função: o "Recebi" e o passo adiante dela são os mesmos
+  do editor.
+- "Abrir o WhatsApp com o resumo" e "Abrir a folha do orçamento" são secundários, sempre.
+- A ajudante no pedido pago (só leitura, sem "Salvar") tem o âmbar no passo adiante, mesmo com
+  campo mexido: não há o que ela possa salvar.
+
+**Consequência.** O `DESIGN.md` § Padrões diz que o primário mora no canto do cabeçalho; nos
+editores ele anda, e a regra "um por tela" fica. Escrito lá.
+
+---
+
+## D272 · O editor de pedido na ordem da encomenda, em seis blocos
+
+**Status:** vigente · decidida em 2026-10-03, spec `075-um-ambar-por-vez.md`
+
+**Contexto.** A tela crescera um bloco por spec: dez cartões com ícone, título e parágrafo, o
+pagamento partido em dois com o orçamento e o WhatsApp no meio, as observações no pé, e "Em que pé
+está" com o avanço encostado em "Cancelar pedido".
+
+**Decisão.**
+
+- **A ordem**, no pedido gravado: a trilha (sem cartão), Para quem é, O que ela pediu (com
+  "Para lembrar na produção", as observações, sob os itens), Quando e como, Pagamento (forma,
+  desconto, a maquininha e, depois de um filete, "Ela já pagou?" ou "Já foi pago"), Mandar pra
+  cliente (o WhatsApp e, depois de um filete, a folha do orçamento com a validade), e o pé com
+  "Cancelar pedido" e "Arquivar pedido". `BlocoPagamento`, `BlocoWhatsApp` e `BlocoOrcamento`
+  perderam o `Bloco` de fora; ninguém mais os usava.
+- **Descrições** só onde dizem uma consequência que a tela não mostra: sai a de "Para quem é";
+  "Quando e como" encurta para "A data manda na agenda e na tela Hoje."; "Mandar pra cliente" diz
+  "Você confere e envia: nada sai daqui sozinho." As `dica` de campo ficam todas. "Já foi pago"
+  perdeu a descrição: a confirmação do desfazer já diz o que ele faz.
+- **A trilha** (`TrilhaDoPedido`): no `lg`, um `<ol>` com os cinco passos, o feito com `Check` em
+  `--brand-as-ink`, o atual com o `SeloStatus` e `aria-current="step"`, o de depois em
+  `--ink-subtle`. No celular, o selo e "passo 2 de 5" (o leitor de tela ouve "Passo 2 de 5,
+  Confirmado") e cinco traços de 4 px, `aria-hidden`. Embaixo, o passo adiante em `lg` e "Voltar
+  para …" terciário, com o nome do status de antes em minúscula ("Voltar para em produção").
+  "Pelo cardápio" fica à direita da trilha. Cancelado: só o selo e "Reabrir como orçamento",
+  secundário. Registrar fornada e as fornadas do pedido continuam ali, depois do filete.
+- **Cancelar desce para o pé**, ao lado de "Arquivar pedido", com o ícone `Ban`. Continua sem
+  confirmação, como era: cancelar não apaga nada e reabre em um toque. Só o arquivar confirma.
+- **O pedido novo** abre com "Orçamento · Já está fechado" em `Pilulas` (44 px, `aria-pressed`),
+  sem cartão, e a `explicacao` da escolhida embaixo. O foco inicial continua no nome.
+- O ícone de "Pagamento" passou de `Store` para `Wallet`, que era o de `BlocoPagamento`.
+
+**Consequência.** A troca de cartão por seção no papel (`#d267`) fica para os dois editores
+juntos, se seis blocos não bastarem.

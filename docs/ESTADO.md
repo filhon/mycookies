@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-10-02 (**a 074 codificada, e com ela a crítica do Caixa (069 a 074) inteira**, o relatório do MEI: `/financeiro/relatorio-mei/[competencia]` monta o Relatório Mensal das Receitas Brutas das entradas `VENDA` do mês, no modelo do portal conferido no dia, com indústria ou comércio e a nota emitida guardados no aparelho, para imprimir como o orçamento; o limite do ano (R$ 81.000,00, conferido) com o ritmo e os avisos em ocre no topo da tela e compacto no pé de `/financeiro`, cujo link aponta para o mês anterior do dia 1 ao 20, `#d269` e `#d270`; nenhum campo, consulta, regra, índice ou dependência; roteiro de navegador da seção 4 por rodar; **a 073 codificada**, o caixa com peso: só o mês e a meta como cartão, o resto como seção no papel, os lançamentos em quarto na pilha e duas colunas a partir de `xl` ("O mês" e "Em perspectiva", sem `sticky`), o traço de 4 px no lugar do fundo do ranking e das saídas, o pé só com "Refazer as contas do mês", e o gráfico até `max(hoje, 7)` com cada dia como botão que filtra a lista (`dia` em `filtrarLancamentos`), `#d267` e `#d268`; nenhum campo, consulta, regra ou dependência; roteiro de navegador da seção 4 por rodar; **a 072 codificada**, a lista do mês: o nome da cliente no título da linha e o código no detalhe (`tituloDoLancamento`, com `descricaoDaVenda` mudada para o domínio), os lançamentos por dia com o saldo do dia, Tudo · Entrou · Saiu, a busca e a categoria de "Para onde o dinheiro foi" filtrando a lista, em `ListaDoMes`, `#d266`; nenhum campo, consulta, regra ou dependência; roteiro de navegador da seção 4 por rodar; **a 071 codificada**, o mês contra os outros: a `Comparacao` da
+Atualizado em 2026-10-03 (**a 075 codificada**, um âmbar por vez: o editor de pedido nunca mostra dois primários, o âmbar vai para o "Salvar" enquanto há o que salvar e, sem alteração, para o próximo passo (`proximoPasso` em `domain/pedido.ts`, também lido pela ficha do pedido), com "Salvo" desabilitado no cabeçalho; a trilha do pedido (`TrilhaDoPedido`) no lugar de "Em que pé está"; seis blocos na ordem da encomenda, as observações sob os itens, o pagamento num bloco só, o WhatsApp e a folha em "Mandar pra cliente", e "Cancelar pedido" no pé ao lado do arquivar; o pedido novo nasce com "Orçamento · Já está fechado" em pílulas, `#d271` e `#d272`; nenhum campo, regra, índice ou dependência; roteiro de navegador da seção 4 por rodar; **specs 075 a 081 escritas**: a crítica do editor de pedido (`/pedidos/[id]`, novo e edição) sobre os prints de celular e desktop virou sete specs, na ordem 075 (um âmbar por vez: nunca dois primários, o âmbar no próximo passo quando não há o que salvar, a trilha do pedido, seis blocos na ordem da encomenda, cancelar no pé; **vem antes de tudo**), 076 (o pedido que segue: o novo, salvo, abre ele mesmo com o WhatsApp na mão, em vez de cair na lista), 077 (a coluna do pedido: o resumo preso à direita a partir de `2xl`, e `⌘S`), 078 (o pedido de sempre: os mais pedidos em pílula, −/+, repetir o último pedido da cliente, a nota por item que o schema já tinha), 079 (o dia que cabe: atalhos de dia e a carga do dia escolhido), 080 (o Pix copia e cola com o valor, BR Code montado no aparelho, campo opcional na forma Pix) e 081 (o sinal, em duas sessões A e B, **pede aprovação de schema**), com as decisões `#d271` a `#d280` reservadas; **a 074 codificada, e com ela a crítica do Caixa (069 a 074) inteira**, o relatório do MEI: `/financeiro/relatorio-mei/[competencia]` monta o Relatório Mensal das Receitas Brutas das entradas `VENDA` do mês, no modelo do portal conferido no dia, com indústria ou comércio e a nota emitida guardados no aparelho, para imprimir como o orçamento; o limite do ano (R$ 81.000,00, conferido) com o ritmo e os avisos em ocre no topo da tela e compacto no pé de `/financeiro`, cujo link aponta para o mês anterior do dia 1 ao 20, `#d269` e `#d270`; nenhum campo, consulta, regra, índice ou dependência; roteiro de navegador da seção 4 por rodar; **a 073 codificada**, o caixa com peso: só o mês e a meta como cartão, o resto como seção no papel, os lançamentos em quarto na pilha e duas colunas a partir de `xl` ("O mês" e "Em perspectiva", sem `sticky`), o traço de 4 px no lugar do fundo do ranking e das saídas, o pé só com "Refazer as contas do mês", e o gráfico até `max(hoje, 7)` com cada dia como botão que filtra a lista (`dia` em `filtrarLancamentos`), `#d267` e `#d268`; nenhum campo, consulta, regra ou dependência; roteiro de navegador da seção 4 por rodar; **a 072 codificada**, a lista do mês: o nome da cliente no título da linha e o código no detalhe (`tituloDoLancamento`, com `descricaoDaVenda` mudada para o domínio), os lançamentos por dia com o saldo do dia, Tudo · Entrou · Saiu, a busca e a categoria de "Para onde o dinheiro foi" filtrando a lista, em `ListaDoMes`, `#d266`; nenhum campo, consulta, regra ou dependência; roteiro de navegador da seção 4 por rodar; **a 071 codificada**, o mês contra os outros: a `Comparacao` da
 Hoje em arquivo próprio e na faixa "No caixa" de `/financeiro` (até o dia no mês corrente, o mês
 inteiro no fechado), `consultaAgregadosDoPeriodo` por id, `mesesDaFaixa` e `noAno` em
 `domain/caixa.ts` com teste, e `DozeMeses` depois da meta, `#d264` e `#d265`; nenhum campo,
@@ -4400,6 +4400,33 @@ para a mesma URL não foi testado no navegador: o `preventDefault` vale nos dois
 mais importa: é ele que prova a tira da área segura.
 
 Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
+## A spec 075 · Um âmbar por vez
+
+**Codificada em 2026-10-03** (`#d271`, `#d272`). Nenhum campo, consulta, regra, índice ou
+dependência.
+
+- `src/lib/domain/pedido.ts`: `proximoPasso(pedido)`, o passo adiante de `FLUXO_PEDIDO` ou
+  `"RECEBER"` no entregue não pago. Três casos em `tests/domain/pedido.test.ts`.
+  `FichaDoPedido` passa a usá-la no lugar da conta dela.
+- `src/components/pedidos/TrilhaDoPedido.tsx`: os cinco passos em `<ol>` no `lg`, com
+  `aria-current="step"`; no celular o selo, "passo N de 5" e os cinco traços `aria-hidden`.
+- `FormularioPedido`: a regra do âmbar (`salvarEhPrimario`), "Salvo" desabilitado no cabeçalho,
+  a trilha com o passo adiante e "Voltar para …" terciário, a ordem de seis blocos, "Para lembrar
+  na produção" sob os itens, "Mandar pra cliente", e o pé com "Cancelar pedido" e "Arquivar
+  pedido". O pedido novo abre com `Pilulas` para o nascimento.
+- `BlocoPagamento`, `BlocoWhatsApp`, `BlocoOrcamento`: sem `Bloco` de fora; o WhatsApp e a folha
+  em secundário; `BlocoPagamento` ganha `primario`.
+- `DESIGN.md` § Padrões: o âmbar que anda nos editores.
+
+**Diferente da spec** (no `#d272`): "Cancelar pedido" continua sem confirmação, como era (a
+spec fala em "as confirmações de hoje", e hoje só o arquivar confirma); "Já foi pago" perdeu a
+descrição; o ícone de "Pagamento" virou `Wallet`.
+
+**Não rodou:** o roteiro de navegador (§ 4), inteiro.
+
+Portão: lint e typecheck limpos, **878 testes** (3 novos), `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
 ## A spec 074 · O relatório do MEI

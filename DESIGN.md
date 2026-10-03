@@ -261,7 +261,10 @@ de deslocamento.
 - **Um botão primário por tela.** No celular ele é o "+" da barra ou o botão do painel de pé;
   no desktop, o canto superior direito do cabeçalho. Enquanto o estado vazio ensina a tela, a
   ação primária é dele: o botão do cabeçalho sai; o "+" da barra fica, porque é cromo. A tela Hoje é de leitura; a
-  ação da agenda vazia é secundária.
+  ação da agenda vazia é secundária. **Nos editores o âmbar anda, e continua um só**
+  (`#d271`): enquanto há o que salvar, é o "Salvar"; no pedido gravado e sem alteração, o botão
+  do cabeçalho vira "Salvo" secundário e desabilitado, e o âmbar vai para o próximo passo do
+  pedido ("Começar a produzir", ou "Marcar como pago" no entregue não pago, só para a dona).
 - **Todo número mostra sua consequência.** O par obrigatório é "preço + sobra": nunca um preço
   sozinho. Valor em display, consequência em rótulo logo abaixo ("sobram R$ 3,19 pra você, por
   unidade, depois da maquininha").

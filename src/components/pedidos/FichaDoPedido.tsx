@@ -42,7 +42,7 @@ import { formatarMoeda } from "@/lib/domain/money";
 import {
   ACAO_STATUS_PEDIDO,
   derivarPedido,
-  FLUXO_PEDIDO,
+  proximoPasso,
   quantidadeEmTexto,
   resumoDasEscolhas,
 } from "@/lib/domain/pedido";
@@ -163,11 +163,9 @@ export function FichaDoPedido({
   }
 
   // O "adiante" da fila, e não o passo atrás nem o cancelar (`#d249`).
-  // Cancelado não está na fila e entregue é o fim dela: nenhum dos dois anda.
-  const posicao = FLUXO_PEDIDO.indexOf(pedido.status);
-  const proximo: StatusPedido | undefined =
-    posicao >= 0 ? FLUXO_PEDIDO[posicao + 1] : undefined;
-  const cobrar = pedido.status === "ENTREGUE" && !pedido.pago;
+  const passo = proximoPasso(pedido);
+  const proximo = passo === "RECEBER" ? undefined : passo;
+  const cobrar = passo === "RECEBER";
   const receber = cobrar && dona;
 
   const forma = formas.find((item) => item.id === pedido.formaPagamentoId);

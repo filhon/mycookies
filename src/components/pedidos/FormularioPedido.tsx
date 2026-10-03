@@ -4,17 +4,18 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   Archive,
+  Ban,
   CalendarDays,
   Check,
-  ClipboardList,
   CookingPot,
-  NotebookPen,
+  MessageCircle,
   Receipt,
   Store,
   Truck,
   Unlink,
   UserPlus,
   UserRound,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
@@ -35,12 +36,14 @@ import {
   Seletor,
 } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
+import { Pilulas } from "@/components/ui/Pilulas";
 import { Selo } from "@/components/ui/Selo";
 import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
 import { EscolhaDoCombo } from "./EscolhaDoCombo";
 import { LinhaItemPedido } from "./LinhaItemPedido";
 import { PainelPedido } from "./PainelPedido";
 import { SeloStatus } from "./SeloStatus";
+import { TrilhaDoPedido } from "./TrilhaDoPedido";
 import { podeSerComponente, temEscolhas } from "@/lib/domain/custoFicha";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { formatarMoeda, parseParaNumero } from "@/lib/domain/money";
@@ -49,9 +52,11 @@ import {
   custoDoComboMontado,
   derivarPedido,
   escolhasCompletas,
+  FLUXO_PEDIDO,
   ofereceOPrecoDeHoje,
+  proximoPasso,
   resumoDasEscolhas,
-  transicoesPermitidas,
+  ROTULO_STATUS_PEDIDO,
 } from "@/lib/domain/pedido";
 import {
   errosDeLinha,
@@ -875,6 +880,21 @@ export function FormularioPedido({
   const erroDaLista =
     Object.keys(errosItens).length === 0 ? erros.itens : undefined;
 
+  // Um âmbar por vez (`#d271`): o "Salvar" enquanto há o que salvar; senão, o
+  // próximo passo da trilha, ou o "Marcar como pago" do entregue não pago.
+  const salvarEhPrimario = !pedido || (sujo && !soLeitura);
+  const passo = pedido
+    ? proximoPasso({ status, pago: pedido.pago })
+    : undefined;
+  const adiante = passo === "RECEBER" ? undefined : passo;
+  const atras = FLUXO_PEDIDO[FLUXO_PEDIDO.indexOf(status) - 1];
+  const podeCancelar = !!pedido && status !== "CANCELADO" && !soLeitura;
+  const seloCardapio = pedido?.origem === "CARDAPIO" && (
+    <Selo icone={<Store aria-hidden className="size-3.5" strokeWidth={1.75} />}>
+      Pelo cardápio
+    </Selo>
+  );
+
   return (
     <>
       <CabecalhoPagina
@@ -883,59 +903,82 @@ export function FormularioPedido({
         voltar={{ href: "/pedidos", rotulo: "Pedidos" }}
         pendente={pendente}
         acao={
-          !soLeitura && (
+          !soLeitura &&
+          (salvarEhPrimario ? (
             <Botao
               variante="primaria"
+              className="min-w-24"
               onClick={() => void salvar()}
               carregando={salvando}
             >
               Salvar
             </Botao>
-          )
+          ) : (
+            // Desabilitado em vez de sumir: o título não pula de largura.
+            <Botao
+              disabled
+              className="min-w-24"
+              iconeInicial={
+                <Check aria-hidden className="size-4" strokeWidth={2} />
+              }
+            >
+              Salvo
+            </Botao>
+          ))
         }
       />
 
       {/* Espaço no pé para o rodapé de totais não cobrir o último bloco. */}
       <div className="mt-4 space-y-4 pb-36 apertado:pb-32 lg:pb-44">
         {pedido ? (
-          <Bloco
-            icone={ClipboardList}
-            titulo="Em que pé está"
-            descricao="Voltar um passo é sempre permitido, e cancelar não apaga nada."
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <SeloStatus status={status} />
-              {pedido.origem === "CARDAPIO" && (
-                <Selo
-                  icone={
-                    <Store
-                      aria-hidden
-                      className="size-3.5"
-                      strokeWidth={1.75}
-                    />
-                  }
-                >
-                  Pelo cardápio
-                </Selo>
-              )}
-            </div>
+          <section aria-label="Em que pé está" className="space-y-4">
+            {status === "CANCELADO" ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <SeloStatus status={status} />
+                {seloCardapio}
+              </div>
+            ) : (
+              <div className="flex items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  <TrilhaDoPedido status={status} />
+                </div>
+                {seloCardapio}
+              </div>
+            )}
 
-            <div className="flex flex-wrap gap-2">
-              {transicoesPermitidas(status)
-                .filter((proximo) => !(soLeitura && proximo === "CANCELADO"))
-                .map((proximo) => (
-                  <Botao
-                    key={proximo}
-                    tamanho="sm"
-                    variante={proximo === "CANCELADO" ? "perigo" : "secundaria"}
-                    disabled={salvando}
-                    onClick={() => void mover(proximo)}
-                  >
-                    {status === "CANCELADO" && proximo === "ORCAMENTO"
-                      ? "Reabrir como orçamento"
-                      : ACAO_STATUS_PEDIDO[proximo]}
-                  </Botao>
-                ))}
+            {/* O avanço sozinho, e o destrutivo lá no pé (`#d272`). */}
+            <div className="flex flex-wrap items-center gap-2">
+              {status === "CANCELADO" ? (
+                <Botao
+                  disabled={salvando}
+                  onClick={() => void mover("ORCAMENTO")}
+                >
+                  Reabrir como orçamento
+                </Botao>
+              ) : (
+                <>
+                  {adiante && (
+                    <Botao
+                      tamanho="lg"
+                      variante={salvarEhPrimario ? "secundaria" : "primaria"}
+                      disabled={salvando}
+                      onClick={() => void mover(adiante)}
+                    >
+                      {ACAO_STATUS_PEDIDO[adiante]}
+                    </Botao>
+                  )}
+                  {atras && (
+                    <Botao
+                      variante="terciaria"
+                      disabled={salvando}
+                      onClick={() => void mover(atras)}
+                    >
+                      Voltar para{" "}
+                      {ROTULO_STATUS_PEDIDO[atras].toLocaleLowerCase("pt-BR")}
+                    </Botao>
+                  )}
+                </>
+              )}
             </div>
 
             {/* A fornada não é o status (`DECISOES.md#d92`): registrar não
@@ -973,32 +1016,25 @@ export function FormularioPedido({
             {fornadasDoPedido.length > 0 && (
               <FornadasRecentes contaId={contaId} fornadas={fornadasDoPedido} />
             )}
-          </Bloco>
+          </section>
         ) : (
-          <Bloco
-            icone={ClipboardList}
-            titulo="Como este pedido nasce"
-            descricao="Dá para mudar depois: um orçamento aceito vira pedido confirmado em um toque."
-          >
-            <div className="grid gap-2 sm:grid-cols-2">
-              {NASCIMENTOS.map((opcao) => (
-                <Escolha
-                  key={opcao.valor}
-                  ativo={status === opcao.valor}
-                  titulo={opcao.titulo}
-                  explicacao={opcao.explicacao}
-                  aoEscolher={() => setStatus(opcao.valor)}
-                />
-              ))}
-            </div>
-          </Bloco>
+          <div>
+            <Pilulas
+              rotulo="Como este pedido nasce"
+              opcoes={NASCIMENTOS.map(({ valor, titulo }) => ({
+                valor,
+                rotulo: titulo,
+              }))}
+              valor={status}
+              aoMudar={setStatus}
+            />
+            <p className="mt-2 text-label text-ink-muted">
+              {NASCIMENTOS.find((opcao) => opcao.valor === status)?.explicacao}
+            </p>
+          </div>
         )}
 
-        <Bloco
-          icone={UserRound}
-          titulo="Para quem é"
-          descricao="O nome basta. A cliente que compra uma vez na feira não precisa virar cadastro."
-        >
+        <Bloco icone={UserRound} titulo="Para quem é">
           <div className="grid gap-4 sm:grid-cols-2">
             <Campo
               rotulo="Nome da cliente"
@@ -1249,12 +1285,23 @@ export function FormularioPedido({
               </p>
             )}
           </div>
+
+          {/* Sob os itens: quem anota "sem nozes" quer ver isso ao lado do
+              que vai produzir (`#d272`). */}
+          <div className="lg:ml-8">
+            <AreaTexto
+              rotulo="Para lembrar na produção"
+              value={valores.observacoes}
+              placeholder="Sem nozes. Laço vinho. Entregar depois das 18h."
+              onChange={(evento) => definir("observacoes", evento.target.value)}
+            />
+          </div>
         </Bloco>
 
         <Bloco
           icone={CalendarDays}
           titulo="Quando e como"
-          descricao="A data manda na agenda: é por ela que o pedido aparece na tela Hoje."
+          descricao="A data manda na agenda e na tela Hoje."
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <Campo
@@ -1330,7 +1377,7 @@ export function FormularioPedido({
         </Bloco>
 
         <Bloco
-          icone={Store}
+          icone={Wallet}
           titulo="Pagamento"
           descricao="A taxa da maquininha sai do seu lucro, então ela aparece no total antes de você fechar o combinado."
         >
@@ -1379,17 +1426,36 @@ export function FormularioPedido({
               </Link>
             </p>
           )}
+
+          {/* O que vem depois do combinado: receber. O pedido que ainda não
+              existe não tem o que pagar. */}
+          {pedido && !ajudante && (
+            <BlocoPagamento
+              pedido={pedido}
+              pagoEmISO={pagoEmISO}
+              aoMudarData={setPagoEmISO}
+              aoPagar={() => void pagar()}
+              aoDesfazer={() => void desfazer()}
+              ocupado={salvando}
+              semAgregado={pagamento.carregando}
+              primario={!salvarEhPrimario && passo === "RECEBER"}
+            />
+          )}
         </Bloco>
 
-        {/* Depois do pagamento, porque é a ordem em que a encomenda acontece:
-            ela combina, produz, entrega, e só então recebe. O pedido que ainda
-            não existe não tem o que pagar — nem o que confirmar: um resumo sem
-            código não é um pedido, é uma proposta (`DECISOES.md#d78`). */}
+        {/* Um resumo sem código não é um pedido, é uma proposta
+            (`DECISOES.md#d78`): mandar só existe no pedido gravado. A folha lê
+            o gravado (`#d107`), o WhatsApp lê a tela (`#d78`). */}
         {pedido && (
-          <>
-            {/* O orçamento vem antes da confirmação, na ordem em que a venda
-                acontece. A folha lê o gravado (`#d107`), o WhatsApp lê a tela
-                (`#d78`): um é documento assinado, o outro é conversa. */}
+          <Bloco
+            icone={MessageCircle}
+            titulo="Mandar pra cliente"
+            descricao="Você confere e envia: nada sai daqui sozinho."
+          >
+            <BlocoWhatsApp
+              resumo={resumoParaCliente(pedido)}
+              telefone={valores.clienteTelefone}
+            />
             <BlocoOrcamento
               pedidoId={pedido.id}
               validoAteISO={valores.validoAteISO}
@@ -1397,38 +1463,8 @@ export function FormularioPedido({
               hoje={hoje}
               temItens={itensResolvidos.length > 0}
             />
-
-            <BlocoWhatsApp
-              resumo={resumoParaCliente(pedido)}
-              telefone={valores.clienteTelefone}
-            />
-
-            {!ajudante && (
-              <BlocoPagamento
-                pedido={pedido}
-                pagoEmISO={pagoEmISO}
-                aoMudarData={setPagoEmISO}
-                aoPagar={() => void pagar()}
-                aoDesfazer={() => void desfazer()}
-                ocupado={salvando}
-                semAgregado={pagamento.carregando}
-              />
-            )}
-          </>
+          </Bloco>
         )}
-
-        <Bloco
-          icone={NotebookPen}
-          titulo="Observações"
-          descricao="O que você vai querer lembrar na hora de produzir e de embalar."
-        >
-          <AreaTexto
-            rotulo="Sobre este pedido"
-            value={valores.observacoes}
-            placeholder="Sem nozes. Laço vinho. Entregar depois das 18h."
-            onChange={(evento) => definir("observacoes", evento.target.value)}
-          />
-        </Bloco>
 
         {falha && (
           <p role="alert" className="text-label text-negative">
@@ -1464,7 +1500,20 @@ export function FormularioPedido({
               </div>
             </div>
           ) : (
-            <div className="border-t border-line pt-5">
+            <div className="flex flex-wrap gap-2 border-t border-line pt-5">
+              {podeCancelar && (
+                <Botao
+                  variante="perigo"
+                  tamanho="sm"
+                  disabled={salvando}
+                  onClick={() => void mover("CANCELADO")}
+                  iconeInicial={
+                    <Ban aria-hidden className="size-4" strokeWidth={1.75} />
+                  }
+                >
+                  {ACAO_STATUS_PEDIDO.CANCELADO}
+                </Botao>
+              )}
               <Botao
                 variante="perigo"
                 tamanho="sm"

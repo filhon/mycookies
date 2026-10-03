@@ -1,8 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { BanknoteArrowUp, Check, Undo2, Wallet } from "lucide-react";
-import { Bloco } from "@/components/ui/Bloco";
+import { BanknoteArrowUp, Check, Undo2 } from "lucide-react";
 import { Botao } from "@/components/ui/Botao";
 import { Campo } from "@/components/ui/Campo";
 import { Selo } from "@/components/ui/Selo";
@@ -29,6 +28,7 @@ export function BlocoPagamento({
   aoDesfazer,
   ocupado,
   semAgregado,
+  primario,
 }: {
   pedido: Pedido;
   /** O dia escolhido enquanto o pedido ainda não foi pago. */
@@ -39,6 +39,8 @@ export function BlocoPagamento({
   ocupado: boolean;
   /** O agregado do mês do pagamento ainda não chegou: pagar agora torceria. */
   semAgregado: boolean;
+  /** O âmbar é dele quando receber é o próximo passo e não há o que salvar (`#d271`). */
+  primario: boolean;
 }) {
   const [confirmandoDesfazer, setConfirmandoDesfazer] = useState(false);
   const liquido = pedido.total - pedido.custoTaxaPagamento;
@@ -47,11 +49,8 @@ export function BlocoPagamento({
     const dia = pedido.pagoEm ? dataISODe(pedido.pagoEm.toDate()) : undefined;
 
     return (
-      <Bloco
-        icone={Wallet}
-        titulo="Já foi pago"
-        descricao="Este pedido virou uma entrada no seu caixa. Desfazer tira o dinheiro de lá e arquiva o lançamento, sem apagar nada."
-      >
+      <div className="space-y-4 border-t border-line pt-4">
+        <h3 className="text-label font-semibold text-ink">Já foi pago</h3>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <Selo
             tom="positivo"
@@ -119,16 +118,19 @@ export function BlocoPagamento({
             Desfazer o pagamento
           </Botao>
         )}
-      </Bloco>
+      </div>
     );
   }
 
   return (
-    <Bloco
-      icone={Wallet}
-      titulo="Ela já pagou?"
-      descricao="Marcar como pago lança a venda no caixa sozinho, com a taxa da maquininha já descontada."
-    >
+    <div className="space-y-4 border-t border-line pt-4">
+      <div>
+        <h3 className="text-label font-semibold text-ink">Ela já pagou?</h3>
+        <p className="mt-1 max-w-[56ch] text-label text-ink-muted">
+          Marcar como pago lança a venda no caixa sozinho, com a taxa da
+          maquininha já descontada.
+        </p>
+      </div>
       <Campo
         rotulo="Dia em que o dinheiro entrou"
         type="date"
@@ -151,7 +153,7 @@ export function BlocoPagamento({
 
       <div>
         <Botao
-          variante="primaria"
+          variante={primario ? "primaria" : "secundaria"}
           tamanho="lg"
           carregando={ocupado}
           disabled={semAgregado}
@@ -173,6 +175,6 @@ export function BlocoPagamento({
           </p>
         )}
       </div>
-    </Bloco>
+    </div>
   );
 }

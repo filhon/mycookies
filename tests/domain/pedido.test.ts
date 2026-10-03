@@ -17,6 +17,7 @@ import {
   ofereceOPrecoDeHoje,
   passouDoDia,
   podeIrPara,
+  proximoPasso,
   repassesFeitos,
   resumoDasEscolhas,
   resumoDoRepasse,
@@ -193,6 +194,27 @@ describe("preço congelado", () => {
 // ---------------------------------------------------------------------------
 // Status: avanço, um passo atrás, cancelamento e reabertura.
 // ---------------------------------------------------------------------------
+
+describe("proximoPasso", () => {
+  it("é o passo adiante da fila, pago ou não", () => {
+    expect(proximoPasso({ status: "ORCAMENTO", pago: false })).toBe(
+      "CONFIRMADO",
+    );
+    expect(proximoPasso({ status: "CONFIRMADO", pago: true })).toBe(
+      "EM_PRODUCAO",
+    );
+    expect(proximoPasso({ status: "PRONTO", pago: false })).toBe("ENTREGUE");
+  });
+
+  it("entregue e não pago é receber; entregue e pago acabou", () => {
+    expect(proximoPasso({ status: "ENTREGUE", pago: false })).toBe("RECEBER");
+    expect(proximoPasso({ status: "ENTREGUE", pago: true })).toBeUndefined();
+  });
+
+  it("cancelado não anda", () => {
+    expect(proximoPasso({ status: "CANCELADO", pago: false })).toBeUndefined();
+  });
+});
 
 describe("transicoesPermitidas", () => {
   it("avança um passo de cada vez", () => {
