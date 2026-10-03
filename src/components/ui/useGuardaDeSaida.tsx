@@ -20,11 +20,12 @@ type Acao = () => void | Promise<void>;
  * (`beforeunload`, cujo diálogo é do navegador e não este).
  *
  * `navegar(href)` é a saída de quem já salvou: desarma a sentinela e navega,
- * sem perguntar. `pedir(acao)` é para um botão que não é link (o "Sair" da
+ * sem perguntar; com `replace`, a tela de onde saiu some do histórico (o pedido
+ * novo que vira o pedido aberto, `#d273`). `pedir(acao)` é para um botão que não é link (o "Sair" da
  * configuração). `dialogo` é renderizado uma vez pela tela.
  */
 export function useGuardaDeSaida(sujo: boolean): {
-  navegar: (href: Route) => Promise<void>;
+  navegar: (href: Route, opcoes?: { replace?: boolean }) => Promise<void>;
   pedir: (acao: Acao) => void;
   dialogo: ReactNode;
 } {
@@ -70,9 +71,10 @@ export function useGuardaDeSaida(sujo: boolean): {
   }, [sujo, armar, desarmar]);
 
   const navegar = useCallback(
-    async (href: Route) => {
+    async (href: Route, opcoes?: { replace?: boolean }) => {
       await desarmar();
-      router.push(href);
+      if (opcoes?.replace) router.replace(href);
+      else router.push(href);
     },
     [desarmar, router],
   );

@@ -8088,3 +8088,35 @@ está" com o avanço encostado em "Cancelar pedido".
 
 **Consequência.** A troca de cartão por seção no papel (`#d267`) fica para os dois editores
 juntos, se seis blocos não bastarem.
+
+---
+
+## D273 · O pedido novo, salvo, vira o pedido aberto
+
+**Status:** vigente · decidida em 2026-10-03, spec `076-o-pedido-que-segue.md`
+
+**Contexto.** Salvar o pedido novo levava para `/pedidos`. O próximo passo de quase todo pedido
+novo é mandar o resumo para a cliente conferir, e o WhatsApp só existe no pedido gravado: para
+chegar nele, achar o pedido na lista, abrir e rolar.
+
+**Decisão.**
+
+- No pedido **novo**, `salvar` navega para `/pedidos/{id}?anotado=1` com `replace`
+  (`useGuardaDeSaida.navegar(href, { replace: true })`): o voltar leva à lista, e não ao
+  formulário vazio. O id vem de `criarPedido`, gerado no aparelho, então sem rede é igual.
+- Fica no **editor**, e não na ficha da 063: a ficha mora na lista e depende do pedido estar na
+  página carregada; o editor lê pelo id.
+- Com `anotado`, a `FaixaAnotado` no topo, antes da trilha: `Check` e a frase (nunca só a cor), o
+  mesmo `<a>` do `BlocoWhatsApp` (`linkDoWhatsApp`, `mensagemDoPedido`) como **o âmbar** da tela,
+  "Agora não" terciário e a linha de para quem vai (`ParaQuemVai`, a mesma do bloco). O passo
+  adiante da trilha cede o âmbar enquanto a faixa existe (`#d271`).
+- A faixa sai no "Agora não", depois do toque em "Mandar" (num `setTimeout`, para o `<a>` não
+  sumir no meio do clique) e na primeira alteração do formulário. O parâmetro sai junto, por
+  `history.replaceState` nativo, sem histórico novo e sem remontar a tela; recarregar depois disso
+  não traz a faixa de volta.
+- Orçamento: "Orçamento anotado. Válido até …" quando há validade gravada; sem ela, "{código} é
+  para {dia}". A mensagem do WhatsApp não muda.
+- **Edição** continua voltando para `/pedidos`: quem edita veio da lista ou da ficha.
+
+**Consequência.** O "+" da barra (061) herda o comportamento, porque abre o mesmo
+`/pedidos/novo`.

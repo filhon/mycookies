@@ -1,7 +1,9 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Archive,
   Ban,
@@ -40,6 +42,7 @@ import { Pilulas } from "@/components/ui/Pilulas";
 import { Selo } from "@/components/ui/Selo";
 import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
 import { EscolhaDoCombo } from "./EscolhaDoCombo";
+import { FaixaAnotado } from "./FaixaAnotado";
 import { LinhaItemPedido } from "./LinhaItemPedido";
 import { PainelPedido } from "./PainelPedido";
 import { SeloStatus } from "./SeloStatus";
@@ -303,6 +306,20 @@ export function FormularioPedido({
   );
   const [inicial] = useState(() => JSON.stringify(valores));
   const sujo = JSON.stringify(valores) !== inicial;
+
+  // O pedido novo, salvo, abre aqui com `?anotado=1` (`#d273`). A faixa sai no
+  // "Agora não", no "Mandar" e na primeira alteração, e o parâmetro com ela.
+  const parametros = useSearchParams();
+  const [anotado, setAnotado] = useState(
+    () => !!pedido && parametros.has("anotado"),
+  );
+  if (anotado && sujo) setAnotado(false);
+  // Antes da guarda: a sentinela que ela arma copia a URL, e precisa copiá-la
+  // já sem o parâmetro. O `replaceState` nativo não remonta a tela.
+  useEffect(() => {
+    if (anotado || !new URLSearchParams(location.search).has("anotado")) return;
+    history.replaceState(history.state, "", location.pathname);
+  }, [anotado]);
 
   // Receber é da dona: marcar pago escreve em `transacoes` e `agregados`, que a
   // regra nega à ajudante (spec 030, `DECISOES.md#d157`). Pelo mesmo motivo,
@@ -775,10 +792,15 @@ export function FormularioPedido({
           contextoPagamento,
           clienteDoPedido,
         );
+        void guarda.navegar("/pedidos");
       } else {
-        await criarPedido(contaId, dadosDoPedido());
+        // O pedido novo vira o pedido aberto, com o resumo na mão (`#d273`).
+        // `replace`: o voltar leva à lista, e não ao formulário vazio.
+        const id = await criarPedido(contaId, dadosDoPedido());
+        void guarda.navegar(`/pedidos/${id}?anotado=1` as Route, {
+          replace: true,
+        });
       }
-      void guarda.navegar("/pedidos");
     } catch {
       setFalha("Não foi possível salvar agora. Tente de novo em instantes.");
       setSalvando(false);
@@ -881,8 +903,10 @@ export function FormularioPedido({
     Object.keys(errosItens).length === 0 ? erros.itens : undefined;
 
   // Um âmbar por vez (`#d271`): o "Salvar" enquanto há o que salvar; senão, o
-  // próximo passo da trilha, ou o "Marcar como pago" do entregue não pago.
+  // "Mandar o resumo" da faixa do pedido anotado (`#d273`), o próximo passo da
+  // trilha, ou o "Marcar como pago" do entregue não pago.
   const salvarEhPrimario = !pedido || (sujo && !soLeitura);
+  const passoEhPrimario = !salvarEhPrimario && !anotado;
   const passo = pedido
     ? proximoPasso({ status, pago: pedido.pago })
     : undefined;
@@ -930,6 +954,16 @@ export function FormularioPedido({
 
       {/* Espaço no pé para o rodapé de totais não cobrir o último bloco. */}
       <div className="mt-4 space-y-4 pb-36 apertado:pb-32 lg:pb-44">
+        {pedido && anotado && (
+          <FaixaAnotado
+            pedido={pedido}
+            resumo={resumoParaCliente(pedido)}
+            telefone={valores.clienteTelefone}
+            hoje={hoje}
+            aoFechar={() => setAnotado(false)}
+          />
+        )}
+
         {pedido ? (
           <section aria-label="Em que pé está" className="space-y-4">
             {status === "CANCELADO" ? (
@@ -960,7 +994,7 @@ export function FormularioPedido({
                   {adiante && (
                     <Botao
                       tamanho="lg"
-                      variante={salvarEhPrimario ? "secundaria" : "primaria"}
+                      variante={passoEhPrimario ? "primaria" : "secundaria"}
                       disabled={salvando}
                       onClick={() => void mover(adiante)}
                     >
@@ -1438,7 +1472,7 @@ export function FormularioPedido({
               aoDesfazer={() => void desfazer()}
               ocupado={salvando}
               semAgregado={pagamento.carregando}
-              primario={!salvarEhPrimario && passo === "RECEBER"}
+              primario={passoEhPrimario && passo === "RECEBER"}
             />
           )}
         </Bloco>

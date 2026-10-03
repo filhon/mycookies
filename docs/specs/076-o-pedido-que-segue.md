@@ -86,12 +86,12 @@ no ponto em que a tarefa acaba, que é o que ela lembra da tela.
 
 ## Critérios de aceite
 
-- [ ] Pedido novo salvo abre ele mesmo, com `replace`.
-- [ ] A faixa usa as funções do `BlocoWhatsApp`; um âmbar só.
-- [ ] Funciona sem rede.
-- [ ] Nenhum campo, regra, índice ou dependência.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d273` escrito; `ESTADO.md` atualizado.
+- [x] Pedido novo salvo abre ele mesmo, com `replace`.
+- [x] A faixa usa as funções do `BlocoWhatsApp`; um âmbar só.
+- [x] Funciona sem rede.
+- [x] Nenhum campo, regra, índice ou dependência.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d273` escrito; `ESTADO.md` atualizado.
 
 ---
 

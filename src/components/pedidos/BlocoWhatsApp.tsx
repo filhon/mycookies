@@ -28,9 +28,6 @@ export function BlocoWhatsApp({
   /** O que está no campo, como ela digitou. Pode não ser discável. */
   telefone?: string;
 }) {
-  const numero = telefoneParaWhatsApp(telefone);
-  const digitado = telefone?.trim();
-
   return (
     <>
       {resumo.itens.length === 0 ? (
@@ -40,7 +37,10 @@ export function BlocoWhatsApp({
       ) : (
         <div>
           <a
-            href={linkDoWhatsApp(numero, mensagemDoPedido(resumo))}
+            href={linkDoWhatsApp(
+              telefoneParaWhatsApp(telefone),
+              mensagemDoPedido(resumo),
+            )}
             target="_blank"
             rel="noopener noreferrer"
             className={classesBotao({ variante: "secundaria", tamanho: "lg" })}
@@ -49,25 +49,35 @@ export function BlocoWhatsApp({
             Abrir o WhatsApp com o resumo
           </a>
 
-          <p className="mt-2 max-w-[60ch] text-label text-ink-muted">
-            {numero ? (
-              <>Abre a conversa com {digitado}.</>
-            ) : digitado ? (
-              // O campo é livre e ninguém validou nada até hoje: um número que
-              // não dá para discar degrada, e não vira erro.
-              <>
-                Não dá para discar {digitado}. O WhatsApp vai perguntar para
-                quem mandar.
-              </>
-            ) : (
-              <>
-                Este pedido não tem telefone. O WhatsApp vai perguntar para quem
-                mandar.
-              </>
-            )}
-          </p>
+          <ParaQuemVai telefone={telefone} />
         </div>
       )}
     </>
+  );
+}
+
+/** Para quem o link abre: a linha sob o botão, aqui e na faixa do pedido anotado. */
+export function ParaQuemVai({ telefone }: { telefone?: string }) {
+  const numero = telefoneParaWhatsApp(telefone);
+  const digitado = telefone?.trim();
+
+  return (
+    <p className="mt-2 max-w-[60ch] text-label text-ink-muted">
+      {numero ? (
+        <>Abre a conversa com {digitado}.</>
+      ) : digitado ? (
+        // O campo é livre e ninguém validou nada até hoje: um número que
+        // não dá para discar degrada, e não vira erro.
+        <>
+          Não dá para discar {digitado}. O WhatsApp vai perguntar para quem
+          mandar.
+        </>
+      ) : (
+        <>
+          Este pedido não tem telefone. O WhatsApp vai perguntar para quem
+          mandar.
+        </>
+      )}
+    </p>
   );
 }
