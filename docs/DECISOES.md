@@ -7847,3 +7847,43 @@ zero, para a barra dizer "sem pedido pago".
 
 **Consequência.** Se o rendeu se mostrar estável nos dados reais, a faixa passa a ser dele. Comparar
 com o mesmo mês do ano passado espera existir ano passado.
+
+---
+
+## D266 · A linha diz quem, o dia diz quanto, e a lista se filtra
+
+**Status:** vigente · decidida em 2026-10-02, spec `072-a-lista-do-mes.md`
+
+**Contexto.** No celular, a linha "Pedido P-261001-B14 · Danilo Jo…" cortava o nome da cliente e
+mostrava inteiro o código, que ela nunca fala. A lista era uma fila sem dia, e não havia como
+achar o gás do mês nem ver quais lançamentos somavam "Despesa fixa".
+
+**Decisão.**
+
+- **O título se lê da descrição gravada**, sem campo novo: `tituloDoLancamento` reconhece
+  "Pedido {codigo} · {cliente}" só com `pedidoId`, e devolve a cliente como título e o código
+  para o detalhe ("Pedido P-… · Venda · Pix"). Fora do formato (editada à mão, cliente vazia),
+  o título é a descrição. O código não tem espaço, então o primeiro " · " depois dele separa, e
+  um nome com " · " fica inteiro.
+- **`descricaoDaVenda` mudou para `domain/caixa.ts`**, ao lado da leitura, e a mutação a importa,
+  como já fazia com `descricaoDoRepasse`. A spec deixava o formato na mutação; os testes do
+  domínio não importam Firebase, e só assim o teste prende os dois lados.
+- **O dia é o grupo**: `h3` com "Qui, 1 de out." e o saldo do dia (entrou − saiu, pelo bruto,
+  `comSinal`); o dia saiu do detalhe da linha. Abaixo de `lg` o `h3` gruda sob o cabeçalho da
+  tela. A agenda de `/pedidos` não gruda (a spec supunha que sim); para saber onde o cabeçalho
+  termina, `CabecalhoPagina` publica `--fundo-cabecalho` na raiz, com a altura dele, ou, recolhido
+  no celular, a área segura mais a faixa de ferramentas. A seção é `overflow-clip`, e não
+  `hidden`, para não virar contêiner de rolagem.
+- **Achar** é `filtrarLancamentos`, em memória sobre `lancamentos.dados`: Tudo · Entrou · Saiu, e
+  o texto por `chaveDeBusca` na descrição, no nome da categoria e no da forma. A contagem das
+  pílulas respeita a busca e a categoria, não a pílula, e só aparece acima de zero.
+- **A categoria** vem de "Para onde o dinheiro foi", cujas linhas viraram botões, e **só casa com
+  saída**: aquele total é de saídas, e "Outro" de entrada o desmentiria. Ela vive em
+  `TelaFinanceiro` presa ao mês em que foi tocada; busca e pílula vivem na `ListaDoMes`, que
+  remonta a cada mês. Nada vai para a URL ou para o aparelho.
+- Com filtro, o título diz "· 3 de 41 · −R$ 950,00", em `aria-live`: o total sai com sinal,
+  como as linhas. Sem resultado, uma linha: "Nada com “gás” em outubro." e "Limpar a busca", ou
+  "Nenhuma saída em outubro." e "Ver tudo"; os dois limpam tudo, a categoria também.
+
+**Consequência.** Se a descrição de venda mudar de forma, o teste quebra antes da tela. Os
+lançamentos antigos com descrição editada continuam lidos como antes.

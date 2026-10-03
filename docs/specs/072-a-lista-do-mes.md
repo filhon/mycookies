@@ -113,11 +113,11 @@ como a consulta).
 
 ## Critérios de aceite
 
-- [ ] O teste prende `descricaoDaVenda` ↔ `tituloDoLancamento`.
-- [ ] Nenhuma consulta nova; tudo em memória sobre `lancamentos.dados`.
-- [ ] Pílulas de 44 px, campo de 48 px, linhas com alvo inteiro.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d266` escrito; `ESTADO.md` atualizado.
+- [x] O teste prende `descricaoDaVenda` ↔ `tituloDoLancamento`.
+- [x] Nenhuma consulta nova; tudo em memória sobre `lancamentos.dados`.
+- [x] Pílulas de 44 px, campo de 48 px, linhas com alvo inteiro.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d266` escrito; `ESTADO.md` atualizado.
 
 ---
 

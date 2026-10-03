@@ -3,12 +3,15 @@ import {
   agregarMes,
   agregarPedidos,
   agregarTransacoes,
+  agruparPorDia,
   conferirAgregado,
   contasQueRepetemPendentes,
   deltaDaTransacao,
   deltaDoPedido,
+  descricaoDaVenda,
   entradasAteODia,
   eSeCobrasseMais,
+  filtrarLancamentos,
   leituraDoCardapio,
   mesDaLeitura,
   mesesDaFaixa,
@@ -22,6 +25,7 @@ import {
   somarParcelas,
   taxaDaEntrada,
   ticketMedioDe,
+  tituloDoLancamento,
   type ParcelasDoAgregado,
   type PedidoAgregavel,
   type TransacaoAgregavel,
@@ -1331,5 +1335,122 @@ describe("mesesDaFaixa (#d265)", () => {
     );
     expect(meses.filter((m) => m.temAgregado)).toHaveLength(1);
     expect(ano.entradas).toBe(1000);
+  });
+});
+
+describe("tituloDoLancamento (#d266)", () => {
+  it("desmonta o que descricaoDaVenda monta", () => {
+    const descricao = descricaoDaVenda({
+      codigo: "P-261001-B14",
+      clienteNome: "Danilo Jorge",
+    });
+    expect(descricao).toBe("Pedido P-261001-B14 · Danilo Jorge");
+    expect(tituloDoLancamento({ descricao, pedidoId: "p1" })).toEqual({
+      titulo: "Danilo Jorge",
+      codigo: "P-261001-B14",
+    });
+  });
+
+  it("nome com ' · ' dentro: conta o primeiro separador depois do código", () => {
+    const descricao = descricaoDaVenda({
+      codigo: "P-1",
+      clienteNome: "Ana · Festa da escola",
+    });
+    expect(tituloDoLancamento({ descricao, pedidoId: "p1" })).toEqual({
+      titulo: "Ana · Festa da escola",
+      codigo: "P-1",
+    });
+  });
+
+  it("sem pedido, ou fora do formato, o título é a descrição", () => {
+    const venda = descricaoDaVenda({ codigo: "P-1", clienteNome: "Ana" });
+    expect(tituloDoLancamento({ descricao: venda })).toEqual({ titulo: venda });
+    expect(
+      tituloDoLancamento({ descricao: "Bolo da Ana", pedidoId: "p1" }),
+    ).toEqual({ titulo: "Bolo da Ana" });
+    expect(
+      tituloDoLancamento({ descricao: "Pedido P-1 · ", pedidoId: "p1" }),
+    ).toEqual({ titulo: "Pedido P-1 · " });
+  });
+});
+
+describe("filtrarLancamentos e agruparPorDia (#d266)", () => {
+  const lista = [
+    {
+      id: "a",
+      tipo: "ENTRADA" as const,
+      categoria: "VENDA" as const,
+      descricao: "Pedido P-2 · Joana Conceição",
+      valor: 3700,
+      dataISO: "2026-10-02",
+      formaPagamentoId: "pix",
+    },
+    {
+      id: "b",
+      tipo: "SAIDA" as const,
+      categoria: "DESPESA_FIXA" as const,
+      descricao: "Gás",
+      valor: 12000,
+      dataISO: "2026-10-01",
+    },
+    {
+      id: "c",
+      tipo: "ENTRADA" as const,
+      categoria: "OUTRO" as const,
+      descricao: "Troco",
+      valor: 500,
+      dataISO: "2026-10-01",
+    },
+    {
+      id: "d",
+      tipo: "SAIDA" as const,
+      categoria: "OUTRO" as const,
+      descricao: "Fita",
+      valor: 300,
+      dataISO: "2026-10-01",
+    },
+  ];
+  const nomeDaForma = (id: string) => (id === "pix" ? "Pix" : undefined);
+  const ids = (l: { id: string }[]) => l.map((x) => x.id);
+  const filtro = { tipo: "TUDO" as const, texto: "", categoria: null };
+
+  it("sem filtro, tudo", () => {
+    expect(ids(filtrarLancamentos(lista, filtro))).toEqual([
+      "a",
+      "b",
+      "c",
+      "d",
+    ]);
+  });
+
+  it("busca sem acento e sem caixa, na descrição, na categoria e na forma", () => {
+    const busca = (texto: string) =>
+      ids(filtrarLancamentos(lista, { ...filtro, texto }, nomeDaForma));
+    expect(busca("conceicao")).toEqual(["a"]);
+    expect(busca("GAS")).toEqual(["b"]);
+    expect(busca("despesa")).toEqual(["b"]);
+    expect(busca("pix")).toEqual(["a"]);
+  });
+
+  it("a pílula combina com a busca", () => {
+    expect(
+      ids(
+        filtrarLancamentos(lista, { ...filtro, tipo: "SAIDA", texto: "outro" }),
+      ),
+    ).toEqual(["d"]);
+  });
+
+  it("a categoria só casa com saída", () => {
+    expect(
+      ids(filtrarLancamentos(lista, { ...filtro, categoria: "OUTRO" })),
+    ).toEqual(["d"]);
+  });
+
+  it("agrupa por dia, do mais recente, com o saldo do dia", () => {
+    const dias = agruparPorDia([...lista].reverse());
+    expect(dias.map((d) => [d.dataISO, ids(d.lancamentos), d.saldo])).toEqual([
+      ["2026-10-02", ["a"], 3700],
+      ["2026-10-01", ["d", "c", "b"], -300 + 500 - 12000],
+    ]);
   });
 });

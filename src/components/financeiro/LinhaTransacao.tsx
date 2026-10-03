@@ -1,7 +1,10 @@
 import { ChevronRight } from "lucide-react";
 import { Dinheiro } from "@/components/ui/Dinheiro";
-import { ROTULO_CATEGORIA_TRANSACAO } from "@/lib/domain/caixa";
-import { rotuloDia } from "@/lib/domain/datas";
+import {
+  ROTULO_CATEGORIA_TRANSACAO,
+  tituloDoLancamento,
+  valorComSinal,
+} from "@/lib/domain/caixa";
 import { formatarMoeda } from "@/lib/domain/money";
 import type { FormaPagamento, Transacao } from "@/lib/types";
 
@@ -23,11 +26,13 @@ export function LinhaTransacao({
   forma?: FormaPagamento;
   aoAbrir: (transacao: Transacao) => void;
 }) {
-  const ehEntrada = transacao.tipo === "ENTRADA";
   const taxa = transacao.custoTaxa ?? 0;
 
+  // O nome da cliente primeiro, o código no detalhe; o dia está no grupo
+  // (`#d266`).
+  const { titulo, codigo } = tituloDoLancamento(transacao);
   const detalhe = [
-    rotuloDia(transacao.dataISO),
+    codigo && `Pedido ${codigo}`,
     ROTULO_CATEGORIA_TRANSACAO[transacao.categoria],
     forma?.nome,
     transacao.recorrente ? "repete todo mês" : undefined,
@@ -41,19 +46,14 @@ export function LinhaTransacao({
         className="flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:px-5"
       >
         <div className="min-w-0 flex-1">
-          <p className="truncate text-body font-medium text-ink">
-            {transacao.descricao}
-          </p>
+          <p className="truncate text-body font-medium text-ink">{titulo}</p>
           <p className="mt-0.5 truncate text-label text-ink-muted">
             {detalhe.join(" · ")}
           </p>
         </div>
 
         <div className="shrink-0 text-right">
-          <Dinheiro
-            centavos={ehEntrada ? transacao.valor : -transacao.valor}
-            comSinal
-          />
+          <Dinheiro centavos={valorComSinal(transacao)} comSinal />
           {taxa > 0 && (
             <p className="num mt-0.5 text-micro text-ink-muted">
               maquininha ficou com {formatarMoeda(taxa)}

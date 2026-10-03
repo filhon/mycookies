@@ -85,6 +85,30 @@ export function CabecalhoPagina({
   // Sem rede, "Salvo no aparelho" precisa estar à vista.
   if (recolhido && !online) setRecolhido(false);
 
+  // Onde o cabeçalho acaba na tela, para o que gruda logo abaixo dele (o dia
+  // da lista do caixa, `#d266`). Recolhido, que só sobe abaixo de `lg`, sobra
+  // a área segura sem a faixa.
+  useEffect(() => {
+    const cabecalho = cabecalhoRef.current;
+    const faixa = faixaRef.current;
+    if (!cabecalho || !faixa) return;
+
+    const raiz = document.documentElement.style;
+    const observador = new ResizeObserver(() =>
+      raiz.setProperty(
+        "--fundo-cabecalho",
+        recolhido && !matchMedia("(min-width: 64rem)").matches
+          ? `calc(${cabecalho.offsetHeight - faixa.offsetHeight}px + env(safe-area-inset-top))`
+          : `${cabecalho.offsetHeight}px`,
+      ),
+    );
+    observador.observe(cabecalho);
+    return () => {
+      observador.disconnect();
+      raiz.removeProperty("--fundo-cabecalho");
+    };
+  }, [recolhido]);
+
   useEffect(() => {
     const cabecalho = cabecalhoRef.current;
     const faixa = faixaRef.current;

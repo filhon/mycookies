@@ -45,6 +45,7 @@ import {
 } from "@/lib/firebase/mutations/pedidos";
 import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
 import type {
+  CategoriaTransacao,
   CompetenciaMensal,
   ConfiguracaoGeral,
   Meta,
@@ -58,7 +59,7 @@ import { AteOFimDoMes } from "./AteOFimDoMes";
 import { ContasQueRepetem } from "./ContasQueRepetem";
 import { DozeMeses } from "./DozeMeses";
 import { FormularioTransacao } from "./FormularioTransacao";
-import { LinhaTransacao } from "./LinhaTransacao";
+import { ID_LISTA_DO_MES, ListaDoMes } from "./ListaDoMes";
 import { MovimentoPorDia } from "./MovimentoPorDia";
 import { ProdutosDoMes } from "./ProdutosDoMes";
 import { ResultadoDoMes } from "./ResultadoDoMes";
@@ -280,6 +281,26 @@ export function TelaFinanceiro() {
     </>
   );
 
+  // A categoria de "Para onde o dinheiro foi" filtrando a lista, presa ao mês
+  // em que foi tocada: trocar de mês a solta sem efeito.
+  const [filtroCategoria, setFiltroCategoria] = useState<{
+    competencia: CompetenciaMensal;
+    categoria: CategoriaTransacao;
+  } | null>(null);
+  const categoria =
+    filtroCategoria?.competencia === competencia
+      ? filtroCategoria.categoria
+      : null;
+
+  function filtrarPorCategoria(categoria: CategoriaTransacao) {
+    setFiltroCategoria({ competencia, categoria });
+    document.getElementById(ID_LISTA_DO_MES)?.scrollIntoView({
+      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+  }
+
   function abrirPainelMeta() {
     setAberturasMeta((anterior) => anterior + 1);
     setPainelMetaAberto(true);
@@ -421,37 +442,19 @@ export function TelaFinanceiro() {
           <SaidasPorCategoria
             porCategoriaSaida={parcelas.porCategoriaSaida}
             saidas={parcelas.saidas}
+            aoFiltrar={filtrarPorCategoria}
           />
 
-          <section
-            aria-labelledby="lancamentos-do-mes"
-            className="overflow-hidden rounded-lg border border-line bg-surface"
-          >
-            <h2
-              id="lancamentos-do-mes"
-              className="border-b border-line px-4 pb-3 pt-4 text-subheading font-semibold text-ink lg:px-5"
-            >
-              Lançamentos do mês
-              <span className="num ml-2 text-label font-medium text-ink-muted">
-                {lancamentos.dados.length}
-              </span>
-            </h2>
-
-            <ul className="divide-y divide-line">
-              {lancamentos.dados.map((transacao) => (
-                <LinhaTransacao
-                  key={transacao.id}
-                  transacao={transacao}
-                  forma={
-                    transacao.formaPagamentoId
-                      ? formaPorId.get(transacao.formaPagamentoId)
-                      : undefined
-                  }
-                  aoAbrir={abrirPainel}
-                />
-              ))}
-            </ul>
-          </section>
+          {/* Remonta a cada mês: trocar de mês limpa o filtro (`#d266`). */}
+          <ListaDoMes
+            key={competencia}
+            lancamentos={lancamentos.dados}
+            competencia={competencia}
+            formaPorId={formaPorId}
+            categoria={categoria}
+            aoTirarCategoria={() => setFiltroCategoria(null)}
+            aoAbrir={abrirPainel}
+          />
 
           {/* A rede de segurança, e não o caminho normal: fica no pé da tela,
               onde não disputa atenção com o que ela veio ver. */}

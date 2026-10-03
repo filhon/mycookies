@@ -961,3 +961,114 @@ export const DICA_CATEGORIA: Partial<Record<CategoriaTransacao, string>> = {
     "A entrega avulsa, paga na hora. O acerto da semana com o entregador sai do painel de entregas, na tela de pedidos.",
   PRO_LABORE: "O que você tira do negócio para você.",
 };
+
+// ---------------------------------------------------------------------------
+// A lista do mês (`#d266`).
+// ---------------------------------------------------------------------------
+
+/**
+ * "Pedido P-260915-K3F · Ana Beatriz", a descrição do lançamento que o
+ * pagamento de um pedido cria. Mora aqui, e não na mutação, porque
+ * `tituloDoLancamento` desmonta este texto, e o teste prende os dois lados.
+ */
+export function descricaoDaVenda(pedido: {
+  codigo: string;
+  clienteNome: string;
+}): string {
+  return `Pedido ${pedido.codigo} · ${pedido.clienteNome}`;
+}
+
+/** O código não tem espaço; o primeiro " · " depois dele separa a cliente. */
+const FORMATO_DA_VENDA = /^Pedido (\S+) · (.*\S.*)$/s;
+
+/**
+ * O que a linha diz primeiro: o nome da cliente no lançamento de pedido, com o
+ * código indo para o detalhe; a descrição no resto, e também quando ela foi
+ * editada à mão e saiu do formato de `descricaoDaVenda`.
+ */
+export function tituloDoLancamento(lancamento: {
+  descricao: string;
+  pedidoId?: string;
+}): { titulo: string; codigo?: string } {
+  const partes = lancamento.pedidoId
+    ? FORMATO_DA_VENDA.exec(lancamento.descricao)
+    : null;
+  return partes
+    ? { titulo: partes[2]!.trim(), codigo: partes[1]! }
+    : { titulo: lancamento.descricao };
+}
+
+export type TipoNoFiltro = "TUDO" | TipoTransacao;
+
+export interface FiltroDaLista {
+  tipo: TipoNoFiltro;
+  texto: string;
+  /** Uma linha de "Para onde o dinheiro foi": só saídas dela. */
+  categoria: CategoriaTransacao | null;
+}
+
+type LancamentoNaLista = {
+  tipo: TipoTransacao;
+  categoria: CategoriaTransacao;
+  descricao: string;
+  formaPagamentoId?: string;
+};
+
+/**
+ * A lista do mês filtrada em memória. O texto procura na descrição (o nome da
+ * cliente e o código estão nela), no nome da categoria e no da forma, sem
+ * acento e sem caixa. A categoria vem das saídas por categoria, e por isso só
+ * casa com saída: "Outro" de entrada não está naquele total.
+ */
+export function filtrarLancamentos<T extends LancamentoNaLista>(
+  lista: T[],
+  filtro: FiltroDaLista,
+  nomeDaForma: (id: string) => string | undefined = () => undefined,
+): T[] {
+  const termo = chaveDeBusca(filtro.texto);
+  return lista.filter(
+    (lancamento) =>
+      (filtro.tipo === "TUDO" || lancamento.tipo === filtro.tipo) &&
+      (!filtro.categoria ||
+        (lancamento.tipo === "SAIDA" &&
+          lancamento.categoria === filtro.categoria)) &&
+      (!termo ||
+        [
+          lancamento.descricao,
+          ROTULO_CATEGORIA_TRANSACAO[lancamento.categoria],
+          lancamento.formaPagamentoId
+            ? (nomeDaForma(lancamento.formaPagamentoId) ?? "")
+            : "",
+        ].some((campo) => chaveDeBusca(campo).includes(termo))),
+  );
+}
+
+/** O valor com a direção: entrada soma, saída subtrai. */
+export function valorComSinal(lancamento: {
+  tipo: TipoTransacao;
+  valor: Centavos;
+}): Centavos {
+  return lancamento.tipo === "ENTRADA" ? lancamento.valor : -lancamento.valor;
+}
+
+/**
+ * Os lançamentos por dia, do mais recente para trás como a consulta, cada dia
+ * com o saldo (entrou − saiu, pelo bruto). Dentro do dia, a ordem que veio.
+ */
+export function agruparPorDia<
+  T extends { tipo: TipoTransacao; valor: Centavos; dataISO: DataISO },
+>(lista: T[]): { dataISO: DataISO; lancamentos: T[]; saldo: Centavos }[] {
+  const dias = new Map<DataISO, T[]>();
+  for (const lancamento of lista) {
+    const dia = dias.get(lancamento.dataISO);
+    if (dia) dia.push(lancamento);
+    else dias.set(lancamento.dataISO, [lancamento]);
+  }
+  return [...dias.entries()]
+    .map(([dataISO, lancamentos]) => ({
+      dataISO,
+      lancamentos,
+      saldo: lancamentos.reduce((soma, l) => soma + valorComSinal(l), 0),
+    }))
+    .sort((a, b) => b.dataISO.localeCompare(a.dataISO));
+}

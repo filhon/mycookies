@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 2026-10-02 (**a 071 codificada**, o mês contra os outros: a `Comparacao` da
+Atualizado em 2026-10-02 (**a 072 codificada**, a lista do mês: o nome da cliente no título da linha e o código no detalhe (`tituloDoLancamento`, com `descricaoDaVenda` mudada para o domínio), os lançamentos por dia com o saldo do dia, Tudo · Entrou · Saiu, a busca e a categoria de "Para onde o dinheiro foi" filtrando a lista, em `ListaDoMes`, `#d266`; nenhum campo, consulta, regra ou dependência; roteiro de navegador da seção 4 por rodar; **a 071 codificada**, o mês contra os outros: a `Comparacao` da
 Hoje em arquivo próprio e na faixa "No caixa" de `/financeiro` (até o dia no mês corrente, o mês
 inteiro no fechado), `consultaAgregadosDoPeriodo` por id, `mesesDaFaixa` e `noAno` em
 `domain/caixa.ts` com teste, e `DozeMeses` depois da meta, `#d264` e `#d265`; nenhum campo,
@@ -4400,6 +4400,32 @@ para a mesma URL não foi testado no navegador: o `preventDefault` vale nos dois
 mais importa: é ele que prova a tira da área segura.
 
 Portão: lint e typecheck limpos, **796 testes**, `npm run build` passa.
+`package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
+
+## A spec 072 · A lista do mês
+
+**Codificada em 2026-10-02** (`#d266`). Nenhum campo, consulta, regra, índice ou dependência.
+
+- `src/lib/domain/caixa.ts`: `descricaoDaVenda` (veio de `mutations/pedidos.ts`), `tituloDoLancamento`,
+  `filtrarLancamentos`, `agruparPorDia` e `valorComSinal`. Testes em `tests/domain/caixa.test.ts`,
+  com o texto de `descricaoDaVenda` desmontado por `tituloDoLancamento`.
+- `src/lib/domain/datas.ts`: `rotuloDiaDaSemana` ("Qui, 1 de out.").
+- `src/components/financeiro/ListaDoMes.tsx`: a seção inteira, fora de `TelaFinanceiro`: título com
+  "N de M" e o total com sinal em `aria-live`, busca, pílulas com contagem, a pílula da categoria
+  com ×, o vazio do filtro em uma linha e os dias em `h3`, grudentos abaixo do cabeçalho no celular.
+- `LinhaTransacao`: título e detalhe por `tituloDoLancamento`; o dia saiu do detalhe.
+- `SaidasPorCategoria`: cada linha é um `<button>` com chevron; `TelaFinanceiro` guarda a categoria
+  presa ao mês e rola até a lista.
+- `src/components/layout/CabecalhoPagina.tsx`: publica `--fundo-cabecalho` na raiz.
+
+**Diferente da spec:** a categoria filtra só saídas (é o total de "Para onde o dinheiro foi"); o
+total do filtro sai com sinal ("−R$ 950,00"); o vazio sem texto diz "Nenhuma saída em outubro."
+com "Ver tudo". A agenda de `/pedidos` não é grudenta, ao contrário do que a spec supunha; o
+grudento é novo, e por isso o cabeçalho passou a dizer onde termina.
+
+**Não rodou:** o roteiro de navegador (§ 4), inteiro.
+
+Portão: lint e typecheck limpos, **867 testes** (8 novos), `npm run build` passa.
 `package.json`, `firestore.rules` e `firestore.indexes.json` intocados.
 
 ## A spec 071 · O mês contra os outros

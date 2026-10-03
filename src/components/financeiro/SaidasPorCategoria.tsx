@@ -1,3 +1,4 @@
+import { ChevronRight } from "lucide-react";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import {
   ROTULO_CATEGORIA_TRANSACAO,
@@ -13,13 +14,18 @@ import type { CategoriaTransacao, Centavos } from "@/lib/types";
  * barra atrás de cada uma é a comparação (`DESIGN.md`, Cartões). A barra é uma
  * medida em neutro, e não um alerta — comprar insumo é o negócio funcionando,
  * não um erro a ser pintado de vermelho.
+ *
+ * Tocar numa linha filtra a lista do mês por ela (`#d266`): "Despesa fixa R$
+ * 950,00" mostra quais lançamentos somam isso.
  */
 export function SaidasPorCategoria({
   porCategoriaSaida,
   saidas,
+  aoFiltrar,
 }: {
   porCategoriaSaida: Partial<Record<CategoriaTransacao, Centavos>>;
   saidas: Centavos;
+  aoFiltrar: (categoria: CategoriaTransacao) => void;
 }) {
   const linhas = saidasOrdenadas(porCategoriaSaida);
   if (linhas.length === 0) return null;
@@ -51,17 +57,26 @@ export function SaidasPorCategoria({
                 }}
                 className="absolute inset-y-0 left-0 bg-sunken"
               />
-              <div className="relative flex min-h-14 items-center justify-between gap-3 px-4 py-3 lg:px-5">
-                <p className="min-w-0 text-body text-ink">
+              <button
+                type="button"
+                onClick={() => aoFiltrar(linha.categoria)}
+                className="relative flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:px-5"
+              >
+                <span className="min-w-0 flex-1 text-body text-ink">
                   <span className="truncate font-medium">
                     {ROTULO_CATEGORIA_TRANSACAO[linha.categoria]}
                   </span>
                   <span className="num ml-2 text-label text-ink-muted">
                     {formatarPercentual(fatia, 0)}
                   </span>
-                </p>
+                </span>
                 <Dinheiro centavos={linha.valor} />
-              </div>
+                <ChevronRight
+                  aria-hidden
+                  className="size-5 shrink-0 text-ink-subtle"
+                  strokeWidth={1.75}
+                />
+              </button>
             </li>
           );
         })}

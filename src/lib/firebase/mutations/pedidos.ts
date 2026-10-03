@@ -31,6 +31,7 @@ import type { ContextoMeta } from "./metas";
 import {
   deltaDaTransacao,
   deltaDoPedido,
+  descricaoDaVenda,
   somarParcelas,
   ticketMedioDe,
   type ParcelasDoAgregado,
@@ -340,11 +341,6 @@ function ticketMedioApos(
     contexto.receitaPedidos + parcelas.receitaPedidos,
     contexto.qtdPedidos + parcelas.qtdPedidos,
   );
-}
-
-/** "Pedido P-260915-K3F · Ana Beatriz" — o que a linha do caixa diz. */
-function descricaoDaVenda(pedido: Pick<Pedido, "codigo" | "clienteNome">) {
-  return `Pedido ${pedido.codigo} · ${pedido.clienteNome}`;
 }
 
 /** O que a contribuição no caixa precisa saber do pedido. Nada além disso. */

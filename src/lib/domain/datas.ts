@@ -31,6 +31,12 @@ const DIA_E_MES = new Intl.DateTimeFormat("pt-BR", {
   month: "short",
 });
 
+const DIA_DA_SEMANA = new Intl.DateTimeFormat("pt-BR", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+});
+
 const DIA_POR_EXTENSO = new Intl.DateTimeFormat("pt-BR", {
   weekday: "long",
   day: "numeric",
@@ -119,6 +125,12 @@ export function rotuloMes(competencia: CompetenciaMensal): string {
 /** '03 de set.' — o dia de um lançamento na lista. */
 export function rotuloDia(iso: DataISO): string {
   return DIA_E_MES.format(dataDeISO(iso));
+}
+
+/** 'Qui, 1 de out.' — o cabeçalho de um dia na lista do caixa. */
+export function rotuloDiaDaSemana(iso: DataISO): string {
+  const escrito = DIA_DA_SEMANA.format(dataDeISO(iso)).replace(".,", ",");
+  return escrito.charAt(0).toUpperCase() + escrito.slice(1);
 }
 
 /**
