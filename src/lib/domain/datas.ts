@@ -133,6 +133,15 @@ export function rotuloDiaDaSemana(iso: DataISO): string {
   return escrito.charAt(0).toUpperCase() + escrito.slice(1);
 }
 
+const SO_A_SEMANA = new Intl.DateTimeFormat("pt-BR", { weekday: "short" });
+
+/** 'Sáb 4' — o atalho de dia do pedido (`#d277`). */
+export function rotuloDiaCurto(iso: DataISO): string {
+  const data = dataDeISO(iso);
+  const semana = SO_A_SEMANA.format(data).replace(".", "");
+  return `${semana.charAt(0).toUpperCase()}${semana.slice(1)} ${data.getDate()}`;
+}
+
 /**
  * O dia `passo` dias adiante (ou atrás), em ISO. `Date` normaliza a virada de
  * mês e de ano sozinho, e a conta acontece toda no fuso do aparelho.

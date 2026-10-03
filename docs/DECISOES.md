@@ -8215,3 +8215,39 @@ remontar item por item.
 spec: "Anotar neste item" sob a linha, gravada em `ItemPedido.observacao`, lida na ficha do pedido
 e no WhatsApp (entre parênteses depois do nome). A folha do orçamento e a lista de produção ficam
 sem ela (fora de escopo).
+
+---
+
+## D277 · Os dias que ela marca em um toque, e o que já está marcado neles
+
+**Status:** vigente · decidida em 2026-10-03, spec `079-o-dia-que-cabe.md`
+
+**Contexto.** "Data da entrega" era só o seletor do aparelho, uma roda de três colunas no iPhone,
+para um dia que quase sempre é hoje, amanhã ou o fim de semana. E ela marcava o dia no escuro: a
+tela já tinha os pedidos dos próximos 30 dias (`useDespensaParaProduzir`) e não dizia que o sábado
+já tinha quatro pedidos.
+
+**Decisão.**
+
+- Acima do campo, quatro pílulas (`Pilulas`, 44px, a escolhida em `--brand-700`): "Hoje",
+  "Amanhã" e os dois seguintes como "Sáb 4" (`rotuloDiaCurto` em `domain/datas.ts`). Os dias
+  partem do `hoje` congelado na abertura do editor. O campo continua embaixo, com o rótulo e o
+  erro, para qualquer outro dia; dia fora dos quatro deixa as pílulas desmarcadas.
+- As pílulas ficam em **quatro colunas iguais** (`grid-cols-4`, até `max-w-sm`), e não na fila
+  que rola de lado: em 360px a fila cortava a quarta.
+- Abaixo do campo, na `dica` dele (o erro a substitui, e ela volta quando o erro some):
+  "Nesse dia você já tem 3 pedidos, 40 unidades." ou "Nenhum pedido nesse dia ainda."
+- A conta é `cargaDoDia(pedidos, diaISO, exceto?)` em `domain/pedido.ts`, sobre os
+  `pedidosAbertos` que a tela já tem. **Nenhuma consulta nova.** Sai o próprio pedido (a consulta
+  do horizonte o inclui, como a 078 conferiu), o `CANCELADO` e o `ENTREGUE`.
+- Unidades: o item com escolhas conta as receitas de dentro (`Σ escolha × quantidade`), como a
+  produção conta (`#d103`); o resto conta a quantidade da linha. O kit de composição fixa conta
+  como o kit: o item gravado não carrega os componentes, e ler a ficha para isso seria mais uma
+  dependência da tela por um número que só orienta.
+- Dia antes de hoje, depois do horizonte (`HORIZONTE_MAXIMO`, 30 dias) ou com os dados ainda
+  chegando: **a linha não aparece**. Zero ali seria mentira com cara de resposta.
+- **Tom neutro sempre**: `text-label` em `--ink-muted`, sem ocre e sem ícone, em qualquer
+  número. O Rende não sabe quanto ela aguenta num dia e não finge saber.
+
+**Consequência.** A capacidade do dia ("você faz no máximo 80") fica para quando houver o campo e
+a pergunta; a agenda de `/pedidos` continua sendo o calendário com a carga de cada dia.

@@ -255,6 +255,45 @@ export function maisPedidos(
     .map(([fichaId]) => fichaId);
 }
 
+/**
+ * O que já está marcado num dia (`#d277`): quantos pedidos e quantas unidades,
+ * sem o próprio pedido (`exceto`), sem o cancelado e sem o entregue. O combo
+ * com escolhas conta as receitas de dentro, como a produção conta; o resto
+ * conta a quantidade da linha. Quem chama decide se o dia está nos pedidos
+ * que tem: fora deles, a resposta seria zero sem ser.
+ */
+export function cargaDoDia(
+  pedidos: {
+    id: string;
+    status: StatusPedido;
+    dataEntregaISO: DataISO;
+    itens: {
+      quantidade: number;
+      escolhas?: { quantidade: number }[];
+    }[];
+  }[],
+  diaISO: DataISO,
+  exceto?: string,
+): { pedidos: number; unidades: number } {
+  let quantos = 0;
+  let unidades = 0;
+  for (const pedido of pedidos) {
+    if (pedido.dataEntregaISO !== diaISO || pedido.id === exceto) continue;
+    if (STATUS_CONCLUIDOS.includes(pedido.status)) continue;
+    quantos += 1;
+    for (const item of pedido.itens) {
+      const escolhas = item.escolhas ?? [];
+      unidades +=
+        escolhas.length > 0
+          ? escolhas.reduce((soma, escolha) => soma + escolha.quantidade, 0) *
+            quantidadeUtil(item)
+          : quantidadeUtil(item);
+    }
+  }
+  // "1,5" de um e "0,1" de outro não podem virar 1,6000000000000001 na tela.
+  return { pedidos: quantos, unidades: Math.round(unidades * 100) / 100 };
+}
+
 /** A ficha de hoje, no que repetir um item precisa ler dela. */
 export interface FichaParaRepetir {
   id: string;

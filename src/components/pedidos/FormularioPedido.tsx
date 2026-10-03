@@ -55,6 +55,7 @@ import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { formatarMoeda, parseParaNumero } from "@/lib/domain/money";
 import {
   ACAO_STATUS_PEDIDO,
+  cargaDoDia,
   custoDoComboMontado,
   derivarPedido,
   escolhasCompletas,
@@ -63,6 +64,7 @@ import {
   maisPedidos,
   ofereceOPrecoDeHoje,
   proximoPasso,
+  quantidadeEmTexto,
   resumoDasEscolhas,
   resumoDosItens,
   ROTULO_STATUS_PEDIDO,
@@ -83,7 +85,13 @@ import {
   type DadosPedido,
   type ItemDoPedido,
 } from "@/lib/firebase/mutations/pedidos";
-import { competenciaDeISO, rotuloDia } from "@/lib/domain/datas";
+import {
+  competenciaDeISO,
+  diaVizinho,
+  rotuloDia,
+  rotuloDiaCurto,
+} from "@/lib/domain/datas";
+import { HORIZONTE_MAXIMO } from "@/lib/domain/listaCompras";
 import {
   capacidadeDaFicha,
   projecaoDoPronto,
@@ -547,6 +555,24 @@ export function FormularioPedido({
           .slice(0, 6)
           .flatMap((id) => mapaFichas.get(id) ?? []);
   const idSaindo = useId();
+
+  // O dia que cabe (`#d277`): os dias que ela mais marca em um toque, e o que
+  // já está marcado no escolhido, dos pedidos do horizonte que a tela já tem.
+  // Fora do horizonte a conta daria zero sem ser, e a linha não aparece.
+  const atalhosDeDia = [0, 1, 2, 3].map((passo) => {
+    const dia = diaVizinho(hoje, passo);
+    return {
+      valor: dia,
+      rotulo: ["Hoje", "Amanhã"][passo] ?? rotuloDiaCurto(dia),
+    };
+  });
+  const diaEscolhido = valores.dataEntregaISO;
+  const carga =
+    despensaPronta &&
+    diaEscolhido >= hoje &&
+    diaEscolhido <= diaVizinho(hoje, HORIZONTE_MAXIMO)
+      ? cargaDoDia(pedidosAbertos, diaEscolhido, pedido?.id)
+      : null;
 
   // O último pedido da cliente vinculada, só no pedido novo (`#d276`). Sem
   // vínculo, nenhuma leitura; sem rede e sem cache, nada aparece.
@@ -1526,13 +1552,30 @@ export function FormularioPedido({
             titulo="Quando e como"
             descricao="A data manda na agenda e na tela Hoje."
           >
-            <div className="grid gap-4 sm:grid-cols-2">
+            {/* Quatro colunas iguais, e não a fila que rola: as quatro cabem
+              em 360px. A carga é neutra sempre: quanto cabe num dia é dela. */}
+            <Pilulas
+              rotulo="Atalhos de dia"
+              opcoes={atalhosDeDia}
+              valor={diaEscolhido}
+              aoMudar={(dia) => definir("dataEntregaISO", dia)}
+              numerico
+              className="mx-0 grid max-w-sm grid-cols-4 px-0 *:px-0"
+            />
+            {/* `items-start`: a linha da carga sob a data não empurra a hora. */}
+            <div className="grid items-start gap-4 sm:grid-cols-2">
               <Campo
                 rotulo="Data da entrega"
                 type="date"
                 required
                 value={valores.dataEntregaISO}
                 erro={erros.dataEntregaISO}
+                dica={
+                  carga &&
+                  (carga.pedidos === 0
+                    ? "Nenhum pedido nesse dia ainda."
+                    : `Nesse dia você já tem ${carga.pedidos} ${carga.pedidos === 1 ? "pedido" : "pedidos"}, ${quantidadeEmTexto(carga.unidades)} ${carga.unidades === 1 ? "unidade" : "unidades"}.`)
+                }
                 onChange={(evento) =>
                   definir("dataEntregaISO", evento.target.value)
                 }

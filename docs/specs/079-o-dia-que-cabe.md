@@ -69,11 +69,11 @@ nenhum índice, nenhuma dependência.**
 
 ## Critérios de aceite
 
-- [ ] Quatro atalhos e o campo de sempre; nenhuma consulta nova.
-- [ ] `cargaDoDia` com teste, sem contar o próprio pedido.
-- [ ] Linha neutra, sem alarme.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d277` escrito; `ESTADO.md` atualizado.
+- [x] Quatro atalhos e o campo de sempre; nenhuma consulta nova.
+- [x] `cargaDoDia` com teste, sem contar o próprio pedido.
+- [x] Linha neutra, sem alarme.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d277` escrito; `ESTADO.md` atualizado.
 
 ---
 

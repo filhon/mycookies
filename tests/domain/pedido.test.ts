@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   agruparPorEntrega,
   aReceber,
+  cargaDoDia,
   codigoDoPedido,
   custoDoComboMontado,
   custoDoItem,
@@ -914,6 +915,60 @@ describe("maisPedidos", () => {
 
   it("sem pedidos, nada", () => {
     expect(maisPedidos([])).toEqual([]);
+  });
+});
+
+describe("cargaDoDia", () => {
+  const pedido = (
+    id: string,
+    status: StatusPedido,
+    dataEntregaISO: string,
+    ...itens: { quantidade: number; escolhas?: { quantidade: number }[] }[]
+  ) => ({ id, status, dataEntregaISO, itens });
+
+  const pedidos = [
+    pedido("a", "CONFIRMADO", "2026-10-10", { quantidade: 12 }),
+    // 3 combos com 2 + 4 lá dentro são 18 doces, e não 3.
+    pedido("b", "ORCAMENTO", "2026-10-10", {
+      quantidade: 3,
+      escolhas: [{ quantidade: 2 }, { quantidade: 4 }],
+    }),
+    pedido("c", "CANCELADO", "2026-10-10", { quantidade: 50 }),
+    pedido("d", "ENTREGUE", "2026-10-10", { quantidade: 50 }),
+    pedido("e", "CONFIRMADO", "2026-10-11", { quantidade: 7 }),
+  ];
+
+  it("conta os pedidos do dia e as unidades, o combo pelas receitas de dentro", () => {
+    expect(cargaDoDia(pedidos, "2026-10-10")).toEqual({
+      pedidos: 2,
+      unidades: 30,
+    });
+  });
+
+  it("não conta o próprio pedido", () => {
+    expect(cargaDoDia(pedidos, "2026-10-10", "a")).toEqual({
+      pedidos: 1,
+      unidades: 18,
+    });
+  });
+
+  it("dia sem pedido é zero", () => {
+    expect(cargaDoDia(pedidos, "2026-10-12")).toEqual({
+      pedidos: 0,
+      unidades: 0,
+    });
+  });
+
+  it("quantidade com vírgula não sai com ruído de ponto flutuante", () => {
+    expect(
+      cargaDoDia(
+        [
+          pedido("a", "CONFIRMADO", "2026-10-10", { quantidade: 0.1 }),
+          pedido("b", "CONFIRMADO", "2026-10-10", { quantidade: 0.2 }),
+        ],
+        "2026-10-10",
+      ).unidades,
+    ).toBe(0.3);
   });
 });
 
