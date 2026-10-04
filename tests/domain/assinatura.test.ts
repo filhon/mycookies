@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   acessoAteDaAssinatura,
+  cobrancaPrevistaMs,
+  fraseDaCobranca,
+  fraseDaEconomia,
+  fraseDoPlano,
+  legendaDaAssinatura,
+  O_QUE_O_RECURSO_FAZ,
+  oQueOCompletoTraz,
   diasRestantes,
   economiaAnual,
   FOLGA_COBRANCA_DIAS,
@@ -302,5 +309,64 @@ describe("sobraQuePagaOPlano (spec 048)", () => {
     expect(
       sobraQuePagaOPlano({ a: { ...cookie, quantidade: 0 } }, 4900),
     ).toBeNull();
+  });
+});
+
+describe("o resumo da assinatura (spec 084)", () => {
+  // `formatarMoeda` usa o espaço inseparável do Intl entre "R$" e o número.
+  const semNbsp = (texto: string) => texto.replace(/ /g, " ");
+  // 12 de novembro, meio-dia em Brasília.
+  const dozeNov = Date.parse("2026-11-12T15:00:00Z");
+
+  it("diz o plano, o valor e o período", () => {
+    expect(
+      semNbsp(fraseDoPlano("ESSENCIAL", { valor: 3990, periodo: "mensal" })),
+    ).toBe("Plano Essencial · R$ 39,90 por mês");
+    expect(
+      semNbsp(fraseDoPlano("COMPLETO", { valor: 59900, periodo: "anual" })),
+    ).toBe("Plano Completo · R$ 599,00 por ano");
+  });
+
+  it("diz quando renova e com que cartão, ou quando termina", () => {
+    expect(
+      fraseDaCobranca({ ateMs: dozeNov, final: "4242", cancela: false }),
+    ).toBe("Renova em 12 de novembro, no cartão final 4242.");
+    expect(
+      fraseDaCobranca({ ateMs: dozeNov, final: null, cancela: false }),
+    ).toBe("Renova em 12 de novembro.");
+    expect(
+      fraseDaCobranca({ ateMs: dozeNov, final: "4242", cancela: true }),
+    ).toBe("Termina em 12 de novembro. Até lá, tudo continua aberto.");
+  });
+
+  it("o dia é o de Brasília, e não o do relógio da máquina", () => {
+    // 01h UTC do dia 13 ainda é dia 12 em Brasília.
+    const tarde = Date.parse("2026-11-13T01:00:00Z");
+    expect(fraseDaCobranca({ ateMs: tarde, final: null, cancela: false })).toBe(
+      "Renova em 12 de novembro.",
+    );
+  });
+
+  it("a legenda tira a folga de `assinaturaAte` e abrevia o mês", () => {
+    const assinaturaAteMs = dozeNov + FOLGA_RENOVACAO_DIAS * DIA_MS;
+    expect(cobrancaPrevistaMs(assinaturaAteMs)).toBe(dozeNov);
+    expect(legendaDaAssinatura("ESSENCIAL", assinaturaAteMs)).toBe(
+      "Essencial · renova em 12 nov",
+    );
+  });
+
+  it("o completo é dito só para quem não o tem", () => {
+    expect(oQueOCompletoTraz("ESSENCIAL")).toEqual([
+      O_QUE_O_RECURSO_FAZ.cardapio,
+      O_QUE_O_RECURSO_FAZ.ajudante,
+    ]);
+    expect(oQueOCompletoTraz("COMPLETO")).toEqual([]);
+  });
+
+  it("a economia do anual some quando não compensa", () => {
+    expect(semNbsp(fraseDaEconomia({ mensal: 3990, anual: 39900 })!)).toBe(
+      "No anual você paga R$ 79,80 a menos por ano",
+    );
+    expect(fraseDaEconomia({ mensal: 3990, anual: 47880 })).toBeNull();
   });
 });

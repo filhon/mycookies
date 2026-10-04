@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Centavos, Pacote, ResumoProduto } from "@/lib/types";
 import { LIMITE_DE_AJUDANTES } from "./ajudante";
+import { formatarMoeda } from "./money";
 
 /**
  * O que a regra, o webhook, a tela e a linha da Hoje compartilham sobre o
@@ -207,6 +208,106 @@ export function sobraQuePagaOPlano(
     Math.round(maisVendido.lucro / maisVendido.quantidade),
   );
   return unidades > 0 ? { nome: maisVendido.nome, unidades } : null;
+}
+
+/**
+ * O que `/api/assinatura/resumo` lê do Stripe e devolve, sem gravar nada
+ * (`DECISOES.md#d285`). `ateMs` é a próxima cobrança, ou o fim quando
+ * `cancela`. `final` é o fim do cartão; `null` quando não há cartão.
+ */
+export interface ResumoAssinatura {
+  valor: Centavos;
+  periodo: Periodo;
+  ateMs: number;
+  final: string | null;
+  cancela: boolean;
+}
+
+/**
+ * O que cada recurso do completo faz, numa frase: a linha de "O Completo traz"
+ * para quem está no essencial (spec 084).
+ */
+export const O_QUE_O_RECURSO_FAZ: Record<Recurso, string> = {
+  cardapio: "O cardápio com link: a cliente escolhe e o pedido chega anotado.",
+  ajudante: `Até ${LIMITE_DE_AJUDANTES} ajudantes, que produzem e entregam com você sem ver o seu caixa.`,
+};
+
+/** As frases do que o completo tem e este pacote não. Vazia no completo. */
+export function oQueOCompletoTraz(pacote: Pacote): string[] {
+  return RECURSOS_DO_PACOTE.COMPLETO.filter(
+    (recurso) => !RECURSOS_DO_PACOTE[pacote].includes(recurso),
+  ).map((recurso) => O_QUE_O_RECURSO_FAZ[recurso]);
+}
+
+// Brasília, como o resto da conta (`#d160`): no servidor e no aparelho, o mesmo dia.
+const DIA_E_MES = new Intl.DateTimeFormat("pt-BR", {
+  day: "numeric",
+  month: "long",
+  timeZone: "America/Sao_Paulo",
+});
+
+/** "12 de novembro". */
+function diaEMes(ms: number): string {
+  return DIA_E_MES.format(ms);
+}
+
+/** "12 nov": o mês nas três primeiras letras, sem o ponto do `short`. */
+function diaEMesCurto(ms: number): string {
+  const partes = DIA_E_MES.formatToParts(ms);
+  const dia = partes.find((parte) => parte.type === "day")?.value;
+  const mes = partes.find((parte) => parte.type === "month")?.value ?? "";
+  return `${dia} ${mes.slice(0, 3)}`;
+}
+
+/**
+ * O dia da cobrança pelo que o aparelho sabe: `assinaturaAte` é o fim do
+ * período **mais a folga** (`acessoAteDaAssinatura`), e a cobrança é no fim.
+ */
+export function cobrancaPrevistaMs(renovaEmMs: number): number {
+  return renovaEmMs - FOLGA_RENOVACAO_DIAS * DIA_MS;
+}
+
+/** "Plano Essencial · R$ 39,90 por mês". */
+export function fraseDoPlano(
+  pacote: Pacote,
+  resumo: Pick<ResumoAssinatura, "valor" | "periodo">,
+): string {
+  const por = resumo.periodo === "anual" ? "por ano" : "por mês";
+  return `Plano ${NOME_DO_PACOTE[pacote]} · ${formatarMoeda(resumo.valor)} ${por}`;
+}
+
+/**
+ * "Renova em 12 de novembro, no cartão final 4242." · sem cartão, só o dia ·
+ * com o cancelamento marcado, "Termina em 12 de novembro. Até lá, tudo
+ * continua aberto."
+ */
+export function fraseDaCobranca(
+  resumo: Pick<ResumoAssinatura, "ateMs" | "final" | "cancela">,
+): string {
+  const dia = diaEMes(resumo.ateMs);
+  if (resumo.cancela) return `Termina em ${dia}. Até lá, tudo continua aberto.`;
+  return resumo.final
+    ? `Renova em ${dia}, no cartão final ${resumo.final}.`
+    : `Renova em ${dia}.`;
+}
+
+/** "Essencial · renova em 12 nov": a legenda da linha fechada, pelo aparelho. */
+export function legendaDaAssinatura(
+  pacote: Pacote,
+  renovaEmMs: number,
+): string {
+  return `${NOME_DO_PACOTE[pacote]} · renova em ${diaEMesCurto(cobrancaPrevistaMs(renovaEmMs))}`;
+}
+
+/** "No anual você paga R$ 99,80 a menos por ano", ou `null` quando não compensa. */
+export function fraseDaEconomia(precos: {
+  mensal: Centavos;
+  anual: Centavos;
+}): string | null {
+  const economia = economiaAnual(precos.mensal, precos.anual);
+  return economia > 0
+    ? `No anual você paga ${formatarMoeda(economia)} a menos por ano`
+    : null;
 }
 
 export const esquemaCheckout = z.object({

@@ -89,12 +89,12 @@ mostra o que o Completo traz para quem está no Essencial, e a conta ganha "Fale
 
 ## Critérios de aceite
 
-- [ ] Valor, período, próxima cobrança e final do cartão na tela, sem gravar nada.
-- [ ] O Completo dito para quem está no Essencial, com o caminho para ele.
-- [ ] Offline sem erro.
-- [ ] "Fale com a gente" dentro do app.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d285` escrito; `ESTADO.md` atualizado.
+- [x] Valor, período, próxima cobrança e final do cartão na tela, sem gravar nada.
+- [x] O Completo dito para quem está no Essencial, com o caminho para ele.
+- [x] Offline sem erro.
+- [x] "Fale com a gente" dentro do app.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d285` escrito; `ESTADO.md` atualizado.
 
 ---
 

@@ -23,6 +23,8 @@ import {
   Tag,
 } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
+import { FaleComAGente } from "@/components/conta/FaleComAGente";
+import { LinhaDaAssinatura } from "@/components/conta/LinhaDaAssinatura";
 import { MeusDados } from "@/components/conta/MeusDados";
 import { QuemTeAjuda } from "@/components/conta/QuemTeAjuda";
 import { ANCORA_DO_CONTATO, SeuCardapio } from "@/components/conta/SeuCardapio";
@@ -58,8 +60,6 @@ import {
 } from "@/lib/domain/money";
 import {
   fraseDoTeste,
-  MENSAGEM_FALHA_ASSINATURA,
-  NOME_DO_PACOTE,
   paraSituar,
   situacaoDaConta,
 } from "@/lib/domain/assinatura";
@@ -432,40 +432,12 @@ function LinhaSair({ pedir }: { pedir?: (acao: () => void) => void }) {
 
 function ConfiguracaoDaDona() {
   const contaId = useContaId();
-  const { conta, usuario } = useAuth();
-  const [portalEnviando, setPortalEnviando] = useState(false);
-  const [portalErro, setPortalErro] = useState<string | null>(null);
+  const { conta } = useAuth();
   const idOcultarFeitoCom = useId();
 
   const situacao = conta
     ? situacaoDaConta(paraSituar(conta), new Date().getTime())
     : null;
-
-  async function abrirPortalAssinatura() {
-    setPortalErro(null);
-    setPortalEnviando(true);
-    try {
-      const token = await usuario!.getIdToken();
-      const resposta = await fetch("/api/assinatura/portal", {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${token}`,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({ contaId }),
-      });
-      if (!resposta.ok) {
-        setPortalErro(MENSAGEM_FALHA_ASSINATURA["sem-resposta"]);
-        setPortalEnviando(false);
-        return;
-      }
-      const { url } = (await resposta.json()) as { url: string };
-      window.location.assign(url);
-    } catch {
-      setPortalErro(MENSAGEM_FALHA_ASSINATURA["sem-rede"]);
-      setPortalEnviando(false);
-    }
-  }
 
   const referencia = useMemo(() => docConfiguracao(contaId), [contaId]);
   const { dado, carregando, erro, pendente } =
@@ -1067,53 +1039,36 @@ function ConfiguracaoDaDona() {
           <Parte id="a-sua-conta" titulo="A sua conta">
             <div className={LISTA}>
               {/* Só em teste e assinante: `livre` não tem o que ver aqui (spec
-                  028). Só a linha; o detalhe é da 084. Secundário: o âmbar da
-                  tela é o "Salvar" (`#d284`). */}
-              {(situacao?.tipo === "teste" ||
-                situacao?.tipo === "assinante") && (
-                <>
-                  <div className="flex flex-wrap items-center gap-3 border-t border-line px-4 py-4 lg:px-5">
-                    <CreditCard
-                      aria-hidden
-                      className="size-5 shrink-0 text-ink-muted"
-                      strokeWidth={1.75}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-body font-medium text-ink">
-                        Assinatura
-                      </span>
-                      <span className="mt-0.5 block text-label text-ink-muted">
-                        {situacao.tipo === "teste"
-                          ? fraseDoTeste(situacao.diasRestantes)
-                          : `Você está no plano ${NOME_DO_PACOTE[situacao.pacote]}.`}
-                      </span>
+                  028). No teste, o prazo e "Assinar", secundário: o âmbar da
+                  tela é o "Salvar" (`#d284`). A assinante abre o painel (`#d285`). */}
+              {situacao?.tipo === "teste" && (
+                <div className="flex flex-wrap items-center gap-3 border-t border-line px-4 py-4 lg:px-5">
+                  <CreditCard
+                    aria-hidden
+                    className="size-5 shrink-0 text-ink-muted"
+                    strokeWidth={1.75}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-body font-medium text-ink">
+                      Assinatura
                     </span>
-                    {situacao.tipo === "teste" ? (
-                      <Link
-                        href="/assinatura"
-                        className={classesBotao({ variante: "secundaria" })}
-                      >
-                        Assinar
-                      </Link>
-                    ) : (
-                      <Botao
-                        variante="secundaria"
-                        onClick={() => void abrirPortalAssinatura()}
-                        carregando={portalEnviando}
-                      >
-                        Gerenciar assinatura
-                      </Botao>
-                    )}
-                  </div>
-                  {portalErro && (
-                    <p
-                      role="alert"
-                      className="px-4 pb-3 text-label text-negative lg:px-5"
-                    >
-                      {portalErro}
-                    </p>
-                  )}
-                </>
+                    <span className="mt-0.5 block text-label text-ink-muted">
+                      {fraseDoTeste(situacao.diasRestantes)}
+                    </span>
+                  </span>
+                  <Link
+                    href="/assinatura"
+                    className={classesBotao({ variante: "secundaria" })}
+                  >
+                    Assinar
+                  </Link>
+                </div>
+              )}
+              {situacao?.tipo === "assinante" && (
+                <LinhaDaAssinatura
+                  pacote={situacao.pacote}
+                  renovaEmMs={situacao.renovaEmMs}
+                />
               )}
 
               {/* O que se usa uma vez por ano (spec 030): a legenda é o
@@ -1154,6 +1109,8 @@ function ConfiguracaoDaDona() {
               </label>
 
               <BlocoTema />
+
+              <FaleComAGente />
 
               {/* A entrada do guia no celular, onde não há barra lateral. É
                   para cá que a engrenagem do cabeçalho da tela Hoje já leva. */}

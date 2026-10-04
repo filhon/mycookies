@@ -8512,3 +8512,48 @@ rotas quebrariam a barra de salvar única.
 
 **Consequência.** Uma linha que entrar na lista leva `border-t border-line` e o recuo de sempre;
 sem o filete, ela cola na de cima.
+
+## D285 · A assinatura dita inteira, lida no Stripe e não gravada
+
+**Status:** vigente · decidida em 2026-10-04, spec `084-o-que-voce-assina.md`.
+
+**Contexto.** A linha dizia "Você está no plano Essencial." e mais nada: nem o valor, nem quando
+renova, nem o cartão. O Completo era um cadeado longe dali, e pedir ajuda só dava na tela de
+entrada.
+
+**Decisão.**
+
+- **`POST /api/assinatura/resumo`**, com o token e o `contaId` do portal e só para a dona, lê a
+  `stripeSubscriptionId` da conta e devolve `ResumoAssinatura`: valor em centavos, período, a
+  próxima cobrança (ou o fim, com cancelamento), o final do cartão e se cancela. **Nada é
+  gravado**: o Stripe é a verdade, e o webhook continua o único que escreve a conta.
+- O cartão é o `default_payment_method` da assinatura e, sem ele, o padrão do cliente, que é
+  onde o portal grava a troca. Cancelamento é `cancel_at_period_end` **ou** `cancel_at`: o portal
+  marca de um dos dois jeitos. A bandeira ficou fora da resposta: a frase é "no cartão final
+  4242", e só o final entra nela.
+- O valor é o preço da tabela vezes a quantidade, sem cupom (`ponytail` na rota):
+  `invoices.createPreview` no dia em que houver desconto.
+- **A legenda da linha, fechada, é do aparelho**: "Essencial · renova em 12 nov", por
+  `legendaDaAssinatura`. `assinaturaAte` é o fim do período **mais a folga**
+  (`FOLGA_RENOVACAO_DIAS`), então `cobrancaPrevistaMs` a tira: sem isso a linha diria a renovação
+  três dias depois da cobrança. Na assinatura atrasada (`past_due`) o número é outro e a conta
+  erra; nesse caso o painel, com rede, diz o certo.
+- O painel lê no toque de abrir, e não ao montar a tela: a Configuração não chama o Stripe a
+  cada visita. Lê também `/api/assinatura/precos`, para "No anual você paga R$ … a menos por
+  ano" só no mensal. Qualquer falha das duas é silêncio: fica o plano, "Renova em …" pelo
+  aparelho e "O valor e o cartão aparecem com internet.", nunca um erro.
+- Cancelamento marcado: "Termina em …. Até lá, tudo continua aberto." na caixa de atenção, com o
+  triângulo.
+- No essencial, "O Completo traz:" com uma linha por recurso que falta (`oQueOCompletoTraz`, de
+  `RECURSOS_DO_PACOTE` e `O_QUE_O_RECURSO_FAZ`) e "Passar para o Completo", secundário. "Trocar
+  o cartão, ver as cobranças ou cancelar" é terciário. Os dois vão ao portal. Nenhum primário
+  no painel: o âmbar da tela continua o "Salvar" (`#d284`).
+- O teste continua como era: o prazo e "Assinar" para `/assinatura`. A conta `livre` não tem a
+  linha.
+- **"Fale com a gente"** antes de "Como funciona": o canal do `#d195` (WhatsApp do
+  `RESPONSAVEL`, e-mail sem ele, com a legenda dizendo qual), com o texto "Oi, aqui é da
+  {nome do negócio}. Preciso de ajuda com o Rende.", em aba nova.
+
+**Consequência.** "Gerenciar assinatura" saiu da tela: o portal agora se abre do painel, por
+um dos dois botões. Hoje `RESPONSAVEL.whatsapp` está vazio, então "Fale com a gente" abre o
+e-mail até o número entrar lá.
