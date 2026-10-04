@@ -152,9 +152,9 @@ export function OQueMudaNosProdutos({
 
   return (
     <section aria-labelledby={idTitulo} className="pt-2">
-      <h2 id={idTitulo} className="text-subheading font-semibold text-ink">
+      <h3 id={idTitulo} className="text-subheading font-semibold text-ink">
         O que muda nos seus produtos
-      </h2>
+      </h3>
       {frases.length > 0 && (
         <p className="mt-1 max-w-[60ch] text-label text-ink-muted">
           Com estes números, {frases.join(" ")}

@@ -184,7 +184,7 @@ export function QuemTeAjuda() {
       <button
         type="button"
         onClick={() => setAberto(true)}
-        className="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-4 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:px-5"
+        className="flex w-full items-center gap-3 border-t border-line px-4 py-4 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:px-5"
       >
         <Users
           aria-hidden

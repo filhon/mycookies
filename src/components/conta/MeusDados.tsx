@@ -102,7 +102,7 @@ export function MeusDados() {
         onClick={() => void baixar()}
         disabled={baixando}
         aria-busy={baixando}
-        className="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-4 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken disabled:opacity-60 lg:px-5"
+        className="flex w-full items-center gap-3 border-t border-line px-4 py-4 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken disabled:opacity-60 lg:px-5"
       >
         <Download
           aria-hidden
@@ -120,7 +120,7 @@ export function MeusDados() {
         </span>
       </button>
       {erroBaixar && (
-        <p role="alert" className="text-label text-negative">
+        <p role="alert" className="px-4 pb-3 text-label text-negative lg:px-5">
           {erroBaixar}
         </p>
       )}
@@ -128,7 +128,7 @@ export function MeusDados() {
       <button
         type="button"
         onClick={() => setModalAberta(true)}
-        className="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-4 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:px-5"
+        className="flex w-full items-center gap-3 border-t border-line px-4 py-4 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:px-5"
       >
         <UserX
           aria-hidden
@@ -146,12 +146,15 @@ export function MeusDados() {
         </span>
       </button>
       {erroEncerrar && (
-        <p role="alert" className="text-label text-negative">
+        <p role="alert" className="px-4 pb-3 text-label text-negative lg:px-5">
           {erroEncerrar}
         </p>
       )}
       {sairPendente && (
-        <p aria-live="polite" className="text-label text-ink-muted">
+        <p
+          aria-live="polite"
+          className="px-4 pb-3 text-label text-ink-muted lg:px-5"
+        >
           {AVISO_SAIR_PENDENTE}
         </p>
       )}

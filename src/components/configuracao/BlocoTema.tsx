@@ -4,7 +4,6 @@ import { SunMoon } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { Pilulas, type OpcaoPilula } from "@/components/ui/Pilulas";
 import { CHAVE_TEMA, type Tema } from "@/lib/tema";
-import { BlocoConfiguracao } from "./BlocoConfiguracao";
 
 /** O `<html>` é a fonte: o script do `<head>` já o escreveu do armazenamento. */
 function lido(): Tema {
@@ -48,18 +47,35 @@ const TEMAS: OpcaoPilula<Tema>[] = [
 
 /**
  * O tema, fora do formulário: vale no toque e neste aparelho, como a ordem das
- * listas, e não espera o "Salvar" (`DECISOES.md#d244`).
+ * listas, e não espera o "Salvar" (`DECISOES.md#d244`). Uma linha da lista de
+ * "A sua conta" (`#d284`): as pílulas à direita no desktop, embaixo no celular.
  */
 export function BlocoTema() {
   const [tema, mudar] = useTema();
 
   return (
-    <BlocoConfiguracao
-      icone={SunMoon}
-      titulo="Tema"
-      descricao="Claro para a cozinha iluminada, escuro para a noite. Vale neste aparelho, no toque."
-    >
-      <Pilulas rotulo="Tema" opcoes={TEMAS} valor={tema} aoMudar={mudar} />
-    </BlocoConfiguracao>
+    <div className="flex flex-col gap-3 border-t border-line px-4 py-4 lg:flex-row lg:items-center lg:px-5">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <SunMoon
+          aria-hidden
+          className="size-5 shrink-0 text-ink-muted"
+          strokeWidth={1.75}
+        />
+        <span className="min-w-0">
+          <span className="block text-body font-medium text-ink">Tema</span>
+          <span className="mt-0.5 block text-label text-ink-muted">
+            Claro para a cozinha iluminada, escuro para a noite. Vale neste
+            aparelho.
+          </span>
+        </span>
+      </div>
+      <Pilulas
+        rotulo="Tema"
+        opcoes={TEMAS}
+        valor={tema}
+        aoMudar={mudar}
+        className="lg:shrink-0 lg:flex-nowrap"
+      />
+    </div>
   );
 }

@@ -42,7 +42,7 @@ export function BlocoConfiguracao({
   return (
     <section
       id={id}
-      className="scroll-mt-24 overflow-hidden rounded-lg border border-line bg-surface"
+      className="scroll-mt-[calc(var(--fundo-cabecalho,0px)+1rem)] overflow-hidden rounded-lg border border-line bg-surface"
     >
       <div className="px-4 py-5 lg:px-5">
         <div className="flex items-start gap-3">
@@ -52,7 +52,7 @@ export function BlocoConfiguracao({
             strokeWidth={1.75}
           />
           <div className="min-w-0">
-            <h2 className="text-subheading font-semibold text-ink">{titulo}</h2>
+            <h3 className="text-subheading font-semibold text-ink">{titulo}</h3>
             {descricao && (
               <p className="mt-1 max-w-[56ch] text-label text-ink-muted">
                 {descricao}

@@ -105,11 +105,11 @@ e os blocos dentro dela continuam `BlocoConfiguracao`.
 
 ## Critérios de aceite
 
-- [ ] Três partes na ordem decidida; Preço padrão logo depois do custo por hora.
-- [ ] A terceira parte é lista, sem cartão, e nada nela pede "Salvar".
-- [ ] Um âmbar por tela.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d283` e `#d284` escritos; `DESIGN.md` com a seção da Configuração; `ESTADO.md`
+- [x] Três partes na ordem decidida; Preço padrão logo depois do custo por hora.
+- [x] A terceira parte é lista, sem cartão, e nada nela pede "Salvar".
+- [x] Um âmbar por tela.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d283` e `#d284` escritos; `DESIGN.md` com a seção da Configuração; `ESTADO.md`
       atualizado.
 
 ---

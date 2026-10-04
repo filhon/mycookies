@@ -8451,3 +8451,64 @@ escuro: a faixa de cada bloco diz o efeito numa fornada de exemplo, nunca nos do
 
 **Consequência.** A conta da prévia roda a cada render da tela, sobre dezenas de fichas; com
 centenas, memorizar pelo rateio.
+
+## D283 · A configuração em três partes, na ordem da conta
+
+**Status:** vigente · decidida em 2026-10-03, spec `083-a-configuracao-em-partes.md`.
+
+**Contexto.** A tela era uma pilha de dezesseis caixas iguais, com a cobrança do Rende e a folha do
+orçamento no meio da matemática do preço: o preço padrão, continuação direta do custo por hora,
+vinha depois da assinatura. No desktop largo, a coluna de 1024px deixava 600px vazios e o número
+que fecha a conta rolava para fora.
+
+**Decisão.**
+
+- Três partes, cada uma **seção no papel** (`h2` em `heading`, `font-display`, 48px antes, sem
+  caixa): **O seu preço** (trabalho · energia e gás · despesas fixas · cada hora custa · preço
+  padrão · formas de pagamento), **A sua marca** (a folha do orçamento · a linha "Seu cardápio",
+  que saiu da prateleira: é vitrine, não conta) e **A sua conta** (`#d284`). Os blocos dentro das
+  duas primeiras continuam `BlocoConfiguracao`, agora com `h3`.
+- **Índice** na faixa de ferramentas do cabeçalho: três âncoras com o desenho da pílula de filtro,
+  em três colunas iguais no celular (cabem em 360px) e em fila no desktop. `aria-current` na
+  parte em leitura, por um `IntersectionObserver` cuja faixa vai do pé do cabeçalho à metade da
+  tela: acende a **última** parte que passa por ela, e não a primeira, porque "A sua conta" é curta
+  e no fim da página não chega ao topo. Tocar acende na hora. Local à tela: nenhuma outra tinha
+  índice, e `ui/` não ganhou componente.
+- Descrição do cabeçalho: "De onde sai o preço de todo produto, e o que é da sua conta."
+- **A partir de `2xl`**, a grade do editor de pedido (`#d274`): o formulário até 944px e, à
+  direita, a `<aside>` de 320px presa sob o cabeçalho com "Cada hora de produção custa" e a prévia
+  da 082 (`#d282`). Os dois são desenhados duas vezes, `2xl:hidden` no fluxo e `hidden 2xl:block`
+  na coluna, como o `PainelPedido`; a prévia assina a mesma consulta nos dois, que o Firestore
+  serve de um alvo só. Abaixo de `2xl`, nada muda.
+- Para isso a rota saiu de `(coluna)`: a tela põe a própria largura, `max-w-5xl` e
+  `2xl:max-w-324` só para a dona. A ajudante continua na coluna, com a tela reduzida de antes.
+- As âncoras que outras telas usam ficam: `#avisos` (o e-mail) e `#folha-do-orcamento` (o painel
+  do cardápio), com a margem de rolagem do cabeçalho (`--fundo-cabecalho`), que agora tem o índice.
+
+**Consequência.** Dividir em uma página por parte foi recusado: com o índice uma página basta, e
+rotas quebrariam a barra de salvar única.
+
+## D284 · O que vale no toque fica fora do formulário, e o âmbar é do "Salvar"
+
+**Status:** vigente · decidida em 2026-10-03, spec `083-a-configuracao-em-partes.md`.
+
+**Contexto.** Oito blocos esperavam o "Salvar"; avisos e tema valiam no toque e precisavam da frase
+"Vale no toque, sem salvar". E no desktop havia dois primários: "Salvar" e "Gerenciar assinatura".
+
+**Decisão.**
+
+- **A sua conta** é uma lista com divisórias, uma linha por item, nenhum cartão: assinatura (só a
+  linha; o detalhe é da 084) · quem te ajuda · avisos por e-mail · tema · como funciona · baixar
+  meus dados · encerrar minha conta · sair. Cada linha age na hora, como já agia; a posição diz
+  isso, e a frase saiu.
+- Avisos: a linha **é** o `<label>`, com o título, o rótulo de sempre embaixo e a caixa à direita.
+  Tema: a linha com as três pílulas à direita no desktop e embaixo no celular.
+- A barra de salvar, o "Você mudou coisas…" e a guarda de saída já só olhavam o formulário das
+  duas primeiras partes; nada mudou neles.
+- "Gerenciar assinatura" e também o "Assinar" do teste são **secundários**: o âmbar da tela é o
+  "Salvar".
+- As linhas de `components/conta/` perderam a caixa e levam o filete de cima; a lista (superfície,
+  borda, raio 14px) tira o da primeira. As frases de erro dentro da lista ganharam o recuo da linha.
+
+**Consequência.** Uma linha que entrar na lista leva `border-t border-line` e o recuo de sempre;
+sem o filete, ela cola na de cima.

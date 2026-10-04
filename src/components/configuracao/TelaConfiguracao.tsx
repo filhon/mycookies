@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useMemo, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   Check,
   ChevronRight,
@@ -89,7 +96,28 @@ import { cn } from "@/lib/utils/cn";
 const PRECO_EXEMPLO = 1237;
 
 const DESCRICAO =
-  "Os custos que não aparecem no produto, mas saem do seu bolso. É daqui que sai o rateio de todo produto.";
+  "De onde sai o preço de todo produto, e o que é da sua conta.";
+
+/**
+ * As três partes da tela, na ordem em que uma coisa depende da outra
+ * (`#d283`). As duas primeiras gravam com o "Salvar"; a terceira vale no toque
+ * (`#d284`).
+ */
+const PARTES = [
+  { id: "o-seu-preco", rotulo: "O seu preço" },
+  { id: "a-sua-marca", rotulo: "A sua marca" },
+  { id: "a-sua-conta", rotulo: "A sua conta" },
+] as const;
+
+type IdParte = (typeof PARTES)[number]["id"];
+
+/** A lista com divisórias: cada linha traz o filete de cima, menos a primeira. */
+const LISTA =
+  "overflow-hidden rounded-lg border border-line bg-surface [&>:first-child]:border-t-0";
+
+/** Uma linha da lista de "A sua conta", como as de `components/conta/`. */
+const LINHA =
+  "flex w-full items-center gap-3 border-t border-line px-4 py-4 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:px-5";
 
 const REGRAS: RegraArredondamento[] = [
   "CENTAVO_90",
@@ -218,15 +246,21 @@ const METODOS: {
  * fecha para ela: abre reduzida (spec 030, 3.B.3).
  */
 export function TelaConfiguracao() {
+  // Fora de `(coluna)` (`#d283`): a tela põe a própria largura, e só a da
+  // dona alarga em `2xl` para a coluna do custo por hora.
   return usePapel() === "AJUDANTE" ? (
-    <ConfiguracaoDaAjudante />
+    <div className="mx-auto w-full max-w-5xl">
+      <ConfiguracaoDaAjudante />
+    </div>
   ) : (
-    <ConfiguracaoDaDona />
+    <div className="mx-auto w-full max-w-5xl 2xl:max-w-324">
+      <ConfiguracaoDaDona />
+    </div>
   );
 }
 
 /**
- * O cabeçalho, de quem é a configuração, e a prateleira só com "Sair". Sem
+ * O cabeçalho, de quem é a configuração, e a lista só com o tema e "Sair". Sem
  * "Como funciona" (é o caminho dos primeiros passos, rota da dona), sem "Quem
  * te ajuda" e sem `MeusDados` — os dados não são dela para exportar nem a conta
  * dela para encerrar. Sem `useGuardaDeSaida`: não há formulário para sujar.
@@ -238,10 +272,8 @@ function ConfiguracaoDaAjudante() {
       <p className="mt-4 max-w-[60ch] text-body text-ink-muted">
         O preço e os custos são de quem é dona do negócio.
       </p>
-      <div className="mt-4">
+      <div className={cn(LISTA, "mt-4 lg:max-w-2xl")}>
         <BlocoTema />
-      </div>
-      <div className="mt-8 flex flex-col gap-2 lg:mt-12 lg:max-w-md">
         <LinhaSair />
       </div>
     </>
@@ -249,7 +281,105 @@ function ConfiguracaoDaAjudante() {
 }
 
 /**
- * "Sair", na prateleira. `pedir` é a guarda de saída da tela que tem
+ * Uma parte da tela (`#d283`): seção no papel, sem caixa, com os blocos ou a
+ * lista dentro. A margem de rolagem é a do cabeçalho, que leva o índice.
+ */
+function Parte({
+  id,
+  titulo,
+  children,
+  className,
+}: {
+  id: IdParte;
+  titulo: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      id={id}
+      aria-labelledby={`${id}-titulo`}
+      className={cn(
+        "mt-12 scroll-mt-[calc(var(--fundo-cabecalho,0px)+1rem)] first:mt-6",
+        className,
+      )}
+    >
+      <h2
+        id={`${id}-titulo`}
+        className="font-display text-heading font-semibold text-ink"
+      >
+        {titulo}
+      </h2>
+      <div className="mt-4 space-y-4">{children}</div>
+    </section>
+  );
+}
+
+/**
+ * O índice da faixa de ferramentas: três âncoras, com `aria-current` na parte
+ * em leitura. É a última parte cujo pedaço passa pela metade de cima da tela,
+ * abaixo do cabeçalho: no fim da página, onde a última parte não chega ao
+ * topo, ela ainda acende.
+ */
+function IndiceDasPartes() {
+  const ref = useRef<HTMLElement>(null);
+  const [atual, setAtual] = useState<IdParte>(PARTES[0].id);
+
+  useEffect(() => {
+    const cabecalho = ref.current?.closest("header");
+    const visiveis = new Set<string>();
+    const observador = new IntersectionObserver(
+      (entradas) => {
+        for (const entrada of entradas) {
+          if (entrada.isIntersecting) visiveis.add(entrada.target.id);
+          else visiveis.delete(entrada.target.id);
+        }
+        const emLeitura = PARTES.filter((parte) => visiveis.has(parte.id)).at(
+          -1,
+        );
+        if (emLeitura) setAtual(emLeitura.id);
+      },
+      { rootMargin: `-${cabecalho?.offsetHeight ?? 0}px 0px -50% 0px` },
+    );
+    for (const parte of PARTES) {
+      const elemento = document.getElementById(parte.id);
+      if (elemento) observador.observe(elemento);
+    }
+    return () => observador.disconnect();
+  }, []);
+
+  return (
+    <nav
+      ref={ref}
+      aria-label="Partes da configuração"
+      className="grid grid-cols-3 gap-2 lg:flex"
+    >
+      {PARTES.map((parte) => {
+        const ativa = atual === parte.id;
+        return (
+          <a
+            key={parte.id}
+            href={`#${parte.id}`}
+            onClick={() => setAtual(parte.id)}
+            aria-current={ativa ? "true" : undefined}
+            className={cn(
+              "flex h-11 items-center justify-center rounded-full px-2 text-label font-medium whitespace-nowrap lg:px-4",
+              "transition-colors duration-150 ease-quart",
+              ativa
+                ? "bg-brand-700 text-on-brand"
+                : "border border-line-strong text-ink-muted hover:bg-sunken active:bg-sunken",
+            )}
+          >
+            {parte.rotulo}
+          </a>
+        );
+      })}
+    </nav>
+  );
+}
+
+/**
+ * "Sair", a última linha da lista. `pedir` é a guarda de saída da tela que tem
  * formulário; sem ela, sai direto.
  */
 function LinhaSair({ pedir }: { pedir?: (acao: () => void) => void }) {
@@ -273,7 +403,7 @@ function LinhaSair({ pedir }: { pedir?: (acao: () => void) => void }) {
         onClick={() => (pedir ? pedir(aoSair) : void aoSair())}
         disabled={saindo}
         aria-busy={saindo}
-        className="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-4 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken disabled:opacity-60 lg:px-5"
+        className={cn(LINHA, "disabled:opacity-60")}
       >
         <LogOut
           aria-hidden
@@ -289,7 +419,10 @@ function LinhaSair({ pedir }: { pedir?: (acao: () => void) => void }) {
       </button>
 
       {sairPendente && (
-        <p aria-live="polite" className="text-label text-ink-muted">
+        <p
+          aria-live="polite"
+          className="px-4 pb-3 text-label text-ink-muted lg:px-5"
+        >
           {AVISO_SAIR_PENDENTE}
         </p>
       )}
@@ -303,7 +436,6 @@ function ConfiguracaoDaDona() {
   const [portalEnviando, setPortalEnviando] = useState(false);
   const [portalErro, setPortalErro] = useState<string | null>(null);
   const idOcultarFeitoCom = useId();
-  const idAvisos = useId();
 
   const situacao = conta
     ? situacaoDaConta(paraSituar(conta), new Date().getTime())
@@ -506,6 +638,20 @@ function ConfiguracaoDaDona() {
     }
   }
 
+  // A soma que fecha a conta e a prévia da 082. Abaixo de `2xl`, logo depois
+  // das despesas; a partir dele, a coluna presa à direita (`#d283`), como o
+  // resumo do pedido (`#d274`). O recibo só enquanto "Tudo salvo": a primeira
+  // alteração o tira.
+  const custoDaHora = (
+    <>
+      <CustoPorHora operacional={operacional} />
+      <OQueMudaNosProdutos
+        rateio={rateioMudou ? rateio : null}
+        recibo={salvo ? recibo : null}
+      />
+    </>
+  );
+
   return (
     <>
       <CabecalhoPagina
@@ -523,11 +669,15 @@ function ConfiguracaoDaDona() {
             Salvar
           </Botao>
         }
-      />
+      >
+        <IndiceDasPartes />
+      </CabecalhoPagina>
 
       <div className="mt-4 flex min-h-8 items-center justify-between gap-3">
         {/* Três estados, e não dois: dizer "você mudou" para quem só abriu a
-            tela seria o sistema atribuindo a ela o que ele mesmo sugeriu. */}
+            tela seria o sistema atribuindo a ela o que ele mesmo sugeriu. Só
+            fala das duas primeiras partes: a terceira não espera o "Salvar"
+            (`#d284`). */}
         <p className="text-label text-ink-muted" aria-live="polite">
           {nuncaSalvou
             ? "Estes são valores sugeridos. Confira e salve para começar."
@@ -539,480 +689,515 @@ function ConfiguracaoDaDona() {
         </p>
       </div>
 
-      {/* Mesma coluna de todas as telas: quem estreita é o campo dentro do
-          bloco, nunca a página, senão o cabeçalho fica mais largo que o corpo. */}
-      <div className="mt-2 space-y-4">
-        <BlocoConfiguracao
-          icone={Clock}
-          titulo="Seu trabalho"
-          descricao="A hora que você passa na bancada tem preço. Ignorar isso é trabalhar de graça e chamar de lucro."
-          consequencia={
-            <>
-              Uma fornada de 1h30 leva{" "}
-              <Realce>
-                {formatarMoeda(
-                  custoDeMinutos(
-                    estado.valorHoraTrabalho,
-                    FORNADA_EXEMPLO_MINUTOS,
-                  ),
-                )}
-              </Realce>{" "}
-              só do seu tempo.
-              {horas > 0 && (
+      {/* A grade só a partir de `2xl`: o formulário até 944px e a coluna de
+          320px, como no editor de pedido (`#d274`). */}
+      <div className="2xl:grid 2xl:grid-cols-[minmax(0,59rem)_20rem] 2xl:items-start 2xl:gap-8">
+        <div
+          className={cn(
+            // Espaço para a barra de salvar não cobrir a última linha.
+            alterado && "pb-20 lg:pb-0",
+          )}
+        >
+          <Parte id="o-seu-preco" titulo="O seu preço">
+            <BlocoConfiguracao
+              icone={Clock}
+              titulo="Seu trabalho"
+              descricao="A hora que você passa na bancada tem preço. Ignorar isso é trabalhar de graça e chamar de lucro."
+              consequencia={
                 <>
-                  {" "}
-                  No mês cheio, seu trabalho vale{" "}
+                  Uma fornada de 1h30 leva{" "}
                   <Realce>
                     {formatarMoeda(
-                      Math.round(estado.valorHoraTrabalho * horas),
+                      custoDeMinutos(
+                        estado.valorHoraTrabalho,
+                        FORNADA_EXEMPLO_MINUTOS,
+                      ),
                     )}
-                  </Realce>
-                  .
-                </>
-              )}
-            </>
-          }
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <CampoMoeda
-              rotulo="Quanto vale a sua hora"
-              valor={estado.valorHoraTrabalho}
-              aoMudar={(centavos) => definir("valorHoraTrabalho", centavos)}
-              erro={erros.valorHoraTrabalho}
-            />
-            <Campo
-              rotulo="Horas que você produz por mês"
-              inputMode="decimal"
-              sufixo="h"
-              value={estado.horasProdutivasMes}
-              erro={erros.horasProdutivasMes}
-              dica="Não é o mês inteiro: é o tempo de bancada, forno e embalagem."
-              onChange={(evento) =>
-                definir("horasProdutivasMes", evento.target.value)
-              }
-            />
-          </div>
-        </BlocoConfiguracao>
-
-        <BlocoConfiguracao
-          icone={Flame}
-          titulo="Energia e gás"
-          descricao="Some a conta de luz e o botijão do mês e divida pelas horas que o forno fica ligado. Chute alto é melhor que zero."
-          consequencia={
-            <>
-              Forno e luz somam <Realce>{formatarMoeda(energiaGas)}</Realce> por
-              hora ligada, ou{" "}
-              <Realce>
-                {formatarMoeda(
-                  custoDeMinutos(energiaGas, FORNADA_EXEMPLO_MINUTOS),
-                )}
-              </Realce>{" "}
-              na fornada de 1h30.
-            </>
-          }
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <CampoMoeda
-              rotulo="Energia por hora"
-              valor={estado.custoEnergiaHora}
-              aoMudar={(centavos) => definir("custoEnergiaHora", centavos)}
-              erro={erros.custoEnergiaHora}
-            />
-            <CampoMoeda
-              rotulo="Gás por hora"
-              valor={estado.custoGasHora}
-              aoMudar={(centavos) => definir("custoGasHora", centavos)}
-              erro={erros.custoGasHora}
-            />
-          </div>
-        </BlocoConfiguracao>
-
-        <BlocoConfiguracao
-          icone={Receipt}
-          titulo="Despesas fixas"
-          descricao="Aluguel, internet, contador, assinaturas. O que você paga todo mês mesmo sem vender nada."
-          tom={horas > 0 ? "neutro" : "atencao"}
-          consequencia={
-            horas > 0 ? (
-              <>
-                Suas despesas fixas custam{" "}
-                <Realce>{formatarMoeda(indireto)}</Realce> por hora produzida. É
-                essa fatia que entra em cada produto.
-              </>
-            ) : (
-              <>
-                Sem horas produtivas no bloco acima, não há por onde ratear: as
-                despesas fixas não entram em preço nenhum.
-              </>
-            )
-          }
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <CampoMoeda
-              rotulo="Despesas fixas do mês"
-              valor={estado.despesasFixasMensais}
-              aoMudar={(centavos) => definir("despesasFixasMensais", centavos)}
-              erro={erros.despesasFixasMensais}
-            />
-          </div>
-        </BlocoConfiguracao>
-
-        <CustoPorHora operacional={operacional} />
-
-        {/* O recibo só enquanto "Tudo salvo": a primeira alteração o tira. */}
-        <OQueMudaNosProdutos
-          rateio={rateioMudou ? rateio : null}
-          recibo={salvo ? recibo : null}
-        />
-
-        <BlocoConfiguracao
-          icone={CreditCard}
-          titulo="Formas de pagamento"
-          descricao="A maquininha cobra por venda, e essa taxa sai do seu lucro, não do preço da cliente."
-          recuado={false}
-        >
-          <ListaFormasPagamento
-            formas={estado.formasPagamento}
-            aoAbrir={(forma) => {
-              setFormaEmEdicao(forma);
-              setPainelAberto(true);
-            }}
-            aoAdicionar={() => {
-              setFormaEmEdicao(undefined);
-              setPainelAberto(true);
-            }}
-          />
-        </BlocoConfiguracao>
-
-        {/* Só em teste e assinante: `livre` não tem o que ver aqui (spec 028). */}
-        {(situacao?.tipo === "teste" || situacao?.tipo === "assinante") && (
-          <BlocoConfiguracao icone={CreditCard} titulo="Assinatura">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-label text-ink-muted">
-                {situacao.tipo === "teste"
-                  ? fraseDoTeste(situacao.diasRestantes)
-                  : `Você está no plano ${NOME_DO_PACOTE[situacao.pacote]}.`}
-              </p>
-              {situacao.tipo === "teste" ? (
-                <Link
-                  href="/assinatura"
-                  className={classesBotao({ variante: "primaria" })}
-                >
-                  Assinar
-                </Link>
-              ) : (
-                <Botao
-                  variante="primaria"
-                  onClick={() => void abrirPortalAssinatura()}
-                  carregando={portalEnviando}
-                >
-                  Gerenciar assinatura
-                </Botao>
-              )}
-            </div>
-            {portalErro && (
-              <p role="alert" className="text-label text-negative">
-                {portalErro}
-              </p>
-            )}
-          </BlocoConfiguracao>
-        )}
-
-        <BlocoConfiguracao
-          id={ANCORA_DO_CONTATO}
-          icone={FileText}
-          titulo="Na folha do orçamento"
-          descricao="O que a empresa vê no rodapé e na assinatura da folha."
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Campo
-              rotulo="Telefone"
-              type="tel"
-              autoComplete="tel"
-              placeholder="81 98696-6176"
-              value={estado.telefone}
-              onChange={(evento) => definir("telefone", evento.target.value)}
-            />
-            <Campo
-              rotulo="Instagram"
-              prefixo="@"
-              autoCapitalize="none"
-              autoCorrect="off"
-              placeholder="suaconfeitaria"
-              value={estado.instagram}
-              onChange={(evento) => definir("instagram", evento.target.value)}
-            />
-          </div>
-
-          <Campo
-            rotulo="Frase do orçamento"
-            dica="Aparece embaixo da folha, ao lado do seu contato."
-            placeholder="Feito com amor em cada mordida."
-            maxLength={80}
-            value={estado.frase}
-            onChange={(evento) => definir("frase", evento.target.value)}
-            erro={erros.frase}
-          />
-
-          {/* Assinantes podem tirar a linha do Rende do rodapé; em teste, só a
-              explicação — o bloco de assinatura já está duas dobras acima
-              (spec 028, `#d147`). */}
-          {situacao?.tipo === "teste" ? (
-            <p className="text-label text-ink-muted">
-              Assinantes podem tirar esta linha da folha e do cardápio.
-            </p>
-          ) : (
-            <div className="flex min-h-11 items-start gap-3 rounded-md border border-line-strong px-3 py-3">
-              <input
-                id={idOcultarFeitoCom}
-                type="checkbox"
-                checked={estado.ocultarFeitoCom}
-                onChange={(evento) =>
-                  definir("ocultarFeitoCom", evento.target.checked)
-                }
-                className="mt-0.5 size-5 shrink-0"
-              />
-              <label
-                htmlFor={idOcultarFeitoCom}
-                className="text-label text-ink"
-              >
-                Tirar a linha &ldquo;feito com Rende&rdquo; da folha e do
-                cardápio
-              </label>
-            </div>
-          )}
-
-          <CampoImagem
-            rotulo="Assinatura"
-            dica="Uma imagem PNG com fundo transparente fica melhor. Uma foto da assinatura em papel branco também serve."
-            formato="largo"
-            valor={estado.assinaturaDataUrl}
-            aoMudar={(dataUrl) => definir("assinaturaDataUrl", dataUrl)}
-            reducao={{ ladoMaximo: ASSINATURA_LADO_PX, formato: "image/png" }}
-            maxBytes={ASSINATURA_MAX_BYTES}
-            rotuloEscolher="Escolher imagem"
-            rotuloTirar="Tirar"
-          />
-        </BlocoConfiguracao>
-
-        <BlocoConfiguracao
-          icone={Tag}
-          titulo="Preço padrão"
-          descricao="Como todo produto novo começa. Cada produto pode fugir daqui depois."
-          consequencia={
-            estado.arredondamento === "NENHUM" ? (
-              <>
-                Um preço calculado em{" "}
-                <Realce>{formatarMoeda(PRECO_EXEMPLO)}</Realce> vai para a
-                vitrine exatamente assim, com centavo quebrado e tudo.
-              </>
-            ) : (
-              <>
-                Um preço calculado em{" "}
-                <Realce>{formatarMoeda(PRECO_EXEMPLO)}</Realce> chega à vitrine
-                como{" "}
-                <Realce>
-                  {formatarMoeda(
-                    arredondarPreco(PRECO_EXEMPLO, estado.arredondamento),
+                  </Realce>{" "}
+                  só do seu tempo.
+                  {horas > 0 && (
+                    <>
+                      {" "}
+                      No mês cheio, seu trabalho vale{" "}
+                      <Realce>
+                        {formatarMoeda(
+                          Math.round(estado.valorHoraTrabalho * horas),
+                        )}
+                      </Realce>
+                      .
+                    </>
                   )}
-                </Realce>
-                .
-              </>
-            )
-          }
-        >
-          <fieldset>
-            <legend className="text-label font-medium text-ink">
-              Como você prefere calcular
-            </legend>
-            <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
-              {METODOS.map((metodo) => {
-                const ativo = estado.metodoPadrao === metodo.valor;
-                return (
-                  <button
-                    key={metodo.valor}
-                    type="button"
-                    aria-pressed={ativo}
-                    onClick={() => definir("metodoPadrao", metodo.valor)}
-                    className={cn(
-                      "rounded-md border p-3 text-left transition-colors duration-150 ease-quart",
-                      ativo
-                        ? "border-brand-ink bg-brand-100"
-                        : "border-line-strong hover:bg-sunken",
-                    )}
-                  >
-                    <span className="flex items-center gap-1.5 text-label font-semibold text-ink">
-                      {/* O ícone, e não só o fundo, diz qual está escolhido. */}
-                      {ativo && (
-                        <Check
-                          aria-hidden
-                          className="size-4 shrink-0 text-brand-ink"
-                          strokeWidth={2}
-                        />
-                      )}
-                      {metodo.titulo}
-                    </span>
-                    <span className="mt-1 block text-label text-ink-muted">
-                      {metodo.explicacao}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </fieldset>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {estado.metodoPadrao === "MARGEM" ? (
-              <Campo
-                rotulo="Quero que sobre"
-                inputMode="decimal"
-                sufixo="%"
-                value={estado.margemPadrao}
-                erro={erros.margemPadrao}
-                dica="Do preço de venda, depois de descontar custo e taxas."
-                onChange={(evento) =>
-                  definir("margemPadrao", evento.target.value)
-                }
-              />
-            ) : (
-              <Campo
-                rotulo="Multiplico o custo por"
-                inputMode="decimal"
-                sufixo="×"
-                value={estado.markupPadrao}
-                erro={erros.markupPadrao}
-                dica="2,5 quer dizer que um doce de R$ 4,00 de custo sai por R$ 10,00."
-                onChange={(evento) =>
-                  definir("markupPadrao", evento.target.value)
-                }
-              />
-            )}
-
-            <Campo
-              rotulo="Outras taxas sobre o preço"
-              inputMode="decimal"
-              sufixo="%"
-              value={estado.outrasTaxasPadrao}
-              erro={erros.outrasTaxasPadrao}
-              dica="Imposto ou comissão de aplicativo, fora a maquininha. Se não tem, deixe zero."
-              onChange={(evento) =>
-                definir("outrasTaxasPadrao", evento.target.value)
+                </>
               }
-            />
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <CampoMoeda
+                  rotulo="Quanto vale a sua hora"
+                  valor={estado.valorHoraTrabalho}
+                  aoMudar={(centavos) => definir("valorHoraTrabalho", centavos)}
+                  erro={erros.valorHoraTrabalho}
+                />
+                <Campo
+                  rotulo="Horas que você produz por mês"
+                  inputMode="decimal"
+                  sufixo="h"
+                  value={estado.horasProdutivasMes}
+                  erro={erros.horasProdutivasMes}
+                  dica="Não é o mês inteiro: é o tempo de bancada, forno e embalagem."
+                  onChange={(evento) =>
+                    definir("horasProdutivasMes", evento.target.value)
+                  }
+                />
+              </div>
+            </BlocoConfiguracao>
 
-            <Seletor
-              rotulo="Arredondamento"
-              value={estado.arredondamento}
-              onChange={(evento) =>
-                definir(
-                  "arredondamento",
-                  evento.target.value as RegraArredondamento,
+            <BlocoConfiguracao
+              icone={Flame}
+              titulo="Energia e gás"
+              descricao="Some a conta de luz e o botijão do mês e divida pelas horas que o forno fica ligado. Chute alto é melhor que zero."
+              consequencia={
+                <>
+                  Forno e luz somam <Realce>{formatarMoeda(energiaGas)}</Realce>{" "}
+                  por hora ligada, ou{" "}
+                  <Realce>
+                    {formatarMoeda(
+                      custoDeMinutos(energiaGas, FORNADA_EXEMPLO_MINUTOS),
+                    )}
+                  </Realce>{" "}
+                  na fornada de 1h30.
+                </>
+              }
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <CampoMoeda
+                  rotulo="Energia por hora"
+                  valor={estado.custoEnergiaHora}
+                  aoMudar={(centavos) => definir("custoEnergiaHora", centavos)}
+                  erro={erros.custoEnergiaHora}
+                />
+                <CampoMoeda
+                  rotulo="Gás por hora"
+                  valor={estado.custoGasHora}
+                  aoMudar={(centavos) => definir("custoGasHora", centavos)}
+                  erro={erros.custoGasHora}
+                />
+              </div>
+            </BlocoConfiguracao>
+
+            <BlocoConfiguracao
+              icone={Receipt}
+              titulo="Despesas fixas"
+              descricao="Aluguel, internet, contador, assinaturas. O que você paga todo mês mesmo sem vender nada."
+              tom={horas > 0 ? "neutro" : "atencao"}
+              consequencia={
+                horas > 0 ? (
+                  <>
+                    Suas despesas fixas custam{" "}
+                    <Realce>{formatarMoeda(indireto)}</Realce> por hora
+                    produzida. É essa fatia que entra em cada produto.
+                  </>
+                ) : (
+                  <>
+                    Sem horas produtivas no bloco acima, não há por onde ratear:
+                    as despesas fixas não entram em preço nenhum.
+                  </>
                 )
               }
             >
-              {REGRAS.map((regra) => (
-                <option key={regra} value={regra}>
-                  {ROTULO_ARREDONDAMENTO[regra]}
-                </option>
-              ))}
-            </Seletor>
-          </div>
-        </BlocoConfiguracao>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <CampoMoeda
+                  rotulo="Despesas fixas do mês"
+                  valor={estado.despesasFixasMensais}
+                  aoMudar={(centavos) =>
+                    definir("despesasFixasMensais", centavos)
+                  }
+                  erro={erros.despesasFixasMensais}
+                />
+              </div>
+            </BlocoConfiguracao>
 
-        {/* Fora do formulário: vale no toque, como a conta que o AuthProvider
-            já assina, e não espera o "Salvar" (spec 044-B, `#d207`). */}
-        <BlocoConfiguracao
-          id="avisos"
-          icone={Mail}
-          titulo="Avisos por e-mail"
-          descricao="O aviso do fim do teste chega sempre. Estes dois são notícia, e você escolhe. Vale no toque, sem salvar."
-        >
-          <div className="flex min-h-11 items-start gap-3 rounded-md border border-line-strong px-3 py-3">
-            <input
-              id={idAvisos}
-              type="checkbox"
-              checked={conta?.avisosPorEmail !== false}
-              disabled={!conta}
-              onChange={(evento) =>
-                void definirAvisosPorEmail(contaId, evento.target.checked)
+            <div className="space-y-4 2xl:hidden">{custoDaHora}</div>
+
+            {/* Logo depois do custo por hora: é a continuação dele (`#d283`). */}
+            <BlocoConfiguracao
+              icone={Tag}
+              titulo="Preço padrão"
+              descricao="Como todo produto novo começa. Cada produto pode fugir daqui depois."
+              consequencia={
+                estado.arredondamento === "NENHUM" ? (
+                  <>
+                    Um preço calculado em{" "}
+                    <Realce>{formatarMoeda(PRECO_EXEMPLO)}</Realce> vai para a
+                    vitrine exatamente assim, com centavo quebrado e tudo.
+                  </>
+                ) : (
+                  <>
+                    Um preço calculado em{" "}
+                    <Realce>{formatarMoeda(PRECO_EXEMPLO)}</Realce> chega à
+                    vitrine como{" "}
+                    <Realce>
+                      {formatarMoeda(
+                        arredondarPreco(PRECO_EXEMPLO, estado.arredondamento),
+                      )}
+                    </Realce>
+                    .
+                  </>
+                )
               }
-              className="mt-0.5 size-5 shrink-0"
-            />
-            <label htmlFor={idAvisos} className="text-label text-ink">
-              Receber por e-mail o resumo do mês e o aviso de meta batida
-            </label>
-          </div>
-        </BlocoConfiguracao>
+            >
+              <fieldset>
+                <legend className="text-label font-medium text-ink">
+                  Como você prefere calcular
+                </legend>
+                <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
+                  {METODOS.map((metodo) => {
+                    const ativo = estado.metodoPadrao === metodo.valor;
+                    return (
+                      <button
+                        key={metodo.valor}
+                        type="button"
+                        aria-pressed={ativo}
+                        onClick={() => definir("metodoPadrao", metodo.valor)}
+                        className={cn(
+                          "rounded-md border p-3 text-left transition-colors duration-150 ease-quart",
+                          ativo
+                            ? "border-brand-ink bg-brand-100"
+                            : "border-line-strong hover:bg-sunken",
+                        )}
+                      >
+                        <span className="flex items-center gap-1.5 text-label font-semibold text-ink">
+                          {/* O ícone, e não só o fundo, diz qual está escolhido. */}
+                          {ativo && (
+                            <Check
+                              aria-hidden
+                              className="size-4 shrink-0 text-brand-ink"
+                              strokeWidth={2}
+                            />
+                          )}
+                          {metodo.titulo}
+                        </span>
+                        <span className="mt-1 block text-label text-ink-muted">
+                          {metodo.explicacao}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
 
-        <BlocoTema />
-      </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {estado.metodoPadrao === "MARGEM" ? (
+                  <Campo
+                    rotulo="Quero que sobre"
+                    inputMode="decimal"
+                    sufixo="%"
+                    value={estado.margemPadrao}
+                    erro={erros.margemPadrao}
+                    dica="Do preço de venda, depois de descontar custo e taxas."
+                    onChange={(evento) =>
+                      definir("margemPadrao", evento.target.value)
+                    }
+                  />
+                ) : (
+                  <Campo
+                    rotulo="Multiplico o custo por"
+                    inputMode="decimal"
+                    sufixo="×"
+                    value={estado.markupPadrao}
+                    erro={erros.markupPadrao}
+                    dica="2,5 quer dizer que um doce de R$ 4,00 de custo sai por R$ 10,00."
+                    onChange={(evento) =>
+                      definir("markupPadrao", evento.target.value)
+                    }
+                  />
+                )}
 
-      {falha && (
-        <p role="alert" className="mt-4 text-label text-negative">
-          {falha}
-        </p>
-      )}
+                <Campo
+                  rotulo="Outras taxas sobre o preço"
+                  inputMode="decimal"
+                  sufixo="%"
+                  value={estado.outrasTaxasPadrao}
+                  erro={erros.outrasTaxasPadrao}
+                  dica="Imposto ou comissão de aplicativo, fora a maquininha. Se não tem, deixe zero."
+                  onChange={(evento) =>
+                    definir("outrasTaxasPadrao", evento.target.value)
+                  }
+                />
 
-      {/* A prateleira do que se usa uma vez ou raramente: o guia, os dois
-          direitos da LGPD e sair. Um respiro maior a separa das configurações
-          acima — não é mais um campo para editar, é outra categoria de coisa —
-          e no desktop ela é um menu compacto, não uma fileira de campos: por
-          isso a coluna encolhe e as linhas ficam mais próximas umas das
-          outras do que os blocos de configuração ficam entre si. */}
-      <div
-        className={cn(
-          "mt-8 flex flex-col gap-2 lg:mt-12 lg:max-w-md",
-          // Espaço para a barra de salvar não cobrir o último bloco.
-          alterado && "pb-20 lg:pb-0",
-        )}
-      >
-        {/* A entrada do guia no celular, onde não há barra lateral. É para cá
-            que a engrenagem do cabeçalho da tela Hoje já leva: são três toques
-            para uma coisa que se consulta raramente, e é o preço de não gastar
-            o sexto destino de uma navegação que tem cinco. */}
-        <Link
-          href="/comecar"
-          className="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-4 transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:px-5"
+                <Seletor
+                  rotulo="Arredondamento"
+                  value={estado.arredondamento}
+                  onChange={(evento) =>
+                    definir(
+                      "arredondamento",
+                      evento.target.value as RegraArredondamento,
+                    )
+                  }
+                >
+                  {REGRAS.map((regra) => (
+                    <option key={regra} value={regra}>
+                      {ROTULO_ARREDONDAMENTO[regra]}
+                    </option>
+                  ))}
+                </Seletor>
+              </div>
+            </BlocoConfiguracao>
+
+            <BlocoConfiguracao
+              icone={CreditCard}
+              titulo="Formas de pagamento"
+              descricao="A maquininha cobra por venda, e essa taxa sai do seu lucro, não do preço da cliente."
+              recuado={false}
+            >
+              <ListaFormasPagamento
+                formas={estado.formasPagamento}
+                aoAbrir={(forma) => {
+                  setFormaEmEdicao(forma);
+                  setPainelAberto(true);
+                }}
+                aoAdicionar={() => {
+                  setFormaEmEdicao(undefined);
+                  setPainelAberto(true);
+                }}
+              />
+            </BlocoConfiguracao>
+          </Parte>
+
+          <Parte id="a-sua-marca" titulo="A sua marca">
+            <BlocoConfiguracao
+              id={ANCORA_DO_CONTATO}
+              icone={FileText}
+              titulo="Na folha do orçamento"
+              descricao="O que a empresa vê no rodapé e na assinatura da folha."
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Campo
+                  rotulo="Telefone"
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder="81 98696-6176"
+                  value={estado.telefone}
+                  onChange={(evento) =>
+                    definir("telefone", evento.target.value)
+                  }
+                />
+                <Campo
+                  rotulo="Instagram"
+                  prefixo="@"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  placeholder="suaconfeitaria"
+                  value={estado.instagram}
+                  onChange={(evento) =>
+                    definir("instagram", evento.target.value)
+                  }
+                />
+              </div>
+
+              <Campo
+                rotulo="Frase do orçamento"
+                dica="Aparece embaixo da folha, ao lado do seu contato."
+                placeholder="Feito com amor em cada mordida."
+                maxLength={80}
+                value={estado.frase}
+                onChange={(evento) => definir("frase", evento.target.value)}
+                erro={erros.frase}
+              />
+
+              {/* Assinantes podem tirar a linha do Rende do rodapé; em teste,
+                  só a explicação — a linha da assinatura mora em "A sua
+                  conta", logo abaixo (spec 028, `#d147`). */}
+              {situacao?.tipo === "teste" ? (
+                <p className="text-label text-ink-muted">
+                  Assinantes podem tirar esta linha da folha e do cardápio.
+                </p>
+              ) : (
+                <div className="flex min-h-11 items-start gap-3 rounded-md border border-line-strong px-3 py-3">
+                  <input
+                    id={idOcultarFeitoCom}
+                    type="checkbox"
+                    checked={estado.ocultarFeitoCom}
+                    onChange={(evento) =>
+                      definir("ocultarFeitoCom", evento.target.checked)
+                    }
+                    className="mt-0.5 size-5 shrink-0"
+                  />
+                  <label
+                    htmlFor={idOcultarFeitoCom}
+                    className="text-label text-ink"
+                  >
+                    Tirar a linha &ldquo;feito com Rende&rdquo; da folha e do
+                    cardápio
+                  </label>
+                </div>
+              )}
+
+              <CampoImagem
+                rotulo="Assinatura"
+                dica="Uma imagem PNG com fundo transparente fica melhor. Uma foto da assinatura em papel branco também serve."
+                formato="largo"
+                valor={estado.assinaturaDataUrl}
+                aoMudar={(dataUrl) => definir("assinaturaDataUrl", dataUrl)}
+                reducao={{
+                  ladoMaximo: ASSINATURA_LADO_PX,
+                  formato: "image/png",
+                }}
+                maxBytes={ASSINATURA_MAX_BYTES}
+                rotuloEscolher="Escolher imagem"
+                rotuloTirar="Tirar"
+              />
+            </BlocoConfiguracao>
+
+            {/* O cardápio público (spec 031) é vitrine, e não conta: saiu da
+                prateleira para cá (`#d283`). Lê a configuração que a tela já
+                assina, e vale no toque, no painel dele. */}
+            <div className={LISTA}>
+              <SeuCardapio configuracao={dado} carregando={carregando} />
+            </div>
+
+            {falha && (
+              <p role="alert" className="text-label text-negative">
+                {falha}
+              </p>
+            )}
+          </Parte>
+
+          {/* Fora do formulário (`#d284`): cada linha age na hora, e a posição
+              diz isso. Lista com divisórias, nenhum cartão. */}
+          <Parte id="a-sua-conta" titulo="A sua conta">
+            <div className={LISTA}>
+              {/* Só em teste e assinante: `livre` não tem o que ver aqui (spec
+                  028). Só a linha; o detalhe é da 084. Secundário: o âmbar da
+                  tela é o "Salvar" (`#d284`). */}
+              {(situacao?.tipo === "teste" ||
+                situacao?.tipo === "assinante") && (
+                <>
+                  <div className="flex flex-wrap items-center gap-3 border-t border-line px-4 py-4 lg:px-5">
+                    <CreditCard
+                      aria-hidden
+                      className="size-5 shrink-0 text-ink-muted"
+                      strokeWidth={1.75}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-body font-medium text-ink">
+                        Assinatura
+                      </span>
+                      <span className="mt-0.5 block text-label text-ink-muted">
+                        {situacao.tipo === "teste"
+                          ? fraseDoTeste(situacao.diasRestantes)
+                          : `Você está no plano ${NOME_DO_PACOTE[situacao.pacote]}.`}
+                      </span>
+                    </span>
+                    {situacao.tipo === "teste" ? (
+                      <Link
+                        href="/assinatura"
+                        className={classesBotao({ variante: "secundaria" })}
+                      >
+                        Assinar
+                      </Link>
+                    ) : (
+                      <Botao
+                        variante="secundaria"
+                        onClick={() => void abrirPortalAssinatura()}
+                        carregando={portalEnviando}
+                      >
+                        Gerenciar assinatura
+                      </Botao>
+                    )}
+                  </div>
+                  {portalErro && (
+                    <p
+                      role="alert"
+                      className="px-4 pb-3 text-label text-negative lg:px-5"
+                    >
+                      {portalErro}
+                    </p>
+                  )}
+                </>
+              )}
+
+              {/* O que se usa uma vez por ano (spec 030): a legenda é o
+                  estado, "Só você" até alguém ser convidada. */}
+              <QuemTeAjuda />
+
+              {/* A caixa de marcar é a linha, como a conta que o AuthProvider
+                  já assina (spec 044-B, `#d207`). A âncora é a do e-mail. */}
+              <label
+                id="avisos"
+                className={cn(
+                  LINHA,
+                  "cursor-pointer scroll-mt-[calc(var(--fundo-cabecalho,0px)+1rem)] has-disabled:cursor-not-allowed",
+                )}
+              >
+                <Mail
+                  aria-hidden
+                  className="size-5 shrink-0 text-ink-muted"
+                  strokeWidth={1.75}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-body font-medium text-ink">
+                    Avisos por e-mail
+                  </span>
+                  <span className="mt-0.5 block text-label text-ink-muted">
+                    Receber por e-mail o resumo do mês e o aviso de meta batida
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={conta?.avisosPorEmail !== false}
+                  disabled={!conta}
+                  onChange={(evento) =>
+                    void definirAvisosPorEmail(contaId, evento.target.checked)
+                  }
+                  className="size-5 shrink-0"
+                />
+              </label>
+
+              <BlocoTema />
+
+              {/* A entrada do guia no celular, onde não há barra lateral. É
+                  para cá que a engrenagem do cabeçalho da tela Hoje já leva. */}
+              <Link href="/comecar" className={LINHA}>
+                <Compass
+                  aria-hidden
+                  className="size-5 shrink-0 text-ink-muted"
+                  strokeWidth={1.75}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-body font-medium text-ink">
+                    Como funciona
+                  </span>
+                  <span className="mt-0.5 block text-label text-ink-muted">
+                    Os cinco passos do começo, na ordem em que uma coisa depende
+                    da outra.
+                  </span>
+                </span>
+                <ChevronRight
+                  aria-hidden
+                  className="size-5 shrink-0 text-ink-subtle"
+                  strokeWidth={1.75}
+                />
+              </Link>
+
+              {/* Os dois direitos da LGPD (spec 029): baixar e encerrar.
+                  Antes de sair, porque "Encerrar" não pode ser vizinha de
+                  baixo de nada que se toque sem pensar. */}
+              <MeusDados />
+
+              {/* Onde o celular já busca o que não cabe no menu de baixo. No
+                  desktop duplica a barra lateral: sair é raro, e não merece o
+                  sexto destino nem um lugar visível na tela Hoje. */}
+              <LinhaSair pedir={guarda.pedir} />
+            </div>
+          </Parte>
+        </div>
+
+        <aside
+          aria-label="Cada hora de produção custa"
+          className="sticky top-[calc(var(--fundo-cabecalho,0px)+1rem)] mt-6 hidden max-h-[calc(100dvh-var(--fundo-cabecalho,0px)-2rem)] space-y-4 overflow-y-auto 2xl:block"
         >
-          <Compass
-            aria-hidden
-            className="size-5 shrink-0 text-ink-muted"
-            strokeWidth={1.75}
-          />
-          <span className="min-w-0 flex-1">
-            <span className="block text-body font-medium text-ink">
-              Como funciona
-            </span>
-            <span className="mt-0.5 block text-label text-ink-muted">
-              Os cinco passos do começo, na ordem em que uma coisa depende da
-              outra.
-            </span>
-          </span>
-          <ChevronRight
-            aria-hidden
-            className="size-5 shrink-0 text-ink-subtle"
-            strokeWidth={1.75}
-          />
-        </Link>
-
-        {/* O cardápio público (spec 031): acima de "Quem te ajuda", fechado até
-            ela abrir. Lê a configuração que a tela já assina. */}
-        <SeuCardapio configuracao={dado} carregando={carregando} />
-
-        {/* O que se usa uma vez por ano, como o guia (spec 030): a legenda é o
-            estado, "Só você" até alguém ser convidada. */}
-        <QuemTeAjuda />
-
-        {/* Os dois direitos da LGPD (spec 029): baixar e encerrar. Depois do
-            guia e antes de sair, porque "Encerrar" não pode ser vizinha de
-            baixo de nada que se toque sem pensar. */}
-        <MeusDados />
-
-        {/* Onde o celular já busca o que não cabe no menu de baixo — a mesma
-            prateleira do guia acima. No desktop duplica a barra lateral, e é
-            assim que "Como funciona" já é: sair é raro, e não merece o sexto
-            destino nem um lugar visível na tela Hoje. */}
-        <LinhaSair pedir={guarda.pedir} />
+          {custoDaHora}
+        </aside>
       </div>
 
       {/* Barra de salvar acima da navegação inferior: no celular a ação
