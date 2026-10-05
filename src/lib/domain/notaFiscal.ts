@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ehEmbalagem } from "./custoFicha";
 import { chaveDeBusca } from "./custoInsumo";
+import { dataISODe, diasEntre } from "./datas";
 import type {
   CategoriaInsumo,
   CategoriaTransacao,
@@ -86,6 +87,54 @@ export const TIPOS_ACEITOS = [
   "image/heic",
   "application/pdf",
 ] as const;
+
+// ---------------------------------------------------------------------------
+// O motivo de ler: a idade dos preços
+// ---------------------------------------------------------------------------
+
+/** Passou disso desde a última compra, o preço do material é velho. */
+export const PRECO_ENVELHECE_DIAS = 60;
+
+/** O que `idadeDosPrecos` chama num `Timestamp`: o domínio não o importa. */
+export interface MaterialComCompra {
+  ultimaCompraEm?: { toMillis(): number };
+}
+
+export interface IdadeDosPrecos {
+  /** Sem compra registrada, ou com ela há mais de `PRECO_ENVELHECE_DIAS`. */
+  velhos: number;
+  /** O dia da compra mais recente entre todos, `null` se nenhum tem. */
+  ultimaCompraISO: DataISO | null;
+}
+
+/**
+ * Quantos materiais estão com o preço velho, e quando foi a última compra.
+ *
+ * É o que a porta da nota diz antes de pedir a foto (spec 088): o preço
+ * envelhece em silêncio (spec 006), e a leitura é o que o põe em dia. O dia da
+ * compra é o do aparelho, como o resto do caixa.
+ */
+export function idadeDosPrecos(
+  materiais: MaterialComCompra[],
+  hojeISO: DataISO,
+): IdadeDosPrecos {
+  let velhos = 0;
+  let ultimaCompraISO: DataISO | null = null;
+
+  for (const material of materiais) {
+    const ms = material.ultimaCompraEm?.toMillis();
+    const dia = ms === undefined ? null : dataISODe(new Date(ms));
+
+    if (dia === null || diasEntre(dia, hojeISO) > PRECO_ENVELHECE_DIAS) {
+      velhos += 1;
+    }
+    if (dia !== null && (ultimaCompraISO === null || dia > ultimaCompraISO)) {
+      ultimaCompraISO = dia;
+    }
+  }
+
+  return { velhos, ultimaCompraISO };
+}
 
 // ---------------------------------------------------------------------------
 // As falhas, com a frase de cada uma

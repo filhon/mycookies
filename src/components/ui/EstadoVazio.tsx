@@ -21,8 +21,6 @@ export function EstadoVazio({
   acao?: ReactNode;
   className?: string;
 }) {
-  const assinado = titulo.endsWith(".");
-
   return (
     <div
       className={cn(
@@ -31,21 +29,26 @@ export function EstadoVazio({
       )}
     >
       <h3 className="font-display text-title font-semibold text-ink">
-        {assinado ? (
-          <>
-            {titulo.slice(0, -1)}
-            <span
-              aria-hidden
-              className="ml-[0.06em] inline-block size-2 rounded-full bg-accent-500"
-            />
-            <span className="sr-only">.</span>
-          </>
-        ) : (
-          titulo
-        )}
+        <TituloAssinado titulo={titulo} />
       </h3>
       <p className="mt-2 max-w-[38ch] text-body text-ink-muted">{descricao}</p>
       {acao && <div className="mt-6">{acao}</div>}
     </div>
+  );
+}
+
+/** O título com o ponto âmbar no lugar do ponto final, quando há um. */
+export function TituloAssinado({ titulo }: { titulo: string }) {
+  if (!titulo.endsWith(".")) return titulo;
+
+  return (
+    <>
+      {titulo.slice(0, -1)}
+      <span
+        aria-hidden
+        className="ml-[0.06em] inline-block size-2 rounded-full bg-accent-500"
+      />
+      <span className="sr-only">.</span>
+    </>
   );
 }

@@ -190,6 +190,18 @@ export function rotuloDataCompleta(iso: DataISO): string {
   return DATA_COMPLETA.format(dataDeISO(iso));
 }
 
+const DIA_E_MES_LONGO = new Intl.DateTimeFormat("pt-BR", {
+  day: "numeric",
+  month: "long",
+});
+
+/** '12 de setembro' neste ano, '12 de setembro de 2025' em outro. */
+export function rotuloDiaNoAno(iso: DataISO, hoje: DataISO): string {
+  return iso.slice(0, 4) === hoje.slice(0, 4)
+    ? DIA_E_MES_LONGO.format(dataDeISO(iso))
+    : rotuloDataCompleta(iso);
+}
+
 /**
  * 'Hoje', 'Amanhã', 'Ontem' ou 'Sábado, 12 de setembro' — o cabeçalho de um dia
  * na agenda.

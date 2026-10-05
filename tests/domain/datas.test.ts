@@ -12,6 +12,7 @@ import {
   rotuloAgenda,
   rotuloCompetencia,
   rotuloDataCompleta,
+  rotuloDiaNoAno,
   rotuloMes,
 } from "@/lib/domain/datas";
 
@@ -143,5 +144,14 @@ describe("rotuloCompetencia", () => {
   it("escreve o mês sozinho para caber dentro de uma frase", () => {
     expect(rotuloMes("2026-09")).toBe("setembro");
     expect(rotuloMes("2026-01")).toBe("janeiro");
+  });
+});
+
+describe("rotuloDiaNoAno", () => {
+  it("cala o ano quando é o de hoje", () => {
+    expect(rotuloDiaNoAno("2026-09-12", "2026-10-05")).toBe("12 de setembro");
+    expect(rotuloDiaNoAno("2025-09-12", "2026-10-05")).toBe(
+      "12 de setembro de 2025",
+    );
   });
 });

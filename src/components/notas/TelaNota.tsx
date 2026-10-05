@@ -13,12 +13,10 @@ import {
   Store,
   Undo2,
 } from "lucide-react";
-import { Simbolo } from "@/components/marca/Marca";
 import { Bloco } from "@/components/ui/Bloco";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { Botao } from "@/components/ui/Botao";
 import { Campo } from "@/components/ui/Campo";
-import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { BlocoCaixa } from "./BlocoCaixa";
 import {
@@ -27,6 +25,7 @@ import {
   linhaEditada,
   type LinhaEditada,
 } from "./CartaoLinhaNota";
+import { LendoANota, PortaDaNota } from "./PortaDaNota";
 import { RodapeNota, type ResumoDaNota } from "./RodapeNota";
 import { dataISODe } from "@/lib/domain/datas";
 import { entradasDaNota } from "@/lib/domain/estoque";
@@ -35,6 +34,7 @@ import {
   atualizacaoDaLinha,
   cadastroDaLinha,
   conferirTotal,
+  idadeDosPrecos,
   lancamentoDaNota,
   MENSAGEM_FALHA,
   normalizarNota,
@@ -80,6 +80,20 @@ const CABECALHO_VAZIO: Cabecalho = {
   dataISO: "",
   cnpj: "",
 };
+
+/** O arquivo da espera: o nome, a miniatura e se veio mais de um. */
+interface Escolhido {
+  nome: string;
+  miniatura: string | null;
+  varios: boolean;
+}
+
+/** O que os quatro caminhos aceitam, o mesmo `accept` do seletor. */
+function aceito(arquivo: File): boolean {
+  return (
+    arquivo.type.startsWith("image/") || arquivo.type === "application/pdf"
+  );
+}
 
 /** O lançamento que a guarda achou, junto da chave que o pediu. */
 interface Guarda {
@@ -148,7 +162,14 @@ export function TelaNota() {
     () => new Map(),
   );
 
-  const seletor = useRef<HTMLInputElement>(null);
+  const [escolhido, setEscolhido] = useState<Escolhido | null>(null);
+
+  /** A leitura em curso, para "Cancelar" e para quem sai da tela no meio. */
+  const leitura = useRef<AbortController | null>(null);
+  useEffect(() => () => leitura.current?.abort(), []);
+
+  const hoje = dataISODe(new Date());
+  const idade = useMemo(() => idadeDosPrecos(insumos, hoje), [insumos, hoje]);
 
   // O pareamento sai do nome **atual** da linha, e é refeito a cada tecla:
   // corrigir o nome é o que desfaz um pareamento errado, sem nenhum controle a
@@ -241,7 +262,24 @@ export function TelaNota() {
     setEtapa("conferindo");
   }
 
-  async function ler(arquivo: File) {
+  /** Seletor, câmera, soltar e colar: o primeiro arquivo, se o tipo serve. */
+  function receberArquivos(arquivos: File[]) {
+    const [primeiro] = arquivos;
+    if (!primeiro) return;
+    if (!aceito(primeiro)) {
+      setFalha("sem-arquivo");
+      return;
+    }
+    void ler(primeiro, arquivos.length > 1);
+  }
+
+  /** Abortado não é falha: volta para escolher, sem aviso. */
+  function cancelar() {
+    leitura.current?.abort();
+    setEtapa("escolher");
+  }
+
+  async function ler(arquivo: File, varios: boolean) {
     setFalha(null);
 
     if (!online) {
@@ -253,6 +291,12 @@ export function TelaNota() {
       return;
     }
 
+    const controle = new AbortController();
+    leitura.current = controle;
+    const miniatura = arquivo.type.startsWith("image/")
+      ? URL.createObjectURL(arquivo)
+      : null;
+    setEscolhido({ nome: arquivo.name, miniatura, varios });
     setEtapa("lendo");
 
     try {
@@ -266,20 +310,29 @@ export function TelaNota() {
           authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ contaId, arquivo: preparado }),
+        signal: controle.signal,
       });
 
       if (!resposta.ok) {
-        setFalha(await codigoDaFalha(resposta));
+        const codigo = await codigoDaFalha(resposta);
+        if (controle.signal.aborted) return;
+        setFalha(codigo);
         setEtapa("escolher");
         return;
       }
 
-      receber(normalizarNota((await resposta.json()) as NotaLida));
+      const lida = (await resposta.json()) as NotaLida;
+      if (controle.signal.aborted) return;
+      receber(normalizarNota(lida));
     } catch {
-      // Rede caiu no meio, arquivo ilegível, resposta truncada: para ela é a
-      // mesma coisa, e a mesma frase.
+      // Cancelada, a tela já voltou. Rede caiu no meio, arquivo ilegível,
+      // resposta truncada: para ela é a mesma coisa, e a mesma frase.
+      if (controle.signal.aborted) return;
       setFalha("sem-resposta");
       setEtapa("escolher");
+    } finally {
+      if (miniatura) URL.revokeObjectURL(miniatura);
+      if (leitura.current === controle) leitura.current = null;
     }
   }
 
@@ -366,67 +419,36 @@ export function TelaNota() {
         }
       />
 
-      <input
-        // Sem `capture`: o atributo forçaria a câmera e tiraria dela a galeria e
-        // o gerenciador de arquivos. Sem ele, o iPhone oferece as três opções e
-        // o computador abre o seletor de PDF. Um controle, dois contextos.
-        ref={seletor}
-        type="file"
-        accept="image/*,application/pdf"
-        className="sr-only"
-        onChange={(evento) => {
-          const arquivo = evento.target.files?.[0];
-          evento.target.value = "";
-          if (arquivo) void ler(arquivo);
-        }}
-      />
-
       <div
         className={`mt-4 space-y-4 ${etapa === "conferindo" ? "pb-56 lg:pb-48" : ""}`}
       >
         {etapa === "escolher" && (
-          <>
-            <div className="overflow-hidden rounded-lg border border-line bg-surface">
-              <EstadoVazio
-                titulo="A nota já sabe tudo isso"
-                descricao="Fotografe o cupom, ou escolha o PDF que o mercado mandou. Você confere linha por linha antes de qualquer coisa virar cadastro."
-                acao={
-                  <Botao
-                    variante="primaria"
-                    tamanho="lg"
-                    disabled={!online}
-                    onClick={() => seletor.current?.click()}
-                    iconeInicial={
-                      <ScanLine
-                        aria-hidden
-                        className="size-5"
-                        strokeWidth={1.75}
-                      />
-                    }
-                  >
-                    Escolher a nota
-                  </Botao>
-                }
-              />
-            </div>
-
-            {/* Sem rede a frase é uma só: dizer "a leitura falhou" por cima de
-                "não há internet" seria contar duas vezes a mesma coisa. */}
-            {!online ? (
-              <Aviso>{MENSAGEM_FALHA["sem-rede"]}</Aviso>
-            ) : (
-              falha && <Aviso>{MENSAGEM_FALHA[falha]}</Aviso>
-            )}
-
-            <p className="max-w-[62ch] text-label text-ink-muted">
-              A foto não é guardada: ela sobe, a leitura volta, e o arquivo é
-              descartado. O que fica é o preço de cada material, com a data da
-              compra, dentro do próprio material.
-            </p>
-          </>
+          <PortaDaNota
+            online={online}
+            idade={idade}
+            temMateriais={insumos.length > 0}
+            hoje={hoje}
+            aoReceber={receberArquivos}
+            aviso={
+              // Sem rede a frase é uma só: dizer "a leitura falhou" por cima de
+              // "não há internet" seria contar duas vezes a mesma coisa.
+              !online ? (
+                <Aviso>{MENSAGEM_FALHA["sem-rede"]}</Aviso>
+              ) : (
+                falha && <Aviso>{MENSAGEM_FALHA[falha]}</Aviso>
+              )
+            }
+          />
         )}
 
-        {etapa === "lendo" && <Lendo />}
+        {etapa === "lendo" && escolhido && (
+          <LendoANota
+            nome={escolhido.nome}
+            miniatura={escolhido.miniatura}
+            varios={escolhido.varios}
+            aoCancelar={cancelar}
+          />
+        )}
 
         {etapa === "conferindo" && (
           <>
@@ -597,29 +619,6 @@ function Aviso({ children }: { children: ReactNode }) {
       />
       <span className="max-w-[60ch]">{children}</span>
     </p>
-  );
-}
-
-/**
- * A espera é longa e é a única do sistema: entre dez e trinta segundos, com um
- * serviço externo do outro lado. Um esqueleto mentiria sobre o que está
- * acontecendo, então a tela diz.
- */
-function Lendo() {
-  return (
-    <div className="flex flex-col items-center rounded-lg border border-line bg-surface px-6 py-16 text-center">
-      <Simbolo className="size-12 animate-pulse" />
-      <p
-        aria-live="polite"
-        className="mt-5 font-display text-title font-semibold text-ink"
-      >
-        Lendo a nota
-      </p>
-      <p className="mt-2 max-w-[42ch] text-body text-ink-muted">
-        Isso leva alguns segundos. Não feche a tela: nada é cadastrado antes de
-        você conferir.
-      </p>
-    </div>
   );
 }
 

@@ -12,9 +12,11 @@ import {
   descricaoDaCompra,
   embalagemDoTexto,
   esquemaNotaLida,
+  idadeDosPrecos,
   lancamentoDaNota,
   normalizarNota,
   parearComInsumos,
+  PRECO_ENVELHECE_DIAS,
   somarLinhas,
   type InsumoConhecido,
   type LinhaRascunho,
@@ -672,5 +674,32 @@ describe("chaveDaNota · a guarda contra lançar a mesma nota duas vezes", () =>
   it("sem data no formato do papel também não há chave", () => {
     expect(chaveDaNota("75.315.333/0001-09", "", 17620)).toBe("");
     expect(chaveDaNota("75.315.333/0001-09", "02/09/2026", 17620)).toBe("");
+  });
+});
+
+describe("idadeDosPrecos", () => {
+  const em = (iso: string) => ({
+    ultimaCompraEm: { toMillis: () => new Date(`${iso}T12:00:00`).getTime() },
+  });
+
+  it("conta sem compra e com compra além de 60 dias, e acha a mais recente", () => {
+    expect(
+      idadeDosPrecos(
+        [{}, em("2026-08-05"), em("2026-08-06"), em("2026-09-12")],
+        "2026-10-05",
+      ),
+    ).toEqual({ velhos: 2, ultimaCompraISO: "2026-09-12" });
+    expect(PRECO_ENVELHECE_DIAS).toBe(60);
+  });
+
+  it("sem compra nenhuma registrada, todos velhos e nenhuma data", () => {
+    expect(idadeDosPrecos([{}, {}], "2026-10-05")).toEqual({
+      velhos: 2,
+      ultimaCompraISO: null,
+    });
+    expect(idadeDosPrecos([], "2026-10-05")).toEqual({
+      velhos: 0,
+      ultimaCompraISO: null,
+    });
   });
 });

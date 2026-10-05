@@ -8697,3 +8697,42 @@ não tem no celular, na bancada.
 
 **Consequência.** Girar o celular com a área aberta estica o traço (o tamanho é medido ao montar);
 "Limpar" resolve, e está marcado com `ponytail`.
+
+## D290 · A porta da nota: o que a leitura faz, por que agora, e um caminho por aparelho
+
+**Status:** vigente · decidida em 2026-10-05, spec `088-a-porta-da-nota.md`.
+
+**Contexto.** A etapa "escolher" de `/insumos/nota` dizia "A nota já sabe tudo isso" (o "isso" era
+o formulário de Materiais, que ela não estava vendo), tinha um botão só para dois aparelhos, não
+mostrava o que a leitura faz nem sabia nada dos preços dela, e a espera era cega e sem saída.
+
+**Decisão.**
+
+- **A etapa deixou o `EstadoVazio`**: ele centra o texto, e a composição pede tudo à esquerda,
+  com o exemplo ao lado. O ponto âmbar saiu dele para `TituloAssinado` (mesmo arquivo), que o
+  `EstadoVazio` e a porta usam. Título "A compra inteira numa foto.", com o ponto.
+- **O exemplo** é uma linha estática (o impresso, a seta, nome, marca, "R$ 5,49 o kg" e o selo
+  "Atualiza"), com o `Selo` e as classes do `CartaoLinhaNota`. Nada lê o Firestore.
+- **O motivo:** `idadeDosPrecos` (domínio, com teste) conta os materiais sem `ultimaCompraEm` ou
+  com ela há mais de `PRECO_ENVELHECE_DIAS = 60` dias, e acha a compra mais recente. O dia da
+  compra é o do aparelho (`dataISODe`), como o resto do caixa. Sem material nenhum, a linha some.
+  A data sai por `rotuloDiaNoAno` (`datas.ts`): "12 de setembro", com o ano só quando é outro.
+- **Celular:** dois `<input type="file">`, "Fotografar a nota" com `capture="environment"` e
+  "Escolher foto ou PDF" sem ele. O comentário que recusava `capture` caiu: com dois controles, os
+  três caminhos continuam lá. **Computador:** o bloco é a área de soltar (tracejado
+  `--border-strong` de 2px; sólido `--brand-as-ink` sobre `--brand-100` com um arquivo por cima), e
+  `paste` na janela lê, só enquanto a porta está montada. Colar texto passa reto.
+- **Um lugar decide o arquivo** (`receberArquivos`, na tela): o primeiro, se for `image/*` ou PDF
+  (o mesmo `accept` do seletor), e senão o `Aviso` com `sem-arquivo`. Mais de um: a espera diz
+  "Lemos só o primeiro arquivo."
+- **A espera** (`LendoANota`, em `notas/PortaDaNota.tsx`): a miniatura por `URL.createObjectURL`,
+  criada ao começar a leitura e revogada no `finally` dela (sem efeito: no `StrictMode` um efeito
+  revogaria a URL que o `useMemo` guardou); PDF ou imagem que o navegador não desenha (HEIC no
+  Chrome) mostram `FileText` e o nome. "Cancelar" (terciário) aborta o `fetch` por
+  `AbortController` e volta sem aviso; cada passo depois de um `await` confere o próprio sinal,
+  para uma resposta atrasada não puxar a tela para a conferência. Sair da tela no meio também
+  aborta.
+- O aviso de falha fica entre a área e a frase da privacidade, que encolheu e ganhou o `Lock`.
+
+**Consequência.** Cancelar não desfaz o gasto: se a resposta já estava a caminho, a leitura foi
+cobrada no servidor. Cancelar só poupa a espera dela.
