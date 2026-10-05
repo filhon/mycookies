@@ -47,16 +47,19 @@ import {
   OQueMudaNosProdutos,
   type ReciboDosProdutos,
 } from "./OQueMudaNosProdutos";
+import { DespesasFixas } from "./DespesasFixas";
 import { FazerAConta } from "./FazerAConta";
 import { parametrosDePreco } from "@/lib/domain/configuracaoSugerida";
 import {
   custoDeMinutos,
   custoIndiretoPorHora,
+  despesasParaEditar,
   energiaPorHoraDaConta,
   FORNADA_EXEMPLO_MINUTOS,
   gasPorHoraDoBotijao,
   horaPelaRetirada,
   ROTULO_ARREDONDAMENTO,
+  totalDasDespesas,
 } from "@/lib/domain/custosOperacionais";
 import { formatarMoeda, parseParaNumero } from "@/lib/domain/money";
 import {
@@ -73,7 +76,11 @@ import {
   ASSINATURA_LADO_PX,
   ASSINATURA_MAX_BYTES,
 } from "@/lib/domain/orcamento";
-import { errosPorCampo, esquemaConfiguracao } from "@/lib/domain/schemas";
+import {
+  errosDeLinha,
+  errosPorCampo,
+  esquemaConfiguracao,
+} from "@/lib/domain/schemas";
 import { docConfiguracao } from "@/lib/firebase/colecoes";
 import {
   CONFIGURACAO_SUGERIDA,
@@ -87,6 +94,7 @@ import { useDocumento } from "@/lib/hooks/useColecao";
 import type {
   Centavos,
   ConfiguracaoGeral,
+  DespesaFixa,
   FormaPagamento,
   MetodoPrecificacao,
   RegraArredondamento,
@@ -237,7 +245,8 @@ interface EstadoConfiguracao {
   horasProdutivasMes: string;
   custoEnergiaHora: number;
   custoGasHora: number;
-  despesasFixasMensais: number;
+  /** A soma é o total; o total não se digita (`#d287`). */
+  despesas: DespesaFixa[];
   metodoPadrao: MetodoPrecificacao;
   markupPadrao: string;
   margemPadrao: string;
@@ -271,7 +280,7 @@ function estadoInicial(
     horasProdutivasMes: texto(operacional.horasProdutivasMes),
     custoEnergiaHora: operacional.custoEnergiaHora,
     custoGasHora: operacional.custoGasHora,
-    despesasFixasMensais: operacional.despesasFixasMensais,
+    despesas: despesasParaEditar(operacional),
     metodoPadrao: precificacao.metodoPadrao,
     markupPadrao: texto(precificacao.markupPadrao),
     margemPadrao: texto(precificacao.margemPadrao),
@@ -285,6 +294,21 @@ function estadoInicial(
     assinaturaDataUrl: dado?.assinaturaDataUrl ?? null,
     frase: dado?.frase ?? "",
     ocultarFeitoCom: dado?.ocultarFeitoCom ?? false,
+  };
+}
+
+/** A lista como vai gravada, e o total que ela soma. */
+function despesasDoEstado(despesas: DespesaFixa[]) {
+  const despesasFixasItens = despesas.map((despesa) => ({
+    nome: despesa.nome.trim(),
+    valor: despesa.valor,
+  }));
+  return {
+    despesasFixasMensais: totalDasDespesas({
+      despesasFixasMensais: 0,
+      despesasFixasItens,
+    }),
+    despesasFixasItens,
   };
 }
 
@@ -302,7 +326,7 @@ function paraDados(estado: EstadoConfiguracao): DadosConfiguracao {
       horasProdutivasMes: parseParaNumero(estado.horasProdutivasMes),
       custoEnergiaHora: estado.custoEnergiaHora,
       custoGasHora: estado.custoGasHora,
-      despesasFixasMensais: estado.despesasFixasMensais,
+      ...despesasDoEstado(estado.despesas),
     },
     precificacao: {
       metodoPadrao: estado.metodoPadrao,
@@ -552,6 +576,9 @@ function ConfiguracaoDaDona() {
   const [base, setBase] = useState<string | null>(null);
   const [nuncaSalvou, setNuncaSalvou] = useState(false);
   const [erros, setErros] = useState<Record<string, string>>({});
+  const [errosDespesas, setErrosDespesas] = useState<Record<number, string>>(
+    {},
+  );
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
   const [recibo, setRecibo] = useState<ReciboDosProdutos | null>(null);
@@ -702,10 +729,12 @@ function ConfiguracaoDaDona() {
 
     if (!resultado.success) {
       setErros(errosPorCampo(resultado.error));
+      setErrosDespesas(errosDeLinha(resultado.error, "despesasFixasItens"));
       return;
     }
 
     setErros({});
+    setErrosDespesas({});
     setSalvando(true);
     try {
       await salvarConfiguracao(contaId, dados);
@@ -961,10 +990,19 @@ function ConfiguracaoDaDona() {
             <BlocoConfiguracao
               icone={Receipt}
               titulo="Despesas fixas"
-              descricao="Aluguel, internet, contador, assinaturas. O que você paga todo mês mesmo sem vender nada."
-              tom={horas > 0 ? "neutro" : "atencao"}
+              descricao="O que você paga todo mês mesmo sem vender nada, uma por uma: a que você não lembra fica fora do preço. Conta de ano, como o alvará, entra dividida por 12."
+              tom={
+                horas > 0 && operacional.despesasFixasMensais > 0
+                  ? "neutro"
+                  : "atencao"
+              }
               consequencia={
-                horas > 0 ? (
+                !(horas > 0) ? (
+                  <>
+                    Sem horas produtivas no bloco acima, não há por onde ratear:
+                    as despesas fixas não entram em preço nenhum.
+                  </>
+                ) : operacional.despesasFixasMensais > 0 ? (
                   <>
                     Suas despesas fixas custam{" "}
                     <Realce>{formatarMoeda(indireto)}</Realce> por hora
@@ -972,22 +1010,26 @@ function ConfiguracaoDaDona() {
                   </>
                 ) : (
                   <>
-                    Sem horas produtivas no bloco acima, não há por onde ratear:
-                    as despesas fixas não entram em preço nenhum.
+                    Suas despesas fixas custam{" "}
+                    <Realce>{formatarMoeda(0)}</Realce> por hora produzida:
+                    aluguel, internet e o resto não entram em preço nenhum.
                   </>
                 )
               }
             >
-              <div className="grid gap-4 sm:grid-cols-2">
-                <CampoMoeda
-                  rotulo="Despesas fixas do mês"
-                  valor={estado.despesasFixasMensais}
-                  aoMudar={(centavos) =>
-                    definir("despesasFixasMensais", centavos)
-                  }
-                  erro={erros.despesasFixasMensais}
-                />
-              </div>
+              <DespesasFixas
+                despesas={estado.despesas}
+                aoMudar={(atualizar) => {
+                  setSalvo(false);
+                  setEstado((anterior) =>
+                    anterior
+                      ? { ...anterior, despesas: atualizar(anterior.despesas) }
+                      : anterior,
+                  );
+                }}
+                erros={errosDespesas}
+                assinante={situacao?.tipo === "assinante"}
+              />
             </BlocoConfiguracao>
 
             <div className="space-y-4 2xl:hidden">{custoDaHora}</div>

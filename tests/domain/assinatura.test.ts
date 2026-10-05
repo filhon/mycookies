@@ -6,6 +6,7 @@ import {
   fraseDaEconomia,
   fraseDoPlano,
   legendaDaAssinatura,
+  mensalDoPlano,
   O_QUE_O_RECURSO_FAZ,
   oQueOCompletoTraz,
   diasRestantes,
@@ -368,5 +369,12 @@ describe("o resumo da assinatura (spec 084)", () => {
       "No anual você paga R$ 79,80 a menos por ano",
     );
     expect(fraseDaEconomia({ mensal: 3990, anual: 47880 })).toBeNull();
+  });
+});
+
+describe("mensalDoPlano (spec 086)", () => {
+  it("o anual entra nas despesas dividido por 12", () => {
+    expect(mensalDoPlano({ valor: 2900, periodo: "mensal" })).toBe(2900);
+    expect(mensalDoPlano({ valor: 29000, periodo: "anual" })).toBe(2417);
   });
 });

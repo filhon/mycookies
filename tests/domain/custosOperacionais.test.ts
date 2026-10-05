@@ -3,13 +3,18 @@ import {
   custoDeMinutos,
   custoHoraProducao,
   custoIndiretoPorHora,
+  DESPESA_SEM_LISTA,
+  despesasParaEditar,
+  despesasQueFaltam,
   energiaPorHoraDaConta,
   gasPorHoraDoBotijao,
   horaPelaRetirada,
   liquidoRecebido,
   taxaCobrada,
   textoPrazo,
+  totalDasDespesas,
 } from "@/lib/domain/custosOperacionais";
+import { esquemaConfiguracao } from "@/lib/domain/schemas";
 
 describe("custoIndiretoPorHora", () => {
   it("rateia a despesa fixa pelas horas produtivas", () => {
@@ -124,5 +129,70 @@ describe("Fazer a conta (#d286)", () => {
     expect(gasPorHoraDoBotijao(12000, 0, 10)).toBeNull();
     expect(gasPorHoraDoBotijao(12000, 4, 0)).toBeNull();
     expect(gasPorHoraDoBotijao(12000, -1, 10)).toBeNull();
+  });
+});
+
+describe("as despesas fixas item a item (spec 086)", () => {
+  it("com a lista, o total é a soma dela, e não o gravado", () => {
+    expect(
+      totalDasDespesas({
+        despesasFixasMensais: 99999,
+        despesasFixasItens: [
+          { nome: "Aluguel", valor: 50000 },
+          { nome: "Internet", valor: 9990 },
+        ],
+      }),
+    ).toBe(59990);
+    expect(
+      totalDasDespesas({ despesasFixasMensais: 99999, despesasFixasItens: [] }),
+    ).toBe(0);
+  });
+
+  it("sem a lista, a conta antiga fica com o total de sempre", () => {
+    expect(totalDasDespesas({ despesasFixasMensais: 30000 })).toBe(30000);
+    const linhas = despesasParaEditar({ despesasFixasMensais: 30000 });
+    expect(linhas).toEqual([{ nome: DESPESA_SEM_LISTA, valor: 30000 }]);
+    // Salvar sem mexer grava a linha, e o total não muda.
+    expect(
+      totalDasDespesas({
+        despesasFixasMensais: 30000,
+        despesasFixasItens: linhas,
+      }),
+    ).toBe(30000);
+    expect(despesasParaEditar({ despesasFixasMensais: 0 })).toEqual([]);
+  });
+
+  it("as pílulas são as comuns que ainda não estão na lista", () => {
+    expect(
+      despesasQueFaltam([
+        { nome: " aluguel ", valor: 0 },
+        { nome: "Rende", valor: 2900 },
+      ]),
+    ).toEqual(["Internet", "Celular", "Contador", "DAS do MEI"]);
+  });
+
+  it("o esquema recusa nome vazio, valor negativo e mais de 20 linhas", () => {
+    const base = {
+      valorHoraTrabalho: 0,
+      horasProdutivasMes: 80,
+      custoEnergiaHora: 0,
+      custoGasHora: 0,
+      despesasFixasMensais: 0,
+      metodoPadrao: "MARGEM",
+      markupPadrao: 2,
+      margemPadrao: 30,
+      outrasTaxasPadrao: 0,
+      arredondamento: "NENHUM",
+    } as const;
+    const com = (despesasFixasItens: { nome: string; valor: number }[]) =>
+      esquemaConfiguracao.safeParse({ ...base, despesasFixasItens }).success;
+
+    expect(com([{ nome: "Aluguel", valor: 50000 }])).toBe(true);
+    expect(com([{ nome: " ", valor: 100 }])).toBe(false);
+    expect(com([{ nome: "x".repeat(41), valor: 100 }])).toBe(false);
+    expect(com([{ nome: "Aluguel", valor: -1 }])).toBe(false);
+    expect(
+      com(Array.from({ length: 21 }, (_, i) => ({ nome: `D${i}`, valor: 1 }))),
+    ).toBe(false);
   });
 });

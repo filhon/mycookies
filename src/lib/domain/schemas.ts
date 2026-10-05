@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { PERDA_MAXIMA } from "./custoInsumo";
+import { DESPESAS_MAXIMAS } from "./custosOperacionais";
 import { ehHoraValida } from "./pedido";
 
 /** Mensagens na língua da confeitaria, não na do validador. */
@@ -98,6 +99,23 @@ export const esquemaConfiguracao = z.object({
     .number()
     .int()
     .min(0, "As despesas fixas não podem ser negativas."),
+  // As despesas uma a uma (spec 086, `#d287`); o total é a soma, na escrita.
+  despesasFixasItens: z
+    .array(
+      z.object({
+        nome: z
+          .string()
+          .trim()
+          .min(1, "Dê um nome a esta despesa.")
+          .max(40, "Um nome curto basta: até 40 letras."),
+        valor: z.number().int().min(0, "Uma despesa não pode ser negativa."),
+      }),
+    )
+    .max(
+      DESPESAS_MAXIMAS,
+      `Até ${DESPESAS_MAXIMAS} despesas: junte as pequenas numa só.`,
+    )
+    .optional(),
   metodoPadrao: z.enum(["MARKUP", "MARGEM"]),
   markupPadrao: z
     .number()

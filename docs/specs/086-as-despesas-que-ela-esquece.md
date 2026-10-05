@@ -72,10 +72,10 @@ planilhas de precificação que confeiteiras compram listam as despesas uma a um
 
 ## Critérios de aceite
 
-- [ ] Lista com soma gravada; conta antiga intacta.
-- [ ] Pílulas das despesas comuns, com "Rende" pelo valor do plano quando conhecido.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d287` escrito; `ESTADO.md` atualizado.
+- [x] Lista com soma gravada; conta antiga intacta.
+- [x] Pílulas das despesas comuns, com "Rende" pelo valor do plano quando conhecido.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d287` escrito; `ESTADO.md` atualizado.
 
 ---
 

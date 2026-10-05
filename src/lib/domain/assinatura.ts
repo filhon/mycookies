@@ -267,6 +267,15 @@ export function cobrancaPrevistaMs(renovaEmMs: number): number {
   return renovaEmMs - FOLGA_RENOVACAO_DIAS * DIA_MS;
 }
 
+/** O plano por mês, que é como ele entra nas despesas fixas (`#d287`). */
+export function mensalDoPlano(
+  resumo: Pick<ResumoAssinatura, "valor" | "periodo">,
+): Centavos {
+  return resumo.periodo === "anual"
+    ? Math.round(resumo.valor / 12)
+    : resumo.valor;
+}
+
 /** "Plano Essencial · R$ 39,90 por mês". */
 export function fraseDoPlano(
   pacote: Pacote,

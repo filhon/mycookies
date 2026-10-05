@@ -8,7 +8,10 @@ import {
   precificacaoSugerida,
   rateioSugerido,
 } from "@/lib/domain/configuracaoSugerida";
-import { custoIndiretoPorHora } from "@/lib/domain/custosOperacionais";
+import {
+  custoIndiretoPorHora,
+  totalDasDespesas,
+} from "@/lib/domain/custosOperacionais";
 import type { ParametrosPreco } from "@/lib/domain/precificacao";
 import { VERSAO_SCHEMA } from "@/lib/types";
 import type { ConfiguracaoGeral, DadosConfiguracao } from "@/lib/types";
@@ -67,13 +70,17 @@ export async function salvarConfiguracao(
  */
 export function corpoDaConfiguracao(dados: DadosConfiguracao) {
   const { operacional } = dados;
+  // Com a lista, o total é a soma dela, e nunca o digitado (`#d287`). Sem ela,
+  // o total de sempre; o `merge` não toca uma lista que já esteja gravada.
+  const despesasFixasMensais = totalDasDespesas(operacional);
   return {
     v: VERSAO_SCHEMA,
     ...(dados.nomeNegocio ? { nomeNegocio: dados.nomeNegocio } : {}),
     operacional: {
       ...operacional,
+      despesasFixasMensais,
       custoIndiretoPorHora: custoIndiretoPorHora(
-        operacional.despesasFixasMensais,
+        despesasFixasMensais,
         operacional.horasProdutivasMes,
       ),
     },

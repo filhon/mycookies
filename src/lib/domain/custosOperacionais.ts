@@ -1,5 +1,6 @@
 import type {
   Centavos,
+  DespesaFixa,
   FormaPagamento,
   Percentual,
   RegraArredondamento,
@@ -90,6 +91,58 @@ export function energiaPorHoraDaConta(
   horasProdutivasMes: number,
 ): Centavos | null {
   return porHora(luzDaConfeitaria, horasProdutivasMes);
+}
+
+/**
+ * As despesas que ela esquece (spec 086, `#d287`), na ordem das pílulas.
+ * "Rende" é a ferramenta: também é custo fixo.
+ */
+export const DESPESAS_COMUNS = [
+  "Aluguel",
+  "Internet",
+  "Celular",
+  "Contador",
+  "DAS do MEI",
+  "Rende",
+] as const;
+
+/** A linha em que o total de antes da lista aparece. */
+export const DESPESA_SEM_LISTA = "Despesas do mês";
+
+export const DESPESAS_MAXIMAS = 20;
+
+/** O total das despesas fixas: a soma da lista, ou o total de antes dela. */
+export function totalDasDespesas(operacional: {
+  despesasFixasMensais: Centavos;
+  despesasFixasItens?: DespesaFixa[];
+}): Centavos {
+  return operacional.despesasFixasItens
+    ? operacional.despesasFixasItens.reduce((soma, d) => soma + d.valor, 0)
+    : operacional.despesasFixasMensais;
+}
+
+/**
+ * A lista que a tela abre: a gravada, ou o total de antes como uma linha que
+ * ela pode renomear ou dividir. Nada some; zero sem lista é lista vazia.
+ */
+export function despesasParaEditar(operacional: {
+  despesasFixasMensais: Centavos;
+  despesasFixasItens?: DespesaFixa[];
+}): DespesaFixa[] {
+  if (operacional.despesasFixasItens) return operacional.despesasFixasItens;
+  return operacional.despesasFixasMensais > 0
+    ? [{ nome: DESPESA_SEM_LISTA, valor: operacional.despesasFixasMensais }]
+    : [];
+}
+
+/** As pílulas: as comuns que ainda não estão na lista, pelo nome. */
+export function despesasQueFaltam(itens: DespesaFixa[]): string[] {
+  const tem = new Set(
+    itens.map((d) => d.nome.trim().toLocaleLowerCase("pt-BR")),
+  );
+  return DESPESAS_COMUNS.filter(
+    (nome) => !tem.has(nome.toLocaleLowerCase("pt-BR")),
+  );
 }
 
 /** Converte um custo por hora no custo de um trecho medido em minutos. */

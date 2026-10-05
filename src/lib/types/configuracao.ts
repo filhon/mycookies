@@ -40,6 +40,12 @@ export interface FormaPagamento {
   pix?: { chave: string; nome: string; cidade: string };
 }
 
+/** Uma linha das despesas fixas (spec 086, `DECISOES.md#d287`). */
+export interface DespesaFixa {
+  nome: string;
+  valor: Centavos;
+}
+
 /**
  * Custos invisíveis. Tudo que não é insumo mas sai do bolso.
  * Alimentam o rateio de cada ficha técnica.
@@ -51,8 +57,16 @@ export interface CustosOperacionais {
   horasProdutivasMes: number;
   custoEnergiaHora: Centavos;
   custoGasHora: Centavos;
-  /** Aluguel, internet, contador, assinaturas. */
+  /**
+   * Aluguel, internet, contador, assinaturas. Com `despesasFixasItens`, é a
+   * soma da lista, gravada na escrita (`DECISOES.md#d287`).
+   */
   despesasFixasMensais: Centavos;
+  /**
+   * As despesas uma a uma (spec 086, `#d287`). Ausente = conta de antes da
+   * lista: vale o total, e a tela o mostra como a linha "Despesas do mês".
+   */
+  despesasFixasItens?: DespesaFixa[];
   /** Derivado: despesasFixasMensais / horasProdutivasMes. Gravado para uso direto. */
   custoIndiretoPorHora: Centavos;
 }

@@ -8591,3 +8591,47 @@ faixa que só falava do arredondamento, e Pix e Dinheiro repetiam "R$ 100,00 de 
 
 **Consequência.** Guardar o que ela digitou na conta seria campo novo, e ficou fora (spec 085,
 § 5). Um quarto "Fazer a conta" é só mais um `FazerAConta` com `campos`, `calcular` e `frase`.
+
+## D287 · As despesas fixas uma a uma, e o total continua derivado e gravado
+
+**Status:** vigente · decidida em 2026-10-05, spec `086-as-despesas-que-ela-esquece.md`.
+
+**Contexto.** "Despesas fixas do mês" era um campo só, e o print mostrava R$ 0,00: somar de cabeça
+aluguel, internet, celular, contador, DAS e a assinatura é a conta que ela não faz, e o que ela não
+lembra fica fora do preço para sempre (o zero inventado que o `#d114` recusa).
+
+**Decisão.**
+
+- **Schema, compatível:** `operacional.despesasFixasItens?: { nome, valor }[]` (`DespesaFixa`).
+  Aprovação pedida pela spec e tomada pelo pedido de quem conduz o projeto ("implemente a spec"),
+  como as peças da 044-A. Ausente = conta de antes da lista, e vale o total gravado.
+- **O total é a soma, na escrita:** `corpoDaConfiguracao` grava `despesasFixasMensais =
+totalDasDespesas(operacional)` e o `custoIndiretoPorHora` sobre ele. Sem a lista, o total que
+  veio. Quem lê o total continua lendo o total: a ficha (pelo `custoIndiretoPorHora` gravado), a
+  configuração sugerida, a calculadora do site e a biblioteca (que gravam pelo mesmo corpo, sem
+  lista, numa conta nova). Nenhum e-mail lê o campo.
+- **Conta antiga:** a tela abre o total como a linha "Despesas do mês" (`despesasParaEditar`), que
+  ela renomeia ou divide; salvar sem mexer grava a lista de uma linha e o mesmo total. Total zero
+  sem lista abre lista vazia.
+- **O bloco** (`components/configuracao/DespesasFixas.tsx`): "Costumam ficar de fora" com as
+  pílulas das comuns que faltam (`DESPESAS_COMUNS`, pelo nome, sem caixa), que entram com o valor
+  vazio e o foco no valor; uma linha por despesa (nome, valor tabular, lixeira de 44px) na mesma
+  linha em 360px; "Adicionar despesa" (secundário, foco no nome); "Total do mês" embaixo.
+- **"Rende"** entra com `mensalDoPlano` (o anual dividido por 12) lido por
+  `/api/assinatura/resumo` no toque, só para a assinante; a linha nasce com zero e o valor entra
+  quando chega, se ela não tiver digitado outro. Sem rede, no teste ou na conta livre, fica vazio
+  com a dica "O valor do seu plano por mês. No anual, divida por 12."
+- "DAS do MEI" vazio diz "O valor está no boleto do mês, no portal do Simples." A descrição do
+  bloco diz que conta de ano entra dividida por 12; o campo de periodicidade ficou fora (§ 5).
+- `esquemaConfiguracao`: nome de 1 a 40 caracteres, valor inteiro ≥ 0, até 20 linhas
+  (`DESPESAS_MAXIMAS`); a tela esconde pílulas e "Adicionar" no limite. O erro vai na linha, por
+  `errosDeLinha`.
+- Chave da linha é o índice: os campos são controlados e a lista não tem id. Um id por linha só
+  existiria para o React, e iria para o documento.
+
+**Fora do que a spec desenhou.** Com horas e total zero, a faixa vira atenção ("R$ 0,00 por hora
+produzida: aluguel, internet e o resto não entram em preço nenhum"), pelo mesmo `#d114`; a spec só
+pedia que a faixa dissesse.
+
+**Consequência.** A lista e as "Contas que repetem" do Caixa (070) são a mesma coisa vista de dois
+lados, e continuam separadas até decidir qual manda (spec 086, § 5).
