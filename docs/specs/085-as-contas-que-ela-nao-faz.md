@@ -90,11 +90,11 @@ ela digita ali é gravado: só o resultado, no campo que já existia.
 
 ## Critérios de aceite
 
-- [ ] Três "Fazer a conta", nada gravado além do campo de sempre.
-- [ ] Preço padrão dito em reais, com a sobra no crédito.
-- [ ] Formas sem taxa sem a linha repetida.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d286` escrito; `ESTADO.md` atualizado.
+- [x] Três "Fazer a conta", nada gravado além do campo de sempre.
+- [x] Preço padrão dito em reais, com a sobra no crédito.
+- [x] Formas sem taxa sem a linha repetida.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d286` escrito; `ESTADO.md` atualizado.
 
 ---
 

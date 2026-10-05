@@ -29,8 +29,12 @@ const ICONE_TIPO: Record<TipoPagamento, LucideIcon> = {
   TRANSFERENCIA: ArrowLeftRight,
 };
 
+function semTaxa(forma: FormaPagamento): boolean {
+  return forma.taxaPercentual === 0 && forma.taxaFixa === 0;
+}
+
 function textoTaxa(forma: FormaPagamento): string {
-  if (forma.taxaPercentual === 0 && forma.taxaFixa === 0) return "sem taxa";
+  if (semTaxa(forma)) return "sem taxa";
   const percentual = forma.taxaPercentual.toLocaleString("pt-BR", {
     maximumFractionDigits: 2,
   });
@@ -52,7 +56,6 @@ function LinhaForma({
   aoAbrir: (forma: FormaPagamento) => void;
 }) {
   const Icone = ICONE_TIPO[forma.tipo];
-  const liquido = liquidoRecebido(VENDA_EXEMPLO, forma);
 
   return (
     <li>
@@ -97,16 +100,19 @@ function LinhaForma({
           </span>
         </span>
 
-        {/* A consequência da taxa, em dinheiro, na própria linha. */}
-        <span className="shrink-0 text-right">
-          <Dinheiro
-            centavos={liquido}
-            className={forma.ativo ? undefined : "opacity-60"}
-          />
-          <span className="mt-0.5 block text-micro text-ink-subtle">
-            de cada 100 reais
+        {/* A consequência da taxa, em dinheiro, na própria linha. Sem taxa, o
+            "sem taxa" já diz tudo (`#d286`). */}
+        {!semTaxa(forma) && (
+          <span className="shrink-0 text-right">
+            <Dinheiro
+              centavos={liquidoRecebido(VENDA_EXEMPLO, forma)}
+              className={forma.ativo ? undefined : "opacity-60"}
+            />
+            <span className="mt-0.5 block text-micro text-ink-subtle">
+              de cada R$ 100
+            </span>
           </span>
-        </span>
+        )}
       </button>
     </li>
   );

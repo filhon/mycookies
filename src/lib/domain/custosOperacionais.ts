@@ -57,6 +57,41 @@ export function custoHoraProducao(
   );
 }
 
+/**
+ * As contas do "Fazer a conta" (`#d286`): um valor que ela sabe dividido por
+ * horas que ela sabe. Divisor zero, negativo ou não numérico é `null`, e não
+ * zero: zero seria um resultado para "Usar", e não há resultado.
+ */
+function porHora(valor: Centavos, horas: number): Centavos | null {
+  if (!(horas > 0) || !Number.isFinite(horas)) return null;
+  return Math.round(valor / horas);
+}
+
+/** Quanto ela quer tirar no mês, nas horas que produz. */
+export function horaPelaRetirada(
+  retiradaMensal: Centavos,
+  horasProdutivasMes: number,
+): Centavos | null {
+  return porHora(retiradaMensal, horasProdutivasMes);
+}
+
+/** O botijão pelas horas de forno que ele dura. */
+export function gasPorHoraDoBotijao(
+  precoBotijao: Centavos,
+  semanasQueDura: number,
+  horasFornoPorSemana: number,
+): Centavos | null {
+  return porHora(precoBotijao, semanasQueDura * horasFornoPorSemana);
+}
+
+/** A parte da confeitaria na conta de luz, nas horas que ela produz. */
+export function energiaPorHoraDaConta(
+  luzDaConfeitaria: Centavos,
+  horasProdutivasMes: number,
+): Centavos | null {
+  return porHora(luzDaConfeitaria, horasProdutivasMes);
+}
+
 /** Converte um custo por hora no custo de um trecho medido em minutos. */
 export function custoDeMinutos(
   custoPorHora: Centavos,

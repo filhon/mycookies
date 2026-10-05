@@ -47,17 +47,23 @@ import {
   OQueMudaNosProdutos,
   type ReciboDosProdutos,
 } from "./OQueMudaNosProdutos";
+import { FazerAConta } from "./FazerAConta";
+import { parametrosDePreco } from "@/lib/domain/configuracaoSugerida";
 import {
   custoDeMinutos,
   custoIndiretoPorHora,
+  energiaPorHoraDaConta,
   FORNADA_EXEMPLO_MINUTOS,
+  gasPorHoraDoBotijao,
+  horaPelaRetirada,
   ROTULO_ARREDONDAMENTO,
 } from "@/lib/domain/custosOperacionais";
+import { formatarMoeda, parseParaNumero } from "@/lib/domain/money";
 import {
-  arredondarPreco,
-  formatarMoeda,
-  parseParaNumero,
-} from "@/lib/domain/money";
+  calcularPrecoSugerido,
+  somaTaxas,
+  verificarPreco,
+} from "@/lib/domain/precificacao";
 import {
   fraseDoTeste,
   paraSituar,
@@ -79,10 +85,12 @@ import { refazerFichasPelaConfiguracao } from "@/lib/firebase/mutations/fichas";
 import type { RateioOperacional } from "@/lib/domain/custoFicha";
 import { useDocumento } from "@/lib/hooks/useColecao";
 import type {
+  Centavos,
   ConfiguracaoGeral,
   FormaPagamento,
   MetodoPrecificacao,
   RegraArredondamento,
+  TipoPagamento,
 } from "@/lib/types";
 import {
   AVISO_SAIR_PENDENTE,
@@ -92,8 +100,101 @@ import {
 } from "@/providers/AuthProvider";
 import { cn } from "@/lib/utils/cn";
 
-/** Preço de exemplo para mostrar o que a regra de arredondamento faz. */
-const PRECO_EXEMPLO = 1237;
+/** O doce de exemplo da faixa do preço padrão (`#d286`). */
+const CUSTO_EXEMPLO = 400;
+
+/** "No crédito, sobram…": a forma que mais cobra, pelo tipo, e não pelo nome. */
+const NA_FORMA: Record<TipoPagamento, string> = {
+  PIX: "No Pix",
+  DINHEIRO: "No dinheiro",
+  DEBITO: "No débito",
+  CREDITO: "No crédito",
+  CREDITO_PARCELADO: "No crédito parcelado",
+  TRANSFERENCIA: "Na transferência",
+};
+
+function textoHoras(horas: number): string {
+  return `${horas.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} h`;
+}
+
+/**
+ * A faixa do preço padrão como um exemplo inteiro (`#d286`): o doce de R$ 4,00
+ * pela mesma conta do editor (`calcularPrecoSugerido` e `verificarPreco` sobre
+ * `parametrosDePreco`), com a sobra na forma de taxa mais alta.
+ */
+function fraseDoPrecoPadrao(
+  precificacao: DadosConfiguracao["precificacao"],
+  formas: FormaPagamento[],
+): { tom: "neutro" | "atencao"; texto: ReactNode } {
+  const parametros = parametrosDePreco(precificacao, formas);
+  const resultado = calcularPrecoSugerido(CUSTO_EXEMPLO, parametros);
+
+  if (!resultado.ok) {
+    return {
+      tom: "atencao",
+      texto:
+        resultado.motivo === "MARGEM_IMPOSSIVEL"
+          ? "O que você quer que sobre mais as taxas passam de 100% do preço. Não existe preço que caiba nisso: diminua um dos dois."
+          : "Multiplicar o custo por zero não dá preço nenhum. Escolha por quanto multiplicar.",
+    };
+  }
+
+  const { precoSugerido, precoArredondado } = resultado;
+  const { custoTaxas, lucroUnitario } = verificarPreco(
+    precoArredondado,
+    CUSTO_EXEMPLO,
+    somaTaxas(parametros),
+  );
+  const maisCara = formas.find(
+    (forma) =>
+      forma.ativo &&
+      forma.taxaPercentual > 0 &&
+      forma.taxaPercentual === parametros.taxaCartaoConsiderada,
+  );
+  const inicio = (texto: string) =>
+    maisCara
+      ? `${NA_FORMA[maisCara.tipo]}, ${texto}`
+      : texto.charAt(0).toUpperCase() + texto.slice(1);
+  // Com markup, o que as taxas levam é o que o multiplicador não enxerga.
+  const quemLeva = !maisCara
+    ? "as outras taxas levam"
+    : parametros.outrasTaxas > 0
+      ? "a maquininha e as outras taxas levam"
+      : "a maquininha leva";
+
+  return {
+    tom: lucroUnitario < 0 ? "atencao" : "neutro",
+    texto: (
+      <>
+        Um doce que custa <Realce>{formatarMoeda(CUSTO_EXEMPLO)}</Realce> vai
+        para a vitrine por{" "}
+        {precoSugerido !== precoArredondado && (
+          <>
+            <Realce>{formatarMoeda(precoSugerido)}</Realce> arredondado
+            para{" "}
+          </>
+        )}
+        <Realce>{formatarMoeda(precoArredondado)}</Realce>.{" "}
+        {lucroUnitario < 0 ? (
+          <>
+            {inicio("você perde")}{" "}
+            <Realce>{formatarMoeda(-lucroUnitario)}</Realce> em cada um.
+          </>
+        ) : parametros.metodo === "MARKUP" && custoTaxas > 0 ? (
+          <>
+            {inicio(quemLeva)} <Realce>{formatarMoeda(custoTaxas)}</Realce> e
+            sobram <Realce>{formatarMoeda(lucroUnitario)}</Realce> pra você.
+          </>
+        ) : (
+          <>
+            {inicio("sobram")} <Realce>{formatarMoeda(lucroUnitario)}</Realce>{" "}
+            pra você.
+          </>
+        )}
+      </>
+    ),
+  };
+}
 
 const DESCRICAO =
   "De onde sai o preço de todo produto, e o que é da sua conta.";
@@ -515,8 +616,28 @@ function ConfiguracaoDaDona() {
     );
   };
 
-  const operacional = paraDados(estado).operacional;
+  const dados = paraDados(estado);
+  const operacional = dados.operacional;
   const horas = operacional.horasProdutivasMes;
+  const precoPadrao = fraseDoPrecoPadrao(
+    dados.precificacao,
+    estado.formasPagamento,
+  );
+
+  // A frase do "Fazer a conta" que divide pelas horas do mês: sem elas, diz
+  // onde pôr (`#d286`).
+  const porHoraDoMes = (
+    valor: Centavos,
+    resultado: Centavos | null,
+  ): ReactNode =>
+    resultado === null ? (
+      "Diga quantas horas você produz por mês, em Seu trabalho, e a conta sai."
+    ) : valor > 0 ? (
+      <>
+        <Realce>{formatarMoeda(valor)}</Realce> em {textoHoras(horas)} dá{" "}
+        <Realce>{formatarMoeda(resultado)}</Realce> por hora.
+      </>
+    ) : null;
   const indireto = custoIndiretoPorHora(
     operacional.despesasFixasMensais,
     horas,
@@ -702,13 +823,35 @@ function ConfiguracaoDaDona() {
                 </>
               }
             >
-              <div className="grid gap-4 sm:grid-cols-2">
-                <CampoMoeda
-                  rotulo="Quanto vale a sua hora"
-                  valor={estado.valorHoraTrabalho}
-                  aoMudar={(centavos) => definir("valorHoraTrabalho", centavos)}
-                  erro={erros.valorHoraTrabalho}
-                />
+              <div className="grid items-start gap-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <CampoMoeda
+                    rotulo="Quanto vale a sua hora"
+                    valor={estado.valorHoraTrabalho}
+                    aoMudar={(centavos) =>
+                      definir("valorHoraTrabalho", centavos)
+                    }
+                    erro={erros.valorHoraTrabalho}
+                  />
+                  <FazerAConta
+                    campos={[
+                      {
+                        chave: "retirada",
+                        rotulo: "Quanto você quer tirar por mês",
+                        tipo: "moeda",
+                      },
+                    ]}
+                    calcular={({ retirada }) =>
+                      horaPelaRetirada(retirada, horas)
+                    }
+                    frase={({ retirada }, resultado) =>
+                      porHoraDoMes(retirada, resultado)
+                    }
+                    aoUsar={(centavos) =>
+                      definir("valorHoraTrabalho", centavos)
+                    }
+                  />
+                </div>
                 <Campo
                   rotulo="Horas que você produz por mês"
                   inputMode="decimal"
@@ -726,7 +869,7 @@ function ConfiguracaoDaDona() {
             <BlocoConfiguracao
               icone={Flame}
               titulo="Energia e gás"
-              descricao="Some a conta de luz e o botijão do mês e divida pelas horas que o forno fica ligado. Chute alto é melhor que zero."
+              descricao="O que o forno e a luz custam em cada hora de produção. Chute alto é melhor que zero."
               consequencia={
                 <>
                   Forno e luz somam <Realce>{formatarMoeda(energiaGas)}</Realce>{" "}
@@ -740,19 +883,78 @@ function ConfiguracaoDaDona() {
                 </>
               }
             >
-              <div className="grid gap-4 sm:grid-cols-2">
-                <CampoMoeda
-                  rotulo="Energia por hora"
-                  valor={estado.custoEnergiaHora}
-                  aoMudar={(centavos) => definir("custoEnergiaHora", centavos)}
-                  erro={erros.custoEnergiaHora}
-                />
-                <CampoMoeda
-                  rotulo="Gás por hora"
-                  valor={estado.custoGasHora}
-                  aoMudar={(centavos) => definir("custoGasHora", centavos)}
-                  erro={erros.custoGasHora}
-                />
+              <div className="grid items-start gap-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <CampoMoeda
+                    rotulo="Energia por hora"
+                    valor={estado.custoEnergiaHora}
+                    aoMudar={(centavos) =>
+                      definir("custoEnergiaHora", centavos)
+                    }
+                    erro={erros.custoEnergiaHora}
+                  />
+                  <FazerAConta
+                    campos={[
+                      {
+                        chave: "luz",
+                        rotulo:
+                          "Quanto a confeitaria pesa na conta de luz do mês",
+                        tipo: "moeda",
+                        dica: "Se não sabe, compare a conta de um mês de muita encomenda com a de um mês parado.",
+                      },
+                    ]}
+                    calcular={({ luz }) => energiaPorHoraDaConta(luz, horas)}
+                    frase={({ luz }, resultado) => porHoraDoMes(luz, resultado)}
+                    aoUsar={(centavos) => definir("custoEnergiaHora", centavos)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <CampoMoeda
+                    rotulo="Gás por hora"
+                    valor={estado.custoGasHora}
+                    aoMudar={(centavos) => definir("custoGasHora", centavos)}
+                    erro={erros.custoGasHora}
+                  />
+                  <FazerAConta
+                    campos={[
+                      {
+                        chave: "botijao",
+                        rotulo: "Quanto custa o botijão",
+                        tipo: "moeda",
+                      },
+                      {
+                        chave: "semanas",
+                        rotulo: "Ele dura quantas semanas",
+                        tipo: "numero",
+                      },
+                      {
+                        chave: "horasForno",
+                        rotulo: "Quantas horas o forno fica ligado por semana",
+                        tipo: "numero",
+                        sufixo: "h",
+                      },
+                    ]}
+                    calcular={({ botijao, semanas, horasForno }) =>
+                      gasPorHoraDoBotijao(botijao, semanas, horasForno)
+                    }
+                    frase={({ botijao, semanas, horasForno }, resultado) =>
+                      resultado === null ? (
+                        "Diga quantas semanas o botijão dura e quantas horas o forno fica ligado por semana."
+                      ) : botijao > 0 ? (
+                        <>
+                          Um botijão de{" "}
+                          <Realce>{formatarMoeda(botijao)}</Realce> em{" "}
+                          {semanas.toLocaleString("pt-BR")}{" "}
+                          {semanas === 1 ? "semana" : "semanas"} de{" "}
+                          {textoHoras(horasForno)} dá{" "}
+                          <Realce>{formatarMoeda(resultado)}</Realce> por hora
+                          de forno.
+                        </>
+                      ) : null
+                    }
+                    aoUsar={(centavos) => definir("custoGasHora", centavos)}
+                  />
+                </div>
               </div>
             </BlocoConfiguracao>
 
@@ -795,27 +997,8 @@ function ConfiguracaoDaDona() {
               icone={Tag}
               titulo="Preço padrão"
               descricao="Como todo produto novo começa. Cada produto pode fugir daqui depois."
-              consequencia={
-                estado.arredondamento === "NENHUM" ? (
-                  <>
-                    Um preço calculado em{" "}
-                    <Realce>{formatarMoeda(PRECO_EXEMPLO)}</Realce> vai para a
-                    vitrine exatamente assim, com centavo quebrado e tudo.
-                  </>
-                ) : (
-                  <>
-                    Um preço calculado em{" "}
-                    <Realce>{formatarMoeda(PRECO_EXEMPLO)}</Realce> chega à
-                    vitrine como{" "}
-                    <Realce>
-                      {formatarMoeda(
-                        arredondarPreco(PRECO_EXEMPLO, estado.arredondamento),
-                      )}
-                    </Realce>
-                    .
-                  </>
-                )
-              }
+              tom={precoPadrao.tom}
+              consequencia={precoPadrao.texto}
             >
               <fieldset>
                 <legend className="text-label font-medium text-ink">

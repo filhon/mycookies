@@ -3,6 +3,9 @@ import {
   custoDeMinutos,
   custoHoraProducao,
   custoIndiretoPorHora,
+  energiaPorHoraDaConta,
+  gasPorHoraDoBotijao,
+  horaPelaRetirada,
   liquidoRecebido,
   taxaCobrada,
   textoPrazo,
@@ -95,5 +98,31 @@ describe("textoPrazo", () => {
     expect(textoPrazo(0)).toBe("cai na hora");
     expect(textoPrazo(1)).toBe("cai em 1 dia");
     expect(textoPrazo(30)).toBe("cai em 30 dias");
+  });
+});
+
+describe("Fazer a conta (#d286)", () => {
+  it("divide a retirada do mês pelas horas que ela produz", () => {
+    // O caso da spec: R$ 4.000,00 em 160 h dá R$ 25,00 por hora.
+    expect(horaPelaRetirada(400000, 160)).toBe(2500);
+  });
+
+  it("divide o botijão pelas horas de forno que ele dura", () => {
+    // R$ 120,00 em 4 semanas de 10 h dá R$ 3,00 por hora de forno.
+    expect(gasPorHoraDoBotijao(12000, 4, 10)).toBe(300);
+  });
+
+  it("divide a luz da confeitaria pelas horas do mês, em centavo inteiro", () => {
+    // R$ 200,00 / 160 h = 125 centavos; R$ 100,00 / 3 h = 3333,33…
+    expect(energiaPorHoraDaConta(20000, 160)).toBe(125);
+    expect(energiaPorHoraDaConta(10000, 3)).toBe(3333);
+  });
+
+  it("sem divisor não há resultado, e não zero nem Infinity", () => {
+    expect(horaPelaRetirada(400000, 0)).toBeNull();
+    expect(energiaPorHoraDaConta(20000, Number.NaN)).toBeNull();
+    expect(gasPorHoraDoBotijao(12000, 0, 10)).toBeNull();
+    expect(gasPorHoraDoBotijao(12000, 4, 0)).toBeNull();
+    expect(gasPorHoraDoBotijao(12000, -1, 10)).toBeNull();
   });
 });

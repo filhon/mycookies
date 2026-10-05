@@ -8557,3 +8557,37 @@ entrada.
 **Consequência.** "Gerenciar assinatura" saiu da tela: o portal agora se abre do painel, por
 um dos dois botões. Hoje `RESPONSAVEL.whatsapp` está vazio, então "Fale com a gente" abre o
 e-mail até o número entrar lá.
+
+## D286 · Fazer a conta ao lado do campo, e o preço padrão dito em reais
+
+**Status:** vigente · decidida em 2026-10-05, spec `085-as-contas-que-ela-nao-faz.md`.
+
+**Contexto.** "Energia por hora" pedia que ela somasse a luz e o botijão e dividisse pelas horas de
+forno; "Quanto vale a sua hora" pedia a hora, quando ela pensa no mês. O preço padrão fechava numa
+faixa que só falava do arredondamento, e Pix e Dinheiro repetiam "R$ 100,00 de cada 100 reais".
+
+**Decisão.**
+
+- **`FazerAConta`** (em `components/configuracao/`), botão terciário sob o campo: abre logo
+  abaixo os campos da conta, empilhados, a frase do resultado e "Usar R$ …", secundário (o âmbar é
+  do "Salvar", `#d284`), que preenche o campo de sempre e fecha. **Nada do que ela digita ali é
+  gravado**: fechar desmonta, e o que foi digitado vai junto. O campo continua dela e editável.
+- As três divisões em `domain/custosOperacionais.ts`, centavos inteiros: `horaPelaRetirada`
+  (retirada ÷ horas do mês), `gasPorHoraDoBotijao` (botijão ÷ semanas × horas de forno por semana)
+  e `energiaPorHoraDaConta` (a parte da confeitaria na luz ÷ horas do mês). Sem divisor, `null`, e
+  não zero: **sem "Usar"**. Resultado zero (campo vazio) também não oferece "Usar".
+- A hora e a energia dividem pelas "Horas que você produz por mês" do formulário, ao vivo; sem
+  elas, a frase diz onde pô-las. O gás divide pelas horas de forno, que é o que o botijão sabe.
+- A descrição de "Energia e gás" deixou de mandar dividir: a conta agora está ali.
+- **O preço padrão é um exemplo inteiro**: um doce de R$ 4,00 por `calcularPrecoSugerido` e
+  `verificarPreco` sobre `parametrosDePreco`, as mesmas do editor. O arredondamento entra só quando
+  muda o número ("R$ 6,67 arredondado para R$ 6,90"). A sobra é dita na forma ativa de taxa mais
+  alta, nomeada pelo **tipo** ("No crédito", "No débito"), e não pelo nome que ela deu; sem forma
+  com taxa, só "Sobram R$ … pra você". Com markup, a frase diz também o que a maquininha (e as
+  outras taxas) leva, que é o que o multiplicador não enxerga. Sobra negativa, margem impossível e
+  markup zero viram a faixa de atenção, com o ícone.
+- **Forma sem taxa** (percentual e fixa zero): só "sem taxa · cai na hora", sem o valor à direita.
+  Com taxa, o valor que fica e "de cada R$ 100" embaixo.
+
+**Consequência.** Guardar o que ela digitou na conta seria campo novo, e ficou fora (spec 085,
+§ 5). Um quarto "Fazer a conta" é só mais um `FazerAConta` com `campos`, `calcular` e `frase`.
