@@ -17,6 +17,7 @@ import {
   normalizarNota,
   parearComInsumos,
   PRECO_ENVELHECE_DIAS,
+  saltoDePreco,
   somarLinhas,
   type InsumoConhecido,
   type LinhaRascunho,
@@ -701,5 +702,50 @@ describe("idadeDosPrecos", () => {
       velhos: 0,
       ultimaCompraISO: null,
     });
+  });
+});
+
+describe("saltoDePreco", () => {
+  // Manteiga a R$ 10,98 o quilo.
+  const manteiga = calcularCustoInsumo({
+    precoCompra: 1098,
+    quantidadeCompra: 1,
+    unidadeCompra: "kg",
+    perdaPercentual: 0,
+  });
+  const lida = (
+    precoCompra: number,
+    quantidadeCompra: number,
+    unidade: "g" | "kg" | "un" = "kg",
+  ) =>
+    calcularCustoInsumo({
+      precoCompra,
+      quantidadeCompra,
+      unidadeCompra: unidade,
+      perdaPercentual: 0,
+    });
+
+  it("a vírgula lida errado pula para cima", () => {
+    expect(saltoDePreco(manteiga, lida(10980, 1))).toBe("subiu");
+  });
+
+  it("o dobro exato já é salto; logo abaixo, não", () => {
+    expect(saltoDePreco(manteiga, lida(2196, 1))).toBe("subiu");
+    expect(saltoDePreco(manteiga, lida(2195, 1))).toBeNull();
+  });
+
+  it("a metade exata já é salto para baixo; logo acima, não", () => {
+    expect(saltoDePreco(manteiga, lida(549, 1))).toBe("caiu");
+    expect(saltoDePreco(manteiga, lida(550, 1))).toBeNull();
+  });
+
+  it("'1 g' no lugar de '1 kg' pula; corrigir a unidade desfaz", () => {
+    expect(saltoDePreco(manteiga, lida(1190, 1, "g"))).toBe("subiu");
+    expect(saltoDePreco(manteiga, lida(1190, 1, "kg"))).toBeNull();
+  });
+
+  it("base diferente ou sem preço anterior não se compara", () => {
+    expect(saltoDePreco(manteiga, lida(10980, 1, "un"))).toBeNull();
+    expect(saltoDePreco(lida(0, 1), lida(1098, 1))).toBeNull();
   });
 });

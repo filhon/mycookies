@@ -662,22 +662,24 @@ export interface EfeitoNaFicha {
 }
 
 /**
- * O que o preço digitado faz com a sobra de cada produto, antes de salvar
- * (`#d224`): `custosDeHoje` com os materiais de hoje contra o mesmo cálculo com
- * `materialNovo` trocado. Só as fichas cuja sobra mudou, a maior diferença
- * primeiro: com um material só, todas mudam no mesmo sentido, e a maior
- * diferença é a maior queda (ou a maior alta, se o preço caiu). Kit entra
- * pelas receitas, porque `custosDeHoje` já o recalcula por elas.
+ * O que os preços novos fazem com a sobra de cada produto, antes de salvar
+ * (`#d224`, `#d291`): `custosDeHoje` com os materiais de hoje contra o mesmo
+ * cálculo com todos os `novos` trocados. O formulário de material passa um, a
+ * nota passa as linhas pareadas. Só as fichas cuja sobra mudou, a maior
+ * diferença primeiro, em qualquer sentido: com vários materiais uma ficha pode
+ * subir e outra cair. Kit entra pelas receitas, porque `custosDeHoje` já o
+ * recalcula por elas.
  */
-export function efeitoDoPrecoNovo(
+export function efeitoDosPrecosNovos(
   fichas: FichaTecnica[],
   materiais: MaterialDeHoje[],
-  materialNovo: MaterialDeHoje,
+  novos: MaterialDeHoje[],
 ): EfeitoNaFicha[] {
+  const porId = new Map(novos.map((m) => [m.id, m]));
   const antes = custosDeHoje(fichas, materiais);
   const depois = custosDeHoje(
     fichas,
-    materiais.map((m) => (m.id === materialNovo.id ? materialNovo : m)),
+    materiais.map((m) => porId.get(m.id) ?? m),
   );
   return fichas
     .map((ficha) => ({

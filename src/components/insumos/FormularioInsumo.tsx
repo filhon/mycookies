@@ -5,7 +5,7 @@ import { Botao } from "@/components/ui/Botao";
 import { Campo, Seletor } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Painel } from "@/components/ui/Painel";
-import { EfeitoDoPreco } from "./EfeitoDoPreco";
+import { EfeitoDoPrecoDigitado } from "./EfeitoDoPreco";
 import { ResumoCusto } from "./ResumoCusto";
 import {
   calcularCustoInsumo,
@@ -360,7 +360,7 @@ export function FormularioInsumo({
         {podeCalcular && <ResumoCusto custo={custo} perdaPercentual={perda} />}
 
         {podeCalcular && insumo && fichas && (
-          <EfeitoDoPreco
+          <EfeitoDoPrecoDigitado
             insumo={insumo}
             custo={custo}
             fichas={fichas}

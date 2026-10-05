@@ -99,11 +99,11 @@ preço muda sem dizer o que faz.
 
 ## Critérios de aceite
 
-- [ ] O efeito de todos os preços pela mesma função do formulário, com teste.
-- [ ] Aviso de salto por linha, sem bloquear, com teste.
-- [ ] O "pronto" diz quais produtos e quanto.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d291` escrito; `ESTADO.md` atualizado.
+- [x] O efeito de todos os preços pela mesma função do formulário, com teste.
+- [x] Aviso de salto por linha, sem bloquear, com teste.
+- [x] O "pronto" diz quais produtos e quanto.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d291` escrito; `ESTADO.md` atualizado.
 
 ---
 

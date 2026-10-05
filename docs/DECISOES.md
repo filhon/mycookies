@@ -8736,3 +8736,38 @@ mostrava o que a leitura faz nem sabia nada dos preços dela, e a espera era ceg
 
 **Consequência.** Cancelar não desfaz o gasto: se a resposta já estava a caminho, a leitura foi
 cobrada no servidor. Cancelar só poupa a espera dela.
+
+## D291 · O que a compra faz nos produtos, e a linha que pulou
+
+**Status:** vigente · decidida em 2026-10-05, spec `089-o-que-a-compra-faz.md`.
+
+**Contexto.** Trocar o preço de um material à mão mostrava a sobra de cada produto caindo (`#d224`);
+ler uma nota que troca vinte preços não mostrava nada, e o "pronto" terminava em "3 produtos
+ficaram com o custo desatualizado". E nada comparava o custo por quilo lido com o que o material
+tinha: uma vírgula ou um "1 g" no lugar de "1 kg" passavam se ela não reparasse.
+
+**Decisão.**
+
+- **Uma função para um preço e para vinte:** `efeitoDoPrecoNovo` virou `efeitoDosPrecosNovos(fichas,
+materiais, novos[])`, que troca todos os `novos` antes do segundo `custosDeHoje`. O formulário
+  passa um. Mesmo filtro (só a sobra que mudou) e mesma ordem (a maior diferença primeiro, em
+  qualquer sentido): dois preços em sentidos opostos que se anulam numa ficha a tiram da lista.
+- **`EfeitoDoPreco` recebe a lista pronta**, com título, `detalhe` (o preço do material, só no
+  formulário) e `fecho`; o formulário usa `EfeitoDoPrecoDigitado`, que faz a conta e monta o
+  detalhe como antes. Na nota, os `novos` saem das linhas pareadas e completas, pela
+  `calcularCustoInsumo` com a perda do material pareado (`#d51`); base trocada (g → un) fica de fora,
+  como no formulário. O bloco fica entre as linhas e o caixa; sem preço pareado mudado, não aparece.
+- **O "pronto" guarda o efeito calculado antes de gravar** (depois, o "antes" já é o preço novo),
+  com "Ele(s) fica(m) marcado(s) para rever o preço em Produtos." e "Ver em Produtos" para
+  `/fichas` sem filtro: a lista não tem filtro endereçável por URL. Se as fichas não tinham
+  carregado e a lista sai vazia, volta a contagem de `fichasMarcadas`.
+- **O salto:** `saltoDePreco` (`domain/notaFiscal.ts`) compara o custo por unidade base, sem perda,
+  e é salto o dobro ou mais, ou a metade ou menos (`FATOR_SALTO = 2`); base diferente ou preço
+  anterior zero não se compara. A linha troca a frase da conta pelo `TriangleAlert` em ocre e "O
+  quilo sai a R$ …; era R$ …. Confira a quantidade e a unidade." **Não bloqueia.** O rodapé conta as
+  linhas com salto depois das incompletas e antes da conferência do total, e com salto a frase
+  não é "tudo certo" (não some com o teclado aberto).
+
+**Consequência.** A marcação `custoDesatualizado` é a de antes (por `insumoIds`): um kit que só usa o
+material pela receita de dentro aparece no bloco e não é marcado, como já acontecia no formulário.
+Refazer o custo das fichas ao cadastrar continua fora, decisão de quem conduz o projeto.

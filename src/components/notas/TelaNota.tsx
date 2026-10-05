@@ -17,6 +17,7 @@ import { Bloco } from "@/components/ui/Bloco";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { Botao } from "@/components/ui/Botao";
 import { Campo } from "@/components/ui/Campo";
+import { EfeitoDoPreco } from "@/components/insumos/EfeitoDoPreco";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { BlocoCaixa } from "./BlocoCaixa";
 import {
@@ -27,6 +28,12 @@ import {
 } from "./CartaoLinhaNota";
 import { LendoANota, PortaDaNota } from "./PortaDaNota";
 import { RodapeNota, type ResumoDaNota } from "./RodapeNota";
+import {
+  efeitoDosPrecosNovos,
+  type EfeitoNaFicha,
+  type MaterialDeHoje,
+} from "@/lib/domain/custoFicha";
+import { calcularCustoInsumo } from "@/lib/domain/custoInsumo";
 import { dataISODe } from "@/lib/domain/datas";
 import { entradasDaNota } from "@/lib/domain/estoque";
 import { formatarMoeda } from "@/lib/domain/money";
@@ -39,13 +46,14 @@ import {
   MENSAGEM_FALHA,
   normalizarNota,
   parearComInsumos,
+  saltoDePreco,
   somarLinhas,
   type FalhaNota,
   type NotaLida,
   type RascunhoNota,
 } from "@/lib/domain/notaFiscal";
 import { guardarSemente } from "@/lib/estado/sementeDaContagem";
-import { colInsumos } from "@/lib/firebase/colecoes";
+import { colFichas, colInsumos } from "@/lib/firebase/colecoes";
 import { dadosDoInsumo } from "@/lib/firebase/mutations/insumos";
 import {
   importarNota,
@@ -55,7 +63,7 @@ import {
 import { buscarLancamentoDaNota } from "@/lib/firebase/mutations/transacoes";
 import { useColecao } from "@/lib/hooks/useColecao";
 import { useConexao } from "@/lib/hooks/useDispositivo";
-import type { Insumo, Transacao } from "@/lib/types";
+import type { FichaTecnica, Insumo, Transacao } from "@/lib/types";
 import { prepararParaLeitura } from "@/lib/utils/imagem";
 import { useAuth, useContaId } from "@/providers/AuthProvider";
 
@@ -129,6 +137,18 @@ export function TelaNota() {
   );
   const { dados: insumos } = useColecao<Insumo>(consulta);
 
+  // A mesma consulta de `/insumos` e de `ListaFichas`, para cair no mesmo cache.
+  const consultaFichas = useMemo(
+    () =>
+      query(
+        colFichas(contaId),
+        where("arquivado", "==", false),
+        orderBy("nomeBusca"),
+      ),
+    [contaId],
+  );
+  const { dados: fichas } = useColecao<FichaTecnica>(consultaFichas);
+
   const [etapa, setEtapa] = useState<Etapa>("escolher");
   const [falha, setFalha] = useState<FalhaNota | null>(null);
   const [erroAoGravar, setErroAoGravar] = useState<string | null>(null);
@@ -151,6 +171,11 @@ export function TelaNota() {
 
   const [salvando, setSalvando] = useState(false);
   const [resultado, setResultado] = useState<ResultadoImportacao | null>(null);
+  /**
+   * O efeito nos produtos, guardado ao cadastrar: depois de gravar, o "antes"
+   * já é o preço novo e a conta daria zero.
+   */
+  const [efeitosGravados, setEfeitosGravados] = useState<EfeitoNaFicha[]>([]);
 
   /**
    * O que a compra trouxe, por `insumoId` e em unidade base.
@@ -184,10 +209,49 @@ export function TelaNota() {
     [insumos],
   );
 
+  /**
+   * As linhas pareadas e completas, com o custo pela mesma conta do cartão e a
+   * perda do material pareado: a nota não traz perda (`#d51`).
+   */
+  const pareadas = useMemo(
+    () =>
+      linhas.flatMap((linha) => {
+        const par = pares.get(linha.chave);
+        const anterior = par ? porId.get(par.insumoId) : undefined;
+        if (!anterior || !linhaCompleta(linha)) return [];
+        const custo = calcularCustoInsumo({
+          precoCompra: linha.precoCompra,
+          quantidadeCompra: linha.quantidadeCompra,
+          unidadeCompra: linha.unidadeCompra,
+          perdaPercentual: anterior.perdaPercentual,
+        });
+        return [{ anterior, custo }];
+      }),
+    [linhas, pares, porId],
+  );
+
+  // O que todos os preços novos fazem, de uma vez (`#d291`). Base trocada fica
+  // de fora, como no formulário: as fichas medem na base gravada.
+  const efeitos = useMemo(() => {
+    const novos: MaterialDeHoje[] = pareadas
+      .filter(
+        ({ anterior, custo }) => custo.unidadeBase === anterior.unidadeBase,
+      )
+      .map(({ anterior, custo }) => ({
+        id: anterior.id,
+        nome: anterior.nome,
+        custoUnidadeBaseCorrigido: custo.custoUnidadeBaseCorrigido,
+      }));
+    return novos.length > 0 ? efeitoDosPrecosNovos(fichas, insumos, novos) : [];
+  }, [pareadas, fichas, insumos]);
+
   const resumo: ResumoDaNota = {
     linhas: linhas.length,
     atualizacoes: linhas.filter((linha) => pares.has(linha.chave)).length,
     incompletas: linhas.filter((linha) => !linhaCompleta(linha)).length,
+    saltos: pareadas.filter(({ anterior, custo }) =>
+      saltoDePreco(anterior, custo),
+    ).length,
     conferencia: conferirTotal(linhas, total),
     removido: somarLinhas(removidas),
   };
@@ -239,6 +303,7 @@ export function TelaNota() {
     setLinhas([]);
     setRemovidas([]);
     setResultado(null);
+    setEfeitosGravados([]);
     setEntradas(new Map());
     setTotal(0);
     setCabecalho(CABECALHO_VAZIO);
@@ -339,6 +404,7 @@ export function TelaNota() {
   async function cadastrar() {
     setErroAoGravar(null);
     setSalvando(true);
+    const efeitosAntes = efeitos;
 
     try {
       const importadas: LinhaImportada[] = linhas.map((linha) => {
@@ -389,6 +455,7 @@ export function TelaNota() {
       );
 
       setResultado(gravado);
+      setEfeitosGravados(efeitosAntes);
       setEtapa("pronto");
     } catch {
       setErroAoGravar(
@@ -502,28 +569,34 @@ export function TelaNota() {
             </Bloco>
 
             <ul className="space-y-3">
-              {linhas.map((linha) => (
-                <CartaoLinhaNota
-                  key={linha.chave}
-                  linha={linha}
-                  par={pares.get(linha.chave)}
-                  aoMudar={(mudanca) =>
-                    setLinhas((anteriores) =>
-                      anteriores.map((atual) =>
-                        atual.chave === linha.chave
-                          ? { ...atual, ...mudanca }
-                          : atual,
-                      ),
-                    )
-                  }
-                  aoRemover={() => {
-                    setLinhas((anteriores) =>
-                      anteriores.filter((atual) => atual.chave !== linha.chave),
-                    );
-                    setRemovidas((anteriores) => [...anteriores, linha]);
-                  }}
-                />
-              ))}
+              {linhas.map((linha) => {
+                const par = pares.get(linha.chave);
+                return (
+                  <CartaoLinhaNota
+                    key={linha.chave}
+                    linha={linha}
+                    par={par}
+                    anterior={par ? porId.get(par.insumoId) : undefined}
+                    aoMudar={(mudanca) =>
+                      setLinhas((anteriores) =>
+                        anteriores.map((atual) =>
+                          atual.chave === linha.chave
+                            ? { ...atual, ...mudanca }
+                            : atual,
+                        ),
+                      )
+                    }
+                    aoRemover={() => {
+                      setLinhas((anteriores) =>
+                        anteriores.filter(
+                          (atual) => atual.chave !== linha.chave,
+                        ),
+                      );
+                      setRemovidas((anteriores) => [...anteriores, linha]);
+                    }}
+                  />
+                );
+              })}
             </ul>
 
             {removidas.length > 0 && (
@@ -548,6 +621,17 @@ export function TelaNota() {
               />
             )}
 
+            <EfeitoDoPreco
+              efeitos={efeitos}
+              titulo="O que esta compra muda nos seus produtos"
+              nivel="h2"
+              fecho={
+                efeitos.length === 1
+                  ? "Ao cadastrar, ele fica marcado para rever o preço em Produtos."
+                  : "Ao cadastrar, eles ficam marcados para rever o preço em Produtos."
+              }
+            />
+
             {linhas.length > 0 && (
               <BlocoCaixa
                 lancamento={lancamento}
@@ -565,6 +649,7 @@ export function TelaNota() {
         {etapa === "pronto" && resultado && (
           <Pronto
             resultado={resultado}
+            efeitos={efeitosGravados}
             aoLerOutra={recomecar}
             aoGuardar={
               entradas.size > 0
@@ -698,10 +783,13 @@ function ForaDaCompra({
  */
 function Pronto({
   resultado,
+  efeitos,
   aoLerOutra,
   aoGuardar,
 }: {
   resultado: ResultadoImportacao;
+  /** O efeito nos produtos, calculado antes de gravar. */
+  efeitos: EfeitoNaFicha[];
   aoLerOutra: () => void;
   /** Ausente quando nada da nota virou entrada — não há o que guardar. */
   aoGuardar?: () => void;
@@ -734,7 +822,8 @@ function Pronto({
               , com a compra guardada no histórico.
             </p>
           )}
-          {fichasMarcadas > 0 && (
+          {/* Sem a lista (as fichas não tinham carregado), fica a contagem. */}
+          {fichasMarcadas > 0 && efeitos.length === 0 && (
             <p>
               <strong className="num font-semibold text-ink">
                 {fichasMarcadas}
@@ -752,6 +841,34 @@ function Pronto({
             </p>
           )}
         </div>
+
+        {efeitos.length > 0 && (
+          <div className="mt-6 w-full max-w-lg text-left">
+            <EfeitoDoPreco
+              efeitos={efeitos}
+              titulo="O que esta compra mudou nos seus produtos"
+              fecho={
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <p>
+                    {efeitos.length === 1
+                      ? "Ele fica marcado para rever o preço em Produtos."
+                      : "Eles ficam marcados para rever o preço em Produtos."}
+                  </p>
+                  <Link
+                    href="/fichas"
+                    className={classesBotao({
+                      variante: "terciaria",
+                      tamanho: "sm",
+                      className: "-mr-3",
+                    })}
+                  >
+                    Ver em Produtos
+                  </Link>
+                </div>
+              }
+            />
+          </div>
+        )}
 
         {aoGuardar && (
           <p className="mt-5 max-w-[46ch] text-label text-ink-muted">

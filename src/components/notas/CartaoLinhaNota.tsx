@@ -1,6 +1,7 @@
 "use client";
 
-import { CircleAlert, Plus, RefreshCw, X } from "lucide-react";
+import { CircleAlert, Plus, RefreshCw, TriangleAlert, X } from "lucide-react";
+import { formatarReferencia } from "@/components/insumos/FichaDoMaterial";
 import { Campo, Seletor } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Selo } from "@/components/ui/Selo";
@@ -13,8 +14,14 @@ import {
   formatarMoeda,
   parseParaNumero,
 } from "@/lib/domain/money";
-import type { LinhaRascunho, Pareamento } from "@/lib/domain/notaFiscal";
 import {
+  saltoDePreco,
+  type CustoPorBase,
+  type LinhaRascunho,
+  type Pareamento,
+} from "@/lib/domain/notaFiscal";
+import {
+  custoDeReferencia,
   GRUPOS_UNIDADE,
   ROTULO_UNIDADE_BASE,
   ROTULO_UNIDADE_COMPRA,
@@ -60,12 +67,15 @@ export function linhaCompleta(linha: LinhaRascunho): boolean {
 export function CartaoLinhaNota({
   linha,
   par,
+  anterior,
   aoMudar,
   aoRemover,
 }: {
   linha: LinhaEditada;
   /** O insumo que esta linha atualiza, quando o pareamento acertou. */
   par?: Pareamento;
+  /** O custo gravado desse insumo, para desconfiar do salto (`#d291`). */
+  anterior?: CustoPorBase;
   aoMudar: (mudanca: Partial<LinhaEditada>) => void;
   aoRemover: () => void;
 }) {
@@ -77,6 +87,7 @@ export function CartaoLinhaNota({
   });
 
   const completa = linhaCompleta(linha);
+  const salto = completa && anterior ? saltoDePreco(anterior, custo) : null;
 
   return (
     <li className="overflow-hidden rounded-lg border border-line bg-surface">
@@ -179,7 +190,17 @@ export function CartaoLinhaNota({
           </Selo>
         )}
 
-        {completa ? (
+        {salto && anterior ? (
+          // Não bloqueia: preço dobra de verdade. Só troca a conta pela dúvida.
+          <p className="num flex items-start gap-1.5 text-label text-attention">
+            <TriangleAlert
+              aria-hidden
+              className="mt-0.5 size-4 shrink-0"
+              strokeWidth={1.75}
+            />
+            <span>{fraseDoSalto(anterior, custo)}</span>
+          </p>
+        ) : completa ? (
           <p className="num text-label text-ink-muted">
             {formatarMoeda(linha.precoCompra)}{" "}
             <span aria-label="dividido por">÷</span>{" "}
@@ -208,6 +229,17 @@ function faltaNaLinha(linha: LinhaRascunho): string {
   if (linha.nome.trim().length < 2) return "Falta o nome deste item.";
   if (linha.precoCompra <= 0) return "Falta o preço desta linha.";
   return "Falta dizer quanto vem na embalagem.";
+}
+
+/** "O quilo sai a R$ 54,90; era R$ 10,98. Confira a quantidade e a unidade." */
+function fraseDoSalto(anterior: CustoPorBase, novo: CustoPorBase): string {
+  const era = custoDeReferencia(
+    anterior.custoUnidadeBase,
+    anterior.unidadeBase,
+  );
+  const sai = custoDeReferencia(novo.custoUnidadeBase, novo.unidadeBase);
+  const rotulo = sai.rotulo[0]!.toUpperCase() + sai.rotulo.slice(1);
+  return `${rotulo} sai a ${formatarReferencia(sai.centavos, novo.unidadeBase)}; era ${formatarReferencia(era.centavos, anterior.unidadeBase)}. Confira a quantidade e a unidade.`;
 }
 
 function formatarNumero(valor: number): string {

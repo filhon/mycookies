@@ -16,6 +16,8 @@ export interface ResumoDaNota {
   atualizacoes: number;
   /** Quantas ainda não têm nome, preço ou embalagem. */
   incompletas: number;
+  /** Quantas pareadas com o preço por unidade dobrado ou pela metade. */
+  saltos: number;
   conferencia: ConferenciaTotal;
   /** O que ela tirou da lista, somado. */
   removido: Centavos;
@@ -38,12 +40,15 @@ export function RodapeNota({
   salvando: boolean;
   aoCadastrar: () => void;
 }) {
-  const { linhas, atualizacoes, incompletas, conferencia, removido } = resumo;
+  const { linhas, atualizacoes, incompletas, saltos, conferencia, removido } =
+    resumo;
 
   /** A diferença que a remoção não explica. Zero é a nota fechando. */
   const naoExplicado = conferencia.diferenca - removido;
   const tudoCerto =
-    incompletas === 0 && (naoExplicado === 0 || conferencia.total <= 0);
+    incompletas === 0 &&
+    saltos === 0 &&
+    (naoExplicado === 0 || conferencia.total <= 0);
 
   return (
     <RodapeFixo>
@@ -116,7 +121,30 @@ function Valor({ centavos }: { centavos: Centavos }) {
   );
 }
 
+/** O salto vem depois das incompletas, e antes da conferência do total. */
 function Frase({
+  resumo,
+  naoExplicado,
+}: {
+  resumo: ResumoDaNota;
+  naoExplicado: Centavos;
+}) {
+  const { saltos, incompletas, linhas } = resumo;
+  if (saltos === 0 || incompletas > 0 || linhas === 0) {
+    return <FraseDoTotal resumo={resumo} naoExplicado={naoExplicado} />;
+  }
+  return (
+    <>
+      <strong className="num font-semibold text-ink">{saltos}</strong>{" "}
+      {saltos === 1
+        ? "linha com o preço muito diferente do anterior"
+        : "linhas com o preço muito diferente do anterior"}
+      . <FraseDoTotal resumo={resumo} naoExplicado={naoExplicado} />
+    </>
+  );
+}
+
+function FraseDoTotal({
   resumo,
   naoExplicado,
 }: {

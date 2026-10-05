@@ -8,6 +8,7 @@ import type {
   Centavos,
   DataISO,
   Percentual,
+  UnidadeBase,
   UnidadeCompra,
 } from "@/lib/types";
 
@@ -701,6 +702,39 @@ function melhorPrefixo(
       Math.abs(a.nomeBusca.length - alvo.length) -
       Math.abs(b.nomeBusca.length - alvo.length),
   )[0];
+}
+
+// ---------------------------------------------------------------------------
+// A linha que pulou
+// ---------------------------------------------------------------------------
+
+/** O dobro ou mais, ou a metade ou menos, do custo por unidade base. */
+export const FATOR_SALTO = 2;
+
+/** O bastante de um custo para comparar: `Insumo` e `CustoInsumoCalculado` servem. */
+export interface CustoPorBase {
+  custoUnidadeBase: number;
+  unidadeBase: UnidadeBase;
+}
+
+/**
+ * Uma vírgula lida errado (R$ 125,00 por R$ 12,50) ou "1 g" por "1 kg" dão um
+ * custo por quilo absurdo; o preço de verdade raramente dobra de uma compra
+ * para a outra (`#d291`). Não bloqueia: só pede para conferir. Base diferente
+ * (o material era em gramas, a linha veio em unidades) ou sem preço anterior
+ * não se compara.
+ */
+export function saltoDePreco(
+  anterior: CustoPorBase,
+  novo: CustoPorBase,
+): "subiu" | "caiu" | null {
+  if (anterior.unidadeBase !== novo.unidadeBase) return null;
+  if (anterior.custoUnidadeBase <= 0 || novo.custoUnidadeBase <= 0) return null;
+  if (novo.custoUnidadeBase >= anterior.custoUnidadeBase * FATOR_SALTO)
+    return "subiu";
+  if (novo.custoUnidadeBase * FATOR_SALTO <= anterior.custoUnidadeBase)
+    return "caiu";
+  return null;
 }
 
 // ---------------------------------------------------------------------------

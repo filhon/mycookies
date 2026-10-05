@@ -9,7 +9,7 @@ import {
   custosDeHoje,
   derivarFicha,
   refazerCustoPelaConfiguracao,
-  efeitoDoPrecoNovo,
+  efeitoDosPrecosNovos,
   ehEmbalagem,
   kitDividido,
   levaDoKit,
@@ -923,7 +923,7 @@ describe("usoDoMaterial", () => {
   });
 });
 
-describe("efeitoDoPrecoNovo", () => {
+describe("efeitoDosPrecosNovos", () => {
   const COOKIE = fichaHoje();
   // Lote gravado 2425 com chocolate a 4; 100 g de chocolate no lote de 20.
   const BRIGADEIRO = fichaHoje({
@@ -964,10 +964,10 @@ describe("efeitoDoPrecoNovo", () => {
   });
 
   it("preço sobe: só quem usa, a maior queda primeiro", () => {
-    const efeito = efeitoDoPrecoNovo(
+    const efeito = efeitoDosPrecosNovos(
       [BRIGADEIRO, PAO, COOKIE],
       [FARINHA, chocolate(4)],
-      chocolate(6.5),
+      [chocolate(6.5)],
     );
 
     // Cookie: 243 → 293, sobra 447 → 397. Brigadeiro: 2425/20 = 121 → 2675/20
@@ -983,10 +983,10 @@ describe("efeitoDoPrecoNovo", () => {
   });
 
   it("preço cai: a maior alta primeiro", () => {
-    const efeito = efeitoDoPrecoNovo(
+    const efeito = efeitoDosPrecosNovos(
       [BRIGADEIRO, COOKIE],
       [FARINHA, chocolate(4)],
-      chocolate(2),
+      [chocolate(2)],
     );
 
     // Cookie: 2025/10 = 203, sobra 487. Brigadeiro: 2225/20 = 111, sobra 579.
@@ -1002,17 +1002,17 @@ describe("efeitoDoPrecoNovo", () => {
     });
 
     // 260 − 243 = 17; com chocolate a 6,50, 260 − 293 = −33.
-    const [entra] = efeitoDoPrecoNovo(
+    const [entra] = efeitoDosPrecosNovos(
       [apertado],
       [FARINHA, chocolate(4)],
-      chocolate(6.5),
+      [chocolate(6.5)],
     );
     expect([entra?.antes, entra?.depois]).toEqual([17, -33]);
 
-    const [sai] = efeitoDoPrecoNovo(
+    const [sai] = efeitoDosPrecosNovos(
       [apertado],
       [FARINHA, chocolate(6.5)],
-      chocolate(4),
+      [chocolate(4)],
     );
     expect([sai?.antes, sai?.depois]).toEqual([-33, 17]);
   });
@@ -1040,10 +1040,10 @@ describe("efeitoDoPrecoNovo", () => {
       precificacao: { ...COOKIE.precificacao, precoVenda: 2000 },
     });
 
-    const efeito = efeitoDoPrecoNovo(
+    const efeito = efeitoDosPrecosNovos(
       [COOKIE, kit],
       [FARINHA, chocolate(4)],
-      chocolate(6.5),
+      [chocolate(6.5)],
     );
 
     // 6 × (293 − 243) = 300 a mais na caixa: sobra 542 → 242.
@@ -1053,6 +1053,37 @@ describe("efeitoDoPrecoNovo", () => {
     ]);
   });
 
+  it("vários preços de uma vez, em sentidos opostos na mesma ficha", () => {
+    const farinha = (custo: number): MaterialDeHoje => ({
+      ...FARINHA,
+      custoUnidadeBaseCorrigido: custo,
+    });
+
+    // Cookie: farinha +500, chocolate −200, lote 2725, 273, sobra 447 → 417.
+    // Pão: farinha +500, 293, sobra 397. Brigadeiro: chocolate −100, 2325/20 =
+    // 116, sobra 574. A maior diferença primeiro, subindo ou caindo.
+    expect(
+      efeitoDosPrecosNovos(
+        [BRIGADEIRO, PAO, COOKIE],
+        [FARINHA, chocolate(4)],
+        [farinha(2.25), chocolate(3)],
+      ).map((e) => [e.fichaId, e.antes, e.depois]),
+    ).toEqual([
+      ["pao", 447, 397],
+      ["cookie", 447, 417],
+      ["brigadeiro", 569, 574],
+    ]);
+
+    // +500 na farinha e −500 no chocolate: o cookie não muda e sai da lista.
+    expect(
+      efeitoDosPrecosNovos(
+        [COOKIE],
+        [FARINHA, chocolate(4)],
+        [farinha(2.25), chocolate(1.5)],
+      ),
+    ).toEqual([]);
+  });
+
   it("material sem uso, ou o mesmo preço: nada", () => {
     const manteiga = {
       id: "manteiga",
@@ -1060,13 +1091,14 @@ describe("efeitoDoPrecoNovo", () => {
       custoUnidadeBaseCorrigido: 5,
     };
     expect(
-      efeitoDoPrecoNovo([COOKIE], [FARINHA, chocolate(4), manteiga], {
-        ...manteiga,
-        custoUnidadeBaseCorrigido: 9,
-      }),
+      efeitoDosPrecosNovos(
+        [COOKIE],
+        [FARINHA, chocolate(4), manteiga],
+        [{ ...manteiga, custoUnidadeBaseCorrigido: 9 }],
+      ),
     ).toEqual([]);
     expect(
-      efeitoDoPrecoNovo([COOKIE], [FARINHA, chocolate(4)], chocolate(4)),
+      efeitoDosPrecosNovos([COOKIE], [FARINHA, chocolate(4)], [chocolate(4)]),
     ).toEqual([]);
   });
 });
