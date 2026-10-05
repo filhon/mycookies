@@ -21,11 +21,13 @@ import { EfeitoDoPreco } from "@/components/insumos/EfeitoDoPreco";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { BlocoCaixa } from "./BlocoCaixa";
 import {
-  CartaoLinhaNota,
+  COLUNAS_NOTA,
+  LinhaNota,
   linhaCompleta,
   linhaEditada,
+  linhaParaConferir,
   type LinhaEditada,
-} from "./CartaoLinhaNota";
+} from "./LinhaNota";
 import { LendoANota, PortaDaNota } from "./PortaDaNota";
 import { RodapeNota, type ResumoDaNota } from "./RodapeNota";
 import {
@@ -64,6 +66,7 @@ import { buscarLancamentoDaNota } from "@/lib/firebase/mutations/transacoes";
 import { useColecao } from "@/lib/hooks/useColecao";
 import { useConexao } from "@/lib/hooks/useDispositivo";
 import type { FichaTecnica, Insumo, Transacao } from "@/lib/types";
+import { cn } from "@/lib/utils/cn";
 import { prepararParaLeitura } from "@/lib/utils/imagem";
 import { useAuth, useContaId } from "@/providers/AuthProvider";
 
@@ -157,6 +160,11 @@ export function TelaNota() {
   const [total, setTotal] = useState(0);
   const [linhas, setLinhas] = useState<LinhaEditada[]>([]);
   const [removidas, setRemovidas] = useState<LinhaEditada[]>([]);
+
+  /** A chave da única linha aberta para corrigir (`#d292`). */
+  const [aberta, setAberta] = useState<string | null>(null);
+  /** Só a primeira com problema, ao chegar, é rolada à vista. */
+  const rolarParaAberta = useRef(false);
 
   /**
    * `null` enquanto ela não tocar no bloco do caixa: aí vale o padrão, que é
@@ -255,6 +263,8 @@ export function TelaNota() {
     conferencia: conferirTotal(linhas, total),
     removido: somarLinhas(removidas),
   };
+  // Disjuntas: o salto só se mede em linha completa.
+  const paraConferir = resumo.incompletas + resumo.saltos;
 
   // Um lançamento por nota, com o valor sendo a soma das linhas **mantidas** e
   // não o total impresso: o shampoo que ela tirou não é do negócio.
@@ -296,8 +306,18 @@ export function TelaNota() {
     };
   }, [contaId, chaveDaGuarda, etapa]);
 
+  // A linha aberta ao chegar, à vista: ela não acha o problema rolando.
+  useEffect(() => {
+    if (etapa !== "conferindo" || !aberta || !rolarParaAberta.current) return;
+    rolarParaAberta.current = false;
+    document
+      .getElementById(`linha-${aberta}`)
+      ?.scrollIntoView({ block: "center" });
+  }, [etapa, aberta]);
+
   function recomecar() {
     setEtapa("escolher");
+    setAberta(null);
     setFalha(null);
     setErroAoGravar(null);
     setLinhas([]);
@@ -321,8 +341,21 @@ export function TelaNota() {
       cnpj: rascunho.cnpj,
     });
     setTotal(rascunho.total);
-    setLinhas(rascunho.linhas.map(linhaEditada));
+    const novas = rascunho.linhas.map(linhaEditada);
+    setLinhas(novas);
     setRemovidas([]);
+
+    // A primeira com problema chega aberta; sem problema, todas fechadas.
+    const paresNovos = parearComInsumos(novas, insumos);
+    const primeira = novas.find((linha) => {
+      const par = paresNovos.get(linha.chave);
+      return linhaParaConferir(
+        linha,
+        par ? porId.get(par.insumoId) : undefined,
+      );
+    });
+    setAberta(primeira?.chave ?? null);
+    rolarParaAberta.current = !!primeira;
     setLancamentoManual(null);
     setEtapa("conferindo");
   }
@@ -568,36 +601,85 @@ export function TelaNota() {
               )}
             </Bloco>
 
-            <ul className="space-y-3">
-              {linhas.map((linha) => {
-                const par = pares.get(linha.chave);
-                return (
-                  <CartaoLinhaNota
-                    key={linha.chave}
-                    linha={linha}
-                    par={par}
-                    anterior={par ? porId.get(par.insumoId) : undefined}
-                    aoMudar={(mudanca) =>
-                      setLinhas((anteriores) =>
-                        anteriores.map((atual) =>
-                          atual.chave === linha.chave
-                            ? { ...atual, ...mudanca }
-                            : atual,
-                        ),
-                      )
-                    }
-                    aoRemover={() => {
-                      setLinhas((anteriores) =>
-                        anteriores.filter(
-                          (atual) => atual.chave !== linha.chave,
-                        ),
+            {linhas.length > 0 && (
+              <section aria-label="As linhas da nota">
+                <p className="num text-label text-ink-muted">
+                  {linhas.length} {linhas.length === 1 ? "linha" : "linhas"}
+                  {paraConferir > 0 && (
+                    <>
+                      {" · "}
+                      <strong className="font-semibold text-ink">
+                        {paraConferir} para conferir
+                      </strong>
+                    </>
+                  )}
+                </p>
+
+                {/* Na ordem do papel: ela confere com a nota na mão. */}
+                <div className="mt-2 overflow-hidden rounded-lg border border-line bg-surface">
+                  {/* O cabeçalho das colunas é para quem vê: cada célula da
+                      linha carrega o rótulo em `sr-only` (`#d225`). O vão da
+                      direita é o do "×". */}
+                  <div
+                    aria-hidden
+                    className="hidden border-b border-line text-micro font-semibold uppercase tracking-wide text-ink-muted xl:flex"
+                  >
+                    <div
+                      className={cn(
+                        "grid min-w-0 flex-1 gap-x-4 py-2 pl-4",
+                        COLUNAS_NOTA,
+                      )}
+                    >
+                      <span>Impresso</span>
+                      <span>Material</span>
+                      <span className="text-right">Quantidade</span>
+                      <span className="text-right">Preço pago</span>
+                      <span className="text-right">Preço por unidade</span>
+                      <span className="text-right">O que acontece</span>
+                    </div>
+                    <span className="w-12 shrink-0" />
+                  </div>
+
+                  <ul className="divide-y divide-line">
+                    {linhas.map((linha) => {
+                      const par = pares.get(linha.chave);
+                      return (
+                        <LinhaNota
+                          key={linha.chave}
+                          linha={linha}
+                          par={par}
+                          anterior={par ? porId.get(par.insumoId) : undefined}
+                          aberta={aberta === linha.chave}
+                          aoAbrir={() => setAberta(linha.chave)}
+                          aoFechar={() => setAberta(null)}
+                          aoMudar={(mudanca) =>
+                            setLinhas((anteriores) =>
+                              anteriores.map((atual) =>
+                                atual.chave === linha.chave
+                                  ? { ...atual, ...mudanca }
+                                  : atual,
+                              ),
+                            )
+                          }
+                          aoRemover={() => {
+                            setLinhas((anteriores) =>
+                              anteriores.filter(
+                                (atual) => atual.chave !== linha.chave,
+                              ),
+                            );
+                            setRemovidas((anteriores) => [
+                              ...anteriores,
+                              linha,
+                            ]);
+                            if (aberta === linha.chave) setAberta(null);
+                          }}
+                        />
                       );
-                      setRemovidas((anteriores) => [...anteriores, linha]);
-                    }}
-                  />
-                );
-              })}
-            </ul>
+                    })}
+                  </ul>
+                </div>
+              </section>
+            )}
 
             {removidas.length > 0 && (
               <ForaDaCompra

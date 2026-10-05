@@ -90,11 +90,11 @@ exceção.
 
 ## Critérios de aceite
 
-- [ ] Lista com divisórias na ordem do papel, uma linha aberta por vez.
-- [ ] A primeira com problema abre sozinha; a contagem diz quantas faltam conferir.
-- [ ] Grade de colunas a partir de `xl`.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d292` escrito; `ESTADO.md` atualizado.
+- [x] Lista com divisórias na ordem do papel, uma linha aberta por vez.
+- [x] A primeira com problema abre sozinha; a contagem diz quantas faltam conferir.
+- [x] Grade de colunas a partir de `xl`.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d292` escrito; `ESTADO.md` atualizado.
 
 ---
 

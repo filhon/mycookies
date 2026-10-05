@@ -261,8 +261,8 @@ function MotivoDeLer({
 
 /**
  * Uma linha impressa e a mesma linha como a conferência a mostra. É desenho,
- * não dado: nada lê o Firestore. As classes e o `Selo` são os do
- * `CartaoLinhaNota`, para o exemplo não divergir da tela que ele promete.
+ * não dado: nada lê o Firestore. O `Selo` e o "o kg" são os da `LinhaNota`
+ * aberta, para o exemplo não divergir da tela que ele promete.
  */
 function ExemploDaLinha({ className }: { className?: string }) {
   return (

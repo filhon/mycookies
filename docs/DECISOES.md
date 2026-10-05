@@ -8771,3 +8771,46 @@ materiais, novos[])`, que troca todos os `novos` antes do segundo `custosDeHoje`
 **Consequência.** A marcação `custoDesatualizado` é a de antes (por `insumoIds`): um kit que só usa o
 material pela receita de dentro aparece no bloco e não é marcado, como já acontecia no formulário.
 Refazer o custo das fichas ao cadastrar continua fora, decisão de quem conduz o projeto.
+
+## D292 · A conferência em linhas, uma aberta por vez
+
+**Status:** vigente · decidida em 2026-10-05, spec `090-a-conferencia-em-linhas.md`.
+
+**Contexto.** A conferência da nota era um cartão de seis campos por item (~380px no celular):
+vinte linhas davam ~7.600px de rolagem e 120 campos abertos para ela confirmar que quinze estavam
+certas, e a linha incompleta ou com salto (`#d291`) tinha o mesmo peso das outras. O `DESIGN.md`
+já dizia que lista de material é lista com divisórias, e não grade de cartões.
+
+**Decisão.**
+
+- **`CartaoLinhaNota` virou `LinhaNota`**, numa lista com divisórias (`--surface`, raio 14px,
+  `--border`) na ordem do papel. **Fechada**, a linha é um botão inteiro de 56px: o impresso em
+  micro `--ink-subtle` em cima, o nome em `body` 600 e, embaixo, "Marca · 1 kg · Atualiza" (ou
+  "Novo"); à direita o preço pago e o custo de referência ("R$ 5,49 o quilo", o rótulo de
+  `custoDeReferencia`, como em Materiais, e não "o kg"). Incompleta ou com salto, o detalhe dá
+  lugar à frase de atenção com o ícone, na largura da linha. O "×" fica fora do botão, à direita,
+  em 48px de largura.
+- **Aberta**, os seis campos de antes, o selo ("Atualiza · … · era …" ou "Novo"), a conta da
+  linha e "Pronto" (terciário). A frase de atenção não se repete no painel: ela continua na linha,
+  logo acima, e muda enquanto ela corrige. **Uma aberta por vez**, decidida pela tela
+  (`aberta: chave | null`). Abrir por toque ou teclado leva o foco ao primeiro campo; `Esc` no
+  painel e "Pronto" fecham e devolvem o foco à linha. Abrir uma linha fecha a de cima, e a linha
+  tocada ficaria subindo o tamanho daquele painel: o toque faz `flushSync` e `scrollBy` da
+  diferença, e ela fica sob o dedo.
+- **`aria-expanded` na linha e `aria-controls` só com o painel montado**: o painel fechado não
+  existe no DOM (vinte linhas × seis campos escondidos não ajudam ninguém), e um `aria-controls`
+  apontando para id ausente é erro de validação. O painel é `role="group"` com "Corrigir …".
+- **A chegada:** `receber` pareia as linhas novas e abre a primeira em `linhaParaConferir`
+  (incompleta, ou com salto, na mesma régua do rodapé), rolada ao centro por `scrollIntoView` uma
+  vez. Sem problema, todas fechadas. Essa abertura não move o foco: no celular, abriria o teclado
+  sem ela pedir.
+- **A contagem** acima da lista: "18 linhas · 2 para conferir", com "para conferir" (incompletas
+  mais saltos, que são disjuntos) só acima de zero.
+- **A partir de `xl`**, a mesma `<li>` vira grade, no padrão de Materiais (`#d225`): Impresso ·
+  Material · Quantidade · Preço pago · Preço por unidade · O que acontece, com `COLUNAS_NOTA` e
+  `minmax(0, …)`. Cabeçalho em micro 600 caixa alta `--ink-muted`, `aria-hidden`, com o vão do "×";
+  cada célula leva o rótulo em `sr-only`. A frase de atenção vai numa linha da grade, na largura
+  inteira. O painel aberto ocupa a largura toda com os campos em quatro colunas, como antes.
+
+**Consequência.** O exemplo estático da porta (`#d290`) continua com o selo e "o kg": ele mostra a
+linha aberta, e a tradução do impresso continua a mesma.
