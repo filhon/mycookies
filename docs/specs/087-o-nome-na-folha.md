@@ -78,11 +78,11 @@ regra, nenhum índice, nenhuma dependência.**
 
 ## Critérios de aceite
 
-- [ ] Nome do negócio editável, gravado na conta e no espelho.
-- [ ] O pé da folha ao vivo, pelo mesmo componente da folha.
-- [ ] Assinar com o dedo, nos mesmos limites da imagem.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d288` e `#d289` escritos; `ESTADO.md` atualizado.
+- [x] Nome do negócio editável, gravado na conta e no espelho.
+- [x] O pé da folha ao vivo, pelo mesmo componente da folha.
+- [x] Assinar com o dedo, nos mesmos limites da imagem.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d288` e `#d289` escritos; `ESTADO.md` atualizado.
 
 ---
 

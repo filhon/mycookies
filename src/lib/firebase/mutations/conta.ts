@@ -1,5 +1,6 @@
 import { Timestamp, updateDoc } from "firebase/firestore";
 import { docConta } from "../colecoes";
+import { despachar } from "./despachar";
 import { VERSAO_SCHEMA } from "@/lib/types";
 
 /**
@@ -39,6 +40,15 @@ export function definirAvisosPorEmail(
     v: VERSAO_SCHEMA,
     avisosPorEmail: receber,
   });
+}
+
+/**
+ * O nome do negócio, pelo "Salvar" da Configuração (spec 087, `#d288`). A
+ * barra lateral, o cardápio e os e-mails leem daqui; o espelho
+ * `configuracao.nomeNegocio` vai na escrita da configuração, ao lado.
+ */
+export function renomearNegocio(contaId: string, nome: string): void {
+  despachar(updateDoc(docConta(contaId), { v: VERSAO_SCHEMA, nome }));
 }
 
 export function concluirPrimeirosPassos(contaId: string): Promise<void> {

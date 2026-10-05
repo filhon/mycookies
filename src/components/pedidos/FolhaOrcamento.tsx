@@ -190,10 +190,24 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
         </div>
       </section>
 
+      <PeDaFolha negocio={negocio} />
+    </article>
+  );
+}
+
+/**
+ * As assinaturas e o rodapé, que a prévia de "A sua marca" também desenha,
+ * com o formulário no lugar do gravado (spec 087, `#d289`). `flex-wrap` e
+ * `max-w-full` só agem na coluna estreita da prévia: no A4 as duas linhas
+ * cabem lado a lado.
+ */
+export function PeDaFolha({ negocio }: { negocio: Orcamento["negocio"] }) {
+  return (
+    <>
       {/* Coladas ao fim do conteúdo, e não ao pé da página: uma folha de três
           itens não deve ter um vão de 15 cm antes da assinatura. */}
-      <section className="mt-[20pt] flex gap-8 break-inside-avoid">
-        <div className="w-[70mm]">
+      <section className="mt-[20pt] flex flex-wrap gap-8 break-inside-avoid">
+        <div className="w-[70mm] max-w-full">
           {/* A assinatura apoiada na linha. Sem imagem, o nome sobre a linha
               ainda é uma assinatura. */}
           <div className="flex h-[16mm] items-end">
@@ -211,7 +225,7 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
             <p className="text-ink-muted">{negocio.nome}</p>
           </div>
         </div>
-        <div className="w-[70mm]">
+        <div className="w-[70mm] max-w-full">
           <div className="h-[16mm]" />
           <div className="border-t-[0.5pt] border-line-strong pt-[4pt]">
             <p className="font-semibold">Aprovado por</p>
@@ -238,7 +252,7 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
           <p className="shrink-0 text-ink-subtle">feito com Rende</p>
         )}
       </footer>
-    </article>
+    </>
   );
 }
 

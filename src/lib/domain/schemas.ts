@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TAMANHO_MAXIMO_NOME } from "./cadastro";
 import { PERDA_MAXIMA } from "./custoInsumo";
 import { DESPESAS_MAXIMAS } from "./custosOperacionais";
 import { ehHoraValida } from "./pedido";
@@ -85,6 +86,13 @@ export type EntradaFormaPagamento = z.infer<typeof esquemaFormaPagamento>;
  * gravados juntos em um documento só.
  */
 export const esquemaConfiguracao = z.object({
+  // Grava `contas/{id}.nome` e o espelho (spec 087, `#d288`). O teto é o do
+  // cadastro, onde o nome nasce.
+  nomeNegocio: z
+    .string()
+    .trim()
+    .min(1, "Diga o nome do negócio: é o que a cliente vê.")
+    .max(TAMANHO_MAXIMO_NOME, `Até ${TAMANHO_MAXIMO_NOME} letras.`),
   valorHoraTrabalho: z
     .number()
     .int()

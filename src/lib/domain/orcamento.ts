@@ -161,6 +161,38 @@ function opcional<K extends string>(
   return limpo ? ({ [chave]: limpo } as Record<K, string>) : {};
 }
 
+/**
+ * O pé da folha: o contato, a frase, a assinatura e o "feito com". A folha lê
+ * a configuração gravada; a prévia da Configuração passa o formulário, para
+ * mostrar a folha enquanto ela digita (spec 087, `#d289`).
+ */
+export function negocioDaFolha(
+  conta: Pick<Conta, "nome" | "proprietaria">,
+  configuracao: Partial<
+    Pick<
+      ConfiguracaoGeral,
+      | "nomeNegocio"
+      | "contato"
+      | "assinaturaDataUrl"
+      | "frase"
+      | "ocultarFeitoCom"
+    >
+  > | null,
+): Orcamento["negocio"] {
+  return {
+    nome: configuracao?.nomeNegocio?.trim() || conta.nome,
+    proprietaria: conta.proprietaria,
+    ...opcional("telefone", configuracao?.contato?.telefone),
+    ...opcional(
+      "instagram",
+      configuracao?.contato?.instagram?.trim().replace(/^@/, ""),
+    ),
+    ...opcional("assinaturaDataUrl", configuracao?.assinaturaDataUrl),
+    ...opcional("frase", configuracao?.frase),
+    feitoCom: !configuracao?.ocultarFeitoCom,
+  };
+}
+
 /** Tudo o que a folha desenha, montado de uma vez. */
 export function montarOrcamento(entrada: {
   pedido: PedidoParaOrcar;
@@ -197,18 +229,7 @@ export function montarOrcamento(entrada: {
     : undefined;
 
   return {
-    negocio: {
-      nome: configuracao?.nomeNegocio.trim() || conta.nome,
-      proprietaria: conta.proprietaria,
-      ...opcional("telefone", configuracao?.contato?.telefone),
-      ...opcional(
-        "instagram",
-        configuracao?.contato?.instagram?.trim().replace(/^@/, ""),
-      ),
-      ...opcional("assinaturaDataUrl", configuracao?.assinaturaDataUrl),
-      ...opcional("frase", configuracao?.frase),
-      feitoCom: !configuracao?.ocultarFeitoCom,
-    },
+    negocio: negocioDaFolha(conta, configuracao),
     codigo: pedido.codigo,
     emitidoEmISO: hojeISO,
     ...opcional("validoAteISO", pedido.validoAteISO),

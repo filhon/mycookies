@@ -2,6 +2,7 @@
 
 import { TriangleAlert } from "lucide-react";
 import { useId, useRef, useState, type ReactNode } from "react";
+import { AreaDeAssinatura } from "./AreaDeAssinatura";
 import { Botao } from "./Botao";
 import { tamanhoDoDataUrl, temAlpha } from "@/lib/domain/orcamento";
 import { cn } from "@/lib/utils/cn";
@@ -29,6 +30,11 @@ export interface CampoImagemProps {
   formato?: "quadrado" | "largo";
   rotuloEscolher: string;
   rotuloTirar: string;
+  /**
+   * Com isto, um botão ao lado de "escolher" abre a `AreaDeAssinatura`, cujo
+   * PNG passa pela mesma redução e pelo mesmo teto (spec 087, `#d289`).
+   */
+  rotuloDesenhar?: string;
 }
 
 /**
@@ -49,14 +55,17 @@ export function CampoImagem({
   formato = "quadrado",
   rotuloEscolher,
   rotuloTirar,
+  rotuloDesenhar,
 }: CampoImagemProps) {
   const id = useId();
   const entrada = useRef<HTMLInputElement>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [reduzindo, setReduzindo] = useState(false);
+  const [desenhando, setDesenhando] = useState(false);
 
   async function escolher(arquivo: File | undefined) {
     if (!arquivo) return;
+    setDesenhando(false);
     setErro(null);
     setReduzindo(true);
     try {
@@ -131,6 +140,15 @@ export function CampoImagem({
           >
             {rotuloEscolher}
           </Botao>
+          {rotuloDesenhar && (
+            <Botao
+              aria-expanded={desenhando}
+              onClick={() => setDesenhando((aberta) => !aberta)}
+              disabled={reduzindo}
+            >
+              {rotuloDesenhar}
+            </Botao>
+          )}
           {valor && (
             <Botao
               variante="terciaria"
@@ -145,6 +163,10 @@ export function CampoImagem({
           )}
         </div>
       </div>
+
+      {desenhando && (
+        <AreaDeAssinatura aoUsar={(arquivo) => void escolher(arquivo)} />
+      )}
 
       {erro ? (
         <p

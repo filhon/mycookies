@@ -8635,3 +8635,65 @@ pedia que a faixa dissesse.
 
 **Consequência.** A lista e as "Contas que repetem" do Caixa (070) são a mesma coisa vista de dois
 lados, e continuam separadas até decidir qual manda (spec 086, § 5).
+
+## D288 · O nome do negócio se muda na Configuração, e mora na conta
+
+**Status:** vigente · decidida em 2026-10-05, spec `087-o-nome-na-folha.md`.
+
+**Contexto.** "MyCookie's" está na barra lateral, na folha e no cardápio, e mora em
+`contas/{id}.nome` (espelhado em `configuracao.nomeNegocio`, D14), mas nenhuma tela tinha o campo.
+Quem errou no cadastro ou trocou de nome escrevia para o suporte.
+
+**Decisão.**
+
+- **"Nome do negócio"** é o primeiro campo de "A sua marca", no bloco da folha, com a dica de onde
+  ele aparece. Grava com o "Salvar" da tela: `renomearNegocio` (`mutations/conta.ts`,
+  `v: VERSAO_SCHEMA`, despachada) escreve `contas/{id}.nome` só quando o nome mudou, e o espelho
+  vai no `corpoDaConfiguracao` de sempre. A dona já escreve o documento da conta pelas regras de
+  hoje; nenhuma regra mudou.
+- `esquemaConfiguracao.nomeNegocio`: de 1 a 80 caracteres (`TAMANHO_MAXIMO_NOME`, o teto do
+  cadastro), com o erro no campo. Vazio não salva. O nome é gravado sem os espaços das pontas.
+- **A conta é a verdade na semeadura**: o campo nasce com `conta.nome` e só cai no espelho se a
+  conta ainda não chegou do cache. Antes era o contrário. O conserto do salvar que relia
+  `conta.nome` para um nome vazio saiu: agora o vazio é erro dela, visível no campo.
+- Conferido no passo 2: não há outro espelho. A barra lateral, o cardápio público
+  (`lib/server/cardapio.ts`), o e-mail diário e o "Fale com a gente" leem `contas/{id}.nome` ao
+  vivo; a folha lê o espelho e cai na conta.
+
+**Consequência.** Numa conta nova cuja conta ainda não chegou do cache e sem configuração gravada, o
+campo nasce vazio e o "Salvar" pede o nome. Esperar a conta para semear foi recusado: uma leitura
+que não chega deixaria a tela no esqueleto para sempre.
+
+## D289 · O pé da folha ao vivo, e a assinatura com o dedo
+
+**Status:** vigente · decidida em 2026-10-05, spec `087-o-nome-na-folha.md`.
+
+**Contexto.** Telefone, Instagram, frase, assinatura e "feito com Rende" vão para o rodapé de um
+documento que a cliente recebe, e a tela mostrava só campos. A assinatura pedia um PNG, que ela
+não tem no celular, na bancada.
+
+**Decisão.**
+
+- **`PeDaFolha`** (em `pedidos/FolhaOrcamento.tsx`): as duas linhas de assinatura e o rodapé,
+  saídos da `FolhaOrcamento`, que o usa. A prévia de "A sua marca" ("Assim fica o pé da folha",
+  abaixo dos campos) desenha o mesmo componente com o formulário, e não o gravado, numa caixa com
+  a classe `folha` (papel claro nos dois temas, como a folha) na largura da coluna, sem o zoom do
+  A4: no celular a folha inteira encolhida seria ilegível, e a prévia existe para ser lida.
+- `negocioDaFolha` (domínio, `orcamento.ts`) monta o `negocio` da folha a partir da conta e da
+  configuração, saída de `montarOrcamento`: a folha e a prévia limpam o `@`, a frase e o nome do
+  mesmo jeito.
+- As linhas de assinatura ganharam `flex-wrap` e `max-w-full`, que só agem na coluna estreita da
+  prévia; no A4 as duas cabem lado a lado e nada mudou na impressão.
+- **"Assinar aqui"** (`rotuloDesenhar` do `CampoImagem`, secundário, ao lado de "Escolher imagem")
+  abre `ui/AreaDeAssinatura`: um `<canvas>` com eventos de ponteiro, `touch-action: none`, fundo
+  transparente e traço `--ink` lido da área, que também é `folha`: no escuro o `--ink` de fora é
+  claro e a assinatura sumiria no papel. A linha onde apoiar fica fora do canvas, fora do PNG.
+  "Usar esta" (secundário) e "Limpar" (terciário), desabilitados sem traço.
+- O PNG é **recortado no traço** antes de sair, para encher a linha da folha (16 mm de altura), e
+  entra pelo mesmo `escolher` do arquivo: a mesma redução (`ASSINATURA_LADO_PX`, PNG) e o mesmo teto
+  (`ASSINATURA_MAX_BYTES`).
+- "Tirar" virou "Tirar a assinatura"; o exemplo do telefone virou `(11) 90000-0000`; a dica da
+  assinatura fala do dedo antes da foto.
+
+**Consequência.** Girar o celular com a área aberta estica o traço (o tamanho é medido ao montar);
+"Limpar" resolve, e está marcado com `ponytail`.

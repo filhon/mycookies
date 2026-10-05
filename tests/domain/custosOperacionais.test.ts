@@ -173,6 +173,7 @@ describe("as despesas fixas item a item (spec 086)", () => {
 
   it("o esquema recusa nome vazio, valor negativo e mais de 20 linhas", () => {
     const base = {
+      nomeNegocio: "MyCookie's",
       valorHoraTrabalho: 0,
       horasProdutivasMes: 80,
       custoEnergiaHora: 0,
@@ -194,5 +195,11 @@ describe("as despesas fixas item a item (spec 086)", () => {
     expect(
       com(Array.from({ length: 21 }, (_, i) => ({ nome: `D${i}`, valor: 1 }))),
     ).toBe(false);
+
+    // O nome do negócio vazio não salva (spec 087, `#d288`).
+    const comNome = (nomeNegocio: string) =>
+      esquemaConfiguracao.safeParse({ ...base, nomeNegocio }).success;
+    expect(comNome("  ")).toBe(false);
+    expect(comNome("x".repeat(81))).toBe(false);
   });
 });

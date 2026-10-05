@@ -50,6 +50,7 @@ import {
 import { DespesasFixas } from "./DespesasFixas";
 import { FazerAConta } from "./FazerAConta";
 import { parametrosDePreco } from "@/lib/domain/configuracaoSugerida";
+import { TAMANHO_MAXIMO_NOME } from "@/lib/domain/cadastro";
 import {
   custoDeMinutos,
   custoIndiretoPorHora,
@@ -75,7 +76,9 @@ import {
 import {
   ASSINATURA_LADO_PX,
   ASSINATURA_MAX_BYTES,
+  negocioDaFolha,
 } from "@/lib/domain/orcamento";
+import { PeDaFolha } from "@/components/pedidos/FolhaOrcamento";
 import {
   errosDeLinha,
   errosPorCampo,
@@ -87,7 +90,10 @@ import {
   salvarConfiguracao,
   type DadosConfiguracao,
 } from "@/lib/firebase/mutations/configuracao";
-import { definirAvisosPorEmail } from "@/lib/firebase/mutations/conta";
+import {
+  definirAvisosPorEmail,
+  renomearNegocio,
+} from "@/lib/firebase/mutations/conta";
 import { refazerFichasPelaConfiguracao } from "@/lib/firebase/mutations/fichas";
 import type { RateioOperacional } from "@/lib/domain/custoFicha";
 import { useDocumento } from "@/lib/hooks/useColecao";
@@ -275,7 +281,10 @@ function estadoInicial(
   const precificacao = dado?.precificacao ?? CONFIGURACAO_SUGERIDA.precificacao;
 
   return {
-    nomeNegocio: dado?.nomeNegocio ?? nomeConta ?? "",
+    // A conta é onde o nome mora (D14); o espelho só cobre a conta que ainda
+    // não chegou do cache. Numa conta nova sem os dois, o campo nasce vazio e
+    // o "Salvar" pede o nome (`#d288`).
+    nomeNegocio: nomeConta ?? dado?.nomeNegocio ?? "",
     valorHoraTrabalho: operacional.valorHoraTrabalho,
     horasProdutivasMes: texto(operacional.horasProdutivasMes),
     custoEnergiaHora: operacional.custoEnergiaHora,
@@ -559,6 +568,7 @@ function ConfiguracaoDaDona() {
   const contaId = useContaId();
   const { conta } = useAuth();
   const idOcultarFeitoCom = useId();
+  const idPeDaFolha = useId();
 
   const situacao = conta
     ? situacaoDaConta(paraSituar(conta), new Date().getTime())
@@ -709,17 +719,12 @@ function ConfiguracaoDaDona() {
     if (!estado) return;
     setFalha(null);
 
-    // O documento da conta é outra assinatura, e pode não ter chegado na hora
-    // em que a configuração semeou o formulário. O nome é relido aqui porque é
-    // o único campo desta tela que não sai do teclado: numa conta nova ele
-    // nasceria vazio e o espelho de `contas/{id}.nome` iria embora da escrita.
-    const paraGravar: EstadoConfiguracao = {
-      ...estado,
-      nomeNegocio: estado.nomeNegocio || (conta?.nome ?? ""),
-    };
+    const nome = estado.nomeNegocio.trim();
+    const paraGravar: EstadoConfiguracao = { ...estado, nomeNegocio: nome };
 
     const dados = paraDados(paraGravar);
     const resultado = esquemaConfiguracao.safeParse({
+      nomeNegocio: nome,
       ...dados.operacional,
       ...dados.precificacao,
       contato: dados.contato,
@@ -738,17 +743,17 @@ function ConfiguracaoDaDona() {
     setSalvando(true);
     try {
       await salvarConfiguracao(contaId, dados);
+      // O nome mora na conta; a configuração leva o espelho (`#d288`).
+      if (nome !== conta?.nome) renomearNegocio(contaId, nome);
       setRecibo(
         rateioMudou
           ? await refazerFichasPelaConfiguracao(contaId, rateio)
           : null,
       );
-      // A base passa a ser o que foi gravado. O nome entra por atualização
-      // funcional para não desfazer o que ela tenha digitado durante a escrita.
+      // A base passa a ser o que foi gravado: o nome sem os espaços das pontas,
+      // que o campo também perde.
       setEstado((anterior) =>
-        anterior
-          ? { ...anterior, nomeNegocio: paraGravar.nomeNegocio }
-          : anterior,
+        anterior ? { ...anterior, nomeNegocio: nome } : anterior,
       );
       setBase(assinatura(paraGravar));
       setNuncaSalvou(false);
@@ -1165,14 +1170,26 @@ function ConfiguracaoDaDona() {
               id={ANCORA_DO_CONTATO}
               icone={FileText}
               titulo="Na folha do orçamento"
-              descricao="O que a empresa vê no rodapé e na assinatura da folha."
+              descricao="O nome, o contato e a assinatura que a cliente vê."
             >
+              <Campo
+                rotulo="Nome do negócio"
+                dica="Como a cliente vê: na folha, no cardápio e no topo do app."
+                autoComplete="organization"
+                maxLength={TAMANHO_MAXIMO_NOME}
+                value={estado.nomeNegocio}
+                onChange={(evento) =>
+                  definir("nomeNegocio", evento.target.value)
+                }
+                erro={erros.nomeNegocio}
+              />
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <Campo
                   rotulo="Telefone"
                   type="tel"
                   autoComplete="tel"
-                  placeholder="81 98696-6176"
+                  placeholder="(11) 90000-0000"
                   value={estado.telefone}
                   onChange={(evento) =>
                     definir("telefone", evento.target.value)
@@ -1231,7 +1248,7 @@ function ConfiguracaoDaDona() {
 
               <CampoImagem
                 rotulo="Assinatura"
-                dica="Uma imagem PNG com fundo transparente fica melhor. Uma foto da assinatura em papel branco também serve."
+                dica="Assine com o dedo, ou escolha a foto de uma assinatura em papel branco."
                 formato="largo"
                 valor={estado.assinaturaDataUrl}
                 aoMudar={(dataUrl) => definir("assinaturaDataUrl", dataUrl)}
@@ -1241,8 +1258,28 @@ function ConfiguracaoDaDona() {
                 }}
                 maxBytes={ASSINATURA_MAX_BYTES}
                 rotuloEscolher="Escolher imagem"
-                rotuloTirar="Tirar"
+                rotuloDesenhar="Assinar aqui"
+                rotuloTirar="Tirar a assinatura"
               />
+
+              {/* O pé da folha pelo mesmo componente da folha, com o que está
+                  na tela, e não o gravado (`#d289`). Papel, nos dois temas. */}
+              {conta && (
+                <section
+                  aria-labelledby={idPeDaFolha}
+                  className="flex flex-col gap-2"
+                >
+                  <h4
+                    id={idPeDaFolha}
+                    className="text-label font-medium text-ink"
+                  >
+                    Assim fica o pé da folha
+                  </h4>
+                  <div className="folha w-full! min-h-0! rounded-md border border-line px-4! pt-0! pb-4! text-[10.5pt] leading-[1.45]">
+                    <PeDaFolha negocio={negocioDaFolha(conta, dados)} />
+                  </div>
+                </section>
+              )}
             </BlocoConfiguracao>
 
             {/* O cardápio público (spec 031) é vitrine, e não conta: saiu da
