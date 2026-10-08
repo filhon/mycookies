@@ -1,4 +1,5 @@
-import { Check } from "lucide-react";
+import { Archive, Check } from "lucide-react";
+import { Botao } from "@/components/ui/Botao";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { RodapeFixo } from "@/components/ui/RodapeFixo";
 import type { ResumoDaLista } from "@/lib/domain/listaCompras";
@@ -14,8 +15,18 @@ import type { ResumoDaLista } from "@/lib/domain/listaCompras";
  * inteira, e mostrar os dois lado a lado era repetir. Depois do primeiro item, o
  * grande passa a ser o que falta, com o total em rótulo; com tudo marcado, o que
  * ela gastou. A contagem ao lado faz o que a faixa de prosa fazia.
+ *
+ * Com tudo marcado, "Fechar a lista" abre o bloco do fechar (`#d301`). Some com
+ * o teclado aberto, como o resto do que não é correção (`#d75`).
  */
-export function RodapeCompras({ resumo }: { resumo: ResumoDaLista }) {
+export function RodapeCompras({
+  resumo,
+  aoFechar,
+}: {
+  resumo: ResumoDaLista;
+  /** Ausente quando o bloco do fechar já está aberto. */
+  aoFechar?: () => void;
+}) {
   const nadaMarcado = resumo.comprados === 0;
   const tudoNoCarrinho = resumo.aComprar > 0 && resumo.restante === 0;
 
@@ -63,6 +74,19 @@ export function RodapeCompras({ resumo }: { resumo: ResumoDaLista }) {
             </span>
           )}
         </p>
+
+        {tudoNoCarrinho && aoFechar && (
+          <Botao
+            larguraTotal
+            className="mt-2 apertado:hidden sm:mt-0 sm:w-auto"
+            onClick={aoFechar}
+            iconeInicial={
+              <Archive aria-hidden className="size-4" strokeWidth={1.75} />
+            }
+          >
+            Fechar a lista
+          </Botao>
+        )}
       </div>
     </RodapeFixo>
   );

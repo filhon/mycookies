@@ -92,12 +92,12 @@ acesa no mercado. **Nenhum campo, nenhuma regra, nenhum índice, nenhuma depend�
 
 ## Critérios de aceite
 
-- [ ] Refaz sozinha sem marcado; uma faixa com o botão com marcado; sem laço de escrita.
-- [ ] Um "Contar" por vez; "Refazer" fora do cabeçalho.
-- [ ] Fechar com um primário por contexto.
-- [ ] Tela acesa com item por comprar.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d301` e `#d302` escritos; `ESTADO.md`; linha em `novidades.ts`.
+- [x] Refaz sozinha sem marcado; uma faixa com o botão com marcado; sem laço de escrita.
+- [x] Um "Contar" por vez; "Refazer" fora do cabeçalho.
+- [x] Fechar com um primário por contexto.
+- [x] Tela acesa com item por comprar.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d301` e `#d302` escritos; `ESTADO.md`; linha em `novidades.ts`.
 
 ---
 

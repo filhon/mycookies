@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Archive,
   CalendarRange,
@@ -10,6 +10,7 @@ import {
   CircleAlert,
   ClipboardList,
   FileQuestion,
+  Info,
   RefreshCw,
   ScanLine,
   ShoppingCart,
@@ -26,6 +27,7 @@ import { agruparPorCorredor, ROTULO_CORREDOR } from "@/lib/domain/corredores";
 import { diaVizinho, rotuloDia } from "@/lib/domain/datas";
 import { contagemDoInsumo, entradasDaLista } from "@/lib/domain/estoque";
 import { useConexao } from "@/lib/hooks/useDispositivo";
+import { useTelaAcesa } from "@/lib/hooks/useTelaAcesa";
 import {
   entraNaLista,
   explodirDemanda,
@@ -261,11 +263,11 @@ export function ListaDoMercado({
    *
    * Medida em `quantidadePacotes`, e deliberadamente não específica de estoque:
    * a mesma comparação pega mudança de embalagem e pedido confirmado depois.
-   * Sem a frase, contar a despensa pareceria não fazer nada — `/compras` desenha
-   * `lista.itens`, e quem refaz é o botão.
+   * `/compras` desenha `lista.itens`, então sem refazer contar a despensa
+   * pareceria não fazer nada.
    *
-   * Cala quando o período divergiu, porque aí a frase do período já está
-   * mandando refazer, e duas frases dizendo a mesma coisa é uma a mais.
+   * Só vale no mesmo período: com o período divergente, `montada` é de outro
+   * recorte e a comparação não diz nada.
    */
   const desatualizada = useMemo(() => {
     if (!lista || lista.periodoFim !== periodoFim) return false;
@@ -279,6 +281,36 @@ export function ListaDoMercado({
       (item) => agora.get(item.insumoId) !== item.quantidadePacotes,
     );
   }, [lista, periodoFim, montada, itens]);
+
+  const periodoMudou = !!lista && lista.periodoFim !== periodoFim;
+  const algoMarcado = itens.some((item) => item.comprado);
+  const ficouParaTras = periodoMudou || desatualizada;
+
+  /**
+   * Sem nada marcado a lista se refaz sozinha (`#d301`): não há carrinho a
+   * perder, e o que ela vê passa a ser sempre a lista do período escolhido.
+   *
+   * A assinatura (período e quantidades) segura o laço: a mesma não se escreve
+   * duas vezes, nem quando a escrita ainda não voltou do cache. Duas abas que
+   * refazem com a mesma entrada gravam o mesmo corpo.
+   */
+  const assinatura = `${periodoFim}|${montada.linhas
+    .map((l) => `${l.insumoId}:${l.quantidadePacotes}`)
+    .join(",")}`;
+  const despachada = useRef<string | null>(null);
+  useEffect(() => {
+    if (!lista || algoMarcado || !ficouParaTras) return;
+    if (despachada.current === assinatura) return;
+    despachada.current = assinatura;
+    regerarListaCompras(contaId, lista.id, dadosDaLista()).catch(() =>
+      setFalha(
+        "Não deu para refazer a lista agora. Tente de novo em instantes.",
+      ),
+    );
+  });
+
+  // A tela não apaga entre um corredor e outro (`#d302`).
+  useTelaAcesa(!!lista && resumo.comprados < resumo.aComprar);
 
   /**
    * O que ela marcou como comprado, pronto para semear a contagem.
@@ -306,6 +338,52 @@ export function ListaDoMercado({
     router.push("/insumos/nota");
   };
 
+  // O rodapé abre o mesmo bloco lá embaixo, e o foco vai com ele.
+  const abrirFechar = () => {
+    setConfirmandoFechar(true);
+    requestAnimationFrame(() =>
+      document.getElementById("fechar-lista")?.focus(),
+    );
+  };
+
+  /**
+   * As saídas do fechar, na ordem em que uma vence a outra (`#d301`): a nota faz
+   * o que a despensa faz e mais dois, e a despensa faz o que o fechar faz e mais
+   * um. O primário é a primeira que dá para usar agora; o resto vai embaixo.
+   */
+  const saidas: Saida[] = [
+    ...(dona
+      ? [
+          {
+            rotulo: "Ler a nota e fechar",
+            frase:
+              "Corrige os preços, lança a compra no caixa e propõe a contagem.",
+            Icone: ScanLine,
+            acao: fecharELerANota,
+            desligada: !online,
+          },
+        ]
+      : []),
+    ...(entradasDaCompra.size > 0
+      ? [
+          {
+            rotulo: "Guardar na despensa e fechar",
+            frase: `Abre a contagem já somada com ${entradasDaCompra.size === 1 ? "o item que você marcou" : `os ${entradasDaCompra.size} itens que você marcou`}.`,
+            Icone: ClipboardList,
+            acao: guardarNaDespensa,
+          },
+        ]
+      : []),
+    {
+      rotulo: "Fechar a lista",
+      frase: "Guarda a lista como está, e a próxima nasce limpa.",
+      Icone: Archive,
+      acao: fechar,
+    },
+  ];
+  const primaria = saidas.find((saida) => !saida.desligada) ?? saidas[0]!;
+  const outras = saidas.filter((saida) => saida !== primaria);
+
   return (
     <>
       <CabecalhoPagina
@@ -314,26 +392,12 @@ export function ListaDoMercado({
         recolhe
         descricao="O que os pedidos já fechados e a reserva de fornadas vão exigir do mercado, em pacote e em reais."
         acao={
-          // Em coluna no celular: as duas ações lado a lado espremeriam o
-          // título em 360px. Contar aparece **também quando não há lista** —
-          // domingo à noite sem pedido confirmado é exatamente quando ela conta.
-          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-start">
-            <EntradaContagem />
-            {lista && (
-              <Botao
-                onClick={montar}
-                iconeInicial={
-                  <RefreshCw
-                    aria-hidden
-                    className="size-4"
-                    strokeWidth={1.75}
-                  />
-                }
-              >
-                Refazer
-              </Botao>
-            )}
-          </div>
+          // Contar aparece **também quando não há lista**: domingo à noite sem
+          // pedido confirmado é exatamente quando ela conta. Some enquanto o
+          // cartão da contagem está na tela, que tem o dele ao lado do motivo
+          // (`#d301`). "Refazer" saiu daqui: sem marcado a lista se refaz
+          // sozinha, e com marcado o botão mora na faixa que diz por quê.
+          semContagem.length === 0 ? <EntradaContagem /> : undefined
         }
       >
         <Periodo
@@ -345,41 +409,67 @@ export function ListaDoMercado({
         />
       </CabecalhoPagina>
 
-      {/* O respiro acompanha o rodapé, que perdeu a faixa de prosa (`#d300`). */}
-      <div className={cn("mt-4 space-y-4", lista && "pb-40 lg:pb-32")}>
-        {/* A lista na tela é a gravada, e o período acima é o escolhido. Quando
-            os dois divergem, dizer isso é obrigatório: sem a frase, as pílulas
-            estariam descrevendo uma lista que não é a que está embaixo delas. */}
-        {lista && lista.periodoFim !== periodoFim && (
-          <p className="rounded-lg border border-line bg-sunken px-4 py-3 text-label text-ink-muted">
-            Esta lista foi montada para as entregas até{" "}
-            <span className="num font-semibold text-ink">
-              {rotuloDia(lista.periodoFim)}
-            </span>
-            . Toque em <strong className="font-semibold">Refazer</strong> para
-            incluir as de até {rotuloDia(periodoFim)}. O que você já marcou
-            continua marcado.
-          </p>
+      {/* O respiro acompanha o rodapé (`#d300`), que no celular ganha a linha
+          de "Fechar a lista" com tudo marcado (`#d301`). */}
+      <div
+        className={cn(
+          "mt-4 space-y-4",
+          lista &&
+            (resumo.aComprar > 0 && resumo.restante === 0
+              ? "pb-56 sm:pb-40 lg:pb-32"
+              : "pb-40 lg:pb-32"),
         )}
-
-        {/* Contar depois de montar a lista não muda a lista gravada: `/compras`
-            desenha `lista.itens`, e quem refaz é o botão. Sem esta frase,
-            contar pareceria não fazer nada — e ela não contaria de novo na
-            semana seguinte, que é a aposta desta spec inteira.
-
-            A frase nomeia a contagem primeiro porque é a causa mais provável e
-            é a que ela acabou de provocar, mas não afirma só isso: a mesma
-            comparação de `quantidadePacotes` pega um pedido confirmado agora e
-            um pacote de tamanho diferente, e uma frase que jurasse "você
-            contou" seria falsa nesses dois casos. */}
-        {desatualizada && (
-          <p className="rounded-lg border border-line bg-sunken px-4 py-3 text-label text-ink-muted">
-            A conta mudou depois que esta lista foi montada: uma contagem da
-            despensa, um pedido novo, outro tamanho de pacote. Toque em{" "}
-            <strong className="font-semibold text-ink">Refazer</strong> para
-            descontar o que você tem agora. O que já está marcado continua
-            marcado.
-          </p>
+      >
+        {/* Com algo marcado a lista não se refaz sozinha, e a tela diz que
+            ficou para trás numa faixa só, com o botão dentro (`#d301`): é a
+            ação da tela enquanto a faixa existe. A frase da conta não jura
+            "você contou": a mesma comparação pega um pedido confirmado agora e
+            um pacote de tamanho diferente. */}
+        {lista && algoMarcado && ficouParaTras && (
+          <section
+            aria-label="A lista ficou para trás"
+            className="rounded-lg border border-info/30 bg-info-soft p-4 lg:p-5"
+          >
+            <p className="flex items-start gap-2.5 text-label text-ink">
+              <Info
+                aria-hidden
+                className="mt-0.5 size-4 shrink-0 text-info"
+                strokeWidth={1.75}
+              />
+              <span className="num max-w-[60ch]">
+                {periodoMudou ? (
+                  <>
+                    Esta lista é de até{" "}
+                    <strong className="font-semibold">
+                      {rotuloDia(lista.periodoFim)}
+                    </strong>
+                    , e o período escolhido vai até {rotuloDia(periodoFim)}.
+                  </>
+                ) : (
+                  "A conta mudou depois desta lista: uma contagem da despensa, um pedido novo ou outro tamanho de pacote."
+                )}
+              </span>
+            </p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+              <Botao
+                variante="primaria"
+                tamanho="lg"
+                onClick={montar}
+                iconeInicial={
+                  <RefreshCw
+                    aria-hidden
+                    className="size-5"
+                    strokeWidth={1.75}
+                  />
+                }
+              >
+                Refazer
+              </Botao>
+              <p className="text-label text-ink-muted">
+                O que você já marcou continua marcado.
+              </p>
+            </div>
+          </section>
         )}
 
         {semContagem.length > 0 && (
@@ -424,7 +514,7 @@ export function ListaDoMercado({
           <div className="overflow-hidden rounded-lg border border-line bg-surface">
             <EstadoVazio
               titulo="Nada a comprar por enquanto"
-              descricao="Nenhum pedido confirmado neste período consome material, e nenhum produto pede reserva. Confirme um orçamento ou aumente o período, e refaça a lista."
+              descricao="Nenhum pedido confirmado neste período consome material, e nenhum produto pede reserva. Confirme um orçamento ou aumente o período."
             />
           </div>
         ) : (
@@ -519,91 +609,92 @@ export function ListaDoMercado({
 
         {lista &&
           (confirmandoFechar ? (
-            <div className="rounded-lg border border-line-strong bg-sunken p-4">
-              <p className="max-w-[60ch] text-label text-ink">
-                Fechar guarda esta lista como está e deixa a próxima nascer
-                limpa, sem nenhum item já marcado. É o que se faz quando a
-                compra terminou.
-              </p>
+            // Um primário pelo contexto e o resto embaixo de "Ou" (`#d301`).
+            // A despensa propõe a contagem com os campos preenchidos, e não
+            // grava: a compra sabe quanto entrou e não o que saiu desde então.
+            <section
+              id="fechar-lista"
+              tabIndex={-1}
+              aria-labelledby="fechar-lista-titulo"
+              className="rounded-lg border border-line-strong bg-sunken p-4 outline-none lg:p-5"
+            >
+              <h2
+                id="fechar-lista-titulo"
+                className="text-subheading font-semibold text-ink"
+              >
+                A compra terminou?
+              </h2>
 
-              <p className="mt-2 max-w-[60ch] text-label text-ink-muted">
-                Com o cupom na mão, ler a nota corrige os preços e lança a
-                compra no caixa de uma vez.
-              </p>
-
-              {/* A compra sabe quanto entrou e não sabe o que saiu desde então:
-                  somar e gravar seria inventar a metade que falta. Então ela
-                  propõe, com os campos já preenchidos, e a decisão continua
-                  sendo de quem está de pé na frente da despensa. */}
-              {entradasDaCompra.size > 0 && (
-                <p className="mt-2 max-w-[60ch] text-label text-ink-muted">
-                  Você marcou{" "}
-                  <strong className="num font-semibold text-ink">
-                    {entradasDaCompra.size}
-                  </strong>{" "}
-                  {entradasDaCompra.size === 1 ? "item" : "itens"} como
-                  {entradasDaCompra.size === 1 ? " comprado" : " comprados"}.
-                  Guardar na despensa abre a contagem já somada com o que
-                  entrou, para você conferir enquanto tira das sacolas.
+              <div className="mt-3">
+                <Botao
+                  variante="primaria"
+                  tamanho="lg"
+                  larguraTotal
+                  className="sm:w-auto"
+                  onClick={primaria.acao}
+                  iconeInicial={
+                    <primaria.Icone
+                      aria-hidden
+                      className="size-5"
+                      strokeWidth={1.75}
+                    />
+                  }
+                >
+                  {primaria.rotulo}
+                </Botao>
+                <p className="mt-1.5 max-w-[60ch] text-label text-ink-muted">
+                  {primaria.frase}
                 </p>
+              </div>
+
+              {outras.length > 0 && (
+                <div className="mt-5">
+                  <p className="text-label text-ink-muted">Ou</p>
+                  <ul className="mt-1 space-y-2">
+                    {outras.map((saida) => (
+                      <li key={saida.rotulo}>
+                        <Botao
+                          variante="terciaria"
+                          tamanho="sm"
+                          className="-ml-3"
+                          disabled={saida.desligada}
+                          onClick={saida.acao}
+                          iconeInicial={
+                            <saida.Icone
+                              aria-hidden
+                              className="size-4"
+                              strokeWidth={1.75}
+                            />
+                          }
+                        >
+                          {saida.rotulo}
+                        </Botao>
+                        <p className="max-w-[60ch] text-label text-ink-muted">
+                          {saida.frase}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                  <AvisoLeituraSemRede className="mt-3" />
+                </div>
               )}
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Botao tamanho="sm" onClick={() => setConfirmandoFechar(false)}>
-                  Continuar comprando
-                </Botao>
+              <div className="mt-4 border-t border-line pt-3">
                 <Botao
+                  variante="terciaria"
                   tamanho="sm"
-                  variante={
-                    entradasDaCompra.size > 0 ? "secundaria" : "primaria"
-                  }
-                  onClick={fechar}
+                  className="-ml-3"
+                  onClick={() => setConfirmandoFechar(false)}
                 >
-                  Fechar a lista
+                  Voltar
                 </Botao>
-                {dona && (
-                  <Botao
-                    tamanho="sm"
-                    variante={online ? "primaria" : "secundaria"}
-                    disabled={!online}
-                    onClick={fecharELerANota}
-                    iconeInicial={
-                      <ScanLine
-                        aria-hidden
-                        className="size-4"
-                        strokeWidth={1.75}
-                      />
-                    }
-                  >
-                    Fechar e ler a nota
-                  </Botao>
-                )}
-                {entradasDaCompra.size > 0 && (
-                  <Botao
-                    tamanho="sm"
-                    variante={online && dona ? "secundaria" : "primaria"}
-                    onClick={guardarNaDespensa}
-                    iconeInicial={
-                      <ClipboardList
-                        aria-hidden
-                        className="size-4"
-                        strokeWidth={1.75}
-                      />
-                    }
-                  >
-                    Fechar e guardar na despensa
-                  </Botao>
-                )}
               </div>
-              <div className="mt-2">
-                <AvisoLeituraSemRede />
-              </div>
-            </div>
+            </section>
           ) : (
             <div className="border-t border-line pt-5">
               <Botao
                 tamanho="sm"
-                onClick={() => setConfirmandoFechar(true)}
+                onClick={abrirFechar}
                 iconeInicial={
                   <Archive aria-hidden className="size-4" strokeWidth={1.75} />
                 }
@@ -614,9 +705,23 @@ export function ListaDoMercado({
           ))}
       </div>
 
-      {lista && <RodapeCompras resumo={resumo} />}
+      {lista && (
+        <RodapeCompras
+          resumo={resumo}
+          aoFechar={confirmandoFechar ? undefined : abrirFechar}
+        />
+      )}
     </>
   );
+}
+
+interface Saida {
+  rotulo: string;
+  frase: string;
+  Icone: typeof Archive;
+  acao: () => void;
+  /** Sem rede, a nota não lê: fica embaixo, desligada, com o aviso. */
+  desligada?: boolean;
 }
 
 /** O horizonte que a lista gravada usou, para a tela reabrir no mesmo recorte. */

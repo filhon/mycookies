@@ -9171,3 +9171,63 @@ linhas que a compra; e o rodapé mostrava o mesmo número duas vezes antes do pr
 
 **Consequência.** O "você pode fechar a lista no fim da página" do rodapé com tudo marcado
 sumiu: "Fechar esta lista" fica logo depois do carrinho e do resumo fechado, a pouca rolagem.
+
+## D301 · A lista que se refaz sozinha
+
+**Status:** vigente · decidida em 2026-10-08, spec `099-a-lista-que-se-refaz-sozinha.md`.
+
+**Contexto.** Com "7 dias" escolhido e a lista gravada para outro fim, o topo de `/compras`
+mostrava uma faixa cinza mandando tocar em "Refazer", às vezes uma segunda ("A conta mudou…"),
+e logo abaixo o cartão da contagem: três caixas parecidas antes do primeiro item. O botão que a
+faixa mandava tocar era secundário, no cabeçalho, ao lado de "Contar", e "Contar" aparecia
+duas vezes em 300px. O fechar tinha quatro botões, três parágrafos e um primário que trocava de
+botão conforme o estado.
+
+**Decisão.**
+
+- **Nada marcado** e (período escolhido diferente do gravado ou `desatualizada`): a tela chama
+  `regerarListaCompras` sozinha, num `useEffect`. Sem marcado não há carrinho a perder. Um
+  `useRef` guarda a assinatura despachada (`periodoFim` e `insumoId:quantidadePacotes` de cada
+  linha de `montada`), e a mesma assinatura não se escreve duas vezes, nem enquanto a escrita
+  ainda não voltou do cache. Conferido antes do código: `regerarListaCompras` com a mesma
+  entrada grava o mesmo corpo (só `atualizadoEm` muda), então duas abas abertas convergem.
+  Falha cai no `setFalha` de sempre, sem novo despacho até a assinatura mudar.
+- **Algo marcado**: uma faixa só, informativa (`info-soft`, `Info`), com uma frase por motivo
+  (o período, "Esta lista é de até 11 de out., e o período escolhido vai até 15 de out.", ou a
+  conta) e **"Refazer"** primário, `lg`, dentro, com "O que você já marcou continua marcado." ao
+  lado. Os dois motivos não coexistem na tela: com o período divergente, `montada` é de outro
+  recorte e `desatualizada` não diz nada, como antes.
+- O "Refazer" do cabeçalho saiu. "Montar a lista" da primeira vez continua manual.
+- "Contar" do cabeçalho some enquanto o cartão "sem contagem recente" está na tela; o do cartão
+  fica, ao lado do motivo.
+- **O fechar**: "A compra terminou?", um primário pelo contexto (dona com rede, "Ler a nota e
+  fechar"; senão, com algo marcado, "Guardar na despensa e fechar"; senão, "Fechar a lista"),
+  uma frase embaixo, e as outras saídas como terciário sob "Ou", cada uma com a sua frase. A nota
+  sem rede fica embaixo, desligada, com o `AvisoLeituraSemRede`. "Continuar comprando" virou
+  "Voltar", terciário, no pé do bloco. A ordem é de inclusão: a nota faz o que a despensa faz e
+  mais dois, a despensa faz o que o fechar faz e mais um.
+- **Tudo marcado**: o rodapé ganha "Fechar a lista" (secundário, largura toda no celular), que
+  abre o mesmo bloco e leva o foco a ele. Some com o bloco aberto e com o teclado aberto
+  (`apertado:hidden`, `#d75`); a moldura do `RodapeFixo` não mudou. O respiro da lista sobe para
+  `pb-56` no celular enquanto o botão existe.
+
+**Consequência.** A faixa de "Refazer" só aparece quando há carrinho a perder, que é quando
+refazer é uma decisão. "Nada a comprar por enquanto" perdeu o "e refaça a lista": aumentar o
+período já refaz.
+
+## D302 · A tela acesa no mercado
+
+**Status:** vigente · decidida em 2026-10-08, spec `099-a-lista-que-se-refaz-sozinha.md`.
+
+**Contexto.** Entre um corredor e outro o celular dormia, e ela desbloqueava com a mão que
+segura a cesta. App de lista que se paga (Paprika, AnyList) mantém a tela acesa.
+
+**Decisão.** `useTelaAcesa(ativo)` em `lib/hooks/useTelaAcesa.ts`:
+`navigator.wakeLock.request("screen")` enquanto `ativo` e a aba visível, pedido de novo no
+`visibilitychange` (o navegador solta sozinho quando a aba some), solto ao desmontar ou quando
+`ativo` vira falso. Sem suporte ou com o pedido recusado, não faz nada e não diz nada. Em
+`/compras`, `ativo` é haver lista com item por comprar não marcado: marcou tudo, a tela volta a
+apagar.
+
+**Consequência.** Fornada e receita ficam fora (spec própria, se a 099 provar o valor). Sem
+dependência: a API é do navegador, e o tipo vem do `lib.dom`.
