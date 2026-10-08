@@ -64,6 +64,28 @@ export function formatarQuantidade(
 }
 
 /**
+ * O que falta, dito como se compra (`#d300`): ninguém leva 0,59 ml.
+ *
+ * Arredonda **para cima**, porque para baixo promete menos do que a receita
+ * pede: abaixo de 100, o inteiro; de 100 a 999, a dezena; em kg e l, uma casa.
+ * 1388 g → "1,4 kg" · 10,59 ml → "11 ml" · 376,67 g → "380 g" · 3,2 un → "4 un"
+ */
+export function quantidadeParaOMercado(
+  quantidadeBase: number,
+  unidadeBase: UnidadeBase,
+): string {
+  const passo =
+    unidadeBase === "un" || quantidadeBase < 100
+      ? 1
+      : quantidadeBase < 1000
+        ? 10
+        : 100;
+  // A folga engole o resto de ponto flutuante: 300,0000001 g continua 300 g.
+  const acima = Math.ceil((quantidadeBase - 1e-6) / passo) * passo;
+  return formatarQuantidade(acima, unidadeBase);
+}
+
+/**
  * O custo no número da etiqueta da gôndola (`#d220`): o quilo, o litro ou a
  * unidade. O do quilo e o do litro saem em centavos inteiros; o da unidade
  * continua fracionário (luva a R$ 0,0875).

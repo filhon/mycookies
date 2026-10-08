@@ -4,6 +4,7 @@ import {
   daBase,
   formatarQuantidade,
   paraBase,
+  quantidadeParaOMercado,
   unidadeBaseDe,
 } from "@/lib/domain/unidades";
 
@@ -38,6 +39,27 @@ describe("formatarQuantidade", () => {
 
   it("não usa casa decimal em contagem", () => {
     expect(formatarQuantidade(12, "un")).toBe("12 un");
+  });
+});
+
+describe("quantidadeParaOMercado", () => {
+  it("arredonda para cima, no passo de cada faixa", () => {
+    expect(quantidadeParaOMercado(10.59, "ml")).toBe("11 ml");
+    expect(quantidadeParaOMercado(99.2, "g")).toBe("100 g");
+    expect(quantidadeParaOMercado(376.67, "g")).toBe("380 g");
+    expect(quantidadeParaOMercado(1388, "g")).toBe("1,4 kg");
+    expect(quantidadeParaOMercado(1696, "ml")).toBe("1,7 l");
+    expect(quantidadeParaOMercado(3.2, "un")).toBe("4 un");
+  });
+
+  it("deixa o número redondo como está", () => {
+    expect(quantidadeParaOMercado(300.0000001, "g")).toBe("300 g");
+    expect(quantidadeParaOMercado(1400, "g")).toBe("1,4 kg");
+    expect(quantidadeParaOMercado(2, "un")).toBe("2 un");
+  });
+
+  it("sobe de escala quando a dezena passa de 999", () => {
+    expect(quantidadeParaOMercado(995, "g")).toBe("1 kg");
   });
 });
 

@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-08",
+    titulo: "A lista de compras cabe no celular",
+    frase:
+      "O preço aparece em toda linha, o pacote vem primeiro e o que você marca desce para o carrinho.",
+    href: "/compras",
+  },
+  {
+    dataISO: "2026-10-08",
     titulo: "A nota chega pelo Compartilhar",
     frase:
       "No PDF da nota, toque em Compartilhar e escolha o Rende: ela já chega para ler.",

@@ -9131,3 +9131,43 @@ meta havia meses. A página não sabia a quem estava falando.
 cliente cadastrada é o que a tela lista, e não há campo melhor sem escrita nova. Sem rede, uma
 conta que ainda não abriu alguma tela vê a lista de hoje até a rede voltar. Tela nova fora do
 menu entra em `FUNCIONALIDADES` com o fato dela, ou sem fato e em cima.
+
+## D300 · A lista que cabe no celular
+
+**Status:** vigente · decidida em 2026-10-08, spec `098-a-lista-que-cabe-no-celular.md`.
+
+**Contexto.** No print de 393px de `/compras`, nenhuma linha mostrava o preço: o botão da linha
+era `flex-1` sem `min-w-0`, e o `truncate` de dentro fazia a largura mínima dele ser a da frase
+inteira. O pacote, que é o que vai pro carrinho, estava em rótulo cinza com o mesmo peso da falta
+em precisão de balança ("10,59 ml"); as frases de contagem, forno e reserva eram texto em
+`--ink-subtle`; o marcado ficava riscado no meio do corredor; "Não precisa comprar" tinha mais
+linhas que a compra; e o rodapé mostrava o mesmo número duas vezes antes do primeiro toque.
+
+**Decisão.**
+
+- **A linha:** nome, depois "**7 pacotes**" em `body` 600 `--ink` com "de 200 g · falta 1,4 kg"
+  em `label` `--ink-muted`, e o preço à direita sempre à vista. `min-w-0` no botão da linha e no
+  número de "Não precisa comprar". O nome trunca; as frases de baixo quebram em até duas linhas
+  (`line-clamp-2`), em `--ink-muted`, com o ícone em `--ink-subtle` (a contagem ignorada segue em
+  ocre com o triângulo). O componente `Frase` em `LinhaCompra.tsx` é o único dono disso.
+- **A falta arredondada para cima** por `quantidadeParaOMercado` em `domain/unidades.ts`, com
+  teste: abaixo de 100 g/ml o inteiro, de 100 a 999 a dezena, em kg/l uma casa, `un` inteiro. Para
+  cima, porque para baixo promete menos do que a receita pede. Só na linha do carrinho: "Não
+  precisa comprar" continua com o número exato, e o exato completo é da 100. Folga de `1e-6`
+  contra o resto de ponto flutuante, a mesma de `fraseDaReserva`. `rotuloDeCompra` ficou sem uso
+  na tela e foi mantido, com o teste dele.
+- **O marcado desce** para "No carrinho · N", depois do último corredor, na ordem da loja
+  (agrupado pelos mesmos corredores e achatado). Mesma linha, apagada e riscada; tocar devolve.
+  Corredor sem nada por comprar some. A linha chega por opacidade (`starting:opacity-0`, o
+  `@starting-style` nativo), sem animar posição.
+- **"Não precisa comprar" fechado**: `<details>` nativo, o `<summary>` de 44px diz "**19** você já
+  tem em casa" e "A contagem ou a fornada já cobre estes.". O título "Não precisa comprar" saiu: a
+  frase do resumo diz o mesmo com o número.
+- **O rodapé, um número por vez:** nada marcado, "A lista dá R$ …"; algo marcado, "Ainda falta
+  R$ …" grande e "de R$ …" pequeno; tudo marcado, "Você gastou R$ …". Do lado, "3 de 8 no
+  carrinho" (ou "Tudo no carrinho" com o visto), com `aria-live`. A faixa de prosa saiu, e com
+  ela o "mais N você já tem em casa", que agora é o resumo do `<details>`. O respiro da lista
+  desceu de `pb-52 lg:pb-44` para `pb-40 lg:pb-32`.
+
+**Consequência.** O "você pode fechar a lista no fim da página" do rodapé com tudo marcado
+sumiu: "Fechar esta lista" fica logo depois do carrinho e do resumo fechado, a pouca rolagem.

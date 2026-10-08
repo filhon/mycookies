@@ -1,87 +1,69 @@
-import { Check, ShoppingCart } from "lucide-react";
+import { Check } from "lucide-react";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { RodapeFixo } from "@/components/ui/RodapeFixo";
 import type { ResumoDaLista } from "@/lib/domain/listaCompras";
-import { formatarMoeda } from "@/lib/domain/money";
 
 /**
  * O rodapé preso ao pé da tela enquanto ela anda pelo mercado.
  *
  * Mesma razão do rodapé do pedido e do painel de preço da ficha: a pergunta que
  * a trouxe até aqui — "quanto ainda falta gastar?" — não pode depender de rolar
- * a lista até o fim. O número grande é o que **falta**, e não o total: é ele que
- * decide se dá para levar tudo hoje, e é ele que desce a cada item marcado.
+ * a lista até o fim.
+ *
+ * Um número só por vez (`#d300`): antes de marcar, o que falta **é** a lista
+ * inteira, e mostrar os dois lado a lado era repetir. Depois do primeiro item, o
+ * grande passa a ser o que falta, com o total em rótulo; com tudo marcado, o que
+ * ela gastou. A contagem ao lado faz o que a faixa de prosa fazia.
  */
 export function RodapeCompras({ resumo }: { resumo: ResumoDaLista }) {
+  const nadaMarcado = resumo.comprados === 0;
   const tudoNoCarrinho = resumo.aComprar > 0 && resumo.restante === 0;
 
   return (
     <RodapeFixo>
-      <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 px-4 py-3 lg:px-5">
-        <div>
-          <p className="text-micro font-medium uppercase tracking-wide text-ink-subtle">
-            Lista inteira
-          </p>
-          <p className="mt-0.5">
-            <Dinheiro centavos={resumo.total} />
-          </p>
-        </div>
-
-        <div className="text-right">
-          <p className="text-micro font-medium uppercase tracking-wide text-ink-subtle">
-            {tudoNoCarrinho ? "Você gastou" : "Ainda falta"}
-          </p>
-          <p className="mt-0.5">
-            <Dinheiro
-              centavos={tudoNoCarrinho ? resumo.total : resumo.restante}
-              tamanho="lg"
-            />
-          </p>
-        </div>
-      </div>
-
-      {/* Prosa neutra: some com o teclado aberto e volta quando ele fecha.
-            Ver `DECISOES.md#d75`. */}
-      <p className="flex items-start gap-2.5 border-t border-line bg-sunken px-4 py-2.5 text-label text-ink-muted apertado:hidden lg:px-5">
-        {tudoNoCarrinho ? (
-          <Check
-            aria-hidden
-            className="mt-0.5 size-4 shrink-0 text-positive"
-            strokeWidth={2}
-          />
-        ) : (
-          <ShoppingCart
-            aria-hidden
-            className="mt-0.5 size-4 shrink-0 text-ink-subtle"
-            strokeWidth={1.75}
-          />
-        )}
-        <span className="max-w-[64ch]" aria-live="polite">
-          {tudoNoCarrinho ? (
+      <div className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1 px-4 py-3 lg:px-5">
+        <p className="flex flex-wrap items-baseline gap-x-2 text-label text-ink-muted">
+          {nadaMarcado ? (
             <>
-              Tudo marcado. A compra deu{" "}
-              <strong className="num font-semibold text-ink">
-                {formatarMoeda(resumo.total)}
-              </strong>
-              , e você pode fechar a lista no fim da página.
+              A lista dá <Dinheiro centavos={resumo.total} tamanho="lg" />
+            </>
+          ) : tudoNoCarrinho ? (
+            <>
+              Você gastou <Dinheiro centavos={resumo.total} tamanho="lg" />
             </>
           ) : (
             <>
-              <strong className="num font-semibold text-ink">
-                {resumo.comprados} de {resumo.aComprar}
-              </strong>{" "}
-              {resumo.aComprar === 1 ? "item" : "itens"} no carrinho.
-              {resumo.jaTem > 0 && (
-                <>
-                  {" "}
-                  Mais {resumo.jaTem} {resumo.jaTem === 1 ? "item" : "itens"}{" "}
-                  você já tem em casa.
-                </>
-              )}
+              Ainda falta <Dinheiro centavos={resumo.restante} tamanho="lg" />
+              <span>
+                de <Dinheiro centavos={resumo.total} tamanho="sm" />
+              </span>
             </>
           )}
-        </span>
-      </p>
+        </p>
+
+        <p
+          aria-live="polite"
+          className="num flex items-center gap-1.5 text-label text-ink-muted"
+        >
+          {tudoNoCarrinho ? (
+            <>
+              <Check
+                aria-hidden
+                className="size-4 shrink-0 text-positive"
+                strokeWidth={2}
+              />
+              Tudo no carrinho
+            </>
+          ) : (
+            <span>
+              <strong className="font-semibold text-ink">
+                {resumo.comprados} de {resumo.aComprar}
+              </strong>{" "}
+              no carrinho
+            </span>
+          )}
+        </p>
+      </div>
     </RodapeFixo>
   );
 }

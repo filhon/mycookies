@@ -1,14 +1,23 @@
 "use client";
 
-import { Check, CookingPot, Pencil, Shield, TriangleAlert } from "lucide-react";
-import { useState } from "react";
+import {
+  Check,
+  CookingPot,
+  Pencil,
+  Shield,
+  TriangleAlert,
+  type LucideIcon,
+} from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { listarNomes } from "@/components/producao/FraseDaCapacidade";
 import { Botao } from "@/components/ui/Botao";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { contagemDoInsumo, rotuloDeIdade } from "@/lib/domain/estoque";
 import { formatarMoeda } from "@/lib/domain/money";
-import { rotuloDeCompra } from "@/lib/domain/listaCompras";
-import { formatarQuantidade } from "@/lib/domain/unidades";
+import {
+  formatarQuantidade,
+  quantidadeParaOMercado,
+} from "@/lib/domain/unidades";
 import type {
   Centavos,
   DataISO,
@@ -27,8 +36,9 @@ import { cn } from "@/lib/utils/cn";
  * custa de verdade hoje.
  *
  * As duas quantidades aparecem juntas de propósito. `1 pacote de 1 kg` é a
- * verdade da gôndola, e é o que ela põe no carrinho; `342,11 g em falta` é a
- * verdade da receita, e é o que explica por que o pacote está na lista.
+ * verdade da gôndola, e é o que ela põe no carrinho; `falta 350 g` é a verdade
+ * da receita, arredondada para cima (`#d300`), e é o que explica por que o
+ * pacote está na lista.
  */
 /** Quem pede a reserva deste insumo, das fichas vivas. */
 type ReservaPara = { nome: string; fornadas: number }[];
@@ -52,13 +62,12 @@ export function LinhaCompra({
   const [editando, setEditando] = useState(false);
 
   const comprado = item.comprado;
-  const embalagem = insumo
-    ? rotuloDeCompra(
-        item.quantidadePacotes,
-        insumo.quantidadeCompra,
-        insumo.unidadeCompra,
-      )
-    : `${item.quantidadePacotes} ${item.quantidadePacotes === 1 ? "pacote" : "pacotes"}`;
+  // O pacote é o que vai pro carrinho, e por isso é o dado forte da linha
+  // (`#d300`); o tamanho dele fica em rótulo, ao lado.
+  const pacotes = `${item.quantidadePacotes} ${item.quantidadePacotes === 1 ? "pacote" : "pacotes"}`;
+  const tamanho = insumo
+    ? `de ${insumo.quantidadeCompra.toLocaleString("pt-BR", { maximumFractionDigits: 3 })} ${insumo.unidadeCompra}`
+    : null;
 
   // A idade sai do insumo **vivo**, e não da linha gravada: uma idade congelada
   // dentro de um documento que ninguém reescreve envelhece errado.
@@ -67,13 +76,22 @@ export function LinhaCompra({
   const reserva = fraseDaReserva(item, reservaPara);
 
   return (
-    <li className={cn(comprado && "bg-sunken")}>
+    // Marcar muda a linha de seção: ela chega pela opacidade, sem animar a
+    // posição (`#d300`).
+    <li
+      className={cn(
+        "transition-opacity duration-200 ease-quart starting:opacity-0",
+        comprado && "bg-sunken",
+      )}
+    >
       <div className="flex items-stretch">
+        {/* `min-w-0`: sem ele, o `truncate` de dentro faz a largura mínima do
+            botão ser a da frase inteira, e o preço sai da tela no celular. */}
         <button
           type="button"
           aria-pressed={comprado}
           onClick={() => aoMarcar(!comprado)}
-          className="flex min-h-16 flex-1 items-center gap-3 px-4 py-3 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:px-5"
+          className="flex min-h-16 min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:px-5"
         >
           {/* O círculo marcado carrega o traço do visto: a cor sozinha nunca
               decide. Em tinta, e não em `brand-700`: no escuro o cromo some
@@ -100,58 +118,39 @@ export function LinhaCompra({
             >
               {item.nome}
             </span>
-            <span className="num mt-0.5 block truncate text-label text-ink-muted">
-              {embalagem}
+            <span className="num mt-0.5 line-clamp-2 text-label text-ink-muted">
+              <span
+                className={cn(
+                  "text-body font-semibold",
+                  comprado ? "text-ink-muted" : "text-ink",
+                )}
+              >
+                {pacotes}
+              </span>
+              {tamanho && <> {tamanho}</>}
               <span className="mx-1.5 text-ink-subtle">·</span>
-              {formatarQuantidade(item.quantidadeComprar, item.unidadeBase)} em
-              falta
+              falta{" "}
+              {quantidadeParaOMercado(item.quantidadeComprar, item.unidadeBase)}
             </span>
 
             {/* O que a lista fez com o que está no armário. A contagem fresca
                 não diz nada: ela funcionou, e não há notícia. */}
             {contagem && (
-              <span
-                className={cn(
-                  "num mt-1 flex items-center gap-1.5 text-micro",
-                  contagem.ignorada ? "text-attention" : "text-ink-subtle",
-                )}
+              <Frase
+                icone={contagem.ignorada ? TriangleAlert : undefined}
+                atencao={contagem.ignorada}
               >
-                {contagem.ignorada && (
-                  <TriangleAlert
-                    aria-hidden
-                    className="size-3 shrink-0"
-                    strokeWidth={2}
-                  />
-                )}
-                <span className="truncate">{contagem.frase}</span>
-              </span>
+                {contagem.frase}
+              </Frase>
             )}
 
             {/* O que a massa já fez com esta linha: é o que explica um número
                 menor do que o pedido pede, ou maior do que a contagem sugere. */}
-            {forno && (
-              <span className="num mt-1 flex items-center gap-1.5 text-micro text-ink-subtle">
-                <CookingPot
-                  aria-hidden
-                  className="size-3 shrink-0"
-                  strokeWidth={2}
-                />
-                <span className="truncate">{forno}</span>
-              </span>
-            )}
+            {forno && <Frase icone={CookingPot}>{forno}</Frase>}
 
             {/* De onde veio: uma linha sem pedido atrás é uma linha em que ela
                 para de confiar, e esta diz que é a reserva (`#d96`). */}
-            {reserva && (
-              <span className="num mt-1 flex items-center gap-1.5 text-micro text-ink-subtle">
-                <Shield
-                  aria-hidden
-                  className="size-3 shrink-0"
-                  strokeWidth={2}
-                />
-                <span className="truncate">{reserva}</span>
-              </span>
-            )}
+            {reserva && <Frase icone={Shield}>{reserva}</Frase>}
           </span>
         </button>
 
@@ -200,6 +199,48 @@ export function LinhaCompra({
         />
       )}
     </li>
+  );
+}
+
+/**
+ * Uma frase de baixo da linha: contagem, forno ou reserva.
+ *
+ * Texto que ela lê, então `--ink-muted`; o ícone fica em `--ink-subtle`, que
+ * não é cor de texto (`DESIGN.md`). Quebra em até duas linhas em vez de cortar
+ * no meio da palavra.
+ */
+function Frase({
+  icone: Icone,
+  atencao = false,
+  className,
+  children,
+}: {
+  icone?: LucideIcon;
+  /** A contagem que a lista ignorou: ocre, e sempre com o triângulo. */
+  atencao?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <span
+      className={cn(
+        "num mt-1 flex items-start gap-1.5 text-micro",
+        atencao ? "text-attention" : "text-ink-muted",
+        className,
+      )}
+    >
+      {Icone && (
+        <Icone
+          aria-hidden
+          className={cn(
+            "mt-0.5 size-3 shrink-0",
+            !atencao && "text-ink-subtle",
+          )}
+          strokeWidth={2}
+        />
+      )}
+      <span className="line-clamp-2">{children}</span>
+    </span>
   );
 }
 
@@ -394,7 +435,7 @@ export function LinhaJaTem({
   return (
     <li className="flex min-h-14 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 lg:px-5">
       <p className="min-w-0 truncate text-body text-ink">{item.nome}</p>
-      <p className="num shrink-0 text-label text-ink-muted">
+      <p className="num min-w-0 text-label text-ink-muted">
         {/* Coberto só pela fornada: "você tem 0 g" seria verdade e ruído. */}
         {produzida > 0 && tem === 0 ? (
           "já virou massa para o pedido"
@@ -414,16 +455,14 @@ export function LinhaJaTem({
         )}
       </p>
       {forno && (
-        <p className="num flex basis-full items-center gap-1.5 text-micro text-ink-subtle">
-          <CookingPot aria-hidden className="size-3 shrink-0" strokeWidth={2} />
-          <span className="truncate">{forno}</span>
-        </p>
+        <Frase icone={CookingPot} className="mt-0 basis-full">
+          {forno}
+        </Frase>
       )}
       {reserva && (
-        <p className="num flex basis-full items-center gap-1.5 text-micro text-ink-subtle">
-          <Shield aria-hidden className="size-3 shrink-0" strokeWidth={2} />
-          <span className="truncate">{reserva}</span>
-        </p>
+        <Frase icone={Shield} className="mt-0 basis-full">
+          {reserva}
+        </Frase>
       )}
     </li>
   );

@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import {
   Archive,
   CalendarRange,
+  ChevronDown,
   CircleAlert,
   ClipboardList,
   FileQuestion,
@@ -217,7 +218,25 @@ export function ListaDoMercado({
   const aComprar = itens.filter(precisaComprar);
   const jaTem = itens.filter((item) => !precisaComprar(item));
   const resumo = resumoDaLista(itens);
-  const corredores = agruparPorCorredor(aComprar);
+  // O marcado sai do corredor e desce para "No carrinho" (`#d300`): riscado no
+  // lugar, ele obrigava a reler cada corredor. Agrupar também o carrinho mantém
+  // a ordem da loja ali embaixo.
+  const corredores = agruparPorCorredor(aComprar.filter((i) => !i.comprado));
+  const noCarrinho = agruparPorCorredor(
+    aComprar.filter((i) => i.comprado),
+  ).flatMap((corredor) => corredor.itens);
+
+  const linha = (item: ItemListaCompras) => (
+    <LinhaCompra
+      key={item.insumoId}
+      item={item}
+      insumo={porInsumo.get(item.insumoId)}
+      reservaPara={reserva.get(item.insumoId)?.fichas}
+      hoje={hoje}
+      aoMarcar={(comprado) => marcar(item.insumoId, comprado)}
+      aoCorrigirPreco={corrigirPreco}
+    />
+  );
 
   /**
    * Os insumos do carrinho em que a lista não confiou.
@@ -326,7 +345,8 @@ export function ListaDoMercado({
         />
       </CabecalhoPagina>
 
-      <div className={cn("mt-4 space-y-4", lista && "pb-52 lg:pb-44")}>
+      {/* O respiro acompanha o rodapé, que perdeu a faixa de prosa (`#d300`). */}
+      <div className={cn("mt-4 space-y-4", lista && "pb-40 lg:pb-32")}>
         {/* A lista na tela é a gravada, e o período acima é o escolhido. Quando
             os dois divergem, dizer isso é obrigatório: sem a frase, as pílulas
             estariam descrevendo uma lista que não é a que está embaixo delas. */}
@@ -422,42 +442,52 @@ export function ListaDoMercado({
                   {ROTULO_CORREDOR[corredor.categoria]}
                 </h2>
                 <ul className="divide-y divide-line">
-                  {corredor.itens.map((item) => (
-                    <LinhaCompra
-                      key={item.insumoId}
-                      item={item}
-                      insumo={porInsumo.get(item.insumoId)}
-                      reservaPara={reserva.get(item.insumoId)?.fichas}
-                      hoje={hoje}
-                      aoMarcar={(comprado) => marcar(item.insumoId, comprado)}
-                      aoCorrigirPreco={(insumo, preco) =>
-                        corrigirPreco(insumo, preco)
-                      }
-                    />
-                  ))}
+                  {corredor.itens.map(linha)}
                 </ul>
               </section>
             ))}
 
-            {jaTem.length > 0 && (
+            {noCarrinho.length > 0 && (
               <section
-                aria-labelledby="ja-tem"
+                aria-labelledby="no-carrinho"
                 className="overflow-hidden rounded-lg border border-line bg-surface"
               >
-                <div className="border-b border-line px-4 pb-3 pt-4 lg:px-5">
-                  <h2
-                    id="ja-tem"
-                    className="text-subheading font-semibold text-ink"
-                  >
-                    Não precisa comprar
-                  </h2>
-                  <p className="mt-1 max-w-[56ch] text-label text-ink-muted">
-                    A contagem que você fez, ou a fornada que você registrou, já
-                    cobre estes. Eles ficam à vista para você conferir, em vez
-                    de sumirem da lista.
-                  </p>
-                </div>
+                <h2
+                  id="no-carrinho"
+                  className="num border-b border-line px-4 pb-3 pt-4 text-subheading font-semibold text-ink lg:px-5"
+                >
+                  No carrinho
+                  <span className="mx-1.5 text-ink-subtle">·</span>
+                  {noCarrinho.length}
+                </h2>
                 <ul className="divide-y divide-line">
+                  {noCarrinho.map(linha)}
+                </ul>
+              </section>
+            )}
+
+            {/* Fechado: dezenove linhas de conferência embaixo de oito de
+                compra empurravam "Fechar esta lista" três telas para baixo
+                (`#d300`). Continua à vista, a um toque. */}
+            {jaTem.length > 0 && (
+              <details className="group overflow-hidden rounded-lg border border-line bg-surface">
+                <summary className="toque flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 transition-colors duration-150 ease-quart hover:bg-sunken lg:px-5 [&::-webkit-details-marker]:hidden">
+                  <span className="min-w-0">
+                    <span className="num block text-subheading text-ink">
+                      <strong className="font-semibold">{jaTem.length}</strong>{" "}
+                      você já tem em casa
+                    </span>
+                    <span className="mt-0.5 block text-label text-ink-muted">
+                      A contagem ou a fornada já cobre estes.
+                    </span>
+                  </span>
+                  <ChevronDown
+                    aria-hidden
+                    className="size-5 shrink-0 text-ink-muted transition-transform duration-150 ease-quart group-open:rotate-180"
+                    strokeWidth={1.75}
+                  />
+                </summary>
+                <ul className="divide-y divide-line border-t border-line">
                   {jaTem.map((item) => (
                     <LinhaJaTem
                       key={item.insumoId}
@@ -468,7 +498,7 @@ export function ListaDoMercado({
                     />
                   ))}
                 </ul>
-              </section>
+              </details>
             )}
           </>
         )}
