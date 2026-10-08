@@ -9087,3 +9087,47 @@ dataISO, titulo, frase, href, soAndroid? }`, a mais nova primeiro, o título no 
 aviso nunca mais acende. "Visto" é por aparelho: ela abre a página no celular e ainda vê a palavra
 no computador, de propósito. A palavra fica até ela abrir `/comecar`, mesmo que a novidade seja
 de uma tela que ela já usou.
+
+## D299 · O que você ainda não abriu
+
+**Status:** vigente · decidida em 2026-10-08, spec `097-o-que-voce-ainda-nao-abriu.md`.
+
+**Contexto.** "O que mais tem aqui" era igual para a conta que conta a despensa todo domingo e
+para a que nunca abriu a contagem, e a nota da meta dizia "seria um palpite" para quem já tinha
+meta havia meses. A página não sabia a quem estava falando.
+
+**Decisão.**
+
+- **Um fato por tela**, em `lib/hooks/useTelasAbertas.ts`, perguntado à coleção que tem a
+  resposta com `limit(1)`, como o `#d67`: a foto da nota por transação com `notaChave != null`;
+  a contagem da despensa por material com `estoqueContadoEmISO != null`; o que está pronto por
+  produto com `estoqueProntoContadoEmISO != null`; clientes por cliente com `arquivado == false`.
+  Conferido no código: os dois campos de contagem só nascem das telas de contagem
+  (`mutations/estoque.ts`; os outros caminhos só carregam a data que já estava), e a
+  `notaChave` só da nota. Cada consulta tem um campo só, e o `!=` sem `orderBy` anda no índice
+  de campo único: **nenhum índice novo**. Lançamento e material arquivados contam: ela usou a
+  tela do mesmo jeito.
+- **A lista de compras não tem fato** e nunca é dita como usada nem como não usada na própria
+  linha (`#d69`). Fica em cima, com a linha inteira, como a spec manda.
+- **Vazio só vale como "não" quando veio do servidor.** O cache de um aparelho sem rede também
+  responde vazio, então resposta vazia com `fromCache`, com erro ou carregando deixa os fatos em
+  `null`, e a seção mostra a lista de hoje, inteira e sem grupo. Documento achado vale de onde
+  vier.
+- **A meta** é lida como o Caixa lê: o documento `metas/{competência corrente}` pelo id. Existe,
+  e com os fatos em mão, ela vira a linha compacta "A meta do mês" no grupo de baixo; senão, a
+  nota de sempre. A carga da meta entra na espera dos fatos, para a nota não trocar de forma
+  depois que os grupos aparecem.
+- **Os grupos:** em cima "Que você ainda não abriu", com a linha inteira; embaixo "Já fazem
+  parte da sua semana", uma linha de ícone, nome e chevron. Os títulos dos grupos só aparecem
+  quando há os dois: a conta nova vê a lista como antes, sem título. "Todas abertas" é as quatro
+  com fato abertas; aí a lista de compras desce com elas, as cinco ficam compactas e a descrição
+  vira "As cinco já fazem parte da sua semana.".
+- **A seção carrega o próprio título** (`<OQueMaisTem id="mais" />`, como o `InstalarNaTela`),
+  porque a descrição depende dos fatos. Assinaturas, e não leitura única: as cinco morrem com a
+  página.
+
+**Consequência.** "Clientes" é o fato mais fraco: a cliente cadastrada no meio de um pedido
+(`#d80`) põe a tela no grupo de baixo sem que ela tenha aberto `/clientes`. Aceito, porque a
+cliente cadastrada é o que a tela lista, e não há campo melhor sem escrita nova. Sem rede, uma
+conta que ainda não abriu alguma tela vê a lista de hoje até a rede voltar. Tela nova fora do
+menu entra em `FUNCIONALIDADES` com o fato dela, ou sem fato e em cima.

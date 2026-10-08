@@ -91,10 +91,10 @@ Tela sem fato **nunca** é dita como "não usada": um selo inventado é pior do 
 
 ## Critérios de aceite
 
-- [ ] Dois grupos pelo fato de cada tela; tela sem fato nunca dita como não usada.
-- [ ] A nota da meta compacta quando há meta.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d299` escrito; `ESTADO.md` atualizado.
+- [x] Dois grupos pelo fato de cada tela; tela sem fato nunca dita como não usada.
+- [x] A nota da meta compacta quando há meta.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d299` escrito; `ESTADO.md` atualizado.
 
 ---
 

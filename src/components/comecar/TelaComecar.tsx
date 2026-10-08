@@ -192,13 +192,9 @@ export function TelaComecar() {
         <CadeiaDoDinheiro dados={cadeia} />
       </SecaoGuia>
 
-      <SecaoGuia
-        id="mais"
-        titulo="O que mais tem aqui"
-        descricao="Cinco telas fora do caminho de todo dia, e que são justamente as que mais poupam trabalho seu."
-      >
-        <OQueMaisTem />
-      </SecaoGuia>
+      {/* Carrega o próprio título: a descrição muda com o que ela já usa
+          (`#d299`). */}
+      <OQueMaisTem id="mais" />
 
       <SecaoGuia
         id="offline"
