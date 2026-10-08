@@ -29,9 +29,13 @@ export interface OpcoesDeReducao {
  * Falhar aqui não trava a leitura: um formato que o navegador não sabe desenhar
  * (HEIC em navegador antigo) sobe como veio, e quem decide se é grande demais é
  * o teto da rota.
+ *
+ * `ladoMaximo` cai com o número de fotos da mesma nota (`ladoParaFotos`,
+ * `#d293`), para a soma caber no corpo que o Vercel aceita.
  */
 export async function prepararParaLeitura(
   arquivo: File,
+  ladoMaximo = LADO_MAXIMO_PX,
 ): Promise<ArquivoParaLeitura> {
   const tipo = arquivo.type || "application/octet-stream";
 
@@ -41,7 +45,7 @@ export async function prepararParaLeitura(
 
   try {
     const reduzida = await reduzirImagem(arquivo, {
-      ladoMaximo: LADO_MAXIMO_PX,
+      ladoMaximo,
       formato: "image/jpeg",
       qualidade: QUALIDADE_JPEG,
     });

@@ -17,6 +17,8 @@ import {
   ImageUp,
   Lock,
   RefreshCw,
+  ScanLine,
+  X,
 } from "lucide-react";
 import { Simbolo } from "@/components/marca/Marca";
 import { Botao } from "@/components/ui/Botao";
@@ -24,7 +26,7 @@ import { TituloAssinado } from "@/components/ui/EstadoVazio";
 import { Selo } from "@/components/ui/Selo";
 import { rotuloDiaNoAno } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
-import type { IdadeDosPrecos } from "@/lib/domain/notaFiscal";
+import { LIMITE_FOTOS, type IdadeDosPrecos } from "@/lib/domain/notaFiscal";
 import type { DataISO } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -38,8 +40,11 @@ import { cn } from "@/lib/utils/cn";
  * seguem lá, e o comum custa um toque. No computador, o bloco é a área de
  * soltar, e colar na página também lê: o PDF está no e-mail, na aba ao lado.
  *
- * Os arquivos vão crus para `aoReceber`: quem escolhe o primeiro e recusa o
- * tipo é a tela, num lugar só para os quatro caminhos.
+ * Os arquivos vão crus para `aoReceber`: quem junta as fotos, separa o PDF e
+ * recusa o tipo é a tela, num lugar só para os quatro caminhos.
+ *
+ * Foto não é lida na hora (`#d293`): ela entra na faixa, onde se vê se saiu
+ * tremida, e a nota comprida ganha a continuação. "Ler a nota" lê todas.
  */
 export function PortaDaNota({
   online,
@@ -47,7 +52,11 @@ export function PortaDaNota({
   temMateriais,
   hoje,
   aviso,
+  fotos,
+  notaDaFaixa,
   aoReceber,
+  aoTirar,
+  aoLer,
 }: {
   online: boolean;
   idade: IdadeDosPrecos;
@@ -55,11 +64,19 @@ export function PortaDaNota({
   temMateriais: boolean;
   hoje: DataISO;
   aviso?: ReactNode;
+  /** As partes da nota esperando a leitura, na ordem em que entraram. */
+  fotos: FotoDaNota[];
+  /** O que ficou de fora da faixa, dito embaixo dela. */
+  notaDaFaixa: string | null;
   aoReceber: (arquivos: File[]) => void;
+  aoTirar: (indice: number) => void;
+  aoLer: () => void;
 }) {
   const camera = useRef<HTMLInputElement>(null);
   const seletor = useRef<HTMLInputElement>(null);
   const [arrastando, setArrastando] = useState(false);
+  const juntando = fotos.length > 0;
+  const cabeMais = fotos.length < LIMITE_FOTOS;
 
   // Colar só vale nesta etapa: a porta monta e desmonta com ela. Colar sem
   // arquivo (texto) não é tentativa de ler, e passa reto.
@@ -99,6 +116,7 @@ export function PortaDaNota({
         ref={seletor}
         type="file"
         accept="image/*,application/pdf"
+        multiple
         className="sr-only"
         tabIndex={-1}
         aria-hidden
@@ -125,7 +143,9 @@ export function PortaDaNota({
         className={cn(
           "lg:rounded-lg lg:border-2 lg:p-8",
           "lg:transition-colors lg:duration-150 lg:ease-quart",
-          "xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] xl:gap-x-10",
+          // Juntando, o exemplo sai e a faixa fica com a largura.
+          !juntando &&
+            "xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] xl:gap-x-10",
           arrastando
             ? "lg:border-solid lg:border-brand-ink lg:bg-brand-100"
             : "lg:border-dashed lg:border-line-strong",
@@ -141,15 +161,61 @@ export function PortaDaNota({
           </p>
         </div>
 
-        <ExemploDaLinha className="mt-6 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:mt-0 xl:self-center" />
+        {/* Com a foto tirada, ela já decidiu ler: o exemplo e o motivo saem, e
+            a faixa sobe para perto do polegar. */}
+        {!juntando && (
+          <ExemploDaLinha className="mt-6 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:mt-0 xl:self-center" />
+        )}
 
         <div>
-          {temMateriais && (
+          {temMateriais && !juntando && (
             <MotivoDeLer idade={idade} hoje={hoje} className="mt-6" />
           )}
 
+          {juntando && (
+            <div className="mt-6">
+              <FaixaDeFotos fotos={fotos} aoTirar={aoTirar} />
+              {notaDaFaixa && (
+                <p className="mt-3 text-label text-ink-muted">{notaDaFaixa}</p>
+              )}
+            </div>
+          )}
+
+          {/* Celular, juntando: ler é o âmbar; a continuação, a câmera de novo. */}
+          {juntando && (
+            <div className="mt-6 grid gap-3 lg:hidden">
+              <Botao
+                variante="primaria"
+                tamanho="lg"
+                larguraTotal
+                disabled={!online}
+                onClick={aoLer}
+                iconeInicial={
+                  <ScanLine aria-hidden className="size-5" strokeWidth={1.75} />
+                }
+              >
+                Ler a nota
+              </Botao>
+              {cabeMais && (
+                <Botao
+                  tamanho="lg"
+                  larguraTotal
+                  disabled={!online}
+                  onClick={() => camera.current?.click()}
+                  iconeInicial={
+                    <Camera aria-hidden className="size-5" strokeWidth={1.75} />
+                  }
+                >
+                  Fotografar a continuação
+                </Botao>
+              )}
+            </div>
+          )}
+
           {/* Celular: as duas ações em largura inteira, a câmera primeiro. */}
-          <div className="mt-6 grid gap-3 lg:hidden">
+          <div
+            className={cn("mt-6 grid gap-3 lg:hidden", juntando && "hidden")}
+          >
             <Botao
               variante="primaria"
               tamanho="lg"
@@ -175,10 +241,48 @@ export function PortaDaNota({
             </Botao>
           </div>
 
+          {/* Computador, juntando: soltar e colar continuam juntando. */}
+          {juntando && (
+            <div className="mt-6 hidden flex-wrap items-center gap-x-4 gap-y-2 lg:flex">
+              <Botao
+                variante="primaria"
+                tamanho="lg"
+                disabled={!online}
+                onClick={aoLer}
+                iconeInicial={
+                  <ScanLine aria-hidden className="size-5" strokeWidth={1.75} />
+                }
+              >
+                Ler a nota
+              </Botao>
+              {cabeMais && (
+                <>
+                  <Botao
+                    tamanho="lg"
+                    disabled={!online}
+                    onClick={() => seletor.current?.click()}
+                    iconeInicial={
+                      <FileUp
+                        aria-hidden
+                        className="size-5"
+                        strokeWidth={1.75}
+                      />
+                    }
+                  >
+                    Juntar a continuação
+                  </Botao>
+                  <span className="text-micro text-ink-muted">
+                    ou solte e cole aqui
+                  </span>
+                </>
+              )}
+            </div>
+          )}
+
           {/* Computador: o bloco inteiro é onde soltar. */}
-          <div className="mt-8 hidden lg:block">
+          <div className={cn("mt-8 hidden", !juntando && "lg:block")}>
             <p className="text-subheading font-semibold text-ink">
-              Solte aqui o PDF ou a foto da nota
+              Solte aqui o PDF ou as fotos da nota
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
               <Botao
@@ -211,6 +315,109 @@ export function PortaDaNota({
         A foto não fica guardada. Fica o preço de cada material, dentro dele.
       </p>
     </>
+  );
+}
+
+/** Uma parte da nota esperando a leitura; a tela cria e revoga o `blob:`. */
+export interface FotoDaNota {
+  arquivo: File;
+  miniatura: string;
+}
+
+/**
+ * As partes na ordem do papel, numeradas, cada uma com o "×" para tirar.
+ * Quatro colunas iguais cabem em 360px. Reordenar fica fora (spec 091): tirar e
+ * fotografar de novo resolve.
+ */
+function FaixaDeFotos({
+  fotos,
+  aoTirar,
+}: {
+  fotos: FotoDaNota[];
+  aoTirar: (indice: number) => void;
+}) {
+  return (
+    <ol
+      aria-label={
+        fotos.length === 1 ? "A foto da nota" : "As partes da nota, em ordem"
+      }
+      className="grid max-w-sm grid-cols-4 gap-3"
+    >
+      {fotos.map((foto, indice) => (
+        <li key={foto.miniatura} className="relative">
+          <Miniatura
+            src={foto.miniatura}
+            nome={foto.arquivo.name}
+            alt={`Parte ${indice + 1} da nota`}
+            className="aspect-3/4 w-full rounded-md border border-line bg-sunken object-cover"
+          />
+          <span
+            aria-hidden
+            className="num absolute bottom-1.5 left-1.5 rounded-sm bg-surface px-1.5 text-micro font-semibold text-ink"
+          >
+            {indice + 1}
+          </span>
+          {/* Alvo de 44px, desenho de 24px no canto: a miniatura continua à vista. */}
+          <button
+            type="button"
+            onClick={() => aoTirar(indice)}
+            aria-label={`Tirar a parte ${indice + 1}`}
+            className="group absolute -right-3 -top-3 grid size-11 place-items-center rounded-full"
+          >
+            <span className="grid size-6 place-items-center rounded-full border border-line-strong bg-surface text-ink-muted transition-colors duration-150 ease-quart group-hover:text-ink group-active:bg-sunken">
+              <X aria-hidden className="size-3.5" strokeWidth={2} />
+            </span>
+          </button>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/**
+ * A imagem escolhida, ou o nome dela quando o navegador não a desenha (HEIC no
+ * Chrome): a mesma reserva da espera.
+ */
+function Miniatura({
+  src,
+  nome,
+  alt,
+  className,
+}: {
+  src: string;
+  nome: string;
+  alt: string;
+  className?: string;
+}) {
+  const [quebrou, setQuebrou] = useState(false);
+
+  if (quebrou) {
+    return (
+      <span
+        className={cn(
+          "flex flex-col items-center justify-center gap-1 p-1.5 text-micro text-ink-muted",
+          className,
+        )}
+      >
+        <FileText
+          aria-hidden
+          className="size-5 shrink-0 text-ink-subtle"
+          strokeWidth={1.75}
+        />
+        <span className="max-w-full truncate">{nome}</span>
+      </span>
+    );
+  }
+
+  return (
+    // Um `blob:` local: o `next/image` não otimiza nada aqui.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      onError={() => setQuebrou(true)}
+      className={className}
+    />
   );
 }
 
@@ -313,30 +520,39 @@ function ExemploDaLinha({ className }: { className?: string }) {
  */
 export function LendoANota({
   nome,
-  miniatura,
-  varios,
+  fotos,
+  nota,
   aoCancelar,
 }: {
+  /** O nome do PDF, quando é ele que se lê. */
   nome: string;
-  /** `blob:` da imagem, revogado pela tela ao sair da etapa; `null` no PDF. */
-  miniatura: string | null;
-  /** Soltou ou colou mais de um: só o primeiro é lido (até a 091). */
-  varios: boolean;
+  /** As partes sendo lidas; vazio no PDF. */
+  fotos: FotoDaNota[];
+  /** "Lemos só o PDF.", quando ele veio junto de fotos. */
+  nota: string | null;
   aoCancelar: () => void;
 }) {
-  const [quebrou, setQuebrou] = useState(false);
-
   return (
     <div className="flex flex-col items-center rounded-lg border border-line bg-surface px-6 py-10 text-center">
-      {miniatura && !quebrou ? (
-        // Um `blob:` local: o `next/image` não otimiza nada aqui.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={miniatura}
-          alt={`A nota escolhida: ${nome}`}
-          onError={() => setQuebrou(true)}
-          className="max-h-48 max-w-full rounded-md border border-line object-contain"
-        />
+      {fotos.length > 0 ? (
+        <div className="flex max-w-full items-start justify-center gap-2">
+          {fotos.map((foto, indice) => (
+            <Miniatura
+              key={foto.miniatura}
+              src={foto.miniatura}
+              nome={foto.arquivo.name}
+              alt={
+                fotos.length === 1
+                  ? "A nota escolhida"
+                  : `Parte ${indice + 1} da nota`
+              }
+              className={cn(
+                "min-w-0 rounded-md border border-line object-contain",
+                fotos.length === 1 ? "max-h-48 max-w-full" : "max-h-32",
+              )}
+            />
+          ))}
+        </div>
       ) : (
         <p className="flex max-w-full items-center gap-2 text-label text-ink-muted">
           <FileText
@@ -358,11 +574,7 @@ export function LendoANota({
       <p className="mt-2 max-w-[42ch] text-body text-ink-muted">
         Leva de 10 a 30 segundos. Nada é cadastrado antes de você conferir.
       </p>
-      {varios && (
-        <p className="mt-2 text-label text-ink-muted">
-          Lemos só o primeiro arquivo.
-        </p>
-      )}
+      {nota && <p className="mt-2 text-label text-ink-muted">{nota}</p>}
 
       <Botao variante="terciaria" className="mt-6" onClick={aoCancelar}>
         Cancelar

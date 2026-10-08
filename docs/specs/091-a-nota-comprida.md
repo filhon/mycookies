@@ -96,11 +96,11 @@ cada página antes de enviar.
 
 ## Critérios de aceite
 
-- [ ] Até quatro fotos, uma leitura, uma conferência, um lançamento.
-- [ ] Corpo antigo (`arquivo`) continua aceito.
-- [ ] A soma das fotos cabe no teto do Vercel, por função com teste.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d293` escrito; `ESTADO.md` atualizado.
+- [x] Até quatro fotos, uma leitura, uma conferência, um lançamento.
+- [x] Corpo antigo (`arquivo`) continua aceito.
+- [x] A soma das fotos cabe no teto do Vercel, por função com teste.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d293` escrito; `ESTADO.md` atualizado.
 
 ---
 

@@ -68,8 +68,21 @@ export interface NotaLida {
 /** Depois da compressão. Foto de celular chega com muito mais do que isso. */
 export const LIMITE_ARQUIVO_BYTES = 8 * 1024 * 1024;
 
-/** Nota de mercado tem entre seis e vinte linhas. Sessenta é folga larga. */
-export const LIMITE_LINHAS = 60;
+/**
+ * Nota de mercado tem entre seis e vinte linhas; a compra do mês no atacado,
+ * em quatro fotos (`#d293`), passa de sessenta.
+ */
+export const LIMITE_LINHAS = 100;
+
+/** Partes de uma nota comprida numa leitura só (`#d293`). */
+export const LIMITE_FOTOS = 4;
+
+/**
+ * O que cabe de base64 somado num `POST /api/nota`: os 4,5 MB do Vercel
+ * (`docs/DEPLOY.md`), menos a folga do JSON em volta. É o teto que vale antes
+ * do nosso, e a tela o confere antes do `fetch`.
+ */
+export const TETO_CORPO_BASE64 = 4_400_000;
 
 /** Quanto a leitura pode demorar antes de virar falha com frase. */
 export const TEMPO_LIMITE_LEITURA_MS = 30_000;
@@ -80,6 +93,29 @@ export const TEMPO_LIMITE_CNPJ_MS = 3_000;
 /** Maior lado da imagem depois da redução, e a qualidade do JPEG. */
 export const LADO_MAXIMO_PX = 1600;
 export const QUALIDADE_JPEG = 0.8;
+
+/**
+ * O maior lado de cada foto quando a nota vem em `n` partes.
+ *
+ * Uma foto de 1600 px em JPEG 80% dá algumas centenas de KB; duas ainda cabem
+ * com folga. Daí em diante a área somada fica a de duas fotos cheias, e o lado
+ * cai com a raiz: três a ~1306 px, quatro a ~1131 px. Cada parte é um pedaço do
+ * cupom, então a letra continua com mais pixels do que a nota inteira numa foto.
+ */
+export function ladoParaFotos(n: number): number {
+  const partes = Math.min(Math.max(Math.trunc(n), 1), LIMITE_FOTOS);
+  return Math.min(
+    LADO_MAXIMO_PX,
+    Math.round(LADO_MAXIMO_PX * Math.sqrt(2 / partes)),
+  );
+}
+
+/** A soma das partes, em base64, cabe no corpo que o Vercel aceita? */
+export function cabeNoCorpo(dados: string[]): boolean {
+  return (
+    dados.reduce((soma, parte) => soma + parte.length, 0) <= TETO_CORPO_BASE64
+  );
+}
 
 export const TIPOS_ACEITOS = [
   "image/jpeg",
@@ -160,8 +196,8 @@ export const MENSAGEM_FALHA: Record<FalhaNota, string> = {
     "Este login não abre esta conta. Saia e entre de novo, e tente outra vez.",
   "sem-arquivo": "Não deu para ler esse arquivo. Escolha uma foto ou um PDF.",
   "arquivo-grande":
-    "Esse arquivo é grande demais, mesmo depois de reduzido. Fotografe a nota mais de perto, em partes.",
-  "linhas-demais": `Esta nota tem mais de ${LIMITE_LINHAS} linhas. Fotografe em partes e leia uma parte de cada vez: o que já foi cadastrado não se perde.`,
+    "Grande demais para ler, mesmo depois de reduzido. Se for PDF, fotografe a nota no lugar dele; se forem fotos, tire uma da faixa e tente de novo.",
+  "linhas-demais": `Esta nota passa de ${LIMITE_LINHAS} linhas, mais do que uma leitura consegue trazer. Cadastre essa compra à mão em Materiais.`,
   "fora-de-forma":
     "A leitura voltou embaralhada. Tente de novo com a nota mais plana e a foto mais reta.",
   "sem-resposta":
@@ -206,7 +242,7 @@ export const esquemaNotaLida = z.object({
   cidade: texto(),
   dataISO: texto(),
   total: texto(),
-  // Sem teto aqui: passar de sessenta linhas não é resposta fora de forma, é um
+  // Sem teto aqui: passar de `LIMITE_LINHAS` não é resposta fora de forma, é um
   // teto de cota estourado — e ele tem a frase dele, que diz o que fazer. O
   // limite de sanidade evita uma resposta em laço virar mil cartões na tela.
   linhas: z.array(esquemaLinhaLida).max(LIMITE_LINHAS * 10),

@@ -28,7 +28,7 @@ import {
   linhaParaConferir,
   type LinhaEditada,
 } from "./LinhaNota";
-import { LendoANota, PortaDaNota } from "./PortaDaNota";
+import { LendoANota, PortaDaNota, type FotoDaNota } from "./PortaDaNota";
 import { RodapeNota, type ResumoDaNota } from "./RodapeNota";
 import {
   efeitoDosPrecosNovos,
@@ -41,10 +41,13 @@ import { entradasDaNota } from "@/lib/domain/estoque";
 import { formatarMoeda } from "@/lib/domain/money";
 import {
   atualizacaoDaLinha,
+  cabeNoCorpo,
   cadastroDaLinha,
   conferirTotal,
   idadeDosPrecos,
+  ladoParaFotos,
   lancamentoDaNota,
+  LIMITE_FOTOS,
   MENSAGEM_FALHA,
   normalizarNota,
   parearComInsumos,
@@ -92,11 +95,11 @@ const CABECALHO_VAZIO: Cabecalho = {
   cnpj: "",
 };
 
-/** O arquivo da espera: o nome, a miniatura e se veio mais de um. */
+/** O que a espera mostra: as fotos, ou o nome do PDF, e o que ficou de fora. */
 interface Escolhido {
   nome: string;
-  miniatura: string | null;
-  varios: boolean;
+  fotos: FotoDaNota[];
+  nota: string | null;
 }
 
 /** O que os quatro caminhos aceitam, o mesmo `accept` do seletor. */
@@ -197,9 +200,28 @@ export function TelaNota() {
 
   const [escolhido, setEscolhido] = useState<Escolhido | null>(null);
 
+  /**
+   * As partes da nota esperando "Ler a nota" (`#d293`). Ficam depois de uma
+   * falha ou de "Cancelar": tentar de novo não pede fotografar de novo.
+   */
+  const [fotos, setFotos] = useState<FotoDaNota[]>([]);
+  const [notaDaFaixa, setNotaDaFaixa] = useState<string | null>(null);
+
   /** A leitura em curso, para "Cancelar" e para quem sai da tela no meio. */
   const leitura = useRef<AbortController | null>(null);
   useEffect(() => () => leitura.current?.abort(), []);
+
+  // Os `blob:` da faixa morrem com a tela. Criados e revogados nos eventos, e
+  // não num efeito por foto: no `StrictMode` ele revogaria o que está à vista.
+  const fotosAtuais = useRef<FotoDaNota[]>([]);
+  useEffect(() => {
+    fotosAtuais.current = fotos;
+  }, [fotos]);
+  useEffect(() => {
+    const atuais = fotosAtuais;
+    return () =>
+      atuais.current.forEach((foto) => URL.revokeObjectURL(foto.miniatura));
+  }, []);
 
   const hoje = dataISODe(new Date());
   const idade = useMemo(() => idadeDosPrecos(insumos, hoje), [insumos, hoje]);
@@ -360,15 +382,53 @@ export function TelaNota() {
     setEtapa("conferindo");
   }
 
-  /** Seletor, câmera, soltar e colar: o primeiro arquivo, se o tipo serve. */
+  /**
+   * Seletor, câmera, soltar e colar. Foto entra na faixa, em ordem, até
+   * `LIMITE_FOTOS`; PDF entra sozinho e é lido na hora: ele já é a nota
+   * inteira, e não se mistura com foto.
+   */
   function receberArquivos(arquivos: File[]) {
-    const [primeiro] = arquivos;
-    if (!primeiro) return;
-    if (!aceito(primeiro)) {
-      setFalha("sem-arquivo");
+    const aceitos = arquivos.filter(aceito);
+    if (aceitos.length === 0) {
+      if (arquivos.length > 0) setFalha("sem-arquivo");
       return;
     }
-    void ler(primeiro, arquivos.length > 1);
+    setFalha(null);
+
+    const pdf = aceitos.find((arquivo) => arquivo.type === "application/pdf");
+    if (pdf) {
+      const misturado = aceitos.length > 1 || fotos.length > 0;
+      void ler([pdf], {
+        nome: pdf.name,
+        fotos: [],
+        nota: misturado ? "Lemos só o PDF." : null,
+      });
+      return;
+    }
+
+    const novas = aceitos
+      .slice(0, LIMITE_FOTOS - fotos.length)
+      .map((arquivo) => ({ arquivo, miniatura: URL.createObjectURL(arquivo) }));
+    const deFora = aceitos.length - novas.length;
+    setFotos([...fotos, ...novas]);
+    setNotaDaFaixa(
+      deFora > 0
+        ? `${deFora === 1 ? "Uma foto ficou" : `${deFora} fotos ficaram`} de fora: uma nota se lê em até ${LIMITE_FOTOS} partes.`
+        : null,
+    );
+  }
+
+  function tirarFoto(indice: number) {
+    const foto = fotos[indice];
+    if (foto) URL.revokeObjectURL(foto.miniatura);
+    setFotos(fotos.filter((_, atual) => atual !== indice));
+    setNotaDaFaixa(null);
+  }
+
+  function limparFotos() {
+    fotos.forEach((foto) => URL.revokeObjectURL(foto.miniatura));
+    setFotos([]);
+    setNotaDaFaixa(null);
   }
 
   /** Abortado não é falha: volta para escolher, sem aviso. */
@@ -377,7 +437,7 @@ export function TelaNota() {
     setEtapa("escolher");
   }
 
-  async function ler(arquivo: File, varios: boolean) {
+  async function ler(arquivos: File[], espera: Escolhido) {
     setFalha(null);
 
     if (!online) {
@@ -391,14 +451,27 @@ export function TelaNota() {
 
     const controle = new AbortController();
     leitura.current = controle;
-    const miniatura = arquivo.type.startsWith("image/")
-      ? URL.createObjectURL(arquivo)
-      : null;
-    setEscolhido({ nome: arquivo.name, miniatura, varios });
+    setEscolhido(espera);
     setEtapa("lendo");
 
     try {
-      const preparado = await prepararParaLeitura(arquivo);
+      // Uma por vez: quatro fotos de 12 MP decodificadas juntas estouram a
+      // memória de celular barato. O lado cai com o número de fotos, para a
+      // soma caber no corpo (`#d293`).
+      const lado = ladoParaFotos(arquivos.length);
+      const preparados = [];
+      for (const arquivo of arquivos) {
+        preparados.push(await prepararParaLeitura(arquivo, lado));
+      }
+      if (controle.signal.aborted) return;
+
+      // Passou do teto do Vercel: o aviso sem subir nada, e sem gastar o dado.
+      if (!cabeNoCorpo(preparados.map((preparado) => preparado.dados))) {
+        setFalha("arquivo-grande");
+        setEtapa("escolher");
+        return;
+      }
+
       const token = await usuario.getIdToken();
 
       const resposta = await fetch("/api/nota", {
@@ -407,7 +480,7 @@ export function TelaNota() {
           "content-type": "application/json",
           authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ contaId, arquivo: preparado }),
+        body: JSON.stringify({ contaId, arquivos: preparados }),
         signal: controle.signal,
       });
 
@@ -422,6 +495,7 @@ export function TelaNota() {
       const lida = (await resposta.json()) as NotaLida;
       if (controle.signal.aborted) return;
       receber(normalizarNota(lida));
+      limparFotos();
     } catch {
       // Cancelada, a tela já voltou. Rede caiu no meio, arquivo ilegível,
       // resposta truncada: para ela é a mesma coisa, e a mesma frase.
@@ -429,7 +503,6 @@ export function TelaNota() {
       setFalha("sem-resposta");
       setEtapa("escolher");
     } finally {
-      if (miniatura) URL.revokeObjectURL(miniatura);
       if (leitura.current === controle) leitura.current = null;
     }
   }
@@ -528,7 +601,16 @@ export function TelaNota() {
             idade={idade}
             temMateriais={insumos.length > 0}
             hoje={hoje}
+            fotos={fotos}
+            notaDaFaixa={notaDaFaixa}
             aoReceber={receberArquivos}
+            aoTirar={tirarFoto}
+            aoLer={() =>
+              void ler(
+                fotos.map((foto) => foto.arquivo),
+                { nome: fotos[0]?.arquivo.name ?? "", fotos, nota: null },
+              )
+            }
             aviso={
               // Sem rede a frase é uma só: dizer "a leitura falhou" por cima de
               // "não há internet" seria contar duas vezes a mesma coisa.
@@ -544,8 +626,8 @@ export function TelaNota() {
         {etapa === "lendo" && escolhido && (
           <LendoANota
             nome={escolhido.nome}
-            miniatura={escolhido.miniatura}
-            varios={escolhido.varios}
+            fotos={escolhido.fotos}
+            nota={escolhido.nota}
             aoCancelar={cancelar}
           />
         )}

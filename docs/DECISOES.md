@@ -8814,3 +8814,49 @@ já dizia que lista de material é lista com divisórias, e não grade de cartõ
 
 **Consequência.** O exemplo estático da porta (`#d290`) continua com o selo e "o kg": ele mostra a
 linha aberta, e a tradução do impresso continua a mesma.
+
+## D293 · A nota comprida: até quatro fotos, uma leitura
+
+**Status:** vigente · decidida em 2026-10-08, spec `091-a-nota-comprida.md`.
+
+**Contexto.** Cupom de atacado não cabe numa foto legível, e a tela mandava fotografar em partes
+e ler uma de cada vez: o total impresso só fechava na última parte, o caixa recebia dois
+lançamentos que a guarda do `#d54` não reconhecia como a nota inteira, e ela esperava e
+conferia o cabeçalho duas vezes.
+
+**Decisão.**
+
+- **Foto não é lida na hora.** Câmera, galeria, soltar e colar põem a foto na faixa
+  (`FaixaDeFotos`, em `PortaDaNota`): até `LIMITE_FOTOS = 4`, numeradas, em quatro colunas
+  iguais que cabem em 360px, com o "×" de 24px num alvo de 44px no canto. "Ler a nota" é o
+  âmbar; "Fotografar a continuação" (celular) e "Juntar a continuação" (computador) são
+  secundários e somem com quatro. O toque a mais no caso de uma foto é aceito: é onde ela vê a
+  foto tremida antes de esperar. Com a faixa, o exemplo e o motivo de ler saem da porta.
+- **A ordem é a de entrada**, e reordenar fica fora: tirar e fotografar de novo resolve. O que
+  passa de quatro numa seleção fica de fora, dito embaixo da faixa, em tom neutro.
+- **PDF entra sozinho** e é lido na hora, como antes: ele já é a nota inteira. Vindo junto de
+  fotos (na seleção ou na faixa), lê só o PDF e a espera diz "Lemos só o PDF.".
+- **A faixa sobrevive à falha e ao "Cancelar"**, e some só quando a leitura chega à
+  conferência. Os `blob:` são criados e revogados nos eventos (entrar, tirar, ler com sucesso)
+  e, ao sair da tela, por um efeito sem dependências que lê a faixa por ref, pelo mesmo motivo
+  do `#d290`.
+- **A rota** aceita `arquivos` (1 a 4, um inválido recusa o corpo) e continua aceitando
+  `arquivo`, porque o app instalado pode estar com o bundle velho. Cada arquivo vira uma
+  `inline_data` na ordem, antes do prompt; a frase da emenda ("uma linha que aparece no fim de
+  uma e no começo da outra é uma linha só") entra só com mais de uma. O teto de custo
+  (`LIMITE_ARQUIVO_BYTES`) vale para a soma. A linha repetida na emenda continua sendo pega
+  pelo rodapé (a soma passa do total); nada novo no domínio.
+- **O tamanho:** `ladoParaFotos(n)` mantém 1600 px para uma e duas fotos e, daí em diante, a
+  área somada de duas fotos cheias (1306 px para três, 1131 para quatro). Cada parte é um pedaço
+  do cupom, então a letra ainda tem mais pixels do que a nota inteira numa foto. A tela reduz uma
+  foto por vez (quatro de 12 MP decodificadas juntas estouram celular barato) e confere
+  `cabeNoCorpo` contra `TETO_CORPO_BASE64 = 4.400.000` antes do `fetch`: passou, o aviso
+  `arquivo-grande` sem subir nada. O teste supõe o quadro 4:3 a 0,75 byte por pixel, três vezes
+  o peso comum de um cupom em JPEG 80%.
+- **`LIMITE_LINHAS` de 60 para 100.** A frase de `linhas-demais` manda cadastrar à mão, e não
+  mais ler em partes; a de `arquivo-grande` deixou o "em partes".
+
+**Consequência.** Uma nota de quatro fotos custa perto de quatro de uma na chamada do modelo. O
+PDF grande agora é recusado pela tela antes de subir, e não mais pelo 413 do Vercel. A
+medição com fotos reais e a conferência do limite de imagens do modelo configurado (passo 2 da
+spec) ficaram por fazer.

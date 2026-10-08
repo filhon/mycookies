@@ -4,6 +4,7 @@ import {
   digitosDoCnpj,
   esquemaNotaLida,
   LIMITE_ARQUIVO_BYTES,
+  LIMITE_FOTOS,
   LIMITE_LINHAS,
   TEMPO_LIMITE_CNPJ_MS,
   TEMPO_LIMITE_LEITURA_MS,
@@ -121,14 +122,47 @@ function falha(codigo: FalhaNota, status: number) {
   return NextResponse.json({ erro: codigo }, { status });
 }
 
+/** Dita só quando a nota vem em partes (`#d293`): para uma foto, não há emenda. */
+const EMENDA =
+  "As imagens são partes da mesma nota, em ordem; uma linha que aparece no fim de uma e no começo da outra é uma linha só.";
+
 interface Arquivo {
   mimeType: string;
   dados: string;
 }
 
-function arquivoDoCorpo(corpo: unknown): Arquivo | null {
+/**
+ * `arquivos` (1 a `LIMITE_FOTOS`, em ordem) desde a 091; `arquivo` sozinho
+ * continua aceito, porque o app instalado pode estar com o bundle velho em
+ * cache. Um item inválido recusa o corpo inteiro: ler meia nota daria um total
+ * que não confere.
+ */
+function arquivosDoCorpo(corpo: unknown): Arquivo[] | null {
   if (typeof corpo !== "object" || corpo === null) return null;
-  const arquivo = (corpo as { arquivo?: unknown }).arquivo;
+  const { arquivos, arquivo } = corpo as {
+    arquivos?: unknown;
+    arquivo?: unknown;
+  };
+
+  if (arquivos === undefined) {
+    const unico = arquivoValido(arquivo);
+    return unico ? [unico] : null;
+  }
+  if (
+    !Array.isArray(arquivos) ||
+    arquivos.length === 0 ||
+    arquivos.length > LIMITE_FOTOS
+  ) {
+    return null;
+  }
+
+  const validos = arquivos.map(arquivoValido);
+  return validos.every((item): item is Arquivo => item !== null)
+    ? validos
+    : null;
+}
+
+function arquivoValido(arquivo: unknown): Arquivo | null {
   if (typeof arquivo !== "object" || arquivo === null) return null;
 
   const { mimeType, dados } = arquivo as {
@@ -172,18 +206,20 @@ export async function POST(requisicao: Request) {
     return falha("sem-acesso", 401);
   }
 
-  const arquivo = arquivoDoCorpo(corpo);
-  if (!arquivo) return falha("sem-arquivo", 400);
-  if (bytesDoBase64(arquivo.dados) > LIMITE_ARQUIVO_BYTES) {
-    return falha("arquivo-grande", 413);
-  }
+  const arquivos = arquivosDoCorpo(corpo);
+  if (!arquivos) return falha("sem-arquivo", 400);
+  const bytes = arquivos.reduce(
+    (soma, arquivo) => soma + bytesDoBase64(arquivo.dados),
+    0,
+  );
+  if (bytes > LIMITE_ARQUIVO_BYTES) return falha("arquivo-grande", 413);
 
   const chave = process.env.GEMINI_API_KEY;
   if (!chave) return falha("sem-configuracao", 500);
 
   let bruto: string;
   try {
-    bruto = await lerComGemini(arquivo, chave);
+    bruto = await lerComGemini(arquivos, chave);
   } catch {
     return falha("sem-resposta", 502);
   }
@@ -204,8 +240,12 @@ export async function POST(requisicao: Request) {
  * esse POST seria dependência de produção pedindo aprovação
  * (`CLAUDE.md`) para o que `fetch` já faz.
  */
-async function lerComGemini(arquivo: Arquivo, chave: string): Promise<string> {
+async function lerComGemini(
+  arquivos: Arquivo[],
+  chave: string,
+): Promise<string> {
   const modelo = process.env.GEMINI_MODELO || MODELO_PADRAO;
+  const prompt = arquivos.length > 1 ? `${PROMPT}\n\n${EMENDA}` : PROMPT;
 
   const resposta = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`,
@@ -217,14 +257,15 @@ async function lerComGemini(arquivo: Arquivo, chave: string): Promise<string> {
         contents: [
           {
             role: "user",
+            // As partes na ordem do papel, e o prompt depois delas.
             parts: [
-              {
+              ...arquivos.map((arquivo) => ({
                 inline_data: {
                   mime_type: arquivo.mimeType,
                   data: arquivo.dados,
                 },
-              },
-              { text: PROMPT },
+              })),
+              { text: prompt },
             ],
           },
         ],

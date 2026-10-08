@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { calcularCustoInsumo } from "@/lib/domain/custoInsumo";
 import {
   atualizacaoDaLinha,
+  cabeNoCorpo,
   cadastroDaLinha,
   categoriaDaCompra,
   categoriaSugerida,
@@ -13,12 +14,16 @@ import {
   embalagemDoTexto,
   esquemaNotaLida,
   idadeDosPrecos,
+  LADO_MAXIMO_PX,
+  ladoParaFotos,
+  LIMITE_FOTOS,
   lancamentoDaNota,
   normalizarNota,
   parearComInsumos,
   PRECO_ENVELHECE_DIAS,
   saltoDePreco,
   somarLinhas,
+  TETO_CORPO_BASE64,
   type InsumoConhecido,
   type LinhaRascunho,
   type NotaLida,
@@ -747,5 +752,36 @@ describe("saltoDePreco", () => {
   it("base diferente ou sem preço anterior não se compara", () => {
     expect(saltoDePreco(manteiga, lida(10980, 1, "un"))).toBeNull();
     expect(saltoDePreco(lida(0, 1), lida(1098, 1))).toBeNull();
+  });
+});
+
+describe("ladoParaFotos · a nota comprida cabe no corpo (#d293)", () => {
+  it("uma e duas fotos sobem no lado cheio; três e quatro, menores", () => {
+    expect(ladoParaFotos(1)).toBe(LADO_MAXIMO_PX);
+    expect(ladoParaFotos(2)).toBe(LADO_MAXIMO_PX);
+    expect(ladoParaFotos(3)).toBe(1306);
+    expect(ladoParaFotos(4)).toBe(1131);
+  });
+
+  it("fora da faixa, vale a ponta mais próxima", () => {
+    expect(ladoParaFotos(0)).toBe(ladoParaFotos(1));
+    expect(ladoParaFotos(9)).toBe(ladoParaFotos(LIMITE_FOTOS));
+  });
+
+  it("a soma de até quatro fotos cabe no teto, mesmo em JPEG pesado", () => {
+    // Quadro 4:3 da câmera do celular, e 0,75 byte por pixel: três vezes o que
+    // uma foto de cupom em JPEG 80% costuma pesar. Base64 carrega 4 por 3.
+    for (let n = 1; n <= LIMITE_FOTOS; n += 1) {
+      const lado = ladoParaFotos(n);
+      const base64 = n * lado * ((lado * 3) / 4) * 0.75 * (4 / 3);
+      expect(base64).toBeLessThanOrEqual(TETO_CORPO_BASE64);
+    }
+  });
+
+  it("cabeNoCorpo soma as partes e para no teto", () => {
+    const metade = "A".repeat(TETO_CORPO_BASE64 / 2);
+    expect(cabeNoCorpo([metade, metade])).toBe(true);
+    expect(cabeNoCorpo([metade, metade, "A"])).toBe(false);
+    expect(cabeNoCorpo([])).toBe(true);
   });
 });

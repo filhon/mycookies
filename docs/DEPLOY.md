@@ -410,13 +410,11 @@ e o corpo é JSON com base64 — que carrega 4 bytes a cada 3. Na prática o tet
 é ~3,3 MB.
 
 Foto não chega perto disso: `imagem.ts` reduz para 1600 px / JPEG 80% antes de subir, o que
-dá algumas centenas de KB. **PDF sobe como está**, e é o caso que pode bater no teto. Quando
-bate, o Vercel devolve 413 sem corpo, e a tela já lida com isso — `codigoDaFalha` cai no
-status e mostra "Esse arquivo é grande demais, mesmo depois de reduzido. Fotografe a nota mais
-de perto, em partes." A frase está certa; o que ela não diz é que o corte veio da hospedagem.
-
-Se um PDF de nota grande passar a ser rotina, o conserto é baixar `LIMITE_ARQUIVO_BYTES` para
-3 MB — aí a recusa é nossa, acontece antes do upload inteiro e não gasta o dado dela.
+dá algumas centenas de KB; com três ou quatro fotos da mesma nota o lado cai
+(`ladoParaFotos`, `#d293`). **PDF sobe como está**, e é o caso que pode bater no teto. Desde a
+091 a tela soma o base64 antes do `fetch` (`cabeNoCorpo`, `TETO_CORPO_BASE64`) e, passou,
+mostra o aviso de `arquivo-grande` sem subir nada. O 413 do Vercel continua tratado em
+`codigoDaFalha` para o bundle velho.
 
 **A leitura tem 60 segundos.** `maxDuration = 60` na rota, que é o teto do plano gratuito. O
 tempo limite interno da chamada ao Gemini é de 30 s (`TEMPO_LIMITE_LEITURA_MS`), então a folga
