@@ -8,9 +8,11 @@ import {
 } from "@/components/layout/IndiceDaPagina";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { CATALOGO_DO_COMECO, type IdPasso } from "@/lib/domain/onboarding";
+import { useCadeia } from "@/lib/hooks/useCadeia";
 import { useComeco } from "@/lib/hooks/useComeco";
 import { useDesktop } from "@/lib/hooks/useDispositivo";
 import { cn } from "@/lib/utils/cn";
+import { useContaId } from "@/providers/AuthProvider";
 import { BlocoPasso, LinhaPasso } from "./BlocoPasso";
 import { CadeiaDoDinheiro } from "./CadeiaDoDinheiro";
 import { InstalarNaTela, useInstalado } from "./InstalarNaTela";
@@ -46,14 +48,15 @@ const ANCORAS_QUE_FICAM: readonly Ancora[] = [
  * você está" e os cinco vêm primeiro, porque é o que ela veio fazer. Encerrado,
  * os cinco descem para o fim, uma linha cada, e o que ela volta para buscar (a
  * cadeia do dinheiro, as outras telas, o sem internet, o instalar) sobe. Nenhuma
- * dessas quatro depende da conta, e por isso nenhuma espera as cinco
- * assinaturas: a página nunca fica em branco.
+ * dessas quatro espera as cinco assinaturas: a página nunca fica em branco. Os
+ * números da cadeia chegam depois das frases (`#d296`).
  */
 export function TelaComecar() {
   const desktop = useDesktop();
   const instalado = useInstalado();
   const { passos, progresso, proximo, carregando, encerrado } = useComeco();
   const [abertura, setAbertura] = useState<Abertura>(null);
+  const cadeia = useCadeia(useContaId());
 
   // Sem abertura manual, o passo de agora é o que já vem aberto: no celular ela
   // chega aqui para fazer alguma coisa, e não para ler os cinco.
@@ -140,11 +143,19 @@ export function TelaComecar() {
 
       <SecaoGuia
         id="cadeia"
-        titulo="A cadeia do dinheiro"
-        descricao="Cada coisa que você cadastra é o que dá número à seguinte. É por isso que o sistema pede tudo isso, e nesta ordem."
+        titulo={
+          cadeia.ficha
+            ? `A cadeia do dinheiro, no seu ${cadeia.ficha.nome}`
+            : "A cadeia do dinheiro"
+        }
+        descricao={
+          cadeia.ficha
+            ? "De um pacote que você compra até o que entrou no caixa, com os números de hoje."
+            : "Cada coisa que você cadastra é o que dá número à seguinte. É por isso que o sistema pede tudo isso, e nesta ordem."
+        }
         className={encerrado ? "mt-6 lg:mt-8" : undefined}
       >
-        <CadeiaDoDinheiro />
+        <CadeiaDoDinheiro dados={cadeia} />
       </SecaoGuia>
 
       <SecaoGuia

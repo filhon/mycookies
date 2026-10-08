@@ -2043,7 +2043,7 @@ com dúvidas", que não tem fundo, e sim "isto cabe em alguma tela?". Se cabe, m
 
 **Nenhum número de exemplo entra na página.** Número de mentira numa página de ajuda envelhece
 e passa a contradizer a tela, e é o mesmo argumento de `#d17` contra dado semeado, aplicado ao
-texto.
+texto. (Número **lido da conta** entra na cadeia desde o `#d296`: ele é o da tela.)
 
 O conteúdo das quatro seções mora nos componentes de `src/components/comecar/`, e **não** em
 `src/lib/domain/`. Os cinco passos foram para o domínio porque duas telas mostram os mesmos
@@ -8951,3 +8951,45 @@ era procurar um ícone na barra de endereço.
 **Consequência.** O ouvinte só existe no shell autenticado: quem abre o app pela primeira vez
 fora dele (cadastro, login) e recebe o evento ali perde o botão naquela visita, e vê as
 instruções.
+
+## D296 · A cadeia do dinheiro com os números dela
+
+**Status:** vigente · decidida em 2026-10-08, spec `094-a-cadeia-com-os-seus-numeros.md`.
+
+**Contexto.** A cadeia é a página em que o produto explica por que ela cadastra tudo, e os seis
+elos falavam de "o pacote de farinha" e "o doce pronto" sem número nenhum. O `#d70` proíbe
+**número de exemplo** nesta página porque ele envelhece e passa a contradizer a tela. Número
+lido da conta não envelhece: é o mesmo que a tela mostra. O `#d70` continua de pé para o
+inventado; esta decisão só abre a porta para o lido.
+
+**Decisão.**
+
+- **Qual produto:** `produtoDaCadeia` em `domain/caixa.ts` (ao lado de `produtosOrdenados`, com
+  teste) ordena os ids do `ResumoMensal.produtos` por `quantidade` e, no empate, `receita`, sem a
+  linha zerada. O agregado é o do mês corrente e, sem produto vendido nele, o do anterior. A tela
+  lê até três candidatos e fica com a primeira receita (`SIMPLES`) viva; sem nenhuma, `fichas`
+  com `arquivado == false` e `tipo == "SIMPLES"`, `limit(1)`, duas igualdades que o Firestore
+  serve juntando índices de campo único, sem índice composto. O material da cadeia é o item de
+  maior `custoLinha`.
+- **Leitura, e não assinatura.** `lib/hooks/useCadeia.ts` faz `getDoc` um de cada vez num efeito
+  (no máximo dois agregados, três fichas, a consulta de reserva e um material), sem
+  `onSnapshot`: a página é de ler, e o número de um minuto atrás é o da tela. Sem rede e sem
+  cache o `getDoc` lança, e o elo fica só com a frase, sem aviso.
+- **Cada elo ganha uma linha** embaixo da frase, `body` com o `Dinheiro` (o `R$` menor em
+  `--ink-muted`). Elo sem dado (sem material, preço zerado, mês sem pedido) fica só com a
+  frase. O esqueleto vale só para a linha do número.
+- **O preço por unidade é o `custoDeReferencia`**, o mesmo de Materiais e da conferência da nota
+  (`#d292`): "Sai a R$ 5,49 o quilo", e não "a cada 100 g" como o exemplo da spec. ", já
+  contando a perda" só quando há perda.
+- **Receita em grama ou porção** diz o lote ("Um lote de … custa R$ … e rende 1.200 gramas"),
+  porque "um" ali não é a unidade.
+- **O ponto âmbar** fica na sobra do elo 4, e só nela. Sobra negativa: "falta", o
+  `trending-down`, o sinal e a cor negativa, sem o ponto. Custo desatualizado: "Custo por
+  refazer" com o triângulo, em ocre, embaixo do número.
+- **Os links:** os dois elos do produto abrem `/fichas/{id}`; os do material continuam em
+  `/insumos`, que não abre um item pela URL.
+- **Título** "A cadeia do dinheiro, no seu …" e a descrição nova só com produto.
+
+**Consequência.** A página deixa de ser estática: são até sete leituras ao abrir `/comecar`, só
+para a dona (a rota já é dela). Escolher outro produto para seguir é um seletor, e fica para
+quando a pergunta aparecer.

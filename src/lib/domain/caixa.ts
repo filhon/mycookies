@@ -751,6 +751,23 @@ export function produtosOrdenados(
 }
 
 /**
+ * Os produtos que a cadeia do dinheiro pode seguir, do mais vendido para o
+ * menos (`#d296`): maior `quantidade`, e no empate a maior receita, o mesmo
+ * critério do `sobraQuePagaOPlano`. A linha sem venda fica fora. A tela lê as
+ * fichas nessa ordem e fica com a primeira receita viva.
+ */
+export function produtoDaCadeia(
+  produtos: Record<string, ResumoProduto> | undefined,
+): string[] {
+  return Object.entries(produtos ?? {})
+    .filter(([, produto]) => produto.quantidade > 0)
+    .sort(
+      ([, a], [, b]) => b.quantidade - a.quantidade || b.receita - a.receita,
+    )
+    .map(([fichaId]) => fichaId);
+}
+
+/**
  * O mês que a leitura do cardápio lê (`#d232`): o corrente a partir do dia 10;
  * antes, o anterior, porque nove dias de venda ainda não dizem nada.
  */

@@ -19,6 +19,7 @@ import {
   parcelasDoResumo,
   pedidosQueEntramNoMes,
   previsaoDoMes,
+  produtoDaCadeia,
   produtosOrdenados,
   rendimentoDoMes,
   saidasOrdenadas,
@@ -797,6 +798,37 @@ describe("parcelasDoResumo lê a metade nova", () => {
       entradas: 24500,
       saidas: 12000,
     });
+  });
+});
+
+describe("produtoDaCadeia", () => {
+  const linha = (quantidade: number, receita: number): ResumoProduto => ({
+    nome: "",
+    quantidade,
+    receita,
+    lucro: 0,
+  });
+
+  it("sem agregado ou sem venda, nenhum produto", () => {
+    expect(produtoDaCadeia(undefined)).toEqual([]);
+    expect(produtoDaCadeia({})).toEqual([]);
+    expect(produtoDaCadeia({ cookie: linha(0, 0) })).toEqual([]);
+  });
+
+  it("do mais vendido para o menos, pela quantidade", () => {
+    expect(
+      produtoDaCadeia({
+        brownie: linha(5, 9000),
+        cookie: linha(38, 15200),
+        caixa6: linha(12, 30000),
+      }),
+    ).toEqual(["cookie", "caixa6", "brownie"]);
+  });
+
+  it("no empate da quantidade, a maior receita", () => {
+    expect(
+      produtoDaCadeia({ cookie: linha(10, 4000), brownie: linha(10, 6000) }),
+    ).toEqual(["brownie", "cookie"]);
   });
 });
 

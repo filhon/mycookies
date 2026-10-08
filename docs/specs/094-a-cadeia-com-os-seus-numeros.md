@@ -108,11 +108,11 @@ A frase de hoje fica. Embaixo dela, quando o dado existe, **uma linha com o núm
 
 ## Critérios de aceite
 
-- [ ] Os seis elos com a linha do número quando o dado existe, e sem ela quando não existe.
-- [ ] `produtoDaCadeia` com teste.
-- [ ] Um ponto âmbar, na sobra.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d296` escrito (citando o `#d70`); `ESTADO.md` atualizado.
+- [x] Os seis elos com a linha do número quando o dado existe, e sem ela quando não existe.
+- [x] `produtoDaCadeia` com teste.
+- [x] Um ponto âmbar, na sobra.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d296` escrito (citando o `#d70`); `ESTADO.md` atualizado.
 
 ---
 
