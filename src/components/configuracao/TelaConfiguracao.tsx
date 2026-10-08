@@ -1,14 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useId, useMemo, useState, type ReactNode } from "react";
 import {
   Check,
   ChevronRight,
@@ -23,6 +16,7 @@ import {
   Tag,
 } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
+import { IndiceDaPagina } from "@/components/layout/IndiceDaPagina";
 import { FaleComAGente } from "@/components/conta/FaleComAGente";
 import { LinhaDaAssinatura } from "@/components/conta/LinhaDaAssinatura";
 import { MeusDados } from "@/components/conta/MeusDados";
@@ -450,69 +444,6 @@ function Parte({
 }
 
 /**
- * O índice da faixa de ferramentas: três âncoras, com `aria-current` na parte
- * em leitura. É a última parte cujo pedaço passa pela metade de cima da tela,
- * abaixo do cabeçalho: no fim da página, onde a última parte não chega ao
- * topo, ela ainda acende.
- */
-function IndiceDasPartes() {
-  const ref = useRef<HTMLElement>(null);
-  const [atual, setAtual] = useState<IdParte>(PARTES[0].id);
-
-  useEffect(() => {
-    const cabecalho = ref.current?.closest("header");
-    const visiveis = new Set<string>();
-    const observador = new IntersectionObserver(
-      (entradas) => {
-        for (const entrada of entradas) {
-          if (entrada.isIntersecting) visiveis.add(entrada.target.id);
-          else visiveis.delete(entrada.target.id);
-        }
-        const emLeitura = PARTES.filter((parte) => visiveis.has(parte.id)).at(
-          -1,
-        );
-        if (emLeitura) setAtual(emLeitura.id);
-      },
-      { rootMargin: `-${cabecalho?.offsetHeight ?? 0}px 0px -50% 0px` },
-    );
-    for (const parte of PARTES) {
-      const elemento = document.getElementById(parte.id);
-      if (elemento) observador.observe(elemento);
-    }
-    return () => observador.disconnect();
-  }, []);
-
-  return (
-    <nav
-      ref={ref}
-      aria-label="Partes da configuração"
-      className="grid grid-cols-3 gap-2 lg:flex"
-    >
-      {PARTES.map((parte) => {
-        const ativa = atual === parte.id;
-        return (
-          <a
-            key={parte.id}
-            href={`#${parte.id}`}
-            onClick={() => setAtual(parte.id)}
-            aria-current={ativa ? "true" : undefined}
-            className={cn(
-              "flex h-11 items-center justify-center rounded-full px-2 text-label font-medium whitespace-nowrap lg:px-4",
-              "transition-colors duration-150 ease-quart",
-              ativa
-                ? "bg-brand-700 text-on-brand"
-                : "border border-line-strong text-ink-muted hover:bg-sunken active:bg-sunken",
-            )}
-          >
-            {parte.rotulo}
-          </a>
-        );
-      })}
-    </nav>
-  );
-}
-
-/**
  * "Sair", a última linha da lista. `pedir` é a guarda de saída da tela que tem
  * formulário; sem ela, sai direto.
  */
@@ -797,7 +728,11 @@ function ConfiguracaoDaDona() {
           </Botao>
         }
       >
-        <IndiceDasPartes />
+        <IndiceDaPagina
+          ancoras={PARTES}
+          rotulo="Partes da configuração"
+          className="grid grid-cols-3 overflow-visible lg:flex [&>a]:px-2 lg:[&>a]:px-4"
+        />
       </CabecalhoPagina>
 
       <div className="mt-4 flex min-h-8 items-center justify-between gap-3">

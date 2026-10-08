@@ -11,6 +11,8 @@ import { classesBotao } from "@/components/ui/estilosBotao";
 import { rotaSoDaDona } from "@/lib/domain/ajudante";
 import { situacaoDaConta } from "@/lib/domain/assinatura";
 import { AVISO_SAIR_PENDENTE, useAuth } from "@/providers/AuthProvider";
+// Só pelo efeito: o ouvinte de instalar precisa estar de pé antes de `/comecar`.
+import "@/lib/utils/instalacao";
 
 /** Resultado da última reconferência. `null` = ainda não tentou. */
 type Tentativa = null | "sem-acesso" | "sem-conexao";

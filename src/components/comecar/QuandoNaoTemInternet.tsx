@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Check, CloudOff, Download, ScanLine } from "lucide-react";
-import { Selo } from "@/components/ui/Selo";
+import { SeloSalvoNoAparelho } from "@/components/layout/SeloSincronizacao";
 
 /**
  * O comportamento mais surpreendente do produto, e o único sem tela própria.
@@ -23,14 +23,9 @@ export function QuandoNaoTemInternet() {
       </Fala>
 
       <Fala icone={CloudOff} titulo="O selo é aviso, e não erro">
-        Quando o sinal cai, este selo aparece no alto da tela:
+        Quando o sinal cai, este selo aparece embaixo do título da tela:
         <span className="mt-2 flex">
-          <Selo
-            tom="atencao"
-            icone={<CloudOff aria-hidden className="size-3.5" />}
-          >
-            Sem conexão, salvando no aparelho
-          </Selo>
+          <SeloSalvoNoAparelho />
         </span>
         <span className="mt-2 block">
           Ele diz que o que você acabou de escrever está guardado aqui no

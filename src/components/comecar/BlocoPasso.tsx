@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { Route } from "next";
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronRight } from "lucide-react";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import type { EstadoPasso, PassoBase } from "@/lib/domain/onboarding";
 import { cn } from "@/lib/utils/cn";
@@ -16,9 +16,8 @@ import { SeloDoPasso } from "./Trilha";
  * primária precisa caber inteira. No desktop os cinco ficam abertos ao mesmo
  * tempo, porque ver o mapa inteiro é o que a tela grande tem de melhor.
  *
- * `estado` nulo é o modo referência: com o caminho já encerrado, as cinco
- * perguntas não são feitas (`DECISOES.md#d67`), e um selo dizendo "depois" sobre
- * um passo que ninguém consultou seria uma afirmação inventada.
+ * `estado` nulo é o passo que ninguém consultou (`DECISOES.md#d67`): um selo
+ * dizendo "depois" sobre ele seria uma afirmação inventada.
  */
 export function BlocoPasso({
   passo,
@@ -66,11 +65,10 @@ export function BlocoPasso({
   );
 
   return (
-    <li
-      // O passo de agora é dito pelo distintivo em tinta cheia e pelo selo, não
-      // por enfeite na borda: é o mesmo "é este aqui" do cartão da tela Hoje.
-      className="overflow-hidden rounded-lg border border-line bg-surface"
-    >
+    // Linha da lista, e não cartão (`#d295`): a superfície e o filete são da
+    // `<ol>`. O passo de agora é dito pelo distintivo em tinta cheia e pelo
+    // selo, não por enfeite: é o mesmo "é este aqui" do cartão da tela Hoje.
+    <li>
       {dobravel ? (
         <button
           type="button"
@@ -134,6 +132,38 @@ export function BlocoPasso({
           </div>
         </div>
       )}
+    </li>
+  );
+}
+
+/**
+ * Um dos cinco com o caminho encerrado: o número, o título e o chevron, e a
+ * linha inteira leva à tela do passo (`DECISOES.md#d295`). Sem `porque` nem
+ * "O que esperar": quem já fez os cinco não lê de novo o que é abrir um
+ * produto pela primeira vez.
+ */
+export function LinhaPasso({ passo }: { passo: PassoBase }) {
+  return (
+    <li>
+      <Link
+        href={passo.href as Route}
+        className="flex items-center gap-3 px-4 py-3 transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:px-5"
+      >
+        <span
+          aria-hidden
+          className="num flex size-8 shrink-0 items-center justify-center rounded-full border border-line-strong text-label font-semibold text-ink-muted"
+        >
+          {passo.numero}
+        </span>
+        <span className="min-w-0 flex-1 text-body font-semibold text-ink">
+          {passo.titulo}
+        </span>
+        <ChevronRight
+          aria-hidden
+          className="size-5 shrink-0 text-ink-subtle"
+          strokeWidth={1.75}
+        />
+      </Link>
     </li>
   );
 }

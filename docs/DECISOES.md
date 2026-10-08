@@ -8907,3 +8907,47 @@ do fornecedor no WhatsApp. O caminho era baixar, abrir o Rende, Materiais, "Ler 
 **Consequência.** Vários arquivos de uma vez ficam fora: o primeiro basta, e com a 091 de pé
 é trocar "o primeiro" por "até quatro". O passo 2 da spec (conferir no Android que o app
 aparece na folha depois de reinstalar) é do roteiro de navegador.
+
+## D295 · "Como funciona" por fase, com índice e o instalar num toque
+
+**Status:** vigente · decidida em 2026-10-08, spec `093-a-pagina-por-fase.md`.
+
+**Contexto.** Com o caminho do começo encerrado, que é o estado de quem já usa, os cinco passos
+ocupavam o primeiro terço da página, abertos, com "O que esperar" escrito para quem nunca abriu
+um produto. Duas frases diziam a mesma coisa, os cinco eram cartões empilhados, a página tinha
+3.585 px no celular sem índice, a cópia errava em três lugares ("Quatro telas" listando cinco,
+o selo "Sem conexão, salvando no aparelho" que não existe mais, "no alto da tela"), e instalar
+era procurar um ícone na barra de endereço.
+
+**Decisão.**
+
+- **A ordem muda com a fase.** Aberto: "Onde você está" e os cinco no topo, depois as quatro
+  seções que ficam. Encerrado: a cadeia, o que mais tem aqui, sem internet, instalar e, por
+  último, "Os cinco passos do começo", uma linha por passo (`LinhaPasso`: o número no distintivo
+  de contorno, o título, o chevron, a linha inteira é o link). A descrição do cabeçalho no
+  encerrado é uma só, e o parágrafo "Você já encerrou o caminho…" saiu.
+- **Os cinco numa `<ol>` com divisórias** (`--surface`, raio 14px, filete `--border`) nos dois
+  estados. `BlocoPasso` virou linha da lista; abrir e fechar no aberto não mudou (`#d69`).
+- **O índice saiu para `layout/IndiceDaPagina`**, com a mesma regra de `#d283` (acende a última
+  parte que passa pela metade de cima da tela, abaixo do cabeçalho) e `ancoras` como lista: o
+  observador é refeito quando ela muda. A faixa rola na horizontal com `scroll-snap`, e a
+  pílula ativa é rolada à vista pelo `scrollLeft` da faixa, nunca por `scrollIntoView`, que
+  puxaria a página. A Configuração passa `className` com a grade de três e o recuo de antes.
+  Em `/comecar`: "O dinheiro · Outras telas · Sem internet · Instalar · Os cinco", com "Os
+  cinco" primeiro no aberto, fora enquanto carrega, e "Instalar" fora com o app instalado.
+- **O `id` da `SecaoGuia` foi do `h2` para a `<section>`** (o título ganhou `-titulo`): é a
+  seção que o índice observa, com o `scroll-mt` do cabeçalho grudento.
+- **O selo de exemplo é o de verdade:** `SeloSalvoNoAparelho`, exportado de
+  `SeloSincronizacao` e usado pelo próprio selo sem rede. "Embaixo do título da tela".
+- **Instalar num toque.** `lib/utils/instalacao.ts` escuta `beforeinstallprompt` (com
+  `preventDefault`, o que também cala a faixa própria do Chrome no Android) e `appinstalled`
+  desde o import, que mora no `(app)/layout` (cliente): o evento dispara uma vez, cedo. O
+  estado vai a `useSyncExternalStore`, sem React no módulo. Com o evento, "Instalar o Rende"
+  (secundário, `Download`); recusado, o evento não serve de novo e a tela volta às instruções;
+  aceito, `instalou` esconde a seção e a âncora, porque a aba onde ela aceitou continua
+  navegador e `display-mode` não muda. Sem o evento, as instruções de antes, com o ícone
+  `Share` dentro da frase do iPhone. Nada gravado e nada de user-agent (`#d71`).
+
+**Consequência.** O ouvinte só existe no shell autenticado: quem abre o app pela primeira vez
+fora dele (cadastro, login) e recebe o evento ali perde o botão naquela visita, e vê as
+instruções.

@@ -25,8 +25,17 @@ export function SecaoGuia({
   className?: string;
 }) {
   return (
-    <section aria-labelledby={id} className={cn("mt-8 lg:mt-10", className)}>
-      <h2 id={id} className="text-heading font-semibold text-ink">
+    // O `id` é da seção, e não do título: é ela que o índice observa
+    // (`#d295`), e a âncora para logo abaixo do cabeçalho grudento.
+    <section
+      id={id}
+      aria-labelledby={`${id}-titulo`}
+      className={cn(
+        "mt-8 scroll-mt-[calc(var(--fundo-cabecalho,0px)+1rem)] lg:mt-10",
+        className,
+      )}
+    >
+      <h2 id={`${id}-titulo`} className="text-heading font-semibold text-ink">
         {titulo}
       </h2>
       {descricao && (

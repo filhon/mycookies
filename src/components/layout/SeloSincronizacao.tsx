@@ -7,6 +7,18 @@ import { Selo } from "@/components/ui/Selo";
 import { obterDb } from "@/lib/firebase/client";
 import { useConexao } from "@/lib/hooks/useDispositivo";
 
+/**
+ * O selo sem rede, sozinho: "Como funciona" desenha este mesmo, para ensinar o
+ * selo que ela vai ver (`DECISOES.md#d295`).
+ */
+export function SeloSalvoNoAparelho() {
+  return (
+    <Selo tom="atencao" icone={<CloudOff aria-hidden className="size-3.5" />}>
+      Salvo no aparelho
+    </Selo>
+  );
+}
+
 /** O que o selo diz depois que a rede volta. */
 type Volta = null | "enviando" | "enviado";
 
@@ -52,13 +64,7 @@ export function SeloSincronizacao({ pendente }: { pendente: boolean }) {
     return () => clearTimeout(relogio);
   }, [volta]);
 
-  if (!online) {
-    return (
-      <Selo tom="atencao" icone={<CloudOff aria-hidden className="size-3.5" />}>
-        Salvo no aparelho
-      </Selo>
-    );
-  }
+  if (!online) return <SeloSalvoNoAparelho />;
 
   if (pendente || volta === "enviando") {
     return (
