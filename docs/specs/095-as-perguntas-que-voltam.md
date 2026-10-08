@@ -100,11 +100,11 @@ para a tela que resolve.
 
 ## Critérios de aceite
 
-- [ ] Até dez perguntas, cada resposta conferida no código, cada uma com o link da tela.
-- [ ] Busca sem acento; âncora por pergunta.
-- [ ] "Fale com a gente" no fim.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d297` escrito; `ESTADO.md` atualizado.
+- [x] Até dez perguntas, cada resposta conferida no código, cada uma com o link da tela.
+- [x] Busca sem acento; âncora por pergunta.
+- [x] "Fale com a gente" no fim.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d297` escrito; `ESTADO.md` atualizado.
 
 ---
 

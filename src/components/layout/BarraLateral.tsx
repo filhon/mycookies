@@ -31,6 +31,7 @@ import {
   useEsperaDoCardapio,
   type Destino,
 } from "./navegacao";
+import { useHaNovidade } from "@/lib/hooks/useNovidade";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -44,6 +45,7 @@ export function BarraLateral() {
   const { usuario, conta, sair } = useAuth();
   const papel = usePapel();
   const esperaDoCardapio = useEsperaDoCardapio();
+  const novidade = useHaNovidade();
   const [saindo, setSaindo] = useState(false);
   const [pendente, setPendente] = useState(false);
 
@@ -156,6 +158,12 @@ export function BarraLateral() {
             pe
           >
             Como funciona
+            {/* A palavra, sem contagem e sem bolinha (`#d298`). */}
+            {novidade && (
+              <span className="ml-auto text-micro font-semibold text-on-brand-muted">
+                Novidade
+              </span>
+            )}
           </ItemDaBarra>
         )}
 

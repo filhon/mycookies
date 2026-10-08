@@ -34,7 +34,7 @@ const SEM_MUDANCA = () => () => undefined;
  * Pelo user-agent, ao contrário do `InstalarNaTela`: aqui a pergunta é mesmo
  * o sistema, porque o `share_target` só existe no Android (`#d294`).
  */
-function useAndroid(): boolean {
+export function useAndroid(): boolean {
   return useSyncExternalStore(
     SEM_MUDANCA,
     () => /Android/i.test(navigator.userAgent),

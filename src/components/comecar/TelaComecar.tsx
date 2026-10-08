@@ -1,22 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import {
   IndiceDaPagina,
   type Ancora,
 } from "@/components/layout/IndiceDaPagina";
 import { Esqueleto } from "@/components/ui/Esqueleto";
+import { dataISODe } from "@/lib/domain/datas";
 import { CATALOGO_DO_COMECO, type IdPasso } from "@/lib/domain/onboarding";
 import { useCadeia } from "@/lib/hooks/useCadeia";
 import { useComeco } from "@/lib/hooks/useComeco";
 import { useDesktop } from "@/lib/hooks/useDispositivo";
+import { marcarNovidadesVistas } from "@/lib/hooks/useNovidade";
 import { cn } from "@/lib/utils/cn";
 import { useContaId } from "@/providers/AuthProvider";
 import { BlocoPasso, LinhaPasso } from "./BlocoPasso";
 import { CadeiaDoDinheiro } from "./CadeiaDoDinheiro";
 import { InstalarNaTela, useInstalado } from "./InstalarNaTela";
-import { OQueMaisTem } from "./OQueMaisTem";
+import { OQueMudou } from "./OQueMudou";
+import { NOVIDADES, novidadesRecentes } from "./novidades";
+import { OQueMaisTem, useAndroid } from "./OQueMaisTem";
 import { PerguntasQueVoltam } from "./PerguntasQueVoltam";
 import { QuandoNaoTemInternet } from "./QuandoNaoTemInternet";
 import { SecaoGuia } from "./SecaoGuia";
@@ -30,6 +34,7 @@ const LISTA =
   "divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface";
 
 const ANCORA_DOS_CINCO: Ancora = { id: "os-cinco", rotulo: "Os cinco" };
+const ANCORA_DAS_NOVIDADES: Ancora = { id: "novidades", rotulo: "Novidades" };
 
 const ANCORAS_QUE_FICAM: readonly Ancora[] = [
   { id: "cadeia", rotulo: "O dinheiro" },
@@ -59,14 +64,26 @@ export function TelaComecar() {
   const { passos, progresso, proximo, carregando, encerrado } = useComeco();
   const [abertura, setAbertura] = useState<Abertura>(null);
   const cadeia = useCadeia(useContaId());
+  const android = useAndroid();
+  const [hoje] = useState(() => dataISODe(new Date()));
+  const novidades = novidadesRecentes(
+    hoje,
+    NOVIDADES.filter((novidade) => android || !novidade.soAndroid),
+  );
+
+  // Abrir a página é ver as novidades: o "Novidade" do menu some (`#d298`).
+  useEffect(marcarNovidadesVistas, []);
 
   // Sem abertura manual, o passo de agora é o que já vem aberto: no celular ela
   // chega aqui para fazer alguma coisa, e não para ler os cinco.
   const aberto = abertura ? abertura.id : (proximo?.id ?? null);
 
-  const queFicam = ANCORAS_QUE_FICAM.filter(
-    (ancora) => !instalado || ancora.id !== "instalar",
-  );
+  const queFicam = [
+    ...(novidades.length > 0 ? [ANCORA_DAS_NOVIDADES] : []),
+    ...ANCORAS_QUE_FICAM.filter(
+      (ancora) => !instalado || ancora.id !== "instalar",
+    ),
+  ];
   const ancoras = carregando
     ? queFicam
     : encerrado
@@ -143,6 +160,19 @@ export function TelaComecar() {
         )
       )}
 
+      {/* Logo abaixo do cabeçalho no encerrado e depois dos cinco no aberto:
+          é o que muda entre uma visita e outra (`#d298`). */}
+      {novidades.length > 0 && (
+        <SecaoGuia
+          id={ANCORA_DAS_NOVIDADES.id}
+          titulo="O que mudou"
+          descricao="O que chegou ao Rende nos últimos meses, e onde mora."
+          className={encerrado ? "mt-6 lg:mt-8" : undefined}
+        >
+          <OQueMudou novidades={novidades} />
+        </SecaoGuia>
+      )}
+
       <SecaoGuia
         id="cadeia"
         titulo={
@@ -155,7 +185,9 @@ export function TelaComecar() {
             ? "De um pacote que você compra até o que entrou no caixa, com os números de hoje."
             : "Cada coisa que você cadastra é o que dá número à seguinte. É por isso que o sistema pede tudo isso, e nesta ordem."
         }
-        className={encerrado ? "mt-6 lg:mt-8" : undefined}
+        className={
+          encerrado && novidades.length === 0 ? "mt-6 lg:mt-8" : undefined
+        }
       >
         <CadeiaDoDinheiro dados={cadeia} />
       </SecaoGuia>

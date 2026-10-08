@@ -9045,3 +9045,45 @@ sinal, o Pix com o valor, o relatório do MEI, a folha do orçamento) não tinha
 quem mudar o sinal, o Pix, o arquivar ou a assinatura confere a pergunta correspondente. A rolagem
 pela âncora acontece uma vez, no carregar; a cadeia, que chega depois com os números, pode
 empurrar a pergunta um pouco para baixo.
+
+## D298 · O que mudou, e a palavra "Novidade" no menu
+
+**Status:** vigente · decidida em 2026-10-08, spec `096-o-que-mudou.md`.
+
+**Contexto.** Desde 2026-09-20 saíram o Pix com o valor, o sinal, o relatório do MEI, a nota em
+várias fotos e pelo "Compartilhar", as despesas item a item e a assinatura com o dedo, e nenhuma
+foi dita a ela. Cada spec terminava com o `ESTADO.md` para quem constrói, e nada para quem usa.
+Assinatura se paga mês a mês, e quem paga precisa ver que o produto anda.
+
+**Decisão.**
+
+- **O conteúdo** mora em `components/comecar/novidades.ts` (cópia, não domínio, `#d70`): `{
+dataISO, titulo, frase, href, soAndroid? }`, a mais nova primeiro, o título no que ela ganha e
+  a frase sem número de exemplo. A semente são onze entregas da 074 à 092, cada uma com o dia do
+  **commit que entregou** (e não o da spec): 074 em 2026-10-02; 078 a 082 em 2026-10-03; 085 a 087
+  em 2026-10-05; 091 e 092 em 2026-10-08. O protocolo de sessão do `CLAUDE.md` ganhou a linha que
+  manda acrescentar uma entrada a cada spec que muda o que ela vê.
+- **A seção** "O que mudou" vem logo abaixo do cabeçalho no encerrado e depois dos cinco no
+  aberto, o que no código é um lugar só (entre a seção dos cinco, que só existe no aberto, e a
+  cadeia). Âncora "Novidades" no índice, antes de "O dinheiro". Só os últimos 90 dias, no máximo
+  seis; nenhuma, a seção e a âncora somem. O filtro do Android vem **antes** do corte em seis,
+  para o iPhone também ver seis. Com a semente de hoje, as seis são de 2026-10-03 em diante: o
+  Pix, o sinal, o pedido de sempre, o dia que cabe e o MEI já ficam de fora pelo teto.
+- **O aviso** é a data da mais nova vista, por aparelho (`localStorage`,
+  `rende:novidades-vistas`, `#d71`), lida por `useHaNovidade` em `lib/hooks/useNovidade.ts` por
+  `useSyncExternalStore`. Abrir `/comecar` grava a mais nova da lista inteira (mesmo com a seção
+  vazia) e avisa os ouvintes: a barra lateral apaga a palavra na hora. Leitura ou escrita que
+  falha não mostra nada. Aparelho sem nada gravado só vê "Novidade" se a mais nova tem até 14
+  dias. A regra (`haNovidade`, `novidadesRecentes`) fica no `novidades.ts`, com teste em
+  `tests/novidades.test.ts`.
+- **A palavra**, "Novidade" em `micro` 600, à direita de "Como funciona" na barra lateral
+  (`on-brand-muted`) e na linha da Configuração (`ink-muted`), antes do chevron. Sem contagem,
+  sem bolinha, sem cor de atenção. Na barra, "Como funciona" e "Novidade" cabem nos 192px do item
+  com folga curta.
+- **O componente é `OQueMudou.tsx`, e não `Novidades.tsx`** como a spec dizia: no Windows
+  `novidades.ts` e `Novidades.tsx` são o mesmo módulo para o TypeScript, como no `#d297`.
+
+**Consequência.** A lista só funciona se cada spec que muda a tela acrescentar a linha; sem isso o
+aviso nunca mais acende. "Visto" é por aparelho: ela abre a página no celular e ainda vê a palavra
+no computador, de propósito. A palavra fica até ela abrir `/comecar`, mesmo que a novidade seja
+de uma tela que ela já usou.

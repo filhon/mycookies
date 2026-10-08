@@ -97,11 +97,11 @@ atualizado para quem constrói, e nada para quem usa.
 
 ## Critérios de aceite
 
-- [ ] Seção com até seis itens dos últimos 90 dias, e sem seção quando não há.
-- [ ] "Novidade" na barra e na Configuração, e só até ela abrir a página.
-- [ ] A linha no protocolo do `CLAUDE.md`.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d298` escrito; `ESTADO.md` atualizado.
+- [x] Seção com até seis itens dos últimos 90 dias, e sem seção quando não há.
+- [x] "Novidade" na barra e na Configuração, e só até ela abrir a página.
+- [x] A linha no protocolo do `CLAUDE.md`.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d298` escrito; `ESTADO.md` atualizado.
 
 ---
 

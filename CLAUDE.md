@@ -37,7 +37,8 @@ carregar o repositório inteiro na cabeça.
    mesmo que pareça trivial adicionar.
 3. Rode o portão de conclusão.
 4. Antes de encerrar: atualize `docs/ESTADO.md` e registre em `docs/DECISOES.md` toda
-   decisão nova que um leitor futuro poderia questionar.
+   decisão nova que um leitor futuro poderia questionar. Se a spec muda algo que ela vê,
+   acrescente uma linha em `components/comecar/novidades.ts`.
 
 Se uma spec parecer grande demais para uma sessão, ela está grande demais. Divida e diga.
 

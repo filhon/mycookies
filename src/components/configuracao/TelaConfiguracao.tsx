@@ -91,6 +91,7 @@ import {
 import { refazerFichasPelaConfiguracao } from "@/lib/firebase/mutations/fichas";
 import type { RateioOperacional } from "@/lib/domain/custoFicha";
 import { useDocumento } from "@/lib/hooks/useColecao";
+import { useHaNovidade } from "@/lib/hooks/useNovidade";
 import type {
   Centavos,
   ConfiguracaoGeral,
@@ -542,6 +543,7 @@ function ConfiguracaoDaDona() {
   const sujo = estado !== null && base !== null && assinatura(estado) !== base;
   const alterado = nuncaSalvou || sujo;
   const guarda = useGuardaDeSaida(sujo);
+  const novidade = useHaNovidade();
 
   // Só bloqueia a tela se a falha veio antes de haver o que editar. Um erro
   // que chega depois não pode desmontar um formulário já preenchido.
@@ -1326,6 +1328,11 @@ function ConfiguracaoDaDona() {
                     da outra.
                   </span>
                 </span>
+                {novidade && (
+                  <span className="shrink-0 text-micro font-semibold text-ink-muted">
+                    Novidade
+                  </span>
+                )}
                 <ChevronRight
                   aria-hidden
                   className="size-5 shrink-0 text-ink-subtle"

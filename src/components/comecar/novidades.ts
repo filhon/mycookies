@@ -1,0 +1,150 @@
+import type { Route } from "next";
+import { diaVizinho } from "@/lib/domain/datas";
+import type { DataISO } from "@/lib/types/common";
+
+export interface Novidade {
+  /** O dia do commit que entregou, e não o da spec. */
+  dataISO: DataISO;
+  /** O que ela ganha, e não o nome do recurso. */
+  titulo: string;
+  /** Uma linha, sem número de exemplo (`DECISOES.md#d70`). */
+  frase: string;
+  href: Route;
+  /** Só aparece no Android. */
+  soAndroid?: boolean;
+}
+
+/**
+ * O que mudou para ela, a mais nova primeiro (`DECISOES.md#d298`). Cópia, e não
+ * domínio: só "Como funciona" mostra.
+ *
+ * Toda spec que muda algo que ela vê acrescenta uma linha aqui, no topo, com o
+ * dia do commit. É isso que acende "Novidade" no menu.
+ */
+export const NOVIDADES: readonly Novidade[] = [
+  {
+    dataISO: "2026-10-08",
+    titulo: "A nota chega pelo Compartilhar",
+    frase:
+      "No PDF da nota, toque em Compartilhar e escolha o Rende: ela já chega para ler.",
+    href: "/insumos/nota",
+    soAndroid: true,
+  },
+  {
+    dataISO: "2026-10-08",
+    titulo: "A nota comprida numa leitura só",
+    frase:
+      "O cupom que não cabe numa foto vai em partes, e o Rende lê todas juntas.",
+    href: "/insumos/nota",
+  },
+  {
+    dataISO: "2026-10-05",
+    titulo: "O seu nome e a sua assinatura no orçamento",
+    frase:
+      "Assine com o dedo na Configuração, e o pé da folha leva o nome do negócio e a assinatura.",
+    href: "/configuracao#a-sua-marca",
+  },
+  {
+    dataISO: "2026-10-05",
+    titulo: "As despesas que a gente esquece",
+    frase:
+      "Aluguel, internet, contador: cada despesa fixa numa linha, com as que costumam ficar de fora à mão.",
+    href: "/configuracao#o-seu-preco",
+  },
+  {
+    dataISO: "2026-10-05",
+    titulo: "A conta da energia e do gás, feita por você",
+    frase:
+      "Em “Fazer a conta”, você copia o que vem na conta do mês, e o Rende divide.",
+    href: "/configuracao#o-seu-preco",
+  },
+  {
+    dataISO: "2026-10-03",
+    titulo: "Mudou a hora, os produtos acompanham",
+    frase:
+      "Antes de salvar o custo da hora, você vê quanto passa a sobrar em cada produto.",
+    href: "/configuracao#o-seu-preco",
+  },
+  {
+    dataISO: "2026-10-03",
+    titulo: "O sinal da encomenda",
+    frase:
+      "Anote o sinal no pedido: ele entra no caixa no dia, e a cobrança já é só do que falta.",
+    href: "/pedidos",
+  },
+  {
+    dataISO: "2026-10-03",
+    titulo: "O Pix vai com o valor",
+    frase:
+      "Com a sua chave na Configuração, o resumo do WhatsApp leva o Pix copia e cola já com o valor.",
+    href: "/configuracao#o-seu-preco",
+  },
+  {
+    dataISO: "2026-10-03",
+    titulo: "O dia que ainda cabe",
+    frase:
+      "Ao escolher a entrega, o pedido diz quanto você já tem para fazer naquele dia.",
+    href: "/pedidos/novo" as Route,
+  },
+  {
+    dataISO: "2026-10-03",
+    titulo: "O pedido de sempre num toque",
+    frase:
+      "O que mais sai aparece primeiro, e o último pedido da cliente se repete com um toque.",
+    href: "/pedidos/novo" as Route,
+  },
+  {
+    dataISO: "2026-10-02",
+    titulo: "O relatório do MEI pronto para imprimir",
+    frase:
+      "O Caixa monta o relatório mensal das receitas no modelo do portal, e acompanha o limite do ano.",
+    href: "/financeiro",
+  },
+];
+
+const JANELA_DIAS = 90;
+const MAXIMO = 6;
+/** O aparelho que nunca viu nada não ganha "Novidade" sobre o que já existia. */
+const CARENCIA_DIAS = 14;
+
+/** As dos últimos 90 dias, no máximo seis. */
+export function novidadesRecentes(
+  hojeISO: DataISO,
+  lista: readonly Novidade[] = NOVIDADES,
+): Novidade[] {
+  const desde = diaVizinho(hojeISO, -JANELA_DIAS);
+  return lista.filter((n) => n.dataISO >= desde).slice(0, MAXIMO);
+}
+
+/** Há uma mais nova que a vista; sem nada visto, só a dos últimos 14 dias. */
+export function haNovidade(
+  hojeISO: DataISO,
+  vista: DataISO | null,
+  maisNova: DataISO | undefined = NOVIDADES[0]?.dataISO,
+): boolean {
+  if (!maisNova) return false;
+  return vista
+    ? maisNova > vista
+    : maisNova >= diaVizinho(hojeISO, -CARENCIA_DIAS);
+}
+
+const MESES = [
+  "jan",
+  "fev",
+  "mar",
+  "abr",
+  "mai",
+  "jun",
+  "jul",
+  "ago",
+  "set",
+  "out",
+  "nov",
+  "dez",
+];
+
+/** "2 out". */
+export function rotuloNovidade(iso: DataISO): string {
+  const [, mes, dia] = iso.split("-").map(Number);
+  return `${dia} ${MESES[(mes ?? 1) - 1]}`;
+}
