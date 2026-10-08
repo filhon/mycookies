@@ -17,6 +17,7 @@ import { BlocoPasso, LinhaPasso } from "./BlocoPasso";
 import { CadeiaDoDinheiro } from "./CadeiaDoDinheiro";
 import { InstalarNaTela, useInstalado } from "./InstalarNaTela";
 import { OQueMaisTem } from "./OQueMaisTem";
+import { PerguntasQueVoltam } from "./PerguntasQueVoltam";
 import { QuandoNaoTemInternet } from "./QuandoNaoTemInternet";
 import { SecaoGuia } from "./SecaoGuia";
 import { Trilha } from "./Trilha";
@@ -34,6 +35,7 @@ const ANCORAS_QUE_FICAM: readonly Ancora[] = [
   { id: "cadeia", rotulo: "O dinheiro" },
   { id: "mais", rotulo: "Outras telas" },
   { id: "offline", rotulo: "Sem internet" },
+  { id: "perguntas", rotulo: "Perguntas" },
   { id: "instalar", rotulo: "Instalar" },
 ];
 
@@ -172,6 +174,16 @@ export function TelaComecar() {
         descricao="Na cozinha e no mercado o sinal cai, e isso não é falha do sistema nem do seu aparelho."
       >
         <QuandoNaoTemInternet />
+      </SecaoGuia>
+
+      {/* Entre o sem internet e o instalar nas duas fases: no aberto, isso já
+          é "depois dos cinco" (`#d297`). */}
+      <SecaoGuia
+        id="perguntas"
+        titulo="Perguntas que aparecem depois"
+        descricao="Escritas do jeito que você pergunta, cada uma com a tela que resolve."
+      >
+        <PerguntasQueVoltam />
       </SecaoGuia>
 
       {/* Carrega o próprio título: instalado, a seção inteira some. */}

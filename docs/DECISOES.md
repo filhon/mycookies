@@ -8993,3 +8993,55 @@ inventado; esta decisão só abre a porta para o lido.
 **Consequência.** A página deixa de ser estática: são até sete leituras ao abrir `/comecar`, só
 para a dona (a rota já é dela). Escolher outro produto para seguir é um seletor, e fica para
 quando a pergunta aparecer.
+
+## D297 · As perguntas que voltam, conferidas no código, e a saída para uma pessoa
+
+**Status:** vigente · decidida em 2026-10-08, spec `095-as-perguntas-que-voltam.md`.
+
+**Contexto.** `/comecar` era organizada por tela, e a dúvida da terceira semana chega como
+pergunta ("por que o caixa está zerado se eu vendi?"). A página não tinha busca, terminava em
+"Instalar" sem saída para uma pessoa, e o que cresceu no sistema sem ser tela fora do menu (o
+sinal, o Pix com o valor, o relatório do MEI, a folha do orçamento) não tinha onde morar.
+
+**Decisão.**
+
+- **O critério:** entra só a pergunta que atravessa telas ou que nenhuma tela responde sozinha
+  (`#d70`), e **toda resposta é conferida no código na sessão**. As dez da spec entraram, em
+  `components/comecar/perguntas.ts` (cópia, não domínio), cada uma com o link da tela que
+  resolve. O comentário de cada entrada diz onde a resposta foi conferida.
+- **O que a conferência mudou na resposta:**
+  - **A farinha subiu (2):** o preço **não** muda sozinho. O material com preço novo marca
+    `custoDesatualizado` (`#d05`), e o editor abre a ficha gravada com `precoManual: true`: salvar
+    refaz o custo e a sobra, e o preço só segue o sugerido com o "Usar" do `PainelPreco`.
+  - **Arquivei sem querer (8):** **nenhuma tela desarquiva.** `restaurarInsumo` existe e ninguém
+    chama. A resposta diz isso e manda para "Fale com a gente": quem conduz o projeto volta o
+    `arquivado` à mão (no insumo, com o `totalInsumos` do resumo junto). Um "Arquivados" com
+    desarquivar é outra spec, quando essa pergunta chegar de verdade.
+  - **Parar de assinar (10):** tudo fica guardado e legível (`#d144`), o app abre na tela de
+    assinar e não escreve, o cardápio fecha, e apagar é só o encerrar (`#d148`).
+  - **A hora (3):** as receitas são refeitas e o preço fica (`#d281`); os kits ficam com "Custo
+    desatualizado".
+- **A seção** "Perguntas que aparecem depois" fica entre "Quando não tem internet" e "Instalar"
+  **nas duas fases**: no aberto os cinco estão no topo, então isso já é "depois dos cinco", e a
+  página não ganha uma terceira ordem. Âncora "Perguntas" no índice, no mesmo lugar.
+- **`<details>` nativo**, `<summary>` de 44px com o `chevron-down` que gira, numa lista com
+  divisórias, sem animação de altura. O React só passa `open` quando a busca deixa uma pergunta
+  sozinha: como ele só escreve o atributo quando a prop muda, o que ela abriu ou fechou com o dedo
+  fica como ela deixou.
+- **A busca** é o `CampoBusca` (48px, lupa), "Procurar uma pergunta", por `filtrarPerguntas`:
+  `chaveDeBusca` sobre pergunta e resposta juntas. Nenhuma: "Nenhuma pergunta com isso.", num
+  `role="status"` montado sempre, e a saída logo abaixo. O teste `tests/perguntas.test.ts` prende
+  as buscas do roteiro ("pix", "sinal", "zerado", "mei", "relatorio" acham uma só): a cópia que
+  mudar e quebrar isso quebra o teste.
+- **A âncora** `/comecar#pergunta-{id}` abre a pergunta e rola até ela, no carregar e no
+  `hashchange`, direto no DOM (`open = true`), sem estado.
+- **A saída:** "Não achou o que procurava?" e o `FaleComAGente` da 084, o mesmo componente e o
+  mesmo canal, numa caixa de uma linha, com o `id` `fale-com-a-gente` (para onde a resposta 8
+  aponta).
+- **O componente é `PerguntasQueVoltam.tsx`, e não `Perguntas.tsx`** como a spec dizia: no
+  Windows `perguntas.ts` e `Perguntas.tsx` são o mesmo módulo para o TypeScript.
+
+**Consequência.** Cada resposta é uma cópia do comportamento de outra tela, e envelhece com ela:
+quem mudar o sinal, o Pix, o arquivar ou a assinatura confere a pergunta correspondente. A rolagem
+pela âncora acontece uma vez, no carregar; a cadeia, que chega depois com os números, pode
+empurrar a pergunta um pouco para baixo.
