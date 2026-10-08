@@ -54,5 +54,16 @@ export default function manifest(): MetadataRoute.Manifest {
     // Atalhos apontam só para rotas que já existem: um atalho para 404 é pior
     // do que atalho nenhum. Ganham entradas conforme os módulos entram.
     shortcuts: [{ name: "Materiais", url: "/insumos" }],
+    // O Rende no "Compartilhar" do Android, para a nota do WhatsApp e do
+    // e-mail. Quem responde é o service worker, sem rede (`#d294`). O Safari não
+    // implementa; e o Android só relê isto ao reinstalar ou atualizar o WebAPK.
+    share_target: {
+      action: "/insumos/nota/compartilhar",
+      method: "POST",
+      enctype: "multipart/form-data",
+      params: {
+        files: [{ name: "nota", accept: ["application/pdf", "image/*"] }],
+      },
+    },
   };
 }

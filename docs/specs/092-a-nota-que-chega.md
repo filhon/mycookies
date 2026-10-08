@@ -89,11 +89,11 @@ ou com o "Compartilhar" do sistema. O e-mail pede caixa de entrada e arquivo gua
 
 ## Critérios de aceite
 
-- [ ] O Rende aparece no "Compartilhar" do Android para PDF e imagem.
-- [ ] O arquivo compartilhado chega na leitura sem passar pela rede no caminho.
-- [ ] Sem rede, a tela segura o arquivo e lê quando a rede volta.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d294` escrito; `ESTADO.md` atualizado.
+- [x] O Rende aparece no "Compartilhar" do Android para PDF e imagem.
+- [x] O arquivo compartilhado chega na leitura sem passar pela rede no caminho.
+- [x] Sem rede, a tela segura o arquivo e lê quando a rede volta.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d294` escrito; `ESTADO.md` atualizado.
 
 ---
 

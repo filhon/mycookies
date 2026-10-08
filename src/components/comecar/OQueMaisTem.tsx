@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { Route } from "next";
+import { useSyncExternalStore } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Camera,
@@ -20,6 +23,23 @@ interface Funcionalidade {
   /** Em que momento da semana ela aparece. É o gatilho, e não o recurso. */
   momento: string;
   href: Route;
+  /** Uma frase a mais, só no Android. */
+  noAndroid?: string;
+}
+
+/** Sem assinatura: o aparelho não muda no meio da leitura. */
+const SEM_MUDANCA = () => () => undefined;
+
+/**
+ * Pelo user-agent, ao contrário do `InstalarNaTela`: aqui a pergunta é mesmo
+ * o sistema, porque o `share_target` só existe no Android (`#d294`).
+ */
+function useAndroid(): boolean {
+  return useSyncExternalStore(
+    SEM_MUDANCA,
+    () => /Android/i.test(navigator.userAgent),
+    () => false,
+  );
 }
 
 /**
@@ -45,6 +65,7 @@ const FUNCIONALIDADES: readonly Funcionalidade[] = [
       "O cupom da compra vira uma lista que você confere antes de aprovar: os materiais entram todos de uma vez, já com o preço novo, e a compra ainda é lançada como saída no caixa.",
     momento: "Na volta do mercado, com o cupom ainda na mão.",
     href: "/insumos/nota",
+    noAndroid: "No Android, compartilhe o PDF da nota com o Rende.",
   },
   {
     icone: ClipboardList,
@@ -84,6 +105,8 @@ const FUNCIONALIDADES: readonly Funcionalidade[] = [
  * que ela serve: é o gatilho, e é o que nenhuma tela pode dizer sobre si mesma.
  */
 export function OQueMaisTem() {
+  const android = useAndroid();
+
   return (
     <>
       <ul className="overflow-hidden rounded-lg border border-line bg-surface">
@@ -108,6 +131,9 @@ export function OQueMaisTem() {
                 </span>
                 <span className="mt-1 block max-w-[56ch] text-label text-ink-muted">
                   {funcionalidade.frase}
+                  {android &&
+                    funcionalidade.noAndroid &&
+                    ` ${funcionalidade.noAndroid}`}
                 </span>
                 <span className="mt-2 flex items-center gap-1.5 text-micro font-medium text-ink-subtle">
                   <Clock aria-hidden className="size-3.5" strokeWidth={1.75} />

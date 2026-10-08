@@ -8860,3 +8860,50 @@ conferia o cabeçalho duas vezes.
 PDF grande agora é recusado pela tela antes de subir, e não mais pelo 413 do Vercel. A
 medição com fotos reais e a conferência do limite de imagens do modelo configurado (passo 2 da
 spec) ficaram por fazer.
+
+## D294 · A nota que chega pelo "Compartilhar" do Android
+
+**Status:** vigente · decidida em 2026-10-08, spec `092-a-nota-que-chega.md`.
+
+**Contexto.** Metade das notas nasce em arquivo: o PDF do e-mail do atacado, a foto ou o PDF
+do fornecedor no WhatsApp. O caminho era baixar, abrir o Rende, Materiais, "Ler uma nota",
+"Escolher" e achar o arquivo em Downloads. O encaminhamento por e-mail fica fora pelo `#d49`.
+
+**Decisão.**
+
+- **O manifesto ganha `share_target`** (`POST`, `multipart/form-data`, `files: nota` para
+  `application/pdf` e `image/*`) apontando para `/insumos/nota/compartilhar`, rota que não
+  existe no servidor: quem responde é o service worker. O Android só relê o manifesto ao
+  reinstalar ou atualizar o WebAPK; o Safari não implementa, e no iPhone nada muda.
+- **No `sw.ts`, o mesmo ouvinte `fetch` do `/__/`** (`#d199`), registrado antes do Serwist, e
+  não uma rota `registerCapture` do Serwist: a resposta não é cache nem rede, e o
+  `stopImmediatePropagation` já é o jeito do arquivo de passar na frente do `defaultCache`.
+  Ele lê o `formData`, guarda o primeiro `nota` no cache `nota-compartilhada` (uma entrada,
+  com o `content-type` e o nome em `x-nome`, por `encodeURIComponent` porque cabeçalho é
+  ASCII) e responde `303` para `/insumos/nota`. Nada passa pela rede.
+- **Os nomes do cache moram em `lib/utils/notaCompartilhada.ts`**, lido pelos dois escopos;
+  o módulo usa só `caches`, `File` e `Response`.
+- **`TelaNota` tira ao montar** e apaga só depois de ficar com o arquivo: no `StrictMode` a
+  primeira montagem desmonta antes de a leitura do cache voltar, e apagar ali perderia a nota.
+  A decisão de ler vem de `navigator.onLine`, e não do `useConexao`, que na hidratação ainda é o
+  do servidor; o resto entra por `useEffectEvent`.
+- **Foto compartilhada vai para a faixa do `#d293`** e é lida na hora, com rede. Sem rede ela
+  fica na faixa com "Ler a nota" desabilitado e a frase de sempre. A spec pedia o nome do
+  arquivo e "Ler esta nota" também para a foto; a faixa já mostra a foto, já segura depois de
+  falha e já é o lugar da continuação, e um segundo jeito de segurar foto seria um a mais.
+- **PDF compartilhado ocupa o lugar da faixa** (`ArquivoDaNota`: o nome e o "×") com "Ler esta
+  nota", e é lido na hora com rede. Fica até uma leitura chegar à conferência, ou até ela
+  escolher outro arquivo ou tocar no "×": depois de falha ou "Cancelar", tentar de novo não
+  pede achar o arquivo outra vez, que é o que o PDF escolhido no seletor nunca fez.
+- **A ajudante** não abre `/insumos/nota` (`ajudante.ts`): o arquivo fica no cache, sem efeito,
+  e o próximo compartilhamento o substitui. Sem login, o login de sempre, e a tela acha o
+  arquivo quando chega.
+- **"Como funciona"** diz "No Android, compartilhe o PDF da nota com o Rende." em "Foto da
+  nota", só no Android, por `navigator.userAgent`: aqui a pergunta é o sistema, e não o dedo
+  como no `InstalarNaTela`.
+- **De carona:** `limparFotos` passou a revogar pela ref da faixa, e não pelo `fotos` da
+  closure, que ao fim de uma leitura é o de antes dela.
+
+**Consequência.** Vários arquivos de uma vez ficam fora: o primeiro basta, e com a 091 de pé
+é trocar "o primeiro" por "até quatro". O passo 2 da spec (conferir no Android que o app
+aparece na folha depois de reinstalar) é do roteiro de navegador.

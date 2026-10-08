@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { orderBy, query, where } from "firebase/firestore";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   Check,
   CircleAlert,
@@ -71,6 +78,10 @@ import { useConexao } from "@/lib/hooks/useDispositivo";
 import type { FichaTecnica, Insumo, Transacao } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 import { prepararParaLeitura } from "@/lib/utils/imagem";
+import {
+  esquecerNotaCompartilhada,
+  notaCompartilhada,
+} from "@/lib/utils/notaCompartilhada";
 import { useAuth, useContaId } from "@/providers/AuthProvider";
 
 type Etapa = "escolher" | "lendo" | "conferindo" | "pronto";
@@ -221,6 +232,42 @@ export function TelaNota() {
     const atuais = fotosAtuais;
     return () =>
       atuais.current.forEach((foto) => URL.revokeObjectURL(foto.miniatura));
+  }, []);
+
+  /**
+   * O PDF que chegou pelo "Compartilhar" do Android (`#d294`), até uma leitura
+   * dar certo: sem rede ele espera aqui, e depois de falha não se perde. Foto
+   * compartilhada vai para a faixa, que já faz isso.
+   */
+  const [pdfCompartilhado, setPdfCompartilhado] = useState<File | null>(null);
+
+  const chegouCompartilhada = useEffectEvent((arquivo: File) => {
+    if (!aceito(arquivo)) return;
+    const pdf = arquivo.type === "application/pdf";
+    const espera: Escolhido = { nome: arquivo.name, fotos: [], nota: null };
+    if (pdf) {
+      setPdfCompartilhado(arquivo);
+    } else {
+      const foto = { arquivo, miniatura: URL.createObjectURL(arquivo) };
+      setFotos([foto]);
+      espera.fotos = [foto];
+    }
+    // `navigator`, e não `online`: na hidratação este ainda é o do servidor.
+    if (navigator.onLine) void ler([arquivo], espera);
+  });
+
+  // O service worker guardou, a tela tira. Apaga só quem fica com o arquivo:
+  // no `StrictMode` a primeira montagem desmonta antes da leitura do cache.
+  useEffect(() => {
+    let valendo = true;
+    void notaCompartilhada().then(async (arquivo) => {
+      if (!valendo || !arquivo) return;
+      await esquecerNotaCompartilhada();
+      chegouCompartilhada(arquivo);
+    });
+    return () => {
+      valendo = false;
+    };
   }, []);
 
   const hoje = dataISODe(new Date());
@@ -379,6 +426,7 @@ export function TelaNota() {
     setAberta(primeira?.chave ?? null);
     rolarParaAberta.current = !!primeira;
     setLancamentoManual(null);
+    setPdfCompartilhado(null);
     setEtapa("conferindo");
   }
 
@@ -394,6 +442,7 @@ export function TelaNota() {
       return;
     }
     setFalha(null);
+    setPdfCompartilhado(null);
 
     const pdf = aceitos.find((arquivo) => arquivo.type === "application/pdf");
     if (pdf) {
@@ -425,8 +474,9 @@ export function TelaNota() {
     setNotaDaFaixa(null);
   }
 
+  // Pelo ref: chamada ao fim da leitura, o `fotos` da closure é o de antes dela.
   function limparFotos() {
-    fotos.forEach((foto) => URL.revokeObjectURL(foto.miniatura));
+    fotosAtuais.current.forEach((foto) => URL.revokeObjectURL(foto.miniatura));
     setFotos([]);
     setNotaDaFaixa(null);
   }
@@ -603,6 +653,18 @@ export function TelaNota() {
             hoje={hoje}
             fotos={fotos}
             notaDaFaixa={notaDaFaixa}
+            pdf={
+              pdfCompartilhado && {
+                nome: pdfCompartilhado.name,
+                aoLer: () =>
+                  void ler([pdfCompartilhado], {
+                    nome: pdfCompartilhado.name,
+                    fotos: [],
+                    nota: null,
+                  }),
+                aoTirar: () => setPdfCompartilhado(null),
+              }
+            }
             aoReceber={receberArquivos}
             aoTirar={tirarFoto}
             aoLer={() =>

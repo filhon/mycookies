@@ -54,6 +54,7 @@ export function PortaDaNota({
   aviso,
   fotos,
   notaDaFaixa,
+  pdf,
   aoReceber,
   aoTirar,
   aoLer,
@@ -68,6 +69,11 @@ export function PortaDaNota({
   fotos: FotoDaNota[];
   /** O que ficou de fora da faixa, dito embaixo dela. */
   notaDaFaixa: string | null;
+  /**
+   * O PDF que chegou pelo "Compartilhar" do Android e espera a rede, ou que
+   * ficou de uma leitura que falhou (`#d294`). Ocupa o lugar da faixa.
+   */
+  pdf: { nome: string; aoLer: () => void; aoTirar: () => void } | null;
   aoReceber: (arquivos: File[]) => void;
   aoTirar: (indice: number) => void;
   aoLer: () => void;
@@ -75,8 +81,11 @@ export function PortaDaNota({
   const camera = useRef<HTMLInputElement>(null);
   const seletor = useRef<HTMLInputElement>(null);
   const [arrastando, setArrastando] = useState(false);
-  const juntando = fotos.length > 0;
-  const cabeMais = fotos.length < LIMITE_FOTOS;
+  const comPdf = pdf !== null && fotos.length === 0;
+  const juntando = fotos.length > 0 || comPdf;
+  const cabeMais = !comPdf && fotos.length < LIMITE_FOTOS;
+  const lerAgora = comPdf ? pdf.aoLer : aoLer;
+  const rotuloLer = comPdf ? "Ler esta nota" : "Ler a nota";
 
   // Colar só vale nesta etapa: a porta monta e desmonta com ela. Colar sem
   // arquivo (texto) não é tentativa de ler, e passa reto.
@@ -174,8 +183,12 @@ export function PortaDaNota({
 
           {juntando && (
             <div className="mt-6">
-              <FaixaDeFotos fotos={fotos} aoTirar={aoTirar} />
-              {notaDaFaixa && (
+              {comPdf ? (
+                <ArquivoDaNota nome={pdf.nome} aoTirar={pdf.aoTirar} />
+              ) : (
+                <FaixaDeFotos fotos={fotos} aoTirar={aoTirar} />
+              )}
+              {notaDaFaixa && !comPdf && (
                 <p className="mt-3 text-label text-ink-muted">{notaDaFaixa}</p>
               )}
             </div>
@@ -189,12 +202,12 @@ export function PortaDaNota({
                 tamanho="lg"
                 larguraTotal
                 disabled={!online}
-                onClick={aoLer}
+                onClick={lerAgora}
                 iconeInicial={
                   <ScanLine aria-hidden className="size-5" strokeWidth={1.75} />
                 }
               >
-                Ler a nota
+                {rotuloLer}
               </Botao>
               {cabeMais && (
                 <Botao
@@ -248,12 +261,12 @@ export function PortaDaNota({
                 variante="primaria"
                 tamanho="lg"
                 disabled={!online}
-                onClick={aoLer}
+                onClick={lerAgora}
                 iconeInicial={
                   <ScanLine aria-hidden className="size-5" strokeWidth={1.75} />
                 }
               >
-                Ler a nota
+                {rotuloLer}
               </Botao>
               {cabeMais && (
                 <>
@@ -371,6 +384,36 @@ function FaixaDeFotos({
         </li>
       ))}
     </ol>
+  );
+}
+
+/** O PDF esperando "Ler esta nota": o nome, e o "×" da faixa. */
+function ArquivoDaNota({
+  nome,
+  aoTirar,
+}: {
+  nome: string;
+  aoTirar: () => void;
+}) {
+  return (
+    <p className="flex max-w-sm items-center gap-2 rounded-md border border-line bg-surface py-1 pl-3 text-label text-ink">
+      <FileText
+        aria-hidden
+        className="size-5 shrink-0 text-ink-subtle"
+        strokeWidth={1.75}
+      />
+      <span className="min-w-0 flex-1 truncate">{nome}</span>
+      <button
+        type="button"
+        onClick={aoTirar}
+        aria-label={`Tirar ${nome}`}
+        className="group grid size-11 shrink-0 place-items-center rounded-full"
+      >
+        <span className="grid size-6 place-items-center rounded-full border border-line-strong bg-surface text-ink-muted transition-colors duration-150 ease-quart group-hover:text-ink group-active:bg-sunken">
+          <X aria-hidden className="size-3.5" strokeWidth={2} />
+        </span>
+      </button>
+    </p>
   );
 }
 
