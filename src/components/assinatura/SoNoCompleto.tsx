@@ -57,7 +57,7 @@ export function LegendaNoCompleto() {
 
 /**
  * O painel inteiro quando o pacote não tem o recurso: a explicação e o botão
- * que leva ao portal, onde se muda de plano. Nenhum controle de edição, nenhuma
+ * que leva à confirmação da troca no portal. Nenhum controle de edição, nenhuma
  * escrita. `aviso` é o triângulo de atenção, para quando algo saiu do ar.
  */
 export function SoNoCompleto({
@@ -83,7 +83,8 @@ export function SoNoCompleto({
           authorization: `Bearer ${await usuario.getIdToken()}`,
           "content-type": "application/json",
         },
-        body: JSON.stringify({ contaId }),
+        // Direto na confirmação da troca, sem a página inicial (`#d313`).
+        body: JSON.stringify({ contaId, para: "COMPLETO" }),
       });
       if (!resposta.ok) {
         const corpo = (await resposta.json().catch(() => ({}))) as {

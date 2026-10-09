@@ -9683,3 +9683,55 @@ implementar a spec, sem subir `VERSAO_SCHEMA`, como `juntadaEm?` (`#d311`). `fir
 não lista campos de cliente, então nenhuma regra muda. Nenhum índice ou dependência. Spec
 pedia a 106 rodando semanas antes; foi codificada no mesmo dia, a pedido, e a frase só terá o
 que contar depois das primeiras chamadas.
+
+## D313 · Passar para o Completo abre a confirmação da troca
+
+**Status:** vigente · decidida em 2026-10-09, spec `110-passar-para-o-completo.md`.
+
+**Contexto.** O print do portal em 2026-10-09 mostrava "Assinatura Rende · R$ 29,00 por mês"
+só com "Cancelar assinatura": o passo de "Customers can switch plans" da 032 nunca foi feito, e
+configuração por clique não fica registrada nem passa do modo de teste ao ao vivo. Mesmo
+configurado, o botão caía na página inicial do portal, a três telas de confirmar uma decisão já
+tomada no app. E quem está no essencial não lia "Essencial" em lugar nenhum.
+
+**Decisão.**
+
+- **O portal é configurado pela CLI**, `stripe billing_portal configurations update` na
+  configuração padrão, com o bloco inteiro em `DEPLOY.md` ("Stripe, o portal (spec 110)"),
+  no lugar do passo 2 da 028 e do passo 3 da 032; o mesmo bloco roda com `--live`. Trocar o
+  cartão, ver as cobranças, cancelar no fim do período, e `subscription_update` com
+  `default_allowed_updates=[price]` e os dois produtos com os quatro preços.
+- **Subir cobra a diferença na hora** (`proration_behavior=always_invoice`); **descer de
+  pacote, ou do anual para o mensal, fica para o fim do período** (`schedule_at_period_end` com
+  `decreasing_item_amount` e `shortening_interval`). As ajudantes ficam até lá, e o `#d170` as
+  tira quando o webhook vir o essencial vivo.
+- **Os produtos se chamam "Rende Essencial" e "Rende Completo"** (`stripe products update`). A
+  `metadata.pacote` não muda (`#d169`).
+- **`POST /api/assinatura/portal` aceita `para?: "COMPLETO"`**: relê a assinatura, pega o item,
+  tira o período de `price.recurring.interval` (como o `resumo`) e cria a sessão com
+  `flow_data.type = "subscription_update_confirm"` para `PRECOS.COMPLETO[periodo]`. O período
+  nunca muda nessa troca. Já no preço do completo, abre o portal comum. Confirmada, a troca
+  volta sozinha a `/configuracao` (`after_completion.redirect`, a mesma URL do `return_url`), e
+  o painel vira "Plano Completo" quando o webhook gravar, pelo documento observado.
+- **"Passar para o Completo" e "Mudar para o completo" mandam `para`**; "Trocar o cartão, ver as
+  cobranças ou cancelar" continua sem ele, na página inicial do portal.
+- **O webhook não muda**: já lê o pacote do produto em todo `customer.subscription.updated`.
+- **Checkout e portal continuam os do Stripe** (reafirma o `#d146`); a marca entra por Settings
+  → Branding. Checkout próprio, domínio próprio no checkout e troca de plano dentro do app
+  ficaram fora.
+
+**Consequência.** Nenhum campo, regra, índice ou dependência. Sem a configuração da CLI
+aplicada no modo da chave, o Stripe recusa a sessão com `subscription_update_confirm` e o botão
+diz a frase de falha de sempre: o bloco do `DEPLOY.md` vai ao ar antes do app.
+
+**Aplicado no ao vivo em 2026-10-09, sem passar pelo teste**, com o pedido explícito: o CLI da
+máquina está logado na sandbox da Koinos Digital (outra conta, a do Igreja.app), e do Rende só
+havia a chave ao vivo. A sessão `subscription_update_confirm` para o completo mensal foi
+criada e aceita pela assinatura ao vivo de teste da conta `mycookies`, sem confirmar a troca.
+Dois achados no caminho, já corrigidos no ao vivo e escritos no bloco:
+
+- **O produto do completo estava sem `metadata.pacote`** ("Assinatura Rende + Cardápio", `{}`):
+  pelo `#d169`, quem comprasse o completo, no checkout ou no portal, seria gravado como
+  essencial. O bloco grava `metadata[pacote]=COMPLETO` junto do nome, idempotente.
+- **O Stripe liga `adjustable_quantity`** em cada produto da lista do portal; o bloco a desliga,
+  senão o portal deixaria assinar mais de uma unidade.

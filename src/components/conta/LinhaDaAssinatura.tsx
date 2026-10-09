@@ -86,7 +86,10 @@ export function LinhaDaAssinatura({
           authorization: `Bearer ${await usuario.getIdToken()}`,
           "content-type": "application/json",
         },
-        body: JSON.stringify({ contaId }),
+        // O completo abre direto na confirmação da troca (`#d313`).
+        body: JSON.stringify(
+          qual === "completo" ? { contaId, para: "COMPLETO" } : { contaId },
+        ),
       });
       if (!resposta.ok) {
         const corpo = (await resposta.json().catch(() => ({}))) as {

@@ -115,9 +115,9 @@ de **teste** primeiro:
 1. **Um produto** ("Rende") com **dois preços recorrentes** em BRL: mensal e anual, o anual
    valendo dez mensais. Anotar os dois ids `price_…` → `STRIPE_PRICE_MENSAL` e
    `STRIPE_PRICE_ANUAL`.
-2. **Customer Portal ativado** — Settings → Billing → Customer portal: trocar cartão, mudar
-   de preço entre os dois, cancelar ao fim do período. Sem isto, `POST /api/assinatura/portal`
-   falha na criação da sessão, com erro do próprio Stripe.
+2. **Customer Portal configurado pela CLI** — o bloco de "Stripe, o portal (spec 110)", abaixo.
+   Sem isto, `POST /api/assinatura/portal` falha na criação da sessão, com erro do próprio
+   Stripe.
 3. **Um endpoint de webhook** apontando para `https://<host>/api/stripe/webhook`, com os três
    eventos `customer.subscription.created`, `customer.subscription.updated` e
    `customer.subscription.deleted`. Anotar o `whsec_…` → `STRIPE_WEBHOOK_SECRET`.
@@ -149,10 +149,9 @@ outra coisa é o essencial.
 2. **Um produto novo, "Rende Completo"**, com `metadata.pacote = COMPLETO` (maiúsculo: `completo`
    é o essencial) e dois preços recorrentes em BRL, mensal e anual, o anual valendo dez mensais.
    Anotar os dois ids `price_…` → `STRIPE_PRICE_COMPLETO_MENSAL` e `STRIPE_PRICE_COMPLETO_ANUAL`.
-3. **Customer Portal → Subscriptions → "Customers can switch plans"** ligado, com **os dois
-   produtos** e os quatro preços na lista, e os downgrades aplicados **no fim do período**. Sem
-   isso o portal não mostra "Atualizar plano", e o botão "Mudar para o completo" dos painéis de
-   `/configuracao` leva a um portal sem a opção.
+3. **O portal com os dois produtos**: o bloco de "Stripe, o portal (spec 110)", abaixo. Sem
+   ele, "Passar para o Completo" e "Mudar para o completo" recebem erro do Stripe na criação
+   da sessão.
 4. **Conferir a `metadata` antes de qualquer cliente de verdade no completo** (passo 5 do
    roteiro da spec): uma `metadata` errada faz o webhook gravar essencial e **tirar as
    ajudantes** de quem paga o completo (`#d170`). O desfazer é corrigir a `metadata`, reenviar o
@@ -163,6 +162,66 @@ quatro preços em `stripeDisponivel()`; publicado antes das variáveis, ninguém
 (`/assinatura` diz "A assinatura ainda não está configurada neste servidor"), e o resto do app
 continua de pé. Quem assinou antes da 032 fica sem `pacote` no documento, que é o essencial — o
 único que existia.
+
+### Stripe, o portal (spec 110)
+
+O portal é configurado pela CLI, e não por clique, para o modo de teste e o ao vivo ficarem
+iguais e escritos aqui (`DECISOES.md#d313`). Primeiro no teste; depois o **mesmo bloco** com
+`--live` ao fim de cada comando `stripe`, antes de publicar o app. Bash:
+
+> **Aplicado no ao vivo em 2026-10-09**, direto e sem o teste: o CLI desta máquina está logado
+> na sandbox da Koinos Digital (outra conta), e o Rende só tinha a chave ao vivo à mão. Rodou
+> com `--api-key` lida do `.env.local`, e não com `--live`. Configuração padrão
+> `bpc_1ULUAuPrzcZdpSOZjU1oZn0s`.
+
+```bash
+# A configuração padrão é a que tem "is_default": true.
+stripe billing_portal configurations list
+
+BPC=bpc_…                     # a padrão
+PROD_ESSENCIAL=prod_…         # "Rende", sem metadata.pacote
+PROD_COMPLETO=prod_…          # metadata.pacote = COMPLETO
+PRECO_MENSAL=price_…          # STRIPE_PRICE_MENSAL
+PRECO_ANUAL=price_…           # STRIPE_PRICE_ANUAL
+PRECO_COMPLETO_MENSAL=price_… # STRIPE_PRICE_COMPLETO_MENSAL
+PRECO_COMPLETO_ANUAL=price_…  # STRIPE_PRICE_COMPLETO_ANUAL
+
+# O nome do pacote no portal. A metadata do completo vai junto, idempotente: no ao vivo ela
+# faltava até a 110, e quem comprava o completo virava essencial (#d169, #d313).
+stripe products update "$PROD_ESSENCIAL" -d "name=Rende Essencial"
+stripe products update "$PROD_COMPLETO" -d "name=Rende Completo" -d "metadata[pacote]=COMPLETO"
+
+stripe billing_portal configurations update "$BPC" \
+  -d "features[payment_method_update][enabled]=true" \
+  -d "features[invoice_history][enabled]=true" \
+  -d "features[subscription_cancel][enabled]=true" \
+  -d "features[subscription_cancel][mode]=at_period_end" \
+  -d "features[subscription_update][enabled]=true" \
+  -d "features[subscription_update][default_allowed_updates][0]=price" \
+  -d "features[subscription_update][proration_behavior]=always_invoice" \
+  -d "features[subscription_update][products][0][product]=$PROD_ESSENCIAL" \
+  -d "features[subscription_update][products][0][prices][0]=$PRECO_MENSAL" \
+  -d "features[subscription_update][products][0][prices][1]=$PRECO_ANUAL" \
+  -d "features[subscription_update][products][0][adjustable_quantity][enabled]=false" \
+  -d "features[subscription_update][products][1][product]=$PROD_COMPLETO" \
+  -d "features[subscription_update][products][1][prices][0]=$PRECO_COMPLETO_MENSAL" \
+  -d "features[subscription_update][products][1][prices][1]=$PRECO_COMPLETO_ANUAL" \
+  -d "features[subscription_update][products][1][adjustable_quantity][enabled]=false" \
+  -d "features[subscription_update][schedule_at_period_end][conditions][0][type]=decreasing_item_amount" \
+  -d "features[subscription_update][schedule_at_period_end][conditions][1][type]=shortening_interval"
+```
+
+- **A quantidade fica travada em 1** (`adjustable_quantity=false`): o Stripe a liga sozinho
+  quando a lista de produtos é gravada, e o portal deixaria "assinar 3".
+- **Subir de pacote** cobra a diferença proporcional na hora (`always_invoice`).
+- **Descer de pacote, ou do anual para o mensal**, fica agendado para o fim do período já pago.
+  As ajudantes ficam até lá, e o `#d170` as tira quando o webhook vir o essencial vivo.
+- **Conferir no teste**: o portal de uma assinatura essencial, em "Atualizar assinatura", lista
+  os dois produtos; e "Passar para o Completo" no app abre direto a confirmação. Se o Stripe
+  recusar a sessão com `subscription_update_confirm`, o preço do completo não está na lista
+  acima.
+- **A marca** (ícone, logo, cor de destaque, fonte) é por clique, em Settings → Branding, nos
+  dois modos. O checkout e o portal continuam os do Stripe (`#d146`).
 
 ---
 
