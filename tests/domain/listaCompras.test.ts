@@ -17,6 +17,7 @@ import {
   rotuloDeCompra,
   soParaAReserva,
   statusDaLista,
+  textoDaLista,
   type FichaParaExplodir,
   type InsumoParaLista,
   type ListaMontada,
@@ -1058,5 +1059,65 @@ describe("custoPorOrigem (#d305)", () => {
       pedidos: 800,
       reserva: 0,
     });
+  });
+});
+
+describe("textoDaLista (#d306)", () => {
+  const item = (
+    insumoId: string,
+    nome: string,
+    categoria: "INGREDIENTE" | "EMBALAGEM",
+    quantidadePacotes: number,
+    custoEstimado: number,
+    extra: { comprado?: boolean; pulado?: boolean } = {},
+  ) => ({
+    insumoId,
+    nome,
+    categoria,
+    quantidadePacotes,
+    custoEstimado,
+    comprado: false,
+    ...extra,
+  });
+  const INSUMOS = [
+    { id: "manteiga", quantidadeCompra: 200, unidadeCompra: "g" as const },
+    { id: "farinha", quantidadeCompra: 10, unidadeCompra: "kg" as const },
+    { id: "sacola", quantidadeCompra: 100, unidadeCompra: "un" as const },
+  ];
+  const sem = (texto: string) => texto.replace(/\u00a0/g, " ");
+
+  it("o que falta, na ordem dos corredores, com plural e total", () => {
+    const itens = [
+      item("sacola", "Sacola Kraft", "EMBALAGEM", 1, 5999),
+      item("manteiga", "Manteiga", "INGREDIENTE", 7, 6993),
+      item("farinha", "Farinha de trigo", "INGREDIENTE", 1, 4190),
+      // Fora: marcado, pulado e o que ela já tem.
+      item("gotas", "Gotas", "INGREDIENTE", 1, 3000, { comprado: true }),
+      item("pistache", "Pistache", "INGREDIENTE", 1, 10950, { pulado: true }),
+      item("acucar", "Açúcar", "INGREDIENTE", 0, 0),
+    ];
+    expect(sem(textoDaLista(itens, INSUMOS, "2026-10-15"))).toBe(
+      [
+        "Lista de compras até 15 de out.",
+        "",
+        "Ingredientes",
+        "- Farinha de trigo: 1 pacote de 10 kg (R$ 41,90)",
+        "- Manteiga: 7 pacotes de 200 g (R$ 69,93)",
+        "",
+        "Embalagens",
+        "- Sacola Kraft: 1 pacote de 100 un (R$ 59,99)",
+        "",
+        "Total: R$ 171,82",
+      ].join("\n"),
+    );
+  });
+
+  it("material fora do cadastro sai sem o tamanho", () => {
+    const texto = textoDaLista(
+      [item("sumiu", "Coco", "INGREDIENTE", 2, 1000)],
+      [],
+      "2026-10-15",
+    );
+    expect(texto).toContain("- Coco: 2 pacotes (");
   });
 });

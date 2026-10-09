@@ -61,10 +61,10 @@ que cobra assinatura (AnyList, Bring!, OurGroceries).
 
 ## Critérios de aceite
 
-- [ ] `textoDaLista` com teste (ordem, plural, total, marcado e pulado fora).
-- [ ] Compartilhar do sistema, com o WhatsApp como saída.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d306` escrito; `ESTADO.md`; linha em `novidades.ts`.
+- [x] `textoDaLista` com teste (ordem, plural, total, marcado e pulado fora).
+- [x] Compartilhar do sistema, com o WhatsApp como saída.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d306` escrito; `ESTADO.md`; linha em `novidades.ts`.
 
 ---
 

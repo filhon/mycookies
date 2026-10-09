@@ -13,6 +13,7 @@ import {
   Info,
   RefreshCw,
   ScanLine,
+  Share2,
   ShoppingCart,
 } from "lucide-react";
 import { EntradaContagem } from "@/components/estoque/EntradaContagem";
@@ -27,6 +28,7 @@ import { PorqueDoItem } from "./PorqueDoItem";
 import { RodapeCompras } from "./RodapeCompras";
 import { agruparPorCorredor, ROTULO_CORREDOR } from "@/lib/domain/corredores";
 import { diaVizinho, rotuloDia } from "@/lib/domain/datas";
+import { linkDoWhatsApp } from "@/lib/domain/whatsapp";
 import { contagemDoInsumo, entradasDaLista } from "@/lib/domain/estoque";
 import { useConexao } from "@/lib/hooks/useDispositivo";
 import { useTelaAcesa } from "@/lib/hooks/useTelaAcesa";
@@ -40,6 +42,7 @@ import {
   orcamentosDeFora,
   precisaComprar,
   resumoDaLista,
+  textoDaLista,
   type Pendencia,
 } from "@/lib/domain/listaCompras";
 import { resumoDosItens } from "@/lib/domain/pedido";
@@ -376,6 +379,16 @@ export function ListaDoMercado({
     router.push("/insumos/nota");
   };
 
+  // O que falta, em texto, pelo compartilhar do aparelho; sem ele, o WhatsApp
+  // (`#d306`). Fechar a folha do sistema sem escolher rejeita a promessa, e não
+  // é erro.
+  const mandar = () => {
+    const texto = textoDaLista(itens, insumos, lista?.periodoFim ?? periodoFim);
+    if (typeof navigator.share === "function")
+      navigator.share({ text: texto }).catch(() => {});
+    else window.open(linkDoWhatsApp(null, texto), "_blank", "noopener");
+  };
+
   // O rodapé abre o mesmo bloco lá embaixo, e o foco vai com ele.
   const abrirFechar = () => {
     setConfirmandoFechar(true);
@@ -435,7 +448,22 @@ export function ListaDoMercado({
           // cartão da contagem está na tela, que tem o dele ao lado do motivo
           // (`#d301`). "Refazer" saiu daqui: sem marcado a lista se refaz
           // sozinha, e com marcado o botão mora na faixa que diz por quê.
-          semContagem.length === 0 ? <EntradaContagem /> : undefined
+          // "Mandar a lista" ao lado, só com item por comprar (`#d306`).
+          <div className="flex gap-2">
+            {lista && resumo.comprados < resumo.aComprar && (
+              <Botao
+                aria-label="Mandar a lista"
+                onClick={mandar}
+                iconeInicial={
+                  <Share2 aria-hidden className="size-5" strokeWidth={1.75} />
+                }
+              >
+                <span className="sm:hidden">Mandar</span>
+                <span className="hidden sm:inline">Mandar a lista</span>
+              </Botao>
+            )}
+            {semContagem.length === 0 && <EntradaContagem />}
+          </div>
         }
       >
         <Periodo

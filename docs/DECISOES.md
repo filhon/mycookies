@@ -9347,3 +9347,29 @@ e nunca viu quanto ela custa.
 
 **Consequência.** Comparar com o saldo do Caixa e mostrar o custo semanal da reserva na ficha
 ficaram fora.
+
+## D306 · Mandar a lista
+
+**Status:** vigente · decidida em 2026-10-09, spec `103-mandar-a-lista.md`.
+
+**Contexto.** Quem vai ao mercado nem sempre é ela. A lista saía do Rende por print de tela, que
+corta no meio, ou digitada no WhatsApp. Compartilhar é o básico de todo app de lista que cobra
+assinatura (AnyList, Bring!, OurGroceries).
+
+**Decisão.**
+
+- **"Mandar a lista"**, secundário com `share-2`, no cabeçalho de `/compras` ao lado de "Contar".
+  Só aparece com lista e item por comprar (não marcado, não pulado). No celular o rótulo encolhe
+  para "Mandar", como "Contar", e o `aria-label` diz o nome inteiro.
+- **O texto** sai de `textoDaLista(itens, insumos, periodoFim)` em `domain/listaCompras.ts`:
+  "Lista de compras até 15 de out.", um bloco por corredor na ordem do mercado (`- Manteiga: 7
+pacotes de 200 g (R$ 69,93)`) e "Total: R$ …". Só o que falta: o marcado, o pulado (`#d304`) e o
+  que ela já tem ficam fora, e o total é a soma do que foi. O tamanho do pacote vem do insumo vivo,
+  como na linha; material que sumiu do cadastro sai com "N pacotes", sem tamanho, porque a linha
+  gravada não guarda. Sem emoji e sem marca: a lista é dela, como a folha do orçamento (`#d127`).
+- **A saída:** `navigator.share({ text })` quando existe; senão `linkDoWhatsApp(null, texto)` numa
+  aba nova. Fechar a folha do sistema sem escolher rejeita a promessa, e a tela não diz nada.
+- O período do título é o da lista gravada, que é o dos itens.
+
+**Consequência.** Lista ao vivo entre dois aparelhos ficou fora: a ajudante já entra na conta
+(spec 030), e para quem não tem login o texto basta. Agrupar por loja também ficou fora.

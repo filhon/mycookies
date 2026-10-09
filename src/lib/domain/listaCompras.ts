@@ -7,9 +7,15 @@ import type {
   UnidadeBase,
   UnidadeCompra,
 } from "@/lib/types";
-import { compararParaOMercado } from "./corredores";
+import {
+  agruparPorCorredor,
+  compararParaOMercado,
+  ROTULO_CORREDOR,
+} from "./corredores";
 import { PERDA_MAXIMA } from "./custoInsumo";
+import { rotuloDia } from "./datas";
 import { estoqueParaLista } from "./estoque";
+import { formatarMoeda } from "./money";
 
 /**
  * O motor da lista de compras: do pedido combinado até o carrinho no mercado.
@@ -846,4 +852,51 @@ export function rotuloDeCompra(
     maximumFractionDigits: 3,
   });
   return `${pacotes} ${pacotes === 1 ? "pacote" : "pacotes"} de ${embalagem} ${unidadeCompra}`;
+}
+
+/**
+ * A lista em texto, para mandar a quem vai ao mercado (`#d306`).
+ *
+ * Só o que falta: nem o marcado, nem o pulado, nem o que ela já tem. Na ordem
+ * dos corredores, com o tamanho do pacote do insumo vivo, como a linha. Sem
+ * emoji e sem marca: a lista é dela (`#d127`).
+ */
+export function textoDaLista(
+  itens: (ItemNoCarrinho & {
+    nome: string;
+    categoria: CategoriaInsumo;
+  })[],
+  insumos: {
+    id: string;
+    quantidadeCompra: number;
+    unidadeCompra: UnidadeCompra;
+  }[],
+  periodoFim: DataISO,
+): string {
+  const porId = new Map(insumos.map((insumo) => [insumo.id, insumo]));
+  const faltam = itens.filter(
+    (item) => precisaComprar(item) && !item.comprado && !item.pulado,
+  );
+
+  const blocos = agruparPorCorredor(faltam).map((corredor) =>
+    [
+      ROTULO_CORREDOR[corredor.categoria],
+      ...corredor.itens.map((item) => {
+        const n = item.quantidadePacotes;
+        const insumo = porId.get(item.insumoId);
+        // Material que sumiu do cadastro: a linha gravada não sabe o tamanho.
+        const pacote = insumo
+          ? rotuloDeCompra(n, insumo.quantidadeCompra, insumo.unidadeCompra)
+          : `${n} ${n === 1 ? "pacote" : "pacotes"}`;
+        return `- ${item.nome}: ${pacote} (${formatarMoeda(item.custoEstimado)})`;
+      }),
+    ].join("\n"),
+  );
+  const total = faltam.reduce((soma, item) => soma + item.custoEstimado, 0);
+
+  return [
+    `Lista de compras até ${rotuloDia(periodoFim)}`,
+    ...blocos,
+    `Total: ${formatarMoeda(total)}`,
+  ].join("\n\n");
 }
