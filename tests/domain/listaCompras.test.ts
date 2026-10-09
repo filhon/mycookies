@@ -4,13 +4,17 @@ import {
   demandaPorPedido,
   entraNaLista,
   explodirDemanda,
+  faltaParaOsPedidos,
   montarLista,
   orcamentosDeFora,
+  poucoAproveitado,
   precisaComprar,
   preservarComprados,
   quantidadeFisica,
+  quemFicaSem,
   resumoDaLista,
   rotuloDeCompra,
+  soParaAReserva,
   statusDaLista,
   type FichaParaExplodir,
   type InsumoParaLista,
@@ -765,7 +769,30 @@ describe("resumoDaLista", () => {
       aComprar: 4,
       comprados: 1,
       jaTem: 1,
+      pulados: 0,
     });
+  });
+
+  it("o pulado sai do total, do que falta e da contagem (#d304)", () => {
+    const comPulado = ITENS.map((item) =>
+      item.insumoId === "caixa" ? { ...item, pulado: true } : item,
+    );
+    expect(resumoDaLista(comPulado)).toEqual({
+      total: 7000,
+      restante: 5750,
+      aComprar: 3,
+      comprados: 1,
+      jaTem: 1,
+      pulados: 1,
+    });
+    // Tudo o que sobrou marcado: a lista está comprada, o pulado não segura.
+    expect(
+      statusDaLista(
+        comPulado.map((item) =>
+          item.insumoId === "caixa" ? item : { ...item, comprado: true },
+        ),
+      ),
+    ).toBe("COMPRADA");
   });
 
   it("o que ela já tem não conta como comprado nem como a comprar", () => {
@@ -796,10 +823,25 @@ describe("preservarComprados", () => {
     );
 
     expect(novos).toEqual([
-      { insumoId: "farinha", comprado: true },
-      { insumoId: "chocolate", comprado: false },
+      { insumoId: "farinha", comprado: true, pulado: false },
+      { insumoId: "chocolate", comprado: false, pulado: false },
       // O que entrou com o pedido novo nasce por comprar.
-      { insumoId: "manteiga", comprado: false },
+      { insumoId: "manteiga", comprado: false, pulado: false },
+    ]);
+  });
+
+  it("o pulado continua pulado ao refazer (#d304)", () => {
+    const novos = preservarComprados(
+      [{ insumoId: "pistache" }, { insumoId: "sacola" }],
+      [
+        { insumoId: "pistache", comprado: false, pulado: true },
+        // Lista gravada antes da 101: sem o campo.
+        { insumoId: "sacola", comprado: true },
+      ],
+    );
+    expect(novos).toEqual([
+      { insumoId: "pistache", comprado: false, pulado: true },
+      { insumoId: "sacola", comprado: true, pulado: false },
     ]);
   });
 
@@ -895,5 +937,70 @@ describe("demandaPorPedido", () => {
     expect(
       demandaPorPedido("manteiga", [comCliente], FICHAS)[0]?.pedido.clienteNome,
     ).toBe("Ana");
+  });
+});
+
+// Os dois casos do print de 2026-10-08 (spec 101).
+describe("o pacote contra a falta (#d304)", () => {
+  // Creme de pistache: tem 360 g, os pedidos pedem 20 g, a reserva o resto.
+  const PISTACHE = {
+    quantidadePacotes: 1,
+    quantidadeComprar: 20,
+    quantidadeDeReserva: 360,
+  };
+  // Sacola Kraft: 90 anotadas e não descontadas, falta 1 para um pedido.
+  const SACOLA = { quantidadePacotes: 1, quantidadeComprar: 1 };
+
+  it("pouco aproveitado: um pacote, e a falta até 10% dele", () => {
+    expect(poucoAproveitado(PISTACHE, 1000)).toBe(true);
+    expect(poucoAproveitado(SACOLA, 100)).toBe(true);
+    expect(
+      poucoAproveitado({ ...PISTACHE, quantidadeComprar: 100 }, 1000),
+    ).toBe(true);
+    expect(
+      poucoAproveitado({ ...PISTACHE, quantidadeComprar: 101 }, 1000),
+    ).toBe(false);
+    // Dois pacotes já não são "um pacote por vinte gramas".
+    expect(poucoAproveitado({ ...PISTACHE, quantidadePacotes: 2 }, 1000)).toBe(
+      false,
+    );
+    expect(
+      poucoAproveitado({ quantidadePacotes: 0, quantidadeComprar: 0 }, 1000),
+    ).toBe(false);
+  });
+
+  it("só para a reserva: sem ela, não compraria", () => {
+    expect(soParaAReserva(PISTACHE, 0)).toBe(true);
+    expect(soParaAReserva(SACOLA, 0)).toBe(false);
+    expect(soParaAReserva({ ...PISTACHE, quantidadeComprar: 0 }, 0)).toBe(
+      false,
+    );
+  });
+
+  it("compara na mesma base: a reserva ganha a perda antes de descontar", () => {
+    // 100 g de reserva com 20% de perda são 125 g físicos.
+    const item = { quantidadeComprar: 125, quantidadeDeReserva: 100 };
+    expect(soParaAReserva(item, 20)).toBe(true);
+    // Sem a perda dos dois lados, 125 > 100 diria que é de pedido.
+    expect(soParaAReserva(item, 0)).toBe(false);
+    // 150 g físicos: 25 g físicos dos pedidos, 20 g úteis.
+    expect(
+      faltaParaOsPedidos({ ...item, quantidadeComprar: 150 }, 20),
+    ).toBeCloseTo(20);
+  });
+
+  it("quem fica sem é a entrega mais longe", () => {
+    const partes = [
+      { pedido: "Ana", quantidade: 120 },
+      { pedido: "Bia", quantidade: 80 },
+    ];
+    expect(quemFicaSem(50, partes)).toEqual([
+      { pedido: "Bia", quantidade: 50 },
+    ]);
+    expect(quemFicaSem(150, partes)).toEqual([
+      { pedido: "Ana", quantidade: 70 },
+      { pedido: "Bia", quantidade: 80 },
+    ]);
+    expect(quemFicaSem(0, partes)).toEqual([]);
   });
 });

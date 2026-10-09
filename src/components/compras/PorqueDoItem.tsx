@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { TrendingDown, TrendingUp } from "lucide-react";
+import { TrendingDown, TrendingUp, TriangleAlert } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { EfeitoDoPrecoDigitado } from "@/components/insumos/EfeitoDoPreco";
 import { formatarReferencia } from "@/components/insumos/FichaDoMaterial";
@@ -9,12 +9,18 @@ import { Botao } from "@/components/ui/Botao";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { Painel } from "@/components/ui/Painel";
+import { listarNomes } from "@/components/producao/FraseDaCapacidade";
 import { fraseDaContagem } from "./LinhaCompra";
 import { pedirAcao } from "@/lib/acaoPedida";
 import { calcularCustoInsumo, comprasDoInsumo } from "@/lib/domain/custoInsumo";
 import { dataISODe, rotuloDia, rotuloDiaCurto } from "@/lib/domain/datas";
 import { contagemDoInsumo, rotuloDeIdade } from "@/lib/domain/estoque";
-import { demandaPorPedido, quantidadeFisica } from "@/lib/domain/listaCompras";
+import {
+  demandaPorPedido,
+  faltaParaOsPedidos,
+  quantidadeFisica,
+  quemFicaSem,
+} from "@/lib/domain/listaCompras";
 import { formatarMoeda } from "@/lib/domain/money";
 import type { ReservaDoInsumo } from "@/lib/domain/producao";
 import { custoDeReferencia, formatarQuantidade } from "@/lib/domain/unidades";
@@ -50,6 +56,7 @@ export function PorqueDoItem({
   reservaPara,
   hoje,
   aoSalvarPreco,
+  aoPular,
 }: {
   aberto: boolean;
   aoFechar: () => void;
@@ -62,14 +69,27 @@ export function PorqueDoItem({
   reservaPara: ReservaDoInsumo["fichas"] | undefined;
   hoje: DataISO;
   aoSalvarPreco: (insumo: Insumo, preco: Centavos) => void;
+  /** "Não levar desta vez" (`#d304`). */
+  aoPular: () => void;
 }) {
   const [preco, setPreco] = useState(insumo?.precoCompra ?? 0);
+  const [avisado, setAvisado] = useState(false);
   // Cada abertura nasce com o preço gravado: o digitado e não salvo não volta.
+  // E sem o aviso de quem fica sem: ele é da decisão daquela abertura.
   const [abertoAntes, setAbertoAntes] = useState(aberto);
   if (aberto !== abertoAntes) {
     setAbertoAntes(aberto);
-    if (aberto) setPreco(insumo?.precoCompra ?? 0);
+    if (aberto) {
+      setPreco(insumo?.precoCompra ?? 0);
+      setAvisado(false);
+    }
   }
+
+  const insumoId = item?.insumoId;
+  const porPedido = useMemo(
+    () => (insumoId ? demandaPorPedido(insumoId, pedidos, fichas) : []),
+    [insumoId, pedidos, fichas],
+  );
 
   const mudou = !!insumo && preco > 0 && preco !== insumo.precoCompra;
 
@@ -101,10 +121,22 @@ export function PorqueDoItem({
           <AConta item={item} insumo={insumo} hoje={hoje} />
           <DeOndeVem
             item={item}
-            pedidos={pedidos}
-            fichas={fichas}
+            porPedido={porPedido}
             reservaPara={reservaPara}
           />
+          {!item.pulado && (
+            <NaoLevar
+              item={item}
+              perdaPercentual={insumo?.perdaPercentual ?? 0}
+              porPedido={porPedido}
+              avisado={avisado}
+              aoAvisar={() => setAvisado(true)}
+              aoPular={() => {
+                aoPular();
+                aoFechar();
+              }}
+            />
+          )}
           {insumo && (
             <OPreco
               insumo={insumo}
@@ -286,20 +318,14 @@ function AConta({
 /** Os pedidos pelo nome da cliente e o dia, e a reserva por produto. */
 function DeOndeVem({
   item,
-  pedidos,
-  fichas,
+  porPedido,
   reservaPara,
 }: {
   item: ItemListaCompras;
-  pedidos: Pedido[];
-  fichas: FichaTecnica[];
+  porPedido: { pedido: Pedido; quantidade: number }[];
   reservaPara: ReservaDoInsumo["fichas"] | undefined;
 }) {
   const q = (valor: number) => formatarQuantidade(valor, item.unidadeBase);
-  const porPedido = useMemo(
-    () => demandaPorPedido(item.insumoId, pedidos, fichas),
-    [item.insumoId, pedidos, fichas],
-  );
   const reserva = (item.quantidadeDeReserva ?? 0) > FOLGA ? reservaPara : [];
 
   if (porPedido.length === 0 && !reserva?.length) return null;
@@ -325,6 +351,74 @@ function DeOndeVem({
         ))}
       </ul>
     </Secao>
+  );
+}
+
+/**
+ * "Não levar desta vez" (`#d304`). Item que só a reserva pede sai no primeiro
+ * toque; item de pedido diz antes quem fica sem, e quanto, e o botão continua
+ * ali: não é modal, é uma linha a mais antes da decisão.
+ */
+function NaoLevar({
+  item,
+  perdaPercentual,
+  porPedido,
+  avisado,
+  aoAvisar,
+  aoPular,
+}: {
+  item: ItemListaCompras;
+  perdaPercentual: number;
+  porPedido: { pedido: Pedido; quantidade: number }[];
+  avisado: boolean;
+  aoAvisar: () => void;
+  aoPular: () => void;
+}) {
+  const sem = quemFicaSem(faltaParaOsPedidos(item, perdaPercentual), porPedido);
+  const q = (valor: number) => formatarQuantidade(valor, item.unidadeBase);
+  const de = (pedido: Pedido) =>
+    `${pedido.clienteNome} de ${rotuloDiaCurto(pedido.dataEntregaISO)}`;
+
+  const aviso =
+    sem.length === 0
+      ? null
+      : sem.length === 1
+        ? `Sem isto, o pedido de ${de(sem[0]!.pedido)} fica sem ${q(sem[0]!.quantidade)}.`
+        : `Sem isto, ${sem.length} pedidos ficam sem: ${listarNomes(
+            sem.map((s) => `o de ${de(s.pedido)} (${q(s.quantidade)})`),
+            3,
+          )}.`;
+  const avisando = avisado && !!aviso;
+
+  return (
+    <div>
+      <Botao
+        onClick={aviso && !avisado ? aoAvisar : aoPular}
+        className="w-full sm:w-auto"
+      >
+        {avisando ? "Não levar mesmo assim" : "Não levar desta vez"}
+      </Botao>
+      <p
+        aria-live="polite"
+        className={cn(
+          "mt-1.5 flex max-w-[60ch] items-start gap-1.5 text-label",
+          avisando ? "text-attention" : "text-ink-muted",
+        )}
+      >
+        {avisando && (
+          <TriangleAlert
+            aria-hidden
+            className="mt-0.5 size-4 shrink-0"
+            strokeWidth={1.75}
+          />
+        )}
+        <span>
+          {avisando
+            ? aviso
+            : "Fica pra próxima, embaixo do carrinho, e “Levar” desfaz."}
+        </span>
+      </p>
+    </div>
   );
 }
 

@@ -9274,3 +9274,46 @@ consumoDeFornadas)`: a linha gravada não guarda a quantidade física, e esta é
 
 **Consequência.** O porquê usa as fichas e os materiais que `/compras` já assinava: nenhuma
 assinatura nova. "Não levar desta vez" e "levar mais um" (101 e 104) moram neste painel.
+
+## D304 · O pacote inteiro por vinte gramas
+
+**Status:** vigente · decidida em 2026-10-09, spec `101-o-pacote-inteiro-por-vinte-gramas.md`.
+
+**Contexto.** No print de 2026-10-08 a lista mandava levar um pacote de 1 kg de creme de pistache
+(R$ 109,50) por 20 g que eram só da reserva, e um pacote de 100 sacolas (R$ 59,99) por uma: 45%
+da lista para cobrir 20 g e uma sacola. A conta estava certa e a decisão estava escondida.
+
+**Decisão.**
+
+- **Duas frases informativas na linha**, com ícone e em `--ink-muted` pela `Frase` de sempre,
+  só quando verdadeiras e do insumo vivo:
+  - **Pacote pouco aproveitado** (`PackageOpen`): um pacote só e a falta até
+    `FRACAO_POUCO_APROVEITADO = 0.1` dele, por `poucoAproveitado` em `domain/listaCompras.ts`.
+    "Faltam 20 g; o pacote tem 1 kg." Os dez por cento são botão de ajuste, e não verdade.
+  - **Só para a reserva** (`Shield`): sem a reserva ela não compraria, por `soParaAReserva`. "Os
+    pedidos estão cobertos: falta só para a reserva."; sem demanda de pedido no item, só "Falta só
+    para a reserva.". É a frase de reserva que a 100 tirou da linha, de volta só quando decide.
+- **A mesma base:** `quantidadeComprar` tem a perda e `quantidadeDeReserva` não. A reserva vira
+  física por `quantidadeFisica` (a função da montagem) antes de comparar, e
+  `faltaParaOsPedidos` devolve o resto ao útil pelo mesmo fator. Conferido no passo 2: a 13C
+  introduziu `quantidadeDeReserva?` como campo opcional, sem subir `VERSAO_SCHEMA` e sem conversor;
+  `pulado?` fez igual.
+- **Deixar para a próxima:** `ItemListaCompras.pulado?` (aditivo, ausente é `false`, aprovado na
+  spec). "Não levar desta vez", secundário, no porquê, depois de "De onde vem"; `pularItem` grava
+  `pulado: true` e tira a marca de comprado. O pulado sai do corredor e do carrinho e vai para
+  **"Fica pra próxima"**, depois de "No carrinho", com "Levar" (secundário, 44px) para desfazer.
+- **Item de pedido avisa antes:** com `faltaParaOsPedidos > 0`, o primeiro toque mostra, embaixo
+  do botão e em ocre com o triângulo, quem fica sem e quanto ("Sem isto, o pedido de Ana de sex 10
+  fica sem 120 g."), e o botão vira "Não levar mesmo assim". Não é modal. Quem fica sem sai de
+  `quemFicaSem`: do último pedido para o primeiro, porque a despensa vai para a entrega mais perto.
+  A despensa cobre os pedidos antes da reserva, que é o piso por cima deles (`#d96`). "de Ana", e
+  não "da Ana": o nome não diz o gênero.
+- **Fora das contas:** `resumoDaLista` e, por ele, `statusDaLista` ignoram o pulado (total, o que
+  falta, a contagem e o fechar com tudo marcado); o resumo ganha `pulados`, e o rodapé diz "· N pra
+  próxima" ao lado de "3 de 8 no carrinho". A lista com o resto todo marcado é `COMPRADA`.
+- **Sobrevive ao refazer:** `preservarComprados` casa por `insumoId` e leva `pulado` como leva
+  `comprado`; toda linha regravada sai com os dois booleanos.
+
+**Consequência.** O pulado não segura a lista sozinha: com nada marcado ela continua se refazendo
+(`#d301`), e o pulado volta pulado. Sugerir outro tamanho de pacote e pular a reserva no produto
+ficaram fora (a lista não conhece os tamanhos do mercado; o piso mora na ficha).

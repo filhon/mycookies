@@ -16,6 +16,8 @@ import type { ResumoDaLista } from "@/lib/domain/listaCompras";
  * grande passa a ser o que falta, com o total em rótulo; com tudo marcado, o que
  * ela gastou. A contagem ao lado faz o que a faixa de prosa fazia.
  *
+ * O que ficou pra próxima sai das contas e entra na contagem ao lado (`#d304`).
+ *
  * Com tudo marcado, "Fechar a lista" abre o bloco do fechar (`#d301`). Some com
  * o teclado aberto, como o resto do que não é correção (`#d75`).
  */
@@ -72,6 +74,14 @@ export function RodapeCompras({
               </strong>{" "}
               no carrinho
             </span>
+          )}
+          {/* Fora do total (`#d304`), e por isso dito: o número de cima
+              desceu por uma decisão dela, e não por um item a menos. */}
+          {resumo.pulados > 0 && (
+            <>
+              <span className="text-ink-subtle">·</span>
+              <span>{resumo.pulados} pra próxima</span>
+            </>
           )}
         </p>
 

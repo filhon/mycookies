@@ -568,6 +568,94 @@ export function montarLista(
 }
 
 // ---------------------------------------------------------------------------
+// O pacote contra a falta (`#d304`)
+// ---------------------------------------------------------------------------
+
+/**
+ * Até que fração do pacote a falta é "pouco aproveitado": 20 g de um pacote de
+ * 1 kg, uma sacola de um pacote de 100.
+ *
+ * É botão de ajuste, e não verdade: 10% foi onde os dois casos do print de
+ * 2026-10-08 caíram com folga. Se a frase aparecer demais, desce; de menos, sobe.
+ */
+export const FRACAO_POUCO_APROVEITADO = 0.1;
+
+/**
+ * Um pacote só, e a falta cabe em até 10% dele.
+ *
+ * `quantidadeComprar` e `quantidadeBase` são as duas físicas, então comparam
+ * direto. O tamanho do pacote vem do insumo vivo, como na linha.
+ */
+export function poucoAproveitado(
+  item: { quantidadePacotes: number; quantidadeComprar: number },
+  quantidadeBase: number,
+): boolean {
+  return (
+    item.quantidadePacotes === 1 &&
+    quantidadeBase > 0 &&
+    item.quantidadeComprar <= quantidadeBase * FRACAO_POUCO_APROVEITADO + FOLGA
+  );
+}
+
+/**
+ * Quanto falta só para os pedidos, em unidade base **útil** (sem perda): o que
+ * eles ficam sem se ela não levar o item.
+ *
+ * `quantidadeComprar` tem a perda dentro e `quantidadeDeReserva` não; a reserva
+ * vira física pela mesma `quantidadeFisica` da montagem antes de descontar, e o
+ * resto volta ao útil pelo mesmo fator. A despensa cobre primeiro os pedidos: a
+ * reserva é o piso por cima deles (`#d96`), então o que falta é dela antes.
+ */
+export function faltaParaOsPedidos(
+  item: { quantidadeComprar: number; quantidadeDeReserva?: number },
+  perdaPercentual: Percentual,
+): number {
+  const fisicaDaReserva = quantidadeFisica(
+    item.quantidadeDeReserva ?? 0,
+    perdaPercentual,
+  );
+  const fisica = item.quantidadeComprar - fisicaDaReserva;
+  return fisica > FOLGA ? fisica / quantidadeFisica(1, perdaPercentual) : 0;
+}
+
+/**
+ * Sem a reserva ela não compraria: os pedidos estão cobertos, e o que falta é
+ * do piso (`#d96`).
+ */
+export function soParaAReserva(
+  item: { quantidadeComprar: number; quantidadeDeReserva?: number },
+  perdaPercentual: Percentual,
+): boolean {
+  return (
+    item.quantidadeComprar > FOLGA &&
+    (item.quantidadeDeReserva ?? 0) > FOLGA &&
+    faltaParaOsPedidos(item, perdaPercentual) === 0
+  );
+}
+
+/**
+ * Que pedidos ficam sem, e quanto, se ela não levar o item.
+ *
+ * Do último para o primeiro: a despensa vai para a entrega mais perto, e quem
+ * fica sem é a mais longe. `partes` chega de `demandaPorPedido`, na ordem de
+ * entrega; a resposta sai na mesma ordem.
+ */
+export function quemFicaSem<P>(
+  falta: number,
+  partes: { pedido: P; quantidade: number }[],
+): { pedido: P; quantidade: number }[] {
+  const sem: { pedido: P; quantidade: number }[] = [];
+  let resta = falta;
+  for (let i = partes.length - 1; i >= 0 && resta > FOLGA; i--) {
+    const parte = partes[i]!;
+    const quantidade = Math.min(resta, parte.quantidade);
+    sem.unshift({ pedido: parte.pedido, quantidade });
+    resta -= quantidade;
+  }
+  return sem;
+}
+
+// ---------------------------------------------------------------------------
 // O estado da lista
 // ---------------------------------------------------------------------------
 
@@ -577,6 +665,8 @@ export interface ItemNoCarrinho {
   quantidadePacotes: number;
   custoEstimado: Centavos;
   comprado: boolean;
+  /** Fica pra próxima (`#d304`). Ausente em lista gravada antes da spec 101. */
+  pulado?: boolean;
 }
 
 /** O que precisa entrar no carrinho. O resto ela já tem em casa. */
@@ -593,16 +683,20 @@ export interface ResumoDaLista {
   comprados: number;
   /** Insumos que a demanda pede e que o estoque já cobre. */
   jaTem: number;
+  /** O que ela deixou para a próxima: fora de todas as contas acima. */
+  pulados: number;
 }
 
 /**
  * O rodapé da tela, somado ao vivo enquanto ela marca.
  *
  * `restante` é o número que decide se dá para levar tudo hoje, e por isso ele
- * desce a cada item marcado em vez de ficar parado no total.
+ * desce a cada item marcado em vez de ficar parado no total. O pulado não entra
+ * em nada (`#d304`): ela decidiu não levar, e ele não é falta nem gasto.
  */
 export function resumoDaLista(itens: ItemNoCarrinho[]): ResumoDaLista {
-  const noCarrinho = itens.filter(precisaComprar);
+  const precisa = itens.filter(precisaComprar);
+  const noCarrinho = precisa.filter((item) => !item.pulado);
   const faltando = noCarrinho.filter((item) => !item.comprado);
 
   return {
@@ -610,7 +704,8 @@ export function resumoDaLista(itens: ItemNoCarrinho[]): ResumoDaLista {
     restante: faltando.reduce((soma, item) => soma + item.custoEstimado, 0),
     aComprar: noCarrinho.length,
     comprados: noCarrinho.length - faltando.length,
-    jaTem: itens.length - noCarrinho.length,
+    jaTem: itens.length - precisa.length,
+    pulados: precisa.length - noCarrinho.length,
   };
 }
 
@@ -633,20 +728,22 @@ export function statusDaLista(itens: ItemNoCarrinho[]): StatusListaCompras {
  *
  * Sem isso, confirmar um pedido novo no meio da feira apagaria meia hora de
  * carrinho. O que sumiu da lista nova simplesmente não volta, e o que entrou
- * nasce por comprar.
+ * nasce por comprar. O pulado (`#d304`) fica pulado pelo mesmo motivo.
  */
 export function preservarComprados<T extends { insumoId: string }>(
   itens: T[],
-  anteriores: { insumoId: string; comprado: boolean }[],
-): (T & { comprado: boolean })[] {
-  const marcados = new Set(
-    anteriores.filter((item) => item.comprado).map((item) => item.insumoId),
-  );
+  anteriores: { insumoId: string; comprado: boolean; pulado?: boolean }[],
+): (T & { comprado: boolean; pulado: boolean })[] {
+  const porId = new Map(anteriores.map((item) => [item.insumoId, item]));
 
-  return itens.map((item) => ({
-    ...item,
-    comprado: marcados.has(item.insumoId),
-  }));
+  return itens.map((item) => {
+    const anterior = porId.get(item.insumoId);
+    return {
+      ...item,
+      comprado: anterior?.comprado ?? false,
+      pulado: anterior?.pulado ?? false,
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------

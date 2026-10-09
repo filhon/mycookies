@@ -21,7 +21,7 @@ import { AvisoLeituraSemRede } from "@/components/notas/EntradaLeitura";
 import { Botao } from "@/components/ui/Botao";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { Pilulas } from "@/components/ui/Pilulas";
-import { LinhaCompra, LinhaJaTem } from "./LinhaCompra";
+import { LinhaCompra, LinhaJaTem, LinhaPulada } from "./LinhaCompra";
 import { PorqueDoItem } from "./PorqueDoItem";
 import { RodapeCompras } from "./RodapeCompras";
 import { agruparPorCorredor, ROTULO_CORREDOR } from "@/lib/domain/corredores";
@@ -53,6 +53,7 @@ import {
   corrigirPrecoNaLista,
   criarListaCompras,
   marcarItemComprado,
+  pularItem,
   regerarListaCompras,
 } from "@/lib/firebase/mutations/listasCompra";
 import type {
@@ -205,6 +206,16 @@ export function ListaDoMercado({
     );
   };
 
+  const pular = (insumoId: string, pulado: boolean) => {
+    if (!lista) return;
+    despachar(
+      pularItem(contaId, lista, insumoId, pulado),
+      pulado
+        ? "Não deu para deixar este item para a próxima agora."
+        : "Não deu para voltar este item para a lista agora.",
+    );
+  };
+
   const corrigirPreco = (insumo: Insumo, preco: Centavos) => {
     despachar(
       corrigirPrecoNaLista(contaId, insumo, preco, lista),
@@ -228,10 +239,16 @@ export function ListaDoMercado({
   // O marcado sai do corredor e desce para "No carrinho" (`#d300`): riscado no
   // lugar, ele obrigava a reler cada corredor. Agrupar também o carrinho mantém
   // a ordem da loja ali embaixo.
-  const corredores = agruparPorCorredor(aComprar.filter((i) => !i.comprado));
+  // O pulado sai dos dois e desce para "Fica pra próxima" (`#d304`).
+  const corredores = agruparPorCorredor(
+    aComprar.filter((i) => !i.comprado && !i.pulado),
+  );
   const noCarrinho = agruparPorCorredor(
-    aComprar.filter((i) => i.comprado),
+    aComprar.filter((i) => i.comprado && !i.pulado),
   ).flatMap((corredor) => corredor.itens);
+  const pulados = agruparPorCorredor(aComprar.filter((i) => i.pulado)).flatMap(
+    (corredor) => corredor.itens,
+  );
 
   const linha = (item: ItemListaCompras) => (
     <LinhaCompra
@@ -569,6 +586,37 @@ export function ListaDoMercado({
               </section>
             )}
 
+            {pulados.length > 0 && (
+              <section
+                aria-labelledby="fica-pra-proxima"
+                className="overflow-hidden rounded-lg border border-line bg-surface"
+              >
+                <div className="border-b border-line px-4 pb-3 pt-4 lg:px-5">
+                  <h2
+                    id="fica-pra-proxima"
+                    className="num text-subheading font-semibold text-ink"
+                  >
+                    Fica pra próxima
+                    <span className="mx-1.5 text-ink-subtle">·</span>
+                    {pulados.length}
+                  </h2>
+                  <p className="mt-0.5 text-label text-ink-muted">
+                    Fora do que falta. Refazer a lista não traz de volta.
+                  </p>
+                </div>
+                <ul className="divide-y divide-line">
+                  {pulados.map((item) => (
+                    <LinhaPulada
+                      key={item.insumoId}
+                      item={item}
+                      insumo={porInsumo.get(item.insumoId)}
+                      aoLevar={() => pular(item.insumoId, false)}
+                    />
+                  ))}
+                </ul>
+              </section>
+            )}
+
             {/* Fechado: dezenove linhas de conferência embaixo de oito de
                 compra empurravam "Fechar esta lista" três telas para baixo
                 (`#d300`). Continua à vista, a um toque. */}
@@ -729,6 +777,7 @@ export function ListaDoMercado({
         reservaPara={porqueId ? reserva.get(porqueId)?.fichas : undefined}
         hoje={hoje}
         aoSalvarPreco={corrigirPreco}
+        aoPular={() => porqueId && pular(porqueId, true)}
       />
 
       {lista && (

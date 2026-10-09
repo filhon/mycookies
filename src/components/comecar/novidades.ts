@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-09",
+    titulo: "O pacote inteiro por um pouquinho",
+    frase:
+      "A lista avisa quando o pacote é muito maior que a falta ou quando a falta é só da reserva, e o item pode ficar pra próxima.",
+    href: "/compras",
+  },
+  {
+    dataISO: "2026-10-09",
     titulo: "O porquê de cada item da lista",
     frase:
       "Toque no preço de um item: a conta, de que pedido vem, a última compra e o que o preço novo faz nos produtos.",

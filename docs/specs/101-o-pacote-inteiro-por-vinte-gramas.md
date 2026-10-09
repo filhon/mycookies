@@ -79,10 +79,10 @@ a diferença que só o Rende pode ter.
 
 ## Critérios de aceite
 
-- [ ] As duas frases, com teste, só quando verdadeiras.
-- [ ] Pular e desfazer; pulado sobrevive ao refazer; fora do total que falta.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d304` escrito; `ESTADO.md`; linha em `novidades.ts`.
+- [x] As duas frases, com teste, só quando verdadeiras.
+- [x] Pular e desfazer; pulado sobrevive ao refazer; fora do total que falta.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d304` escrito; `ESTADO.md`; linha em `novidades.ts`.
 
 ---
 

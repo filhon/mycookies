@@ -197,6 +197,34 @@ export async function marcarItemComprado(
 }
 
 /**
+ * "Não levar desta vez", ou "Levar" para desfazer (`#d304`).
+ *
+ * Pular tira a marca de comprado: o item sai do carrinho e de todas as contas.
+ * Mesmo array reescrito de `marcarItemComprado`, pelo mesmo motivo.
+ */
+export async function pularItem(
+  contaId: string,
+  lista: Pick<ListaCompras, "id" | "itens">,
+  insumoId: string,
+  pulado: boolean,
+): Promise<void> {
+  const itens = lista.itens.map((item) =>
+    item.insumoId === insumoId
+      ? { ...item, pulado, comprado: pulado ? false : item.comprado }
+      : item,
+  );
+
+  despachar(
+    updateDoc(docListaCompras(contaId, lista.id), {
+      v: VERSAO_SCHEMA,
+      itens,
+      status: statusDaLista(itens),
+      atualizadoEm: agora(),
+    }),
+  );
+}
+
+/**
  * O preço corrigido na frente da gôndola.
  *
  * É o contexto 2 do `PRODUCT.md`, e o momento em que ela mais sabe o preço de

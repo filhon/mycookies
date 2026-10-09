@@ -218,6 +218,12 @@ export interface ItemListaCompras {
   quantidadePacotes: number;
   custoEstimado: Centavos;
   comprado: boolean;
+  /**
+   * Ela decidiu deixar para a próxima (`DECISOES.md#d304`): fora do corredor e
+   * do que falta, e preservado ao refazer. Ausente em lista gravada antes da
+   * spec 101, e ausente é `false`.
+   */
+  pulado?: boolean;
 }
 
 export interface ListaCompras extends DocumentoBase {

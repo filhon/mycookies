@@ -4,13 +4,16 @@ import {
   Check,
   ChevronRight,
   CookingPot,
+  PackageOpen,
   Shield,
   TriangleAlert,
   type LucideIcon,
 } from "lucide-react";
 import { type ReactNode } from "react";
 import { listarNomes } from "@/components/producao/FraseDaCapacidade";
+import { Botao } from "@/components/ui/Botao";
 import { contagemDoInsumo, rotuloDeIdade } from "@/lib/domain/estoque";
+import { poucoAproveitado, soParaAReserva } from "@/lib/domain/listaCompras";
 import { formatarMoeda } from "@/lib/domain/money";
 import {
   formatarQuantidade,
@@ -63,6 +66,7 @@ export function LinhaCompra({
   // reserva moram no porquê. Do insumo **vivo**, e não da linha gravada.
   const contagem = fraseDaContagem(insumo, item.unidadeBase, hoje);
   const atencao = contagem?.ignorada ? contagem.frase : null;
+  const { pacote, reserva } = frasesDoPacote(item, insumo);
 
   return (
     // Marcar muda a linha de seção: ela chega pela opacidade, sem animar a
@@ -129,6 +133,10 @@ export function LinhaCompra({
                 {atencao}
               </Frase>
             )}
+            {/* Informativas (`#d304`): a decisão de levar é dela, e estas
+                dizem só o que a conta esconde. */}
+            {pacote && <Frase icone={PackageOpen}>{pacote}</Frase>}
+            {reserva && <Frase icone={Shield}>{reserva}</Frase>}
           </span>
         </button>
 
@@ -154,6 +162,76 @@ export function LinhaCompra({
           />
         </button>
       </div>
+    </li>
+  );
+}
+
+/**
+ * As duas frases do pacote contra a falta (`#d304`), só quando verdadeiras.
+ * Do insumo vivo, como o tamanho do pacote: sem ele, nenhuma.
+ */
+function frasesDoPacote(
+  item: ItemListaCompras,
+  insumo: Insumo | undefined,
+): { pacote: string | null; reserva: string | null } {
+  if (!insumo) return { pacote: null, reserva: null };
+
+  const falta = quantidadeParaOMercado(
+    item.quantidadeComprar,
+    item.unidadeBase,
+  );
+  const pacote = poucoAproveitado(item, insumo.quantidadeBase)
+    ? `${falta.startsWith("1 ") ? "Falta" : "Faltam"} ${falta}; o pacote tem ${insumo.quantidadeCompra.toLocaleString("pt-BR", { maximumFractionDigits: 3 })} ${insumo.unidadeCompra}.`
+    : null;
+
+  const temPedido =
+    item.quantidadeNecessaria - (item.quantidadeDeReserva ?? 0) > 1e-6;
+  const reserva = soParaAReserva(item, insumo.perdaPercentual)
+    ? temPedido
+      ? "Os pedidos estão cobertos: falta só para a reserva."
+      : "Falta só para a reserva."
+    : null;
+
+  return { pacote, reserva };
+}
+
+/**
+ * O que ela deixou para a próxima (`#d304`): sem marcar, sem porquê, só o que
+ * era e o "Levar" que desfaz.
+ */
+export function LinhaPulada({
+  item,
+  insumo,
+  aoLevar,
+}: {
+  item: ItemListaCompras;
+  insumo?: Insumo;
+  aoLevar: () => void;
+}) {
+  const n = item.quantidadePacotes;
+  const tamanho = insumo
+    ? ` de ${insumo.quantidadeCompra.toLocaleString("pt-BR", { maximumFractionDigits: 3 })} ${insumo.unidadeCompra}`
+    : "";
+
+  return (
+    <li className="flex min-h-16 items-center justify-between gap-3 px-4 py-3 transition-opacity duration-200 ease-quart starting:opacity-0 lg:px-5">
+      <span className="min-w-0">
+        <span className="block truncate text-body text-ink">{item.nome}</span>
+        <span className="num mt-0.5 block text-label text-ink-muted">
+          {n} {n === 1 ? "pacote" : "pacotes"}
+          {tamanho}
+          <span className="mx-1.5 text-ink-subtle">·</span>
+          {formatarMoeda(item.custoEstimado)}
+        </span>
+      </span>
+      <Botao
+        tamanho="sm"
+        className="shrink-0"
+        onClick={aoLevar}
+        aria-label={`Levar ${item.nome}`}
+      >
+        Levar
+      </Botao>
     </li>
   );
 }
