@@ -9373,3 +9373,47 @@ pacotes de 200 g (R$ 69,93)`) e "Total: R$ …". Só o que falta: o marcado, o p
 
 **Consequência.** Lista ao vivo entre dois aparelhos ficou fora: a ajudante já entra na conta
 (spec 030), e para quem não tem login o texto basta. Agrupar por loja também ficou fora.
+
+## D307 · Levar também
+
+**Status:** vigente · decidida em 2026-10-09, spec `104-levar-tambem.md`.
+
+**Contexto.** A lista era só derivada (pedido e reserva). Ela compra fora disso toda semana:
+material para testar receita, manteiga na promoção, a embalagem da feira. Isso ia para outro
+papel, e a lista do Rende deixava de ser **a** lista.
+
+**Decisão.**
+
+- **Uma linha por material, sempre.** As operações da lista casam por `insumoId`. O que ela
+  acrescenta vira `ItemListaCompras.pacotesExtras?` (aditivo, ausente é zero, aprovado na spec,
+  sem subir `VERSAO_SCHEMA`, como o `pulado?` da 101), e `quantidadePacotes` e `custoEstimado`
+  gravados já somam os extras. `quantidadeComprar` não: é a falta da conta, e os extras não são
+  falta. A contagem semeada pela lista (`entradasDaLista`) lê `quantidadePacotes` e soma os
+  extras sem mudança (conferido no passo 2).
+- **Na montagem:** `montarLista` recebe `extras` (por `insumoId`) e soma por cima de
+  `pacotesPara`; material que a conta não pede ganha linha com `quantidadeNecessaria: 0` e só os
+  extras, pelo preço vivo. Material arquivado ou sumido com extra sai calado, sem pendência: não
+  é falta de pedido. `extrasDe(lista.itens)` leva os extras da lista gravada à montagem da tela,
+  e é isso que o refazer grava: o extra sobrevive e a linha de quem saiu da conta é recriada. A
+  comparação de "lista desatualizada" (`#d301`) vê os mesmos extras dos dois lados.
+- **"Levar também"**, terciário com `plus`, no fim dos corredores. Aberto, uma seção com
+  `BuscaItem` sobre os materiais vivos (o detalhe diz o preço do pacote e quantos já estão na
+  lista) e depois o passo de pacotes (−/+ de 44px, começa em 1, para em 1), o total e "Pôr na
+  lista" (secundário: o âmbar da tela é do "Refazer" quando ele aparece). `levarTambem` grava na
+  linha do material, com o custo pelo preço vivo como `corrigirPrecoNaLista`, ou cria a linha
+  pela mesma `montarLista`, sem demanda. Pacote novo tira a marca de comprado e de pulado: ainda
+  não está no carrinho.
+- **"Levar mais um"**, terciário, no porquê, embaixo da conta, só para material que a conta
+  pede; a folha fica aberta e o número de cima sobe.
+- **Na linha:** "1 pacote que você acrescentou" (`plus`, pela `Frase`), e sem "falta" quando a
+  conta não pede nada. **No porquê:** os pacotes da conta, a sobra deles, e embaixo os que ela
+  acrescentou e o total na lista; fora da conta, uma frase diz que a conta não pede o material.
+- **Fora das frases da conta:** `poucoAproveitado` desconta os extras (o pacote dela não é
+  "pacote por vinte gramas"), e `custoPorOrigem` (`#d305`) tira o custo deles das duas parcelas,
+  porque não é de pedido nem de reserva. Com extra, as parcelas deixam de somar o total do
+  rodapé, e a diferença é o que ela acrescentou.
+- Item fora do cadastro (detergente) **não**: cadastre como material em "Outros". Item sem
+  `insumoId` mudaria a forma da lista inteira.
+
+**Consequência.** Tirar da conta um pacote (levar menos) continua sendo o "Não levar desta vez"
+(`#d304`), inteiro. A frase do total não diz quanto é dela; o rodapé soma tudo.

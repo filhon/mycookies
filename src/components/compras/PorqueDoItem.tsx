@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { TrendingDown, TrendingUp, TriangleAlert } from "lucide-react";
+import { Plus, TrendingDown, TrendingUp, TriangleAlert } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { EfeitoDoPrecoDigitado } from "@/components/insumos/EfeitoDoPreco";
 import { formatarReferencia } from "@/components/insumos/FichaDoMaterial";
@@ -57,6 +57,7 @@ export function PorqueDoItem({
   hoje,
   aoSalvarPreco,
   aoPular,
+  aoLevarMaisUm,
 }: {
   aberto: boolean;
   aoFechar: () => void;
@@ -71,6 +72,8 @@ export function PorqueDoItem({
   aoSalvarPreco: (insumo: Insumo, preco: Centavos) => void;
   /** "Não levar desta vez" (`#d304`). */
   aoPular: () => void;
+  /** "Levar mais um" (`#d307`): um pacote a mais, fora da conta. */
+  aoLevarMaisUm: (insumo: Insumo) => void;
 }) {
   const [preco, setPreco] = useState(insumo?.precoCompra ?? 0);
   const [avisado, setAvisado] = useState(false);
@@ -118,7 +121,25 @@ export function PorqueDoItem({
     >
       {item && (
         <div className="space-y-8">
-          <AConta item={item} insumo={insumo} hoje={hoje} />
+          <div>
+            <AConta item={item} insumo={insumo} hoje={hoje} />
+            {/* Para o que a conta já pediu; o resto entra por "Levar
+                também", no fim dos corredores. A folha fica aberta e o
+                número de cima sobe. */}
+            {insumo && !item.pulado && item.quantidadeNecessaria > FOLGA && (
+              <Botao
+                variante="terciaria"
+                tamanho="sm"
+                className="-ml-3 mt-2"
+                onClick={() => aoLevarMaisUm(insumo)}
+                iconeInicial={
+                  <Plus aria-hidden className="size-4" strokeWidth={1.75} />
+                }
+              >
+                Levar mais um
+              </Botao>
+            )}
+          </div>
           <DeOndeVem
             item={item}
             porPedido={porPedido}
@@ -282,8 +303,26 @@ function AConta({
         (contagem ? rotuloDeIdade(contagem) : null));
 
   const base = insumo?.quantidadeBase ?? 0;
-  const comprado = item.quantidadePacotes * base;
   const tamanho = tamanhoDoPacote(insumo);
+  // O que é da conta e o que é dela (`#d307`).
+  const extras = item.pacotesExtras ?? 0;
+  const daConta = item.quantidadePacotes - extras;
+  const comprado = daConta * base;
+  const deles = (n: number) => `${n} ${n === 1 ? "pacote" : "pacotes"}`;
+
+  if (item.quantidadeNecessaria <= FOLGA) {
+    return (
+      <Secao titulo="A conta">
+        <p className="num mt-2 max-w-[60ch] text-body text-ink">
+          Os pedidos e a reserva não pedem este material.{" "}
+          {extras === 1
+            ? "O pacote é o que"
+            : `Os ${extras} pacotes são os que`}{" "}
+          você acrescentou.
+        </p>
+      </Secao>
+    );
+  }
 
   return (
     <Secao titulo="A conta">
@@ -297,10 +336,10 @@ function AConta({
         <div className="border-t border-line">
           <Parcela rotulo="Falta" valor={q(item.quantidadeComprar)} forte />
         </div>
-        {base > 0 && (
+        {base > 0 && daConta > 0 && (
           <>
             <Parcela
-              rotulo={`${item.quantidadePacotes} ${item.quantidadePacotes === 1 ? "pacote" : "pacotes"} de ${tamanho}`}
+              rotulo={`${deles(daConta)} de ${tamanho}`}
               valor={q(comprado)}
             />
             <Parcela
@@ -309,6 +348,15 @@ function AConta({
               nota="Além do que os pedidos e a reserva pedem."
             />
           </>
+        )}
+        {extras > 0 && (
+          <div className="border-t border-line">
+            <Parcela
+              rotulo={`${deles(extras)} que você acrescentou`}
+              valor={base > 0 ? `+ ${q(extras * base)}` : `+ ${extras}`}
+              nota={`Na lista: ${deles(item.quantidadePacotes)}.`}
+            />
+          </div>
         )}
       </dl>
     </Secao>

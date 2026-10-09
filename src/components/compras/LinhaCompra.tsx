@@ -5,6 +5,7 @@ import {
   ChevronRight,
   CookingPot,
   PackageOpen,
+  Plus,
   Shield,
   TriangleAlert,
   type LucideIcon,
@@ -67,6 +68,7 @@ export function LinhaCompra({
   const contagem = fraseDaContagem(insumo, item.unidadeBase, hoje);
   const atencao = contagem?.ignorada ? contagem.frase : null;
   const { pacote, reserva } = frasesDoPacote(item, insumo);
+  const extras = item.pacotesExtras ?? 0;
 
   return (
     // Marcar muda a linha de seção: ela chega pela opacidade, sem animar a
@@ -121,9 +123,17 @@ export function LinhaCompra({
                 {pacotes}
               </span>
               {tamanho && <> {tamanho}</>}
-              <span className="mx-1.5 text-ink-subtle">·</span>
-              falta{" "}
-              {quantidadeParaOMercado(item.quantidadeComprar, item.unidadeBase)}
+              {/* Fora da conta (`#d307`) não falta nada: é tudo dela. */}
+              {item.quantidadeComprar > 0 && (
+                <>
+                  <span className="mx-1.5 text-ink-subtle">·</span>
+                  falta{" "}
+                  {quantidadeParaOMercado(
+                    item.quantidadeComprar,
+                    item.unidadeBase,
+                  )}
+                </>
+              )}
             </span>
 
             {/* A contagem que a lista ignorou: é o que explica um carrinho
@@ -137,6 +147,12 @@ export function LinhaCompra({
                 dizem só o que a conta esconde. */}
             {pacote && <Frase icone={PackageOpen}>{pacote}</Frase>}
             {reserva && <Frase icone={Shield}>{reserva}</Frase>}
+            {extras > 0 && (
+              <Frase icone={Plus}>
+                {extras} {extras === 1 ? "pacote" : "pacotes"} que você
+                acrescentou
+              </Frase>
+            )}
           </span>
         </button>
 

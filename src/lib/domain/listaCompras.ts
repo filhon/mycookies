@@ -374,8 +374,10 @@ export interface LinhaDaLista {
   quantidadeCompra: number;
   unidadeCompra: UnidadeCompra;
   precoCompra: Centavos;
-  /** Pacotes inteiros: ninguém compra 342 g de farinha. */
+  /** Pacotes inteiros: ninguém compra 342 g de farinha. Já com os extras. */
   quantidadePacotes: number;
+  /** Os que ela acrescentou, fora da conta (`#d307`). */
+  pacotesExtras: number;
   custoEstimado: Centavos;
 }
 
@@ -489,12 +491,18 @@ export const SEM_PRODUCAO: ContextoDaProducao = {
  *
  * O insumo com estoque de sobra **continua na lista**, com zero pacotes: sumir
  * com ele seria pedir que ela confira de cabeça se esqueceu alguma coisa.
+ *
+ * `extras` são os pacotes que ela acrescentou (`#d307`), por `insumoId`, e
+ * entram por cima da conta: uma linha por material, com os extras somados em
+ * `quantidadePacotes` e no custo. Material que a conta não pede ganha linha só
+ * com eles; o que sumiu do cadastro sai calado, porque não é falta de pedido.
  */
 export function montarLista(
   demanda: Demanda,
   insumos: InsumoParaLista[],
   hojeISO: DataISO,
   producao: ContextoDaProducao = SEM_PRODUCAO,
+  extras: Map<string, number> = new Map(),
 ): ListaMontada {
   const porId = new Map(insumos.map((insumo) => [insumo.id, insumo]));
   const pendencias: Pendencia[] = [...demanda.pendencias];
@@ -506,13 +514,18 @@ export function montarLista(
     demanda.linhas.map((linha) => [linha.insumoId, linha]),
   );
   const piso = producao.piso ?? new Map<string, LinhaDeDemanda>();
-  const insumoIds = new Set([...pedidas.keys(), ...piso.keys()]);
+  const insumoIds = new Set([
+    ...pedidas.keys(),
+    ...piso.keys(),
+    ...extras.keys(),
+  ]);
 
   for (const insumoId of insumoIds) {
     const pedido = pedidas.get(insumoId);
     const reserva = piso.get(insumoId);
     const insumo = porId.get(insumoId);
     if (!insumo || insumo.arquivado) {
+      if (!pedido && !reserva) continue;
       anotarPendencia(
         pendencias,
         (pedido ?? reserva)?.nome ?? insumoId,
@@ -537,7 +550,8 @@ export function montarLista(
     const falta =
       Math.max(0, fisicaPedida - produzida) + fisicaDaReserva - disponivel;
     const comprar = falta > FOLGA ? falta : 0;
-    const pacotes = pacotesPara(comprar, insumo.quantidadeBase);
+    const pacotesExtras = extras.get(insumo.id) ?? 0;
+    const pacotes = pacotesPara(comprar, insumo.quantidadeBase) + pacotesExtras;
 
     linhas.push({
       insumoId: insumo.id,
@@ -557,6 +571,7 @@ export function montarLista(
       unidadeCompra: insumo.unidadeCompra,
       precoCompra: insumo.precoCompra,
       quantidadePacotes: pacotes,
+      pacotesExtras,
       custoEstimado: pacotes * insumo.precoCompra,
     });
   }
@@ -590,14 +605,19 @@ export const FRACAO_POUCO_APROVEITADO = 0.1;
  * Um pacote só, e a falta cabe em até 10% dele.
  *
  * `quantidadeComprar` e `quantidadeBase` são as duas físicas, então comparam
- * direto. O tamanho do pacote vem do insumo vivo, como na linha.
+ * direto. O tamanho do pacote vem do insumo vivo, como na linha. O pacote que
+ * ela acrescentou (`#d307`) não conta: é dela, e não da falta.
  */
 export function poucoAproveitado(
-  item: { quantidadePacotes: number; quantidadeComprar: number },
+  item: {
+    quantidadePacotes: number;
+    quantidadeComprar: number;
+    pacotesExtras?: number;
+  },
   quantidadeBase: number,
 ): boolean {
   return (
-    item.quantidadePacotes === 1 &&
+    item.quantidadePacotes - (item.pacotesExtras ?? 0) === 1 &&
     quantidadeBase > 0 &&
     item.quantidadeComprar <= quantidadeBase * FRACAO_POUCO_APROVEITADO + FOLGA
   );
@@ -673,6 +693,24 @@ export interface ItemNoCarrinho {
   comprado: boolean;
   /** Fica pra próxima (`#d304`). Ausente em lista gravada antes da spec 101. */
   pulado?: boolean;
+  /** Os que ela acrescentou (`#d307`), já dentro de `quantidadePacotes`. */
+  pacotesExtras?: number;
+}
+
+/**
+ * Os pacotes que ela acrescentou, por `insumoId`, para a montagem somar de novo
+ * (`#d307`). É o que faz o refazer não apagar o "levar também".
+ */
+export function extrasDe(
+  itens: { insumoId: string; pacotesExtras?: number }[],
+): Map<string, number> {
+  return new Map(
+    itens.flatMap((item) =>
+      (item.pacotesExtras ?? 0) > 0
+        ? [[item.insumoId, item.pacotesExtras!] as const]
+        : [],
+    ),
+  );
 }
 
 /** O que precisa entrar no carrinho. O resto ela já tem em casa. */
@@ -721,7 +759,9 @@ export function resumoDaLista(itens: ItemNoCarrinho[]): ResumoDaLista {
  * O pacote vai inteiro para quem obrigou a comprá-lo: se sem a reserva ela não
  * compraria (`soParaAReserva`), é da reserva; senão, dos pedidos. Sem rateio,
  * porque pacote não se divide. Conta o que `resumoDaLista` conta no total (sem
- * o pulado e sem o que ela já tem), então as duas parcelas somam o total.
+ * o pulado e sem o que ela já tem), então as duas parcelas somam o total, menos
+ * os pacotes que ela acrescentou (`#d307`): esses não são de pedido nem de
+ * reserva.
  *
  * `perdas` é a perda do insumo vivo, por `insumoId`, como na linha.
  */
@@ -736,9 +776,13 @@ export function custoPorOrigem(
   let reserva = 0;
   for (const item of itens) {
     if (!precisaComprar(item) || item.pulado) continue;
+    const extras = item.pacotesExtras ?? 0;
+    const daConta =
+      item.custoEstimado -
+      Math.round((item.custoEstimado * extras) / item.quantidadePacotes);
     if (soParaAReserva(item, perdas.get(item.insumoId) ?? 0))
-      reserva += item.custoEstimado;
-    else pedidos += item.custoEstimado;
+      reserva += daConta;
+    else pedidos += daConta;
   }
   return { pedidos, reserva };
 }

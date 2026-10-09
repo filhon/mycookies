@@ -13,6 +13,7 @@ import { despachar } from "./despachar";
 import { atualizarInsumo, dadosDoInsumo } from "./insumos";
 import { rotuloDia } from "@/lib/domain/datas";
 import {
+  montarLista,
   preservarComprados,
   statusDaLista,
   type LinhaDaLista,
@@ -101,6 +102,8 @@ function itemDaLinha(linha: LinhaDaLista): Omit<ItemListaCompras, "comprado"> {
     unidadeCompra: linha.unidadeCompra,
     quantidadePacotes: linha.quantidadePacotes,
     custoEstimado: linha.custoEstimado,
+    // Só quando há: ausente é zero (`#d307`).
+    ...(linha.pacotesExtras > 0 && { pacotesExtras: linha.pacotesExtras }),
   };
 }
 
@@ -218,6 +221,63 @@ export async function pularItem(
     updateDoc(docListaCompras(contaId, lista.id), {
       v: VERSAO_SCHEMA,
       itens,
+      status: statusDaLista(itens),
+      atualizadoEm: agora(),
+    }),
+  );
+}
+
+/**
+ * "Levar também" e "Levar mais um" (`#d307`): `pacotes` a mais do material, na
+ * linha dele.
+ *
+ * Uma linha por material, sempre: as operações da lista casam por `insumoId`.
+ * Material que já está na lista ganha os extras na linha, e o custo pelo preço
+ * vivo, como `corrigirPrecoNaLista`; o que a conta não pediu nasce pela mesma
+ * `montarLista`, sem demanda e só com os extras. Pacote novo ainda não está no
+ * carrinho nem fica pra próxima: a linha volta para o corredor.
+ */
+export async function levarTambem(
+  contaId: string,
+  lista: Pick<ListaCompras, "id" | "itens">,
+  insumo: Insumo,
+  pacotes: number,
+  hojeISO: DataISO,
+): Promise<void> {
+  const naLista = lista.itens.some((item) => item.insumoId === insumo.id);
+  const itens: ItemListaCompras[] = naLista
+    ? lista.itens.map((item) => {
+        if (item.insumoId !== insumo.id) return item;
+        const quantidadePacotes = item.quantidadePacotes + pacotes;
+        return {
+          ...item,
+          pacotesExtras: (item.pacotesExtras ?? 0) + pacotes,
+          quantidadePacotes,
+          custoEstimado: quantidadePacotes * insumo.precoCompra,
+          comprado: false,
+          pulado: false,
+        };
+      })
+    : [
+        ...lista.itens,
+        ...montarLista(
+          { linhas: [], pendencias: [], pedidoIds: [] },
+          [insumo],
+          hojeISO,
+          undefined,
+          new Map([[insumo.id, pacotes]]),
+        ).linhas.map((linha) => ({
+          ...itemDaLinha(linha),
+          comprado: false,
+          pulado: false,
+        })),
+      ];
+
+  despachar(
+    updateDoc(docListaCompras(contaId, lista.id), {
+      v: VERSAO_SCHEMA,
+      itens,
+      custoEstimado: somarCusto(itens),
       status: statusDaLista(itens),
       atualizadoEm: agora(),
     }),

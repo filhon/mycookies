@@ -5,6 +5,7 @@ import {
   demandaPorPedido,
   entraNaLista,
   explodirDemanda,
+  extrasDe,
   faltaParaOsPedidos,
   montarLista,
   orcamentosDeFora,
@@ -857,6 +858,87 @@ describe("preservarComprados", () => {
     );
 
     expect(novos).toHaveLength(1);
+  });
+});
+
+describe("levar também (#d307)", () => {
+  const CACAU = insumo({ id: "cacau", nome: "Cacau", precoCompra: 2500 });
+  const COM_CACAU = [...INSUMOS, CACAU];
+  // A lista gravada: um pacote de manteiga a mais, e o cacau fora da conta.
+  const ANTERIORES = [
+    { insumoId: "manteiga", pacotesExtras: 1 },
+    { insumoId: "cacau", pacotesExtras: 1 },
+    { insumoId: "farinha" },
+  ];
+
+  const refazer = (pedidos: PedidoParaExplodir[], insumos = COM_CACAU) =>
+    montarLista(
+      explodirDemanda(pedidos, FICHAS),
+      insumos,
+      HOJE,
+      undefined,
+      extrasDe(ANTERIORES),
+    );
+
+  it("uma linha por material, com os extras somados", () => {
+    const lista = refazer([PEDIDO]);
+    const manteigas = lista.linhas.filter((l) => l.insumoId === "manteiga");
+    expect(manteigas).toHaveLength(1);
+    // A conta pede 1 pacote de 500 g; ela acrescentou 1.
+    expect(manteigas[0]).toMatchObject({
+      quantidadePacotes: 2,
+      pacotesExtras: 1,
+      custoEstimado: 3500,
+    });
+    expect(linhaDe("manteiga")?.quantidadePacotes).toBe(1);
+  });
+
+  it("material fora da conta nasce com zero necessário e os extras", () => {
+    const cacau = refazer([PEDIDO]).linhas.find((l) => l.insumoId === "cacau");
+    expect(cacau).toMatchObject({
+      categoria: "INGREDIENTE",
+      quantidadeNecessaria: 0,
+      quantidadeComprar: 0,
+      quantidadePacotes: 1,
+      pacotesExtras: 1,
+      custoEstimado: 2500,
+    });
+  });
+
+  it("refazer sem pedido nenhum recria a linha de quem tem extra", () => {
+    const lista = refazer([]);
+    expect(lista.linhas.map((l) => l.insumoId).sort()).toEqual([
+      "cacau",
+      "manteiga",
+    ]);
+    expect(lista.custoEstimado).toBe(1750 + 2500);
+  });
+
+  it("material arquivado com extra sai calado, sem pendência", () => {
+    const lista = refazer([], [...INSUMOS, { ...CACAU, arquivado: true }]);
+    expect(lista.linhas.map((l) => l.insumoId)).toEqual(["manteiga"]);
+    expect(lista.pendencias).toEqual([]);
+  });
+
+  it("o pacote dela não é pouco aproveitado, nem de pedido", () => {
+    expect(
+      poucoAproveitado(
+        { quantidadePacotes: 1, quantidadeComprar: 0, pacotesExtras: 1 },
+        1000,
+      ),
+    ).toBe(false);
+    const item = {
+      insumoId: "manteiga",
+      quantidadePacotes: 2,
+      pacotesExtras: 1,
+      custoEstimado: 3500,
+      quantidadeComprar: 320,
+      comprado: false,
+    };
+    expect(custoPorOrigem([item], new Map())).toEqual({
+      pedidos: 1750,
+      reserva: 0,
+    });
   });
 });
 

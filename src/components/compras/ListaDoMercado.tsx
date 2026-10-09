@@ -11,6 +11,8 @@ import {
   ClipboardList,
   FileQuestion,
   Info,
+  Minus,
+  Plus,
   RefreshCw,
   ScanLine,
   Share2,
@@ -20,6 +22,7 @@ import { EntradaContagem } from "@/components/estoque/EntradaContagem";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { AvisoLeituraSemRede } from "@/components/notas/EntradaLeitura";
 import { Botao } from "@/components/ui/Botao";
+import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { Pilulas } from "@/components/ui/Pilulas";
@@ -28,6 +31,7 @@ import { PorqueDoItem } from "./PorqueDoItem";
 import { RodapeCompras } from "./RodapeCompras";
 import { agruparPorCorredor, ROTULO_CORREDOR } from "@/lib/domain/corredores";
 import { diaVizinho, rotuloDia } from "@/lib/domain/datas";
+import { formatarMoeda } from "@/lib/domain/money";
 import { linkDoWhatsApp } from "@/lib/domain/whatsapp";
 import { contagemDoInsumo, entradasDaLista } from "@/lib/domain/estoque";
 import { useConexao } from "@/lib/hooks/useDispositivo";
@@ -36,6 +40,7 @@ import {
   custoPorOrigem,
   entraNaLista,
   explodirDemanda,
+  extrasDe,
   EXPLICACAO_PENDENCIA,
   HORIZONTE_MAXIMO,
   montarLista,
@@ -57,6 +62,7 @@ import {
   arquivarListaCompras,
   corrigirPrecoNaLista,
   criarListaCompras,
+  levarTambem,
   marcarItemComprado,
   pularItem,
   regerarListaCompras,
@@ -154,14 +160,22 @@ export function ListaDoMercado({
    * fornada registrada e sem piso, os três mapas são vazios e a lista é a de
    * sempre.
    */
+  // E com o que ela acrescentou (`#d307`): refazer não apaga o "levar também",
+  // e a comparação de `desatualizada` vê os mesmos pacotes da lista gravada.
   const montada = useMemo(() => {
     const demanda = explodirDemanda(noPeriodo, fichas);
-    return montarLista(demanda, insumos, hoje, {
-      consumo: consumoDesdeAContagem(fornadas, insumos),
-      produzido: produzidoParaPedidos(fornadas, demanda.pedidoIds),
-      piso: reserva,
-    });
-  }, [noPeriodo, fichas, insumos, fornadas, hoje, reserva]);
+    return montarLista(
+      demanda,
+      insumos,
+      hoje,
+      {
+        consumo: consumoDesdeAContagem(fornadas, insumos),
+        produzido: produzidoParaPedidos(fornadas, demanda.pedidoIds),
+        piso: reserva,
+      },
+      extrasDe(lista?.itens ?? []),
+    );
+  }, [noPeriodo, fichas, insumos, fornadas, hoje, reserva, lista]);
 
   const porInsumo = useMemo(
     () => new Map(insumos.map((insumo) => [insumo.id, insumo])),
@@ -218,6 +232,14 @@ export function ListaDoMercado({
       pulado
         ? "Não deu para deixar este item para a próxima agora."
         : "Não deu para voltar este item para a lista agora.",
+    );
+  };
+
+  const levar = (insumo: Insumo, pacotes: number) => {
+    if (!lista) return;
+    despachar(
+      levarTambem(contaId, lista, insumo, pacotes, hoje),
+      "Não deu para pôr na lista agora.",
     );
   };
 
@@ -605,6 +627,8 @@ export function ListaDoMercado({
               </section>
             ))}
 
+            <LevarTambem insumos={insumos} itens={itens} aoLevar={levar} />
+
             {noCarrinho.length > 0 && (
               <section
                 aria-labelledby="no-carrinho"
@@ -816,6 +840,7 @@ export function ListaDoMercado({
         hoje={hoje}
         aoSalvarPreco={corrigirPreco}
         aoPular={() => porqueId && pular(porqueId, true)}
+        aoLevarMaisUm={(insumo) => levar(insumo, 1)}
       />
 
       {lista && (
@@ -885,6 +910,157 @@ function ParaQuemECompra({
         </>
       )}
     </p>
+  );
+}
+
+/**
+ * "Levar também" (`#d307`): um material que a conta não pediu, ou um pacote a
+ * mais de um que pediu. Terciário no fim dos corredores; aberto, a busca e
+ * depois quantos pacotes, de um em um. O material entra na linha dele, no
+ * corredor dele. Item fora do cadastro não: material em "Outros".
+ */
+function LevarTambem({
+  insumos,
+  itens,
+  aoLevar,
+}: {
+  insumos: Insumo[];
+  itens: ItemListaCompras[];
+  aoLevar: (insumo: Insumo, pacotes: number) => void;
+}) {
+  const [aberto, setAberto] = useState(false);
+  const [escolhido, setEscolhido] = useState<Insumo | null>(null);
+  const [pacotes, setPacotes] = useState(1);
+
+  const fechar = () => {
+    setAberto(false);
+    setEscolhido(null);
+    setPacotes(1);
+  };
+
+  if (!aberto) {
+    return (
+      <div>
+        <Botao
+          variante="terciaria"
+          tamanho="sm"
+          className="-ml-3"
+          onClick={() => setAberto(true)}
+          iconeInicial={
+            <Plus aria-hidden className="size-4" strokeWidth={1.75} />
+          }
+        >
+          Levar também
+        </Botao>
+      </div>
+    );
+  }
+
+  const naLista = new Map(itens.map((item) => [item.insumoId, item]));
+  const tamanho = (insumo: Insumo) =>
+    `${insumo.quantidadeCompra.toLocaleString("pt-BR", { maximumFractionDigits: 3 })} ${insumo.unidadeCompra}`;
+  const opcoes: OpcaoBusca[] = insumos
+    .filter((insumo) => !insumo.arquivado)
+    .map((insumo) => {
+      const linha = naLista.get(insumo.id);
+      const ja =
+        linha && linha.quantidadePacotes > 0
+          ? ` · ${linha.quantidadePacotes} na lista`
+          : "";
+      return {
+        id: insumo.id,
+        nome: insumo.nome,
+        nomeBusca: insumo.nomeBusca,
+        detalhe: `${formatarMoeda(insumo.precoCompra)} o pacote de ${tamanho(insumo)}${ja}`,
+      };
+    });
+
+  return (
+    <section
+      aria-labelledby="levar-tambem"
+      className="rounded-lg border border-line bg-surface p-4 lg:p-5"
+    >
+      <h2 id="levar-tambem" className="text-subheading font-semibold text-ink">
+        Levar também
+      </h2>
+      <p className="mt-0.5 max-w-[60ch] text-label text-ink-muted">
+        Um material que a conta não pediu, ou um pacote a mais. Refazer a lista
+        não tira.
+      </p>
+
+      {escolhido ? (
+        <div className="mt-4">
+          <p className="text-body font-medium text-ink">{escolhido.nome}</p>
+          <div className="mt-2 flex items-center gap-4">
+            <div className="flex shrink-0 items-center rounded-md border border-line-strong text-ink">
+              <button
+                type="button"
+                onClick={() => setPacotes((n) => n - 1)}
+                disabled={pacotes === 1}
+                aria-label="Um pacote a menos"
+                className="toque flex items-center justify-center rounded-md transition-colors duration-150 ease-quart hover:bg-sunken active:bg-line disabled:opacity-45"
+              >
+                <Minus aria-hidden className="size-4" strokeWidth={2} />
+              </button>
+              <span
+                aria-live="polite"
+                className="num min-w-8 text-center text-body font-semibold"
+              >
+                {pacotes}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPacotes((n) => n + 1)}
+                aria-label="Um pacote a mais"
+                className="toque flex items-center justify-center rounded-md transition-colors duration-150 ease-quart hover:bg-sunken active:bg-line"
+              >
+                <Plus aria-hidden className="size-4" strokeWidth={2} />
+              </button>
+            </div>
+            <p className="num min-w-0 text-label text-ink-muted">
+              {pacotes === 1 ? "pacote" : "pacotes"} de {tamanho(escolhido)}
+              <span className="mx-1.5 text-ink-subtle">·</span>
+              <span className="text-body font-semibold text-ink">
+                {formatarMoeda(pacotes * escolhido.precoCompra)}
+              </span>
+            </p>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Botao
+              onClick={() => {
+                aoLevar(escolhido, pacotes);
+                fechar();
+              }}
+            >
+              Pôr na lista
+            </Botao>
+            <Botao variante="terciaria" onClick={fechar}>
+              Cancelar
+            </Botao>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-4">
+          <BuscaItem
+            rotulo="Material"
+            placeholder="Buscar material"
+            opcoes={opcoes}
+            aoEscolher={(id) =>
+              setEscolhido(insumos.find((insumo) => insumo.id === id) ?? null)
+            }
+            semResultado="Nenhum material com esse nome. Cadastre-o em Materiais; o que não é ingrediente nem embalagem vai em Outros."
+          />
+          <Botao
+            variante="terciaria"
+            tamanho="sm"
+            className="-ml-3 mt-2"
+            onClick={fechar}
+          >
+            Cancelar
+          </Botao>
+        </div>
+      )}
+    </section>
   );
 }
 

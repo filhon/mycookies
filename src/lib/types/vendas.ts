@@ -215,9 +215,18 @@ export interface ItemListaCompras {
   quantidadeComprar: number;
   /** Traduzido de volta para o mundo real: "comprar 3 pacotes de 1 kg". */
   unidadeCompra: UnidadeCompra;
+  /** Já com `pacotesExtras` dentro (`DECISOES.md#d307`). */
   quantidadePacotes: number;
+  /** Já com `pacotesExtras` dentro, pelo preço do pacote. */
   custoEstimado: Centavos;
   comprado: boolean;
+  /**
+   * Os pacotes que ela acrescentou por conta própria, fora do que a conta pede
+   * (`DECISOES.md#d307`): preservados ao refazer. Material fora da conta nasce
+   * com `quantidadeNecessaria: 0` e só isto. Ausente em lista gravada antes da
+   * spec 104, e ausente é zero.
+   */
+  pacotesExtras?: number;
   /**
    * Ela decidiu deixar para a próxima (`DECISOES.md#d304`): fora do corredor e
    * do que falta, e preservado ao refazer. Ausente em lista gravada antes da

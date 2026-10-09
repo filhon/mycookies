@@ -65,10 +65,10 @@ primeiro.
 
 ## Critérios de aceite
 
-- [ ] Uma linha por material; extras gravados e somados.
-- [ ] Extras sobrevivem ao refazer, com teste.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d307` escrito; `ESTADO.md`; linha em `novidades.ts`.
+- [x] Uma linha por material; extras gravados e somados.
+- [x] Extras sobrevivem ao refazer, com teste.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d307` escrito; `ESTADO.md`; linha em `novidades.ts`.
 
 ---
 

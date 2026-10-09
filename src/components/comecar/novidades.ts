@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-09",
+    titulo: "Pôr na lista o que a conta não pediu",
+    frase:
+      "“Levar também” acrescenta um material ou um pacote a mais, e refazer a lista não tira.",
+    href: "/compras",
+  },
+  {
+    dataISO: "2026-10-09",
     titulo: "Mandar a lista de compras",
     frase:
       "Quem vai ao mercado recebe o que falta, por corredor e com o preço, pelo WhatsApp ou onde você escolher.",
