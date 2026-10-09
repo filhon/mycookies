@@ -7,10 +7,18 @@ import {
   Timestamp,
   updateDoc,
   where,
+  writeBatch,
 } from "firebase/firestore";
-import { colClientes, docCliente, docResumoGlobal } from "../colecoes";
+import { obterDb } from "../client";
+import {
+  colClientes,
+  docCliente,
+  docPedido,
+  docResumoGlobal,
+} from "../colecoes";
 import { despachar } from "./despachar";
 import { ticketMedioDe } from "@/lib/domain/caixa";
+import { contatoJuntado, juntarAgregados } from "@/lib/domain/clientes";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { VERSAO_SCHEMA } from "@/lib/types";
 import type { Centavos, Cliente } from "@/lib/types";
@@ -155,6 +163,62 @@ export async function aplicarPedidoNoCliente(
       atualizadoEm: agora(),
     }),
   );
+}
+
+/** Até 499 escritas num lote (`#d311`); três são das duas e do contador. */
+export const LIMITE_PEDIDOS_AO_JUNTAR = 499 - 3;
+
+/**
+ * A mesma pessoa cadastrada duas vezes vira uma (`DECISOES.md#d311`), num lote
+ * só, que funciona sem rede: os pedidos de `sai` passam para `fica` (o
+ * `clienteNome` deles é snapshot do dia e não muda, `#d35`), `fica` recebe a
+ * soma e o contato que lhe faltava, e `sai` é arquivada com `juntadaEm`. Nada é
+ * apagado. `pedidoIds` são os pedidos de `sai` que a tela já leu.
+ */
+export async function juntarClientes(
+  contaId: string,
+  fica: Cliente,
+  sai: Cliente,
+  pedidoIds: string[],
+): Promise<void> {
+  if (pedidoIds.length > LIMITE_PEDIDOS_AO_JUNTAR) {
+    throw new Error(
+      `${sai.nome} tem pedidos demais para juntar de uma vez. Nada foi mudado.`,
+    );
+  }
+  const momento = agora();
+  const juntos = juntarAgregados(fica, sai);
+  const lote = writeBatch(obterDb());
+  for (const pedidoId of pedidoIds) {
+    lote.update(docPedido(contaId, pedidoId), {
+      v: VERSAO_SCHEMA,
+      clienteId: fica.id,
+      atualizadoEm: momento,
+    });
+  }
+  lote.update(docCliente(contaId, fica.id), {
+    v: VERSAO_SCHEMA,
+    // Incremento, como no pagamento: um pagamento de `fica` noutro aparelho,
+    // ainda na fila, não se perde.
+    totalPedidos: increment(sai.totalPedidos),
+    totalGasto: increment(sai.totalGasto),
+    ticketMedio: juntos.ticketMedio,
+    ...(juntos.ultimoPedidoEm ? { ultimoPedidoEm: juntos.ultimoPedidoEm } : {}),
+    ...contatoJuntado(fica, sai),
+    atualizadoEm: momento,
+  });
+  lote.update(docCliente(contaId, sai.id), {
+    v: VERSAO_SCHEMA,
+    arquivado: true,
+    juntadaEm: { clienteId: fica.id, em: momento },
+    atualizadoEm: momento,
+  });
+  lote.set(
+    docResumoGlobal(contaId),
+    { v: VERSAO_SCHEMA, totalClientes: increment(-1), atualizadoEm: momento },
+    { merge: true },
+  );
+  despachar(lote.commit());
 }
 
 /**

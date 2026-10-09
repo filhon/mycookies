@@ -387,6 +387,7 @@ export function ListaClientes() {
             aoFechar={fecharFichaAcoplada}
             aoEditar={() => abrirEdicao(selecionada, false)}
             cliente={selecionada}
+            clientes={dados}
             hoje={hoje}
           />
         )}
@@ -399,6 +400,7 @@ export function ListaClientes() {
           aoFechar={() => setFichaAberta(false)}
           aoEditar={() => abrirEdicao(lendo, true)}
           cliente={lendo}
+          clientes={dados}
           hoje={hoje}
         />
       )}

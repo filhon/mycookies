@@ -9577,3 +9577,57 @@ uma linha de celular esticada, com o "R$" do tamanho do valor.
 
 **Consequência.** Nenhum campo, regra, índice ou dependência. O formato torto continua
 entrando pelo `PainelCliente`; se incomodar, formatar ao salvar é a próxima.
+
+## D311 · Juntar duas clientes
+
+**Status:** vigente · decidida em 2026-10-09, spec `108-juntar-duas-clientes.md`.
+
+**Contexto.** A cliente nasce do pedido, no meio da feira (`#d137`), e cadastro duplicado nasce
+do jeito certo de trabalhar: a Yasmin Rocha estava duas vezes com o mesmo telefone, R$ 72,00 numa
+e R$ 24,00 na outra. Agregado dividido estraga o ranking, o momento da 106 e o "o que ela pede"
+da 105, e a única saída era arquivar uma e perder a soma.
+
+**Decisão.**
+
+- **Na ficha, só para a dona.** "Juntar com outra cliente" (terciário, largura inteira) no fim
+  da ficha abre a `BuscaItem` sobre as vivas que `/clientes` já tem, sem ela mesma; escolhida a
+  outra, a confirmação aparece no lugar, sem modal, com "Juntar" (secundário) e "Cancelar". A
+  ajudante não vê nem a sugestão nem o botão (`usePapel`). A regra **não** a impede de escrever
+  em `clientes` e `pedidos`, nem no contador de `agregados/global` (`#d157`): a trava é da tela.
+- **A ficha aberta é a que fica.** Telefone, Instagram e endereço vazios nela são preenchidos
+  com os da outra, os preenchidos não mudam, e as observações das duas vão juntas, uma por
+  linha (iguais não repetem), por `contatoJuntado` em `domain/clientes.ts`, com teste.
+- **Sugestão de duplicada** por `possiveisDuplicadas(cliente, clientes)`: outra viva com o mesmo
+  telefone lido por `telefoneParaLer` (não vazio) ou o mesmo `nomeBusca`. Uma faixa informativa
+  (`Users`) por duplicada, depois da observação: "Pode ser a mesma pessoa: **Yasmin Rocha**" com
+  "Juntar", que confirma ali mesmo, no topo. "Yasmin n 2" não casa com "Yasmin Rocha" e não é
+  sugerida: a busca do fim cobre esse caso.
+- **A frase** conta os pedidos que passam (todos os ligados a ela, pagos ou não) e diz com
+  quantos **pedidos pagos** e quanto a que fica termina: "O pedido de Yasmin Rocha (R$ 24,00)
+  passa para esta Yasmin Rocha. Ela fica com 3 pedidos pagos e R$ 96,00. A outra é arquivada."
+- **A conta** por `juntarAgregados(fica, sai)`, com teste: pedidos e gasto somam, a média por
+  `ticketMedioDe`, `ultimoPedidoEm` o mais recente. Na gravação, `totalPedidos` e `totalGasto`
+  vão por `increment` da parte da outra, como no pagamento: um pagamento da que fica ainda na
+  fila de outro aparelho não se perde. A média vai por valor (`#d36`).
+- **A gravação** é `juntarClientes` em `mutations/clientes.ts`, num `writeBatch` despachado sem
+  espera (funciona sem rede; não é transação): cada pedido ganha `clienteId` da que fica, com
+  `clienteNome` e `clienteTelefone` **intactos** (snapshot do dia, `#d35`); a que fica recebe os
+  agregados e o contato; a outra recebe `arquivado: true` e `juntadaEm: { clienteId, em }`, com
+  os agregados dela **como estavam** (auditável); `totalClientes` desce 1, como em
+  `arquivarCliente`. Nada é apagado.
+- **Os pedidos são os que a tela leu.** A confirmação assina `consultaPedidosDaCliente` da outra
+  e passa os ids à mutação, que não lê nada (e `mutations/pedidos` já importa
+  `mutations/clientes`: a volta faria ciclo). Sem a leitura, o "Juntar" fica desabilitado com
+  "Os pedidos de … aparecem quando a conexão voltar": juntar com a lista vazia do cache deixaria
+  pedidos presos a uma arquivada. Pedido **arquivado** da outra não entra na consulta e continua
+  apontando para ela; nenhuma tela o mostra.
+- **Teto**: mais de 499 escritas (os pedidos e três) recusa com a frase, sem gravar nada.
+- **Sem desfazer na tela**, como o arquivar (`#d138`): `juntadaEm` existe para um script saber
+  desfazer um engano (devolver os pedidos ainda é à mão: os ids não são guardados).
+- **Nenhum agregado do mês guarda `clienteId`** (conferido no passo 2: o ranking do Caixa é de
+  produtos), então juntar não reescreve o Caixa.
+
+**Consequência.** Um campo opcional novo, `Cliente.juntadaEm?`, aprovado com o pedido de
+implementar a spec, sem subir `VERSAO_SCHEMA`, como `pacotesExtras?` (`#d307`) e `pulado?`
+(`#d304`). Nenhuma regra, índice ou dependência; conferido em `firestore.rules` que nada trava
+campo de pedido pago para a dona.

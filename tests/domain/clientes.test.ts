@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  contatoJuntado,
   DIAS_SEM_PEDIR,
   diasSemPedir,
+  juntarAgregados,
+  possiveisDuplicadas,
   filtrarClientes,
   instagramParaLer,
   instagramParaLink,
@@ -229,6 +232,110 @@ describe("instagramParaLer", () => {
   it("o que não é usuário aparece como foi digitado", () => {
     expect(instagramParaLer("Ana Doces")).toBe("Ana Doces");
     expect(instagramParaLer(undefined)).toBe("");
+  });
+});
+
+describe("possiveisDuplicadas", () => {
+  const yasmin = {
+    id: "a",
+    nomeBusca: "yasmin rocha",
+    telefone: "81987315065",
+    arquivado: false,
+  };
+  const ids = (lista: (typeof yasmin)[]) =>
+    possiveisDuplicadas(yasmin, lista).map((outra) => outra.id);
+
+  it("o mesmo telefone em outro formato, ou o mesmo nome", () => {
+    expect(
+      ids([
+        yasmin,
+        {
+          ...yasmin,
+          id: "b",
+          nomeBusca: "yasmin n 2",
+          telefone: "(81) 98731-5065",
+        },
+        { ...yasmin, id: "c", telefone: undefined as unknown as string },
+        { ...yasmin, id: "d", nomeBusca: "yasmin", telefone: "81999990000" },
+      ]),
+    ).toEqual(["b", "c"]);
+  });
+
+  it("nem ela mesma, nem a arquivada", () => {
+    expect(ids([yasmin, { ...yasmin, id: "b", arquivado: true }])).toEqual([]);
+  });
+
+  it("sem telefone, só o nome compara", () => {
+    const semTelefone = { ...yasmin, telefone: "" };
+    expect(
+      possiveisDuplicadas(semTelefone, [
+        { ...yasmin, id: "b", nomeBusca: "outra", telefone: "" },
+      ]),
+    ).toEqual([]);
+  });
+});
+
+describe("juntarAgregados", () => {
+  const em = (ms: number) => ({ toMillis: () => ms });
+
+  it("soma pedidos e gasto, refaz a média e fica com o último mais recente", () => {
+    const ultimo = em(300);
+    expect(
+      juntarAgregados(
+        {
+          totalPedidos: 2,
+          totalGasto: 7200,
+          ticketMedio: 3600,
+          ultimoPedidoEm: em(100),
+        },
+        {
+          totalPedidos: 1,
+          totalGasto: 2400,
+          ticketMedio: 2400,
+          ultimoPedidoEm: ultimo,
+        },
+      ),
+    ).toEqual({
+      totalPedidos: 3,
+      totalGasto: 9600,
+      ticketMedio: 3200,
+      ultimoPedidoEm: ultimo,
+    });
+  });
+
+  it("sem pedido pago nas duas, média zero e sem data", () => {
+    expect(
+      juntarAgregados(
+        { totalPedidos: 0, totalGasto: 0, ticketMedio: 0 },
+        { totalPedidos: 0, totalGasto: 0, ticketMedio: 0 },
+      ),
+    ).toEqual({ totalPedidos: 0, totalGasto: 0, ticketMedio: 0 });
+  });
+});
+
+describe("contatoJuntado", () => {
+  it("preenche só o vazio e não mexe no preenchido", () => {
+    expect(
+      contatoJuntado(
+        { telefone: "81987315065", endereco: "  " },
+        { telefone: "81999990000", instagram: "@yas", endereco: "Rua A, 10" },
+      ),
+    ).toEqual({ instagram: "@yas", endereco: "Rua A, 10" });
+  });
+
+  it("observações nas duas vão juntas, uma por linha; iguais não repetem", () => {
+    expect(
+      contatoJuntado(
+        { observacoes: "Laço vermelho" },
+        { observacoes: "Sem açúcar" },
+      ),
+    ).toEqual({ observacoes: "Laço vermelho\nSem açúcar" });
+    expect(contatoJuntado({}, { observacoes: "Sem açúcar" })).toEqual({
+      observacoes: "Sem açúcar",
+    });
+    expect(
+      contatoJuntado({ observacoes: "Igual" }, { observacoes: "Igual" }),
+    ).toEqual({});
   });
 });
 

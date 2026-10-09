@@ -95,12 +95,12 @@ Aditivo e compatível, mas é schema.
 
 ## Critérios de aceite
 
-- [ ] Pedidos passam, agregados somam, a outra arquivada com `juntadaEm`. Nada apagado.
-- [ ] Sugestão por telefone ou nome, com teste.
-- [ ] Lote único; recusa acima do teto, sem gravar pela metade.
-- [ ] Só a dona.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d311` escrito; `ESTADO.md`; linha em `novidades.ts`.
+- [x] Pedidos passam, agregados somam, a outra arquivada com `juntadaEm`. Nada apagado.
+- [x] Sugestão por telefone ou nome, com teste.
+- [x] Lote único; recusa acima do teto, sem gravar pela metade.
+- [x] Só a dona.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d311` escrito; `ESTADO.md`; linha em `novidades.ts`.
 
 ---
 

@@ -12,6 +12,7 @@ import {
   Plus,
   TrendingDown,
   TriangleAlert,
+  Users,
 } from "lucide-react";
 import { ID_PEDIDO_NOVO } from "@/components/pedidos/EditorPedido";
 import {
@@ -20,6 +21,7 @@ import {
 } from "@/components/pedidos/FichaDoPedido";
 import { SeloStatus } from "@/components/pedidos/SeloStatus";
 import { Botao } from "@/components/ui/Botao";
+import { BuscaItem } from "@/components/ui/BuscaItem";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { Painel } from "@/components/ui/Painel";
@@ -27,7 +29,9 @@ import { classesBotao } from "@/components/ui/estilosBotao";
 import {
   instagramParaLer,
   instagramParaLink,
+  juntarAgregados,
   momentoDaCliente,
+  possiveisDuplicadas,
   resumoDaCliente,
   telefoneParaLer,
   temAlergia,
@@ -48,10 +52,11 @@ import {
   primeiroNome,
   telefoneParaWhatsApp,
 } from "@/lib/domain/whatsapp";
+import { juntarClientes } from "@/lib/firebase/mutations/clientes";
 import { consultaPedidosDaCliente } from "@/lib/firebase/mutations/pedidos";
 import { useColecao } from "@/lib/hooks/useColecao";
 import type { Cliente, DataISO, Pedido } from "@/lib/types";
-import { useAuth, useContaId } from "@/providers/AuthProvider";
+import { useAuth, useContaId, usePapel } from "@/providers/AuthProvider";
 
 /** A lista dela mostra os dez mais recentes; o resto, no toque (`#d308`). */
 const PEDIDOS_NA_FICHA = 10;
@@ -72,6 +77,7 @@ export function FichaDaCliente({
   aoFechar,
   aoEditar,
   cliente,
+  clientes,
   hoje,
   acoplada = false,
 }: {
@@ -79,6 +85,8 @@ export function FichaDaCliente({
   aoFechar: () => void;
   aoEditar: () => void;
   cliente: Cliente;
+  /** As vivas que a tela já tem: as duplicadas e a busca do juntar saem dela. */
+  clientes: Cliente[];
   hoje: DataISO;
   /** Na coluna ao lado da tabela, e não no `Painel`. Só no desktop. */
   acoplada?: boolean;
@@ -97,6 +105,15 @@ export function FichaDaCliente({
   const [lendo, setLendo] = useState<Pedido | null>(null);
   const [lendoAberto, setLendoAberto] = useState(false);
   const [todos, setTodos] = useState(false);
+  // Juntar (`#d311`): só a dona; a outra escolhida pela sugestão confirma no
+  // topo, pela busca confirma no fim, onde o toque foi.
+  const dona = usePapel() === "DONA";
+  const [juntar, setJuntar] = useState<
+    | { etapa: "buscando" }
+    | { etapa: "confirmando"; outra: Cliente; onde: "topo" | "fim" }
+    | null
+  >(null);
+  const duplicadas = dona ? possiveisDuplicadas(cliente, clientes) : [];
 
   function abrirPedido(pedido: Pedido) {
     setLendo(pedido);
@@ -197,6 +214,41 @@ export function FichaDaCliente({
             </span>
           </p>
         ))}
+
+      {juntar?.etapa === "confirmando" && juntar.onde === "topo" ? (
+        <ConfirmarJuntar
+          fica={cliente}
+          sai={juntar.outra}
+          aoTerminar={() => setJuntar(null)}
+        />
+      ) : (
+        duplicadas.map((outra) => (
+          <div
+            key={outra.id}
+            className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-info/30 bg-info-soft px-3 py-2.5"
+          >
+            <p className="flex min-w-0 flex-1 items-start gap-2.5 text-body text-ink">
+              <Users
+                aria-hidden
+                className="mt-1 size-4 shrink-0 text-info"
+                strokeWidth={1.75}
+              />
+              <span>
+                Pode ser a mesma pessoa:{" "}
+                <strong className="font-semibold">{outra.nome}</strong>
+              </span>
+            </p>
+            <Botao
+              tamanho="sm"
+              onClick={() =>
+                setJuntar({ etapa: "confirmando", outra, onde: "topo" })
+              }
+            >
+              Juntar
+            </Botao>
+          </div>
+        ))
+      )}
 
       {contato.length > 0 && (
         <div className="space-y-3">
@@ -423,6 +475,56 @@ export function FichaDaCliente({
           </a>
         </Bloco>
       )}
+
+      {dona &&
+        (juntar?.etapa === "confirmando" && juntar.onde === "fim" ? (
+          <ConfirmarJuntar
+            fica={cliente}
+            sai={juntar.outra}
+            aoTerminar={() => setJuntar(null)}
+          />
+        ) : juntar?.etapa === "buscando" ? (
+          <Bloco titulo="Juntar com outra cliente">
+            <BuscaItem
+              rotulo="Quem é ela também"
+              placeholder="Nome da outra cliente"
+              opcoes={clientes
+                .filter((outra) => outra.id !== cliente.id)
+                .map((outra) => ({
+                  id: outra.id,
+                  nome: outra.nome,
+                  nomeBusca: outra.nomeBusca,
+                  detalhe: [
+                    telefoneParaLer(outra.telefone),
+                    resumoDaCliente(outra, null),
+                  ]
+                    .filter(Boolean)
+                    .join(" · "),
+                }))}
+              aoEscolher={(id) => {
+                const outra = clientes.find((c) => c.id === id);
+                if (outra)
+                  setJuntar({ etapa: "confirmando", outra, onde: "fim" });
+              }}
+              semResultado="Nenhuma outra cliente com esse nome."
+            />
+            <Botao
+              variante="terciaria"
+              className="mt-2"
+              onClick={() => setJuntar(null)}
+            >
+              Cancelar
+            </Botao>
+          </Bloco>
+        ) : (
+          <Botao
+            variante="terciaria"
+            larguraTotal
+            onClick={() => setJuntar({ etapa: "buscando" })}
+          >
+            Juntar com outra cliente
+          </Botao>
+        ))}
     </div>
   );
 
@@ -463,6 +565,97 @@ export function FichaDaCliente({
         />
       )}
     </>
+  );
+}
+
+/**
+ * A confirmação no lugar, sem modal (`#d311`): o que passa, com que números
+ * ela fica, e a outra arquivada. Os pedidos da outra são lidos aqui, e sem
+ * eles o "Juntar" espera: juntar com a lista vazia do cache deixaria pedidos
+ * presos a uma cliente arquivada.
+ */
+function ConfirmarJuntar({
+  fica,
+  sai,
+  aoTerminar,
+}: {
+  fica: Cliente;
+  sai: Cliente;
+  aoTerminar: () => void;
+}) {
+  const contaId = useContaId();
+  const consulta = useMemo(
+    () => consultaPedidosDaCliente(contaId, sai.id),
+    [contaId, sai.id],
+  );
+  const pedidos = useColecao<Pedido>(consulta);
+  const esperando =
+    pedidos.carregando || (pedidos.doCache && pedidos.dados.length === 0);
+  const [falha, setFalha] = useState<string | null>(null);
+
+  const n = pedidos.dados.length;
+  const gasto = sai.totalGasto > 0 ? ` (${formatarMoeda(sai.totalGasto)})` : "";
+  const juntos = juntarAgregados(fica, sai);
+  const frase = [
+    n === 0
+      ? `${sai.nome} não tem pedido ligado a ela.`
+      : n === 1
+        ? `O pedido de ${sai.nome}${gasto} passa para esta ${fica.nome}.`
+        : `Os ${n} pedidos de ${sai.nome}${gasto} passam para esta ${fica.nome}.`,
+    juntos.totalPedidos > 0 &&
+      `Ela fica com ${juntos.totalPedidos} ${juntos.totalPedidos === 1 ? "pedido pago" : "pedidos pagos"} e ${formatarMoeda(juntos.totalGasto)}.`,
+    "A outra é arquivada.",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  async function confirmar() {
+    try {
+      await juntarClientes(
+        contaId,
+        fica,
+        sai,
+        pedidos.dados.map((pedido) => pedido.id),
+      );
+      aoTerminar();
+    } catch (erro) {
+      setFalha(erro instanceof Error ? erro.message : "Não deu para juntar.");
+    }
+  }
+
+  return (
+    <section
+      aria-label={`Juntar com ${sai.nome}`}
+      className="rounded-lg border border-line bg-sunken px-3 py-3"
+    >
+      <p className="num max-w-[60ch] text-body text-ink" aria-live="polite">
+        {pedidos.erro || esperando
+          ? `Os pedidos de ${sai.nome} aparecem quando a conexão voltar, e aí dá para juntar.`
+          : frase}
+      </p>
+      {falha && (
+        <p className="mt-2 flex items-start gap-2 text-label text-negative">
+          <TriangleAlert
+            aria-hidden
+            className="mt-0.5 size-4 shrink-0"
+            strokeWidth={2}
+          />
+          {falha}
+        </p>
+      )}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Botao
+          tamanho="sm"
+          disabled={!!pedidos.erro || esperando}
+          onClick={confirmar}
+        >
+          Juntar
+        </Botao>
+        <Botao variante="terciaria" tamanho="sm" onClick={aoTerminar}>
+          Cancelar
+        </Botao>
+      </div>
+    </section>
   );
 }
 

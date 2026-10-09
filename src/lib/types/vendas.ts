@@ -23,6 +23,13 @@ export interface Cliente extends DocumentoBase {
   totalGasto: Centavos;
   ticketMedio: Centavos;
   ultimoPedidoEm?: Timestamp;
+
+  /**
+   * Juntada a outra cliente (`DECISOES.md#d311`): os pedidos passaram para
+   * `clienteId` e esta ficou arquivada. Existe para um script desfazer o
+   * engano; ausente em quem nunca foi juntada.
+   */
+  juntadaEm?: { clienteId: string; em: Timestamp };
 }
 
 export type StatusPedido =

@@ -1,4 +1,5 @@
 import type { Cliente, DataISO } from "@/lib/types";
+import { ticketMedioDe } from "./caixa";
 import { chaveDeBusca } from "./custoInsumo";
 import { diasEntre, rotuloDia } from "./datas";
 import { formatarMoeda } from "./money";
@@ -151,6 +152,70 @@ export function momentoDaCliente(
   const recente = dias < DIAS_SEM_PEDIR;
   if (cliente.totalPedidos === 1) return recente ? "novas" : "uma-vez";
   return recente ? "voltam" : "sumiram";
+}
+
+/**
+ * Outras clientes vivas que podem ser ela (`#d311`): o mesmo telefone, lido
+ * por `telefoneParaLer`, ou o mesmo `nomeBusca`.
+ */
+export function possiveisDuplicadas<
+  C extends Pick<Cliente, "id" | "nomeBusca" | "telefone" | "arquivado">,
+>(cliente: C, clientes: C[]): C[] {
+  const telefone = telefoneParaLer(cliente.telefone);
+  return clientes.filter(
+    (outra) =>
+      outra.id !== cliente.id &&
+      !outra.arquivado &&
+      (outra.nomeBusca === cliente.nomeBusca ||
+        (!!telefone && telefoneParaLer(outra.telefone) === telefone)),
+  );
+}
+
+type Agregados = Pick<Cliente, "totalPedidos" | "totalGasto" | "ticketMedio">;
+
+/**
+ * Os números das duas numa só (`#d311`): pedidos e gasto somam, a média sai
+ * da soma, e o último pedido é o mais recente das duas.
+ */
+export function juntarAgregados<
+  T extends { toMillis(): number },
+  C extends Agregados & { ultimoPedidoEm?: T },
+>(fica: C, sai: C): Agregados & { ultimoPedidoEm?: T } {
+  const totalPedidos = fica.totalPedidos + sai.totalPedidos;
+  const totalGasto = fica.totalGasto + sai.totalGasto;
+  const ultimos = [fica.ultimoPedidoEm, sai.ultimoPedidoEm].filter(
+    (data): data is T => !!data,
+  );
+  const ultimoPedidoEm = ultimos.sort((a, b) => b.toMillis() - a.toMillis())[0];
+  return {
+    totalPedidos,
+    totalGasto,
+    ticketMedio: ticketMedioDe(totalGasto, totalPedidos),
+    ...(ultimoPedidoEm ? { ultimoPedidoEm } : {}),
+  };
+}
+
+type Contato = Pick<
+  Cliente,
+  "telefone" | "instagram" | "endereco" | "observacoes"
+>;
+
+/**
+ * O que a que fica ganha da outra (`#d311`): telefone, Instagram e endereço
+ * vazios são preenchidos, os preenchidos não mudam; observações nas duas vão
+ * juntas, uma por linha. Só os campos que mudam.
+ */
+export function contatoJuntado(fica: Contato, sai: Contato): Contato {
+  const novo: Contato = {};
+  for (const campo of ["telefone", "instagram", "endereco"] as const) {
+    const delas = sai[campo]?.trim();
+    if (!fica[campo]?.trim() && delas) novo[campo] = delas;
+  }
+  const obs = [fica.observacoes?.trim(), sai.observacoes?.trim()];
+  if (obs[1] && obs[1] !== obs[0]) {
+    novo.observacoes = obs[0] ? `${obs[0]}\n${obs[1]}` : obs[1];
+  }
+  return novo;
 }
 
 /**
