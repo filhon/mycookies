@@ -2,12 +2,16 @@ import type { Cliente, DataISO } from "@/lib/types";
 import { chaveDeBusca } from "./custoInsumo";
 import { diasEntre, rotuloDia } from "./datas";
 import { formatarMoeda } from "./money";
+import { telefoneParaWhatsApp } from "./whatsapp";
 
 /** O que a ordem da tela precisa saber de uma cliente. */
 export type ClienteOrdenavel = Pick<
   Cliente,
   "nomeBusca" | "totalPedidos" | "totalGasto"
->;
+> & {
+  /** Um `Timestamp`: o domínio não o importa, só chama `toMillis`. */
+  ultimoPedidoEm?: { toMillis(): number };
+};
 
 /**
  * Quem mais deixou dinheiro no caixa primeiro. Empate por pedidos pagos, depois
@@ -22,6 +26,77 @@ export function ordenarPorGasto<C extends ClienteOrdenavel>(
       b.totalPedidos - a.totalPedidos ||
       a.nomeBusca.localeCompare(b.nomeBusca),
   );
+}
+
+/** As ordens da lista (`#d310`). "GASTO" é a de sempre (`#d137`). */
+export type OrdemClientes = "GASTO" | "RECENTE" | "PARADA" | "NOME";
+
+/**
+ * A lista na ordem escolhida (`#d310`). Quem nunca pagou um pedido não tem
+ * "último pedido" que conte (`ultimoPedidoEm` fica no desfazer, `#d37`): vai
+ * para o fim, por nome, em "RECENTE" e "PARADA". Pedido pago sem a data conta
+ * como parada desde sempre, como em `momentoDaCliente`.
+ */
+export function ordenarClientes<C extends ClienteOrdenavel>(
+  clientes: C[],
+  ordem: OrdemClientes,
+): C[] {
+  if (ordem === "GASTO") return ordenarPorGasto(clientes);
+  const porNome = (a: C, b: C) => a.nomeBusca.localeCompare(b.nomeBusca);
+  if (ordem === "NOME") return [...clientes].sort(porNome);
+  const semPedido = (c: C) => (c.totalPedidos <= 0 ? 1 : 0);
+  const ms = (c: C) => c.ultimoPedidoEm?.toMillis() ?? -Infinity;
+  // Comparação, e não subtração: `-Infinity - -Infinity` é `NaN`.
+  const antes = (x: number, y: number) => (x === y ? 0 : x < y ? -1 : 1);
+  return [...clientes].sort(
+    (a, b) =>
+      semPedido(a) - semPedido(b) ||
+      (semPedido(a)
+        ? 0
+        : ordem === "RECENTE"
+          ? antes(ms(b), ms(a))
+          : antes(ms(a), ms(b))) ||
+      porNome(a, b),
+  );
+}
+
+/**
+ * Nome, Instagram e telefone, em memória (`#d310`). Com 4 dígitos ou mais no
+ * termo, os dígitos dele contra os do telefone: "98713" acha "81 98713-8356".
+ */
+export function filtrarClientes<
+  C extends Pick<Cliente, "nomeBusca" | "telefone" | "instagram">,
+>(clientes: C[], busca: string): C[] {
+  const termo = chaveDeBusca(busca);
+  if (!termo) return clientes;
+  const semArroba = termo.replace(/^@/, "");
+  const digitos = busca.replace(/\D/g, "");
+  return clientes.filter(
+    (cliente) =>
+      cliente.nomeBusca.includes(termo) ||
+      (!!semArroba &&
+        chaveDeBusca(cliente.instagram ?? "").includes(semArroba)) ||
+      (digitos.length >= 4 &&
+        (cliente.telefone ?? "").replace(/\D/g, "").includes(digitos)),
+  );
+}
+
+/**
+ * O telefone para ler (`#d310`): com 10 ou 11 dígitos depois da limpeza de
+ * `telefoneParaWhatsApp`, "(81) 99913-7502" ou "(81) 3222-1234"; o resto
+ * como foi digitado. Só leitura: o documento continua como ela escreveu.
+ */
+export function telefoneParaLer(telefone: string | undefined): string {
+  const numero = telefoneParaWhatsApp(telefone);
+  if (!numero) return (telefone ?? "").trim();
+  const local = numero.slice(2);
+  return `(${local.slice(0, 2)}) ${local.slice(2, -4)}-${local.slice(-4)}`;
+}
+
+/** O usuário do Instagram com o "@", do jeito que `instagramParaLink` o acha. */
+export function instagramParaLer(usuario: string | undefined): string {
+  const nome = usuarioDoInstagram(usuario);
+  return nome ? `@${nome}` : (usuario ?? "").trim();
 }
 
 /**
@@ -92,12 +167,15 @@ export function temAlergia(observacoes: string | undefined): boolean {
  * botão não aparece em vez de abrir uma página que não existe.
  */
 export function instagramParaLink(usuario: string | undefined): string | null {
+  const nome = usuarioDoInstagram(usuario);
+  return nome ? `https://instagram.com/${nome}` : null;
+}
+
+function usuarioDoInstagram(usuario: string | undefined): string | null {
   const nome = (usuario ?? "")
     .trim()
     .replace(/^(https?:\/\/)?(www\.)?instagram\.com\//i, "")
     .replace(/^@/, "")
     .replace(/[/?#].*$/, "");
-  return /^[A-Za-z0-9._]{1,30}$/.test(nome)
-    ? `https://instagram.com/${nome}`
-    : null;
+  return /^[A-Za-z0-9._]{1,30}$/.test(nome) ? nome : null;
 }

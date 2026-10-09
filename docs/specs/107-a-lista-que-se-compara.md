@@ -92,13 +92,13 @@ dependência.**
 
 ## Critérios de aceite
 
-- [ ] Linha de dois andares; contato só na ficha, formatado.
-- [ ] `ui/Dinheiro` na linha e na tabela.
-- [ ] Quatro ordens, guardadas no aparelho.
-- [ ] Busca por telefone e Instagram, com teste.
-- [ ] Tabela em `xl` com a ficha acoplada.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d310` escrito; `ESTADO.md`; linha em `novidades.ts`.
+- [x] Linha de dois andares; contato só na ficha, formatado.
+- [x] `ui/Dinheiro` na linha e na tabela.
+- [x] Quatro ordens, guardadas no aparelho.
+- [x] Busca por telefone e Instagram, com teste.
+- [x] Tabela em `xl` com a ficha acoplada.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d310` escrito; `ESTADO.md`; linha em `novidades.ts`.
 
 ---
 

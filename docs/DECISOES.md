@@ -9522,3 +9522,58 @@ comprou uma vez, escondida no fundo de cinquenta linhas iguais.
 **Consequência.** Saber se quem ela chamou voltou pede campo (`Cliente.chamadaEm?`) e é a 109.
 Ritmo por cliente pede a data do primeiro pedido, que o documento não tem. Nenhum campo, regra,
 índice ou dependência.
+
+## D310 · A lista que se compara
+
+**Status:** vigente · decidida em 2026-10-09, spec `107-a-lista-que-se-compara.md`.
+
+**Contexto.** A linha de `/clientes` tinha três andares, e o terceiro, o contato, era um terço da
+lista em `--ink-subtle` (3,45:1, que o `DESIGN.md` proíbe como texto), com o mesmo telefone
+escrito de quatro jeitos. A lista tinha uma ordem só, a busca só lia o nome, e no desktop era
+uma linha de celular esticada, com o "R$" do tamanho do valor.
+
+**Decisão.**
+
+- **Dois andares no celular**: nome e `ui/Dinheiro` do `totalGasto` em cima, o resumo embaixo,
+  sempre em `--ink-muted` (o `--ink-subtle` do "ainda sem pedido pago" saiu). O contato mora só
+  na ficha (`#d308`), numa linha acima dos botões de "Falar com ela".
+- **`telefoneParaLer`** em `domain/clientes.ts` passa pela mesma limpeza de
+  `telefoneParaWhatsApp` (com ou sem 55, com ou sem zero de operadora) e, com 10 ou 11 dígitos,
+  devolve "(81) 99913-7502" ou "(81) 3222-1234"; o resto aparece como foi digitado. O que a
+  ficha mostra é, por construção, o número que o WhatsApp e o "Ligar" discam. **Só leitura**:
+  nenhum documento é reescrito (normalizar ao salvar é spec futura). **`instagramParaLer`** usa
+  o mesmo `usuarioDoInstagram` de `instagramParaLink`: põe o "@" e tira o link colado; o que não
+  é usuário aparece como foi escrito. Os quatro formatos da crítica estão no teste; o cache real
+  não foi lido na sessão.
+- **Quatro ordens** por `ordenarClientes` em `domain/clientes.ts`, na `EscolhaDeOrdem` da linha
+  da contagem, guardadas em `rende:ordem-clientes` como as de Produtos (`#d229`): Mais gasto (a
+  de sempre, padrão, `#d137`) · Pedido mais recente · Mais tempo sem pedir · Nome. Nas duas do
+  tempo, quem tem `totalPedidos` 0 vai para o fim por nome (a data que ficou do desfazer não
+  conta, `#d37`), e pedido pago sem data é o mais parado. O domínio lê `ultimoPedidoEm` por
+  `toMillis()` numa interface, sem importar o `Timestamp`, como `custoInsumo`.
+- **Sumiram e Uma vez só impõem "Mais tempo sem pedir"** (`#d309`) pela mesma função, e a
+  escolha some enquanto a vista está ativa. O empate passou de dias inteiros para o instante do
+  pagamento; o nome desempata o resto.
+- **A busca casa nome, Instagram e telefone** por `filtrarClientes`, em memória: o termo sem
+  acento contra `nomeBusca` e o Instagram (com ou sem "@"), e, com 4 dígitos ou mais no termo,
+  os dígitos dele contra os do telefone por `includes`. Com menos de 4, número não busca
+  telefone: "81" acharia todo mundo.
+- **Tabela a partir de `xl`**, com a rota fora de `(coluna)` (`#d129`): Cliente · Pedidos ·
+  Média · Último · Total, `COLUNAS_CLIENTE`, a mesma `<li>` virando grade, cabeçalho em `micro`
+  600 caixa alta `aria-hidden` e o rótulo de cada célula em `sr-only`. A média aparece com um
+  pedido só (é o total): na tabela, a coluna se compara, e o traço na célula vazia mentiria.
+  Em Sumiram e Uma vez só a coluna Último diz "há N dias".
+- **A ficha acopla à direita** a partir de `lg`, pela `FichaAcoplada` de `FichaDoPedido`
+  (exportada), com a linha em `--surface-sunken` e o foco devolvido a ela ao fechar; com a
+  ficha aberta, a tabela espera o `2xl` (`arranjoDaTabela`), como a mesa de Pedidos (`#d253`).
+  Tocar num pedido na ficha acoplada abre o `Painel` do pedido por cima, e "Editar" abre o
+  formulário por cima sem fechar a coluna.
+- **"Chamar" na tabela** tem uma vaga de `w-32` em toda linha da vista e no cabeçalho, com ou
+  sem telefone, para as colunas não andarem.
+- **O traço da parte de cada uma** sob o Total, só na tabela: 4px em `--brand-as-ink`, alinhado
+  à direita do valor, até `max-w-28`, na proporção do `totalGasto` dela sobre o **maior da
+  lista à vista**, e não sobre o da primeira linha: em outra ordem a primeira não é a maior, e o
+  traço passaria de cheio.
+
+**Consequência.** Nenhum campo, regra, índice ou dependência. O formato torto continua
+entrando pelo `PainelCliente`; se incomodar, formatar ao salvar é a próxima.

@@ -2,28 +2,35 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { DESKTOP } from "@/components/fichas/LinhaFicha";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { Botao } from "@/components/ui/Botao";
 import { CampoBusca } from "@/components/ui/CampoBusca";
+import {
+  EscolhaDeOrdem,
+  type OpcaoOrdem,
+} from "@/components/ui/EscolhaDeOrdem";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { Pilulas, type OpcaoPilula } from "@/components/ui/Pilulas";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { FichaDaCliente } from "./FichaDaCliente";
-import { LinhaCliente } from "./LinhaCliente";
+import { arranjoDaTabela, COLUNAS_CLIENTE, LinhaCliente } from "./LinhaCliente";
 import { PainelCliente } from "./PainelCliente";
 import {
   diasSemPedir,
+  filtrarClientes,
   momentoDaCliente,
-  ordenarPorGasto,
+  ordenarClientes,
   type MomentoDaCliente,
+  type OrdemClientes,
 } from "@/lib/domain/clientes";
 import { dataISODe } from "@/lib/domain/datas";
-import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { consultaClientes } from "@/lib/firebase/mutations/clientes";
 import { useColecao } from "@/lib/hooks/useColecao";
 import type { Cliente } from "@/lib/types";
+import { cn } from "@/lib/utils/cn";
 import { novoId } from "@/lib/utils/id";
 import { useAuth, useContaId } from "@/providers/AuthProvider";
 
@@ -51,6 +58,43 @@ const PARA_CHAMAR = new Set<Vista>(["sumiram", "uma-vez"]);
 /** Abaixo disso a frase do topo é conta que ela faz de olho. */
 const CLIENTES_PARA_A_FRASE = 10;
 
+const ORDENS: OpcaoOrdem<OrdemClientes>[] = [
+  {
+    valor: "GASTO",
+    rotulo: "Mais gasto",
+    linha: "Quem mais deixou dinheiro no caixa",
+  },
+  {
+    valor: "RECENTE",
+    rotulo: "Pedido mais recente",
+    linha: "Quem pagou um pedido por último",
+  },
+  {
+    valor: "PARADA",
+    rotulo: "Mais tempo sem pedir",
+    linha: "Quem está há mais tempo sem pagar um pedido",
+  },
+  { valor: "NOME", rotulo: "Nome", linha: "De A a Z" },
+];
+
+/*
+ * A ordem mora no aparelho (`#d310`), como a de Produtos (`#d229`). Navegador
+ * que bloqueia armazenamento lança no acesso: quem não pode guardar volta à de
+ * sempre.
+ */
+const CHAVE_ORDEM = "rende:ordem-clientes";
+
+function ordemGuardada(): OrdemClientes {
+  try {
+    const lida = localStorage.getItem(CHAVE_ORDEM);
+    return ORDENS.find((ordem) => ordem.valor === lida)?.valor ?? "GASTO";
+  } catch {
+    return "GASTO";
+  }
+}
+
+const semAssinatura = () => () => {};
+
 /**
  * Quem mais deixou dinheiro no caixa primeiro (`#d137`), em cinco momentos
  * pelos agregados (`#d309`). Não cadastra: uma cliente nasce do pedido, e
@@ -67,11 +111,23 @@ export function ListaClientes() {
     aberto: boolean;
     cliente?: Cliente;
     chave: string;
+    daFolha?: boolean;
   }>({ aberto: false, chave: "fechado" });
   // Tocar lê (`#d308`). O id fica depois de fechar, para a folha descer com o
   // conteúdo dentro; a cliente vem da lista, viva, e some se for arquivada.
   const [lendoId, setLendoId] = useState<string | null>(null);
   const [fichaAberta, setFichaAberta] = useState(false);
+  // No desktop a ficha acopla ao lado da tabela (`#d310`).
+  const [selecionadaId, setSelecionadaId] = useState<string | null>(null);
+  const lista = useRef<HTMLUListElement>(null);
+  // A guardada até ela escolher outra nesta visita; no servidor, a de sempre.
+  const guardada = useSyncExternalStore(
+    semAssinatura,
+    ordemGuardada,
+    () => "GASTO" as const,
+  );
+  const [escolhida, setEscolhida] = useState<OrdemClientes | null>(null);
+  const ordem = escolhida ?? guardada;
 
   const consulta = useMemo(() => consultaClientes(contaId), [contaId]);
   const { dados, carregando, erro, pendente } = useColecao<Cliente>(consulta);
@@ -117,20 +173,29 @@ export function ListaClientes() {
     [dados, situacao, vista],
   );
 
-  // A busca vale dentro da vista.
-  const visiveis = useMemo(() => {
-    const termo = chaveDeBusca(busca);
-    const filtradas = termo
-      ? daVista.filter((cliente) => cliente.nomeBusca.includes(termo))
-      : daVista;
-    if (!PARA_CHAMAR.has(vista)) return ordenarPorGasto(filtradas);
-    // Há mais tempo sem pedir primeiro; sem a data, antes de todas.
-    const dias = (cliente: Cliente) =>
-      situacao.get(cliente.id)?.dias ?? Infinity;
-    return [...filtradas].sort(
-      (a, b) => dias(b) - dias(a) || a.nomeBusca.localeCompare(b.nomeBusca),
-    );
-  }, [daVista, busca, vista, situacao]);
+  // A busca vale dentro da vista, e a vista de chamar impõe a ordem dela.
+  const ordemDaVista = PARA_CHAMAR.has(vista) ? null : ordem;
+  const visiveis = useMemo(
+    () =>
+      ordenarClientes(
+        filtrarClientes(daVista, busca),
+        ordemDaVista ?? "PARADA",
+      ),
+    [daVista, busca, ordemDaVista],
+  );
+  const maiorGasto = Math.max(0, ...visiveis.map((c) => c.totalGasto));
+  // Derivada, e não guardada: arquivada em outra aba, a ficha fecha sozinha.
+  const selecionada = dados.find((cliente) => cliente.id === selecionadaId);
+  const arranjo = arranjoDaTabela(!!selecionada);
+
+  function mudarOrdem(nova: OrdemClientes) {
+    setEscolhida(nova);
+    try {
+      localStorage.setItem(CHAVE_ORDEM, nova);
+    } catch {
+      // Sem armazenamento, a ordem vale só nesta visita.
+    }
+  }
 
   const vistas: OpcaoPilula<Vista>[] = VISTAS.map(({ valor, rotulo }) => {
     const quantas = valor === "todas" ? 0 : contagem[valor];
@@ -145,15 +210,37 @@ export function ListaClientes() {
     );
   }
 
+  /** No desktop, a ficha ao lado da tabela; abaixo de `lg`, a folha. */
   function abrirFicha(cliente: Cliente) {
+    if (window.matchMedia(DESKTOP).matches) {
+      setSelecionadaId(cliente.id);
+      return;
+    }
     setLendoId(cliente.id);
     setFichaAberta(true);
   }
 
-  /** "Editar" troca a ficha pelo formulário; fechar o formulário volta a ela. */
-  function abrirEdicao(cliente: Cliente) {
-    setFichaAberta(false);
-    setEmEdicao({ aberto: true, cliente, chave: `${cliente.id}-${novoId()}` });
+  /** Fecha a ficha ao lado e devolve o foco à linha que estava marcada. */
+  function fecharFichaAcoplada() {
+    const linha = lista.current?.querySelector<HTMLElement>(
+      'button[aria-current="true"]',
+    );
+    setSelecionadaId(null);
+    linha?.focus();
+  }
+
+  /**
+   * "Editar" troca a folha pelo formulário, e fechar o formulário volta a
+   * ela. A ficha acoplada fica onde está, com o formulário por cima.
+   */
+  function abrirEdicao(cliente: Cliente, daFolha: boolean) {
+    if (daFolha) setFichaAberta(false);
+    setEmEdicao({
+      aberto: true,
+      cliente,
+      chave: `${cliente.id}-${novoId()}`,
+      daFolha,
+    });
   }
 
   return (
@@ -167,7 +254,7 @@ export function ListaClientes() {
         <div className="space-y-3">
           <CampoBusca
             rotulo="Buscar cliente"
-            placeholder="Buscar cliente"
+            placeholder="Nome, telefone ou Instagram"
             value={busca}
             onChange={(evento) => setBusca(evento.target.value)}
           />
@@ -194,57 +281,114 @@ export function ListaClientes() {
             ? "Carregando"
             : `${visiveis.length} ${visiveis.length === 1 ? "cliente" : "clientes"}`}
         </p>
+        {/* Em Sumiram e Uma vez só a ordem é da vista (`#d309`), e a escolha
+            some enquanto ela está ativa. */}
+        {ordemDaVista && (
+          <EscolhaDeOrdem
+            titulo="Ordenar clientes"
+            opcoes={ORDENS}
+            valor={ordemDaVista}
+            aoMudar={mudarOrdem}
+          />
+        )}
       </div>
 
-      <div className="mt-2 overflow-hidden rounded-lg border border-line bg-surface">
-        {erro ? (
-          <EstadoVazio
-            titulo="Não deu para carregar suas clientes"
-            descricao="Verifique a conexão. O que já foi aberto antes continua disponível offline."
-          />
-        ) : carregando ? (
-          <EsqueletoLista />
-        ) : visiveis.length === 0 ? (
-          dados.length > 0 && daVista.length === 0 ? (
-            <VazioDaVista vista={vista} />
-          ) : dados.length === 0 ? (
+      {/* No desktop a tabela e a ficha da cliente selecionada dividem a
+          largura: sem seleção, a tabela ocupa tudo (`#d310`). */}
+      <div className="lg:flex lg:items-start lg:gap-4">
+        <div className="mt-2 min-w-0 flex-1 overflow-hidden rounded-lg border border-line bg-surface">
+          {erro ? (
             <EstadoVazio
-              titulo="Suas clientes nascem dos pedidos."
-              descricao="Ao anotar uma encomenda, toque em Cadastrar esta cliente para guardar telefone e endereço. Ela aparece aqui com o que já comprou."
-              acao={
-                <Link
-                  href="/pedidos"
-                  className={classesBotao({
-                    variante: "primaria",
-                    tamanho: "lg",
-                  })}
-                >
-                  Ver pedidos
-                </Link>
-              }
+              titulo="Não deu para carregar suas clientes"
+              descricao="Verifique a conexão. O que já foi aberto antes continua disponível offline."
             />
-          ) : (
-            <EstadoVazio
-              titulo="Ninguém com esse nome"
-              descricao="Tente outro termo de busca."
-              acao={<Botao onClick={() => setBusca("")}>Limpar busca</Botao>}
-            />
-          )
-        ) : (
-          <ul className="divide-y divide-line">
-            {visiveis.map((cliente) => (
-              <LinhaCliente
-                key={cliente.id}
-                cliente={cliente}
-                aoAbrir={abrirFicha}
-                parada={
-                  PARA_CHAMAR.has(vista)
-                    ? { dias: situacao.get(cliente.id)?.dias ?? null, negocio }
-                    : undefined
+          ) : carregando ? (
+            <EsqueletoLista />
+          ) : visiveis.length === 0 ? (
+            dados.length > 0 && daVista.length === 0 ? (
+              <VazioDaVista vista={vista} />
+            ) : dados.length === 0 ? (
+              <EstadoVazio
+                titulo="Suas clientes nascem dos pedidos."
+                descricao="Ao anotar uma encomenda, toque em Cadastrar esta cliente para guardar telefone e endereço. Ela aparece aqui com o que já comprou."
+                acao={
+                  <Link
+                    href="/pedidos"
+                    className={classesBotao({
+                      variante: "primaria",
+                      tamanho: "lg",
+                    })}
+                  >
+                    Ver pedidos
+                  </Link>
                 }
               />
-            ))}
-          </ul>
+            ) : (
+              <EstadoVazio
+                titulo="Ninguém com essa busca"
+                descricao="A busca acha pelo nome, pelo Instagram ou por quatro números ou mais do telefone."
+                acao={<Botao onClick={() => setBusca("")}>Limpar busca</Botao>}
+              />
+            )
+          ) : (
+            <>
+              {/* O cabeçalho das colunas é para quem vê: cada célula da linha
+                carrega o rótulo em `sr-only`. */}
+              <div
+                aria-hidden
+                className={cn(
+                  "hidden border-b border-line text-micro font-semibold uppercase tracking-wide text-ink-muted",
+                  arranjo.cabecalho,
+                )}
+              >
+                <div
+                  className={cn(
+                    "grid flex-1 gap-x-4 px-4 py-2",
+                    COLUNAS_CLIENTE,
+                  )}
+                >
+                  <span>Cliente</span>
+                  <span className="text-right">Pedidos</span>
+                  <span className="text-right">Média</span>
+                  <span className="text-right">Último</span>
+                  <span className="text-right">Total</span>
+                </div>
+                {PARA_CHAMAR.has(vista) && <span className="w-32 shrink-0" />}
+              </div>
+              <ul ref={lista} className="divide-y divide-line">
+                {visiveis.map((cliente) => (
+                  <LinhaCliente
+                    key={cliente.id}
+                    cliente={cliente}
+                    aoAbrir={abrirFicha}
+                    maiorGasto={maiorGasto}
+                    selecionada={cliente.id === selecionada?.id}
+                    comFicha={!!selecionada}
+                    parada={
+                      PARA_CHAMAR.has(vista)
+                        ? {
+                            dias: situacao.get(cliente.id)?.dias ?? null,
+                            negocio,
+                          }
+                        : undefined
+                    }
+                  />
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+
+        {selecionada && (
+          <FichaDaCliente
+            key={selecionada.id}
+            acoplada
+            aberto
+            aoFechar={fecharFichaAcoplada}
+            aoEditar={() => abrirEdicao(selecionada, false)}
+            cliente={selecionada}
+            hoje={hoje}
+          />
         )}
       </div>
 
@@ -253,7 +397,7 @@ export function ListaClientes() {
           key={lendo.id}
           aberto={fichaAberta}
           aoFechar={() => setFichaAberta(false)}
-          aoEditar={() => abrirEdicao(lendo)}
+          aoEditar={() => abrirEdicao(lendo, true)}
           cliente={lendo}
           hoje={hoje}
         />
@@ -270,7 +414,7 @@ export function ListaClientes() {
         aoFechar={() => {
           setEmEdicao((anterior) => ({ ...anterior, aberto: false }));
           // Arquivada, ela sai de `dados` e a ficha não volta.
-          setFichaAberta(true);
+          if (emEdicao.daFolha) setFichaAberta(true);
         }}
       />
     </>

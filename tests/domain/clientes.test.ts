@@ -2,10 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   DIAS_SEM_PEDIR,
   diasSemPedir,
+  filtrarClientes,
+  instagramParaLer,
   instagramParaLink,
   momentoDaCliente,
+  ordenarClientes,
   ordenarPorGasto,
   resumoDaCliente,
+  telefoneParaLer,
   temAlergia,
 } from "@/lib/domain/clientes";
 import { formatarMoeda } from "@/lib/domain/money";
@@ -103,6 +107,128 @@ describe("instagramParaLink", () => {
     expect(instagramParaLink(undefined)).toBeNull();
     expect(instagramParaLink("@")).toBeNull();
     expect(instagramParaLink("Ana Doces")).toBeNull();
+  });
+});
+
+describe("ordenarClientes", () => {
+  const em = (ms: number) => ({ toMillis: () => ms });
+  const lista = [
+    {
+      ...cliente({ nomeBusca: "bia", totalPedidos: 2, totalGasto: 9000 }),
+      ultimoPedidoEm: em(300),
+    },
+    {
+      ...cliente({ nomeBusca: "ana", totalPedidos: 1, totalGasto: 2000 }),
+      ultimoPedidoEm: em(100),
+    },
+    // Desfez o único pedido pago: a data ficou, mas não conta.
+    {
+      ...cliente({ nomeBusca: "cris", totalPedidos: 0, totalGasto: 0 }),
+      ultimoPedidoEm: em(999),
+    },
+    // Pedido pago sem a data: parada desde sempre.
+    cliente({ nomeBusca: "duda", totalPedidos: 1, totalGasto: 5000 }),
+    {
+      ...cliente({ nomeBusca: "eva", totalPedidos: 3, totalGasto: 1000 }),
+      ultimoPedidoEm: em(200),
+    },
+  ];
+  const nomes = (ordem: Parameters<typeof ordenarClientes>[1]) =>
+    ordenarClientes(lista, ordem).map((item) => item.nomeBusca);
+
+  it("mais gasto é a de sempre", () => {
+    expect(nomes("GASTO")).toEqual(["bia", "duda", "ana", "eva", "cris"]);
+  });
+
+  it("pedido mais recente primeiro; sem pedido pago no fim", () => {
+    expect(nomes("RECENTE")).toEqual(["bia", "eva", "ana", "duda", "cris"]);
+  });
+
+  it("mais tempo sem pedir primeiro, a sem data antes de todas; sem pedido pago no fim", () => {
+    expect(nomes("PARADA")).toEqual(["duda", "ana", "eva", "bia", "cris"]);
+  });
+
+  it("por nome", () => {
+    expect(nomes("NOME")).toEqual(["ana", "bia", "cris", "duda", "eva"]);
+  });
+});
+
+describe("filtrarClientes", () => {
+  const lista = [
+    {
+      nomeBusca: "lindacy",
+      telefone: "81 98713-8356",
+      instagram: "lindacy.doces",
+    },
+    {
+      nomeBusca: "ketilyn",
+      telefone: "+55 81 99373-6569",
+      instagram: "@ketilyn",
+    },
+    { nomeBusca: "janessa", telefone: "81999137502", instagram: "@janessadd1" },
+    { nomeBusca: "veronica", instagram: "Veronicaapolonia23" },
+  ];
+  const nomes = (busca: string) =>
+    filtrarClientes(lista, busca).map((item) => item.nomeBusca);
+
+  it("sem termo, todas", () => {
+    expect(nomes("  ")).toHaveLength(4);
+  });
+
+  it("pelo nome, sem acento e sem caixa", () => {
+    expect(nomes("Kétilyn")).toEqual(["ketilyn"]);
+  });
+
+  it("pelos dígitos do telefone, com 4 ou mais, como ela vê ou como foi gravado", () => {
+    expect(nomes("98713")).toEqual(["lindacy"]);
+    expect(nomes("(81) 99373-6569")).toEqual(["ketilyn"]);
+    expect(nomes("9913 7502")).toEqual(["janessa"]);
+  });
+
+  it("com menos de 4 dígitos, o telefone não entra", () => {
+    expect(nomes("813")).toEqual([]);
+  });
+
+  it("pelo Instagram, com ou sem arroba", () => {
+    expect(nomes("@janessa")).toEqual(["janessa"]);
+    expect(nomes("apolonia")).toEqual(["veronica"]);
+    expect(nomes("@ketil")).toEqual(["ketilyn"]);
+  });
+});
+
+describe("telefoneParaLer", () => {
+  it("os formatos que existem na conta viram o mesmo desenho", () => {
+    expect(telefoneParaLer("81999137502")).toBe("(81) 99913-7502");
+    expect(telefoneParaLer("81 98713-8356")).toBe("(81) 98713-8356");
+    expect(telefoneParaLer("+55 81 99373-6569")).toBe("(81) 99373-6569");
+    expect(telefoneParaLer("819 9242-3262")).toBe("(81) 99242-3262");
+  });
+
+  it("fixo, zero de operadora e o 55 sem o +", () => {
+    expect(telefoneParaLer("8132221234")).toBe("(81) 3222-1234");
+    expect(telefoneParaLer("081 3222-1234")).toBe("(81) 3222-1234");
+    expect(telefoneParaLer("5581999137502")).toBe("(81) 99913-7502");
+  });
+
+  it("o que não é número brasileiro com DDD aparece como foi digitado", () => {
+    expect(telefoneParaLer(" 9999-1234 ")).toBe("9999-1234");
+    expect(telefoneParaLer("liga no fixo")).toBe("liga no fixo");
+    expect(telefoneParaLer(undefined)).toBe("");
+  });
+});
+
+describe("instagramParaLer", () => {
+  it("põe o arroba quando falta e tira o link", () => {
+    expect(instagramParaLer("Veronicaapolonia23")).toBe("@Veronicaapolonia23");
+    expect(instagramParaLer("@janessadd1")).toBe("@janessadd1");
+    expect(instagramParaLer("https://www.instagram.com/ana.doces/")).toBe(
+      "@ana.doces",
+    );
+  });
+
+  it("o que não é usuário aparece como foi digitado", () => {
+    expect(instagramParaLer("Ana Doces")).toBe("Ana Doces");
+    expect(instagramParaLer(undefined)).toBe("");
   });
 });
 

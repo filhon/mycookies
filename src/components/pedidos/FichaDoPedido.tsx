@@ -577,8 +577,9 @@ export function FichaDoPedido({
 /**
  * A coluna ao lado da tabela (`#d253`), a de `FichaAcoplada` de Materiais:
  * foco nela ao abrir e ao trocar de pedido, para o `Escape` ter de onde sair.
+ * A ficha da cliente acopla pela mesma (`#d310`).
  */
-function FichaAcoplada({
+export function FichaAcoplada({
   id,
   titulo,
   descricao,

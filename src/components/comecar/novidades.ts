@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-09",
+    titulo: "Achar a cliente pelo telefone",
+    frase:
+      "A busca de Clientes acha pelo telefone e pelo Instagram, a lista ordena por quem sumiu ou pediu por último, e o número aparece arrumado na ficha.",
+    href: "/clientes",
+  },
+  {
+    dataISO: "2026-10-09",
     titulo: "Com quem falar hoje",
     frase:
       "Clientes separa quem sumiu e quem comprou uma vez só, e “Chamar” abre o WhatsApp com a mensagem de volta pronta pra você ajustar.",

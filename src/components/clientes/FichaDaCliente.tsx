@@ -14,7 +14,10 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { ID_PEDIDO_NOVO } from "@/components/pedidos/EditorPedido";
-import { FichaDoPedido } from "@/components/pedidos/FichaDoPedido";
+import {
+  FichaAcoplada,
+  FichaDoPedido,
+} from "@/components/pedidos/FichaDoPedido";
 import { SeloStatus } from "@/components/pedidos/SeloStatus";
 import { Botao } from "@/components/ui/Botao";
 import { Dinheiro } from "@/components/ui/Dinheiro";
@@ -22,9 +25,11 @@ import { Esqueleto } from "@/components/ui/Esqueleto";
 import { Painel } from "@/components/ui/Painel";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
+  instagramParaLer,
   instagramParaLink,
   momentoDaCliente,
   resumoDaCliente,
+  telefoneParaLer,
   temAlergia,
 } from "@/lib/domain/clientes";
 import { dataISODe, rotuloAgenda, rotuloDia } from "@/lib/domain/datas";
@@ -68,12 +73,15 @@ export function FichaDaCliente({
   aoEditar,
   cliente,
   hoje,
+  acoplada = false,
 }: {
   aberto: boolean;
   aoFechar: () => void;
   aoEditar: () => void;
   cliente: Cliente;
   hoje: DataISO;
+  /** Na coluna ao lado da tabela, e não no `Painel`. Só no desktop. */
+  acoplada?: boolean;
 }) {
   const contaId = useContaId();
   const negocio = useAuth().conta?.nome ?? "";
@@ -102,6 +110,10 @@ export function FichaDaCliente({
   const numero = telefoneParaWhatsApp(cliente.telefone);
   const instagram = instagramParaLink(cliente.instagram);
   const endereco = cliente.endereco?.trim();
+  const contato = [
+    telefoneParaLer(cliente.telefone),
+    instagramParaLer(cliente.instagram),
+  ].filter(Boolean);
 
   const deve = pedidos.dados
     .filter((pedido) => pedido.status === "ENTREGUE" && !pedido.pago)
@@ -159,42 +171,48 @@ export function FichaDaCliente({
     </div>
   );
 
-  return (
-    <>
-      <Painel
-        aberto={aberto && !lendoAberto}
-        aoFechar={aoFechar}
-        titulo={cliente.nome}
-        descricao={resumoDaCliente(cliente, ultimoISO)}
-        rodape={rodape}
-      >
-        <div className="space-y-6">
-          {observacao &&
-            (temAlergia(observacao) ? (
-              <p className="flex items-start gap-2.5 rounded-lg border border-attention/30 bg-attention-soft px-3 py-2.5 text-body text-ink">
-                <TriangleAlert
-                  aria-hidden
-                  className="mt-1 size-4 shrink-0 text-attention"
-                  strokeWidth={2}
-                />
-                <span className="max-w-[60ch] whitespace-pre-line">
-                  <strong className="font-semibold">Alergia.</strong>{" "}
-                  {observacao}
-                </span>
-              </p>
-            ) : (
-              <p className="flex items-start gap-2.5 rounded-lg border border-info/30 bg-info-soft px-3 py-2.5 text-body text-ink">
-                <Info
-                  aria-hidden
-                  className="mt-1 size-4 shrink-0 text-info"
-                  strokeWidth={1.75}
-                />
-                <span className="max-w-[60ch] whitespace-pre-line">
-                  {observacao}
-                </span>
-              </p>
-            ))}
+  const conteudo = (
+    <div className="space-y-6">
+      {observacao &&
+        (temAlergia(observacao) ? (
+          <p className="flex items-start gap-2.5 rounded-lg border border-attention/30 bg-attention-soft px-3 py-2.5 text-body text-ink">
+            <TriangleAlert
+              aria-hidden
+              className="mt-1 size-4 shrink-0 text-attention"
+              strokeWidth={2}
+            />
+            <span className="max-w-[60ch] whitespace-pre-line">
+              <strong className="font-semibold">Alergia.</strong> {observacao}
+            </span>
+          </p>
+        ) : (
+          <p className="flex items-start gap-2.5 rounded-lg border border-info/30 bg-info-soft px-3 py-2.5 text-body text-ink">
+            <Info
+              aria-hidden
+              className="mt-1 size-4 shrink-0 text-info"
+              strokeWidth={1.75}
+            />
+            <span className="max-w-[60ch] whitespace-pre-line">
+              {observacao}
+            </span>
+          </p>
+        ))}
 
+      {contato.length > 0 && (
+        <div className="space-y-3">
+          {/* Formatado só aqui (`#d310`): o documento fica como ela escreveu. */}
+          <p className="num flex flex-wrap gap-x-2 text-body text-ink">
+            {contato.map((parte, indice) => (
+              <span key={parte}>
+                {indice > 0 && (
+                  <span aria-hidden className="mr-2 text-ink-subtle">
+                    ·
+                  </span>
+                )}
+                {parte}
+              </span>
+            ))}
+          </p>
           {(numero || instagram) && (
             <div aria-label="Falar com ela" className="flex flex-wrap gap-2">
               {deVolta && (
@@ -250,166 +268,191 @@ export function FichaDaCliente({
               )}
             </div>
           )}
+        </div>
+      )}
 
-          {pedidos.erro ? (
-            // Informativo, e não erro: offline é o estado normal.
-            <p className="text-label text-ink-muted">
-              Os pedidos dela aparecem quando a conexão voltar.
-            </p>
-          ) : esperando ? (
-            <div
-              role="status"
-              aria-label="Carregando os pedidos dela"
-              className="space-y-3"
+      {pedidos.erro ? (
+        // Informativo, e não erro: offline é o estado normal.
+        <p className="text-label text-ink-muted">
+          Os pedidos dela aparecem quando a conexão voltar.
+        </p>
+      ) : esperando ? (
+        <div
+          role="status"
+          aria-label="Carregando os pedidos dela"
+          className="space-y-3"
+        >
+          <Esqueleto className="h-5 w-1/3" />
+          <Esqueleto className="h-12 w-full" />
+          <Esqueleto className="h-12 w-full" />
+        </div>
+      ) : (
+        <>
+          {deve.length > 0 && (
+            <Bloco
+              titulo={
+                <span className="flex items-center gap-1.5 text-negative">
+                  <TrendingDown
+                    aria-hidden
+                    className="size-5"
+                    strokeWidth={2}
+                  />
+                  <span className="num">Deve {formatarMoeda(totalDevido)}</span>
+                </span>
+              }
             >
-              <Esqueleto className="h-5 w-1/3" />
-              <Esqueleto className="h-12 w-full" />
-              <Esqueleto className="h-12 w-full" />
-            </div>
-          ) : (
-            <>
-              {deve.length > 0 && (
-                <Bloco
-                  titulo={
-                    <span className="flex items-center gap-1.5 text-negative">
-                      <TrendingDown
-                        aria-hidden
-                        className="size-5"
-                        strokeWidth={2}
-                      />
-                      <span className="num">
-                        Deve {formatarMoeda(totalDevido)}
-                      </span>
-                    </span>
-                  }
+              <Linhas>
+                {deve.map((pedido) => (
+                  <LinhaPedidoDela
+                    key={pedido.id}
+                    pedido={pedido}
+                    dia={rotuloDia(pedido.dataEntregaISO)}
+                    valor={faltaPagar(pedido)}
+                    aoAbrir={abrirPedido}
+                  />
+                ))}
+              </Linhas>
+              {numero && (
+                <a
+                  href={linkDoWhatsApp(numero, mensagemDeCobranca(deve[0]!))}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={classesBotao({
+                    tamanho: "sm",
+                    className: "mt-3",
+                  })}
                 >
-                  <Linhas>
-                    {deve.map((pedido) => (
-                      <LinhaPedidoDela
-                        key={pedido.id}
-                        pedido={pedido}
-                        dia={rotuloDia(pedido.dataEntregaISO)}
-                        valor={faltaPagar(pedido)}
-                        aoAbrir={abrirPedido}
-                      />
-                    ))}
-                  </Linhas>
-                  {numero && (
-                    <a
-                      href={linkDoWhatsApp(
-                        numero,
-                        mensagemDeCobranca(deve[0]!),
-                      )}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={classesBotao({
-                        tamanho: "sm",
-                        className: "mt-3",
-                      })}
-                    >
-                      <MessageCircle
-                        aria-hidden
-                        className="size-4"
-                        strokeWidth={1.75}
-                      />
-                      {/* Uma mensagem por pedido; com mais de um, o mais
+                  <MessageCircle
+                    aria-hidden
+                    className="size-4"
+                    strokeWidth={1.75}
+                  />
+                  {/* Uma mensagem por pedido; com mais de um, o mais
                           antigo, e os outros pela ficha de cada um. */}
-                      {deve.length > 1
-                        ? "Cobrar o mais antigo no WhatsApp"
-                        : "Cobrar no WhatsApp"}
-                    </a>
-                  )}
-                </Bloco>
+                  {deve.length > 1
+                    ? "Cobrar o mais antigo no WhatsApp"
+                    : "Cobrar no WhatsApp"}
+                </a>
               )}
-
-              {marcados.length > 0 && (
-                <Bloco titulo="Marcado">
-                  <Linhas>
-                    {marcados.map((pedido) => (
-                      <LinhaPedidoDela
-                        key={pedido.id}
-                        pedido={pedido}
-                        dia={
-                          pedido.horaEntrega
-                            ? `${rotuloAgenda(pedido.dataEntregaISO, hoje)}, às ${pedido.horaEntrega}`
-                            : rotuloAgenda(pedido.dataEntregaISO, hoje)
-                        }
-                        valor={pedido.total}
-                        aoAbrir={abrirPedido}
-                      />
-                    ))}
-                  </Linhas>
-                </Bloco>
-              )}
-
-              {oQueElaPede.length > 0 && (
-                <Bloco titulo="O que ela pede">
-                  <ul className="space-y-1.5">
-                    {oQueElaPede.map((produto) => (
-                      <li key={produto.id} className="text-body text-ink">
-                        {produto.nome}
-                        <span className="num text-label text-ink-muted">
-                          {" "}
-                          · {quantidadeEmTexto(produto.unidades)} no total
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </Bloco>
-              )}
-
-              <Bloco titulo="Pedidos">
-                {pedidos.dados.length === 0 ? (
-                  <p className="text-label text-ink-muted">
-                    Nenhum pedido ligado a ela ainda. O pedido anotado sem
-                    escolher a cliente cadastrada se acha pelo nome, em Pedidos.
-                  </p>
-                ) : (
-                  <>
-                    <Linhas>
-                      {naLista.map((pedido) => (
-                        <LinhaPedidoDela
-                          key={pedido.id}
-                          pedido={pedido}
-                          dia={rotuloDia(pedido.dataEntregaISO)}
-                          valor={pedido.total}
-                          aoAbrir={abrirPedido}
-                          comStatus
-                        />
-                      ))}
-                    </Linhas>
-                    {naLista.length < pedidos.dados.length && (
-                      <Botao
-                        variante="terciaria"
-                        larguraTotal
-                        className="mt-2"
-                        onClick={() => setTodos(true)}
-                      >
-                        Ver os {pedidos.dados.length} pedidos
-                      </Botao>
-                    )}
-                  </>
-                )}
-              </Bloco>
-            </>
-          )}
-
-          {endereco && (
-            <Bloco titulo="Endereço">
-              <p className="text-body text-ink">{endereco}</p>
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endereco)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={classesBotao({ tamanho: "sm", className: "mt-2" })}
-              >
-                <MapPin aria-hidden className="size-4" strokeWidth={1.75} />
-                Abrir no mapa
-              </a>
             </Bloco>
           )}
-        </div>
-      </Painel>
+
+          {marcados.length > 0 && (
+            <Bloco titulo="Marcado">
+              <Linhas>
+                {marcados.map((pedido) => (
+                  <LinhaPedidoDela
+                    key={pedido.id}
+                    pedido={pedido}
+                    dia={
+                      pedido.horaEntrega
+                        ? `${rotuloAgenda(pedido.dataEntregaISO, hoje)}, às ${pedido.horaEntrega}`
+                        : rotuloAgenda(pedido.dataEntregaISO, hoje)
+                    }
+                    valor={pedido.total}
+                    aoAbrir={abrirPedido}
+                  />
+                ))}
+              </Linhas>
+            </Bloco>
+          )}
+
+          {oQueElaPede.length > 0 && (
+            <Bloco titulo="O que ela pede">
+              <ul className="space-y-1.5">
+                {oQueElaPede.map((produto) => (
+                  <li key={produto.id} className="text-body text-ink">
+                    {produto.nome}
+                    <span className="num text-label text-ink-muted">
+                      {" "}
+                      · {quantidadeEmTexto(produto.unidades)} no total
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Bloco>
+          )}
+
+          <Bloco titulo="Pedidos">
+            {pedidos.dados.length === 0 ? (
+              <p className="text-label text-ink-muted">
+                Nenhum pedido ligado a ela ainda. O pedido anotado sem escolher
+                a cliente cadastrada se acha pelo nome, em Pedidos.
+              </p>
+            ) : (
+              <>
+                <Linhas>
+                  {naLista.map((pedido) => (
+                    <LinhaPedidoDela
+                      key={pedido.id}
+                      pedido={pedido}
+                      dia={rotuloDia(pedido.dataEntregaISO)}
+                      valor={pedido.total}
+                      aoAbrir={abrirPedido}
+                      comStatus
+                    />
+                  ))}
+                </Linhas>
+                {naLista.length < pedidos.dados.length && (
+                  <Botao
+                    variante="terciaria"
+                    larguraTotal
+                    className="mt-2"
+                    onClick={() => setTodos(true)}
+                  >
+                    Ver os {pedidos.dados.length} pedidos
+                  </Botao>
+                )}
+              </>
+            )}
+          </Bloco>
+        </>
+      )}
+
+      {endereco && (
+        <Bloco titulo="Endereço">
+          <p className="text-body text-ink">{endereco}</p>
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endereco)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={classesBotao({ tamanho: "sm", className: "mt-2" })}
+          >
+            <MapPin aria-hidden className="size-4" strokeWidth={1.75} />
+            Abrir no mapa
+          </a>
+        </Bloco>
+      )}
+    </div>
+  );
+
+  const descricao = resumoDaCliente(cliente, ultimoISO);
+
+  return (
+    <>
+      {acoplada ? (
+        // A coluna ao lado da tabela (`#d310`); o pedido tocado abre por cima,
+        // no `Painel`, e a ficha dela fica onde está.
+        <FichaAcoplada
+          id={cliente.id}
+          titulo={cliente.nome}
+          descricao={descricao}
+          aoFechar={aoFechar}
+          rodape={rodape}
+        >
+          {conteudo}
+        </FichaAcoplada>
+      ) : (
+        <Painel
+          aberto={aberto && !lendoAberto}
+          aoFechar={aoFechar}
+          titulo={cliente.nome}
+          descricao={descricao}
+          rodape={rodape}
+        >
+          {conteudo}
+        </Painel>
+      )}
 
       {lendo && (
         <FichaDoPedido
