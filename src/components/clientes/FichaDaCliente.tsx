@@ -35,6 +35,7 @@ import {
   resumoDaCliente,
   telefoneParaLer,
   temAlergia,
+  voltouDepoisDeChamar,
 } from "@/lib/domain/clientes";
 import { dataISODe, rotuloAgenda, rotuloDia } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
@@ -52,7 +53,10 @@ import {
   primeiroNome,
   telefoneParaWhatsApp,
 } from "@/lib/domain/whatsapp";
-import { juntarClientes } from "@/lib/firebase/mutations/clientes";
+import {
+  juntarClientes,
+  marcarChamada,
+} from "@/lib/firebase/mutations/clientes";
 import { consultaPedidosDaCliente } from "@/lib/firebase/mutations/pedidos";
 import { useColecao } from "@/lib/hooks/useColecao";
 import type { Cliente, DataISO, Pedido } from "@/lib/types";
@@ -158,6 +162,20 @@ export function FichaDaCliente({
           produto: produtosDela(contados)[0]?.nome || undefined,
         })
       : null;
+  // A marca do "Chamar" (`#d312`): quando foi, e quando voltou.
+  const chamadaISO = cliente.chamadaEm
+    ? dataISODe(cliente.chamadaEm.toDate())
+    : null;
+  const chamada =
+    chamadaISO &&
+    [
+      `Você chamou em ${rotuloDia(chamadaISO)}.`,
+      voltouDepoisDeChamar(cliente, chamadaISO, ultimoISO) &&
+        ultimoISO &&
+        `Voltou em ${rotuloDia(ultimoISO)}.`,
+    ]
+      .filter(Boolean)
+      .join(" ");
   const naLista = todos
     ? pedidos.dados
     : pedidos.dados.slice(0, PEDIDOS_NA_FICHA);
@@ -250,21 +268,23 @@ export function FichaDaCliente({
         ))
       )}
 
-      {contato.length > 0 && (
+      {(contato.length > 0 || chamada) && (
         <div className="space-y-3">
           {/* Formatado só aqui (`#d310`): o documento fica como ela escreveu. */}
-          <p className="num flex flex-wrap gap-x-2 text-body text-ink">
-            {contato.map((parte, indice) => (
-              <span key={parte}>
-                {indice > 0 && (
-                  <span aria-hidden className="mr-2 text-ink-subtle">
-                    ·
-                  </span>
-                )}
-                {parte}
-              </span>
-            ))}
-          </p>
+          {contato.length > 0 && (
+            <p className="num flex flex-wrap gap-x-2 text-body text-ink">
+              {contato.map((parte, indice) => (
+                <span key={parte}>
+                  {indice > 0 && (
+                    <span aria-hidden className="mr-2 text-ink-subtle">
+                      ·
+                    </span>
+                  )}
+                  {parte}
+                </span>
+              ))}
+            </p>
+          )}
           {(numero || instagram) && (
             <div aria-label="Falar com ela" className="flex flex-wrap gap-2">
               {deVolta && (
@@ -272,6 +292,7 @@ export function FichaDaCliente({
                   href={linkDoWhatsApp(numero, deVolta)}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => marcarChamada(contaId, cliente.id)}
                   className={classesBotao({ tamanho: "sm" })}
                 >
                   <MessageCircle
@@ -319,6 +340,9 @@ export function FichaDaCliente({
                 </a>
               )}
             </div>
+          )}
+          {chamada && (
+            <p className="num text-label text-ink-muted">{chamada}</p>
           )}
         </div>
       )}

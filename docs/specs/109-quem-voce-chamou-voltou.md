@@ -68,11 +68,11 @@ Maynara não usa o "Chamar", esta spec não tem o que medir.
 
 ## Critérios de aceite
 
-- [ ] `chamadaEm` gravado no toque, offline.
-- [ ] Chamada recente no fim da vista, sem botão e fora da contagem.
-- [ ] "Das N que você chamou, M voltaram.", com teste da janela.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d312` escrito; `ESTADO.md`; linha em `novidades.ts`.
+- [x] `chamadaEm` gravado no toque, offline.
+- [x] Chamada recente no fim da vista, sem botão e fora da contagem.
+- [x] "Das N que você chamou, M voltaram.", com teste da janela.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d312` escrito; `ESTADO.md`; linha em `novidades.ts`.
 
 ---
 

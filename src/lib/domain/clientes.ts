@@ -154,6 +154,79 @@ export function momentoDaCliente(
   return recente ? "voltam" : "sumiram";
 }
 
+/** Quantos dias a cliente chamada fica fora da vista de chamar (`#d312`). */
+export const DIAS_DEPOIS_DE_CHAMAR = 14;
+
+/** Até quantos dias depois da chamada o pedido pago conta como volta. */
+export const DIAS_PARA_VOLTAR = 30;
+
+/** De quantos dias para trás são as chamadas da frase do topo. */
+export const DIAS_DA_CONTA_DE_CHAMADAS = 60;
+
+/**
+ * Dias desde a chamada enquanto ela está em silêncio (`#d312`): parada (Sumiram
+ * ou Uma vez só) e chamada há menos de `DIAS_DEPOIS_DE_CHAMAR`. `null` fora
+ * disso, e a cliente volta à vista com o "Chamar".
+ */
+export function silencioDaChamada(
+  momento: MomentoDaCliente,
+  chamadaISO: DataISO | null,
+  hoje: DataISO,
+): number | null {
+  if (!chamadaISO || (momento !== "sumiram" && momento !== "uma-vez")) {
+    return null;
+  }
+  const dias = Math.max(0, diasEntre(chamadaISO, hoje));
+  return dias < DIAS_DEPOIS_DE_CHAMAR ? dias : null;
+}
+
+/**
+ * Voltou (`#d312`): pagou um pedido no dia da chamada ou depois, até
+ * `DIAS_PARA_VOLTAR` dias. `ultimoPedidoEm` é o dia do pagamento à meia-noite
+ * (`dataDeISO`), por isso a conta é em dias: pago no mesmo dia da chamada
+ * conta, porque só se chama quem estava parada há 30 dias ou mais.
+ */
+export function voltouDepoisDeChamar(
+  cliente: Pick<Cliente, "totalPedidos">,
+  chamadaISO: DataISO | null,
+  ultimoPedidoISO: DataISO | null,
+): boolean {
+  if (cliente.totalPedidos <= 0 || !chamadaISO || !ultimoPedidoISO) {
+    return false;
+  }
+  const dias = diasEntre(chamadaISO, ultimoPedidoISO);
+  return dias >= 0 && dias <= DIAS_PARA_VOLTAR;
+}
+
+/**
+ * "Das 8 que você chamou, 3 voltaram." (`#d312`): as chamadas dos últimos
+ * `DIAS_DA_CONTA_DE_CHAMADAS` dias e quantas delas voltaram.
+ */
+export function retornoDasChamadas(
+  clientes: {
+    totalPedidos: number;
+    chamadaISO: DataISO | null;
+    ultimoPedidoISO: DataISO | null;
+  }[],
+  hoje: DataISO,
+): { chamadas: number; voltaram: number } {
+  let chamadas = 0;
+  let voltaram = 0;
+  for (const cliente of clientes) {
+    if (!cliente.chamadaISO) continue;
+    if (diasEntre(cliente.chamadaISO, hoje) >= DIAS_DA_CONTA_DE_CHAMADAS) {
+      continue;
+    }
+    chamadas++;
+    if (
+      voltouDepoisDeChamar(cliente, cliente.chamadaISO, cliente.ultimoPedidoISO)
+    ) {
+      voltaram++;
+    }
+  }
+  return { chamadas, voltaram };
+}
+
 /**
  * Outras clientes vivas que podem ser ela (`#d311`): o mesmo telefone, lido
  * por `telefoneParaLer`, ou o mesmo `nomeBusca`.

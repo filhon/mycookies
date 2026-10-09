@@ -9631,3 +9631,55 @@ da 105, e a única saída era arquivar uma e perder a soma.
 implementar a spec, sem subir `VERSAO_SCHEMA`, como `pacotesExtras?` (`#d307`) e `pulado?`
 (`#d304`). Nenhuma regra, índice ou dependência; conferido em `firestore.rules` que nada trava
 campo de pedido pago para a dona.
+
+## D312 · Quem você chamou voltou
+
+**Status:** vigente · decidida em 2026-10-09, spec `109-quem-voce-chamou-voltou.md`.
+
+**Contexto.** O "Chamar" da 106 (`#d309`) não deixava rastro: a Keila chamada na segunda
+estava de novo no topo de "Uma vez só" na quinta, e chamar duas vezes na mesma semana é o que
+faz a cliente silenciar o número. E sem retorno medido a 106 era palpite: o que se paga numa
+ferramenta de fidelidade é "das 8 que você chamou, 3 voltaram".
+
+**Decisão.**
+
+- **Tocar "Chamar" (lista) ou "Chamar de volta" (ficha) grava `chamadaEm: Timestamp.now()`**
+  na cliente, por `marcarChamada` em `mutations/clientes.ts`, despachado sem espera no
+  `onClick` do `<a>`, junto da abertura do WhatsApp; funciona sem rede e a linha muda na hora
+  pelo cache. **O app não sabe se ela mandou de fato: abrir conta como chamar.** O botão
+  "WhatsApp" da ficha, sem a mensagem de volta, não marca.
+- **Um campo, a última chamada.** Chamar de novo sobrescreve; histórico seria subcoleção.
+- **Silêncio de `DIAS_DEPOIS_DE_CHAMAR = 14` dias**, por `silencioDaChamada(momento,
+chamadaISO, hoje)` em `domain/clientes.ts`, com teste: só vale para quem está em Sumiram ou
+  Uma vez só (quem voltou já saiu dessas vistas, e não pode descontar de Voltam ou Novas). Em
+  silêncio, a cliente desce para o fim da vista (a ordem de "Mais tempo sem pedir" se mantém
+  dentro de cada grupo), a linha diz "chamada hoje", "chamada ontem" ou "chamada há N dias" no
+  lugar de "há N dias" (no resumo do celular e na coluna Último da tabela), e o "Chamar" sai,
+  com a vaga dele mantida na tabela. A pílula conta só quem está para chamar; a frase do topo
+  ("**7** de 55 compraram uma vez só") continua contando todas, porque é fato e não tarefa.
+  Conferir com a Maynara se 14 dias é o tempo certo ficou por fazer (spec, passo 2.2).
+- **Voltou** é `voltouDepoisDeChamar(cliente, chamadaISO, ultimoPedidoISO)`, com teste:
+  `totalPedidos > 0` e o último pedido pago **no dia da chamada ou depois**, até
+  `DIAS_PARA_VOLTAR = 30` dias. A conta é em dias, e não em instantes: `ultimoPedidoEm` é a
+  meia-noite do dia do pagamento (`dataDeISO` em `marcarPedidoPago`), e um pedido pago na
+  tarde da chamada ficaria "antes" dela. Pago no mesmo dia conta porque só se chama quem estava
+  parada há 30 dias ou mais. Herda o `#d37`: pagamento datado antes da chamada não conta, e o
+  desfazer não recua a data.
+- **A frase** é uma segunda linha sob a da 106, em "Todas", só com chamada nos últimos
+  `DIAS_DA_CONTA_DE_CHAMADAS = 60` dias, por `retornoDasChamadas` com teste: "Das **8** que
+  você chamou, **3** voltaram.", "nenhuma voltou ainda" com zero, e "Você chamou **1** cliente,
+  e ela voltou." (ou "ainda não voltou") com uma. Ela não espera os 10 clientes da linha da
+  106: quem chamou quer ver a consequência (princípio 3 do `PRODUCT.md`). Conta só as vivas
+  que a tela já lê; arquivada ou juntada sai da conta.
+- **Quanto elas trouxeram fica fora.** O agregado da cliente não separa o pedido da volta dos
+  anteriores, e somar `totalGasto` inteiro mentiria; a única leitura honesta seria consultar
+  os pedidos pagos depois de `chamadaEm`, uma consulta por cliente, que a spec não pede.
+- **Na ficha**, abaixo dos botões de "Falar com ela", "Você chamou em 2 de out." e, quando
+  voltou, "Voltou em 9 de out." (o dia do último pagamento), em `--ink-muted`. O "Chamar de
+  volta" continua na ficha durante o silêncio: a linha avisa, e a decisão é dela.
+
+**Consequência.** Um campo opcional novo, `Cliente.chamadaEm?`, aprovado com o pedido de
+implementar a spec, sem subir `VERSAO_SCHEMA`, como `juntadaEm?` (`#d311`). `firestore.rules`
+não lista campos de cliente, então nenhuma regra muda. Nenhum índice ou dependência. Spec
+pedia a 106 rodando semanas antes; foi codificada no mesmo dia, a pedido, e a frase só terá o
+que contar depois das primeiras chamadas.

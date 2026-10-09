@@ -165,6 +165,24 @@ export async function aplicarPedidoNoCliente(
   );
 }
 
+/**
+ * Tocar "Chamar" deixa marca (`DECISOES.md#d312`), despachada sem espera junto
+ * da abertura do WhatsApp: grava no aparelho sem rede, e a linha muda na hora.
+ */
+export async function marcarChamada(
+  contaId: string,
+  clienteId: string,
+): Promise<void> {
+  const momento = agora();
+  despachar(
+    updateDoc(docCliente(contaId, clienteId), {
+      v: VERSAO_SCHEMA,
+      chamadaEm: momento,
+      atualizadoEm: momento,
+    }),
+  );
+}
+
 /** Até 499 escritas num lote (`#d311`); três são das duas e do contador. */
 export const LIMITE_PEDIDOS_AO_JUNTAR = 499 - 3;
 

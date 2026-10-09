@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-09",
+    titulo: "Quem você chamou voltou",
+    frase:
+      "Quem você chamou sai da lista por duas semanas, a ficha diz quando foi, e Clientes conta quantas das chamadas voltaram a pedir.",
+    href: "/clientes",
+  },
+  {
+    dataISO: "2026-10-09",
     titulo: "Juntar a cliente cadastrada duas vezes",
     frase:
       "A ficha avisa quando outra cliente tem o mesmo telefone ou o mesmo nome, e “Juntar” passa os pedidos para uma só e soma o que ela já gastou.",

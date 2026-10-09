@@ -30,6 +30,13 @@ export interface Cliente extends DocumentoBase {
    * engano; ausente em quem nunca foi juntada.
    */
   juntadaEm?: { clienteId: string; em: Timestamp };
+
+  /**
+   * A última vez que ela tocou "Chamar" para esta cliente (`DECISOES.md#d312`).
+   * Abrir o WhatsApp conta como chamar: o app não sabe se ela mandou. Ausente
+   * em quem nunca foi chamada.
+   */
+  chamadaEm?: Timestamp;
 }
 
 export type StatusPedido =

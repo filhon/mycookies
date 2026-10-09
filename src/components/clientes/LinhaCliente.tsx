@@ -11,8 +11,10 @@ import {
   primeiroNome,
   telefoneParaWhatsApp,
 } from "@/lib/domain/whatsapp";
+import { marcarChamada } from "@/lib/firebase/mutations/clientes";
 import type { Cliente } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
+import { useContaId } from "@/providers/AuthProvider";
 
 /**
  * As cinco colunas da tabela (`#d310`): Cliente · Pedidos · Média · Último ·
@@ -68,6 +70,10 @@ function SemValor({ frase }: { frase: string }) {
  * dias" e põe "Chamar" ao lado do botão da linha, nunca dentro dele, só com
  * telefone que disca. Na tabela, a vaga dele existe em toda linha, para as
  * colunas não andarem.
+ *
+ * Chamada há pouco (`#d312`), "chamada há 3 dias" fica no lugar do "há N dias"
+ * e o "Chamar" sai. Tocar "Chamar" grava a chamada junto da abertura do
+ * WhatsApp.
  */
 export function LinhaCliente({
   cliente,
@@ -79,7 +85,7 @@ export function LinhaCliente({
 }: {
   cliente: Cliente;
   aoAbrir: (cliente: Cliente) => void;
-  parada?: { dias: number | null; negocio: string };
+  parada?: { dias: number | null; chamadaHa: number | null; negocio: string };
   /** O maior `totalGasto` da lista: o traço é a parte dela nele. */
   maiorGasto: number;
   /** A linha cuja cliente está na ficha ao lado. Só no desktop. */
@@ -87,24 +93,31 @@ export function LinhaCliente({
   /** A ficha acoplada divide a largura: a tabela espera o `2xl`. */
   comFicha?: boolean;
 }) {
+  const contaId = useContaId();
   const arranjo = arranjoDaTabela(comFicha);
   const pagou = cliente.totalPedidos > 0;
   const ultimoISO =
     pagou && cliente.ultimoPedidoEm
       ? dataISODe(cliente.ultimoPedidoEm.toDate())
       : null;
-  const resumo = parada
-    ? [
-        resumoDaCliente(cliente, null),
-        ...(parada.dias != null ? [`há ${parada.dias} dias`] : []),
-      ].join(" · ")
-    : resumoDaCliente(cliente, ultimoISO);
   const ultimo = parada
-    ? parada.dias != null
-      ? `há ${parada.dias} dias`
-      : null
+    ? parada.chamadaHa != null
+      ? parada.chamadaHa === 0
+        ? "chamada hoje"
+        : parada.chamadaHa === 1
+          ? "chamada ontem"
+          : `chamada há ${parada.chamadaHa} dias`
+      : parada.dias != null
+        ? `há ${parada.dias} dias`
+        : null
     : ultimoISO && rotuloDia(ultimoISO);
-  const numero = parada ? telefoneParaWhatsApp(cliente.telefone) : null;
+  const resumo = parada
+    ? [resumoDaCliente(cliente, null), ...(ultimo ? [ultimo] : [])].join(" · ")
+    : resumoDaCliente(cliente, ultimoISO);
+  const numero =
+    parada && parada.chamadaHa == null
+      ? telefoneParaWhatsApp(cliente.telefone)
+      : null;
   const parte =
     maiorGasto > 0 ? Math.max(0, cliente.totalGasto) / maiorGasto : 0;
 
@@ -209,6 +222,7 @@ export function LinhaCliente({
               )}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => marcarChamada(contaId, cliente.id)}
               aria-label={`Chamar ${cliente.nome} no WhatsApp`}
               className={classesBotao({ tamanho: "sm" })}
             >

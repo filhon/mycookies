@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   contatoJuntado,
+  DIAS_DA_CONTA_DE_CHAMADAS,
+  DIAS_DEPOIS_DE_CHAMAR,
+  DIAS_PARA_VOLTAR,
   DIAS_SEM_PEDIR,
+  retornoDasChamadas,
+  silencioDaChamada,
+  voltouDepoisDeChamar,
   diasSemPedir,
   juntarAgregados,
   possiveisDuplicadas,
@@ -381,5 +387,83 @@ describe("momentoDaCliente", () => {
     expect(momentoDaCliente({ totalPedidos: 1 }, "2026-10-12", hoje)).toBe(
       "novas",
     );
+  });
+});
+
+describe("silencioDaChamada", () => {
+  const hoje = "2026-10-09";
+
+  it("parada e chamada há menos de 14 dias fica em silêncio", () => {
+    expect(DIAS_DEPOIS_DE_CHAMAR).toBe(14);
+    expect(silencioDaChamada("uma-vez", hoje, hoje)).toBe(0);
+    expect(silencioDaChamada("sumiram", "2026-09-26", hoje)).toBe(13);
+    expect(silencioDaChamada("sumiram", "2026-09-25", hoje)).toBeNull();
+  });
+
+  it("sem chamada, ou fora das vistas de chamar, não há silêncio", () => {
+    expect(silencioDaChamada("uma-vez", null, hoje)).toBeNull();
+    expect(silencioDaChamada("voltam", hoje, hoje)).toBeNull();
+    expect(silencioDaChamada("novas", hoje, hoje)).toBeNull();
+  });
+});
+
+describe("voltouDepoisDeChamar", () => {
+  const chamada = "2026-09-01";
+
+  it("pago no dia da chamada até 30 dias depois conta como volta", () => {
+    expect(DIAS_PARA_VOLTAR).toBe(30);
+    const dois = { totalPedidos: 2 };
+    expect(voltouDepoisDeChamar(dois, chamada, "2026-09-01")).toBe(true);
+    expect(voltouDepoisDeChamar(dois, chamada, "2026-10-01")).toBe(true);
+    expect(voltouDepoisDeChamar(dois, chamada, "2026-10-02")).toBe(false);
+  });
+
+  it("o último pedido antes da chamada não é volta", () => {
+    expect(
+      voltouDepoisDeChamar({ totalPedidos: 1 }, chamada, "2026-08-31"),
+    ).toBe(false);
+  });
+
+  it("sem chamada, sem data, ou com o pagamento desfeito, não voltou", () => {
+    expect(voltouDepoisDeChamar({ totalPedidos: 2 }, null, chamada)).toBe(
+      false,
+    );
+    expect(voltouDepoisDeChamar({ totalPedidos: 2 }, chamada, null)).toBe(
+      false,
+    );
+    expect(voltouDepoisDeChamar({ totalPedidos: 0 }, chamada, chamada)).toBe(
+      false,
+    );
+  });
+});
+
+describe("retornoDasChamadas", () => {
+  const hoje = "2026-10-09";
+
+  it("conta as chamadas dos últimos 60 dias e quantas voltaram", () => {
+    expect(DIAS_DA_CONTA_DE_CHAMADAS).toBe(60);
+    expect(
+      retornoDasChamadas(
+        [
+          // Chamada hoje, ainda não voltou.
+          { totalPedidos: 1, chamadaISO: hoje, ultimoPedidoISO: "2026-08-01" },
+          // Há 59 dias, voltou dez dias depois.
+          {
+            totalPedidos: 2,
+            chamadaISO: "2026-08-11",
+            ultimoPedidoISO: "2026-08-21",
+          },
+          // Há 60 dias: fora da conta, mesmo tendo voltado.
+          {
+            totalPedidos: 2,
+            chamadaISO: "2026-08-10",
+            ultimoPedidoISO: "2026-08-12",
+          },
+          // Nunca chamada.
+          { totalPedidos: 3, chamadaISO: null, ultimoPedidoISO: hoje },
+        ],
+        hoje,
+      ),
+    ).toEqual({ chamadas: 2, voltaram: 1 });
   });
 });

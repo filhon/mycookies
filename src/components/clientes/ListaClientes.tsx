@@ -23,6 +23,8 @@ import {
   filtrarClientes,
   momentoDaCliente,
   ordenarClientes,
+  retornoDasChamadas,
+  silencioDaChamada,
   type MomentoDaCliente,
   type OrdemClientes,
 } from "@/lib/domain/clientes";
@@ -133,34 +135,58 @@ export function ListaClientes() {
   const { dados, carregando, erro, pendente } = useColecao<Cliente>(consulta);
   const lendo = dados.find((cliente) => cliente.id === lendoId);
 
-  // O momento e os dias de cada uma, uma vez por leitura da coleção.
-  const situacao = useMemo(() => {
+  // O momento, os dias e a chamada de cada uma, uma vez por leitura da coleção.
+  const { situacao, retorno } = useMemo(() => {
     const porId = new Map<
       string,
-      { momento: MomentoDaCliente; dias: number | null }
+      {
+        momento: MomentoDaCliente;
+        dias: number | null;
+        chamadaHa: number | null;
+      }
     >();
+    const chamadas = [];
     for (const cliente of dados) {
-      const ultimoISO = cliente.ultimoPedidoEm
+      const ultimoPedidoISO = cliente.ultimoPedidoEm
         ? dataISODe(cliente.ultimoPedidoEm.toDate())
         : null;
+      const chamadaISO = cliente.chamadaEm
+        ? dataISODe(cliente.chamadaEm.toDate())
+        : null;
+      const momento = momentoDaCliente(cliente, ultimoPedidoISO, hoje);
       porId.set(cliente.id, {
-        momento: momentoDaCliente(cliente, ultimoISO, hoje),
-        dias: diasSemPedir(ultimoISO, hoje),
+        momento,
+        dias: diasSemPedir(ultimoPedidoISO, hoje),
+        chamadaHa: silencioDaChamada(momento, chamadaISO, hoje),
+      });
+      chamadas.push({
+        totalPedidos: cliente.totalPedidos,
+        chamadaISO,
+        ultimoPedidoISO,
       });
     }
-    return porId;
+    return {
+      situacao: porId,
+      retorno: retornoDasChamadas(chamadas, hoje),
+    };
   }, [dados, hoje]);
 
-  const contagem = useMemo(() => {
-    const porMomento: Record<MomentoDaCliente, number> = {
+  // A frase conta todas; a pílula, só quem ainda está para chamar (`#d312`).
+  const { contagem, naPilula } = useMemo(() => {
+    const zerado = (): Record<MomentoDaCliente, number> => ({
       voltam: 0,
       novas: 0,
       sumiram: 0,
       "uma-vez": 0,
       "sem-pedido": 0,
-    };
-    for (const { momento } of situacao.values()) porMomento[momento]++;
-    return porMomento;
+    });
+    const porMomento = zerado();
+    const paraChamar = zerado();
+    for (const { momento, chamadaHa } of situacao.values()) {
+      porMomento[momento]++;
+      if (chamadaHa == null) paraChamar[momento]++;
+    }
+    return { contagem: porMomento, naPilula: paraChamar };
   }, [situacao]);
 
   const daVista = useMemo(
@@ -173,16 +199,21 @@ export function ListaClientes() {
     [dados, situacao, vista],
   );
 
-  // A busca vale dentro da vista, e a vista de chamar impõe a ordem dela.
+  // A busca vale dentro da vista, e a vista de chamar impõe a ordem dela, com
+  // a chamada há pouco no fim (`#d312`).
   const ordemDaVista = PARA_CHAMAR.has(vista) ? null : ordem;
-  const visiveis = useMemo(
-    () =>
-      ordenarClientes(
-        filtrarClientes(daVista, busca),
-        ordemDaVista ?? "PARADA",
-      ),
-    [daVista, busca, ordemDaVista],
-  );
+  const visiveis = useMemo(() => {
+    const ordenadas = ordenarClientes(
+      filtrarClientes(daVista, busca),
+      ordemDaVista ?? "PARADA",
+    );
+    if (ordemDaVista) return ordenadas;
+    const chamada = (c: Cliente) => situacao.get(c.id)?.chamadaHa != null;
+    return [
+      ...ordenadas.filter((c) => !chamada(c)),
+      ...ordenadas.filter(chamada),
+    ];
+  }, [daVista, busca, ordemDaVista, situacao]);
   const maiorGasto = Math.max(0, ...visiveis.map((c) => c.totalGasto));
   // Derivada, e não guardada: arquivada em outra aba, a ficha fecha sozinha.
   const selecionada = dados.find((cliente) => cliente.id === selecionadaId);
@@ -198,7 +229,7 @@ export function ListaClientes() {
   }
 
   const vistas: OpcaoPilula<Vista>[] = VISTAS.map(({ valor, rotulo }) => {
-    const quantas = valor === "todas" ? 0 : contagem[valor];
+    const quantas = valor === "todas" ? 0 : naPilula[valor];
     return { valor, rotulo: quantas > 0 ? `${rotulo} ${quantas}` : rotulo };
   });
 
@@ -258,11 +289,12 @@ export function ListaClientes() {
             value={busca}
             onChange={(evento) => setBusca(evento.target.value)}
           />
-          {vista === "todas" && dados.length >= CLIENTES_PARA_A_FRASE && (
+          {vista === "todas" && (
             <FraseDoTopo
               total={dados.length}
               umaVez={contagem["uma-vez"]}
               sumiram={contagem.sumiram}
+              retorno={retorno}
             />
           )}
           <Pilulas
@@ -368,6 +400,8 @@ export function ListaClientes() {
                       PARA_CHAMAR.has(vista)
                         ? {
                             dias: situacao.get(cliente.id)?.dias ?? null,
+                            chamadaHa:
+                              situacao.get(cliente.id)?.chamadaHa ?? null,
                             negocio,
                           }
                         : undefined
@@ -425,9 +459,68 @@ export function ListaClientes() {
 
 /**
  * "**38** de 55 compraram uma vez só. **4** que voltavam sumiram." No papel,
- * nada de cartão de métrica; cada metade só com número acima de zero.
+ * nada de cartão de métrica; cada metade só com número acima de zero, e só com
+ * `CLIENTES_PARA_A_FRASE` clientes ou mais. Embaixo, com chamada nos últimos
+ * 60 dias, "Das **8** que você chamou, **3** voltaram." (`#d312`).
  */
 function FraseDoTopo({
+  total,
+  umaVez,
+  sumiram,
+  retorno,
+}: {
+  total: number;
+  umaVez: number;
+  sumiram: number;
+  retorno: { chamadas: number; voltaram: number };
+}) {
+  const momentos =
+    total >= CLIENTES_PARA_A_FRASE && (umaVez > 0 || sumiram > 0);
+  if (!momentos && retorno.chamadas === 0) return null;
+  return (
+    <div className="space-y-1">
+      {momentos && (
+        <FraseDosMomentos total={total} umaVez={umaVez} sumiram={sumiram} />
+      )}
+      {retorno.chamadas > 0 && <FraseDoRetorno {...retorno} />}
+    </div>
+  );
+}
+
+function FraseDoRetorno({
+  chamadas,
+  voltaram,
+}: {
+  chamadas: number;
+  voltaram: number;
+}) {
+  const forte = (n: number) => (
+    <strong className="text-body font-semibold text-ink">{n}</strong>
+  );
+  return (
+    <p className="num text-label text-ink-muted">
+      {chamadas === 1 ? (
+        <>
+          Você chamou {forte(1)} cliente, e ela{" "}
+          {voltaram > 0 ? "voltou." : "ainda não voltou."}
+        </>
+      ) : (
+        <>
+          Das {forte(chamadas)} que você chamou,{" "}
+          {voltaram === 0 ? (
+            "nenhuma voltou ainda."
+          ) : (
+            <>
+              {forte(voltaram)} {voltaram === 1 ? "voltou." : "voltaram."}
+            </>
+          )}
+        </>
+      )}
+    </p>
+  );
+}
+
+function FraseDosMomentos({
   total,
   umaVez,
   sumiram,
@@ -436,7 +529,6 @@ function FraseDoTopo({
   umaVez: number;
   sumiram: number;
 }) {
-  if (umaVez === 0 && sumiram === 0) return null;
   return (
     <p className="num text-label text-ink-muted">
       {umaVez > 0 && (
