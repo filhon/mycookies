@@ -23,6 +23,7 @@ import { Painel } from "@/components/ui/Painel";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
   instagramParaLink,
+  momentoDaCliente,
   resumoDaCliente,
   temAlergia,
 } from "@/lib/domain/clientes";
@@ -38,12 +39,14 @@ import {
 import {
   linkDoWhatsApp,
   mensagemDeCobranca,
+  mensagemDeVolta,
+  primeiroNome,
   telefoneParaWhatsApp,
 } from "@/lib/domain/whatsapp";
 import { consultaPedidosDaCliente } from "@/lib/firebase/mutations/pedidos";
 import { useColecao } from "@/lib/hooks/useColecao";
 import type { Cliente, DataISO, Pedido } from "@/lib/types";
-import { useContaId } from "@/providers/AuthProvider";
+import { useAuth, useContaId } from "@/providers/AuthProvider";
 
 /** A lista dela mostra os dez mais recentes; o resto, no toque (`#d308`). */
 const PEDIDOS_NA_FICHA = 10;
@@ -73,6 +76,7 @@ export function FichaDaCliente({
   hoje: DataISO;
 }) {
   const contaId = useContaId();
+  const negocio = useAuth().conta?.nome ?? "";
   const consulta = useMemo(
     () => consultaPedidosDaCliente(contaId, cliente.id),
     [contaId, cliente.id],
@@ -114,6 +118,17 @@ export function FichaDaCliente({
     (pedido) => pedido.status !== "CANCELADO",
   );
   const oQueElaPede = contados.length >= 2 ? produtosDela(contados) : [];
+  // Parada (`#d309`): "Chamar de volta" vira o primeiro botão de "Falar com
+  // ela", com o produto que ela mais pede, quando os pedidos já chegaram.
+  const momento = momentoDaCliente(cliente, ultimoISO, hoje);
+  const deVolta =
+    numero && (momento === "sumiram" || momento === "uma-vez")
+      ? mensagemDeVolta({
+          primeiroNome: primeiroNome(cliente.nome),
+          negocio,
+          produto: produtosDela(contados)[0]?.nome || undefined,
+        })
+      : null;
   const naLista = todos
     ? pedidos.dados
     : pedidos.dados.slice(0, PEDIDOS_NA_FICHA);
@@ -182,6 +197,21 @@ export function FichaDaCliente({
 
           {(numero || instagram) && (
             <div aria-label="Falar com ela" className="flex flex-wrap gap-2">
+              {deVolta && (
+                <a
+                  href={linkDoWhatsApp(numero, deVolta)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={classesBotao({ tamanho: "sm" })}
+                >
+                  <MessageCircle
+                    aria-hidden
+                    className="size-4"
+                    strokeWidth={1.75}
+                  />
+                  Chamar de volta
+                </a>
+              )}
               {numero && (
                 <>
                   {/* Um `<a>`, e não `window.open` (`#d77`). */}

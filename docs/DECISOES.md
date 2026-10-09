@@ -9466,3 +9466,59 @@ nem quanto ela deve.
 
 **Consequência.** O chevron da linha passa a dizer a verdade. Nenhum campo, regra, índice ou
 dependência.
+
+## D309 · Quem chamar
+
+**Status:** vigente · decidida em 2026-10-09, spec `106-quem-chamar.md`.
+
+**Contexto.** `/clientes` respondia "quem gastou mais", que é um fato e não uma tarefa. O que
+paga ferramenta de recompra (Square Marketing, Klaviyo, a fidelidade de iFood e Goomer) é a
+lista curta de quem parou de comprar, com o botão de chamar ao lado. E a maior parte da lista
+comprou uma vez, escondida no fundo de cinquenta linhas iguais.
+
+**Decisão.**
+
+- **Cinco momentos, uma partição**, por `momentoDaCliente(cliente, ultimoISO, hoje)` em
+  `domain/clientes.ts`, só com `totalPedidos` e `ultimoPedidoEm`: 0 pedido pago é "sem pedido"
+  (só em "Todas"); 1 é Novas abaixo de `DIAS_SEM_PEDIR = 30` dias e Uma vez só a partir dele; 2
+  ou mais é Voltam abaixo e Sumiram a partir. A data entra como `DataISO`, e não como
+  `Timestamp`, para o domínio ficar sem Firebase, como `resumoDaCliente`.
+- **Os momentos herdam o que `ultimoPedidoEm` é** (conferido em `aplicarPedidoNoCliente`): a
+  data do **pagamento**, e não da entrega, e que **não volta no desfazer** (`#d37`). Desfazer o
+  único pagamento leva `totalPedidos` a 0 e a cliente a "sem pedido", com a data parada. Pedido
+  pago sem a data conta como parada (dias infinitos): não há como dizer que foi recente. Data à
+  frente de hoje (o dia do dinheiro escolhido no pagamento) conta zero dias.
+- **Pílulas** na faixa de ferramentas, abaixo da busca: Todas · Sumiram · Uma vez só · Novas ·
+  Voltam, as que pedem ação primeiro. Contagem no rótulo só acima de zero (`#d246`), contada
+  sobre todas e não sobre a busca, para o número não pular enquanto ela digita. A vista na URL
+  (`?vista=sumiram`, `uma-vez`, `novas`, `voltam`; "Todas" é a ausência), trocada por
+  `replace`, e a página ganhou o `Suspense` de `/pedidos`. A faixa rola na horizontal no
+  celular pelo próprio `Pilulas`, sem componente novo.
+- **A busca vale dentro da vista**, ao contrário de `/pedidos` (`#d252`), onde atravessa: aqui
+  a vista é a tarefa, e "as Anas novas" é a pergunta. Trocar de vista não limpa o campo.
+- **Sumiram e Uma vez só** ordenam por há mais tempo sem pedir (sem data primeiro, empate pelo
+  nome), e a linha diz "1 pedido pago · há 34 dias" no lugar de "último em …". As outras
+  continuam por gasto (`#d137`).
+- **"Chamar"** (secundário de 44px, `message-circle`) é irmão do botão da linha, nunca filho:
+  um `<a>` não vive dentro de um `<button>`. Só nessas duas vistas e só com telefone que disca.
+  Abre `linkDoWhatsApp` com `mensagemDeVolta`, sem enviar.
+- **`mensagemDeVolta({ primeiroNome, negocio, produto? })`** em `domain/whatsapp.ts`: "Oi,
+  Keila! Aqui é da MyCookie's. Faz um tempinho que você não pede, e eu queria saber se ficou
+  tudo certo com o último. Essa semana tem fornada, quer que eu separe um pra você?". Sem emoji
+  e sem desconto: o desconto é dela, escrito no WhatsApp antes de mandar. O negócio é
+  `conta.nome`, lido ao vivo como a barra e o "Fale com a gente" (`#d287`). `primeiroNome`
+  passou a ser exportado.
+- **Na ficha (`#d308`)**, parada (Sumiram ou Uma vez só) e com telefone, "Chamar de volta" é o
+  primeiro botão de "Falar com ela", com o produto de `maisPedidos` sobre os pedidos dela
+  ("o último Cookie Red Velvet"), mesmo com um pedido só. Enquanto os pedidos carregam, a
+  mensagem sai sem o produto. Secundário: o âmbar da ficha continua "Novo pedido pra ela".
+- **A frase do topo**, no papel entre a busca e as pílulas, só em "Todas" e com 10 clientes
+  ou mais: "**7** de 55 compraram uma vez só. **4** que voltavam sumiram.", cada número em
+  `body` 600, cada metade só acima de zero, no singular quando é uma.
+- **O vazio de cada vista diz quem apareceria ali.** Conferido no passo 2 com a conta real em
+  2026-10-09: 55 vivas, Voltam 20, Novas 26, Sumiram 0, Uma vez só 7, sem pedido 2. Sumiram
+  vazia porque o histórico começa em setembro, e o vazio dela diz que ainda não deu tempo.
+
+**Consequência.** Saber se quem ela chamou voltou pede campo (`Cliente.chamadaEm?`) e é a 109.
+Ritmo por cliente pede a data do primeiro pedido, que o documento não tem. Nenhum campo, regra,
+índice ou dependência.

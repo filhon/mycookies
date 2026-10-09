@@ -104,12 +104,12 @@ WhatsApp. **Nenhum campo, nenhuma regra, nenhum índice, nenhuma dependência.**
 
 ## Critérios de aceite
 
-- [ ] Toda cliente em exatamente um momento, com teste das fronteiras (29 e 30 dias, 1 e 2
+- [x] Toda cliente em exatamente um momento, com teste das fronteiras (29 e 30 dias, 1 e 2
       pedidos, 0 pedido).
-- [ ] Pílulas com contagem, vista na URL, busca dentro da vista.
-- [ ] "Chamar" fora do botão da linha, só com telefone, abrindo a mensagem pronta.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d309` escrito; `ESTADO.md`; linha em `novidades.ts`.
+- [x] Pílulas com contagem, vista na URL, busca dentro da vista.
+- [x] "Chamar" fora do botão da linha, só com telefone, abrindo a mensagem pronta.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d309` escrito; `ESTADO.md`; linha em `novidades.ts`.
 
 ---
 

@@ -1,6 +1,6 @@
 import type { Cliente, DataISO } from "@/lib/types";
 import { chaveDeBusca } from "./custoInsumo";
-import { rotuloDia } from "./datas";
+import { diasEntre, rotuloDia } from "./datas";
 import { formatarMoeda } from "./money";
 
 /** O que a ordem da tela precisa saber de uma cliente. */
@@ -44,6 +44,38 @@ export function resumoDaCliente(
   }
   if (ultimoPedidoISO) partes.push(`último em ${rotuloDia(ultimoPedidoISO)}`);
   return partes.join(" · ");
+}
+
+/** A partir de quantos dias sem pedido pago a cliente parou (`#d309`). */
+export const DIAS_SEM_PEDIR = 30;
+
+/**
+ * Onde a cliente está, só pelos agregados do documento (`#d309`). Toda cliente
+ * cai em exatamente um. `ultimoPedidoEm` é a data do **pagamento** e não volta
+ * no desfazer (`#d37`), e o momento herda isso.
+ */
+export type MomentoDaCliente =
+  "voltam" | "novas" | "sumiram" | "uma-vez" | "sem-pedido";
+
+/** Dias desde o último pedido pago, nunca negativo; `null` sem a data. */
+export function diasSemPedir(
+  ultimoPedidoISO: DataISO | null,
+  hoje: DataISO,
+): number | null {
+  return ultimoPedidoISO ? Math.max(0, diasEntre(ultimoPedidoISO, hoje)) : null;
+}
+
+export function momentoDaCliente(
+  cliente: Pick<Cliente, "totalPedidos">,
+  ultimoPedidoISO: DataISO | null,
+  hoje: DataISO,
+): MomentoDaCliente {
+  if (cliente.totalPedidos <= 0) return "sem-pedido";
+  // Pedido pago sem a data não diz que foi recente: conta como parada.
+  const dias = diasSemPedir(ultimoPedidoISO, hoje) ?? Infinity;
+  const recente = dias < DIAS_SEM_PEDIR;
+  if (cliente.totalPedidos === 1) return recente ? "novas" : "uma-vez";
+  return recente ? "voltam" : "sumiram";
 }
 
 /**

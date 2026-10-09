@@ -4,6 +4,7 @@ import { brCodePix } from "@/lib/domain/pix";
 import {
   linkDoWhatsApp,
   mensagemDeCobranca,
+  mensagemDeVolta,
   mensagemDoPedido,
   telefoneParaWhatsApp,
   type ResumoParaCliente,
@@ -390,5 +391,31 @@ describe("mensagemDeCobranca", () => {
         total: 500,
       }),
     ).toMatch(/^Oi! Passando/);
+  });
+});
+
+describe("mensagemDeVolta", () => {
+  it("chama pelo primeiro nome, diz o negócio e não oferece desconto", () => {
+    expect(
+      mensagemDeVolta({ primeiroNome: "Keila", negocio: "MyCookie's" }),
+    ).toBe(
+      "Oi, Keila! Aqui é da MyCookie's. Faz um tempinho que você não pede, e eu queria saber se ficou tudo certo com o último. Essa semana tem fornada, quer que eu separe um pra você?",
+    );
+  });
+
+  it("com o produto, diz qual foi o último", () => {
+    expect(
+      mensagemDeVolta({
+        primeiroNome: "Keila",
+        negocio: "MyCookie's",
+        produto: "Cookie Red Velvet",
+      }),
+    ).toContain("com o último Cookie Red Velvet. Essa semana");
+  });
+
+  it("sem nome e sem negócio, nada sobrando", () => {
+    expect(mensagemDeVolta({ primeiroNome: "", negocio: "" })).toMatch(
+      /^Oi! Faz um tempinho/,
+    );
   });
 });

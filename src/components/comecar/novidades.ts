@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-09",
+    titulo: "Com quem falar hoje",
+    frase:
+      "Clientes separa quem sumiu e quem comprou uma vez só, e “Chamar” abre o WhatsApp com a mensagem de volta pronta pra você ajustar.",
+    href: "/clientes",
+  },
+  {
+    dataISO: "2026-10-09",
     titulo: "A ficha de cada cliente",
     frase:
       "Toque numa cliente: a alergia à vista, o que ela pede, o que deve, os pedidos dela e o novo pedido já com ela.",

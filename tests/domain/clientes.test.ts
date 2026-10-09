@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  DIAS_SEM_PEDIR,
+  diasSemPedir,
   instagramParaLink,
+  momentoDaCliente,
   ordenarPorGasto,
   resumoDaCliente,
   temAlergia,
@@ -100,5 +103,50 @@ describe("instagramParaLink", () => {
     expect(instagramParaLink(undefined)).toBeNull();
     expect(instagramParaLink("@")).toBeNull();
     expect(instagramParaLink("Ana Doces")).toBeNull();
+  });
+});
+
+describe("momentoDaCliente", () => {
+  const hoje = "2026-10-09";
+  const ha29 = "2026-09-10";
+  const ha30 = "2026-09-09";
+
+  it("a fronteira é 30 dias", () => {
+    expect(DIAS_SEM_PEDIR).toBe(30);
+    expect(diasSemPedir(ha29, hoje)).toBe(29);
+    expect(diasSemPedir(ha30, hoje)).toBe(30);
+  });
+
+  it("um pedido pago: nova antes de 30 dias, uma vez só a partir de 30", () => {
+    expect(momentoDaCliente({ totalPedidos: 1 }, ha29, hoje)).toBe("novas");
+    expect(momentoDaCliente({ totalPedidos: 1 }, ha30, hoje)).toBe("uma-vez");
+  });
+
+  it("dois ou mais: volta antes de 30 dias, sumiu a partir de 30", () => {
+    expect(momentoDaCliente({ totalPedidos: 2 }, ha29, hoje)).toBe("voltam");
+    expect(momentoDaCliente({ totalPedidos: 2 }, ha30, hoje)).toBe("sumiram");
+    expect(momentoDaCliente({ totalPedidos: 7 }, ha30, hoje)).toBe("sumiram");
+  });
+
+  it("zero pedido pago é sem pedido, com ou sem data (o desfazer não a apaga)", () => {
+    expect(momentoDaCliente({ totalPedidos: 0 }, null, hoje)).toBe(
+      "sem-pedido",
+    );
+    expect(momentoDaCliente({ totalPedidos: 0 }, ha29, hoje)).toBe(
+      "sem-pedido",
+    );
+  });
+
+  it("pedido pago sem data conta como parada", () => {
+    expect(diasSemPedir(null, hoje)).toBeNull();
+    expect(momentoDaCliente({ totalPedidos: 1 }, null, hoje)).toBe("uma-vez");
+    expect(momentoDaCliente({ totalPedidos: 3 }, null, hoje)).toBe("sumiram");
+  });
+
+  it("pagamento com data à frente não dá dia negativo", () => {
+    expect(diasSemPedir("2026-10-12", hoje)).toBe(0);
+    expect(momentoDaCliente({ totalPedidos: 1 }, "2026-10-12", hoje)).toBe(
+      "novas",
+    );
   });
 });

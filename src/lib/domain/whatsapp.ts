@@ -96,8 +96,28 @@ export interface ResumoParaCliente {
 }
 
 /** 'Ana Beatriz' → 'Ana'. É como ela cumprimenta na conversa. */
-function primeiroNome(nome: string): string {
+export function primeiroNome(nome: string): string {
   return nome.trim().split(/\s+/)[0] ?? "";
+}
+
+/**
+ * O convite de volta para quem parou de pedir (`#d309`). Sem emoji e sem
+ * desconto: o desconto é decisão dela, que edita no WhatsApp antes de mandar.
+ * Com `produto` (a ficha conhece os pedidos), "o último Cookie Red Velvet".
+ */
+export function mensagemDeVolta({
+  primeiroNome,
+  negocio,
+  produto,
+}: {
+  primeiroNome: string;
+  negocio: string;
+  produto?: string;
+}): string {
+  const oi = primeiroNome ? `Oi, ${primeiroNome}!` : "Oi!";
+  const quem = negocio ? ` Aqui é da ${negocio}.` : "";
+  const ultimo = produto ? `o último ${produto}` : "o último";
+  return `${oi}${quem} Faz um tempinho que você não pede, e eu queria saber se ficou tudo certo com ${ultimo}. Essa semana tem fornada, quer que eu separe um pra você?`;
 }
 
 /**
