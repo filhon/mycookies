@@ -2,16 +2,14 @@
 
 import {
   Check,
+  ChevronRight,
   CookingPot,
-  Pencil,
   Shield,
   TriangleAlert,
   type LucideIcon,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { listarNomes } from "@/components/producao/FraseDaCapacidade";
-import { Botao } from "@/components/ui/Botao";
-import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { contagemDoInsumo, rotuloDeIdade } from "@/lib/domain/estoque";
 import { formatarMoeda } from "@/lib/domain/money";
 import {
@@ -19,7 +17,6 @@ import {
   quantidadeParaOMercado,
 } from "@/lib/domain/unidades";
 import type {
-  Centavos,
   DataISO,
   Insumo,
   ItemListaCompras,
@@ -31,36 +28,29 @@ import { cn } from "@/lib/utils/cn";
  * Uma linha do carrinho.
  *
  * A linha inteira é o alvo de marcar como comprado, porque a mão que usa isto
- * está empurrando um carrinho. O preço é o único alvo separado, e é separado
- * porque é a segunda coisa que ela faz no mercado: corrigir o que o insumo
- * custa de verdade hoje.
+ * está empurrando um carrinho. O preço é o único alvo separado: abre o porquê
+ * do item (`#d303`), com a conta, os pedidos, a reserva e o campo para corrigir
+ * o preço. Na linha fica só o que vai pro carrinho e a frase de atenção.
  *
  * As duas quantidades aparecem juntas de propósito. `1 pacote de 1 kg` é a
  * verdade da gôndola, e é o que ela põe no carrinho; `falta 350 g` é a verdade
  * da receita, arredondada para cima (`#d300`), e é o que explica por que o
  * pacote está na lista.
  */
-/** Quem pede a reserva deste insumo, das fichas vivas. */
-type ReservaPara = { nome: string; fornadas: number }[];
-
 export function LinhaCompra({
   item,
   insumo,
-  reservaPara,
   hoje,
   aoMarcar,
-  aoCorrigirPreco,
+  aoAbrirPorque,
 }: {
   item: ItemListaCompras;
-  /** O cadastro de hoje: é dele que saem o tamanho do pacote e o preço. */
+  /** O cadastro de hoje: é dele que sai o tamanho do pacote. */
   insumo?: Insumo;
-  reservaPara?: ReservaPara;
   hoje: DataISO;
   aoMarcar: (comprado: boolean) => void;
-  aoCorrigirPreco: (insumo: Insumo, precoCompra: Centavos) => void;
+  aoAbrirPorque: () => void;
 }) {
-  const [editando, setEditando] = useState(false);
-
   const comprado = item.comprado;
   // O pacote é o que vai pro carrinho, e por isso é o dado forte da linha
   // (`#d300`); o tamanho dele fica em rótulo, ao lado.
@@ -69,11 +59,10 @@ export function LinhaCompra({
     ? `de ${insumo.quantidadeCompra.toLocaleString("pt-BR", { maximumFractionDigits: 3 })} ${insumo.unidadeCompra}`
     : null;
 
-  // A idade sai do insumo **vivo**, e não da linha gravada: uma idade congelada
-  // dentro de um documento que ninguém reescreve envelhece errado.
+  // Só a frase de atenção fica na linha (`#d303`): a idade, o forno e a
+  // reserva moram no porquê. Do insumo **vivo**, e não da linha gravada.
   const contagem = fraseDaContagem(insumo, item.unidadeBase, hoje);
-  const forno = fraseDoForno(item);
-  const reserva = fraseDaReserva(item, reservaPara);
+  const atencao = contagem?.ignorada ? contagem.frase : null;
 
   return (
     // Marcar muda a linha de seção: ela chega pela opacidade, sem animar a
@@ -133,77 +122,48 @@ export function LinhaCompra({
               {quantidadeParaOMercado(item.quantidadeComprar, item.unidadeBase)}
             </span>
 
-            {/* O que a lista fez com o que está no armário. A contagem fresca
-                não diz nada: ela funcionou, e não há notícia. */}
-            {contagem && (
-              <Frase
-                icone={contagem.ignorada ? TriangleAlert : undefined}
-                atencao={contagem.ignorada}
-              >
-                {contagem.frase}
+            {/* A contagem que a lista ignorou: é o que explica um carrinho
+                maior, e é a única frase que fica na linha. */}
+            {atencao && (
+              <Frase icone={TriangleAlert} atencao>
+                {atencao}
               </Frase>
             )}
-
-            {/* O que a massa já fez com esta linha: é o que explica um número
-                menor do que o pedido pede, ou maior do que a contagem sugere. */}
-            {forno && <Frase icone={CookingPot}>{forno}</Frase>}
-
-            {/* De onde veio: uma linha sem pedido atrás é uma linha em que ela
-                para de confiar, e esta diz que é a reserva (`#d96`). */}
-            {reserva && <Frase icone={Shield}>{reserva}</Frase>}
           </span>
         </button>
 
-        {insumo ? (
-          <button
-            type="button"
-            onClick={() => setEditando((aberto) => !aberto)}
-            aria-expanded={editando}
-            aria-label={`Corrigir o preço de ${item.nome}, hoje ${formatarMoeda(insumo.precoCompra)} o pacote`}
+        <button
+          type="button"
+          onClick={aoAbrirPorque}
+          aria-haspopup="dialog"
+          aria-label={`Por que ${item.nome}: ${formatarMoeda(item.custoEstimado)}. A conta, de onde vem e o preço.`}
+          className="flex shrink-0 items-center gap-1 border-l border-line pl-4 pr-3 transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:pl-5 lg:pr-4"
+        >
+          <span
             className={cn(
-              "flex shrink-0 items-center gap-1.5 border-l border-line px-4 transition-colors duration-150 ease-quart",
-              "hover:bg-sunken active:bg-sunken lg:px-5",
-              editando && "bg-sunken",
+              "num text-body font-semibold",
+              comprado ? "text-ink-muted" : "text-ink",
             )}
           >
-            <span
-              className={cn(
-                "num text-body font-semibold",
-                comprado ? "text-ink-muted" : "text-ink",
-              )}
-            >
-              {formatarMoeda(item.custoEstimado)}
-            </span>
-            <Pencil
-              aria-hidden
-              className="size-3.5 shrink-0 text-ink-subtle"
-              strokeWidth={1.75}
-            />
-          </button>
-        ) : (
-          <span className="num flex shrink-0 items-center border-l border-line px-4 text-body font-semibold text-ink-muted lg:px-5">
             {formatarMoeda(item.custoEstimado)}
           </span>
-        )}
+          <ChevronRight
+            aria-hidden
+            className="size-4 shrink-0 text-ink-subtle"
+            strokeWidth={1.75}
+          />
+        </button>
       </div>
-
-      {editando && insumo && (
-        <EditorDePreco
-          insumo={insumo}
-          pacotes={item.quantidadePacotes}
-          aoSalvar={(preco) => {
-            aoCorrigirPreco(insumo, preco);
-            setEditando(false);
-          }}
-          aoFechar={() => setEditando(false)}
-        />
-      )}
     </li>
   );
 }
 
+/** Quem pede a reserva deste insumo, das fichas vivas. */
+type ReservaPara = { nome: string; fornadas: number }[];
+
 /**
- * Uma frase de baixo da linha: contagem, forno ou reserva.
+ * Uma frase de baixo da linha: a contagem ignorada no carrinho; contagem,
+ * forno ou reserva em "você já tem em casa".
  *
  * Texto que ela lê, então `--ink-muted`; o ícone fica em `--ink-subtle`, que
  * não é cor de texto (`DESIGN.md`). Quebra em até duas linhas em vez de cortar
@@ -258,7 +218,7 @@ function Frase({
  * teve estoque nenhum é dizer o óbvio em vinte linhas de uma vez, e a frase do
  * topo já conta quantos são.
  */
-function fraseDaContagem(
+export function fraseDaContagem(
   insumo: Insumo | undefined,
   unidadeBase: UnidadeBase,
   hoje: DataISO,
@@ -343,63 +303,6 @@ function fraseDaReserva(
   if (dosPedidos > 1e-6) partes.push(`${quanto(dosPedidos)} para os pedidos`);
   partes.push(`${quanto(daReserva)} para manter ${quem} de reserva`);
   return partes.join(" · ");
-}
-
-/**
- * O preço corrigido na frente da gôndola.
- *
- * Abre dentro da própria linha, e não em painel: ela está com uma mão no
- * carrinho, e o nome do insumo precisa continuar visível enquanto ela digita o
- * que a etiqueta da prateleira diz.
- *
- * A frase embaixo do campo é a consequência do número, como em toda tela deste
- * sistema: corrigir aqui muda o custo de todas as fichas que usam o insumo, e
- * elas ganham o selo de custo desatualizado.
- */
-function EditorDePreco({
-  insumo,
-  pacotes,
-  aoSalvar,
-  aoFechar,
-}: {
-  insumo: Insumo;
-  pacotes: number;
-  aoSalvar: (precoCompra: Centavos) => void;
-  aoFechar: () => void;
-}) {
-  const [preco, setPreco] = useState(insumo.precoCompra);
-  const embalagem = `${insumo.quantidadeCompra.toLocaleString("pt-BR", {
-    maximumFractionDigits: 3,
-  })} ${insumo.unidadeCompra}`;
-
-  return (
-    <div className="border-t border-line bg-sunken px-4 py-4 lg:px-5">
-      <CampoMoeda
-        rotulo={`Preço do pacote de ${embalagem}`}
-        valor={preco}
-        aoMudar={setPreco}
-        dica={
-          pacotes > 1
-            ? `${pacotes} pacotes na lista: ${formatarMoeda(pacotes * preco)} no total.`
-            : "O que a etiqueta da prateleira está pedindo hoje."
-        }
-      />
-
-      <p className="mt-2 max-w-[60ch] text-label text-ink-muted">
-        Salvar corrige o material e marca os produtos que usam {insumo.nome}{" "}
-        como custo desatualizado, para você não dar preço com número velho.
-      </p>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Botao tamanho="sm" variante="primaria" onClick={() => aoSalvar(preco)}>
-          Salvar preço
-        </Botao>
-        <Botao tamanho="sm" onClick={aoFechar}>
-          Cancelar
-        </Botao>
-      </div>
-    </div>
-  );
 }
 
 /**

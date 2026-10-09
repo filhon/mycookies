@@ -22,6 +22,7 @@ import { Botao } from "@/components/ui/Botao";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { Pilulas } from "@/components/ui/Pilulas";
 import { LinhaCompra, LinhaJaTem } from "./LinhaCompra";
+import { PorqueDoItem } from "./PorqueDoItem";
 import { RodapeCompras } from "./RodapeCompras";
 import { agruparPorCorredor, ROTULO_CORREDOR } from "@/lib/domain/corredores";
 import { diaVizinho, rotuloDia } from "@/lib/domain/datas";
@@ -115,6 +116,10 @@ export function ListaDoMercado({
   const [dias, setDias] = useState(() => horizonteDaLista(lista, hoje));
   const [falha, setFalha] = useState<string | null>(null);
   const [confirmandoFechar, setConfirmandoFechar] = useState(false);
+  // O porquê aberto (`#d303`). O id fica depois de fechar, para a folha sair
+  // com o conteúdo dentro.
+  const [porqueId, setPorqueId] = useState<string | null>(null);
+  const [porqueAberto, setPorqueAberto] = useState(false);
 
   const periodoFim = useMemo(() => diaVizinho(hoje, dias), [hoje, dias]);
 
@@ -233,12 +238,20 @@ export function ListaDoMercado({
       key={item.insumoId}
       item={item}
       insumo={porInsumo.get(item.insumoId)}
-      reservaPara={reserva.get(item.insumoId)?.fichas}
       hoje={hoje}
       aoMarcar={(comprado) => marcar(item.insumoId, comprado)}
-      aoCorrigirPreco={corrigirPreco}
+      aoAbrirPorque={() => {
+        setPorqueId(item.insumoId);
+        setPorqueAberto(true);
+      }}
     />
   );
+
+  // Os pedidos que entraram na lista gravada: são eles que dizem de quem é.
+  const pedidosDaLista = useMemo(() => {
+    const ids = new Set(lista?.pedidoIds ?? []);
+    return pedidos.filter((pedido) => ids.has(pedido.id));
+  }, [lista, pedidos]);
 
   /**
    * Os insumos do carrinho em que a lista não confiou.
@@ -704,6 +717,19 @@ export function ListaDoMercado({
             </div>
           ))}
       </div>
+
+      <PorqueDoItem
+        aberto={porqueAberto}
+        aoFechar={() => setPorqueAberto(false)}
+        item={itens.find((item) => item.insumoId === porqueId)}
+        insumo={porqueId ? porInsumo.get(porqueId) : undefined}
+        pedidos={pedidosDaLista}
+        fichas={fichas}
+        materiais={insumos}
+        reservaPara={porqueId ? reserva.get(porqueId)?.fichas : undefined}
+        hoje={hoje}
+        aoSalvarPreco={corrigirPreco}
+      />
 
       {lista && (
         <RodapeCompras

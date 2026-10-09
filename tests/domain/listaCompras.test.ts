@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { agruparPorCorredor } from "@/lib/domain/corredores";
 import {
+  demandaPorPedido,
   entraNaLista,
   explodirDemanda,
   montarLista,
@@ -851,5 +852,48 @@ describe("rotuloDeCompra", () => {
     expect(rotuloDeCompra(1, 1, "kg")).toBe("1 pacote de 1 kg");
     expect(rotuloDeCompra(2, 500, "g")).toBe("2 pacotes de 500 g");
     expect(rotuloDeCompra(1, 25, "un")).toBe("1 pacote de 25 un");
+  });
+});
+
+describe("demandaPorPedido", () => {
+  const OUTRO: PedidoParaExplodir = {
+    id: "p2",
+    itens: [
+      {
+        fichaTecnicaId: "cookie",
+        nomeSnapshot: "Cookie tradicional",
+        quantidade: 10,
+      },
+    ],
+  };
+  // Só um produto que sumiu do caderno: não usa farinha nenhuma.
+  const SEM_FARINHA: PedidoParaExplodir = {
+    id: "p3",
+    itens: [{ fichaTecnicaId: "sumida", nomeSnapshot: "Bolo", quantidade: 1 }],
+  };
+
+  it("diz quanto de cada pedido, e as partes somam a demanda", () => {
+    const partes = demandaPorPedido(
+      "farinha",
+      [PEDIDO, SEM_FARINHA, OUTRO],
+      FICHAS,
+    );
+
+    // 32 cookies (20 soltos e 12 nas caixas) e 10 cookies, a 25 g cada.
+    expect(partes.map((p) => [p.pedido.id, p.quantidade])).toEqual([
+      ["p1", 800],
+      ["p2", 250],
+    ]);
+    expect(partes.reduce((soma, p) => soma + p.quantidade, 0)).toBe(
+      demandaDe("farinha", [PEDIDO, SEM_FARINHA, OUTRO])?.quantidade,
+    );
+  });
+
+  it("devolve o pedido inteiro que entrou, para a tela dizer de quem é", () => {
+    const comCliente = { ...OUTRO, clienteNome: "Ana" };
+    expect(demandaPorPedido("caixa", [comCliente], FICHAS)).toEqual([]);
+    expect(
+      demandaPorPedido("manteiga", [comCliente], FICHAS)[0]?.pedido.clienteNome,
+    ).toBe("Ana");
   });
 });

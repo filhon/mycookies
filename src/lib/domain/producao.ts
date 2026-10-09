@@ -579,8 +579,16 @@ function pisoDaFicha(ficha: FichaParaProduzir): number {
 
 /** O que a reserva de fornadas pede de UM insumo, e quem pede. */
 export interface ReservaDoInsumo extends LinhaDeDemanda {
-  /** As fichas com piso que levam este insumo: "1 fornada de Cookie". */
-  fichas: { fichaId: string; nome: string; fornadas: number }[];
+  /**
+   * As fichas com piso que levam este insumo: "1 fornada de Cookie", e quanto
+   * dele cada uma reserva, útil (`#d303`).
+   */
+  fichas: {
+    fichaId: string;
+    nome: string;
+    fornadas: number;
+    quantidade: number;
+  }[];
 }
 
 /**
@@ -620,6 +628,7 @@ export function reservaDeProducao(
         fichaId: ficha.id,
         nome: ficha.nome,
         fornadas: piso,
+        quantidade: linha.quantidade * piso,
       });
       reserva.set(linha.insumoId, atual);
     }

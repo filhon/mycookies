@@ -865,7 +865,12 @@ describe("o piso de produção", () => {
     expect(reserva.get("farinha")?.quantidade).toBe(1000);
     expect(reserva.get("chocolate")?.quantidade).toBe(600);
     expect(reserva.get("farinha")?.fichas).toEqual([
-      { fichaId: "cookie", nome: "Cookie tradicional", fornadas: 2 },
+      {
+        fichaId: "cookie",
+        nome: "Cookie tradicional",
+        fornadas: 2,
+        quantidade: 1000,
+      },
     ]);
     // A caixa não tem piso: não pede nada.
     expect(reserva.has("caixa")).toBe(false);

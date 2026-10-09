@@ -83,11 +83,11 @@ nenhuma dependência.**
 
 ## Critérios de aceite
 
-- [ ] Linha com nome, pacote, preço e só a frase de atenção.
-- [ ] Porquê com a conta, os pedidos por cliente, a reserva, a última compra e o efeito do preço.
-- [ ] `demandaPorPedido` com teste.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d303` escrito; `ESTADO.md`; linha em `novidades.ts`.
+- [x] Linha com nome, pacote, preço e só a frase de atenção.
+- [x] Porquê com a conta, os pedidos por cliente, a reserva, a última compra e o efeito do preço.
+- [x] `demandaPorPedido` com teste.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d303` escrito; `ESTADO.md`; linha em `novidades.ts`.
 
 ---
 

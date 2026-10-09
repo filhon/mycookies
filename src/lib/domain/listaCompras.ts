@@ -281,6 +281,29 @@ export function explodirDemanda(
   };
 }
 
+/**
+ * De que pedido vem a demanda de um insumo (`#d303`): "Ana · sex 10 · 120 g".
+ *
+ * Cada pedido explode sozinho, pela mesma `explodirDemanda` (e portanto por
+ * `insumosPorLote`, com kit e combo): a soma das partes é a parte dos pedidos
+ * da lista, e não uma segunda conta que poderia divergir dela. Pedido que não
+ * usa o insumo fica de fora; a ordem é a de entrada.
+ */
+export function demandaPorPedido<P extends PedidoParaExplodir>(
+  insumoId: string,
+  pedidos: P[],
+  fichas: FichaParaExplodir[],
+): { pedido: P; quantidade: number }[] {
+  return pedidos.flatMap((pedido) => {
+    const linha = explodirDemanda([pedido], fichas).linhas.find(
+      (l) => l.insumoId === insumoId,
+    );
+    return linha && linha.quantidade > 0
+      ? [{ pedido, quantidade: linha.quantidade }]
+      : [];
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Montagem: demanda → o que comprar
 // ---------------------------------------------------------------------------

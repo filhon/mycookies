@@ -340,6 +340,8 @@ export default function PaginaInsumos() {
 
   // "Novo material" na grade do "+", vindo de outra tela ou desta (`#d241`).
   useAcaoPedida("novo-material", abrirNovo);
+  // "Abrir o material" do porquê de um item da lista de compras (`#d303`).
+  useAcaoPedida("abrir-material", (insumo) => insumo && abrirMaterial(insumo));
 
   // Um botão primário por tela: enquanto o estado vazio ensina a tela, a ação
   // é dele (a biblioteca), e o botão do cabeçalho sai.

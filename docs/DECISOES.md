@@ -9231,3 +9231,46 @@ apagar.
 
 **Consequência.** Fornada e receita ficam fora (spec própria, se a 099 provar o valor). Sem
 dependência: a API é do navegador, e o tipo vem do `lib.dom`.
+
+## D303 · O porquê de cada item
+
+**Status:** vigente · decidida em 2026-10-09, spec `100-o-porque-de-cada-item.md`.
+
+**Contexto.** A linha do carrinho tinha até três frases em `micro` (contagem, forno, reserva),
+cortadas no celular e no desktop: no mercado ela não lê, e em casa não consegue ler inteiro. "Para
+os pedidos" não dizia quais, o preço não tinha memória da última compra, e corrigir o preço na
+linha só avisava "custo desatualizado", quando a ficha do material e a nota já mostram o que muda
+em cada produto (`#d224`).
+
+**Decisão.**
+
+- **A linha:** nome, pacote, preço e só a frase de atenção (a contagem ignorada, em ocre com o
+  triângulo). A idade da contagem, o forno e a reserva saíram dela. A célula do preço abre o
+  porquê, com `chevron-right` no lugar do lápis; a linha inteira continua marcando. O
+  `EditorDePreco` dentro da linha saiu. "Você já tem em casa" (`LinhaJaTem`) não mudou.
+- **O porquê** (`PorqueDoItem`, um `Painel` só por tela, com o último item aberto guardado para a
+  folha sair com o conteúdo): a conta, de onde vem, o preço e "Abrir o material".
+- **A conta, exata:** "Precisa" é `falta + tem`, com `tem = max(0, estoqueAtual −
+consumoDeFornadas)`: a linha gravada não guarda a quantidade física, e esta é a conta de
+  `montarLista` lida de trás para a frente, que fecha por construção. Com mais de uma parcela,
+  "Precisa" se abre em pedidos e reserva (úteis, gravados), a perda (o resíduo) e o que já virou
+  massa (`min(produzida, física dos pedidos)`, com a perda do insumo vivo). Depois "Você tem",
+  com a idade da contagem e o que foi para a massa, "Falta", os pacotes vezes o tamanho do
+  insumo vivo, e a sobra na despensa. Sem nenhum campo novo.
+- **De onde vem:** os pedidos de `lista.pedidoIds` pelo nome da cliente e o dia (`rotuloDiaCurto`),
+  por `demandaPorPedido(insumoId, pedidos, fichas)` em `domain/listaCompras.ts`, que explode cada
+  pedido sozinho por `explodirDemanda` (portanto por `insumosPorLote`, com kit e combo): as partes
+  somam a demanda dos pedidos, e não há segunda conta para divergir. A reserva por produto, com a
+  quantidade que cada ficha reserva, agora em `reservaDeProducao().fichas[].quantidade`.
+- **O preço:** o pacote e o quilo sem perda (o número da gôndola, `#d220`), a última compra dela
+  de `comprasDoInsumo` com o dia, e quanto subiu ou caiu desde a anterior: em reais do pacote
+  quando o pacote é o mesmo, no quilo quando mudou. Com uma compra só, só a compra; sem compra
+  dela (só a da biblioteca), nada. O campo, e `EfeitoDoPrecoDigitado` (`#d224`) enquanto o
+  digitado difere do gravado. "Salvar preço" é o primário, no rodapé do painel, desligado até o
+  preço mudar; salvar fecha o painel. Cada abertura nasce com o preço gravado.
+- **"Abrir o material"**, terciário: `pedirAcao("abrir-material", insumo)` e `/insumos`, que o
+  abre como o toque na linha abre (ficha ao lado no desktop, folha no celular). O documento vai
+  inteiro, e não o id, porque a tela abre antes de a coleção dela carregar (`#d241`).
+
+**Consequência.** O porquê usa as fichas e os materiais que `/compras` já assinava: nenhuma
+assinatura nova. "Não levar desta vez" e "levar mais um" (101 e 104) moram neste painel.
