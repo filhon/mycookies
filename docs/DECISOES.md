@@ -9317,3 +9317,33 @@ da lista para cobrir 20 g e uma sacola. A conta estava certa e a decisão estava
 **Consequência.** O pulado não segura a lista sozinha: com nada marcado ela continua se refazendo
 (`#d301`), e o pulado volta pulado. Sugerir outro tamanho de pacote e pular a reserva no produto
 ficaram fora (a lista não conhece os tamanhos do mercado; o piso mora na ficha).
+
+## D305 · Quanto da compra é dos pedidos
+
+**Status:** vigente · decidida em 2026-10-09, spec `102-quanto-da-compra-e-dos-pedidos.md`.
+
+**Contexto.** O total da lista ("R$ 372,11") era um número sem consequência. No print de
+2026-10-08, sete dos oito itens só estavam na lista pela reserva de fornadas: R$ 312,12 da compra
+era para manter a reserva e R$ 59,99 para os pedidos. Ela configura a reserva produto por produto
+e nunca viu quanto ela custa.
+
+**Decisão.**
+
+- **O pacote vai inteiro para quem obrigou a comprá-lo**: se `soParaAReserva` (`#d304`), é da
+  reserva; senão, dos pedidos. Sem rateio proporcional: pacote não se divide, e a pergunta é "sem
+  a reserva, eu compraria isto?".
+- `custoPorOrigem(itens, perdas)` em `domain/listaCompras.ts` devolve `{ pedidos, reserva }`,
+  com a perda do insumo vivo, como a linha. Pulado e já-tem ficam fora, como em `resumoDaLista`:
+  as duas parcelas somam o total do rodapé.
+- **Uma frase no papel**, entre o período e o primeiro corredor, em `label`, com os valores em
+  `Dinheiro`: "R$ 59,99 é para os 4 pedidos, que somam R$ 1.180,00. R$ 312,12 é para manter a
+  reserva." Sem parcela da reserva, só a primeira metade; sem parcela dos pedidos, só a segunda;
+  um pedido só, "é para o pedido de R$ …".
+- **Os pedidos são os da lista gravada** (`lista.pedidoIds`), os mesmos dos itens, e o que eles
+  trazem é a soma de `Pedido.total`: com o sinal dentro e sem a taxa da maquininha
+  (`custoTaxaPagamento` é à parte), o número que `/pedidos` mostra na linha.
+- "Reserva" ficou sem link: a spec pedia o link que a ficha usa para "Fornadas de reserva", e a
+  ficha não tem link, só a dica do campo. Criar a explicação seria escopo novo.
+
+**Consequência.** Comparar com o saldo do Caixa e mostrar o custo semanal da reserva na ficha
+ficaram fora.

@@ -61,10 +61,10 @@ ficha, e nunca viu quanto ela custa por semana.
 
 ## Critérios de aceite
 
-- [ ] `custoPorOrigem` com teste; as duas parcelas somam o total.
-- [ ] Frase com as três cifras, e as variantes sem reserva e sem pedido.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d305` escrito; `ESTADO.md`; linha em `novidades.ts`.
+- [x] `custoPorOrigem` com teste; as duas parcelas somam o total.
+- [x] Frase com as três cifras, e as variantes sem reserva e sem pedido.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d305` escrito; `ESTADO.md`; linha em `novidades.ts`.
 
 ---
 

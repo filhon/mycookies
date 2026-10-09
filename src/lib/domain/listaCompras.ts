@@ -709,6 +709,34 @@ export function resumoDaLista(itens: ItemNoCarrinho[]): ResumoDaLista {
   };
 }
 
+/**
+ * Quanto da compra é dos pedidos e quanto é da reserva (`#d305`).
+ *
+ * O pacote vai inteiro para quem obrigou a comprá-lo: se sem a reserva ela não
+ * compraria (`soParaAReserva`), é da reserva; senão, dos pedidos. Sem rateio,
+ * porque pacote não se divide. Conta o que `resumoDaLista` conta no total (sem
+ * o pulado e sem o que ela já tem), então as duas parcelas somam o total.
+ *
+ * `perdas` é a perda do insumo vivo, por `insumoId`, como na linha.
+ */
+export function custoPorOrigem(
+  itens: (ItemNoCarrinho & {
+    quantidadeComprar: number;
+    quantidadeDeReserva?: number;
+  })[],
+  perdas: Map<string, Percentual>,
+): { pedidos: Centavos; reserva: Centavos } {
+  let pedidos = 0;
+  let reserva = 0;
+  for (const item of itens) {
+    if (!precisaComprar(item) || item.pulado) continue;
+    if (soParaAReserva(item, perdas.get(item.insumoId) ?? 0))
+      reserva += item.custoEstimado;
+    else pedidos += item.custoEstimado;
+  }
+  return { pedidos, reserva };
+}
+
 export type StatusListaCompras = "ABERTA" | "PARCIAL" | "COMPRADA";
 
 /**

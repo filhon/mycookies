@@ -19,6 +19,7 @@ import { EntradaContagem } from "@/components/estoque/EntradaContagem";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { AvisoLeituraSemRede } from "@/components/notas/EntradaLeitura";
 import { Botao } from "@/components/ui/Botao";
+import { Dinheiro } from "@/components/ui/Dinheiro";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { Pilulas } from "@/components/ui/Pilulas";
 import { LinhaCompra, LinhaJaTem, LinhaPulada } from "./LinhaCompra";
@@ -30,6 +31,7 @@ import { contagemDoInsumo, entradasDaLista } from "@/lib/domain/estoque";
 import { useConexao } from "@/lib/hooks/useDispositivo";
 import { useTelaAcesa } from "@/lib/hooks/useTelaAcesa";
 import {
+  custoPorOrigem,
   entraNaLista,
   explodirDemanda,
   EXPLICACAO_PENDENCIA,
@@ -248,6 +250,12 @@ export function ListaDoMercado({
   ).flatMap((corredor) => corredor.itens);
   const pulados = agruparPorCorredor(aComprar.filter((i) => i.pulado)).flatMap(
     (corredor) => corredor.itens,
+  );
+
+  // Quanto da compra é dos pedidos e quanto é da reserva (`#d305`).
+  const origem = custoPorOrigem(
+    itens,
+    new Map(insumos.map((insumo) => [insumo.id, insumo.perdaPercentual])),
   );
 
   const linha = (item: ItemListaCompras) => (
@@ -549,6 +557,8 @@ export function ListaDoMercado({
           </div>
         ) : (
           <>
+            <ParaQuemECompra {...origem} pedidosDaLista={pedidosDaLista} />
+
             {corredores.map((corredor) => (
               <section
                 key={corredor.categoria}
@@ -797,6 +807,57 @@ interface Saida {
   acao: () => void;
   /** Sem rede, a nota não lê: fica embaixo, desligada, com o aviso. */
   desligada?: boolean;
+}
+
+/**
+ * O total com a consequência (`#d305`): quanto é para os pedidos, o que eles
+ * trazem, e quanto é para manter a reserva. Cada metade só quando tem valor.
+ */
+function ParaQuemECompra({
+  pedidos,
+  reserva,
+  pedidosDaLista,
+}: {
+  pedidos: Centavos;
+  reserva: Centavos;
+  pedidosDaLista: Pedido[];
+}) {
+  if (pedidos === 0 && reserva === 0) return null;
+  const quantos = pedidosDaLista.length;
+  // `total` é o que ela recebe: com o sinal dentro e sem a maquininha, o mesmo
+  // número que `/pedidos` mostra.
+  const trazem = pedidosDaLista.reduce(
+    (soma, pedido) => soma + pedido.total,
+    0,
+  );
+
+  return (
+    <p className="num max-w-[60ch] text-label text-ink">
+      {pedidos > 0 && (
+        <>
+          <Dinheiro centavos={pedidos} tamanho="sm" /> é para{" "}
+          {quantos === 0 ? (
+            "os pedidos."
+          ) : quantos === 1 ? (
+            <>
+              o pedido de <Dinheiro centavos={trazem} tamanho="sm" />.
+            </>
+          ) : (
+            <>
+              os {quantos} pedidos, que somam{" "}
+              <Dinheiro centavos={trazem} tamanho="sm" />.
+            </>
+          )}
+        </>
+      )}
+      {pedidos > 0 && reserva > 0 && " "}
+      {reserva > 0 && (
+        <>
+          <Dinheiro centavos={reserva} tamanho="sm" /> é para manter a reserva.
+        </>
+      )}
+    </p>
+  );
 }
 
 /** O horizonte que a lista gravada usou, para a tela reabrir no mesmo recorte. */

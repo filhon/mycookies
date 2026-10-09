@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { agruparPorCorredor } from "@/lib/domain/corredores";
 import {
+  custoPorOrigem,
   demandaPorPedido,
   entraNaLista,
   explodirDemanda,
@@ -1002,5 +1003,60 @@ describe("o pacote contra a falta (#d304)", () => {
       { pedido: "Bia", quantidade: 80 },
     ]);
     expect(quemFicaSem(0, partes)).toEqual([]);
+  });
+});
+
+describe("custoPorOrigem (#d305)", () => {
+  const item = (
+    insumoId: string,
+    custoEstimado: number,
+    quantidadeComprar: number,
+    quantidadeDeReserva = 0,
+    extra: { comprado?: boolean; pulado?: boolean } = {},
+  ) => ({
+    insumoId,
+    custoEstimado,
+    quantidadePacotes: custoEstimado > 0 ? 1 : 0,
+    quantidadeComprar,
+    quantidadeDeReserva,
+    comprado: false,
+    ...extra,
+  });
+
+  const ITENS = [
+    // Só a reserva pede: o pacote inteiro é dela.
+    item("pistache", 10950, 20, 360),
+    // Pedido e reserva, e falta para o pedido: o pacote inteiro é dos pedidos.
+    item("farinha", 1200, 300, 100),
+    // Só pedido, já no carrinho: continua contando.
+    item("sacola", 5999, 1, 0, { comprado: true }),
+    // Pulado e já-tem ficam fora.
+    item("gotas", 4000, 50, 50, { pulado: true }),
+    item("acucar", 0, 0, 100),
+  ];
+
+  it("o pacote vai inteiro para quem obrigou a comprá-lo", () => {
+    expect(custoPorOrigem(ITENS, new Map())).toEqual({
+      pedidos: 7199,
+      reserva: 10950,
+    });
+  });
+
+  it("as duas parcelas somam o total do rodapé", () => {
+    const { pedidos, reserva } = custoPorOrigem(ITENS, new Map());
+    expect(pedidos + reserva).toBe(resumoDaLista(ITENS).total);
+  });
+
+  it("lê a perda do insumo para comparar", () => {
+    // 125 g físicos para 100 g de reserva: com 20% de perda é só reserva.
+    const cheiro = [item("essencia", 800, 125, 100)];
+    expect(custoPorOrigem(cheiro, new Map([["essencia", 20]]))).toEqual({
+      pedidos: 0,
+      reserva: 800,
+    });
+    expect(custoPorOrigem(cheiro, new Map())).toEqual({
+      pedidos: 800,
+      reserva: 0,
+    });
   });
 });
