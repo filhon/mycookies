@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { z } from "zod";
-import type {
-  FalhaAssinatura,
-  ResumoAssinatura,
+import {
+  valorComDesconto,
+  type FalhaAssinatura,
+  type ResumoAssinatura,
 } from "@/lib/domain/assinatura";
 import {
   ehDona,
@@ -70,6 +71,8 @@ export async function POST(requisicao: Request) {
         expand: [
           "default_payment_method",
           "customer.invoice_settings.default_payment_method",
+          // No SDK 22 o cupom mora em `source.coupon`, e não em `coupon`.
+          "discounts.source.coupon",
         ],
       },
     );
@@ -91,10 +94,17 @@ export async function POST(requisicao: Request) {
   const cancela =
     assinatura.cancel_at_period_end || assinatura.cancel_at != null;
 
-  // ponytail: o preço da tabela, sem cupom; `invoices.createPreview` se um
-  // dia houver desconto.
+  // O preço da tabela menos os cupons da assinatura (`#d314`). ponytail: só os
+  // da assinatura, não os do item; `invoices.createPreview` se um dia houver.
+  const cupons = assinatura.discounts.flatMap((desconto) => {
+    const cupom = typeof desconto === "object" ? desconto.source.coupon : null;
+    return cupom && typeof cupom === "object" ? [cupom] : [];
+  });
   const resumo: ResumoAssinatura = {
-    valor: (item.price.unit_amount ?? 0) * (item.quantity ?? 1),
+    valor: valorComDesconto(
+      (item.price.unit_amount ?? 0) * (item.quantity ?? 1),
+      cupons,
+    ),
     periodo: item.price.recurring?.interval === "year" ? "anual" : "mensal",
     ateMs: (assinatura.cancel_at ?? item.current_period_end) * 1000,
     final,

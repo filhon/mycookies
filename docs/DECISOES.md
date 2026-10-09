@@ -9735,3 +9735,49 @@ Dois achados no caminho, já corrigidos no ao vivo e escritos no bloco:
   essencial. O bloco grava `metadata[pacote]=COMPLETO` junto do nome, idempotente.
 - **O Stripe liga `adjustable_quantity`** em cada produto da lista do portal; o bloco a desliga,
   senão o portal deixaria assinar mais de uma unidade.
+
+## D314 · Cortesia é um cupom de 100% no Stripe
+
+**Status:** vigente · decidida em 2026-10-09, spec `111-cortesia.md`.
+
+**Contexto.** Liberar acesso total a uma beta tester que nasceu pelo `/cadastro` exigia editar à
+mão o documento da conta e a claim da dona e de cada ajudante. A conta `livre` (`#d141`) nunca
+passa pelo webhook, e é justamente a que mais usa o app. E o resumo da 084 lia o preço da tabela
+sem cupom: uma cortesia leria "R$ 49,90 por mês", e a despesa "Rende" (`#d287`) viria com o
+valor cheio.
+
+**Decisão.**
+
+- **Um cupom só, `CORTESIA`**: id fixo, `percent_off=100`, `duration=forever`, criado pela CLI
+  nos dois modos. Cortesia com prazo é outro cupom (`duration=repeating`), sem código.
+- **Um código promocional por pessoa** (`BETA-<NOME>`, `max_redemptions=1`) sobre o `CORTESIA`:
+  um código que vaze vale uma vez.
+- **O checkout aceita código e dispensa o cartão com total zero**: `allow_promotion_codes: true`
+  e `payment_method_collection: "if_required"`. Daí em diante é o caminho de quem paga, e o
+  webhook grava `plano`, `pacote` e `acessoAte`. Conta em teste que usa o código não perde dias:
+  `acessoAteDaAssinatura` nunca encurta o `trialAte`.
+- **A conta `livre` migra pela CLI** (`customers create`, `subscriptions create` com o preço
+  **mensal** do pacote, o `CORTESIA` e a mesma `metadata { contaId, uid }` do checkout), para o
+  webhook rodar todo mês. O estado `livre` continua no código para quem não migrou.
+- **O resumo mostra o valor com desconto**: `valorComDesconto` em `domain/assinatura.ts`, com
+  teste, aplica `percent_off` e `amount_off` em sequência com piso zero. A rota expande
+  `discounts.source.coupon`: na API `dahlia` do SDK 22, o cupom mora em `source.coupon`, e não em
+  `coupon`. Só os cupons da assinatura; os do item ficaram fora (nenhum caminho os cria).
+- **Com valor zero**, "Plano Completo · cortesia", sem a linha de economia do anual, e
+  `mensalDoPlano` dá 0, que `DespesasFixas` já não preenche.
+- **Tirar a cortesia é tirar o desconto da assinatura**: a próxima cobrança vai sem cartão, vira
+  `past_due` e ela tem os sete dias de `FOLGA_COBRANCA_DIAS`. Avisar antes é conversa.
+
+- **Quem já assina ganha a cortesia na mesma assinatura**: troca do preço e o cupom num
+  `subscriptions update` com `proration_behavior=none`, sem fatura na hora. Nunca uma segunda
+  assinatura, porque o webhook gravaria as duas no mesmo documento.
+
+**Consequência.** Nenhum campo, regra, índice ou dependência; um caminho de acesso só, o webhook.
+As receitas estão em `DEPLOY.md` ("Stripe, a cortesia (spec 111)"), rodadas na sandbox da Rende.
+
+**A MyCookie's não era `livre`.** A spec e o `ESTADO.md` diziam que sim; em 2026-10-09 o
+documento tinha `plano: ASSINATURA`, `pacote: ESSENCIAL` e a assinatura ao vivo
+`sub_1ULU0ZPrzcZdpSOZJR2qUC0e`, paga desde 2026-09-30 (R$ 29,00, sem reembolso). Ela foi
+promovida no mesmo dia pelo passo 3b, para o Completo mensal com o `CORTESIA`: o webhook de
+produção gravou `COMPLETO`, e a fatura de 2026-10-30 sai R$ 0,00. Ela já exercitava o caminho de
+quem paga; o "nunca vence" do `#d141` já não valia para ela.

@@ -223,6 +223,70 @@ stripe billing_portal configurations update "$BPC" \
 - **A marca** (ícone, logo, cor de destaque, fonte) é por clique, em Settings → Branding, nos
   dois modos. O checkout e o portal continuam os do Stripe (`#d146`).
 
+### Stripe, a cortesia (spec 111)
+
+Cortesia é um cupom de 100% numa assinatura comum (`DECISOES.md#d314`): o webhook grava
+`plano`, `pacote` e `acessoAte` como para quem paga, e nada no app sabe que é cortesia além do
+valor zero. Primeiro no teste; no ao vivo, `stripe switch acct_1UJCLzPrzcZdpSOZ --live` e
+`--live` ao fim de cada comando (o CLI 1.51 recusa um sem o outro). Bash. O `--stripe-version`
+vai onde a forma do parâmetro mudou entre versões da API.
+
+> **Rodado no teste em 2026-10-09**, na sandbox da Rende (que nasceu vazia: os dois produtos e
+> os dois preços mensais foram criados lá para isso, e o portal do teste continua sem
+> configurar): a assinatura sem cartão nasce `active` com a fatura de R$ 0,00 `paid`; o mesmo
+> código na segunda vez é recusado ("This promotion code has been used up"); o checkout aceita
+> as duas opções; a troca do passo 3b não gera fatura e a seguinte sai R$ 0,00; e o passo 4
+> zera os descontos e a fatura seguinte volta ao preço cheio. **No ao vivo**, o `CORTESIA` foi
+> criado e a MyCookie's promovida pelo passo 3b no mesmo dia.
+
+```bash
+# 1. O cupom, uma vez por modo. Id fixo; cortesia com prazo é outro cupom
+#    (duration=repeating, duration_in_months=N), sem mudar código.
+stripe coupons create -d id=CORTESIA -d name=Cortesia \
+  -d percent_off=100 -d duration=forever
+
+# 2. Um código por pessoa, que vale uma vez só. Ela digita no checkout, em
+#    "Adicionar código promocional", e passa sem cartão.
+stripe promotion_codes create --stripe-version 2026-08-26.dahlia \
+  -d "promotion[type]=coupon" -d "promotion[coupon]=CORTESIA" \
+  -d code=BETA-NOME -d max_redemptions=1
+
+# 3. Migrar uma conta livre (#d141) sem passar por /assinatura. O contaId e o uid
+#    da dona são os mesmos que o checkout grava; o preço é o MENSAL, para o webhook
+#    renovar o acesso todo mês.
+CONTA=…                       # contaId
+UID_DONA=…                    # uid da dona
+EMAIL=…                       # e-mail da dona
+stripe customers create -d "email=$EMAIL"
+CUS=cus_…                     # o id que o comando acima devolveu
+stripe subscriptions create -d "customer=$CUS" \
+  -d "items[0][price]=$PRECO_COMPLETO_MENSAL" \
+  -d "discounts[0][coupon]=CORTESIA" \
+  -d "metadata[contaId]=$CONTA" -d "metadata[uid]=$UID_DONA"
+#    Tem de nascer "status": "active", com a fatura de R$ 0,00 paga sozinha.
+#    O webhook grava o resto: plano, pacote, assinaturaAte e o acessoAte da claim.
+
+# 3b. Dar cortesia a quem JÁ assina: trocar o preço e pôr o cupom na mesma
+#     assinatura, sem cobrar a diferença. Nunca uma segunda assinatura na conta.
+#     O cartão fica, e volta a ser cobrado se a cortesia sair.
+SUB=sub_…
+ITEM=si_…                     # stripe subscriptions retrieve "$SUB" → items.data[0].id
+stripe subscriptions update "$SUB" -d "items[0][id]=$ITEM" \
+  -d "items[0][price]=$PRECO_COMPLETO_MENSAL" \
+  -d "discounts[0][coupon]=CORTESIA" -d proration_behavior=none
+
+# 4. Tirar a cortesia: tirar o desconto. A próxima cobrança vai sem cartão, vira
+#    past_due, e ela tem FOLGA_COBRANCA_DIAS (7) para pôr um pelo portal.
+SUB=sub_…
+stripe subscriptions update "$SUB" -d "discounts="
+```
+
+- **Avisar antes de tirar é conversa**, não código.
+- **Pelo portal**, a cortesia troca de pacote e continua R$ 0,00: o cupom é da assinatura, e não
+  do preço.
+- **A conta livre continua livre no código** até migrar; `npm run metricas` mostra quais ainda
+  são.
+
 ---
 
 ## 3 · No console do Firebase, uma vez

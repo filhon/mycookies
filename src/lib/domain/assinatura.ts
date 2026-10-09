@@ -276,11 +276,34 @@ export function mensalDoPlano(
     : resumo.valor;
 }
 
-/** "Plano Essencial · R$ 39,90 por mês". */
+/** O que o resumo lê de cada cupom do Stripe: um dos dois vem preenchido. */
+export interface Cupom {
+  percent_off: number | null;
+  amount_off: Centavos | null;
+}
+
+/**
+ * O valor depois dos cupons, um depois do outro, nunca negativo (`#d314`):
+ * o `CORTESIA` (100%) dá zero.
+ */
+export function valorComDesconto(valor: Centavos, cupons: Cupom[]): Centavos {
+  return cupons.reduce(
+    (resto, cupom) =>
+      Math.max(
+        0,
+        Math.round(resto * (1 - (cupom.percent_off ?? 0) / 100)) -
+          (cupom.amount_off ?? 0),
+      ),
+    valor,
+  );
+}
+
+/** "Plano Essencial · R$ 39,90 por mês" · com valor zero, "Plano Completo · cortesia". */
 export function fraseDoPlano(
   pacote: Pacote,
   resumo: Pick<ResumoAssinatura, "valor" | "periodo">,
 ): string {
+  if (resumo.valor === 0) return `Plano ${NOME_DO_PACOTE[pacote]} · cortesia`;
   const por = resumo.periodo === "anual" ? "por ano" : "por mês";
   return `Plano ${NOME_DO_PACOTE[pacote]} · ${formatarMoeda(resumo.valor)} ${por}`;
 }

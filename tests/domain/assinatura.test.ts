@@ -20,6 +20,7 @@ import {
   sobraQuePagaOPlano,
   type Situacao,
   unidadesQuePagam,
+  valorComDesconto,
 } from "@/lib/domain/assinatura";
 
 const DIA_MS = 24 * 60 * 60 * 1000;
@@ -376,5 +377,37 @@ describe("mensalDoPlano (spec 086)", () => {
   it("o anual entra nas despesas dividido por 12", () => {
     expect(mensalDoPlano({ valor: 2900, periodo: "mensal" })).toBe(2900);
     expect(mensalDoPlano({ valor: 29000, periodo: "anual" })).toBe(2417);
+  });
+});
+
+describe("valorComDesconto (spec 111)", () => {
+  const percentual = (p: number) => ({ percent_off: p, amount_off: null });
+  const fixo = (centavos: number) => ({
+    percent_off: null,
+    amount_off: centavos,
+  });
+
+  it("sem cupom, o preço da tabela", () => {
+    expect(valorComDesconto(4990, [])).toBe(4990);
+  });
+
+  it("aplica o percentual, arredondado ao centavo", () => {
+    expect(valorComDesconto(4990, [percentual(50)])).toBe(2495);
+    expect(valorComDesconto(2900, [percentual(15)])).toBe(2465);
+    expect(valorComDesconto(4990, [percentual(100)])).toBe(0);
+  });
+
+  it("tira o valor fixo, e nunca fica negativo", () => {
+    expect(valorComDesconto(4990, [fixo(1000)])).toBe(3990);
+    expect(valorComDesconto(4990, [fixo(9999)])).toBe(0);
+  });
+
+  it("a cortesia lê como cortesia, e não entra nas despesas", () => {
+    const resumo = {
+      valor: valorComDesconto(4990, [percentual(100)]),
+      periodo: "mensal" as const,
+    };
+    expect(fraseDoPlano("COMPLETO", resumo)).toBe("Plano Completo · cortesia");
+    expect(mensalDoPlano(resumo)).toBe(0);
   });
 });

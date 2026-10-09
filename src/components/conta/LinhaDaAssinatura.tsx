@@ -115,7 +115,7 @@ export function LinhaDaAssinatura({
 
   const traz = oQueOCompletoTraz(pacote);
   const economia =
-    resumo?.periodo === "mensal" && precos
+    resumo?.periodo === "mensal" && resumo.valor > 0 && precos
       ? fraseDaEconomia(precos[pacote])
       : null;
 

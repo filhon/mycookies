@@ -96,12 +96,12 @@ Modo de teste, com `stripe listen`.
 
 ## Critérios de aceite
 
-- [ ] Código promocional no checkout, sem cartão quando o total é zero.
-- [ ] "Plano Completo · cortesia" no painel; a despesa fixa "Rende" não vem preenchida.
-- [ ] `valorComDesconto` com teste (percentual, valor fixo, piso zero).
-- [ ] Receitas de `DEPLOY.md` rodadas no modo de teste.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d314` escrito; `ESTADO.md`; linha em `novidades.ts` só se a MyCookie's migrar (o
+- [x] Código promocional no checkout, sem cartão quando o total é zero.
+- [x] "Plano Completo · cortesia" no painel; a despesa fixa "Rende" não vem preenchida.
+- [x] `valorComDesconto` com teste (percentual, valor fixo, piso zero).
+- [x] Receitas de `DEPLOY.md` rodadas no modo de teste.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d314` escrito; `ESTADO.md`; linha em `novidades.ts` só se a MyCookie's migrar (o
       painel da assinatura aparece para ela).
 
 ---

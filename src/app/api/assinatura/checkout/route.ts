@@ -58,6 +58,10 @@ export async function POST(requisicao: Request) {
     // Sem o pacote na metadata: quem decide é o produto (`#d169`), e duas
     // fontes discordariam no dia em que ela trocasse pelo portal.
     subscription_data: { metadata: { contaId, uid: quem.uid } },
+    // A cortesia (`#d314`): o código `BETA-…` zera o total, e com total zero
+    // o Stripe não pede cartão.
+    allow_promotion_codes: true,
+    payment_method_collection: "if_required",
     locale: "pt-BR",
     success_url: `${origem}/assinatura/confirmando`,
     cancel_url: `${origem}/assinatura`,
