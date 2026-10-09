@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-09",
+    titulo: "A ficha de cada cliente",
+    frase:
+      "Toque numa cliente: a alergia à vista, o que ela pede, o que deve, os pedidos dela e o novo pedido já com ela.",
+    href: "/clientes",
+  },
+  {
+    dataISO: "2026-10-09",
     titulo: "Pôr na lista o que a conta não pediu",
     frase:
       "“Levar também” acrescenta um material ou um pacote a mais, e refazer a lista não tira.",

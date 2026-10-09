@@ -8,9 +8,11 @@ import { CampoBusca } from "@/components/ui/CampoBusca";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { classesBotao } from "@/components/ui/estilosBotao";
+import { FichaDaCliente } from "./FichaDaCliente";
 import { LinhaCliente } from "./LinhaCliente";
 import { PainelCliente } from "./PainelCliente";
 import { ordenarPorGasto } from "@/lib/domain/clientes";
+import { dataISODe } from "@/lib/domain/datas";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { consultaClientes } from "@/lib/firebase/mutations/clientes";
 import { useColecao } from "@/lib/hooks/useColecao";
@@ -26,14 +28,20 @@ import { useContaId } from "@/providers/AuthProvider";
 export function ListaClientes() {
   const contaId = useContaId();
   const [busca, setBusca] = useState("");
+  const [hoje] = useState(() => dataISODe(new Date()));
   const [emEdicao, setEmEdicao] = useState<{
     aberto: boolean;
     cliente?: Cliente;
     chave: string;
   }>({ aberto: false, chave: "fechado" });
+  // Tocar lê (`#d308`). O id fica depois de fechar, para a folha descer com o
+  // conteúdo dentro; a cliente vem da lista, viva, e some se for arquivada.
+  const [lendoId, setLendoId] = useState<string | null>(null);
+  const [fichaAberta, setFichaAberta] = useState(false);
 
   const consulta = useMemo(() => consultaClientes(contaId), [contaId]);
   const { dados, carregando, erro, pendente } = useColecao<Cliente>(consulta);
+  const lendo = dados.find((cliente) => cliente.id === lendoId);
 
   const visiveis = useMemo(() => {
     const termo = chaveDeBusca(busca);
@@ -43,7 +51,14 @@ export function ListaClientes() {
     return ordenarPorGasto(filtradas);
   }, [dados, busca]);
 
+  function abrirFicha(cliente: Cliente) {
+    setLendoId(cliente.id);
+    setFichaAberta(true);
+  }
+
+  /** "Editar" troca a ficha pelo formulário; fechar o formulário volta a ela. */
   function abrirEdicao(cliente: Cliente) {
+    setFichaAberta(false);
     setEmEdicao({ aberto: true, cliente, chave: `${cliente.id}-${novoId()}` });
   }
 
@@ -109,12 +124,23 @@ export function ListaClientes() {
               <LinhaCliente
                 key={cliente.id}
                 cliente={cliente}
-                aoAbrir={abrirEdicao}
+                aoAbrir={abrirFicha}
               />
             ))}
           </ul>
         )}
       </div>
+
+      {lendo && (
+        <FichaDaCliente
+          key={lendo.id}
+          aberto={fichaAberta}
+          aoFechar={() => setFichaAberta(false)}
+          aoEditar={() => abrirEdicao(lendo)}
+          cliente={lendo}
+          hoje={hoje}
+        />
+      )}
 
       <PainelCliente
         aberto={emEdicao.aberto}
@@ -124,9 +150,11 @@ export function ListaClientes() {
         nomeSugerido={emEdicao.cliente?.nome ?? ""}
         podeArquivar
         aoSalvar={() => {}}
-        aoFechar={() =>
-          setEmEdicao((anterior) => ({ ...anterior, aberto: false }))
-        }
+        aoFechar={() => {
+          setEmEdicao((anterior) => ({ ...anterior, aberto: false }));
+          // Arquivada, ela sai de `dados` e a ficha não volta.
+          setFichaAberta(true);
+        }}
       />
     </>
   );

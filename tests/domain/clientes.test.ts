@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { ordenarPorGasto, resumoDaCliente } from "@/lib/domain/clientes";
+import {
+  instagramParaLink,
+  ordenarPorGasto,
+  resumoDaCliente,
+  temAlergia,
+} from "@/lib/domain/clientes";
 import { formatarMoeda } from "@/lib/domain/money";
 
 function cliente(parcial: {
@@ -62,5 +67,38 @@ describe("resumoDaCliente", () => {
     expect(resumoDaCliente({ totalPedidos: 2, ticketMedio: 4000 }, null)).toBe(
       `2 pedidos pagos · ${formatarMoeda(4000)} em média`,
     );
+  });
+});
+
+describe("temAlergia", () => {
+  it("acha a alergia sem acento e sem caixa", () => {
+    expect(temAlergia("Alérgica a amendoim")).toBe(true);
+    expect(temAlergia("ALERGIA a lactose")).toBe(true);
+    expect(temAlergia("filho alergico")).toBe(true);
+  });
+
+  it("não acha onde não há", () => {
+    expect(temAlergia("Gosta do laço vermelho")).toBe(false);
+    expect(temAlergia("")).toBe(false);
+    expect(temAlergia(undefined)).toBe(false);
+  });
+});
+
+describe("instagramParaLink", () => {
+  it("aceita o usuário com ou sem arroba, e o link colado", () => {
+    const link = "https://instagram.com/ana.doces";
+    expect(instagramParaLink("@ana.doces")).toBe(link);
+    expect(instagramParaLink(" ana.doces ")).toBe(link);
+    expect(instagramParaLink("https://www.instagram.com/ana.doces/")).toBe(
+      link,
+    );
+    expect(instagramParaLink("instagram.com/ana.doces?igsh=abc")).toBe(link);
+  });
+
+  it("sem usuário possível, nada", () => {
+    expect(instagramParaLink("")).toBeNull();
+    expect(instagramParaLink(undefined)).toBeNull();
+    expect(instagramParaLink("@")).toBeNull();
+    expect(instagramParaLink("Ana Doces")).toBeNull();
   });
 });

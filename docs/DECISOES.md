@@ -9417,3 +9417,52 @@ papel, e a lista do Rende deixava de ser **a** lista.
 
 **Consequência.** Tirar da conta um pacote (levar menos) continua sendo o "Não levar desta vez"
 (`#d304`), inteiro. A frase do total não diz quanto é dela; o rodapé soma tudo.
+
+## D308 · A ficha da cliente
+
+**Status:** vigente · decidida em 2026-10-09, spec `105-a-ficha-da-cliente.md`.
+
+**Contexto.** Tocar numa cliente abria "Editar cliente". Para saber o que ela pede eram três
+telas; a observação (a alergia) só aparecia dentro do formulário; não havia como falar com ela
+nem quanto ela deve.
+
+**Decisão.**
+
+- **Tocar lê.** `FichaDaCliente` no `Painel`, o desenho da `FichaDoPedido` (`#d249`). "Editar"
+  (secundário, `pencil`) no pé troca a ficha pelo `PainelCliente` de sempre, e fechar o
+  formulário volta à ficha; arquivada, ela sai da lista e a ficha não volta. "Novo pedido pra
+  ela" é o âmbar do pé.
+- **O cabeçalho é do documento** (nome, `resumoDaCliente`, observação, botões, endereço), na
+  hora e sem rede. Os blocos de pedido assinam `consultaPedidosDaCliente` sem teto (`#d252`):
+  esqueleto enquanto carrega **e** enquanto o que veio é do cache e vazio (o aparelho que nunca
+  abriu os pedidos dela não sabe que ela não tem), e frase em `--ink-muted` no erro, nunca
+  vermelho.
+- **A observação** numa faixa informativa; com "alerg" (`temAlergia`, por `chaveDeBusca`), de
+  atenção, com o triângulo e "Alergia." em negrito.
+- **Falar com ela**: WhatsApp (sem texto) e Ligar só com telefone discável, Instagram só com um
+  usuário possível (`instagramParaLink` aceita "@ana", "ana" e o link colado). O ícone do
+  Instagram é `at-sign`: nada de marca na interface.
+- **"Deve R$ …"** é `aReceber(...).totalEntregue` sobre os entregues não pagos dela, cada linha
+  com `faltaPagar`, do mais antigo para o mais novo. **"Cobrar no WhatsApp"** leva a
+  `mensagemDeCobranca` de um pedido só; com mais de um, o botão diz "Cobrar o mais antigo" e os
+  outros se cobram pela ficha de cada pedido. Uma mensagem que somasse vários pedidos seria
+  função nova, fora da spec.
+- **"Marcado"**: confirmado, em produção e pronto, pelo dia e a hora. Orçamento não é marcado.
+- **"O que ela pede"**: os três primeiros de `maisPedidos` sobre os pedidos dela sem os
+  cancelados, com as unidades somadas na tela e o nome do pedido mais recente; só com dois
+  pedidos ou mais.
+- **Abrir um pedido de dentro da ficha troca de folha, não empilha.** A ficha da cliente fecha e
+  a `FichaDoPedido` abre no mesmo lugar; fechar a do pedido devolve a da cliente. Os dois
+  `Painel` são o mesmo componente sempre montado, então a troca é só `aberto`, e o foco e a
+  trava de rolagem passam de um para o outro sem sobrar.
+- **"Ver os N pedidos" mostra o resto na própria ficha**, e não leva a `/pedidos?cliente=`. Em
+  `/pedidos` a cliente escolhida (`#d252`) é estado da tela com o objeto `Cliente` (nome para a
+  contagem), e lê-la da URL exigiria assinar o documento da cliente, além da leitura de
+  parâmetro que a spec admitia. A ficha mostra dez e o terciário abre os outros.
+- **`/pedidos/novo?cliente={id}`**: o `FormularioPedido` acha a cliente entre as que já
+  carregou e nasce vinculado, com o telefone dela; o "Repetir" (`#d276`) aparece sozinho. O
+  parâmetro sai da URL no mesmo efeito do `anotado` (`#d273`), antes da guarda, e recarregar não
+  vincula de novo. O vínculo nasce no estado inicial, então não conta como alteração.
+
+**Consequência.** O chevron da linha passa a dizer a verdade. Nenhum campo, regra, índice ou
+dependência.

@@ -329,23 +329,38 @@ export function FormularioPedido({
   configuracao: ConfiguracaoGeral | null;
   pendente: boolean;
 }) {
-  const [valores, setValores] = useState<ValoresPedido>(() =>
-    valoresIniciais(pedido, configuracao, hoje),
-  );
+  const parametros = useSearchParams();
+  const [valores, setValores] = useState<ValoresPedido>(() => {
+    const iniciais = valoresIniciais(pedido, configuracao, hoje);
+    // "Novo pedido pra ela" (`#d308`): nasce vinculada, como se ela a tivesse
+    // escolhido na busca, e o "Repetir" aparece sozinho.
+    const daFicha =
+      !pedido &&
+      clientes.find((cliente) => cliente.id === parametros.get("cliente"));
+    return daFicha
+      ? {
+          ...iniciais,
+          clienteId: daFicha.id,
+          clienteNome: daFicha.nome,
+          clienteTelefone: daFicha.telefone ?? "",
+        }
+      : iniciais;
+  });
   const [inicial] = useState(() => JSON.stringify(valores));
   const sujo = JSON.stringify(valores) !== inicial;
 
   // O pedido novo, salvo, abre aqui com `?anotado=1` (`#d273`). A faixa sai no
   // "Agora não", no "Mandar" e na primeira alteração, e o parâmetro com ela.
-  const parametros = useSearchParams();
   const [anotado, setAnotado] = useState(
     () => !!pedido && parametros.has("anotado"),
   );
   if (anotado && sujo) setAnotado(false);
   // Antes da guarda: a sentinela que ela arma copia a URL, e precisa copiá-la
-  // já sem o parâmetro. O `replaceState` nativo não remonta a tela.
+  // já sem o parâmetro. O `replaceState` nativo não remonta a tela. O
+  // `?cliente=` sai do mesmo jeito, lido uma vez (`#d308`).
   useEffect(() => {
-    if (anotado || !new URLSearchParams(location.search).has("anotado")) return;
+    const busca = new URLSearchParams(location.search);
+    if (anotado || !(busca.has("anotado") || busca.has("cliente"))) return;
     history.replaceState(history.state, "", location.pathname);
   }, [anotado]);
 
