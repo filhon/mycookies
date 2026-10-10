@@ -11,6 +11,14 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // A única exceção à regra de ouro (DECISOES.md#d319): o índice global dos
+    // endereços do cardápio, apelido → contaId. Trancado para todo cliente,
+    // com ou sem login; só o Admin SDK lê e escreve. A negação padrão acima já
+    // cobriria: está escrito para que ninguém ache que esqueceram.
+    match /apelidos/{apelido} {
+      allow read, write: if false;
+    }
+
     match /contas/{contaId} {
       // A claim `contas` é um mapa { contaId: papel }, emitida via Admin SDK
       // por /api/conta, /api/conta/membros, pelo webhook do Stripe e pelo script

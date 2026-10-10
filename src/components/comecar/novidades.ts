@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-10",
+    titulo: "Um endereço com o nome da sua loja",
+    frase:
+      "Em “Seu cardápio”, escolha o endereço do link, com o nome da sua loja. O link antigo e o QR code já impresso continuam levando ao seu cardápio.",
+    href: "/configuracao#a-sua-marca",
+  },
+  {
+    dataISO: "2026-10-10",
     titulo: "Agenda cheia sem fechar o cardápio",
     frase:
       "Em “Seu cardápio”, diga até quando a agenda está cheia e a cliente só escolhe depois disso. O topo do cardápio passa a dizer para quando dá, como você recebe e o seu recado.",

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  apelidoValido,
+  sugerirApelido,
   corDaLoja,
   entraNoCardapio,
   esquemaPedidoDoCardapio,
@@ -1635,5 +1637,45 @@ describe("maisPedidosDoCardapio", () => {
         agoraMs: AGORA,
       }),
     ).not.toHaveProperty("maisPedidos");
+  });
+});
+
+describe("o endereço da loja (#d319)", () => {
+  it("sugere do nome, sem acento nem apóstrofo", () => {
+    expect(sugerirApelido("MyCookie's")).toBe("mycookies");
+    expect(sugerirApelido("  Doces da Ná  ")).toBe("doces-da-na");
+    expect(sugerirApelido("Ateliê — Pão & Mel!")).toBe("atelie-pao-mel");
+    expect(sugerirApelido("a".repeat(40))).toHaveLength(30);
+    expect(sugerirApelido("x".repeat(29) + " y")).toBe("x".repeat(29));
+  });
+
+  it("aceita só a forma e recusa o reservado", () => {
+    for (const ok of [
+      "mycookies",
+      "doces-da-na",
+      "abc",
+      "a1-b2",
+      "x".repeat(30),
+    ]) {
+      expect(apelidoValido(ok)).toBe(true);
+    }
+    for (const nao of [
+      "ab",
+      "x".repeat(31),
+      "-doces",
+      "doces-",
+      "doces--na",
+      "Doces",
+      "doces_na",
+      "pão",
+      "doces na",
+      "login",
+      "api",
+      "c",
+      "rende",
+      "pedidos",
+    ]) {
+      expect(apelidoValido(nao)).toBe(false);
+    }
   });
 });

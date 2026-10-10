@@ -13,6 +13,7 @@ import { orderBy, query, where } from "firebase/firestore";
 import {
   Check,
   ChevronRight,
+  CloudOff,
   Copy,
   ExternalLink,
   QrCode,
@@ -36,6 +37,8 @@ import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { Painel } from "@/components/ui/Painel";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
+  apelidoValido,
+  APELIDOS_RESERVADOS,
   CAPA_LADO_PX,
   CAPA_MAX_BYTES,
   DIAS_A_FRENTE,
@@ -44,11 +47,14 @@ import {
   LIMITE_DO_CARDAPIO,
   LOGO_LADO_PX,
   LOGO_MAX_BYTES,
+  MENSAGEM_FALHA_APELIDO,
   porCategoria,
   precoVigente,
   primeiroDiaDoCardapio,
   problemaDaPromocao,
   RECADO_MAXIMO,
+  sugerirApelido,
+  type FalhaApelido,
 } from "@/lib/domain/cardapio";
 import { dataISODe, diaVizinho, rotuloDiaPorExtenso } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
@@ -59,13 +65,14 @@ import {
   salvarVitrine,
 } from "@/lib/firebase/mutations/configuracao";
 import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
+import { useConexao } from "@/lib/hooks/useDispositivo";
 import type {
   ConfiguracaoGeral,
   FichaTecnica,
   PromocaoDoCardapio,
   VitrineDoCardapio,
 } from "@/lib/types";
-import { useContaId } from "@/providers/AuthProvider";
+import { useAuth, useContaId } from "@/providers/AuthProvider";
 import { useLinkDoCardapio } from "./useLinkDoCardapio";
 
 /** O endereço da tela não muda enquanto ela está aberta. */
@@ -385,6 +392,8 @@ export function SeuCardapio({
                 )}
               </label>
             </div>
+
+            <EnderecoDoCardapio />
 
             {aberto && (
               <div className="space-y-3">
@@ -807,6 +816,117 @@ export function SeuCardapio({
         )}
       </Painel>
     </>
+  );
+}
+
+/**
+ * "Endereço do seu cardápio" (spec 116, `#d319`): o apelido em `/c/{apelido}`.
+ * Vai ao servidor, e não à fila: só ele confere se outra loja já o tem. O
+ * espelho `Conta.apelido` volta pelo documento da conta, e o link acima muda
+ * sozinho.
+ */
+function EnderecoDoCardapio() {
+  const contaId = useContaId();
+  const { conta, usuario } = useAuth();
+  const online = useConexao();
+  const host = useSyncExternalStore(
+    SEM_MUDANCA,
+    () => window.location.host,
+    () => "",
+  );
+  const atual = conta?.apelido;
+  // Montado com a conta carregada: a sugestão vem do nome na primeira vez.
+  const [texto, setTexto] = useState(
+    () => atual ?? sugerirApelido(conta?.nome ?? ""),
+  );
+  const [salvando, setSalvando] = useState(false);
+  const [falha, setFalha] = useState<FalhaApelido | null>(null);
+
+  const valido = apelidoValido(texto);
+  const erroDeForma =
+    texto === "" || valido
+      ? undefined
+      : APELIDOS_RESERVADOS.has(texto)
+        ? "Esse endereço é reservado. Escolha outro."
+        : MENSAGEM_FALHA_APELIDO["fora-de-forma"];
+  const salvo = texto === atual;
+
+  async function salvar() {
+    if (!usuario || !valido || salvo) return;
+    setFalha(null);
+    setSalvando(true);
+    try {
+      const resposta = await fetch("/api/cardapio/apelido", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${await usuario.getIdToken()}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ contaId, apelido: texto }),
+      });
+      if (!resposta.ok) {
+        const corpo = (await resposta.json().catch(() => ({}))) as {
+          erro?: string;
+        };
+        setFalha(
+          corpo.erro && corpo.erro in MENSAGEM_FALHA_APELIDO
+            ? (corpo.erro as FalhaApelido)
+            : "sem-resposta",
+        );
+      }
+    } catch {
+      setFalha("sem-resposta");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <Campo
+        rotulo="Endereço do seu cardápio"
+        dica={
+          <span translate="no" className="break-all">
+            {host}/c/<span className="font-medium text-ink">{texto}</span>
+          </span>
+        }
+        erro={
+          erroDeForma ?? (falha ? MENSAGEM_FALHA_APELIDO[falha] : undefined)
+        }
+        value={texto}
+        maxLength={30}
+        autoCapitalize="none"
+        autoCorrect="off"
+        autoComplete="off"
+        spellCheck={false}
+        onChange={(evento) => {
+          setFalha(null);
+          setTexto(evento.target.value.toLowerCase());
+        }}
+      />
+      <Botao
+        carregando={salvando}
+        disabled={!online || !valido || salvo}
+        onClick={() => void salvar()}
+        iconeInicial={
+          salvo ? (
+            <Check aria-hidden className="size-4" strokeWidth={2} />
+          ) : undefined
+        }
+      >
+        {salvo ? "Endereço salvo" : "Salvar endereço"}
+      </Botao>
+      {!online && !salvo && (
+        <p className="flex items-start gap-2 text-label text-ink-muted">
+          <CloudOff
+            aria-hidden
+            className="mt-0.5 size-4 shrink-0"
+            strokeWidth={1.75}
+          />
+          Precisa de internet para conferir se o endereço está livre.
+        </p>
+      )}
+    </div>
   );
 }
 

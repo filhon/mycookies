@@ -362,6 +362,92 @@ export function primeiroDiaDoCardapio(
 }
 
 // ---------------------------------------------------------------------------
+// O endereço da loja (spec 116, `#d319`)
+// ---------------------------------------------------------------------------
+
+/**
+ * O que nenhuma loja leva: as rotas de primeiro nível do app e da página de
+ * venda, e as palavras que pareceriam do Rende. O apelido mora sob `/c/` e
+ * não disputa rota; a lista evita o endereço que confunde.
+ */
+export const APELIDOS_RESERVADOS: ReadonlySet<string> = new Set([
+  "api",
+  "c",
+  "conheca",
+  "login",
+  "cadastro",
+  "rende",
+  "admin",
+  "ajuda",
+  "termos",
+  "privacidade",
+  "assinatura",
+  "redefinir-senha",
+  "offline",
+  "previa",
+  "comecar",
+  "compras",
+  "fichas",
+  "financeiro",
+  "insumos",
+  "pedidos",
+  "clientes",
+  "configuracao",
+  "email",
+  "icons",
+  "manifest",
+  "robots",
+  "sitemap",
+  "llms",
+  "sw",
+  "icon",
+  "apple-icon",
+  "como-calcular-o-preco-de-doces",
+]);
+
+/** 3 a 30, `a-z`, `0-9` e hífen, sem hífen nas pontas nem dois seguidos. */
+const FORMA_DO_APELIDO = /^(?=.{3,30}$)[a-z0-9]+(-[a-z0-9]+)*$/;
+
+export function apelidoValido(apelido: string): boolean {
+  return FORMA_DO_APELIDO.test(apelido) && !APELIDOS_RESERVADOS.has(apelido);
+}
+
+export const esquemaApelido = z.object({
+  contaId: z.string().trim().min(1),
+  apelido: z.string().trim().refine(apelidoValido),
+});
+
+export type FalhaApelido =
+  | "sem-acesso" // token ausente, inválido, ou quem chama não é dona
+  | "fora-de-forma" // apelido que não passa em `apelidoValido`
+  | "ocupado" // já é de outra conta, ou é o `contaId` de outra
+  | "sem-configuracao"
+  | "sem-resposta";
+
+export const MENSAGEM_FALHA_APELIDO: Record<FalhaApelido, string> = {
+  "sem-acesso":
+    "Não deu para confirmar quem você é. Saia, entre de novo e tente outra vez.",
+  "fora-de-forma":
+    "Use de 3 a 30 letras sem acento, números ou hífen, sem hífen no começo nem no fim.",
+  ocupado: "Esse endereço já é de outra loja.",
+  "sem-configuracao":
+    "Isso ainda não está configurado neste servidor. Avise quem cuida do Rende.",
+  "sem-resposta": "Não deu para salvar agora. Tente de novo em instantes.",
+};
+
+/** "MyCookie's" → `mycookies`; "Doces da Ná" → `doces-da-na`. Pode sair inválido (curto, reservado): o campo avisa. */
+export function sugerirApelido(nome: string): string {
+  return nome
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .slice(0, 30)
+    .replace(/^-+|-+$/g, "");
+}
+
+// ---------------------------------------------------------------------------
 // Os mais pedidos (spec 113, `#d316`)
 // ---------------------------------------------------------------------------
 

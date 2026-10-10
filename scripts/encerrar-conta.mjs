@@ -10,6 +10,9 @@
  * guarda que importa, e é a que torna impossível apagar `contas/mycookies`
  * por engano: uma conta viva não tem esse valor, e nenhum script o escreve.
  *
+ * Apaga também os `apelidos/{apelido}` da conta, inclusive os arquivados: o
+ * endereço do cardápio volta a ficar livre (spec 116, `DECISOES.md#d319`).
+ *
  * Não toca no Stripe: a assinatura já foi cancelada no toque de
  * `/api/conta/encerrar`, e o `Customer` fica lá — é registro fiscal deles.
  */
@@ -89,6 +92,17 @@ try {
     console.log(`  ${colecao.id}: ${contagem}`);
   }
 
+  // Igualdade em campo único: o índice automático basta.
+  const apelidos = await db
+    .collection("apelidos")
+    .where("contaId", "==", contaId)
+    .get();
+  console.log(
+    apelidos.empty
+      ? "Endereços do cardápio: nenhum."
+      : `Endereços do cardápio: ${apelidos.docs.map((d) => d.id).join(", ")}`,
+  );
+
   const logins = await loginsComAConta(contaId);
   if (logins.length === 0) {
     console.log(
@@ -112,6 +126,9 @@ try {
 
   await db.recursiveDelete(referencia);
   console.log(`Documento e subcoleções de "${contaId}" apagados.`);
+
+  for (const apelido of apelidos.docs) await apelido.ref.delete();
+  if (!apelidos.empty) console.log("Endereços do cardápio liberados.");
 
   for (const usuario of logins) {
     const contas = { ...(usuario.customClaims?.contas ?? {}) };

@@ -1178,7 +1178,7 @@ logado no Rende e de rede. Aparelho em 360 px nos passos 3, 5 e 7.
   folga e antecedência como regra fixa continuam fora.)
 - **Venda por peso na página** (`#d159`). Quantidade fracionária com preço por quilo. O combo à
   escolha, que a A deixava fora com ela, entra na sessão C.
-- **Endereço bonito** (`/c/mycookies` para toda conta). Índice global fora de `contas/` (`#d158`).
+- **Endereço bonito** (`/c/mycookies` para toda conta). Índice global fora de `contas/` (`#d158`). (A spec 116, `DECISOES.md#d319`, trouxe o apelido em `/c/{apelido}`.)
 - **A cliente acompanhando o pedido** (link de status, "sua encomenda está pronta"). Exige
   identificar a cliente sem login, e o WhatsApp já é o canal.
 - **Aviso para a dona** por push, e-mail ou notificação. O aviso é a cliente, pelo WhatsApp

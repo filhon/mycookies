@@ -30,6 +30,11 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
  * últimos meses, só para a ordem dos mais pedidos (`#d316`), e só devolvem o que
  * `montarCardapio` deixa passar (`DECISOES.md#d158`).
  *
+ * **`/api/cardapio/apelido`** (spec 116, `DECISOES.md#d319`) escreve, com o
+ * token da dona, só em `apelidos/{apelido}` (a coleção na raiz que nenhum
+ * cliente lê) e no campo `apelido` do documento da conta, numa transação. A
+ * página do cardápio lê `apelidos/{endereco}` para achar a conta.
+ *
  * **Sem login, escreve** `/api/cardapio/pedido` (spec 031, `#d160`): só em
  * `pedidos`, e só um documento novo por chamada; nunca atualiza, e só lê o que
  * a página lê. Um segundo `set` ali muda a fronteira de confiança do sistema.

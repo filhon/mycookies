@@ -33,7 +33,9 @@ export function useLinkDoCardapio() {
     return () => clearTimeout(relogio);
   }, [copiado]);
 
-  const endereco = `${origem}/c/${contaId}`;
+  // O apelido, quando ela escolheu um (spec 116, `#d319`); o id continua
+  // valendo, e redireciona.
+  const endereco = `${origem}/c/${conta?.apelido ?? contaId}`;
 
   async function copiar() {
     try {

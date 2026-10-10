@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { cache } from "react";
 import { AtSign, CalendarDays, MessageCircle, Wallet } from "lucide-react";
 import { MandarOCardapio } from "@/components/cardapio/MandarOCardapio";
@@ -43,14 +43,16 @@ export function generateStaticParams() {
 const cardapioDa = cache(lerCardapio);
 
 interface Props {
+  /** O segmento chama `contaId` desde a 031, mas é o endereço: o apelido ou o id (`#d319`). */
   params: Promise<{ contaId: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { contaId } = await params;
-  const cardapio = await cardapioDa(contaId);
+  const { contaId: endereco } = await params;
+  const lido = await cardapioDa(endereco);
   // Fechado: nem o nome do Rende na aba, que a cliente dela não conhece.
-  if (!cardapio) return { title: { absolute: "Cardápio" } };
+  if (!lido) return { title: { absolute: "Cardápio" } };
+  const { contaId, cardapio } = lido;
   const { negocio } = cardapio;
   const description = negocio.frase ?? "Cardápio e pedidos";
   // A prévia do link no WhatsApp e no Instagram (spec 114, `#d317`): a capa
@@ -86,9 +88,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function PaginaCardapio({ params }: Props) {
-  const { contaId } = await params;
-  const cardapio = await cardapioDa(contaId);
-  if (!cardapio) notFound();
+  const { contaId: endereco } = await params;
+  const lido = await cardapioDa(endereco);
+  if (!lido) notFound();
+  // O endereço velho (o id, ou um apelido arquivado) leva ao atual, em 308: o
+  // QR impresso e a bio antiga não quebram (spec 116, `#d319`).
+  if (lido.apelido && lido.apelido !== endereco) {
+    permanentRedirect(`/c/${lido.apelido}`);
+  }
+  const { contaId, cardapio } = lido;
   const { negocio } = cardapio;
   // Amanhã em Brasília, no servidor: o relógio do celular da cliente não
   // decide o mínimo. Guardado com a página por até 60 s. O primeiro dia é a

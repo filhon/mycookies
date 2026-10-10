@@ -4992,7 +4992,7 @@ de não encontrado. O id da URL passa por `/^[A-Za-z0-9_-]{1,64}$/` antes de vir
 
 **Consequência.** A página depende do servidor e da credencial (`FIREBASE_SERVICE_ACCOUNT`); sem
 ela, não encontrado. O preço novo aparece em até um minuto. O link é o `contaId`: um endereço
-bonito exigiria um índice global fora de `contas/`, que a regra de ouro proíbe. Na primeira
+bonito exigiria um índice global fora de `contas/`, que a regra de ouro proíbe. (**Revertido no ponto do link pelo `#d319`**: o apelido em `/c/{apelido}`, com o índice trancado.) Na primeira
 renderização a frio, o não encontrado saiu com status 200 (o conteúdo certo, `noindex`); depois
 da revalidação o cache serve 404. Não vale conserto: quem abre vê a mesma página.
 
@@ -9978,3 +9978,57 @@ passava a parecer quebrado.
 pontos: os tipos das formas ativas (em texto), o recado e o primeiro dia. Horário de
 funcionamento, dia fixo de folga, taxa por bairro, pedido mínimo cobrado e a pausa com o
 cardápio aberto ficaram fora.
+
+## D319 · O endereço da loja
+
+**Status:** vigente · decidida em 2026-10-10, spec `116-o-endereco-da-loja.md`. **Reverte o
+`#d158` no ponto do link** ("o link é o `contaId`") e abre a única exceção ao invariante "todo
+dado mora em `contas/{contaId}/…`" do `CLAUDE.md`. As quatro aprovações da spec (dado fora de
+`contas/`, a regra nova, `Conta.apelido?` e a purga do apelido) tomadas como dadas pelo pedido de
+implementá-la, como na 113 e na 115.
+
+**Contexto.** O link de toda conta depois da MyCookie's era `/c/` mais 32 caracteres de UUID:
+na bio, parece golpe; ditado ou impresso, não funciona. Achar a conta pelo nome exige um índice
+global, e índice global é dado fora de `contas/`.
+
+**Decisão.**
+
+- **`apelidos/{apelido}`** na raiz: `{ contaId, criadoEm, arquivado, v }`. `firestore.rules` ganha
+  `match /apelidos/{apelido} { allow read, write: if false; }` explícito, acima da regra da
+  conta: a negação padrão já cobriria, e o bloco existe para dizer que é de propósito. Só o Admin
+  SDK toca nela.
+- **`Conta.apelido?`**, o espelho que o painel lê pelo documento da conta que já assina; o link
+  (`useLinkDoCardapio`), o "Copiar", o "Compartilhar" e o QR passam a usá-lo. Quem escreve é a
+  rota. A regra ainda deixa a dona escrever o próprio documento: um `apelido` falso ali só
+  redirecionaria o link dela mesma, e não toca o índice; não vale um `soDoServidor` por campo.
+- **O formato** (`apelidoValido`, `sugerirApelido`, `APELIDOS_RESERVADOS` em
+  `domain/cardapio.ts`, com teste): 3 a 30, `a-z0-9` e hífen, sem hífen nas pontas nem dois
+  seguidos. Reservados: os da spec e as rotas de primeiro nível do build (as de `(app)`,
+  `(auth)`, `offline`, `previa`, `comecar`, os arquivos de metadado). A sugestão tira acento e
+  apóstrofo e corta em 30; pode sair inválida (nome curto), e o campo avisa.
+- **`POST /api/cardapio/apelido`**, no molde de `/api/conta/membros`: token, `ehDona`, numa
+  transação do Admin SDK (servidor, não o aparelho: o `runTransaction` proibido é o offline).
+  Livre ou já desta conta → grava o novo (retomar um arquivado desta conta só o desarquiva),
+  arquiva o anterior **sem apagar** e grava `Conta.apelido`. `ocupado` (409) quando é de outra
+  conta **ou quando é o `contaId` de outra conta**: a página tenta o apelido antes do id, e um
+  apelido igual ao id de outra loja roubaria o link antigo dela. O que a spec não previu.
+- **Resolver**: `lerCardapio(endereco)` lê `apelidos/{endereco}` (arquivado ou não); sem ele, o
+  endereço é o `contaId`. Devolve o `contaId`, o apelido atual e o cardápio. A página faz
+  `permanentRedirect` (308) para `/c/{apelido}` sempre que há apelido e o endereço não é ele: o
+  `contaId`, ou um apelido arquivado. Cardápio fechado dá o não encontrado antes do redirecionar,
+  como os outros "não está aberto". A foto, a vitrine e o pedido continuam pelo `contaId`, que a
+  página passa a eles. O segmento da rota continua `[contaId]`: renomear moveria a foto e a
+  vitrine sem ganho.
+- **O painel**: "Endereço do seu cardápio" no topo de "Seu cardápio", antes do link, visível com
+  o cardápio aberto ou fechado. O prefixo (`location.host` + `/c/`) vai na linha de dica com o
+  apelido ao vivo, e não dentro do campo: o prefixo absoluto do `Campo` não cabe um domínio a
+  360 px. O texto vira minúsculo ao digitar; o resto (acento, espaço, reservado) é erro na hora,
+  e o botão fica desabilitado. Sem rede, desabilitado com `CloudOff` e "Precisa de internet para
+  conferir se o endereço está livre."; é a única escrita do cardápio que não vai para a fila.
+  Gravado, o botão diz "Endereço salvo".
+- **A purga** apaga os `apelidos` com o `contaId` encerrado, inclusive os arquivados (o ensaio
+  os lista), depois do `recursiveDelete`. Segunda exceção dentro da mesma purga do `#d148`.
+
+**Consequência.** Uma leitura a mais por renderização do cardápio (o `revalidate` de 60 s a
+segura). Um apelido arquivado nunca volta a ficar livre enquanto a conta existe. Endereço na raiz,
+domínio próprio e apelido para a folha do orçamento ficaram fora.

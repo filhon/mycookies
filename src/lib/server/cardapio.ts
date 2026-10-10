@@ -42,8 +42,30 @@ import { adminDb, credencialDisponivel } from "./firebaseAdmin";
  */
 const ID = /^[A-Za-z0-9_-]{1,64}$/;
 
-/** O cardápio pronto para a página, ou `null` para qualquer "não está aberto". */
-export async function lerCardapio(contaId: string): Promise<Cardapio | null> {
+/**
+ * O que vem em `/c/{endereco}` vira `contaId` (spec 116, `#d319`):
+ * `apelidos/{endereco}` primeiro, arquivado ou não; sem ele, o endereço é o
+ * próprio `contaId`, como antes da 116. Uma leitura a mais por página, que o
+ * `revalidate` segura. O apelido é só a porta: o resto continua pelo id.
+ */
+async function contaDoEndereco(endereco: string): Promise<string | null> {
+  if (!credencialDisponivel() || !ID.test(endereco)) return null;
+  const snap = await adminDb().doc(caminhos.apelido(endereco)).get();
+  return (snap.get("contaId") as string | undefined) ?? endereco;
+}
+
+/**
+ * O cardápio pronto para a página, com o `contaId` que as rotas da foto, da
+ * vitrine e do pedido usam e o apelido atual, para a página redirecionar o
+ * endereço velho. `null` para qualquer "não está aberto".
+ */
+export async function lerCardapio(endereco: string): Promise<{
+  contaId: string;
+  apelido?: string;
+  cardapio: Cardapio;
+} | null> {
+  const contaId = await contaDoEndereco(endereco);
+  if (!contaId) return null;
   const lido = await lerContaDoCardapio(contaId);
   if (!lido) return null;
   // A vitrine é lida aqui e não em `lerContaDoCardapio`: o pedido não precisa
@@ -54,13 +76,14 @@ export async function lerCardapio(contaId: string): Promise<Cardapio | null> {
     lerVitrine(contaId),
     lerVendidos(contaId, hojeISO),
   ]);
-  return montarCardapio({
+  const cardapio = montarCardapio({
     ...lido,
     restam,
     vitrine,
     vendidos,
     agoraMs: Date.now(),
   });
+  return cardapio && { contaId, apelido: lido.conta.apelido, cardapio };
 }
 
 /**

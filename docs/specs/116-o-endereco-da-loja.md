@@ -102,11 +102,11 @@ conta encerrada.
 
 ## Critérios de aceite
 
-- [ ] As quatro aprovações registradas antes do código.
-- [ ] `apelidos/` trancada para o cliente; só o Admin SDK escreve, numa transação.
-- [ ] `/c/{apelido}` abre; `contaId` e apelido antigo redirecionam ao atual.
-- [ ] O antigo nunca é apagado nem reaproveitado por outra conta; a purga o libera.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `#d319` escrito; `CLAUDE.md` (o invariante
+- [x] As quatro aprovações registradas antes do código.
+- [x] `apelidos/` trancada para o cliente; só o Admin SDK escreve, numa transação.
+- [x] `/c/{apelido}` abre; `contaId` e apelido antigo redirecionam ao atual.
+- [x] O antigo nunca é apagado nem reaproveitado por outra conta; a purga o libera.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `#d319` escrito; `CLAUDE.md` (o invariante
       ganha a exceção, como a purga ganhou) e `ESTADO.md` atualizados.
 
 ---

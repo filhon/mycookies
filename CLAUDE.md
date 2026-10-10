@@ -71,6 +71,8 @@ Quebrar qualquer um destes é regressão, não escolha de estilo.
   encerrada por `scripts/encerrar-conta.mjs`, `DECISOES.md#d148`.
 - **Todo dado mora em `contas/{contaId}/…`, nunca sob o login.** `uid` diz quem entrou,
   `contaId` diz de quem é o dado. O mapa `caminhos` é o único lugar que conhece o formato.
+  A única exceção é `apelidos/{apelido}`, o índice dos endereços do cardápio, trancado para
+  todo cliente e escrito só por `/api/cardapio/apelido`, `DECISOES.md#d319`.
 - **Toda escrita grava `v: VERSAO_SCHEMA`.** Sem isso a forma de um documento se adivinha
   pela presença de campos.
 - **Alvo de toque mínimo de 44×44px**, ação primária no celular com 52px.

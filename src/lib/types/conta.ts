@@ -83,6 +83,24 @@ export interface Conta {
    * conta.
    */
   avisosPorEmail?: boolean;
+  /**
+   * O endereço do cardápio, `/c/{apelido}` (spec 116, `DECISOES.md#d319`). Espelho
+   * de `apelidos/{apelido}` para o painel mostrar, escrito por
+   * `/api/cardapio/apelido` e por mais ninguém. Ausente = `/c/{contaId}`.
+   */
+  apelido?: string;
+  v: VersaoSchema;
+}
+
+/**
+ * `apelidos/{apelido}`, na raiz: a única coleção fora de `contas/` (`#d319`).
+ * Nenhum cliente lê nem escreve; só o Admin SDK. O id é o apelido. Arquivado =
+ * um endereço antigo, que ainda leva à loja e que nenhuma outra conta pega.
+ */
+export interface ApelidoDoCardapio {
+  contaId: string;
+  criadoEm: Timestamp;
+  arquivado: boolean;
   v: VersaoSchema;
 }
 
