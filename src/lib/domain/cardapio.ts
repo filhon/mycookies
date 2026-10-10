@@ -87,6 +87,8 @@ export interface OpcaoDoCombo {
   preco?: Centavos;
   /** Como em `ProdutoDoCardapio.restam`. */
   restam?: number;
+  /** Só quando a opção está na página e tem foto: a rota da foto só serve as da lista (`#d315`). */
+  fotoVersao?: number;
 }
 
 export interface Cardapio {
@@ -297,6 +299,20 @@ export function seloDaPromocao(
     : `${quanto} até ${rotuloDiaPorExtenso(promocaoAteISO)}`;
 }
 
+/** "Escolha 4 · Cookie", ou "Escolha 2 · Cookie + 1 · Brownie" (`#d315`). */
+export function escolhasEmTexto(
+  escolhas: { quantidade: number; categoria: string }[],
+): string {
+  return `Escolha ${escolhas.map((e) => `${e.quantidade} · ${e.categoria}`).join(" + ")}`;
+}
+
+/** O `?v=` da foto, quando a ficha tem uma que a rota serve. */
+function fotoDa(ficha: FichaTecnica): { fotoVersao?: number } {
+  return tipoDaFoto(ficha.fotoUrl)
+    ? { fotoVersao: ficha.atualizadoEm?.toMillis() ?? 0 }
+    : {};
+}
+
 function produtoDoCardapio(
   ficha: FichaTecnica,
   vigente: PrecoVigente,
@@ -311,9 +327,7 @@ function produtoDoCardapio(
     categoria: ficha.categoria,
     preco: vigente.preco,
     unidade: UNIDADE[ficha.unidadeRendimento]!,
-    ...(tipoDaFoto(ficha.fotoUrl)
-      ? { fotoVersao: ficha.atualizadoEm?.toMillis() ?? 0 }
-      : {}),
+    ...fotoDa(ficha),
     ...(sobra !== undefined ? { restam: sobra } : {}),
     ...(vigente.cheio !== undefined
       ? { precoCheio: vigente.cheio, promocaoAteISO: vigente.ateISO }
@@ -360,6 +374,7 @@ function comboDoCardapio(
     quantidade: escolha.quantidade,
     opcoes: opcoesVivas(escolha, opcoes, ficha.id)
       .map((opcao): OpcaoDoCombo => {
+        const naLista = naPagina.has(opcao.id);
         const preco = comPreco ? naPagina.get(opcao.id)?.preco : undefined;
         const sobra = restam.get(opcao.id);
         return {
@@ -367,6 +382,8 @@ function comboDoCardapio(
           nome: opcao.nome,
           ...(preco !== undefined ? { preco } : {}),
           ...(sobra !== undefined ? { restam: sobra } : {}),
+          // Fora da lista, a rota da foto daria 404 (`#d315`).
+          ...(naLista ? fotoDa(opcao) : {}),
         };
       })
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),

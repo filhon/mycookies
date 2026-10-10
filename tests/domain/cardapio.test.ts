@@ -7,6 +7,7 @@ import {
   mensagemDeContato,
   montarCardapio,
   economiaDoCombo,
+  escolhasEmTexto,
   limitadasComContagem,
   passaDoQueResta,
   pedidoDoCardapio,
@@ -457,7 +458,9 @@ describe("montarCardapio", () => {
           ]);
           for (const opcao of escolha.opcoes) {
             for (const chave of Object.keys(opcao)) {
-              expect(["id", "nome", "preco", "restam"]).toContain(chave);
+              expect(["id", "nome", "preco", "restam", "fotoVersao"]).toContain(
+                chave,
+              );
             }
           }
         }
@@ -468,6 +471,11 @@ describe("montarCardapio", () => {
     expect(produtos.some((p) => p.avulso)).toBe(true);
     expect(produtos.some((p) => p.escolhas && p.economiaMinima)).toBe(true);
     expect(produtos.some((p) => p.restam === 8)).toBe(true);
+    expect(
+      produtos.some((p) =>
+        p.escolhas?.some((e) => e.opcoes.some((o) => o.fotoVersao)),
+      ),
+    ).toBe(true);
     expect(produtos.some((p) => p.precoCheio && p.promocaoAteISO)).toBe(true);
     expect(Object.keys(cardapio!).sort()).toEqual(["negocio", "secoes"]);
     for (const chave of Object.keys(cardapio!.negocio)) {
@@ -793,8 +801,18 @@ describe("montarCardapio com combos", () => {
         categoria: "Cookie",
         quantidade: 2,
         opcoes: [
-          { id: "redvelvet", nome: "Cookie Red Velvet", preco: 1300 },
-          { id: "tradicional", nome: "Cookie Tradicional", preco: 1000 },
+          {
+            id: "redvelvet",
+            nome: "Cookie Red Velvet",
+            preco: 1300,
+            fotoVersao: 1_700_000_000_000,
+          },
+          {
+            id: "tradicional",
+            nome: "Cookie Tradicional",
+            preco: 1000,
+            fotoVersao: 1_700_000_000_000,
+          },
         ],
       },
     ]);
@@ -815,6 +833,18 @@ describe("montarCardapio com combos", () => {
     ).toBe(700);
   });
 
+  it("escolhasEmTexto: uma escolha e duas", () => {
+    expect(escolhasEmTexto([{ quantidade: 4, categoria: "Cookie" }])).toBe(
+      "Escolha 4 · Cookie",
+    );
+    expect(
+      escolhasEmTexto([
+        { quantidade: 2, categoria: "Cookie" },
+        { quantidade: 1, categoria: "Brownie" },
+      ]),
+    ).toBe("Escolha 2 · Cookie + 1 · Brownie");
+  });
+
   it("opção fora da lista entra no combo, sem preço e sem economia", () => {
     const dupla = produtoDe(
       montarComCombos(undefined, ["tradicional", "dupla"]),
@@ -825,6 +855,9 @@ describe("montarCardapio com combos", () => {
       "tradicional",
     ]);
     expect(dupla.escolhas![0]!.opcoes[0]).not.toHaveProperty("preco");
+    // A rota da foto só serve as da lista (`#d315`): fora dela, sem foto.
+    expect(dupla.escolhas![0]!.opcoes[0]).not.toHaveProperty("fotoVersao");
+    expect(dupla.escolhas![0]!.opcoes[1]!.fotoVersao).toBe(1_700_000_000_000);
     expect(
       economiaDoCombo(dupla, [
         { fichaId: "tradicional", quantidade: 1 },

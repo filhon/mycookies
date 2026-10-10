@@ -19,6 +19,7 @@ import { estiloDaLoja } from "./estiloDaLoja";
 import {
   DIAS_A_FRENTE,
   economiaDoCombo,
+  escolhasEmTexto,
   MENSAGEM_FALHA_PEDIDO_CARDAPIO,
   mensagemDeAviso,
   mensagemDeContato,
@@ -31,6 +32,7 @@ import {
 } from "@/lib/domain/cardapio";
 import { dataDeISO, diaVizinho } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
+import { FOTO_LADO_PX } from "@/lib/domain/orcamento";
 import { nomeComEscolhas, subtotalDoItem } from "@/lib/domain/pedido";
 import { linkDoWhatsApp, telefoneParaWhatsApp } from "@/lib/domain/whatsapp";
 import { useDesktop } from "@/lib/hooks/useDispositivo";
@@ -153,6 +155,7 @@ export function PedidoPeloCardapio({
   const [carrinho, setCarrinho] = useState<Linha[]>([]);
   const [aberto, setAberto] = useState(false);
   const [montando, setMontando] = useState<ProdutoDoCardapio | null>(null);
+  const [vendo, setVendo] = useState<ProdutoDoCardapio | null>(null);
 
   // O formulário só existe no cliente (folha ou pedido ao lado, com carrinho):
   // ler o armazenamento aqui não desencontra a hidratação.
@@ -214,11 +217,12 @@ export function PedidoPeloCardapio({
       ? Infinity
       : restam - (levados.get(fichaId) ?? 0);
   };
-  /** Mais uma unidade desta linha ainda cabe no que resta? */
-  const cabeMaisUm = (linha: LinhaSemQuantidade) =>
+  /** Mais `mais` unidades desta linha ainda cabem no que resta? */
+  const cabe = (linha: LinhaSemQuantidade, mais: number) =>
     [...unidadesPorFicha([comoItem({ ...linha, quantidade: 1 })], [])].every(
-      ([fichaId, leva]) => leva <= livre(fichaId),
+      ([fichaId, leva]) => leva * mais <= livre(fichaId),
     );
+  const cabeMaisUm = (linha: LinhaSemQuantidade) => cabe(linha, 1);
 
   function mudar(linha: LinhaSemQuantidade, passo: number) {
     const atual = quantidadeDe(linha.chave);
@@ -702,6 +706,13 @@ export function PedidoPeloCardapio({
                           ? setMontando(produto)
                           : mudar({ chave: produto.id, produto }, passo)
                       }
+                      // O combo à escolha já abre o "Monte a sua", que tem a
+                      // foto e a descrição: uma ficha antes seria um passo a mais.
+                      aoAbrir={() =>
+                        produto.escolhas
+                          ? setMontando(produto)
+                          : setVendo(produto)
+                      }
                     />
                   ))}
                 </ul>
@@ -780,7 +791,32 @@ export function PedidoPeloCardapio({
         {!desktop && <NaCor cor={negocio.cor}>{corpo}</NaCor>}
       </Painel>
 
+      <FichaNaVitrine
+        contaId={contaId}
+        cor={negocio.cor}
+        hoje={diaVizinho(amanha, -1)}
+        produto={vendo}
+        atual={vendo ? quantidadeDe(vendo.id) : 0}
+        cabe={(quantidade) =>
+          vendo !== null &&
+          cabe(
+            { chave: vendo.id, produto: vendo },
+            quantidade - quantidadeDe(vendo.id),
+          )
+        }
+        aoFechar={() => setVendo(null)}
+        aoPor={(quantidade) => {
+          const produto = vendo!;
+          mudar(
+            { chave: produto.id, produto },
+            quantidade - quantidadeDe(produto.id),
+          );
+          setVendo(null);
+        }}
+      />
+
       <MonteOCombo
+        contaId={contaId}
         cor={negocio.cor}
         produto={montando}
         livre={livre}
@@ -871,12 +907,14 @@ function NaCor({
  * texto e a economia da combinação escolhida, quando a página sabe a conta.
  */
 function MonteOCombo({
+  contaId,
   cor,
   produto,
   livre,
   aoFechar,
   aoPor,
 }: {
+  contaId: string;
   cor: CorDaLoja | undefined;
   produto: ProdutoDoCardapio | null;
   /** Quantas desta receita o carrinho ainda pode levar; `Infinity` sem limite. */
@@ -938,6 +976,18 @@ function MonteOCombo({
       }
     >
       <div className="space-y-8">
+        {produto && (produto.fotoVersao !== undefined || produto.descricao) && (
+          <div className="space-y-4">
+            {produto.fotoVersao !== undefined && (
+              <FotoGrande
+                contaId={contaId}
+                id={produto.id}
+                versao={produto.fotoVersao}
+              />
+            )}
+            {produto.descricao && <Descricao texto={produto.descricao} />}
+          </div>
+        )}
         {escolhas.map((escolha, i) => (
           <fieldset key={escolha.categoria}>
             <legend className="text-label font-semibold uppercase tracking-[0.08em] text-ink-muted">
@@ -965,6 +1015,22 @@ function MonteOCombo({
                 const escolhidas = sabores[opcao.id] ?? 0;
                 return (
                   <li key={opcao.id} className="flex items-center gap-3 py-3">
+                    {opcao.fotoVersao !== undefined && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={urlDaFoto(contaId, opcao.id, opcao.fotoVersao)}
+                        // O nome está ao lado.
+                        alt=""
+                        width={48}
+                        height={48}
+                        loading="lazy"
+                        decoding="async"
+                        className={cn(
+                          "size-12 shrink-0 rounded-md bg-sunken object-cover",
+                          opcao.restam === 0 && "opacity-45",
+                        )}
+                      />
+                    )}
                     <p
                       className={cn(
                         "min-w-0 flex-1 wrap-break-word text-body font-medium",
@@ -1016,10 +1082,262 @@ async function falhaDa(resposta: Response): Promise<FalhaPedidoCardapio> {
   return resposta.status === 400 ? "fora-de-forma" : "sem-resposta";
 }
 
+/** A rota da foto (`#d162`): a página nunca leva a foto dentro. */
+function urlDaFoto(contaId: string, fichaId: string, versao: number): string {
+  return `/c/${encodeURIComponent(contaId)}/foto/${encodeURIComponent(fichaId)}?v=${versao}`;
+}
+
+/** A foto da ficha e do "Monte a sua": quadrada, no lado que a foto gravada tem. */
+function FotoGrande({
+  contaId,
+  id,
+  versao,
+}: {
+  contaId: string;
+  id: string;
+  versao: number;
+}) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={urlDaFoto(contaId, id, versao)}
+      // O nome é o título do painel.
+      alt=""
+      width={FOTO_LADO_PX}
+      height={FOTO_LADO_PX}
+      decoding="async"
+      className="mx-auto aspect-square w-full max-w-80 rounded-lg bg-sunken object-cover"
+    />
+  );
+}
+
+/** A descrição inteira, com as quebras de linha que ela escreveu. */
+function Descricao({ texto }: { texto: string }) {
+  return (
+    <p className="max-w-[68ch] whitespace-pre-line text-body text-ink">
+      {texto}
+    </p>
+  );
+}
+
+/**
+ * A foto da linha. O combo sem foto mostra as opções dele que têm (`#d315`):
+ * uma ocupa o quadrado, duas a quatro dividem em 2 × 2. Sem nenhuma, nada.
+ */
+function Retrato({
+  contaId,
+  produto,
+  className,
+}: {
+  contaId: string;
+  produto: ProdutoDoCardapio;
+  className?: string;
+}) {
+  const fotos =
+    produto.fotoVersao !== undefined
+      ? new Map([[produto.id, produto.fotoVersao]])
+      : new Map(
+          (produto.escolhas ?? [])
+            .flatMap((e) => e.opcoes)
+            .flatMap((o) =>
+              o.fotoVersao === undefined ? [] : [[o.id, o.fotoVersao] as const],
+            ),
+        );
+  const quatro = [...fotos].slice(0, 4);
+  if (quatro.length === 0) return null;
+  return (
+    <div
+      className={cn(
+        "grid size-26 shrink-0 gap-px overflow-hidden rounded-md bg-sunken lg:size-32",
+        quatro.length > 1 && "grid-cols-2 grid-rows-2",
+        className,
+      )}
+    >
+      {quatro.map(([id, versao]) => (
+        // Sem `next/image`: a foto já tem 320px (`#d162`).
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={id}
+          src={urlDaFoto(contaId, id, versao)}
+          // O nome já está no título ao lado.
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="size-full object-cover"
+        />
+      ))}
+    </div>
+  );
+}
+
+/** O preço com o riscado, a unidade quando não é "un", o selo e o "Restam". */
+function PrecoDoProduto({
+  produto,
+  hoje,
+}: {
+  produto: ProdutoDoCardapio;
+  hoje: string;
+}) {
+  const selo = seloDaPromocao(produto, hoje);
+  return (
+    <div>
+      <p className="flex flex-wrap items-baseline gap-x-1.5">
+        {/* O riscado é o preço de sempre da ficha, e nunca um "de"
+            inventado (`#d165`). */}
+        {produto.precoCheio !== undefined && (
+          <s className="num text-label text-ink-muted">
+            <span className="sr-only">antes </span>
+            {formatarMoeda(produto.precoCheio)}
+          </s>
+        )}
+        <Dinheiro centavos={produto.preco} />
+        {/* "· un" em todo preço não informa; "· porção" sim (`#d315`). */}
+        {produto.unidade !== "un" && (
+          <span className="text-label text-ink-muted">· {produto.unidade}</span>
+        )}
+      </p>
+      {selo && (
+        <Selo
+          icone={<Tag aria-hidden className="size-3.5" strokeWidth={2} />}
+          className="num mt-1"
+        >
+          {selo}
+        </Selo>
+      )}
+      {/* Contado do pote, e só do que ela marcou como limitado (`#d164`). */}
+      {produto.restam !== undefined && produto.restam > 0 && (
+        <p className="num text-label text-ink-muted">Restam {produto.restam}</p>
+      )}
+    </div>
+  );
+}
+
+/** A economia do kit fixo, contra o preço que a própria página cobra (`#d163`). */
+function EconomiaDoKit({ produto }: { produto: ProdutoDoCardapio }) {
+  if (produto.avulso === undefined) return null;
+  return (
+    <p className="num mt-1 text-label text-ink-muted">
+      Separados sairiam {formatarMoeda(produto.avulso)} · você economiza{" "}
+      {formatarMoeda(produto.avulso - produto.preco)}
+    </p>
+  );
+}
+
+/**
+ * A ficha do produto (spec 112, `#d315`): a foto grande, a descrição inteira e
+ * o passo, com o mesmo `mudar` da linha. Começa no que o carrinho já tem, ou
+ * em 1; o "+" para no que resta.
+ */
+function FichaNaVitrine({
+  contaId,
+  cor,
+  hoje,
+  produto,
+  atual,
+  cabe,
+  aoFechar,
+  aoPor,
+}: {
+  contaId: string;
+  cor: CorDaLoja | undefined;
+  hoje: string;
+  produto: ProdutoDoCardapio | null;
+  /** Quantas o carrinho já tem. */
+  atual: number;
+  /** A quantidade inteira ainda cabe no que resta? */
+  cabe: (quantidade: number) => boolean;
+  aoFechar: () => void;
+  aoPor: (quantidade: number) => void;
+}) {
+  const [quantidade, setQuantidade] = useState(1);
+  // Cada abertura recomeça do carrinho, como o "Monte a sua".
+  const [de, setDe] = useState<ProdutoDoCardapio | null>(null);
+  if (produto !== de) {
+    setDe(produto);
+    setQuantidade(Math.max(atual, 1));
+  }
+
+  const esgotado = produto?.restam === 0;
+  const valor = produto
+    ? formatarMoeda(
+        subtotalDoItem({ quantidade, precoUnitario: produto.preco }),
+      )
+    : "";
+  const rotulo =
+    atual === 0
+      ? `Pôr no pedido · ${valor}`
+      : quantidade === 0
+        ? "Tirar do pedido"
+        : `Atualizar o pedido · ${valor}`;
+
+  return (
+    <Painel
+      aberto={produto !== null}
+      aoFechar={aoFechar}
+      titulo={produto?.nome ?? ""}
+      rodape={
+        produto && (
+          <div
+            style={estiloDaLoja(cor)}
+            className="flex items-center gap-3 pb-4"
+          >
+            {esgotado ? (
+              <p className="text-body font-medium text-ink-muted">Esgotado</p>
+            ) : (
+              <>
+                <Passo
+                  nome={produto.nome}
+                  quantidade={quantidade}
+                  // Fora do pedido, o mínimo é 1: tirar é coisa de quem já pôs.
+                  podeMenos={quantidade > (atual === 0 ? 1 : 0)}
+                  podeMais={quantidade < 500 && cabe(quantidade + 1)}
+                  aoMudar={(passo) => setQuantidade(quantidade + passo)}
+                />
+                <Botao
+                  variante="loja"
+                  tamanho="lg"
+                  className="num min-w-0 flex-1"
+                  onClick={() => aoPor(quantidade)}
+                >
+                  {rotulo}
+                </Botao>
+              </>
+            )}
+          </div>
+        )
+      }
+    >
+      {produto && (
+        <div className="space-y-4">
+          {produto.fotoVersao !== undefined && (
+            <FotoGrande
+              contaId={contaId}
+              id={produto.id}
+              versao={produto.fotoVersao}
+            />
+          )}
+          {produto.descricao && <Descricao texto={produto.descricao} />}
+          <div>
+            <EconomiaDoKit produto={produto} />
+            <div className="mt-2">
+              <PrecoDoProduto produto={produto} hoje={hoje} />
+            </div>
+          </div>
+        </div>
+      )}
+    </Painel>
+  );
+}
+
 /**
  * Uma linha de lista, com a foto à direita e só foto: o "+" não flutua sobre
- * ela, porque sem foto ele flutuaria no nada (`#d166`). O preço e o controle
- * ocupam a linha de baixo inteira: a 360px, ao lado da foto, espremeriam.
+ * ela, porque sem foto ele flutuaria no nada (`#d166`). No celular, o preço e o
+ * controle ocupam a linha de baixo inteira: a 360px, ao lado da foto,
+ * espremeriam. No desktop sobem para a coluna do texto, e a linha tem a altura
+ * da foto (`#d315`).
+ *
+ * O nome é o botão que abre a ficha, e o alvo dele cobre a linha inteira; o
+ * controle fica por cima, alvo próprio: dois alvos, nenhum dentro do outro.
  */
 function Produto({
   contaId,
@@ -1028,6 +1346,7 @@ function Produto({
   quantidade,
   podeMais,
   aoMudar,
+  aoAbrir,
 }: {
   contaId: string;
   produto: ProdutoDoCardapio;
@@ -1037,9 +1356,9 @@ function Produto({
   /** Falso quando o carrinho já leva tudo o que resta (`#d164`). */
   podeMais: boolean;
   aoMudar: (passo: number) => void;
+  aoAbrir: () => void;
 }) {
   const esgotado = produto.restam === 0;
-  const selo = seloDaPromocao(produto, hoje);
 
   // "Adicionar" vira `− 1 +`, e o `−` no 1 volta a ser "Adicionar": o botão
   // tocado some. O foco vai para o controle novo, e não para o `body`.
@@ -1062,83 +1381,44 @@ function Produto({
   };
 
   return (
-    <li className="py-4">
-      <div className="flex gap-4">
-        <div className="min-w-0 flex-1">
-          <h3 className="wrap-break-word text-body font-semibold text-ink">
+    <li className="relative grid grid-cols-[minmax(0,1fr)_auto] py-4 lg:grid-rows-[auto_1fr]">
+      <div className="col-start-1 row-start-1">
+        <h3 className="wrap-break-word text-body font-semibold text-ink">
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            onClick={aoAbrir}
+            className="text-left after:absolute after:inset-0 after:rounded-md focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-(--focus)"
+          >
             {produto.nome}
-          </h3>
-          {produto.descricao && (
-            <p className="mt-1 line-clamp-3 text-label text-ink-muted">
-              {produto.descricao}
-            </p>
-          )}
-          {/* A economia é contra o preço que a própria página cobra (`#d163`):
-              texto, sem selo colorido. */}
-          {produto.avulso !== undefined && (
-            <p className="num mt-1 text-label text-ink-muted">
-              Separados sairiam {formatarMoeda(produto.avulso)} · você economiza{" "}
-              {formatarMoeda(produto.avulso - produto.preco)}
-            </p>
-          )}
-          {produto.escolhas && (
-            <p className="num mt-1 text-label text-ink-muted">
-              Você escolhe os sabores
-              {produto.economiaMinima !== undefined &&
-                ` · economize pelo menos ${formatarMoeda(produto.economiaMinima)}`}
-            </p>
-          )}
-        </div>
-        {produto.fotoVersao !== undefined && (
-          // Sem `next/image`: a foto já tem 320px (`#d162`).
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={`/c/${encodeURIComponent(contaId)}/foto/${encodeURIComponent(produto.id)}?v=${produto.fotoVersao}`}
-            // O nome já está no título ao lado.
-            alt=""
-            width={104}
-            height={104}
-            loading="lazy"
-            decoding="async"
-            className="size-26 shrink-0 rounded-md bg-sunken object-cover"
-          />
+          </button>
+        </h3>
+        {produto.descricao && (
+          <p className="mt-1 line-clamp-3 text-label text-ink-muted">
+            {produto.descricao}
+          </p>
+        )}
+        <EconomiaDoKit produto={produto} />
+        {produto.escolhas && (
+          <p className="num mt-1 text-label text-ink-muted">
+            {escolhasEmTexto(produto.escolhas)}
+            {produto.economiaMinima !== undefined &&
+              ` · economize pelo menos ${formatarMoeda(produto.economiaMinima)}`}
+          </p>
         )}
       </div>
+      <Retrato
+        contaId={contaId}
+        produto={produto}
+        // Margem, e não `gap`: sem foto, a coluna vazia não rouba 16px do texto.
+        className="col-start-2 row-start-1 ml-4 lg:row-span-2"
+      />
 
       <div
         ref={controle}
-        className="mt-3 flex items-center justify-between gap-3"
+        className="col-span-2 mt-3 flex items-center justify-between gap-3 lg:col-span-1 lg:col-start-1 lg:row-start-2 lg:self-start"
       >
-        <div>
-          <p className="flex flex-wrap items-baseline gap-x-1.5">
-            {/* O riscado é o preço de sempre da ficha, e nunca um "de"
-                inventado (`#d165`). */}
-            {produto.precoCheio !== undefined && (
-              <s className="num text-label text-ink-muted">
-                <span className="sr-only">antes </span>
-                {formatarMoeda(produto.precoCheio)}
-              </s>
-            )}
-            <Dinheiro centavos={produto.preco} />
-            <span className="text-label text-ink-muted">
-              · {produto.unidade}
-            </span>
-          </p>
-          {selo && (
-            <Selo
-              icone={<Tag aria-hidden className="size-3.5" strokeWidth={2} />}
-              className="num mt-1"
-            >
-              {selo}
-            </Selo>
-          )}
-          {/* Contado do pote, e só do que ela marcou como limitado (`#d164`). */}
-          {produto.restam !== undefined && !esgotado && (
-            <p className="num text-label text-ink-muted">
-              Restam {produto.restam}
-            </p>
-          )}
-        </div>
+        <PrecoDoProduto produto={produto} hoje={hoje} />
         {/* O combo à escolha sempre abre "Monte a sua": cada unidade pode ter
             outros sabores, e a quantidade dele mora no pedido. */}
         {esgotado ? (
@@ -1146,7 +1426,7 @@ function Produto({
             Esgotado
           </span>
         ) : quantidade === 0 || produto.escolhas ? (
-          <div className="flex items-center gap-2">
+          <div className="relative flex items-center gap-2">
             {quantidade > 0 && (
               <span className="num text-label text-ink-muted">
                 {quantidade} no pedido
@@ -1184,12 +1464,14 @@ function Produto({
 function Passo({
   nome,
   quantidade,
+  podeMenos = quantidade > 0,
   podeMais = quantidade < 500,
   aoMudar,
   naCor = false,
 }: {
   nome: string;
   quantidade: number;
+  podeMenos?: boolean;
   podeMais?: boolean;
   aoMudar: (passo: number) => void;
   /** Cheio na cor da loja, e não contornado. */
@@ -1204,14 +1486,15 @@ function Passo({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center rounded-md",
+        // `relative`: na linha do produto, fica por cima do alvo da ficha.
+        "relative flex shrink-0 items-center rounded-md",
         naCor ? "bg-loja text-on-loja" : "border border-line-strong text-ink",
       )}
     >
       <button
         type="button"
         onClick={() => aoMudar(-1)}
-        disabled={quantidade === 0}
+        disabled={!podeMenos}
         aria-label={`Diminuir ${nome}`}
         className={botao}
       >

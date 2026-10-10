@@ -23,6 +23,13 @@ export interface Novidade {
  */
 export const NOVIDADES: readonly Novidade[] = [
   {
+    dataISO: "2026-10-10",
+    titulo: "No cardápio, a cliente abre o doce",
+    frase:
+      "Tocar no doce mostra a foto grande e a descrição inteira, o combo diz quantos sabores se escolhe, e “Monte a sua” mostra a foto de cada sabor.",
+    href: "/configuracao#a-sua-marca",
+  },
+  {
     dataISO: "2026-10-09",
     titulo: "Quem você chamou voltou",
     frase:

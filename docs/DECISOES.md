@@ -9781,3 +9781,46 @@ documento tinha `plano: ASSINATURA`, `pacote: ESSENCIAL` e a assinatura ao vivo
 promovida no mesmo dia pelo passo 3b, para o Completo mensal com o `CORTESIA`: o webhook de
 produção gravou `COMPLETO`, e a fatura de 2026-10-30 sai R$ 0,00. Ela já exercitava o caminho de
 quem paga; o "nunca vence" do `#d141` já não valia para ela.
+
+## D315 · A linha do cardápio abre a ficha do produto
+
+**Status:** vigente · decidida em 2026-10-10, spec `112-a-ficha-do-produto-na-vitrine.md`.
+
+**Contexto.** Nos prints do cardápio público, a descrição cortava em três linhas sem saída, a
+foto de 104 px não abria, os combos à escolha eram três linhas iguais ("Você escolhe os
+sabores"), o "Monte a sua" escolhia sabor só pelo nome, cada produto no desktop sobrava um vão
+de ~60 px entre o texto e o preço, e "· un" se repetia em todo preço.
+
+**Decisão.**
+
+- **O nome é um `<button>` cujo alvo (`::after` absoluto) cobre a linha inteira**, foto e
+  descrição incluídas; o controle ("Adicionar" ou o passo) é `relative`, vem depois no DOM e
+  fica por cima. Dois alvos, nenhum dentro do outro. O nome acessível é o nome do produto, e
+  não nome mais descrição: a descrição continua legível ao lado. O anel de foco vai no
+  `::after`, em volta da linha.
+- **`FichaNaVitrine`** no `Painel`: o nome é o título do painel (não se repete no corpo), a
+  foto quadrada até `FOTO_LADO_PX` (320), a descrição inteira com as quebras dela, a economia
+  do kit, o preço com o riscado, o selo e o "Restam". No rodapé, o passo e "Pôr no pedido ·
+  R$ X"; com o produto no carrinho, "Atualizar o pedido · R$ X", e no zero "Tirar do pedido".
+  Fora do carrinho o passo para em 1 (`podeMenos`): tirar é de quem já pôs. A ficha grava pelo
+  mesmo `mudar` da linha, com a diferença para o que o carrinho tem; o "+" usa `cabe(linha,
+mais)`, a generalização de `cabeMaisUm`. Esgotado abre e diz "Esgotado", sem passo.
+- **Combo à escolha não tem ficha**: a linha abre o "Monte a sua", que ganha no topo a foto do
+  combo e a descrição inteira, e 48 px de foto à esquerda de cada opção que tem.
+- **"Escolha 4 · Cookie"** e **"Escolha 2 · Cookie + 1 · Brownie"** por `escolhasEmTexto` em
+  `domain/cardapio.ts`, com teste, no lugar de "Você escolhe os sabores".
+- **`OpcaoDoCombo.fotoVersao?`** só quando a opção está na página (passa por `entraNoCardapio`
+  e está em `fichaIds`) e tem foto: é exatamente o que `lerFotoDoCardapio` serve; fora da lista
+  a rota daria 404. O teste das chaves (`#d158`) aceita `fotoVersao` na opção, e só ela.
+- **Combo sem foto mostra o mosaico** das opções com foto: uma ocupa o quadrado, duas a quatro
+  dividem em 2 × 2 (com duas ou três sobra quadrado vazio em `--surface-sunken`), nenhuma e o
+  quadrado some.
+- **Desktop (`lg`)**: a linha vira grade; a foto (ou o mosaico) vai a 128 px e ocupa as duas
+  linhas da grade, e o preço com o controle sobe para a coluna do texto, logo abaixo da
+  descrição (`self-start`, e não alinhado ao pé da foto, que recriaria o vão). O celular não
+  muda (`#d166`).
+- **"· un" sai**; o rótulo da unidade só aparece quando não é `un`.
+
+**Consequência.** Nenhum campo, regra, índice ou dependência. O que sai para fora cresce em um
+ponto, a versão da foto das opções que já estão na página. Ficha com URL própria, galeria e
+foto maior que 320 px ficaram fora.
