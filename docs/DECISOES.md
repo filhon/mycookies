@@ -10032,3 +10032,65 @@ global, e índice global é dado fora de `contas/`.
 **Consequência.** Uma leitura a mais por renderização do cardápio (o `revalidate` de 60 s a
 segura). Um apelido arquivado nunca volta a ficar livre enquanto a conta existe. Endereço na raiz,
 domínio próprio e apelido para a folha do orçamento ficaram fora.
+
+## D320 · O pedido que a cliente acompanha
+
+**Status:** vigente · decidida em 2026-10-10, spec `117-o-pedido-que-a-cliente-acompanha.md`.
+**Reverte um item do "Fora de escopo" da 031** ("a cliente acompanhando o pedido"): entra o link
+do pedido; o aviso automático quando o status muda continua fora. As três aprovações da spec
+(schema aditivo, o que sai para fora e a reversão) tomadas como dadas pelo pedido de
+implementá-la, como na 113, na 115 e na 116.
+
+**Contexto.** Depois de "Enviar pedido", a cliente ficava no escuro: a tela de enviado some com a
+aba, e "já confirmou?" e "quanto deu mesmo?" viravam mensagem no WhatsApp. Com sinal (081), o
+Pix com valor (080) mudava depois do primeiro pagamento e ficava perdido na conversa. A 031 deixou
+fora porque "exige identificar a cliente sem login"; não exige: basta um link que só ela tem.
+
+**Decisão.**
+
+- **`Pedido.chavePublica?`**, aditivo, sem subir `VERSAO_SCHEMA`: 16 bytes aleatórios em
+  base64url (22 caracteres, `chavePublicaDe` em `domain/acompanhamento.ts`, que recebe os bytes).
+  O handler do cardápio sorteia com `randomBytes` e passa a `pedidoDoCardapio` (o domínio não
+  sorteia); `criarPedido` sorteia com `crypto.getRandomValues` (`novaChavePublica`), sem rede.
+  `atualizarPedido` não a toca (`updateDoc` mantém o que não recebe; conferido).
+- **Pedido antigo**: `useLinkDoAcompanhamento` sorteia uma chave provisória por tela e já a põe
+  no link; `garantirChavePublica` só a grava no toque em mandar (despachado, sem rede inclusive),
+  e só quando o pedido ainda não tem. Sem toque, nada é gravado.
+- **O endereço** `/c/{apelido ou contaId}/pedido/{pedidoId}/{chave}` (`caminhoDoAcompanhamento`),
+  na rota e não em `?chave=`. O segmento do endereço passa pela mesma resolução do cardápio
+  (`apelidos/` primeiro, `#d319`); sem redirecionar o id ao apelido, que não ganha nada aqui.
+- **A página** (`force-dynamic`, sem `revalidate`) chama `lerAcompanhamento` em
+  `server/cardapio.ts`: um `getAll` da conta, da configuração e do pedido. Chave ausente ou
+  diferente (`timingSafeEqual`, depois de comparar o tamanho), pedido arquivado, conta encerrada
+  ou sem `permite(…, "cardapio")` (a vencida inclusive): o mesmo `not-found.tsx`, que não diz se
+  o pedido existe. **Não exige o cardápio aberto**: fechar o cardápio não tira o link de quem já
+  pediu. Arquivar o pedido é revogar.
+- **A prévia**: "Seu pedido na {loja}" e "Acompanhe a sua encomenda.", sem imagem, sem nome,
+  valor ou data. O `noindex` do layout raiz continua.
+- **O que sai** (`acompanhamentoDoPedido`, com o teste das chaves que procura custo, lucro,
+  anotação, observação do item, nome e telefone da cliente, `clienteId`, chave e instruções da
+  forma no JSON inteiro): a frase do pé em que está, os quatro passos **depois** do orçamento
+  (Confirmado, Sendo feito, Pronto…, Entregue/Retirado; o orçamento é a frase "A {quem} vai
+  confirmar", não um passo, o que concilia os "quatro passos" da spec com os cinco status), a
+  validade só enquanto vale (por isso o `hojeISO`), dia, hora, retirada ou entrega com o
+  endereço, itens com escolhas, subtotal, taxa (`null` = "a combinar" no orçamento de entrega com
+  taxa zero; na retirada some), desconto, total, pago, sinal, falta, e o Pix.
+- **O Pix** só fora do orçamento, não cancelado, com falta, e com a forma do pedido `tipo:
+"PIX"` e os três dados preenchidos (a ficha da dona olha só `forma.pix`; aqui o tipo também
+  conta, porque é a cliente). Do que falta, com o código como identificador.
+- **Sem `CopiarPix.tsx`**: o `BotaoCopiar` da 080 já é componente de cliente com o "Copiado" e o
+  texto à mostra sem permissão de área de transferência; a página de servidor o usa direto, na
+  variante `loja`. Sem vitrine lida: a cor da loja não entra, vale o `--loja` padrão.
+- **Onde o link aparece**: o handler devolve `{ codigo, total, link }` (o caminho); a página do
+  cardápio põe `location.origin` e mostra "Acompanhar o pedido" (secundário, `PackageSearch`, em
+  aba nova para o "Avisar" continuar ali) abaixo de "Avisar a {quem}"; `mensagemDeAviso` termina
+  com "Acompanhar: {link}"; `mensagemDoPedido(resumo, link?)` ganha "Acompanhe o pedido: {link}"
+  antes da despedida. No app, o resumo do editor (`BlocoWhatsApp`), a faixa do pedido anotado
+  (`FaixaAnotado`) e o resumo da ficha (`FichaDoPedido`, não a cobrança): os três são o mesmo
+  resumo, e a spec pede o link "no resumo do WhatsApp do app". Sem o cardápio no pacote, sem link.
+
+**Consequência.** Nenhuma regra, índice ou dependência. Três leituras por abertura da página, sem
+cache. O que sai para fora cresce em um pedido inteiro, para quem tem o link: encaminhado, quem
+recebe vê os itens, o total e o endereço de entrega (que a prévia não mostra). Atualização ao
+vivo, aviso automático, cancelar ou mudar pela página, "Meus pedidos" e pagar com cartão ficaram
+fora.

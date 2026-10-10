@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-10",
+    titulo: "A cliente acompanha o pedido pelo link",
+    frase:
+      "Cada pedido ganha um link só dele, no resumo do WhatsApp e no aviso do cardápio: a cliente vê em que pé está, quanto falta pagar e copia o Pix com o valor.",
+    href: "/pedidos",
+  },
+  {
+    dataISO: "2026-10-10",
     titulo: "Um endereço com o nome da sua loja",
     frase:
       "Em “Seu cardápio”, escolha o endereço do link, com o nome da sua loja. O link antigo e o QR code já impresso continuam levando ao seu cardápio.",

@@ -30,6 +30,11 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
  * últimos meses, só para a ordem dos mais pedidos (`#d316`), e só devolvem o que
  * `montarCardapio` deixa passar (`DECISOES.md#d158`).
  *
+ * **Sem login, só lê** `/c/[contaId]/pedido/[pedidoId]/[chave]` (spec 117,
+ * `DECISOES.md#d320`): o pedido, a conta e a configuração, e só devolve o que
+ * `acompanhamentoDoPedido` deixa passar, com a chave conferida por
+ * `timingSafeEqual`.
+ *
  * **`/api/cardapio/apelido`** (spec 116, `DECISOES.md#d319`) escreve, com o
  * token da dona, só em `apelidos/{apelido}` (a coleção na raiz que nenhum
  * cliente lê) e no campo `apelido` do documento da conta, numa transação. A

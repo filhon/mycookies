@@ -1,5 +1,10 @@
+import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { Timestamp } from "firebase-admin/firestore";
+import {
+  caminhoDoAcompanhamento,
+  chavePublicaDe,
+} from "@/lib/domain/acompanhamento";
 import {
   esquemaPedidoDoCardapio,
   LIMITE_DE_ORCAMENTOS_EM_ABERTO,
@@ -83,6 +88,8 @@ export async function POST(requisicao: Request) {
     promocoes: lido.configuracao?.cardapio?.promocoes,
     aPartirDeISO: lido.configuracao?.cardapio?.aPartirDeISO,
     hojeISO,
+    // O link da cliente (`#d320`).
+    chavePublica: chavePublicaDe(randomBytes(16)),
   });
   if (!montado.ok) {
     return falha(montado.falha, montado.falha === "mudou" ? 409 : 400);
@@ -118,10 +125,17 @@ export async function POST(requisicao: Request) {
     atualizadoEm: agora as unknown as Pedido["atualizadoEm"],
   } satisfies Omit<Pedido, "id">;
 
-  await colecao.doc().set(novo);
+  const referencia = colecao.doc();
+  await referencia.set(novo);
 
   return NextResponse.json({
     codigo: montado.corpo.codigo,
     total: montado.corpo.total,
+    // O caminho, com o apelido quando há (`#d319`); a página põe a origem.
+    link: caminhoDoAcompanhamento(
+      lido.conta.apelido ?? pedido.contaId,
+      referencia.id,
+      montado.corpo.chavePublica!,
+    ),
   });
 }

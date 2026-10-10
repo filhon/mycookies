@@ -1,3 +1,9 @@
+import { timingSafeEqual } from "node:crypto";
+import {
+  acompanhamentoDoPedido,
+  type Acompanhamento,
+} from "@/lib/domain/acompanhamento";
+import { paraSituar, permite, situacaoDaConta } from "@/lib/domain/assinatura";
 import {
   entraNoCardapio,
   LIMITE_DO_CARDAPIO,
@@ -13,6 +19,7 @@ import {
   competenciaVizinha,
   hojeEmBrasilia,
 } from "@/lib/domain/datas";
+import { telefoneParaWhatsApp } from "@/lib/domain/whatsapp";
 import {
   caminhos,
   type ConfiguracaoGeral,
@@ -28,8 +35,9 @@ import { adminDb, credencialDisponivel } from "./firebaseAdmin";
 
 /**
  * As leituras do cardápio público (spec 031, `DECISOES.md#d158`): a página, o
- * pedido e a foto. Sem login: quem decide o que sai é `montarCardapio` e
- * `entraNoCardapio`, e nada daqui escreve.
+ * pedido e a foto, e o pedido que a cliente acompanha (spec 117, `#d320`). Sem
+ * login: quem decide o que sai é `montarCardapio`, `entraNoCardapio` e
+ * `acompanhamentoDoPedido`, e nada daqui escreve.
  *
  * O `Timestamp` do Admin SDK tem o mesmo `toMillis()` do cliente, que é tudo o
  * que o domínio chama; por isso os `as` abaixo.
@@ -218,6 +226,60 @@ export async function lerContaDoCardapio(contaId: string): Promise<{
     fichas,
     opcoes,
   };
+}
+
+/**
+ * O pedido que a cliente acompanha (spec 117, `#d320`): o pedido, a conta e a
+ * configuração, e só sai o que `acompanhamentoDoPedido` deixa passar. Chave
+ * errada, pedido arquivado, conta encerrada ou sem o cardápio no pacote: `null`,
+ * o mesmo não encontrado, que não diz se o pedido existe.
+ */
+export async function lerAcompanhamento(
+  endereco: string,
+  pedidoId: string,
+  chave: string,
+): Promise<Acompanhamento | null> {
+  const contaId = await contaDoEndereco(endereco);
+  if (!contaId || !ID.test(pedidoId) || !ID.test(chave)) return null;
+
+  const db = adminDb();
+  const [contaSnap, configuracaoSnap, pedidoSnap] = await db.getAll(
+    db.doc(caminhos.conta(contaId)),
+    db.doc(caminhos.configuracaoGeral(contaId)),
+    db.collection(caminhos.pedidos(contaId)).doc(pedidoId),
+  );
+  if (!contaSnap?.exists || !pedidoSnap?.exists) return null;
+
+  const pedido = pedidoSnap.data() as Pedido;
+  const gravada = Buffer.from(pedido.chavePublica ?? "");
+  const dada = Buffer.from(chave);
+  if (
+    pedido.arquivado ||
+    gravada.length !== dada.length ||
+    !timingSafeEqual(gravada, dada)
+  ) {
+    return null;
+  }
+
+  const conta = contaSnap.data() as Conta;
+  if (conta.status === "ENCERRADA") return null;
+  if (!permite(situacaoDaConta(paraSituar(conta), Date.now()), "cardapio")) {
+    return null;
+  }
+
+  const configuracao = configuracaoSnap?.data() as
+    ConfiguracaoGeral | undefined;
+  const whatsapp = telefoneParaWhatsApp(configuracao?.contato?.telefone);
+  return acompanhamentoDoPedido(
+    pedido,
+    {
+      nome: conta.nome,
+      quem: conta.proprietaria.trim().split(/\s+/)[0] ?? "",
+      ...(whatsapp ? { whatsapp } : {}),
+    },
+    configuracao?.formasPagamento ?? [],
+    hojeEmBrasilia(new Date()),
+  );
 }
 
 /** Os bytes da foto de um produto do cardápio aberto, ou `null` (404). */

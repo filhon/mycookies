@@ -36,6 +36,7 @@ import {
   ticketMedioDe,
   type ParcelasDoAgregado,
 } from "@/lib/domain/caixa";
+import { chavePublicaDe } from "@/lib/domain/acompanhamento";
 import { competenciaDeISO, dataDeISO, dataISODe } from "@/lib/domain/datas";
 import {
   codigoDoPedido,
@@ -116,6 +117,30 @@ export interface DadosPedido {
 
 function agora() {
   return Timestamp.now();
+}
+
+/** A chave do link da cliente (`#d320`), sorteada no aparelho, sem rede. */
+export function novaChavePublica(): string {
+  return chavePublicaDe(crypto.getRandomValues(new Uint8Array(16)));
+}
+
+/**
+ * O pedido de antes da spec 117 ganha a chave no primeiro "Mandar o resumo"
+ * (`#d320`). Quem chama já pôs `chave` no link; aqui só grava, despachado. Só
+ * o campo: `updateDoc` mantém o resto.
+ */
+export function garantirChavePublica(
+  contaId: string,
+  pedido: Pick<Pedido, "id" | "chavePublica">,
+  chave: string,
+): void {
+  if (pedido.chavePublica) return;
+  despachar(
+    updateDoc(docPedido(contaId, pedido.id), {
+      chavePublica: chave,
+      atualizadoEm: agora(),
+    }),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -316,6 +341,8 @@ export async function criarPedido(
     // Nasce no aparelho, porque um pedido anotado na feira sem sinal não pode
     // esperar um número do servidor. `numero` fica sem gravar de propósito.
     codigo: codigoDoPedido(momento.toDate()),
+    // O link da cliente (`#d320`): sorteada aqui, sem rede, como o código.
+    chavePublica: novaChavePublica(),
     pago: false,
     criadoEm: momento,
     atualizadoEm: momento,

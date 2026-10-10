@@ -133,12 +133,12 @@ puro e com o teste das chaves (como o `#d158`):
 
 ## Critérios de aceite
 
-- [ ] `chavePublica` gerada na criação (handler e app) e no resumo de pedido antigo.
-- [ ] A página só abre com a chave certa; o resto dá o mesmo não encontrado.
-- [ ] Teste das chaves: nada além da lista sai.
-- [ ] Pix só confirmado, não cancelado, com falta e forma Pix configurada; do valor que falta.
-- [ ] O link no "Pedido enviado", na mensagem de aviso e no resumo do app.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `#d320` escrito; `ESTADO.md` e
+- [x] `chavePublica` gerada na criação (handler e app) e no resumo de pedido antigo.
+- [x] A página só abre com a chave certa; o resto dá o mesmo não encontrado.
+- [x] Teste das chaves: nada além da lista sai.
+- [x] Pix só confirmado, não cancelado, com falta e forma Pix configurada; do valor que falta.
+- [x] O link no "Pedido enviado", na mensagem de aviso e no resumo do app.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `#d320` escrito; `ESTADO.md` e
       `novidades.ts` atualizados.
 
 ---

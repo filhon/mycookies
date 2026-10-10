@@ -113,6 +113,7 @@ import { contextoDaCapacidade } from "@/lib/hooks/useDespensaParaProduzir";
 import { BlocoOrcamento } from "./BlocoOrcamento";
 import { BlocoPagamento } from "./BlocoPagamento";
 import { BlocoWhatsApp } from "./BlocoWhatsApp";
+import { useLinkDoAcompanhamento } from "./useLinkDoAcompanhamento";
 import { validadeSugerida } from "@/lib/domain/orcamento";
 import type { ResumoParaCliente } from "@/lib/domain/whatsapp";
 import type {
@@ -355,6 +356,8 @@ export function FormularioPedido({
     () => !!pedido && parametros.has("anotado"),
   );
   if (anotado && sujo) setAnotado(false);
+  // O link da cliente no resumo do WhatsApp (spec 117, `#d320`).
+  const acompanhamento = useLinkDoAcompanhamento(pedido);
   // Antes da guarda: a sentinela que ela arma copia a URL, e precisa copiá-la
   // já sem o parâmetro. O `replaceState` nativo não remonta a tela. O
   // `?cliente=` sai do mesmo jeito, lido uma vez (`#d308`).
@@ -1216,6 +1219,8 @@ export function FormularioPedido({
               telefone={valores.clienteTelefone}
               hoje={hoje}
               aoFechar={() => setAnotado(false)}
+              link={acompanhamento.link}
+              aoMandar={acompanhamento.garantir}
             />
           )}
 
@@ -1867,6 +1872,8 @@ export function FormularioPedido({
               <BlocoWhatsApp
                 resumo={resumoParaCliente(pedido)}
                 telefone={valores.clienteTelefone}
+                link={acompanhamento.link}
+                aoMandar={acompanhamento.garantir}
               />
               <BlocoOrcamento
                 pedidoId={pedido.id}

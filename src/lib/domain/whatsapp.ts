@@ -150,8 +150,14 @@ export function mensagemDeCobranca(pedido: {
  * "Desconto: R$ 0,00" faz a cliente procurar um desconto que não houve. Os
  * negritos são dois — o negócio e o total —, e não há emoji: a voz do sistema é
  * a da confeitaria, e não a de um chatbot.
+ *
+ * `link` é o do acompanhamento (spec 117, `#d320`), pronto: `location.origin`
+ * mora no componente. Ausente, a mensagem é a de sempre.
  */
-export function mensagemDoPedido(resumo: ResumoParaCliente): string {
+export function mensagemDoPedido(
+  resumo: ResumoParaCliente,
+  link?: string,
+): string {
   const nome = primeiroNome(resumo.clienteNome);
   const falta = faltaPagar({
     ...resumo,
@@ -231,6 +237,7 @@ export function mensagemDoPedido(resumo: ResumoParaCliente): string {
     totais.join("\n"),
     combinado.join("\n"),
     ...paraPagar,
+    ...(link ? [`Acompanhe o pedido: ${link}`] : []),
     "Qualquer ajuste é só me chamar.",
   ].join("\n\n");
 }

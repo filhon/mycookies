@@ -8,7 +8,14 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { Check, MessageCircle, Minus, Plus, Tag } from "lucide-react";
+import {
+  Check,
+  MessageCircle,
+  Minus,
+  PackageSearch,
+  Plus,
+  Tag,
+} from "lucide-react";
 import { AreaTexto, Campo, focarPrimeiroErro } from "@/components/ui/Campo";
 import { Botao } from "@/components/ui/Botao";
 import { Dinheiro } from "@/components/ui/Dinheiro";
@@ -137,6 +144,8 @@ interface Enviado {
   }[];
   dataEntregaISO: string;
   entrega: Tipo;
+  /** O link do acompanhamento, absoluto (`#d320`); ausente no pote de mel. */
+  link?: string;
 }
 
 export function PedidoPeloCardapio({
@@ -341,10 +350,12 @@ export function PedidoPeloCardapio({
       const corpo = (await resposta.json()) as {
         codigo: string | null;
         total?: Centavos;
+        link?: string;
       };
       setEnviado({
         codigo: corpo.codigo,
         total: corpo.total ?? total,
+        ...(corpo.link ? { link: location.origin + corpo.link } : {}),
         itens: carrinho.map((l) => ({
           nome: l.produto.nome,
           quantidade: l.quantidade,
@@ -591,6 +602,7 @@ export function PedidoPeloCardapio({
               total: enviado.total,
               dataEntregaISO: enviado.dataEntregaISO,
               entrega: enviado.entrega,
+              link: enviado.link,
             }),
           )}
           target="_blank"
@@ -603,6 +615,18 @@ export function PedidoPeloCardapio({
         >
           <MessageCircle aria-hidden className="size-5" strokeWidth={1.75} />
           Avisar a {quem} no WhatsApp
+        </a>
+      )}
+      {/* Em aba nova: esta, com o "Avisar", continua aberta (`#d320`). */}
+      {enviado.link && (
+        <a
+          href={enviado.link}
+          target="_blank"
+          rel="noopener"
+          className={classesBotao({ tamanho: "lg", larguraTotal: true })}
+        >
+          <PackageSearch aria-hidden className="size-5" strokeWidth={1.75} />
+          Acompanhar o pedido
         </a>
       )}
       {/* No celular, fechar a folha já zera; ao lado da lista não há folha. */}

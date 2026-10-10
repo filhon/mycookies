@@ -32,6 +32,7 @@ import { Pilulas } from "@/components/ui/Pilulas";
 import { Marcador } from "@/components/ui/Selo";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { SeloStatus } from "./SeloStatus";
+import { useLinkDoAcompanhamento } from "./useLinkDoAcompanhamento";
 import {
   competenciaDeISO,
   dataISODe,
@@ -119,6 +120,8 @@ export function FichaDoPedido({
     [contaId, daLista.id],
   );
   const pedido = useDocumento<Pedido>(referenciaPedido).dado ?? daLista;
+  // O link da cliente no resumo, não na cobrança (spec 117, `#d320`).
+  const acompanhamento = useLinkDoAcompanhamento(pedido);
 
   const referenciaConfiguracao = useMemo(
     () => docConfiguracao(contaId),
@@ -246,27 +249,30 @@ export function FichaDoPedido({
   const numero = telefoneParaWhatsApp(pedido.clienteTelefone);
   const mensagem = cobrar
     ? mensagemDeCobranca(pedido)
-    : mensagemDoPedido({
-        negocio: configuracao?.nomeNegocio ?? "",
-        codigo: pedido.codigo,
-        clienteNome: pedido.clienteNome,
-        itens: pedido.itens,
-        subtotal: pedido.subtotal,
-        desconto: pedido.desconto,
-        taxaEntrega: pedido.entrega.taxa,
-        total: pedido.total,
-        entrega: {
-          tipo: pedido.entrega.tipo,
-          dataISO: pedido.dataEntregaISO,
-          hora: pedido.horaEntrega,
-          endereco: pedido.entrega.endereco ?? undefined,
+    : mensagemDoPedido(
+        {
+          negocio: configuracao?.nomeNegocio ?? "",
+          codigo: pedido.codigo,
+          clienteNome: pedido.clienteNome,
+          itens: pedido.itens,
+          subtotal: pedido.subtotal,
+          desconto: pedido.desconto,
+          taxaEntrega: pedido.entrega.taxa,
+          total: pedido.total,
+          entrega: {
+            tipo: pedido.entrega.tipo,
+            dataISO: pedido.dataEntregaISO,
+            hora: pedido.horaEntrega,
+            endereco: pedido.entrega.endereco ?? undefined,
+          },
+          formaNome: forma?.nome,
+          formaInstrucoes: forma?.instrucoes,
+          formaPix: forma?.pix,
+          pago: pedido.pago,
+          sinal: pedido.sinal?.valor,
         },
-        formaNome: forma?.nome,
-        formaInstrucoes: forma?.instrucoes,
-        formaPix: forma?.pix,
-        pago: pedido.pago,
-        sinal: pedido.sinal?.valor,
-      });
+        acompanhamento.link,
+      );
 
   const endereco = pedido.entrega.endereco?.trim();
   const noPrejuizo = pedido.lucroEstimado < 0;
@@ -438,6 +444,7 @@ export function FichaDoPedido({
                   href={linkDoWhatsApp(numero, mensagem)}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={cobrar ? undefined : acompanhamento.garantir}
                   className={classesBotao({ tamanho: "sm" })}
                 >
                   <MessageCircle

@@ -573,6 +573,21 @@ function gravar(
 }
 
 describe("pedidoDoCardapio", () => {
+  it("grava a chave que recebe, e sem ela não grava (#d320)", () => {
+    const com = pedidoDoCardapio({
+      pedido: pedidoDaAna(),
+      fichas: [TRADICIONAL, RED_VELVET, RECHEIO],
+      opcoes: [],
+      fichaIds: ["tradicional", "redvelvet", "recheio"],
+      hojeISO: HOJE,
+      chavePublica: "chave",
+    });
+    const sem = gravar();
+    if (!com.ok || !sem.ok) throw new Error("falhou");
+    expect(com.corpo.chavePublica).toBe("chave");
+    expect("chavePublica" in sem.corpo).toBe(false);
+  });
+
   it("o caso de aceite, número por número", () => {
     const r = gravar();
     if (!r.ok) throw new Error(r.falha);
@@ -954,6 +969,14 @@ describe("mensagemDeAviso", () => {
       }),
     ).toBe(
       `Oi, MyCookie's! Acabei de fazer o pedido P-260923-K3F pelo cardápio: 6 Cookie Tradicional, 4 Cookie Red Velvet. Total ${formatarMoeda(11200)} sem a entrega, para receber no sábado, 26 de setembro. Meu nome é Ana.`,
+    );
+  });
+
+  it("com o link, termina com ele (#d320)", () => {
+    expect(
+      mensagemDeAviso({ ...aviso, link: "https://rende.app/c/x/pedido/a/b" }),
+    ).toMatch(
+      /Meu nome é Ana\. Acompanhar: https:\/\/rende\.app\/c\/x\/pedido\/a\/b$/,
     );
   });
 });

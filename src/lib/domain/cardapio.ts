@@ -952,6 +952,8 @@ export function pedidoDoCardapio(entrada: {
   /** `cardapio.aPartirDeISO`: a agenda cheia, pela mesma conta da página (`#d318`). */
   aPartirDeISO?: DataISO;
   hojeISO: DataISO;
+  /** A chave do link (`#d320`), sorteada pelo handler: o domínio não sorteia. */
+  chavePublica?: string;
 }):
   | { ok: true; corpo: CorpoDoPedidoDoCardapio }
   | { ok: false; falha: FalhaPedidoCardapio } {
@@ -1080,6 +1082,7 @@ export function pedidoDoCardapio(entrada: {
       pago: false,
       arquivado: false,
       ...(observacoes ? { observacoes } : {}),
+      ...(entrada.chavePublica ? { chavePublica: entrada.chavePublica } : {}),
     },
   };
 }
@@ -1106,6 +1109,8 @@ export function mensagemDeAviso(entrada: {
   total: Centavos;
   dataEntregaISO: DataISO;
   entrega: "RETIRADA" | "ENTREGA";
+  /** O link do acompanhamento (`#d320`): fica na conversa das duas. */
+  link?: string;
 }): string {
   const itens = entrada.itens
     .map(
@@ -1121,6 +1126,7 @@ export function mensagemDeAviso(entrada: {
 
   return (
     `Oi, ${entrada.negocio}! Acabei de fazer o pedido ${entrada.codigo} pelo cardápio: ${itens}. ` +
-    `Total ${total} ${noDia(entrada.dataEntregaISO)}. Meu nome é ${nome}.`
+    `Total ${total} ${noDia(entrada.dataEntregaISO)}. Meu nome é ${nome}.` +
+    (entrada.link ? ` Acompanhar: ${entrada.link}` : "")
   );
 }

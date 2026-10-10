@@ -1180,7 +1180,7 @@ logado no Rende e de rede. Aparelho em 360 px nos passos 3, 5 e 7.
   escolha, que a A deixava fora com ela, entra na sessão C.
 - **Endereço bonito** (`/c/mycookies` para toda conta). Índice global fora de `contas/` (`#d158`). (A spec 116, `DECISOES.md#d319`, trouxe o apelido em `/c/{apelido}`.)
 - **A cliente acompanhando o pedido** (link de status, "sua encomenda está pronta"). Exige
-  identificar a cliente sem login, e o WhatsApp já é o canal.
+  identificar a cliente sem login, e o WhatsApp já é o canal. (A spec 117, `DECISOES.md#d320`, trouxe o link do pedido; o aviso automático continua fora.)
 - **Aviso para a dona** por push, e-mail ou notificação. O aviso é a cliente, pelo WhatsApp
   (`#d77`), e o pedido está em `/pedidos` na próxima vez que ela abrir.
 - **Cliente cadastrada pelo link.** Escrita pública em `clientes` (`#d160`).

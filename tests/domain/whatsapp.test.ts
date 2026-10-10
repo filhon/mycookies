@@ -68,6 +68,13 @@ describe("mensagemDoPedido", () => {
     );
   });
 
+  it("com o link do acompanhamento, uma linha antes da despedida (#d320)", () => {
+    const texto = mensagemDoPedido(PEDIDO, "https://rende.app/c/x/pedido/a/b");
+    expect(texto).toContain(
+      "Pagamento: Cartão de crédito\n\nAcompanhe o pedido: https://rende.app/c/x/pedido/a/b\n\nQualquer ajuste é só me chamar.",
+    );
+  });
+
   it("some com desconto e entrega quando são zero, e mantém o subtotal", () => {
     const texto = mensagemDoPedido({
       ...PEDIDO,

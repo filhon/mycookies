@@ -203,6 +203,13 @@ export interface Pedido extends DocumentoBase {
    * `/api/cardapio/pedido`.
    */
   origem?: "CARDAPIO";
+
+  /**
+   * A chave do link que a cliente abre sem login (spec 117, `DECISOES.md#d320`):
+   * 16 bytes aleatórios em base64url. Gerada na criação; pedido de antes da spec
+   * ganha uma no primeiro "Mandar o resumo". Arquivar o pedido revoga o link.
+   */
+  chavePublica?: string;
 }
 
 export interface ItemListaCompras {

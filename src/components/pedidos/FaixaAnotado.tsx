@@ -22,12 +22,17 @@ export function FaixaAnotado({
   telefone,
   hoje,
   aoFechar,
+  link,
+  aoMandar,
 }: {
   pedido: Pedido;
   resumo: ResumoParaCliente;
   telefone?: string;
   hoje: DataISO;
   aoFechar: () => void;
+  /** O link do acompanhamento (`#d320`), como no `BlocoWhatsApp`. */
+  link?: string;
+  aoMandar?: () => void;
 }) {
   const dia = rotuloAgenda(pedido.dataEntregaISO, hoje).toLocaleLowerCase(
     "pt-BR",
@@ -53,13 +58,16 @@ export function FaixaAnotado({
         <a
           href={linkDoWhatsApp(
             telefoneParaWhatsApp(telefone),
-            mensagemDoPedido(resumo),
+            mensagemDoPedido(resumo, link),
           )}
           target="_blank"
           rel="noopener noreferrer"
           // Depois de o link abrir: tirar o `<a>` no meio do clique é pedir
           // para o aparelho desistir dele.
-          onClick={() => setTimeout(aoFechar)}
+          onClick={() => {
+            aoMandar?.();
+            setTimeout(aoFechar);
+          }}
           className={classesBotao({ variante: "primaria", tamanho: "lg" })}
         >
           <MessageCircle aria-hidden className="size-5" strokeWidth={1.75} />

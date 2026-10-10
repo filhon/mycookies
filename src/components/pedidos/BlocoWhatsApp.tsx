@@ -23,10 +23,15 @@ import {
 export function BlocoWhatsApp({
   resumo,
   telefone,
+  link,
+  aoMandar,
 }: {
   resumo: ResumoParaCliente;
   /** O que está no campo, como ela digitou. Pode não ser discável. */
   telefone?: string;
+  /** O link do acompanhamento (`#d320`), e o toque que grava a chave dele. */
+  link?: string;
+  aoMandar?: () => void;
 }) {
   return (
     <>
@@ -39,10 +44,11 @@ export function BlocoWhatsApp({
           <a
             href={linkDoWhatsApp(
               telefoneParaWhatsApp(telefone),
-              mensagemDoPedido(resumo),
+              mensagemDoPedido(resumo, link),
             )}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={aoMandar}
             className={classesBotao({ variante: "secundaria", tamanho: "lg" })}
           >
             <MessageCircle aria-hidden className="size-5" strokeWidth={1.75} />
