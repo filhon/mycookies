@@ -14,7 +14,11 @@ import {
 } from "@/lib/domain/custosOperacionais";
 import type { ParametrosPreco } from "@/lib/domain/precificacao";
 import { VERSAO_SCHEMA } from "@/lib/types";
-import type { ConfiguracaoGeral, DadosConfiguracao } from "@/lib/types";
+import type {
+  ConfiguracaoGeral,
+  DadosConfiguracao,
+  RegraDeEntrega,
+} from "@/lib/types";
 
 // Moram no domínio e no schema desde a 040 (`DECISOES.md#d186`); reexportados
 // para nenhum importador mudar.
@@ -130,6 +134,38 @@ export function salvarVitrine(
     setDoc(
       docVitrine(contaId),
       { ...campos, v: VERSAO_SCHEMA, atualizadoEm: Timestamp.now() },
+      { merge: true },
+    ),
+  );
+}
+
+/**
+ * A taxa de entrega (spec 118, `DECISOES.md#d321`), ao lado do cardápio, em
+ * `entrega`. Quem chama já passou a regra por `esquemaEntrega`; `null` tira a
+ * regra e volta ao "a combinar". O `merge` funde o mapa campo a campo: a origem
+ * e os bairros tirados só saem com `deleteField`.
+ */
+export function salvarEntrega(
+  contaId: string,
+  entrega: RegraDeEntrega | null,
+): void {
+  despachar(
+    setDoc(
+      docConfiguracao(contaId),
+      {
+        entrega: entrega
+          ? {
+              raioKm: entrega.raioKm,
+              faixas: entrega.faixas,
+              origem: entrega.origem ?? deleteField(),
+              bairros: entrega.bairros?.length
+                ? entrega.bairros
+                : deleteField(),
+            }
+          : deleteField(),
+        v: VERSAO_SCHEMA,
+        atualizadoEm: Timestamp.now(),
+      },
       { merge: true },
     ),
   );

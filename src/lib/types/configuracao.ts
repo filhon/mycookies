@@ -131,7 +131,21 @@ export interface ConfiguracaoGeral {
     recado?: string;
     aPartirDeISO?: DataISO;
   };
+  /** A taxa de entrega do cardápio (spec 118, `#d321`). Ausente = "a combinar", como sempre foi. */
+  entrega?: RegraDeEntrega;
   atualizadoEm: Timestamp;
+}
+
+/** Escrita só por `salvarEntrega`, validada por `esquemaEntrega`. */
+export interface RegraDeEntrega {
+  /** De onde sai. Nunca sai da conta (`#d322`). Medida uma vez, ao salvar o CEP. */
+  origem?: { cep: string; lat: number; lng: number };
+  /** Além disso, não entrega. Em km, uma casa. */
+  raioKm: number;
+  /** Ordenadas por `ateKm`; a última vai até o raio. De 1 a 5. */
+  faixas: { ateKm: number; taxa: Centavos }[];
+  /** Exceções, que valem antes da distância: preço fixo, ou `null` = não entrega. */
+  bairros?: { nome: string; taxa: Centavos | null }[];
 }
 
 /**

@@ -1167,7 +1167,8 @@ logado no Rende e de rede. Aparelho em 360 px nos passos 3, 5 e 7.
   e é outro provedor (Stripe Connect, ou um PSP de Pix) com a conta dela, não a do Rende. O
   orçamento é justamente o passo em que ela diz se dá.
 - **Taxa de entrega calculada** (por bairro, por distância). Taxa zero e "a {quem} combina com
-  você" é o que ela faz hoje no WhatsApp.
+  você" é o que ela faz hoje no WhatsApp. (A spec 118, `DECISOES.md#d321`, trouxe a regra por
+  distância e bairro; a sessão A, a configuração. A cliente vê a taxa na sessão B.)
 - **"Esgotado" e estoque em todo produto.** O cardápio de encomenda vende o que ainda vai ser
   feito. Só o que ela marca como limitado conta o pote (sessão D, `#d164`).
 - **Dias e horários de funcionamento, antecedência configurável, pedido mínimo.** Amanhã e 90

@@ -40,6 +40,10 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
  * cliente lê) e no campo `apelido` do documento da conta, numa transação. A
  * página do cardápio lê `apelidos/{endereco}` para achar a conta.
  *
+ * **`/api/entrega/medir`** (spec 118, `DECISOES.md#d322`) só confere o token
+ * da dona: não lê nem escreve no Firestore. A origem que ela mede é gravada
+ * pelo aparelho, com a regra de entrega.
+ *
  * **Sem login, escreve** `/api/cardapio/pedido` (spec 031, `#d160`): só em
  * `pedidos`, e só um documento novo por chamada; nunca atualiza, e só lê o que
  * a página lê. Um segundo `set` ali muda a fronteira de confiança do sistema.

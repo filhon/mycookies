@@ -10094,3 +10094,92 @@ cache. O que sai para fora cresce em um pedido inteiro, para quem tem o link: en
 recebe vê os itens, o total e o endereço de entrega (que a prévia não mostra). Atualização ao
 vivo, aviso automático, cancelar ou mudar pela página, "Meus pedidos" e pagar com cartão ficaram
 fora.
+
+## D321 · A taxa de entrega é em linha reta, e o bairro corrige
+
+**Status:** vigente · decidida em 2026-10-10, spec `118-a-taxa-de-entrega.md` (sessão A; a B
+usa a mesma regra no cardápio). **Reverte um item do "Fora de escopo" da 031** ("taxa de entrega
+calculada"), anotado lá. As cinco aprovações da spec (dois serviços externos, o CEP da cliente
+saindo para eles, schema aditivo, a rota pública que gasta dinheiro do Rende e a reversão)
+tomadas como dadas pelo pedido de implementá-la, como na 113, na 115, na 116 e na 117.
+
+**Contexto.** O pedido com entrega nascia com taxa zero e "sem a entrega" ao lado do total: a
+cliente descobria o valor depois de decidir, e quem morava a 25 km mandava o pedido igual. A
+regra dela já existia, na cabeça ("até 3 km, R$ 5; até 6, R$ 8; Candeias eu não vou").
+
+**Decisão.**
+
+- **`ConfiguracaoGeral.entrega?: RegraDeEntrega`**, aditivo, sem subir `VERSAO_SCHEMA`:
+  `origem?` (`cep`, `lat`, `lng`), `raioKm`, `faixas` (1 a 5, `ateKm` crescente, taxa em
+  centavos) e `bairros?` (`taxa: null` = não entrega). Ausente = "a combinar", como sempre foi.
+- **`taxaDeEntrega(regra, destino)`** em `domain/entrega.ts`, pura e testada, nesta ordem: o
+  bairro (por `chaveDeBusca`, sem acento nem caixa) → o preço dele ou `fora`; a distância
+  (haversine, raio da Terra 6371 km, arredondada a 0,1 km) → acima do raio `fora`, senão a
+  primeira faixa com `km ≤ ateKm` (a fronteira entra); faltou origem ou coordenada → `a-combinar`.
+  **Só o `fora` impede um pedido, e ele vem da regra dela**, nunca de falha do Rende.
+- O resultado leva `porque` (`{ bairro }` ou `{ km, ateKm? }`), que só o painel dela mostra; a
+  rota pública da B devolve só `tipo` e `taxa` (`#d322`).
+- **A última faixa acompanha o raio**: o painel a mostra como "Até {raio}" sem campo, grava
+  `ateKm = raioKm`, e o domínio usa a última faixa para quem está entre o `ateKm` dela e o raio,
+  mesmo que um documento venha desalinhado.
+- **`esquemaEntrega`** recusa faixa fora de ordem, faixa além do raio (o que cobre o "raio menor
+  que a primeira faixa" da spec), taxa negativa ou quebrada, mais de 5 faixas, nenhuma, mais de
+  30 bairros e o mesmo bairro duas vezes (por `chaveDeBusca`).
+- **Gravada por `salvarEntrega`**, ao lado de `salvarCardapio` e não dentro dele: o painel da
+  entrega tem rascunho próprio (a regra só grava quando passa no esquema), e o cardápio grava no
+  toque. Mesmo documento, chave `entrega`, `merge` com `deleteField` para origem e bairros
+  tirados.
+- **O painel** (`EntregaDoCardapio.tsx`, chamado por `SeuCardapio.tsx` abaixo dos produtos): o
+  que se digita grava ao sair do campo (o `blur` da seção, com um `ref` para não gravar o estado
+  de um render atrás), o que se toca grava na hora. Sem regra gravada, começa de raio 5 km e uma
+  faixa de R$ 0,00, e só grava quando ela muda algo. "Testar um CEP" calcula com a regra da tela,
+  gravada ou não, para ela calibrar antes de sair do campo.
+
+**Por que linha reta.** A distância de rota exige outra API (Routes), mais cara e por par de
+pontos. Em linha reta, o rio, a ponte e o viaduto erram, e é para isso que a exceção por bairro
+existe: ela conhece a cidade melhor que um mapa. `ponytail:` a distância de rota quando as
+exceções passarem de uma dezena numa conta real.
+
+**Consequência.** Nenhuma regra, índice ou dependência. Sem tirar a regra pelo painel: voltar
+ao "a combinar" para todas é apagar `entrega` à mão; a sessão B decide se precisa de botão.
+
+## D322 · Os serviços do CEP, o cache e o que nunca sai
+
+**Status:** vigente · decidida em 2026-10-10, spec `118-a-taxa-de-entrega.md`, sessão A.
+
+**Decisão.**
+
+- **ViaCEP** (`viacep.com.br/ws/{cep}/json/`, sem chave) dá rua, bairro, cidade e UF, e o bairro
+  das exceções. **Google Geocoding** (`components=postal_code:{cep}|country:BR`) dá as
+  coordenadas **do CEP**, nunca do número: no Brasil o CEP urbano é um trecho de rua, a precisão
+  de centenas de metros não muda uma faixa de quilômetros, e o número da casa da cliente não sai
+  do Rende. Chave em `GOOGLE_MAPS_API_KEY`, só no servidor, restrita à Geocoding API, com cota
+  diária no console (`DEPLOY.md` § 14).
+- **Por que o Google e não o Nominatim**: a política do servidor público do OpenStreetMap proíbe
+  uso comercial, e a cobertura de CEP brasileiro é fraca.
+- **O preço do dia** (2026-10-10, conferido em guias de terceiros que citam a tabela de março de
+  2025; a página oficial não respondeu na busca): a SKU de Geocoding, da categoria Essentials,
+  tem **10 mil chamadas grátis por mês**, e acima disso **US$ 5 a cada mil** até 100 mil.
+  Conferir no console antes de subir a cota.
+- **O cache, 30 dias por CEP**, o que os termos do Google permitem guardar de coordenada, para
+  qualquer conta. `lib/server/endereco.ts`: o ViaCEP por `fetch` com `next: { revalidate }`
+  (o Next só guarda resposta 200; o "CEP não existe" do ViaCEP é 200 e pode ficar). **O Google
+  por `unstable_cache`, e não pelo cache do `fetch`**: o Google responde 200 até para chave
+  recusada e cota estourada, e o `fetch` guardaria a recusa por um mês. Dentro do
+  `unstable_cache` a recusa lança, e o que lança não é guardado; o achado e o `ZERO_RESULTS`
+  ficam. Tempo limite de 5 s nos dois; falha vira `null`, e a regra, "a combinar".
+- **A rota da dona é `/api/entrega/medir`, e não `/api/entrega/origem`.** A spec pedia uma rota
+  que medisse e gravasse a origem; o "Testar um CEP" precisava de outra, porque a rota pública da
+  B exige o cardápio aberto e ela calibra antes de abrir. Uma rota só, com o token da dona
+  (`ehDona`), que mede qualquer CEP e devolve `{ endereco, coordenadas, naoAchado }`, **e não
+  grava nada**: a origem é gravada pelo aparelho, por `salvarEntrega`, com a regra. Assim o
+  servidor continua sem escrever dado de negócio (`firebaseAdmin.ts`), e o cache local já tem a
+  origem no mesmo instante. Ela vê a distância: é dela.
+- **Onde ela mora nunca sai.** A origem fica em `configuracao/geral`, que só a conta lê. A rota
+  pública da B devolve a taxa, o `fora` e o endereço do CEP da própria cliente, **nunca a
+  distância** (com três CEPs e as distâncias, dá para achar a casa dela); o teste das chaves da
+  resposta é da B.
+
+**Consequência.** Um serviço pago novo, com teto na cota diária e alerta de orçamento. O CEP
+digitado pela dona sai para o ViaCEP e para o Google; o da cliente, na B, também, e
+`/privacidade` ganha o parágrafo antes do deploy da B (texto de quem conduz o projeto).

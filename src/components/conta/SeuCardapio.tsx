@@ -73,6 +73,7 @@ import type {
   VitrineDoCardapio,
 } from "@/lib/types";
 import { useAuth, useContaId } from "@/providers/AuthProvider";
+import { EntregaDoCardapio } from "./EntregaDoCardapio";
 import { useLinkDoCardapio } from "./useLinkDoCardapio";
 
 /** O endereço da tela não muda enquanto ela está aberta. */
@@ -546,6 +547,8 @@ export function SeuCardapio({
                 Produtos vendidos por peso ainda não entram no cardápio.
               </p>
             </fieldset>
+
+            <EntregaDoCardapio gravada={configuracao.entrega} />
 
             {comPote.length > 0 && (
               <fieldset>

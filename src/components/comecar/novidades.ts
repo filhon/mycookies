@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-10",
+    titulo: "A taxa de entrega pela distância",
+    frase:
+      "Em “Seu cardápio”, diga de onde sai a entrega, até onde vai e quanto cobra por faixa, com os bairros que têm outro preço. “Testar um CEP” mostra quanto a cliente pagaria.",
+    href: "/configuracao#a-sua-marca",
+  },
+  {
+    dataISO: "2026-10-10",
     titulo: "A cliente acompanha o pedido pelo link",
     frase:
       "Cada pedido ganha um link só dele, no resumo do WhatsApp e no aviso do cardápio: a cliente vê em que pé está, quanto falta pagar e copia o Pix com o valor.",

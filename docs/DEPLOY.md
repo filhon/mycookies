@@ -77,6 +77,7 @@ Firebase incompleta. Faltam: …").
 FIREBASE_SERVICE_ACCOUNT
 GEMINI_API_KEY
 GEMINI_MODELO          (opcional; vazio usa gemini-3.5-flash-lite)
+GOOGLE_MAPS_API_KEY    (spec 118; ver § 14)
 STRIPE_SECRET_KEY
 STRIPE_WEBHOOK_SECRET
 STRIPE_PRICE_MENSAL
@@ -524,6 +525,30 @@ firebase deploy --only firestore:indexes
 
 Sem ele, tocar em "Todos os pedidos de …" mostra "Não deu para carregar seus pedidos"; o resto
 de `/pedidos`, a busca em memória inclusive, segue funcionando. A regra não muda.
+
+## 14 · A taxa de entrega (spec 118): a chave do Google Maps
+
+A taxa de entrega mede o CEP por dois serviços (`DECISOES.md#d322`): o **ViaCEP**, sem chave, e
+a **Geocoding API** do Google Maps Platform, que é paga por CEP novo. Sem a chave, nada quebra:
+o painel diz "Não deu para medir agora" e a taxa fica a combinar.
+
+1. **Google Cloud → APIs e serviços → Biblioteca:** ativar a **Geocoding API** no projeto do
+   Firebase, que já tem faturamento (é o do Gemini). Nenhuma outra API do Maps.
+2. **Credenciais → Criar credenciais → Chave de API.** Em "Restrições de API", **só a Geocoding
+   API**. Em "Restrições de aplicativo", nenhuma: a chamada sai do servidor da Vercel, sem IP
+   fixo nem referenciador. A chave nunca vai ao navegador.
+3. **Cotas → Geocoding API → "Requests per day": 500.** É o teto do estrago se alguém varrer
+   CEPs pela rota pública da sessão B. Passada a cota, o Google recusa, a recusa não fica no
+   cache, e a taxa cai em "a combinar", sem travar pedido. Subir quando as contas passarem a
+   bater no teto num dia normal.
+4. **Faturamento → Orçamentos e alertas:** um orçamento de US$ 10 por mês no projeto, com alerta
+   a 50% e 100%. Na tabela de 2026-10, a Geocoding tem 10 mil chamadas grátis por mês e cobra
+   US$ 5 a cada mil acima disso; com o cache de 30 dias por CEP, uma conta real não chega perto.
+5. **Vercel → Environment Variables:** `GOOGLE_MAPS_API_KEY`, em Production e Preview, e novo
+   deploy. Para `npm run dev`, a mesma no `.env.local`.
+
+**Conferir:** em "Seu cardápio" → "Entrega", salvar o CEP de onde sai e testar outro CEP. A
+resposta mostra o bairro e a distância.
 
 ## Limites conhecidos
 
