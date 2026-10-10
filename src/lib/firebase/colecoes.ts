@@ -10,6 +10,7 @@ import {
 import { obterDb } from "./client";
 import { caminhos } from "@/lib/types";
 import type {
+  AparelhoDeAviso,
   Cliente,
   ConfiguracaoGeral,
   Conta,
@@ -75,6 +76,9 @@ export const colFornadas = (contaId: string) =>
 /** Só leitura do cliente: quem escreve é `/api/conta/membros` (`DECISOES.md#d155`). */
 export const colMembros = (contaId: string) =>
   col<Membro>(caminhos.membros(contaId));
+/** Quem escreve é `lib/firebase/avisos.ts`, e o servidor só desliga (`#d323`). */
+export const colAparelhos = (contaId: string) =>
+  col<AparelhoDeAviso>(caminhos.aparelhos(contaId));
 
 export const docInsumo = (
   contaId: string,

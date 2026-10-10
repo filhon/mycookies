@@ -137,6 +137,24 @@ export interface Membro {
 }
 
 /**
+ * Um aparelho que toca quando chega pedido pelo cardápio (spec 119, `#d323`).
+ * O id é o SHA-256 do token, em hex: ativar de novo regrava o mesmo documento.
+ * Desligar, ou o FCM recusar o token, é `ativo: false`; nunca se apaga.
+ */
+export interface AparelhoDeAviso {
+  id: string;
+  /** Quem ativou. */
+  uid: string;
+  /** Credencial de envio: não sai na exportação. */
+  token: string;
+  ativo: boolean;
+  plataforma: "android" | "iphone" | "computador";
+  criadoEm: Timestamp;
+  atualizadoEm: Timestamp;
+  v: VersaoSchema;
+}
+
+/**
  * A forma da claim inteira, para quem a escreve: `/api/conta`, o webhook do
  * Stripe e `scripts/conceder-acesso.mjs`.
  */

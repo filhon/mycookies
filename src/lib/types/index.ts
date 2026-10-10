@@ -38,4 +38,5 @@ export const caminhos = {
   resumoGlobal: (contaId: string) => `contas/${contaId}/agregados/global`,
   membros: (contaId: string) => `contas/${contaId}/membros`,
   membro: (contaId: string, uid: string) => `contas/${contaId}/membros/${uid}`,
+  aparelhos: (contaId: string) => `contas/${contaId}/aparelhos`,
 } as const;

@@ -1,11 +1,12 @@
 import { randomBytes } from "node:crypto";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { Timestamp } from "firebase-admin/firestore";
 import {
   caminhoDoAcompanhamento,
   chavePublicaDe,
 } from "@/lib/domain/acompanhamento";
 import {
+  avisoDePedidoNovo,
   esquemaPedidoDoCardapio,
   LIMITE_DE_ORCAMENTOS_EM_ABERTO,
   limitadasComContagem,
@@ -16,6 +17,7 @@ import {
   type FalhaPedidoCardapio,
 } from "@/lib/domain/cardapio";
 import { hojeEmBrasilia, meiaNoiteEmBrasilia } from "@/lib/domain/datas";
+import { avisarAparelhos } from "@/lib/server/avisos";
 import { lerContaDoCardapio, lerRestam } from "@/lib/server/cardapio";
 import { taxaDoCep } from "@/lib/server/endereco";
 import { adminDb, credencialDisponivel } from "@/lib/server/firebaseAdmin";
@@ -136,6 +138,10 @@ export async function POST(requisicao: Request) {
 
   const referencia = colecao.doc();
   await referencia.set(novo);
+
+  // O celular dela toca depois da resposta, e nunca a atrasa (spec 119).
+  const aviso = avisoDePedidoNovo({ ...montado.corpo, id: referencia.id });
+  after(() => avisarAparelhos(pedido.contaId, aviso));
 
   return NextResponse.json({
     codigo: montado.corpo.codigo,

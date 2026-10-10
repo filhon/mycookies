@@ -1159,3 +1159,44 @@ export function mensagemDeAviso(entrada: {
     (entrada.link ? ` Acompanhar: ${entrada.link}` : "")
   );
 }
+
+/** O que vai no `data` da mensagem do FCM; tudo texto (spec 119). */
+export interface AvisoDePedidoNovo {
+  titulo: string;
+  corpo: string;
+  url: string;
+  tag: string;
+}
+
+/**
+ * O aviso que toca o celular dela quando um pedido chega pelo cardápio (spec
+ * 119, `#d323`): "Ana · 6 itens · R$ 112,00 · para sexta-feira, 25 de
+ * outubro". A `tag` faz o mesmo pedido avisado duas vezes virar um aviso só.
+ */
+export function avisoDePedidoNovo(pedido: {
+  id: string;
+  clienteNome: string;
+  itens: { quantidade: number }[];
+  total: Centavos;
+  dataEntregaISO: DataISO;
+}): AvisoDePedidoNovo {
+  const nome = pedido.clienteNome.trim().split(/\s+/)[0] ?? "";
+  const quantos = pedido.itens.reduce(
+    (soma, item) => soma + item.quantidade,
+    0,
+  );
+  const itens = `${quantidadeEmTexto(quantos)} ${quantos === 1 ? "item" : "itens"}`;
+  return {
+    titulo: "Pedido novo pelo cardápio",
+    corpo: [
+      nome,
+      itens,
+      formatarMoeda(pedido.total),
+      `para ${rotuloDiaPorExtenso(pedido.dataEntregaISO)}`,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    url: `/pedidos/${pedido.id}`,
+    tag: `pedido-${pedido.id}`,
+  };
+}

@@ -61,6 +61,7 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
 NEXT_PUBLIC_FIREBASE_APP_ID
+NEXT_PUBLIC_FIREBASE_VAPID_KEY      (spec 119; ver § 15)
 ```
 
 Os mesmos valores do `.env.local`. Elas identificam o projeto e não autorizam nada — quem
@@ -549,6 +550,25 @@ o painel diz "Não deu para medir agora" e a taxa fica a combinar.
 
 **Conferir:** em "Seu cardápio" → "Entrega", salvar o CEP de onde sai e testar outro CEP. A
 resposta mostra o bairro e a distância.
+
+## 15 · O aviso de pedido novo (spec 119): a chave Web Push
+
+O aviso no celular sai pelo Firebase Cloud Messaging (`DECISOES.md#d323`). O envio usa a
+mesma `FIREBASE_SERVICE_ACCOUNT`; o aparelho precisa da chave Web Push do projeto.
+
+1. **Console do Firebase → Configurações do projeto → Cloud Messaging → Configuração da Web →
+   Certificados Web Push → Gerar par de chaves.** Copiar a chave pública (a que começa com
+   `B…`). A API "Firebase Cloud Messaging API (V1)" precisa estar ativada na mesma aba.
+2. **Vercel → Environment Variables:** `NEXT_PUBLIC_FIREBASE_VAPID_KEY`, em Production e
+   Preview, e novo deploy (é `NEXT_PUBLIC_`: entra no build). Para testar local, a mesma no
+   `.env.local`, num `npm run build && npm run start`: o `npm run dev` não registra o service
+   worker, e a linha some.
+3. Sem a chave, nada quebra: a linha "Avisar neste aparelho" não aparece e o pedido chega como
+   sempre.
+
+**Conferir:** em `/configuracao`, ativar o aviso, fechar o app e mandar um pedido pelo cardápio
+de outro aparelho. No DevTools (Application → Service workers) deve haver **um** service
+worker, o `/sw.js`.
 
 ## Limites conhecidos
 

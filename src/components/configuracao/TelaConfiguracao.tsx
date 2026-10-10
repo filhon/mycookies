@@ -37,6 +37,7 @@ import { Realce } from "@/components/ui/Realce";
 import { RodapeFixo } from "@/components/ui/RodapeFixo";
 import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
 import { BlocoConfiguracao } from "./BlocoConfiguracao";
+import { LinhaDoAviso } from "@/components/conta/AvisoNoAparelho";
 import { BlocoTema } from "./BlocoTema";
 import { CustoPorHora } from "./CustoPorHora";
 import { FormularioFormaPagamento } from "./FormularioFormaPagamento";
@@ -1311,6 +1312,9 @@ function ConfiguracaoDaDona() {
                   className="size-5 shrink-0"
                 />
               </label>
+
+              {/* Por aparelho, e não por conta como a do e-mail (spec 119). */}
+              <LinhaDoAviso className={LINHA} />
 
               <BlocoTema />
 

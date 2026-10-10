@@ -8,6 +8,7 @@ import {
 } from "firebase-admin/app";
 import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { getMessaging, type Messaging } from "firebase-admin/messaging";
 
 /**
  * O Admin SDK do lado do servidor, e o único lugar que confere um token.
@@ -52,6 +53,9 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
  * **Sem login, escreve** `/api/cardapio/pedido` (spec 031, `#d160`): só em
  * `pedidos`, e só um documento novo por chamada; nunca atualiza, e só lê o que
  * a página lê. Um segundo `set` ali muda a fronteira de confiança do sistema.
+ * Depois da resposta, o mesmo handler lê `aparelhos` e manda o aviso de pedido
+ * novo (spec 119, `DECISOES.md#d323`, `src/lib/server/avisos.ts`), e só escreve
+ * `ativo: false` no aparelho cujo token o FCM recusou.
  *
  * Verificar a assinatura do JWT à mão, para não mexer no `package.json`, está
  * descartado. O projeto desenha gráfico à mão para não pegar dependência
@@ -158,6 +162,10 @@ export function adminAuth(): Auth {
 
 export function adminDb(): Firestore {
   return getFirestore(aplicativo());
+}
+
+export function adminMessaging(): Messaging {
+  return getMessaging(aplicativo());
 }
 
 export interface Autenticado {

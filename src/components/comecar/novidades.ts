@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-10",
+    titulo: "O aviso de pedido novo no celular",
+    frase:
+      "Em “Configuração”, ative o aviso neste aparelho: quando uma cliente manda pedido pelo cardápio, o celular toca, mesmo com o Rende fechado. Com ele aberto, aparece uma faixa no topo.",
+    href: "/configuracao#avisos",
+  },
+  {
+    dataISO: "2026-10-10",
     titulo: "A taxa no cardápio",
     frase:
       "Com a entrega configurada, a cliente põe o CEP no cardápio e vê a taxa e o total com ela antes de mandar. O pedido chega com a taxa, e você ainda pode mudar ao confirmar.",

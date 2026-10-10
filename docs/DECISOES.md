@@ -10217,3 +10217,60 @@ digitado pela dona sai para o ViaCEP e para o Google; o da cliente, na B, també
 - `ponytail:` taxa calculada de **zero** (faixa grátis) aparece como "a combinar" no
   acompanhamento da 117, que lê taxa zero de orçamento como não combinada. Um
   `entrega.calculada` quando ela tiver faixa grátis.
+
+## D323 · O pedido que chega no celular
+
+**Status:** vigente · decidida em 2026-10-10, spec `119-o-pedido-que-chega-no-celular.md`.
+**Reverte um item do "Fora de escopo" da 031** ("aviso para a dona por push"), anotado lá, e em
+parte o `#d77`: a mensagem da cliente pelo WhatsApp continua, e deixa de ser o único aviso. As
+três aprovações da spec (schema aditivo `aparelhos`, a chave Web Push, a reversão) tomadas como
+dadas pelo pedido de implementá-la, como na 113 e da 115 à 118.
+
+**Contexto.** A 058 marca "Pedidos" com o número, mas só para quem está com o app aberto, e ela
+passa o dia na bancada com ele fechado. Pedido sem resposta é venda perdida.
+
+**Decisão.**
+
+- **Firebase Cloud Messaging**, que já vem em `firebase` e `firebase-admin`: nenhuma
+  dependência. O `getToken` recebe o `serviceWorkerRegistration` do Serwist, e o `sw.ts` ganha
+  `push` e `notificationclick`: sem `firebase-messaging-sw.js`, sem segundo service worker.
+- **A mensagem vai só com `data`** (`titulo`, `corpo`, `url`, `tag`) e quem desenha é o
+  `sw.ts`. A forma do `event.data.json()`, `{ data, from, fcmMessageId, … }`, foi conferida no
+  código do próprio `@firebase/messaging/sw` (`getMessagePayloadInternal`), e não num build com
+  mensagem de teste como a seção 2 da spec pedia: a chave Web Push ainda não existe. O ouvinte
+  recusa o que não tem `titulo` e `url`, e o passo 1 do roteiro confirma.
+- **`contas/{contaId}/aparelhos/{sha256 do token}`**: `{ uid, token, ativo, plataforma,
+criadoEm, atualizadoEm, v }`. Ativar de novo regrava o documento inteiro sem ler antes, e por
+  isso `criadoEm` é a última ativação, e não a primeira. Desligar, ou o FCM recusar o token
+  (`registration-token-not-registered`, `invalid-registration-token`), é `ativo: false`;
+  nada se apaga. O id do aparelho ativo fica em `localStorage` (`rende:aviso-aparelho`), e a
+  cada abertura do app (`AvisoDePedido`, no layout de `(app)`) o token é pedido de novo; mudou,
+  grava o novo e desliga o antigo.
+- **A regra não muda**: `aparelhos` cai no `match /{colecao}/{documento=**}`, e a ajudante
+  ativa no celular dela (`#d157`). **A exportação pula `aparelhos`**: token é credencial. A
+  purga apaga junto, porque lista as coleções.
+- **O envio**: `after(() => avisarAparelhos(contaId, aviso))` no handler do cardápio, depois do
+  `set` e da resposta. `aparelhos where ativo == true` (campo único, sem índice), `sendEach`,
+  `Urgency: high`. Erro vai para o log e para. O texto é `avisoDePedidoNovo` em
+  `domain/cardapio.ts`, testado: "Ana · 6 itens · R$ 112,00 · para sexta-feira, 25 de
+  outubro" (o `rotuloDiaPorExtenso` diz "sexta-feira", e não o "sexta" do exemplo da spec).
+  Os itens são a soma das quantidades, com vírgula quando quebrada.
+- **App aberto e visível**: o `sw.ts` manda `postMessage` para a janela e não desenha a
+  notificação; `AvisoDePedido` mostra a faixa por 8 s. **Janelas de `/c/` não contam**: o
+  cardápio público não tem a faixa, e é onde ela testa o próprio pedido. `ponytail:` `/conheca`
+  e os guias visíveis engolem o aviso; confirmação da janela quando acontecer.
+- **O toque** foca uma janela do app e a navega para `/pedidos/{id}` (`WindowClient.navigate`),
+  ou abre uma.
+- **O iPhone é a exceção ao "nada de user-agent" do `#d71`.** Fora do app instalado o Safari
+  não tem `PushManager`, `isSupported()` diz só "não", e a linha sumiria sem dizer que
+  instalar resolve. `ehIphone()` olha o user-agent (o iPad se diz Mac, e tem toque), e a mesma
+  função dá a `plataforma`, que é grosseira e só serve ao "Também em".
+- **Sem a chave Web Push, ou sem o service worker registrado** (o `npm run dev`), a linha some,
+  como o navegador sem suporte.
+- `ponytail:` o Safari pode cortar a assinatura depois de alguns push sem notificação (o caso
+  do app aberto). A renovação da abertura seguinte refaz o token; se o iPhone parar de tocar
+  na prática, desenhar a notificação também com o app aberto no iPhone.
+
+**Consequência.** Uma subcoleção, uma variável pública (`NEXT_PUBLIC_FIREBASE_VAPID_KEY`,
+`DEPLOY.md` § 15). Nenhuma regra, índice ou dependência. Responder pela notificação, outros
+avisos e e-mail do pedido novo continuam fora.

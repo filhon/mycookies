@@ -51,7 +51,10 @@ export async function GET(requisicao: Request) {
             `"conta":${JSON.stringify(paraExportavel({ ...conta, id: contaId }))},` +
             `"colecoes":{`,
         );
-        const colecoes = await documento.listCollections();
+        // Token de aparelho é credencial, e não dado do negócio (`#d323`).
+        const colecoes = (await documento.listCollections()).filter(
+          (colecao) => colecao.id !== "aparelhos",
+        );
         for (const [indice, colecao] of colecoes.entries()) {
           const docs = (await colecao.get()).docs.map((d) => ({
             ...d.data(),

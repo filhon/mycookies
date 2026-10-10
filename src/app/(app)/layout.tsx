@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { AvisoDePedido } from "@/components/layout/AvisoDePedido";
 import { Simbolo } from "@/components/marca/Marca";
 import { Botao } from "@/components/ui/Botao";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -173,5 +174,10 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
   // desenhar o shell por baixo dela por um instante.
   if (situacao?.tipo === "vencida" || rotaFechada) return null;
 
-  return <AppShell>{children}</AppShell>;
+  return (
+    <>
+      <AppShell>{children}</AppShell>
+      <AvisoDePedido />
+    </>
+  );
 }

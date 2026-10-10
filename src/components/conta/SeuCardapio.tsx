@@ -65,6 +65,7 @@ import {
   salvarVitrine,
 } from "@/lib/firebase/mutations/configuracao";
 import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
+import { ConviteDoAviso } from "./AvisoNoAparelho";
 import { useConexao } from "@/lib/hooks/useDispositivo";
 import type {
   ConfiguracaoGeral,
@@ -393,6 +394,9 @@ export function SeuCardapio({
                 )}
               </label>
             </div>
+
+            {/* Até um aparelho da conta avisar (spec 119). */}
+            {aberto && <ConviteDoAviso />}
 
             <EnderecoDoCardapio />
 

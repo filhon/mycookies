@@ -1183,7 +1183,8 @@ logado no Rende e de rede. Aparelho em 360 px nos passos 3, 5 e 7.
 - **A cliente acompanhando o pedido** (link de status, "sua encomenda está pronta"). Exige
   identificar a cliente sem login, e o WhatsApp já é o canal. (A spec 117, `DECISOES.md#d320`, trouxe o link do pedido; o aviso automático continua fora.)
 - **Aviso para a dona** por push, e-mail ou notificação. O aviso é a cliente, pelo WhatsApp
-  (`#d77`), e o pedido está em `/pedidos` na próxima vez que ela abrir.
+  (`#d77`), e o pedido está em `/pedidos` na próxima vez que ela abrir. (A spec 119,
+  `DECISOES.md#d323`, trouxe o push por aparelho; e-mail do pedido novo continua fora.)
 - **Cliente cadastrada pelo link.** Escrita pública em `clientes` (`#d160`).
 - **Captcha e limite por IP** (`#d161`).
 - **Indexação em busca e imagem de prévia** (`og:image`). O link é para quem ela manda; a prévia

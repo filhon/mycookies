@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   apelidoValido,
+  avisoDePedidoNovo,
   sugerirApelido,
   corDaLoja,
   entraNoCardapio,
@@ -978,6 +979,34 @@ describe("mensagemDeAviso", () => {
     ).toMatch(
       /Meu nome é Ana\. Acompanhar: https:\/\/rende\.app\/c\/x\/pedido\/a\/b$/,
     );
+  });
+});
+
+describe("avisoDePedidoNovo (spec 119)", () => {
+  const pedido = {
+    id: "abc",
+    clienteNome: " Ana Beatriz ",
+    itens: [{ quantidade: 4 }, { quantidade: 2 }],
+    total: 11200,
+    dataEntregaISO: "2026-10-23",
+  };
+
+  it("o primeiro nome, os itens somados, o valor e o dia", () => {
+    expect(avisoDePedidoNovo(pedido)).toEqual({
+      titulo: "Pedido novo pelo cardápio",
+      corpo: `Ana · 6 itens · ${formatarMoeda(11200)} · para sexta-feira, 23 de outubro`,
+      url: "/pedidos/abc",
+      tag: "pedido-abc",
+    });
+  });
+
+  it("um item no singular; quantidade quebrada com vírgula", () => {
+    expect(
+      avisoDePedidoNovo({ ...pedido, itens: [{ quantidade: 1 }] }).corpo,
+    ).toMatch(/^Ana · 1 item · /);
+    expect(
+      avisoDePedidoNovo({ ...pedido, itens: [{ quantidade: 1.5 }] }).corpo,
+    ).toMatch(/^Ana · 1,5 itens · /);
   });
 });
 
