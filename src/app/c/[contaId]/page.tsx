@@ -1,13 +1,21 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import { AtSign, MessageCircle } from "lucide-react";
+import { AtSign, CalendarDays, MessageCircle, Wallet } from "lucide-react";
 import { MandarOCardapio } from "@/components/cardapio/MandarOCardapio";
 import { PedidoPeloCardapio } from "@/components/cardapio/PedidoPeloCardapio";
 import { estiloDaLoja } from "@/components/cardapio/estiloDaLoja";
 import { classesBotao } from "@/components/ui/estilosBotao";
-import { mensagemDeContato, type Cardapio } from "@/lib/domain/cardapio";
-import { diaVizinho, hojeEmBrasilia } from "@/lib/domain/datas";
+import {
+  mensagemDeContato,
+  primeiroDiaDoCardapio,
+  type Cardapio,
+} from "@/lib/domain/cardapio";
+import {
+  diaVizinho,
+  hojeEmBrasilia,
+  rotuloDiaPorExtenso,
+} from "@/lib/domain/datas";
 import { linkDoWhatsApp } from "@/lib/domain/whatsapp";
 import { lerCardapio } from "@/lib/server/cardapio";
 import { cn } from "@/lib/utils/cn";
@@ -82,20 +90,32 @@ export default async function PaginaCardapio({ params }: Props) {
   const cardapio = await cardapioDa(contaId);
   if (!cardapio) notFound();
   const { negocio } = cardapio;
+  // Amanhã em Brasília, no servidor: o relógio do celular da cliente não
+  // decide o mínimo. Guardado com a página por até 60 s. O primeiro dia é a
+  // mesma conta do handler (`#d318`).
+  const hoje = hojeEmBrasilia(new Date());
+  const primeiro = primeiroDiaDoCardapio(hoje, negocio.aPartirDeISO);
 
   return (
     <main
       style={estiloDaLoja(negocio.cor)}
       className="mx-auto w-full max-w-6xl pb-12 lg:px-10"
     >
-      <Topo contaId={contaId} negocio={negocio} />
+      <Topo
+        contaId={contaId}
+        negocio={negocio}
+        aPartirDe={
+          primeiro === diaVizinho(hoje, 1)
+            ? "amanhã"
+            : rotuloDiaPorExtenso(primeiro)
+        }
+      />
 
-      {/* Amanhã em Brasília, no servidor: o relógio do celular da cliente não
-          decide o mínimo. Guardado com a página por até 60 s. */}
       <PedidoPeloCardapio
         contaId={contaId}
         cardapio={cardapio}
-        amanha={diaVizinho(hojeEmBrasilia(new Date()), 1)}
+        amanha={diaVizinho(hoje, 1)}
+        primeiro={primeiro}
       />
 
       <footer className="mx-4 mt-12 flex flex-col items-center gap-1 border-t border-line pt-6 text-label text-ink-muted lg:mx-0 lg:flex-row lg:justify-between">
@@ -132,9 +152,12 @@ export default async function PaginaCardapio({ params }: Props) {
 function Topo({
   contaId,
   negocio,
+  aPartirDe,
 }: {
   contaId: string;
   negocio: Cardapio["negocio"];
+  /** "amanhã", ou o dia por extenso com a agenda cheia. */
+  aPartirDe: string;
 }) {
   const base = `/c/${encodeURIComponent(contaId)}/vitrine`;
   const temFaixa = negocio.capaVersao !== undefined || !!negocio.cor;
@@ -186,6 +209,36 @@ function Topo({
             {negocio.frase && (
               <p className="mt-1 max-w-[48ch] text-body text-ink-muted">
                 {negocio.frase}
+              </p>
+            )}
+            {/* Antes de pedir (spec 115, `#d318`): o que a cliente perguntaria
+                no WhatsApp, antes do formulário. Cada linha só com dado. */}
+            <ul className="mt-3 flex flex-col gap-1.5 text-label text-ink">
+              <li className="flex items-start gap-2">
+                <CalendarDays
+                  aria-hidden
+                  className="mt-0.5 size-4 shrink-0"
+                  strokeWidth={1.75}
+                />
+                Pedidos para a partir de {aPartirDe}
+              </li>
+              {negocio.pagamento && (
+                <li className="flex items-start gap-2">
+                  <Wallet
+                    aria-hidden
+                    className="mt-0.5 size-4 shrink-0"
+                    strokeWidth={1.75}
+                  />
+                  <span>
+                    <span className="sr-only">Pagamento: </span>
+                    {negocio.pagamento}
+                  </span>
+                </li>
+              )}
+            </ul>
+            {negocio.recado && (
+              <p className="mt-2 max-w-[48ch] whitespace-pre-line wrap-break-word text-body text-ink">
+                {negocio.recado}
               </p>
             )}
           </div>

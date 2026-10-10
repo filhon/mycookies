@@ -139,10 +139,21 @@ export function salvarCardapio(
   contaId: string,
   cardapio: NonNullable<ConfiguracaoGeral["cardapio"]>,
 ): void {
+  // O `merge` funde o mapa `cardapio` campo a campo: o recado tirado e a agenda
+  // cheia vencida ou tirada (`#d318`) só saem com `deleteField`.
+  const { recado, aPartirDeISO, ...resto } = cardapio;
   despachar(
     setDoc(
       docConfiguracao(contaId),
-      { cardapio, v: VERSAO_SCHEMA, atualizadoEm: Timestamp.now() },
+      {
+        cardapio: {
+          ...resto,
+          recado: recado?.trim() || deleteField(),
+          aPartirDeISO: aPartirDeISO || deleteField(),
+        },
+        v: VERSAO_SCHEMA,
+        atualizadoEm: Timestamp.now(),
+      },
       { merge: true },
     ),
   );

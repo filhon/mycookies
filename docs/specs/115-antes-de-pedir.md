@@ -105,11 +105,11 @@ ativas (nunca o nome, a taxa, a chave Pix ou as instruções); (3) a reversão p
 
 ## Critérios de aceite
 
-- [ ] A lista "antes de pedir" no topo, cada linha só com dado; o recado dela abaixo.
-- [ ] Formas por tipo, sem nome, taxa ou chave; teste das chaves.
-- [ ] "Agenda cheia até" empurra o primeiro dia na página e no handler, pela mesma função, e
+- [x] A lista "antes de pedir" no topo, cada linha só com dado; o recado dela abaixo.
+- [x] Formas por tipo, sem nome, taxa ou chave; teste das chaves.
+- [x] "Agenda cheia até" empurra o primeiro dia na página e no handler, pela mesma função, e
       vence sozinha.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `#d318` escrito; `ESTADO.md` e `novidades.ts`
+- [x] `lint`, `typecheck`, `test` e `build` passam; `#d318` escrito; `ESTADO.md` e `novidades.ts`
       atualizados.
 
 ---

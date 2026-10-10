@@ -81,6 +81,7 @@ export async function POST(requisicao: Request) {
     opcoes: lido.opcoes,
     fichaIds: lido.configuracao?.cardapio?.fichaIds ?? [],
     promocoes: lido.configuracao?.cardapio?.promocoes,
+    aPartirDeISO: lido.configuracao?.cardapio?.aPartirDeISO,
     hojeISO,
   });
   if (!montado.ok) {

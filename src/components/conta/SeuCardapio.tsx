@@ -28,7 +28,7 @@ import {
   usePortao,
 } from "@/components/assinatura/SoNoCompleto";
 import { Botao } from "@/components/ui/Botao";
-import { Campo, Seletor } from "@/components/ui/Campo";
+import { AreaTexto, Campo, Seletor } from "@/components/ui/Campo";
 import { CampoImagem } from "@/components/ui/CampoImagem";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Dinheiro } from "@/components/ui/Dinheiro";
@@ -38,6 +38,7 @@ import { classesBotao } from "@/components/ui/estilosBotao";
 import {
   CAPA_LADO_PX,
   CAPA_MAX_BYTES,
+  DIAS_A_FRENTE,
   DIAS_DE_PROMOCAO,
   entraNoCardapio,
   LIMITE_DO_CARDAPIO,
@@ -45,7 +46,9 @@ import {
   LOGO_MAX_BYTES,
   porCategoria,
   precoVigente,
+  primeiroDiaDoCardapio,
   problemaDaPromocao,
+  RECADO_MAXIMO,
 } from "@/lib/domain/cardapio";
 import { dataISODe, diaVizinho, rotuloDiaPorExtenso } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
@@ -77,6 +80,8 @@ function contadoHa(dias: number): string {
 
 /** Onde o telefone mora: o bloco "Na folha do orçamento" desta mesma tela. */
 export const ANCORA_DO_CONTATO = "folha-do-orcamento";
+/** Onde as formas de pagamento moram, que a linha "Como você recebe" aponta (`#d318`). */
+export const ANCORA_DAS_FORMAS = "formas-de-pagamento";
 
 /**
  * "Seu cardápio" (spec 031, 3.A.5): a linha na prateleira de `/configuracao`,
@@ -188,13 +193,28 @@ export function SeuCardapio({
   const semTelefone = !configuracao?.contato?.telefone?.trim();
   const [gerandoQr, setGerandoQr] = useState(false);
 
+  // A agenda cheia que ainda empurra o primeiro dia (`#d318`); a vencida sai
+  // no próximo toque, como a promoção.
+  const gravadoAPartirDe = configuracao?.cardapio?.aPartirDeISO;
+  const aPartirDeISO =
+    gravadoAPartirDe &&
+    primeiroDiaDoCardapio(hoje, gravadoAPartirDe) === gravadoAPartirDe
+      ? gravadoAPartirDe
+      : undefined;
+
   function gravar(mudanca: {
     aberto?: boolean;
     fichaIds?: string[];
     limitados?: string[];
     promocoes?: PromocaoDoCardapio[];
+    recado?: string;
+    /** `null` tira. */
+    aPartirDeISO?: string | null;
   }) {
     const ids = mudanca.fichaIds ?? fichaIds;
+    const recado = (mudanca.recado ?? configuracao?.cardapio?.recado)?.trim();
+    const aPartirDe =
+      mudanca.aPartirDeISO === undefined ? aPartirDeISO : mudanca.aPartirDeISO;
     salvarCardapio(contaId, {
       aberto: mudanca.aberto ?? aberto,
       fichaIds: ids,
@@ -202,6 +222,8 @@ export function SeuCardapio({
       promocoes: (
         mudanca.promocoes ?? promocoes.map(({ promocao }) => promocao)
       ).filter((promocao) => ids.includes(promocao.fichaId)),
+      ...(recado ? { recado } : {}),
+      ...(aPartirDe ? { aPartirDeISO: aPartirDe } : {}),
     });
   }
 
@@ -434,6 +456,14 @@ export function SeuCardapio({
                 </Botao>
               </div>
             )}
+
+            <ParaACliente
+              recado={configuracao.cardapio?.recado ?? ""}
+              aPartirDeISO={aPartirDeISO}
+              hoje={hoje}
+              aoMudar={gravar}
+              aoIrParaAsFormas={() => setPainelAberto(false)}
+            />
 
             {semTelefone && (
               <div className="flex items-start gap-2.5 rounded-md border border-attention/30 bg-attention-soft px-3 py-3 text-label text-ink">
@@ -777,6 +807,108 @@ export function SeuCardapio({
         )}
       </Painel>
     </>
+  );
+}
+
+/**
+ * "Para a cliente saber" (spec 115, `#d318`): o recado do topo da página e a
+ * agenda cheia. O recado grava ao sair do campo; a data, no toque. Ela pensa
+ * em "cheia até", a página em "a partir de": grava o dia seguinte.
+ */
+function ParaACliente({
+  recado,
+  aPartirDeISO,
+  hoje,
+  aoMudar,
+  aoIrParaAsFormas,
+}: {
+  recado: string;
+  aPartirDeISO: string | undefined;
+  hoje: string;
+  aoMudar: (mudanca: { recado?: string; aPartirDeISO?: string | null }) => void;
+  aoIrParaAsFormas: () => void;
+}) {
+  const id = useId();
+  // Montado só com a configuração carregada: o estado local começa do gravado.
+  const [texto, setTexto] = useState(recado);
+  const [ate, setAte] = useState(
+    aPartirDeISO ? diaVizinho(aPartirDeISO, -1) : "",
+  );
+  // Cheia até amanhã é o mínimo que muda alguma coisa; o máximo é o último dia
+  // que a cliente escolheria.
+  const minimo = diaVizinho(hoje, 1);
+  const maximo = diaVizinho(hoje, DIAS_A_FRENTE - 1);
+  const valida = ate !== "" && ate >= minimo && ate <= maximo;
+
+  return (
+    <section aria-labelledby={id} className="space-y-4">
+      <h3 id={id} className="text-label font-medium text-ink">
+        Para a cliente saber
+      </h3>
+      <div className="space-y-1">
+        <AreaTexto
+          rotulo="Recado"
+          dica="Aparece no topo do cardápio. Onde retirar, onde você entrega, o que precisa de mais antecedência."
+          maxLength={RECADO_MAXIMO}
+          value={texto}
+          onChange={(evento) => setTexto(evento.target.value)}
+          onBlur={() => {
+            if (texto.trim() !== recado.trim()) aoMudar({ recado: texto });
+          }}
+        />
+        <p className="num text-right text-micro text-ink-muted">
+          {texto.length}/{RECADO_MAXIMO}
+        </p>
+      </div>
+      <div className="space-y-2">
+        <Campo
+          rotulo="Agenda cheia até"
+          type="date"
+          min={minimo}
+          max={maximo}
+          value={ate}
+          erro={
+            ate !== "" && !valida
+              ? `Escolha um dia entre amanhã e ${rotuloDiaPorExtenso(maximo)}.`
+              : undefined
+          }
+          onChange={(evento) => {
+            const dia = evento.target.value;
+            setAte(dia);
+            if (dia >= minimo && dia <= maximo) {
+              aoMudar({ aPartirDeISO: diaVizinho(dia, 1) });
+            }
+          }}
+        />
+        {valida && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <p aria-live="polite" className="text-label text-ink">
+              A cliente só escolhe a partir de{" "}
+              {rotuloDiaPorExtenso(diaVizinho(ate, 1))}.
+            </p>
+            <Botao
+              variante="terciaria"
+              onClick={() => {
+                setAte("");
+                aoMudar({ aPartirDeISO: null });
+              }}
+            >
+              Tirar
+            </Botao>
+          </div>
+        )}
+      </div>
+      <p className="text-label text-ink-muted">
+        Como você recebe vem das suas formas de pagamento.{" "}
+        <a
+          href={`#${ANCORA_DAS_FORMAS}`}
+          onClick={aoIrParaAsFormas}
+          className="font-medium text-brand-ink underline underline-offset-2"
+        >
+          Ver as formas
+        </a>
+      </p>
+    </section>
   );
 }
 

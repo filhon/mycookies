@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-10",
+    titulo: "Agenda cheia sem fechar o cardápio",
+    frase:
+      "Em “Seu cardápio”, diga até quando a agenda está cheia e a cliente só escolhe depois disso. O topo do cardápio passa a dizer para quando dá, como você recebe e o seu recado.",
+    href: "/configuracao#a-sua-marca",
+  },
+  {
+    dataISO: "2026-10-10",
     titulo: "O QR code do seu cardápio, para imprimir",
     frase:
       "Em “Seu cardápio”, baixe o QR code para o balcão, a etiqueta ou a embalagem. A cliente aponta a câmera e cai no seu cardápio, e o link que você manda chega com a sua capa.",

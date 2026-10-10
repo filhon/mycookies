@@ -117,12 +117,19 @@ export interface ConfiguracaoGeral {
    * restam no pote e param de receber pedido quando acabam. Ausente = nenhuma.
    *
    * `promocoes` (sessão E, `#d165`): uma por ficha, contra o preço de sempre.
+   *
+   * `recado` e `aPartirDeISO` (spec 115, `#d318`): o texto dela no topo da
+   * página, até 280 caracteres, sem formatação; e o primeiro dia que ela aceita
+   * com a agenda cheia. Passado o dia, vale como ausente, e o próximo
+   * `salvarCardapio` o limpa, como a promoção vencida.
    */
   cardapio?: {
     aberto: boolean;
     fichaIds: string[];
     limitados?: string[];
     promocoes?: PromocaoDoCardapio[];
+    recado?: string;
+    aPartirDeISO?: DataISO;
   };
   atualizadoEm: Timestamp;
 }

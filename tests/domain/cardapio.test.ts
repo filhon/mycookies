@@ -11,9 +11,11 @@ import {
   limitadasComContagem,
   maisPedidosDoCardapio,
   MINIMO_PARA_DESTACAR,
+  pagamentoEmTexto,
   passaDoQueResta,
   pedidoDoCardapio,
   precoVigente,
+  primeiroDiaDoCardapio,
   problemaDaPromocao,
   restamNoPote,
   seloDaPromocao,
@@ -503,6 +505,9 @@ describe("montarCardapio", () => {
         "whatsapp",
         "instagram",
         "feitoComRende",
+        "pagamento",
+        "recado",
+        "aPartirDeISO",
       ]).toContain(chave);
     }
   });
@@ -690,6 +695,175 @@ describe("pedidoDoCardapio", () => {
       ok: false,
       falha: "data",
     });
+  });
+
+  it("agenda cheia (`#d318`): recusa o dia antes do primeiro, aceita ele", () => {
+    const em = (dataEntregaISO: string, aPartirDeISO?: string) =>
+      pedidoDoCardapio({
+        pedido: pedidoDaAna({ dataEntregaISO }),
+        fichas: [TRADICIONAL, RED_VELVET, RECHEIO],
+        opcoes: [],
+        fichaIds: ["tradicional", "redvelvet", "recheio"],
+        aPartirDeISO,
+        hojeISO: HOJE,
+      });
+    expect(em("2026-09-29", "2026-09-30")).toEqual({
+      ok: false,
+      falha: "data",
+    });
+    expect(em("2026-09-30", "2026-09-30").ok).toBe(true);
+    // Vencida: vale como ausente.
+    expect(em("2026-09-24", "2026-09-20").ok).toBe(true);
+  });
+});
+
+describe("pagamentoEmTexto", () => {
+  it("os tipos misturados, na ordem Pix, cartão, dinheiro, transferência", () => {
+    expect(
+      pagamentoEmTexto(["DINHEIRO", "TRANSFERENCIA", "CREDITO", "PIX"]),
+    ).toBe("Pix, cartão, dinheiro ou transferência");
+    expect(pagamentoEmTexto(["DINHEIRO", "PIX"])).toBe("Pix ou dinheiro");
+    expect(pagamentoEmTexto(["DINHEIRO"])).toBe("Dinheiro");
+  });
+
+  it("débito, crédito e parcelado dizem cartão uma vez só", () => {
+    expect(
+      pagamentoEmTexto(["DEBITO", "CREDITO", "CREDITO_PARCELADO", "DINHEIRO"]),
+    ).toBe("Cartão ou dinheiro");
+  });
+
+  it("sem forma, sem linha", () => {
+    expect(pagamentoEmTexto([])).toBeNull();
+  });
+});
+
+describe("primeiroDiaDoCardapio", () => {
+  it("sem agenda cheia, amanhã", () => {
+    expect(primeiroDiaDoCardapio(HOJE)).toBe("2026-09-24");
+  });
+
+  it("antes ou igual a amanhã, amanhã; depois, o dia dela", () => {
+    expect(primeiroDiaDoCardapio(HOJE, "2026-09-24")).toBe("2026-09-24");
+    expect(primeiroDiaDoCardapio(HOJE, "2026-10-02")).toBe("2026-10-02");
+  });
+
+  it("o vencido é ignorado; o inválido também; nunca passa de hoje + 90", () => {
+    expect(primeiroDiaDoCardapio(HOJE, "2026-09-10")).toBe("2026-09-24");
+    expect(primeiroDiaDoCardapio(HOJE, "2026-09-31")).toBe("2026-09-24");
+    expect(primeiroDiaDoCardapio(HOJE, "2027-06-01")).toBe("2026-12-22");
+  });
+});
+
+describe("montarCardapio · antes de pedir (`#d318`)", () => {
+  const FORMAS = [
+    {
+      id: "a",
+      nome: "Crédito maquininha Stone",
+      tipo: "CREDITO",
+      taxaPercentual: 4.99,
+      taxaFixa: 0,
+      prazoRecebimentoDias: 30,
+      ativo: true,
+    },
+    {
+      id: "b",
+      nome: "Pix da Maynara",
+      tipo: "PIX",
+      taxaPercentual: 0,
+      taxaFixa: 0,
+      prazoRecebimentoDias: 0,
+      ativo: true,
+      instrucoes: "Chave: maynara@exemplo.com",
+      pix: { chave: "maynara@exemplo.com", nome: "Maynara", cidade: "Recife" },
+    },
+    {
+      id: "c",
+      nome: "Dinheiro",
+      tipo: "DINHEIRO",
+      taxaPercentual: 0,
+      taxaFixa: 0,
+      prazoRecebimentoDias: 0,
+      ativo: false,
+    },
+  ] as ConfiguracaoGeral["formasPagamento"];
+
+  function comCardapio(
+    cardapio: Partial<NonNullable<ConfiguracaoGeral["cardapio"]>>,
+  ) {
+    return montar({
+      configuracao: configuracao({
+        formasPagamento: FORMAS,
+        cardapio: {
+          aberto: true,
+          fichaIds: ["tradicional", "redvelvet"],
+          ...cardapio,
+        },
+      }),
+    });
+  }
+
+  it("só o tipo das formas ativas sai: nem nome, nem taxa, nem chave", () => {
+    const cardapio = comCardapio({});
+    expect(cardapio!.negocio.pagamento).toBe("Pix ou cartão");
+    const tudo = JSON.stringify(cardapio);
+    for (const vaza of [
+      "Stone",
+      "maynara@exemplo.com",
+      "4.99",
+      "Recife",
+      "Pix da",
+    ]) {
+      expect(tudo).not.toContain(vaza);
+    }
+  });
+
+  it("sem forma ativa, sem `pagamento`", () => {
+    const cardapio = montar({
+      configuracao: configuracao({
+        formasPagamento: FORMAS.map((f) => ({ ...f, ativo: false })),
+      }),
+    });
+    expect(cardapio!.negocio).not.toHaveProperty("pagamento");
+  });
+
+  it("o recado sai aparado; vazio não sai", () => {
+    expect(
+      comCardapio({ recado: "  Retirada no Espinheiro.  " })!.negocio.recado,
+    ).toBe("Retirada no Espinheiro.");
+    expect(comCardapio({ recado: "   " })!.negocio).not.toHaveProperty(
+      "recado",
+    );
+  });
+
+  it("a agenda cheia sai só enquanto empurra o primeiro dia", () => {
+    // AGORA é 23/09/2026.
+    expect(
+      comCardapio({ aPartirDeISO: "2026-10-02" })!.negocio.aPartirDeISO,
+    ).toBe("2026-10-02");
+    expect(
+      comCardapio({ aPartirDeISO: "2026-09-24" })!.negocio,
+    ).not.toHaveProperty("aPartirDeISO");
+    expect(
+      comCardapio({ aPartirDeISO: "2026-09-20" })!.negocio,
+    ).not.toHaveProperty("aPartirDeISO");
+  });
+
+  it("as chaves do negócio, com as três novas", () => {
+    const cardapio = comCardapio({
+      recado: "Entrega a combinar.",
+      aPartirDeISO: "2026-10-02",
+    });
+    expect(Object.keys(cardapio!.negocio).sort()).toEqual([
+      "aPartirDeISO",
+      "feitoComRende",
+      "frase",
+      "instagram",
+      "nome",
+      "pagamento",
+      "quem",
+      "recado",
+      "whatsapp",
+    ]);
   });
 });
 

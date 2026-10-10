@@ -9927,3 +9927,54 @@ o QR já impresso continua valendo se o endereço antigo continuar respondendo. 
 uma leitura da vitrine por prévia, que o `immutable` do `?v=` segura. O WhatsApp guarda a prévia
 por endereço: link colado antes do deploy continua sem imagem. Imagem montada (`next/og`),
 indexação, indicação com recompensa e QR com logo ficaram fora.
+
+## D318 · Antes de pedir, e a agenda cheia no lugar de fechar
+
+**Status:** vigente · decidida em 2026-10-10, spec `115-antes-de-pedir.md`. **Reverte em parte
+um item do "Fora de escopo" da 031** ("antecedência configurável"): entra uma data que vence,
+não uma regra fixa. As três aprovações da spec (schema aditivo, o que sai para fora e a
+reversão) tomadas como dadas pelo pedido de implementá-la, como na 113.
+
+**Contexto.** O topo do cardápio público tinha o nome e os botões; "aceita Pix?", "pra quando
+dá?" e "onde eu pego?" só tinham resposta, parcial, dentro da folha do pedido, e viravam
+pergunta no WhatsApp. Com a agenda cheia, a única saída era fechar o cardápio, e o link da bio
+passava a parecer quebrado.
+
+**Decisão.**
+
+- **"Antes de pedir"**, abaixo do nome e da frase: uma lista (`<ul>`, ícone de 16 px, `label`,
+  `--ink`) com `CalendarDays` "Pedidos para a partir de amanhã" (ou do dia por extenso, com
+  `rotuloDiaPorExtenso`), sempre; `Wallet` com as formas, só quando há forma ativa (com
+  "Pagamento:" em `sr-only`, porque "Pix ou dinheiro" sozinho não diz o que é); e o recado em
+  `body` abaixo, com `whitespace-pre-line`.
+- **`pagamentoEmTexto(tipos)`** em `domain/cardapio.ts`: Pix, cartão (débito, crédito e
+  parcelado, uma vez), dinheiro, transferência, **nessa ordem** (a da regra da spec; o exemplo
+  "Pix, dinheiro ou cartão" do topo da spec a contradizia, e a regra ganhou), com vírgula e "ou",
+  a primeira letra em maiúscula. `negocio.pagamento` sai já em texto: revela menos que os tipos
+  (débito e crédito se fundem). Nome, taxa, chave Pix e instruções nunca saem; o teste procura
+  cada um no JSON inteiro.
+- **`cardapio.recado?`** (até `RECADO_MAXIMO` = 280, texto dela, aparado; a página corta em 280
+  também) e **`cardapio.aPartirDeISO?`** em `ConfiguracaoGeral`, aditivos, sem subir
+  `VERSAO_SCHEMA`.
+- **`primeiroDiaDoCardapio(hojeISO, aPartirDeISO?)`**: amanhã, ou o dia dela quando é válido e
+  depois de amanhã, nunca além de hoje + `DIAS_A_FRENTE`. A página (botões de "Para quando?" e o
+  `min` do calendário) e `pedidoDoCardapio` (recusa com `data`) usam a mesma. Os botões começam
+  no primeiro dia e param no último que a cliente escolhe; "amanhã" só no botão que é amanhã.
+- **`negocio.aPartirDeISO`** só sai enquanto empurra o primeiro dia: vencida, ela some sozinha,
+  sem ninguém tocar (o `revalidate` de 60 s refaz a página). O painel a trata como ausente e o
+  próximo `salvarCardapio` a apaga.
+- **A mensagem de `data`** virou "Esse dia não está aberto para pedidos. Escolha outro em “Para
+  quando?”": com a agenda cheia, "entre amanhã e os próximos 90 dias" mentiria.
+- **O painel, "Para a cliente saber"**, logo abaixo do link: "Recado" (`AreaTexto`, contagem
+  `n/280` abaixo, grava ao sair do campo), "Agenda cheia até" (`type="date"`, de amanhã a hoje +
+  89, grava no toque o **dia seguinte** como `aPartirDeISO`; a frase "A cliente só escolhe a
+  partir de…" e "Tirar"), e a linha `--ink-muted` com o link para as formas de pagamento
+  (`ANCORA_DAS_FORMAS`, o `id` novo do bloco na configuração). O estado local da data aceita o
+  digitar do ano sem gravar `0002-…`: só grava dentro do intervalo, e fora dele mostra o erro.
+- **`salvarCardapio`** passou a mandar `deleteField()` para recado vazio e agenda ausente: o
+  `merge: true` funde o mapa `cardapio` campo a campo, e uma chave omitida ficaria gravada.
+
+**Consequência.** Nenhuma regra, índice ou dependência. O que sai para fora cresce em três
+pontos: os tipos das formas ativas (em texto), o recado e o primeiro dia. Horário de
+funcionamento, dia fixo de folga, taxa por bairro, pedido mínimo cobrado e a pausa com o
+cardápio aberto ficaram fora.

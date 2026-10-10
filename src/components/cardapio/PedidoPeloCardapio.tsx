@@ -143,10 +143,13 @@ export function PedidoPeloCardapio({
   contaId,
   cardapio,
   amanha,
+  primeiro,
 }: {
   contaId: string;
   cardapio: Cardapio;
   amanha: string;
+  /** `primeiroDiaDoCardapio`: amanhã, ou depois com a agenda cheia (`#d318`). */
+  primeiro: string;
 }) {
   const { negocio } = cardapio;
   const quem = negocio.quem || negocio.nome;
@@ -365,9 +368,10 @@ export function PedidoPeloCardapio({
     negocio.whatsapp &&
     linkDoWhatsApp(negocio.whatsapp, mensagemDeContato(negocio));
 
+  const ultimoDia = diaVizinho(amanha, DIAS_A_FRENTE - 1);
   const dias = Array.from({ length: DIAS_EM_BOTAO }, (_, i) =>
-    diaVizinho(amanha, i),
-  );
+    diaVizinho(primeiro, i),
+  ).filter((dia) => dia <= ultimoDia);
 
   const corpo = enviado ? (
     <div className="space-y-4">
@@ -492,7 +496,7 @@ export function PedidoPeloCardapio({
           Para quando?
         </legend>
         <div className="-mx-1 flex gap-2 overflow-x-auto px-1 py-1">
-          {dias.map((dia, i) => (
+          {dias.map((dia) => (
             <Opcao
               key={dia}
               name="dia"
@@ -505,7 +509,7 @@ export function PedidoPeloCardapio({
               className="h-16 w-16 shrink-0 flex-col gap-0 rounded-md border"
             >
               <span className="text-micro">
-                {i === 0 ? "amanhã" : semana(dia)}
+                {dia === amanha ? "amanhã" : semana(dia)}
               </span>
               <span className="num text-body font-semibold">
                 {diaEMes(dia)}
@@ -530,8 +534,8 @@ export function PedidoPeloCardapio({
             rotulo="Qual dia?"
             required
             type="date"
-            min={amanha}
-            max={diaVizinho(amanha, DIAS_A_FRENTE - 1)}
+            min={primeiro}
+            max={ultimoDia}
             value={data}
             onChange={(e) => setData(e.target.value)}
           />

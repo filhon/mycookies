@@ -11,6 +11,7 @@ import {
   type ItemPedido,
   type Pedido,
   type PromocaoDoCardapio,
+  type TipoPagamento,
   type VitrineDoCardapio,
 } from "@/lib/types";
 import { paraSituar, permite, situacaoDaConta } from "./assinatura";
@@ -108,6 +109,12 @@ export interface Cardapio {
     instagram?: string;
     /** `!ocultarFeitoCom` (`#d147`). */
     feitoComRende: boolean;
+    /** "Pix, cartão ou dinheiro", pelos tipos das formas ativas e nunca pelo nome (`#d318`). */
+    pagamento?: string;
+    /** O texto dela no topo (`#d318`). */
+    recado?: string;
+    /** A agenda cheia (`#d318`): só quando empurra o primeiro dia para depois de amanhã. */
+    aPartirDeISO?: DataISO;
   };
   /** Na ordem de `categoriasProduto`, e categoria desconhecida no fim; nome dentro. */
   secoes: { categoria: string; produtos: ProdutoDoCardapio[] }[];
@@ -306,6 +313,52 @@ export function escolhasEmTexto(
   escolhas: { quantidade: number; categoria: string }[],
 ): string {
   return `Escolha ${escolhas.map((e) => `${e.quantidade} · ${e.categoria}`).join(" + ")}`;
+}
+
+// ---------------------------------------------------------------------------
+// Antes de pedir (spec 115, `#d318`)
+// ---------------------------------------------------------------------------
+
+/** O recado da loja no topo da página. */
+export const RECADO_MAXIMO = 280;
+
+/** Na ordem em que a linha os diz; débito e crédito viram "cartão" uma vez. */
+const PAGAMENTO_EM_TEXTO: [string, TipoPagamento[]][] = [
+  ["Pix", ["PIX"]],
+  ["cartão", ["DEBITO", "CREDITO", "CREDITO_PARCELADO"]],
+  ["dinheiro", ["DINHEIRO"]],
+  ["transferência", ["TRANSFERENCIA"]],
+];
+
+/**
+ * "Pix, cartão ou dinheiro", pelos tipos e nunca pelo nome: o nome é dela para
+ * ela ("Crédito maquininha Stone"). `null` sem nenhum tipo, e a linha some.
+ */
+export function pagamentoEmTexto(tipos: TipoPagamento[]): string | null {
+  const ditos = PAGAMENTO_EM_TEXTO.filter(([, deles]) =>
+    deles.some((tipo) => tipos.includes(tipo)),
+  ).map(([texto]) => texto);
+  if (ditos.length === 0) return null;
+  const ultimo = ditos.pop()!;
+  const frase = ditos.length ? `${ditos.join(", ")} ou ${ultimo}` : ultimo;
+  return frase[0]!.toUpperCase() + frase.slice(1);
+}
+
+/**
+ * O primeiro dia que a cliente escolhe: amanhã, ou o "a partir de" da agenda
+ * cheia quando ele é depois de amanhã e válido. Nunca passa de hoje +
+ * `DIAS_A_FRENTE`. A página e o handler passam por aqui: uma conta só.
+ */
+export function primeiroDiaDoCardapio(
+  hojeISO: DataISO,
+  aPartirDeISO?: DataISO,
+): DataISO {
+  const amanha = diaVizinho(hojeISO, 1);
+  if (!aPartirDeISO || !diaValido(aPartirDeISO) || aPartirDeISO <= amanha) {
+    return amanha;
+  }
+  const ultimo = diaVizinho(hojeISO, DIAS_A_FRENTE);
+  return aPartirDeISO > ultimo ? ultimo : aPartirDeISO;
 }
 
 // ---------------------------------------------------------------------------
@@ -542,6 +595,16 @@ export function montarCardapio(entrada: {
   const cor = corDaLoja(vitrine?.cor);
   const versao = vitrine?.atualizadoEm?.toMillis() ?? 0;
   const maisPedidos = maisPedidosDoCardapio(entrada.vendidos ?? [], produtos);
+  // Só o tipo sai: nome, taxa, chave Pix e instruções ficam (`#d318`).
+  const pagamento = pagamentoEmTexto(
+    (configuracao.formasPagamento ?? []).flatMap((f) =>
+      f.ativo ? [f.tipo] : [],
+    ),
+  );
+  const recado = cardapio.recado?.trim().slice(0, RECADO_MAXIMO);
+  const primeiro = primeiroDiaDoCardapio(hojeISO, cardapio.aPartirDeISO);
+  const aPartirDeISO =
+    primeiro !== diaVizinho(hojeISO, 1) ? primeiro : undefined;
 
   return {
     negocio: {
@@ -554,6 +617,9 @@ export function montarCardapio(entrada: {
       ...(whatsapp ? { whatsapp } : {}),
       ...(instagram ? { instagram } : {}),
       feitoComRende: !configuracao.ocultarFeitoCom,
+      ...(pagamento ? { pagamento } : {}),
+      ...(recado ? { recado } : {}),
+      ...(aPartirDeISO ? { aPartirDeISO } : {}),
     },
     secoes,
     ...(maisPedidos.length ? { maisPedidos } : {}),
@@ -728,7 +794,7 @@ export type FalhaPedidoCardapio =
   | "fora-de-forma" // esquema, ou item repetido que soma mais de 500
   | "fechado" // montarCardapio devolveria null
   | "mudou" // item que saiu do cardápio desde que a página abriu
-  | "data" // antes de amanhã ou depois de DIAS_A_FRENTE
+  | "data" // antes do primeiro dia (`#d318`) ou depois de DIAS_A_FRENTE
   | "cheio" // LIMITE_DE_ORCAMENTOS_EM_ABERTO
   | "acabou" // leva mais do que resta de um produto limitado (`#d164`)
   | "sem-configuracao"
@@ -744,7 +810,8 @@ export const MENSAGEM_FALHA_PEDIDO_CARDAPIO: Record<
     "Confira o nome, o WhatsApp com DDD e, se for entrega, o endereço.",
   fechado: "O cardápio fechou enquanto você escolhia. Fale pelo WhatsApp.",
   mudou: "O cardápio mudou enquanto você escolhia. Confira e mande de novo.",
-  data: `Escolha um dia entre amanhã e os próximos ${DIAS_A_FRENTE} dias.`,
+  // Com a agenda cheia (`#d318`), "entre amanhã e…" mentiria.
+  data: "Esse dia não está aberto para pedidos. Escolha outro em “Para quando?”.",
   cheio:
     "Chegaram muitos pedidos de uma vez. Para não se perder, mande o seu pelo WhatsApp.",
   acabou:
@@ -796,6 +863,8 @@ export function pedidoDoCardapio(entrada: {
   fichaIds: string[];
   /** `cardapio.promocoes`: o preço gravado é o de hoje, como na página (`#d165`). */
   promocoes?: PromocaoDoCardapio[];
+  /** `cardapio.aPartirDeISO`: a agenda cheia, pela mesma conta da página (`#d318`). */
+  aPartirDeISO?: DataISO;
   hojeISO: DataISO;
 }):
   | { ok: true; corpo: CorpoDoPedidoDoCardapio }
@@ -823,7 +892,7 @@ export function pedidoDoCardapio(entrada: {
   const dia = pedido.dataEntregaISO;
   if (
     !diaValido(dia) ||
-    dia <= hojeISO ||
+    dia < primeiroDiaDoCardapio(hojeISO, entrada.aPartirDeISO) ||
     dia > diaVizinho(hojeISO, DIAS_A_FRENTE)
   ) {
     return { ok: false, falha: "data" };

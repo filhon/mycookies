@@ -21,7 +21,11 @@ import { FaleComAGente } from "@/components/conta/FaleComAGente";
 import { LinhaDaAssinatura } from "@/components/conta/LinhaDaAssinatura";
 import { MeusDados } from "@/components/conta/MeusDados";
 import { QuemTeAjuda } from "@/components/conta/QuemTeAjuda";
-import { ANCORA_DO_CONTATO, SeuCardapio } from "@/components/conta/SeuCardapio";
+import {
+  ANCORA_DAS_FORMAS,
+  ANCORA_DO_CONTATO,
+  SeuCardapio,
+} from "@/components/conta/SeuCardapio";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, Seletor } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -1083,6 +1087,7 @@ function ConfiguracaoDaDona() {
             </BlocoConfiguracao>
 
             <BlocoConfiguracao
+              id={ANCORA_DAS_FORMAS}
               icone={CreditCard}
               titulo="Formas de pagamento"
               descricao="A maquininha cobra por venda, e essa taxa sai do seu lucro, não do preço da cliente."

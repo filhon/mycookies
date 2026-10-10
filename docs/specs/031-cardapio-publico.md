@@ -1172,7 +1172,10 @@ logado no Rende e de rede. Aparelho em 360 px nos passos 3, 5 e 7.
   feito. Só o que ela marca como limitado conta o pote (sessão D, `#d164`).
 - **Dias e horários de funcionamento, antecedência configurável, pedido mínimo.** Amanhã e 90
   dias são constantes; ela recusa o dia que não dá, na conversa. Viram campo com o primeiro
-  pedido real que ela precisar recusar toda semana.
+  pedido real que ela precisar recusar toda semana. (A spec 115, `DECISOES.md#d318`, trouxe a
+  "agenda cheia até", uma data que vence e empurra o primeiro dia, e o recado em texto livre,
+  onde o pedido mínimo e a área de entrega são ditos e não cobrados; horários, dias fixos de
+  folga e antecedência como regra fixa continuam fora.)
 - **Venda por peso na página** (`#d159`). Quantidade fracionária com preço por quilo. O combo à
   escolha, que a A deixava fora com ela, entra na sessão C.
 - **Endereço bonito** (`/c/mycookies` para toda conta). Índice global fora de `contas/` (`#d158`).
