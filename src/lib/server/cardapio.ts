@@ -8,7 +8,11 @@ import {
   type Cardapio,
 } from "@/lib/domain/cardapio";
 import { temEscolhas } from "@/lib/domain/custoFicha";
-import { hojeEmBrasilia } from "@/lib/domain/datas";
+import {
+  competenciaDeISO,
+  competenciaVizinha,
+  hojeEmBrasilia,
+} from "@/lib/domain/datas";
 import {
   caminhos,
   type ConfiguracaoGeral,
@@ -17,6 +21,7 @@ import {
   type FichaTecnica,
   type Fornada,
   type Pedido,
+  type ResumoMensal,
   type VitrineDoCardapio,
 } from "@/lib/types";
 import { adminDb, credencialDisponivel } from "./firebaseAdmin";
@@ -43,11 +48,44 @@ export async function lerCardapio(contaId: string): Promise<Cardapio | null> {
   if (!lido) return null;
   // A vitrine é lida aqui e não em `lerContaDoCardapio`: o pedido não precisa
   // das imagens, e elas são o documento mais pesado da conta (`#d166`).
-  const [restam, vitrine] = await Promise.all([
-    lerRestam(contaId, lido, hojeEmBrasilia(new Date())),
+  const hojeISO = hojeEmBrasilia(new Date());
+  const [restam, vitrine, vendidos] = await Promise.all([
+    lerRestam(contaId, lido, hojeISO),
     lerVitrine(contaId),
+    lerVendidos(contaId, hojeISO),
   ]);
-  return montarCardapio({ ...lido, restam, vitrine, agoraMs: Date.now() });
+  return montarCardapio({
+    ...lido,
+    restam,
+    vitrine,
+    vendidos,
+    agoraMs: Date.now(),
+  });
+}
+
+/**
+ * Os mais pedidos (`#d316`): os agregados deste mês e do anterior, por id, e
+ * só `produtos[id].quantidade` sai daqui. Mês sem documento conta zero.
+ */
+async function lerVendidos(
+  contaId: string,
+  hojeISO: DataISO,
+): Promise<Map<string, number>[]> {
+  const atual = competenciaDeISO(hojeISO);
+  const db = adminDb();
+  const snaps = await db.getAll(
+    db.doc(caminhos.resumoMensal(contaId, atual)),
+    db.doc(caminhos.resumoMensal(contaId, competenciaVizinha(atual, -1))),
+  );
+  return snaps.map(
+    (snap) =>
+      new Map(
+        Object.entries(
+          (snap.data() as Pick<ResumoMensal, "produtos"> | undefined)
+            ?.produtos ?? {},
+        ).map(([id, produto]) => [id, produto.quantidade]),
+      ),
+  );
 }
 
 async function lerVitrine(contaId: string): Promise<VitrineDoCardapio | null> {

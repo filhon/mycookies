@@ -89,12 +89,12 @@ o Rende não sabe disso").
 
 ## Critérios de aceite
 
-- [ ] Até três destaques com foto, cada um com pelo menos 5 unidades em dois meses; menos de dois,
+- [x] Até três destaques com foto, cada um com pelo menos 5 unidades em dois meses; menos de dois,
       nada.
-- [ ] Só ids saem; teste das chaves.
-- [ ] Duas leituras por id a mais, dentro do `revalidate`.
-- [ ] A peça abre a ficha; nenhum controle de quantidade duplicado.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `#d316` escrito com a reversão do item do
+- [x] Só ids saem; teste das chaves.
+- [x] Duas leituras por id a mais, dentro do `revalidate`.
+- [x] A peça abre a ficha; nenhum controle de quantidade duplicado.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `#d316` escrito com a reversão do item do
       `#d166`; `ESTADO.md` atualizado.
 
 ---

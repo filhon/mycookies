@@ -26,7 +26,8 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
  * (spec 031, `src/lib/server/cardapio.ts`): só a conta, a configuração e as
  * fichas da lista do cardápio, mais as fichas das categorias dos combos (C,
  * `#d163`), mais fornadas e pedidos desde a contagem do pote, só para contar
- * quantas restam dos limitados (D, `#d164`), e só devolvem o que
+ * quantas restam dos limitados (D, `#d164`), mais os agregados dos dois
+ * últimos meses, só para a ordem dos mais pedidos (`#d316`), e só devolvem o que
  * `montarCardapio` deixa passar (`DECISOES.md#d158`).
  *
  * **Sem login, escreve** `/api/cardapio/pedido` (spec 031, `#d160`): só em

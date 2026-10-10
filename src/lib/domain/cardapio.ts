@@ -111,6 +111,8 @@ export interface Cardapio {
   };
   /** Na ordem de `categoriasProduto`, e categoria desconhecida no fim; nome dentro. */
   secoes: { categoria: string; produtos: ProdutoDoCardapio[] }[];
+  /** Os mais pedidos (`#d316`): ids de `secoes`, do mais vendido para o menos. Nunca a quantidade. */
+  maisPedidos?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -306,6 +308,46 @@ export function escolhasEmTexto(
   return `Escolha ${escolhas.map((e) => `${e.quantidade} · ${e.categoria}`).join(" + ")}`;
 }
 
+// ---------------------------------------------------------------------------
+// Os mais pedidos (spec 113, `#d316`)
+// ---------------------------------------------------------------------------
+
+/** Unidades nos dois meses abaixo das quais "mais pedido" seria número inventado. */
+export const MINIMO_PARA_DESTACAR = 5;
+
+/**
+ * Até três ids, do mais para o menos vendido no mês corrente mais o anterior
+ * (`ResumoMensal.produtos[id].quantidade`, um mapa por mês). Só o que está na
+ * página, tem foto, não está esgotado e passou de `MINIMO_PARA_DESTACAR`; com
+ * menos de dois, nenhum. O combo conta como combo (`#d275`).
+ */
+export function maisPedidosDoCardapio(
+  meses: Map<string, number>[],
+  produtos: ProdutoDoCardapio[],
+): string[] {
+  const vendidos = new Map<string, number>();
+  for (const mes of meses) {
+    for (const [id, quantidade] of mes) {
+      vendidos.set(id, (vendidos.get(id) ?? 0) + quantidade);
+    }
+  }
+  const quantos = (id: string) => vendidos.get(id) ?? 0;
+  const destaques = produtos
+    .filter(
+      (p) =>
+        p.fotoVersao !== undefined &&
+        p.restam !== 0 &&
+        quantos(p.id) >= MINIMO_PARA_DESTACAR,
+    )
+    .sort(
+      (a, b) =>
+        quantos(b.id) - quantos(a.id) || a.nome.localeCompare(b.nome, "pt-BR"),
+    )
+    .slice(0, 3)
+    .map((p) => p.id);
+  return destaques.length >= 2 ? destaques : [];
+}
+
 /** O `?v=` da foto, quando a ficha tem uma que a rota serve. */
 function fotoDa(ficha: FichaTecnica): { fotoVersao?: number } {
   return tipoDaFoto(ficha.fotoUrl)
@@ -449,6 +491,8 @@ export function montarCardapio(entrada: {
     VitrineDoCardapio,
     "capa" | "logo" | "cor" | "atualizadoEm"
   > | null;
+  /** `produtos[id].quantidade` do mês corrente e do anterior (`#d316`); ausente = sem destaque. */
+  vendidos?: Map<string, number>[];
   agoraMs: number;
 }): Cardapio | null {
   const { conta, configuracao, fichas, agoraMs } = entrada;
@@ -497,6 +541,7 @@ export function montarCardapio(entrada: {
   const { vitrine } = entrada;
   const cor = corDaLoja(vitrine?.cor);
   const versao = vitrine?.atualizadoEm?.toMillis() ?? 0;
+  const maisPedidos = maisPedidosDoCardapio(entrada.vendidos ?? [], produtos);
 
   return {
     negocio: {
@@ -511,6 +556,7 @@ export function montarCardapio(entrada: {
       feitoComRende: !configuracao.ocultarFeitoCom,
     },
     secoes,
+    ...(maisPedidos.length ? { maisPedidos } : {}),
   };
 }
 

@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-10",
+    titulo: "O cardápio abre pelos mais pedidos",
+    frase:
+      "A primeira tela do cardápio mostra, com foto, os doces que mais saíram nos seus pedidos pagos dos dois últimos meses, sem dizer quantos.",
+    href: "/configuracao#a-sua-marca",
+  },
+  {
+    dataISO: "2026-10-10",
     titulo: "No cardápio, a cliente abre o doce",
     frase:
       "Tocar no doce mostra a foto grande e a descrição inteira, o combo diz quantos sabores se escolhe, e “Monte a sua” mostra a foto de cada sabor.",

@@ -199,11 +199,27 @@ export function PedidoPeloCardapio({
 
   const quantidadeDe = (chave: string) =>
     carrinho.find((l) => l.chave === chave)?.quantidade ?? 0;
+  /** O combo à escolha soma as linhas dele, uma por combinação de sabores. */
+  const noPedido = (produto: ProdutoDoCardapio) =>
+    produto.escolhas
+      ? carrinho
+          .filter((l) => l.produto.id === produto.id)
+          .reduce((s, l) => s + l.quantidade, 0)
+      : quantidadeDe(produto.id);
+  // O combo à escolha já abre o "Monte a sua", que tem a foto e a descrição:
+  // uma ficha antes seria um passo a mais.
+  const abrir = (produto: ProdutoDoCardapio) =>
+    produto.escolhas ? setMontando(produto) : setVendo(produto);
+
+  const todos = cardapio.secoes.flatMap((s) => s.produtos);
+  const maisPedidos = (cardapio.maisPedidos ?? []).flatMap((id) =>
+    todos.filter((p) => p.id === id),
+  );
 
   // O que resta dos limitados, menos o que o carrinho já leva (`#d164`). A
   // página só desabilita o "+"; quem trava é o servidor.
   const restamPorId = new Map<string, number>();
-  for (const produto of cardapio.secoes.flatMap((s) => s.produtos)) {
+  for (const produto of todos) {
     if (produto.restam !== undefined)
       restamPorId.set(produto.id, produto.restam);
     for (const opcao of (produto.escolhas ?? []).flatMap((e) => e.opcoes)) {
@@ -648,6 +664,15 @@ export function PedidoPeloCardapio({
         <div
           className={cn("px-4 lg:px-0", quantidadeTotal > 0 && "pb-24 lg:pb-0")}
         >
+          {maisPedidos.length > 0 && (
+            <MaisPedidos
+              contaId={contaId}
+              produtos={maisPedidos}
+              noPedido={noPedido}
+              aoAbrir={abrir}
+            />
+          )}
+
           {/* Âncoras, e não filtro: a lista é uma só, e a cliente rola. Sem
               "ativa", porque uma pílula que não segue a rolagem mente. */}
           {cardapio.secoes.length > 1 && (
@@ -689,13 +714,7 @@ export function PedidoPeloCardapio({
                       contaId={contaId}
                       produto={produto}
                       hoje={diaVizinho(amanha, -1)}
-                      quantidade={
-                        produto.escolhas
-                          ? carrinho
-                              .filter((l) => l.produto.id === produto.id)
-                              .reduce((s, l) => s + l.quantidade, 0)
-                          : quantidadeDe(produto.id)
-                      }
+                      quantidade={noPedido(produto)}
                       podeMais={
                         produto.escolhas
                           ? true
@@ -706,13 +725,7 @@ export function PedidoPeloCardapio({
                           ? setMontando(produto)
                           : mudar({ chave: produto.id, produto }, passo)
                       }
-                      // O combo à escolha já abre o "Monte a sua", que tem a
-                      // foto e a descrição: uma ficha antes seria um passo a mais.
-                      aoAbrir={() =>
-                        produto.escolhas
-                          ? setMontando(produto)
-                          : setVendo(produto)
-                      }
+                      aoAbrir={() => abrir(produto)}
                     />
                   ))}
                 </ul>
@@ -1326,6 +1339,72 @@ function FichaNaVitrine({
         </div>
       )}
     </Painel>
+  );
+}
+
+/**
+ * Os mais pedidos (spec 113, `#d316`): a primeira tela do celular com doce.
+ * Grade de três, nunca carrossel; a peça inteira abre a ficha, e não tem
+ * "Adicionar": o controle mora na linha e na ficha, e dois do mesmo produto na
+ * mesma tela confundem. É atalho: o produto continua na seção dele.
+ */
+function MaisPedidos({
+  contaId,
+  produtos,
+  noPedido,
+  aoAbrir,
+}: {
+  contaId: string;
+  produtos: ProdutoDoCardapio[];
+  noPedido: (produto: ProdutoDoCardapio) => number;
+  aoAbrir: (produto: ProdutoDoCardapio) => void;
+}) {
+  const idTitulo = useId();
+  return (
+    <section aria-labelledby={idTitulo} className="pb-6">
+      <h2
+        id={idTitulo}
+        className="font-display text-heading font-semibold text-ink"
+      >
+        Os mais pedidos
+      </h2>
+      <ul className="mt-3 grid grid-cols-3 gap-3 lg:gap-4">
+        {produtos.map((produto) => {
+          const quantidade = noPedido(produto);
+          return (
+            <li key={produto.id}>
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                onClick={() => aoAbrir(produto)}
+                className="group flex w-full flex-col rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--focus)"
+              >
+                {/* Na primeira tela: sem `loading="lazy"`. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={urlDaFoto(contaId, produto.id, produto.fotoVersao!)}
+                  // O nome está logo abaixo.
+                  alt=""
+                  width={FOTO_LADO_PX}
+                  height={FOTO_LADO_PX}
+                  decoding="async"
+                  className="aspect-square w-full rounded-md bg-sunken object-cover transition-opacity duration-150 ease-quart group-hover:opacity-90"
+                />
+                <span className="mt-2 line-clamp-2 wrap-break-word text-label font-semibold text-ink">
+                  {produto.nome}
+                </span>
+                <Dinheiro centavos={produto.preco} className="mt-0.5" />
+                {quantidade > 0 && (
+                  <span className="num text-label text-ink-muted">
+                    {quantidade} no pedido
+                  </span>
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 

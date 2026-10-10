@@ -9,6 +9,8 @@ import {
   economiaDoCombo,
   escolhasEmTexto,
   limitadasComContagem,
+  maisPedidosDoCardapio,
+  MINIMO_PARA_DESTACAR,
   passaDoQueResta,
   pedidoDoCardapio,
   precoVigente,
@@ -442,6 +444,12 @@ describe("montarCardapio", () => {
       fichas: [TRADICIONAL, RED_VELVET, CAIXA, DUPLA],
       opcoes: OPCOES,
       restam: new Map([["tradicional", 8]]),
+      vendidos: [
+        new Map([
+          ["tradicional", 20],
+          ["dupla", 9],
+        ]),
+      ],
       agoraMs: AGORA,
     });
     for (const secao of cardapio!.secoes) {
@@ -477,7 +485,16 @@ describe("montarCardapio", () => {
       ),
     ).toBe(true);
     expect(produtos.some((p) => p.precoCheio && p.promocaoAteISO)).toBe(true);
-    expect(Object.keys(cardapio!).sort()).toEqual(["negocio", "secoes"]);
+    expect(Object.keys(cardapio!).sort()).toEqual([
+      "maisPedidos",
+      "negocio",
+      "secoes",
+    ]);
+    // Só ids, e só de produto que está na página (`#d316`).
+    expect(cardapio!.maisPedidos).toEqual(["tradicional", "dupla"]);
+    for (const id of cardapio!.maisPedidos!) {
+      expect(produtos.map((p) => p.id)).toContain(id);
+    }
     for (const chave of Object.keys(cardapio!.negocio)) {
       expect([
         "nome",
@@ -1359,5 +1376,90 @@ describe("montarCardapio com a vitrine", () => {
     // O logo que não é imagem não sai pela rota, então não vira `<img>`.
     expect(cardapio.negocio.logoVersao).toBeUndefined();
     expect(JSON.stringify(cardapio)).not.toContain("base64");
+  });
+});
+
+// Spec 113: os mais pedidos, pelo `ResumoMensal.produtos` de dois meses.
+describe("maisPedidosDoCardapio", () => {
+  const produto = (
+    id: string,
+    parcial: Partial<ProdutoDoCardapio> = {},
+  ): ProdutoDoCardapio => ({
+    id,
+    nome: id,
+    categoria: "Cookie",
+    preco: 1000,
+    unidade: "un",
+    fotoVersao: 1,
+    ...parcial,
+  });
+  const mes = (vendas: Record<string, number>) =>
+    new Map(Object.entries(vendas));
+  const PRODUTOS = ["a", "b", "c", "d"].map((id) => produto(id));
+
+  it("soma os dois meses e corta em três, do mais para o menos vendido", () => {
+    expect(
+      maisPedidosDoCardapio(
+        [mes({ a: 3, b: 10, c: 6 }), mes({ a: 9, d: 7 })],
+        PRODUTOS,
+      ),
+    ).toEqual(["a", "b", "d"]);
+  });
+
+  it(`abaixo de ${MINIMO_PARA_DESTACAR} unidades não destaca`, () => {
+    expect(
+      maisPedidosDoCardapio(
+        [mes({ a: 2, b: 5, c: 4 }), mes({ a: 3 })],
+        PRODUTOS,
+      ),
+    ).toEqual(["a", "b"]);
+  });
+
+  it("com menos de dois, nada", () => {
+    expect(maisPedidosDoCardapio([mes({ a: 50, b: 4 })], PRODUTOS)).toEqual([]);
+    expect(maisPedidosDoCardapio([], PRODUTOS)).toEqual([]);
+  });
+
+  it("sem foto, esgotado ou fora da página fica fora", () => {
+    expect(
+      maisPedidosDoCardapio(
+        [mes({ a: 40, b: 30, c: 20, fora: 99, d: 10, e: 5 })],
+        [
+          produto("a", { fotoVersao: undefined }),
+          produto("b", { restam: 0 }),
+          produto("c", { restam: 3 }),
+          produto("d"),
+          produto("e"),
+        ],
+      ),
+    ).toEqual(["c", "d", "e"]);
+  });
+
+  it("montarCardapio: só ids saem, e sem destaque a chave some", () => {
+    const vendidos = [
+      mes({ tradicional: 12, redvelvet: 8, recheio: 90 }),
+      mes({ redvelvet: 6 }),
+    ];
+    const cardapio = montarCardapio({
+      conta: CONTA,
+      configuracao: configuracao(),
+      fichas: [TRADICIONAL, RED_VELVET, RECHEIO],
+      opcoes: [],
+      vendidos,
+      agoraMs: AGORA,
+    })!;
+    // O recheio (preço zero) não está na página.
+    expect(cardapio.maisPedidos).toEqual(["redvelvet", "tradicional"]);
+    expect(JSON.stringify(cardapio)).not.toMatch(/\b(12|14|90)\b/);
+    expect(
+      montarCardapio({
+        conta: CONTA,
+        configuracao: configuracao(),
+        fichas: [TRADICIONAL, RED_VELVET, RECHEIO],
+        opcoes: [],
+        vendidos: [mes({ tradicional: 12 })],
+        agoraMs: AGORA,
+      }),
+    ).not.toHaveProperty("maisPedidos");
   });
 });

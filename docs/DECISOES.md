@@ -5247,7 +5247,8 @@ painel diz em uma linha que o riscado precisa ser o que ela cobra fora da promo�
 
 ## D166 · A página é da loja: capa, logo e cor dela, e o Rende numa linha de rodapé
 
-**Status:** vigente · decidida em 2026-09-23, na spec `031-cardapio-publico.md` (sessão F).
+**Status:** vigente, menos o item do selo "o mais pedido", revertido pelo `#d316` em
+2026-10-10 · decidida em 2026-09-23, na spec `031-cardapio-publico.md` (sessão F).
 
 **Contexto.** Quem conduz o projeto pediu ao Claude Design a tela do cardápio público
 (`docs/marca/rende/Rende - Cardápio.dc.html`) e preferiu o resultado ao que a A e a B tinham
@@ -5278,7 +5279,8 @@ enchimento apertado). As correções da crítica entraram junto com o design.
   - "próxima fornada", as vagas por dia e o horário e o endereço de retirada: dias e horários
     estão fora de escopo;
   - o ponto verde de "aceitando encomendas": página aberta já é cardápio aberto;
-  - o selo "o mais pedido": o Rende não sabe disso;
+  - o selo "o mais pedido": o Rende não sabe disso (revertido pelo `#d316`: hoje sabe, pelo
+    agregado do mês, e virou a faixa "Os mais pedidos");
   - "volta na próxima": uma promessa sem dado.
 - **O que a crítica mudou no desenho:**
   - o "+" deixou de flutuar sobre a foto e virou "Adicionar" na linha do preço, porque sem foto
@@ -9824,3 +9826,46 @@ mais)`, a generalização de `cabeMaisUm`. Esgotado abre e diz "Esgotado", sem p
 **Consequência.** Nenhum campo, regra, índice ou dependência. O que sai para fora cresce em um
 ponto, a versão da foto das opções que já estão na página. Ficha com URL própria, galeria e
 foto maior que 320 px ficaram fora.
+
+## D316 · Os mais pedidos abrem o cardápio
+
+**Status:** vigente · decidida em 2026-10-10, spec `113-os-mais-pedidos.md`. **Reverte um item do
+`#d166`** ("o selo 'o mais pedido': o Rende não sabe disso").
+
+**Contexto.** No print de 393 px, a primeira tela do cardápio público não tinha um doce: a capa,
+o nome, os contatos, as pílulas e três combos sem foto. As seções seguem `categoriasProduto`, a
+ordem da cozinha dela, e nada dizia o que a casa faz melhor. O `#d166` recusou "o mais pedido"
+porque o Rende não sabia; hoje sabe: `ResumoMensal.produtos[fichaId].quantidade` é o ranking do
+Caixa.
+
+**Decisão.**
+
+- **O número é `maisPedidosDoCardapio`** em `domain/cardapio.ts`, puro e testado: soma a
+  quantidade do mês corrente e do anterior (a competência pelo dia de Brasília) por ficha, fica
+  com o que está na página, tem foto e não está esgotado (`restam !== 0`), e devolve até três
+  ids, do mais para o menos vendido (empate pelo nome). Cada um precisa de
+  `MINIMO_PARA_DESTACAR` (5) unidades nos dois meses, e a faixa só aparece com dois ou mais:
+  "mais pedido" com uma venda é número inventado.
+- **O combo conta como combo** (`#d275`): `deltaDoPedido` grava `produtos[kitId]` pela linha, e
+  as receitas de dentro não ganham nada. Conferido antes do código.
+- **Desfazer o pagamento decrementa** (`contribuicaoDoPedidoPago(…, −1)` em
+  `mutations/pedidos.ts`), então o número não sobe com o desfazer. A competência é a do
+  pagamento (`#d36`), não a da entrega.
+- **Só ids saem**: `Cardapio.maisPedidos?: string[]`, ausente sem destaque. Nenhuma quantidade,
+  receita ou lucro; o teste das chaves confere a chave nova e que o conteúdo são ids da página.
+- **A leitura**: `lerCardapio` faz um `getAll` de `agregados/{competencia}` dos dois meses, em
+  paralelo com o pote e a vitrine, e reduz cada um a `Map<fichaId, quantidade>` antes de
+  `montarCardapio`. Mês sem documento conta zero. Duas leituras por id a mais por página
+  renovada, dentro do `revalidate` de 60 s. O cabeçalho de `firebaseAdmin.ts` lista a leitura.
+- **A faixa**: acima das pílulas, "Os mais pedidos" no `heading` das seções e uma grade de três
+  colunas (nunca carrossel): foto quadrada na largura da coluna, sem `lazy` porque está na
+  primeira tela, o nome em até duas linhas e o preço. A peça inteira é um botão que abre a ficha
+  da 112 (o combo à escolha abre o "Monte a sua", como a linha). Sem "Adicionar": dois controles
+  do mesmo produto na mesma tela confundem; com o produto no carrinho, "2 no pedido".
+- **Os produtos continuam nas seções.** A faixa é atalho.
+- **Sem interruptor no painel**: uma usuária; vem quando ela pedir.
+
+**Consequência.** Nenhum campo, regra, índice ou dependência. O que sai para fora cresce em um
+ponto: quais produtos vendem mais, em ordem, sem número. Quem compara a ordem da faixa entre dois
+dias infere que um subiu, e é tudo. O selo na linha, o destaque escolhido por ela e a quantidade
+à vista ficaram fora.
