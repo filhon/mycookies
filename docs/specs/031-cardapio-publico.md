@@ -1183,7 +1183,8 @@ logado no Rende e de rede. Aparelho em 360 px nos passos 3, 5 e 7.
 - **Cliente cadastrada pelo link.** Escrita pública em `clientes` (`#d160`).
 - **Captcha e limite por IP** (`#d161`).
 - **Indexação em busca e imagem de prévia** (`og:image`). O link é para quem ela manda; a prévia
-  do WhatsApp mostra título e frase, e é o que basta.
+  do WhatsApp mostra título e frase, e é o que basta. (A imagem de prévia entrou pela spec 114,
+  `DECISOES.md#d317`, com a capa ou o logo; a indexação continua fora.)
 - **Preço de cardápio diferente do preço da ficha**, fora da promoção com prazo da sessão E. Um
   preço é um preço.
 - **Promoção contra preço inflado** ("de" acima do que ela cobra) (`#d165`). Publicidade

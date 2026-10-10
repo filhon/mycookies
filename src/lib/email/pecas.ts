@@ -229,7 +229,7 @@ export interface DadosBoasVindas {
   email: string;
   /** O dia do fim do teste, em São Paulo. */
   acabaEmISO: DataISO;
-  origem?: "calculadora";
+  origem?: "calculadora" | "cardapio";
 }
 
 export function boasVindas(d: DadosBoasVindas): Peca {

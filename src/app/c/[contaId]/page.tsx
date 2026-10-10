@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { AtSign, MessageCircle } from "lucide-react";
+import { MandarOCardapio } from "@/components/cardapio/MandarOCardapio";
 import { PedidoPeloCardapio } from "@/components/cardapio/PedidoPeloCardapio";
 import { estiloDaLoja } from "@/components/cardapio/estiloDaLoja";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -38,14 +39,41 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const cardapio = await cardapioDa((await params).contaId);
+  const { contaId } = await params;
+  const cardapio = await cardapioDa(contaId);
   // Fechado: nem o nome do Rende na aba, que a cliente dela não conhece.
   if (!cardapio) return { title: { absolute: "Cardápio" } };
-  // O que o WhatsApp e o Instagram mostram na prévia do link. O `noindex` do
-  // layout raiz continua: o link é para quem ela manda.
+  const { negocio } = cardapio;
+  const description = negocio.frase ?? "Cardápio e pedidos";
+  // A prévia do link no WhatsApp e no Instagram (spec 114, `#d317`): a capa
+  // grande; sem capa, o logo pequeno; sem nenhum, só o texto. O `metadataBase`
+  // do layout raiz faz a URL absoluta. O `noindex` do layout continua: a
+  // prévia é para quem recebe o link, não para a busca. Nada do Rende aqui.
+  const base = `/c/${encodeURIComponent(contaId)}/vitrine`;
+  const imagem =
+    negocio.capaVersao !== undefined
+      ? `${base}/capa?v=${negocio.capaVersao}`
+      : negocio.logoVersao !== undefined
+        ? `${base}/logo?v=${negocio.logoVersao}`
+        : undefined;
   return {
-    title: { absolute: cardapio.negocio.nome },
-    description: cardapio.negocio.frase ?? "Cardápio e pedidos",
+    title: { absolute: negocio.nome },
+    description,
+    openGraph: {
+      title: negocio.nome,
+      description,
+      type: "website",
+      locale: "pt_BR",
+      siteName: negocio.nome,
+      ...(imagem && { images: [imagem] }),
+    },
+    twitter: {
+      card:
+        negocio.capaVersao !== undefined ? "summary_large_image" : "summary",
+      title: negocio.nome,
+      description,
+      ...(imagem && { images: [imagem] }),
+    },
   };
 }
 
@@ -80,7 +108,18 @@ export default async function PaginaCardapio({ params }: Props) {
             </>
           )}
         </p>
-        {negocio.feitoComRende && <p>Cardápio feito no Rende</p>}
+        {/* O único link do Rende na página, medido até a conta criada
+            (`#d317`). Em aba nova: o cardápio dela fica aberto. */}
+        {negocio.feitoComRende && (
+          <a
+            href="/conheca?de=cardapio"
+            target="_blank"
+            rel="noopener"
+            className="inline-flex min-h-11 items-center text-ink-muted underline-offset-2 hover:underline focus-visible:underline"
+          >
+            Cardápio feito no Rende
+          </a>
+        )}
       </footer>
     </main>
   );
@@ -99,7 +138,6 @@ function Topo({
 }) {
   const base = `/c/${encodeURIComponent(contaId)}/vitrine`;
   const temFaixa = negocio.capaVersao !== undefined || !!negocio.cor;
-  const contatos = [negocio.whatsapp, negocio.instagram].filter(Boolean);
 
   return (
     <header>
@@ -154,41 +192,41 @@ function Topo({
         </div>
 
         {/* Para quem só quer perguntar "tem pra hoje?": é o motivo mais comum
-            de abrir o link da bio, e o pedido não é o único caminho. */}
-        {contatos.length > 0 && (
-          <div className="flex gap-2">
-            {negocio.whatsapp && (
-              <a
-                href={linkDoWhatsApp(
-                  negocio.whatsapp,
-                  mensagemDeContato(negocio),
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Falar no WhatsApp"
-                className={classesBotao({ tamanho: "sm" })}
-              >
-                <MessageCircle
-                  aria-hidden
-                  className="size-4"
-                  strokeWidth={1.75}
-                />
-                WhatsApp
-              </a>
-            )}
-            {negocio.instagram && (
-              <a
-                href={`https://instagram.com/${encodeURIComponent(negocio.instagram)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={classesBotao({ tamanho: "sm" })}
-              >
-                <AtSign aria-hidden className="size-4" strokeWidth={1.75} />
-                Instagram
-              </a>
-            )}
-          </div>
-        )}
+            de abrir o link da bio, e o pedido não é o único caminho. E para
+            quem gostou mandar à amiga (spec 114). */}
+        <div className="flex flex-wrap gap-2">
+          {negocio.whatsapp && (
+            <a
+              href={linkDoWhatsApp(
+                negocio.whatsapp,
+                mensagemDeContato(negocio),
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Falar no WhatsApp"
+              className={classesBotao({ tamanho: "sm" })}
+            >
+              <MessageCircle
+                aria-hidden
+                className="size-4"
+                strokeWidth={1.75}
+              />
+              WhatsApp
+            </a>
+          )}
+          {negocio.instagram && (
+            <a
+              href={`https://instagram.com/${encodeURIComponent(negocio.instagram)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={classesBotao({ tamanho: "sm" })}
+            >
+              <AtSign aria-hidden className="size-4" strokeWidth={1.75} />
+              Instagram
+            </a>
+          )}
+          <MandarOCardapio nome={negocio.nome} />
+        </div>
       </div>
     </header>
   );

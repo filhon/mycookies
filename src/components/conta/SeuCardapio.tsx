@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Copy,
   ExternalLink,
+  QrCode,
   Share2,
   Store,
   Tag,
@@ -185,6 +186,7 @@ export function SeuCardapio({
   const { endereco, podeCompartilhar, copiado, copiar, compartilhar } =
     useLinkDoCardapio();
   const semTelefone = !configuracao?.contato?.telefone?.trim();
+  const [gerandoQr, setGerandoQr] = useState(false);
 
   function gravar(mudanca: {
     aberto?: boolean;
@@ -414,6 +416,22 @@ export function SeuCardapio({
                     Ver como a cliente vê
                   </a>
                 </div>
+                {/* Para o balcão, a etiqueta e a embalagem (spec 114, `#d317`). */}
+                <Botao
+                  variante="terciaria"
+                  carregando={gerandoQr}
+                  onClick={() => {
+                    setGerandoQr(true);
+                    baixarQrCode(endereco, `cardapio-${contaId}.png`)
+                      .catch(() => {})
+                      .finally(() => setGerandoQr(false));
+                  }}
+                  iconeInicial={
+                    <QrCode aria-hidden className="size-4" strokeWidth={1.75} />
+                  }
+                >
+                  Baixar o QR code
+                </Botao>
               </div>
             )}
 
@@ -822,4 +840,47 @@ function CampoCor({
       </p>
     </div>
   );
+}
+
+/** 1024 px de lado, a medida da spec: imprime nítido até uns 8 cm. */
+const LADO_DO_QR = 1024;
+
+/**
+ * O QR code do cardápio em PNG (spec 114, parte B, `DECISOES.md#d317`). `uqr`
+ * só desce aqui, por `import()`: o cardápio público não a baixa. Tinta `--ink`
+ * do tema claro sobre branco, nunca a cor da loja (QR precisa de contraste) e
+ * nunca o tema escuro: é papel. Branco, e não o `--canvas`, porque a etiqueta
+ * é branca e o creme imprimiria uma caixa. As 4 casas de margem são a zona
+ * de silêncio do padrão.
+ */
+async function baixarQrCode(endereco: string, arquivo: string) {
+  const { encode } = await import("uqr");
+  const { data, size } = encode(endereco, { ecc: "M", border: 4 });
+  // Casa inteira em pixels: casa fracionada borra a borda de cada módulo.
+  const casa = Math.floor(LADO_DO_QR / size);
+  const inicio = Math.floor((LADO_DO_QR - casa * size) / 2);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = LADO_DO_QR;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, LADO_DO_QR, LADO_DO_QR);
+  ctx.fillStyle = "#22242e"; // `--ink` do tema claro, como `CORES_DA_PREVIA`
+  data.forEach((linha, y) =>
+    linha.forEach((preto, x) => {
+      if (preto) ctx.fillRect(inicio + x * casa, inicio + y * casa, casa, casa);
+    }),
+  );
+
+  const png = await new Promise<Blob | null>((ok) =>
+    canvas.toBlob(ok, "image/png"),
+  );
+  if (!png) return;
+  const url = URL.createObjectURL(png);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = arquivo;
+  link.click();
+  URL.revokeObjectURL(url);
 }

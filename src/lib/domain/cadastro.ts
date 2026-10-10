@@ -23,9 +23,19 @@ export const esquemaCadastro = z.object({
   nome: z.string().trim().min(1).max(TAMANHO_MAXIMO_NOME),
   negocio: z.string().trim().max(TAMANHO_MAXIMO_NOME).optional(),
   termos: z.literal(true),
-  /** Veio da calculadora pública com rascunho no aparelho (spec 040-B, `#d191`). */
-  origem: z.enum(["calculadora"]).optional(),
+  /**
+   * Por onde ela chegou: a calculadora pública com rascunho no aparelho (spec
+   * 040-B, `#d191`) ou o rodapé de um cardápio (spec 114, `#d317`).
+   */
+  origem: z.enum(["calculadora", "cardapio"]).optional(),
 });
+
+/**
+ * Onde `/conheca?de=cardapio` deixa a marca para o cadastro (spec 114,
+ * `#d317`). O rascunho da calculadora, quando existe, ganha: é ele que muda o
+ * e-mail de boas-vindas e a biblioteca.
+ */
+export const CHAVE_DA_ORIGEM = "rende:origem";
 export type Cadastro = z.infer<typeof esquemaCadastro>;
 
 /** `negocio` vazio vira o nome dela: quem ainda não tem marca é o negócio. */

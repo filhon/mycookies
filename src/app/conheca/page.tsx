@@ -5,6 +5,7 @@ import { CalculadoraDaPorta } from "@/components/site/CalculadoraDaPorta";
 import { ContaAberta } from "@/components/site/ContaAberta";
 import { LuzDaJanela } from "@/components/site/LuzDaJanela";
 import { Rodape, Topo } from "@/components/site/Moldura";
+import { OrigemDoLink } from "@/components/site/OrigemDoLink";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
@@ -243,6 +244,7 @@ export default async function PaginaConheca() {
   return (
     <>
       <Topo ancoras={ANCORAS} convite />
+      <OrigemDoLink />
 
       {/* `clip` corta a luz da janela na borda da tela sem virar contêiner de
           rolagem: a barra `sticky` do celular continua presa ao viewport. */}

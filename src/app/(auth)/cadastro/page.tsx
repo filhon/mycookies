@@ -12,6 +12,7 @@ import { Campo, CampoSenha, focarPrimeiroErro } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { cn } from "@/lib/utils/cn";
 import {
+  CHAVE_DA_ORIGEM,
   DIAS_DE_TESTE,
   MENSAGEM_FALHA_CADASTRO,
   TAMANHO_MAXIMO_NOME,
@@ -118,7 +119,11 @@ export default function PaginaCadastro() {
           nome: nome.trim(),
           negocio: negocio.trim() || undefined,
           termos,
-          origem: daCalculadora ? "calculadora" : undefined,
+          origem: daCalculadora
+            ? "calculadora"
+            : doCardapio()
+              ? "cardapio"
+              : undefined,
         }),
       });
       if (!resposta.ok) {
@@ -314,6 +319,15 @@ export default function PaginaCadastro() {
       </p>
     </MolduraDeEntrada>
   );
+}
+
+/** Veio pelo rodapé de um cardápio (spec 114, `#d317`), marcado em `/conheca`. */
+function doCardapio(): boolean {
+  try {
+    return localStorage.getItem(CHAVE_DA_ORIGEM) === "cardapio";
+  } catch {
+    return false;
+  }
 }
 
 /** O padrão de `TelaNota`: o corpo diz o código; sem corpo, o status decide. */

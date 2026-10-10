@@ -99,11 +99,11 @@ dependência de produção** para gerar o QR (seção 1). Sem a (2), a B não en
 
 ## Critérios de aceite
 
-- [ ] Prévia com a capa (ou o logo) no WhatsApp; `noindex` mantido.
-- [ ] "Mandar o cardápio" com `share` e o recuo de copiar.
-- [ ] O rodapé é link, medido até a conta criada (`origem: "cardapio"`), e continua desligável.
-- [ ] **B:** QR baixável, lido por câmera comum, dependência aprovada e fora do pacote da página.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `#d317` escrito; `ESTADO.md` atualizado.
+- [x] Prévia com a capa (ou o logo) no WhatsApp; `noindex` mantido.
+- [x] "Mandar o cardápio" com `share` e o recuo de copiar.
+- [x] O rodapé é link, medido até a conta criada (`origem: "cardapio"`), e continua desligável.
+- [x] **B:** QR baixável, lido por câmera comum, dependência aprovada e fora do pacote da página.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `#d317` escrito; `ESTADO.md` atualizado.
 
 ---
 

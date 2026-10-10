@@ -9869,3 +9869,61 @@ Caixa.
 ponto: quais produtos vendem mais, em ordem, sem número. Quem compara a ordem da faixa entre dois
 dias infere que um subiu, e é tudo. O selo na linha, o destaque escolhido por ela e a quantidade
 à vista ficaram fora.
+
+## D317 · O link do cardápio circula
+
+**Status:** vigente · decidida em 2026-10-10, spec `114-o-link-que-circula.md`. **Reverte um item
+do "Fora de escopo" da 031** ("indexação em busca e imagem de prévia"): a prévia entra, a
+indexação continua fora (`#d158`). Partes A e B; a dependência da B (`uqr`) aprovada em 2026-10-10.
+
+**Contexto.** O link do cardápio chegava no WhatsApp como uma linha cinza, embora a página já
+tivesse a capa e o logo dela (031-F, `#d166`). A cliente que gostou não tinha como mandar à
+amiga, a não ser copiando a barra de endereço. "Cardápio feito no Rende" era texto morto, e uma
+confeiteira que chegasse por ele não era contada.
+
+**Decisão.**
+
+- **A prévia**: `generateMetadata` dá `openGraph` (`title`, `description`, `type: "website"`,
+  `locale: "pt_BR"`, `siteName` = nome da loja) e `twitter`. A imagem é a capa
+  (`/c/{id}/vitrine/capa?v=`), com `summary_large_image`; sem capa, o logo, com `summary`; sem
+  nenhum, sem imagem. O `metadataBase` do layout raiz faz a URL absoluta. Nada do Rende na
+  prévia, e o layout raiz não tem `openGraph` nem `opengraph-image` que vazasse para cá. A rota
+  da vitrine foi conferida antes: responde sem cookie, só com o cardápio aberto, com o
+  `content-type` da imagem gravada (até 300 KB). O `noindex` do layout continua.
+- **"Mandar"** (`MandarOCardapio`, componente de cliente; o topo continua de servidor): terceiro
+  botão ao lado de WhatsApp e Instagram, sempre presente, com `Share2`.
+  `navigator.share({ title, url })` quando existe; senão copia o link e diz "Link copiado" no
+  próprio botão e num `role="status"` por 2 s. Cancelar a folha não diz nada. A URL é `origin + pathname`, sem
+  `?` nem `#`. O texto visível é "Mandar" e o nome acessível "Mandar o cardápio": três botões
+  cabem numa linha de 360 px, e a fileira ganhou `flex-wrap` para o caso de não caberem.
+- **O rodapé é link**: `<a href="/conheca?de=cardapio">` em aba nova, `--ink-muted`, sublinhado
+  no hover e no foco, alvo de 44 px. Continua desligável (`ocultarFeitoCom`).
+- **A medida**: `/conheca` continua estática; `OrigemDoLink`, de cliente, lê `?de=cardapio` e
+  grava `rende:origem` (`CHAVE_DA_ORIGEM` em `domain/cadastro.ts`) no `localStorage`, com
+  `try`. O cadastro manda `origem: "cardapio"` quando a encontra. **O rascunho da calculadora
+  ganha** quando os dois existem: é ele que muda a biblioteca e o e-mail de boas-vindas, e a
+  conta só guarda uma origem. A marca não expira nem é apagada depois do cadastro: um segundo
+  cadastro no mesmo aparelho também conta como cardápio, e não vale o código para evitar.
+- `Conta.origem` e `esquemaCadastro` aceitam `"cardapio"` (aditivo, aprovado pela spec); o
+  e-mail de boas-vindas trata `"cardapio"` como o caminho comum. `npm run metricas` já imprime
+  `conta.origem`.
+
+- **"Baixar o QR code"** em "Seu cardápio", abaixo de "Copiar" e "Compartilhar", em
+  `terciaria`: PNG de 1024 px, `cardapio-{contaId}.png`, com o mesmo `endereco` que o painel
+  mostra. Correção `M` (15%, aguenta etiqueta riscada) e as 4 casas de margem do padrão. A casa é
+  um número inteiro de pixels (`floor(1024 / tamanho)`), centrada, e o que sobra vira margem: casa
+  fracionada borra a borda de cada módulo. Tinta `#22242E` (`--ink` do tema claro, a mesma de
+  `CORES_DA_PREVIA`, `#d183`) sobre **branco**, e não sobre o `--canvas`: a etiqueta é branca e
+  o creme imprimiria uma caixa. Nunca a cor da loja, nunca o tema escuro.
+- **A dependência é `uqr` 0.1.3** (unjs): MIT, nenhuma dependência própria, só o codificador
+  (devolve a matriz; o desenho no `canvas` é nosso). `qrcode` puxa `pngjs` e `yargs`;
+  `qrcode-generator` é a alternativa equivalente, mais antiga. Carregada por `import()` dentro de
+  `baixarQrCode`: o build a põe num chunk assíncrono que o manifesto de `/c/[contaId]` não
+  referencia (conferido).
+
+**Consequência.** Uma dependência de produção (`uqr`), só no painel; nenhuma regra ou índice. O
+QR aponta para `/c/{contaId}`; quando a 116 der o apelido, ele passa a apontar para o apelido, e
+o QR já impresso continua valendo se o endereço antigo continuar respondendo. O robô do WhatsApp passa a pedir a capa:
+uma leitura da vitrine por prévia, que o `immutable` do `?v=` segura. O WhatsApp guarda a prévia
+por endereço: link colado antes do deploy continua sem imagem. Imagem montada (`next/og`),
+indexação, indicação com recompensa e QR com logo ficaram fora.

@@ -72,9 +72,10 @@ export interface Conta {
   /**
    * Por onde ela chegou, gravado pelo cadastro (`/api/conta`, spec 040-B,
    * `DECISOES.md#d191`) e por mais ninguém. `"calculadora"`: havia o rascunho
-   * da calculadora pública no aparelho. Ausente = veio por outro caminho.
+   * da calculadora pública no aparelho. `"cardapio"`: chegou pelo rodapé
+   * "Cardápio feito no Rende" (spec 114, `#d317`). Ausente = outro caminho.
    */
-  origem?: "calculadora";
+  origem?: "calculadora" | "cardapio";
   /**
    * Meta batida e mês fechado por e-mail (spec 044-B, `DECISOES.md#d207`).
    * Ausente = recebe; escrito pela chave em `/configuracao#avisos`. Não desliga
