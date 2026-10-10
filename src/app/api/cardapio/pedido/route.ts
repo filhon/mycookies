@@ -17,6 +17,7 @@ import {
 } from "@/lib/domain/cardapio";
 import { hojeEmBrasilia, meiaNoiteEmBrasilia } from "@/lib/domain/datas";
 import { lerContaDoCardapio, lerRestam } from "@/lib/server/cardapio";
+import { taxaDoCep } from "@/lib/server/endereco";
 import { adminDb, credencialDisponivel } from "@/lib/server/firebaseAdmin";
 import { caminhos, type Pedido } from "@/lib/types";
 
@@ -77,6 +78,13 @@ export async function POST(requisicao: Request) {
     return falha("cheio", 429);
   }
 
+  // A taxa refeita do CEP (spec 118, `#d160`): a da página nunca é lida. O
+  // cache faz a resposta ser a mesma que a página mostrou.
+  const regra = lido.configuracao?.entrega;
+  const cep = pedido.entrega.tipo === "ENTREGA" ? pedido.entrega.cep : null;
+  const taxaDaEntrega =
+    regra && cep ? (await taxaDoCep(regra, cep)).resultado : undefined;
+
   const hojeISO = hojeEmBrasilia(new Date());
   const montado = pedidoDoCardapio({
     pedido,
@@ -90,6 +98,7 @@ export async function POST(requisicao: Request) {
     hojeISO,
     // O link da cliente (`#d320`).
     chavePublica: chavePublicaDe(randomBytes(16)),
+    taxaDaEntrega,
   });
   if (!montado.ok) {
     return falha(montado.falha, montado.falha === "mudou" ? 409 : 400);
@@ -131,6 +140,8 @@ export async function POST(requisicao: Request) {
   return NextResponse.json({
     codigo: montado.corpo.codigo,
     total: montado.corpo.total,
+    // O aviso diz "com a entrega" (spec 118).
+    entregaCalculada: taxaDaEntrega?.tipo === "taxa",
     // O caminho, com o apelido quando há (`#d319`); a página põe a origem.
     link: caminhoDoAcompanhamento(
       lido.conta.apelido ?? pedido.contaId,

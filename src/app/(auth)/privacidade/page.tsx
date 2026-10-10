@@ -35,9 +35,9 @@ const SECOES: SecaoDeTexto[] = [
       "Da dona da conta: nome, e-mail, senha (guardada cifrada pelo serviço de login do Google; ninguém a vê, nem nós), nome do negócio, e a data em que aceitou os termos.",
       // Spec 043 (`DECISOES.md#d198`). Espera a revisão de quem conduz o projeto.
       "Se você entrar com o Google, o Rende recebe do Google o seu nome, o seu e-mail e a sua foto de perfil. A foto não é guardada.",
-      "Do que ela cadastra: ingredientes, receitas, preços, fotos e descrições de produtos, pedidos, clientes (nome, telefone, endereço e o que ela anotar), despensa, lançamentos de caixa e o contato do negócio (telefone e Instagram).",
+      "Do que ela cadastra: ingredientes, receitas, preços, fotos e descrições de produtos, pedidos, clientes (nome, telefone, endereço e o que ela anotar), despensa, lançamentos de caixa, o contato do negócio (telefone e Instagram) e o CEP de onde sai a entrega.",
       "Das ajudantes: e-mail, senha (nas mesmas condições da dona) e a data em que foram convidadas ou tiradas da conta.",
-      "Das clientes que pedem pelo cardápio: nome, WhatsApp, os produtos, a data, a forma de entrega, o endereço quando for entrega, e as observações que escreverem.",
+      "Das clientes que pedem pelo cardápio: nome, WhatsApp, os produtos, a data, a forma de entrega, o endereço e o CEP quando for entrega, e as observações que escreverem.",
       "Da assinatura: o plano, as datas e a situação dos pagamentos, e os identificadores que a Stripe nos devolve. Os dados do cartão são digitados na página da Stripe e ficam com ela: o Rende não os vê nem os guarda.",
       "Da foto de nota fiscal: quando você usa a leitura de nota, a imagem é enviada para ser lida por inteligência artificial, e só os itens e valores lidos voltam para o app. O Rende não guarda a imagem.",
       "Dados técnicos: os serviços que hospedam o Rende registram, como qualquer site, o endereço IP, a data e hora dos acessos e informações do navegador e do aparelho.",
@@ -60,6 +60,8 @@ const SECOES: SecaoDeTexto[] = [
     paragrafos: [
       "Google (Firebase): o login e o banco de dados onde fica tudo o que você cadastra. Google (Gemini): a leitura da foto da nota fiscal; a imagem é enviada, lida e descartada pelo Rende, e o Google pode mantê-la por tempo limitado para prevenir abuso, sem usá-la para treinar seus modelos, conforme os termos do serviço. Vercel: o servidor que entrega o app e roda o cadastro, a assinatura, a exportação, o encerramento e o cardápio. Stripe: a cobrança da assinatura.",
       "Cada um desses fornecedores trata os dados só para prestar o serviço ao Rende, sob contrato e com as proteções de segurança que declaram. Eles podem guardar e processar dados em servidores fora do Brasil, inclusive nos Estados Unidos. Essa transferência internacional é necessária para executar o contrato com você e é feita com as garantias contratuais que esses fornecedores oferecem (LGPD, art. 33).",
+      // Spec 118 (`DECISOES.md#d322`).
+      "A taxa de entrega pelo CEP: quando a dona da conta configura a taxa pela distância, o CEP de onde sai a entrega e o CEP que a cliente digita no cardápio são enviados a dois serviços. A ViaCEP, serviço brasileiro e gratuito de consulta de CEP, devolve a rua, o bairro e a cidade. O Google (Maps Platform) devolve a localização aproximada do CEP, que pode ser processada fora do Brasil, nas condições do parágrafo anterior. Só o CEP é enviado: nunca o nome, o WhatsApp ou o número da casa. Com isso o Rende calcula a distância em linha reta e a taxa, e guarda a resposta de cada CEP por até trinta dias, sem ligá-la a pessoa nenhuma, para não consultar o mesmo CEP de novo. O CEP de onde sai a entrega não aparece no cardápio, e a cliente vê a taxa, nunca a distância.",
       "Fora esses fornecedores, dados só são compartilhados com autoridade pública, quando houver obrigação legal ou ordem judicial, ou com quem vier a suceder o Rende, caso o serviço seja transferido, que ficará obrigado por esta mesma política.",
     ],
   },

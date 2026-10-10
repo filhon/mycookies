@@ -1702,3 +1702,114 @@ describe("o endereço da loja (#d319)", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Spec 118, sessão B: a taxa de entrega no pedido do cardápio (`#d321`).
+// ---------------------------------------------------------------------------
+
+describe("a taxa de entrega no cardápio (spec 118)", () => {
+  const REGRA = {
+    origem: { cep: "50000000", lat: -8.05, lng: -34.9 },
+    raioKm: 8,
+    faixas: [{ ateKm: 8, taxa: 800 }],
+  };
+  const ENTREGA = {
+    tipo: "ENTREGA" as const,
+    endereco: "Rua das Flores, 10 · Graças · Recife · CEP 52020-000",
+    cep: "52020000",
+  };
+
+  function comTaxa(
+    taxaDaEntrega: Parameters<typeof pedidoDoCardapio>[0]["taxaDaEntrega"],
+    entrega: PedidoDoCardapio["entrega"] = ENTREGA,
+  ) {
+    return pedidoDoCardapio({
+      pedido: pedidoDaAna({ entrega }),
+      fichas: [TRADICIONAL, RED_VELVET, RECHEIO],
+      opcoes: [],
+      fichaIds: ["tradicional", "redvelvet", "recheio"],
+      hojeISO: HOJE,
+      taxaDaEntrega,
+    });
+  }
+
+  it("a página só sabe que há regra: nada da regra sai (#d322)", () => {
+    const sem = montar();
+    const com = montar({ configuracao: configuracao({ entrega: REGRA }) });
+    expect(sem?.negocio).not.toHaveProperty("entregaPorCep");
+    expect(com?.negocio.entregaPorCep).toBe(true);
+    expect(JSON.stringify(com)).not.toMatch(/raioKm|faixas|origem|-34\.9/);
+  });
+
+  it("a taxa calculada é gravada e somada ao total", () => {
+    const r = comTaxa({
+      tipo: "taxa",
+      taxa: 800,
+      porque: { km: 4.2, ateKm: 8 },
+    });
+    if (!r.ok) throw new Error(r.falha);
+    expect(r.corpo.entrega).toEqual({
+      tipo: "ENTREGA",
+      taxa: 800,
+      endereco: ENTREGA.endereco,
+    });
+    expect(r.corpo.subtotal).toBe(11200);
+    expect(r.corpo.total).toBe(12000);
+  });
+
+  it("`fora` é `fora-da-area`", () => {
+    expect(comTaxa({ tipo: "fora", porque: { bairro: "Candeias" } })).toEqual({
+      ok: false,
+      falha: "fora-da-area",
+    });
+  });
+
+  it("a combinar, ou sem a conta do handler, é taxa zero, como antes", () => {
+    for (const taxa of [{ tipo: "a-combinar" as const }, undefined]) {
+      const r = comTaxa(taxa);
+      if (!r.ok) throw new Error(r.falha);
+      expect(r.corpo.entrega.taxa).toBe(0);
+      expect(r.corpo.total).toBe(11200);
+    }
+  });
+
+  it("retirada ignora a taxa e o fora", () => {
+    const retirada = { tipo: "RETIRADA" as const };
+    const fora = comTaxa({ tipo: "fora", porque: { km: 20 } }, retirada);
+    const taxa = comTaxa(
+      { tipo: "taxa", taxa: 800, porque: { km: 2 } },
+      retirada,
+    );
+    if (!fora.ok || !taxa.ok) throw new Error("falhou");
+    expect(fora.corpo.entrega).toEqual({ tipo: "RETIRADA", taxa: 0 });
+    expect(taxa.corpo.total).toBe(11200);
+  });
+
+  it("o esquema aceita o CEP de 8 dígitos e recusa o resto; taxa no corpo some", () => {
+    const base = pedidoDaAna();
+    const com = (entrega: unknown) =>
+      esquemaPedidoDoCardapio.safeParse({ ...base, entrega });
+    expect(com(ENTREGA).success).toBe(true);
+    expect(com({ ...ENTREGA, cep: "52020-000" }).success).toBe(false);
+    expect(com({ ...ENTREGA, cep: "5202000" }).success).toBe(false);
+    const comTaxaNoCorpo = com({ ...ENTREGA, taxa: 1 });
+    expect(
+      comTaxaNoCorpo.success && comTaxaNoCorpo.data.entrega,
+    ).not.toHaveProperty("taxa");
+  });
+
+  it('a mensagem diz "com a entrega" quando a taxa veio calculada', () => {
+    expect(
+      mensagemDeAviso({
+        negocio: "MyCookie's",
+        codigo: "P-260923-K3F",
+        nome: "Ana",
+        itens: [{ nome: "Cookie Tradicional", quantidade: 6 }],
+        total: 12000,
+        dataEntregaISO: "2026-09-25",
+        entrega: "ENTREGA",
+        entregaCalculada: true,
+      }),
+    ).toContain(`Total ${formatarMoeda(12000)} com a entrega, para receber`);
+  });
+});

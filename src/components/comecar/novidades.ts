@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-10",
+    titulo: "A taxa no cardápio",
+    frase:
+      "Com a entrega configurada, a cliente põe o CEP no cardápio e vê a taxa e o total com ela antes de mandar. O pedido chega com a taxa, e você ainda pode mudar ao confirmar.",
+    href: "/configuracao#a-sua-marca",
+  },
+  {
+    dataISO: "2026-10-10",
     titulo: "A taxa de entrega pela distância",
     frase:
       "Em “Seu cardápio”, diga de onde sai a entrega, até onde vai e quanto cobra por faixa, com os bairros que têm outro preço. “Testar um CEP” mostra quanto a cliente pagaria.",

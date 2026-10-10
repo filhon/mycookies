@@ -30,6 +30,7 @@ import {
   hojeEmBrasilia,
   rotuloDiaPorExtenso,
 } from "./datas";
+import type { TaxaDeEntrega } from "./entrega";
 import { formatarMoeda } from "./money";
 import {
   codigoDoPedido,
@@ -115,6 +116,8 @@ export interface Cardapio {
     recado?: string;
     /** A agenda cheia (`#d318`): só quando empurra o primeiro dia para depois de amanhã. */
     aPartirDeISO?: DataISO;
+    /** Ela tem regra de entrega (spec 118): a página pede o CEP. A regra nunca sai (`#d322`). */
+    entregaPorCep?: true;
   };
   /** Na ordem de `categoriasProduto`, e categoria desconhecida no fim; nome dentro. */
   secoes: { categoria: string; produtos: ProdutoDoCardapio[] }[];
@@ -706,6 +709,7 @@ export function montarCardapio(entrada: {
       ...(pagamento ? { pagamento } : {}),
       ...(recado ? { recado } : {}),
       ...(aPartirDeISO ? { aPartirDeISO } : {}),
+      ...(configuracao.entrega ? { entregaPorCep: true as const } : {}),
     },
     secoes,
     ...(maisPedidos.length ? { maisPedidos } : {}),
@@ -867,6 +871,11 @@ export const esquemaPedidoDoCardapio = z.object({
     z.object({
       tipo: z.literal("ENTREGA"),
       endereco: z.string().trim().min(5).max(200),
+      /** Com a regra dela, o handler refaz a taxa por ele (spec 118, `#d160`). */
+      cep: z
+        .string()
+        .regex(/^\d{8}$/)
+        .optional(),
     }),
   ]),
   observacoes: z.string().trim().max(500).optional(),
@@ -883,6 +892,7 @@ export type FalhaPedidoCardapio =
   | "data" // antes do primeiro dia (`#d318`) ou depois de DIAS_A_FRENTE
   | "cheio" // LIMITE_DE_ORCAMENTOS_EM_ABERTO
   | "acabou" // leva mais do que resta de um produto limitado (`#d164`)
+  | "fora-da-area" // a regra de entrega dela diz `fora` (spec 118, `#d321`)
   | "sem-configuracao"
   | "sem-resposta"
   | "sem-rede";
@@ -902,6 +912,9 @@ export const MENSAGEM_FALHA_PEDIDO_CARDAPIO: Record<
     "Chegaram muitos pedidos de uma vez. Para não se perder, mande o seu pelo WhatsApp.",
   acabou:
     "Um dos produtos acabou, ou restam menos do que você escolheu. Confira e mande de novo.",
+  // Sem o nome: a lista é uma só para toda loja, e "a gente" é a voz dela.
+  "fora-da-area":
+    "A gente não entrega nesse endereço. Escolha retirar ou fale pelo WhatsApp.",
   "sem-configuracao":
     "Não deu para enviar agora. Tente de novo daqui a pouco, ou mande pelo WhatsApp.",
   "sem-resposta":
@@ -954,10 +967,23 @@ export function pedidoDoCardapio(entrada: {
   hojeISO: DataISO;
   /** A chave do link (`#d320`), sorteada pelo handler: o domínio não sorteia. */
   chavePublica?: string;
+  /**
+   * `taxaDeEntrega` do CEP, refeita pelo handler (spec 118): a do navegador
+   * nunca chega aqui (`#d160`). Ausente = "a combinar", taxa zero.
+   */
+  taxaDaEntrega?: TaxaDeEntrega;
 }):
   | { ok: true; corpo: CorpoDoPedidoDoCardapio }
   | { ok: false; falha: FalhaPedidoCardapio } {
   const { pedido, fichas, opcoes, fichaIds, promocoes, hojeISO } = entrada;
+  const entrega = pedido.entrega.tipo === "ENTREGA" ? pedido.entrega : null;
+  if (entrega && entrada.taxaDaEntrega?.tipo === "fora") {
+    return { ok: false, falha: "fora-da-area" };
+  }
+  const taxaEntrega =
+    entrega && entrada.taxaDaEntrega?.tipo === "taxa"
+      ? entrada.taxaDaEntrega.taxa
+      : 0;
 
   const linhas = new Map<
     string,
@@ -1039,7 +1065,7 @@ export function pedidoDoCardapio(entrada: {
     });
   }
 
-  const derivado = derivarPedido({ itens, desconto: 0, taxaEntrega: 0 });
+  const derivado = derivarPedido({ itens, desconto: 0, taxaEntrega });
   derivado.linhas.forEach((linha, i) => (itens[i]!.subtotal = linha.subtotal));
 
   const observacoes = pedido.observacoes?.trim();
@@ -1068,11 +1094,12 @@ export function pedidoDoCardapio(entrada: {
       status: "ORCAMENTO",
       dataEntregaISO: dia,
       competencia: competenciaDeISO(dia),
-      // A taxa é combinada depois, e a página diz isso antes do envio.
-      entrega:
-        pedido.entrega.tipo === "ENTREGA"
-          ? { tipo: "ENTREGA", taxa: 0, endereco: pedido.entrega.endereco }
-          : { tipo: "RETIRADA", taxa: 0 },
+      // Sem a regra dela, a taxa é combinada depois, e a página diz isso
+      // antes do envio. Com ela, a que a página mostrou (spec 118). O
+      // endereço vem montado pela página, com o CEP: nenhum campo novo.
+      entrega: entrega
+        ? { tipo: "ENTREGA", taxa: taxaEntrega, endereco: entrega.endereco }
+        : { tipo: "RETIRADA", taxa: 0 },
       subtotal: derivado.subtotal,
       desconto: 0,
       total: derivado.total,
@@ -1109,6 +1136,8 @@ export function mensagemDeAviso(entrada: {
   total: Centavos;
   dataEntregaISO: DataISO;
   entrega: "RETIRADA" | "ENTREGA";
+  /** A taxa veio calculada pela regra dela (spec 118): `total` já a tem. */
+  entregaCalculada?: boolean;
   /** O link do acompanhamento (`#d320`): fica na conversa das duas. */
   link?: string;
 }): string {
@@ -1120,7 +1149,7 @@ export function mensagemDeAviso(entrada: {
     .join(", ");
   const total =
     entrada.entrega === "ENTREGA"
-      ? `${formatarMoeda(entrada.total)} sem a entrega, para receber`
+      ? `${formatarMoeda(entrada.total)} ${entrada.entregaCalculada ? "com" : "sem"} a entrega, para receber`
       : `${formatarMoeda(entrada.total)}, para retirar`;
   const nome = entrada.nome.trim().split(/\s+/)[0] ?? "";
 

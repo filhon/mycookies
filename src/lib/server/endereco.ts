@@ -1,5 +1,11 @@
 import { unstable_cache } from "next/cache";
-import type { Coordenadas, EnderecoDoCep } from "@/lib/domain/entrega";
+import {
+  taxaDeEntrega,
+  type Coordenadas,
+  type EnderecoDoCep,
+  type TaxaDeEntrega,
+} from "@/lib/domain/entrega";
+import type { RegraDeEntrega } from "@/lib/types";
 
 /**
  * O CEP, pelos dois serviços da taxa de entrega (spec 118, `DECISOES.md#d322`).
@@ -91,4 +97,23 @@ export async function coordenadasDoCep(
     console.error("[endereco] Geocoding:", (erro as Error).message);
     return null;
   }
+}
+
+/**
+ * A taxa do CEP da cliente pela regra dela (sessão B): a rota pública e o
+ * handler do pedido passam por aqui, e o cache faz as duas respostas iguais.
+ */
+export async function taxaDoCep(
+  regra: RegraDeEntrega,
+  cep: string,
+): Promise<{ endereco: EnderecoDoCep | null; resultado: TaxaDeEntrega }> {
+  const [endereco, medida] = await Promise.all([
+    buscarCep(cep),
+    coordenadasDoCep(cep),
+  ]);
+  const resultado = taxaDeEntrega(regra, {
+    ...(endereco?.bairro ? { bairro: endereco.bairro } : {}),
+    ...(medida?.achado ? { coordenadas: medida.coordenadas } : {}),
+  });
+  return { endereco, resultado };
 }

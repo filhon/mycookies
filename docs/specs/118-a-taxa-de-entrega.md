@@ -175,13 +175,13 @@ distância de rota quando as exceções passarem de uma dezena numa conta real.
 
 ## Critérios de aceite
 
-- [ ] As aprovações registradas antes do código; cota diária configurada.
-- [ ] `taxaDeEntrega` pura e testada, com o bairro antes da distância e o "a combinar" quando
+- [x] As aprovações registradas antes do código; cota diária configurada.
+- [x] `taxaDeEntrega` pura e testada, com o bairro antes da distância e o "a combinar" quando
       falta dado.
-- [ ] A origem nunca sai; a rota pública nunca devolve distância.
-- [ ] A cliente vê a taxa e o total com ela antes de mandar; o handler refaz e grava.
-- [ ] Falha do serviço nunca impede pedido.
-- [ ] `lint`, `typecheck`, `test` e `build` passam em cada sessão; `#d321` e `#d322` escritos;
+- [x] A origem nunca sai; a rota pública nunca devolve distância.
+- [x] A cliente vê a taxa e o total com ela antes de mandar; o handler refaz e grava.
+- [x] Falha do serviço nunca impede pedido.
+- [x] `lint`, `typecheck`, `test` e `build` passam em cada sessão; `#d321` e `#d322` escritos;
       `/privacidade` com o parágrafo antes do deploy da B; `ESTADO.md` atualizado.
 
 ---

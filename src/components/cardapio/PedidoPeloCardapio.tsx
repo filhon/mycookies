@@ -10,6 +10,7 @@ import {
 } from "react";
 import {
   Check,
+  MapPinOff,
   MessageCircle,
   Minus,
   PackageSearch,
@@ -38,6 +39,12 @@ import {
   unidadesPorFicha,
 } from "@/lib/domain/cardapio";
 import { dataDeISO, diaVizinho } from "@/lib/domain/datas";
+import {
+  cepFormatado,
+  limparCep,
+  type EnderecoDoCep,
+  type TaxaParaCliente,
+} from "@/lib/domain/entrega";
 import { formatarMoeda } from "@/lib/domain/money";
 import { FOTO_LADO_PX } from "@/lib/domain/orcamento";
 import { nomeComEscolhas, subtotalDoItem } from "@/lib/domain/pedido";
@@ -108,6 +115,12 @@ function nomeDa(linha: LinhaSemQuantidade): string {
   });
 }
 
+/** A resposta de `/api/cardapio/entrega` para um CEP; `resposta: null` é não ter conseguido. */
+interface ConsultaDoCep {
+  cep: string;
+  resposta: TaxaParaCliente | null;
+}
+
 /** O que ela digitou, sem o carrinho: é o que o recarregar do `mudou` guarda. */
 interface DadosDaCliente {
   nome: string;
@@ -117,6 +130,28 @@ interface DadosDaCliente {
   tipo: Tipo;
   endereco: string;
   observacoes: string;
+  cep: string;
+  numero: string;
+  /** Guardada com o CEP: o recarregar não pergunta de novo. */
+  consulta: ConsultaDoCep | null;
+}
+
+/** "Rua das Flores · Espinheiro · Recife": o que o CEP diz, sem o vazio. */
+function enderecoEmTexto(endereco: EnderecoDoCep): string {
+  return [endereco.logradouro, endereco.bairro, endereco.cidade]
+    .map((parte) => parte.trim())
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/**
+ * "Rua das Flores, 10, ap. 2 · Espinheiro · Recife · CEP 52020-000": o número
+ * entra depois da rua, e o CEP no fim. Nenhum campo novo no pedido (spec 118).
+ */
+function enderecoComCep(endereco: string, numero: string, cep: string): string {
+  const [rua = "", ...resto] = endereco.split(" · ");
+  const comNumero = [rua.trim(), numero.trim()].filter(Boolean).join(", ");
+  return [comNumero, ...resto, `CEP ${cepFormatado(cep)}`].join(" · ");
 }
 
 const chaveDosDados = (contaId: string) => `rende:cardapio:${contaId}`;
@@ -144,6 +179,8 @@ interface Enviado {
   }[];
   dataEntregaISO: string;
   entrega: Tipo;
+  /** O servidor calculou a taxa, e `total` já a tem (spec 118). */
+  entregaCalculada: boolean;
   /** O link do acompanhamento, absoluto (`#d320`); ausente no pote de mel. */
   link?: string;
 }
@@ -181,6 +218,52 @@ export function PedidoPeloCardapio({
   const [observacoes, setObservacoes] = useState(guardado.observacoes ?? "");
   const [site, setSite] = useState("");
 
+  // O CEP (spec 118): só com a regra dela, que nunca chega aqui (`#d322`).
+  const porCep = negocio.entregaPorCep === true;
+  const [cep, setCep] = useState(guardado.cep ?? "");
+  const [numero, setNumero] = useState(guardado.numero ?? "");
+  const [consultaFeita, setConsultaFeita] = useState<ConsultaDoCep | null>(
+    guardado.consulta ?? null,
+  );
+  /** O último CEP perguntado: a resposta de um anterior chega e é ignorada. */
+  const perguntado = useRef<string | null>(null);
+  const cepLimpo = porCep ? limparCep(cep) : null;
+  const consulta =
+    cepLimpo && consultaFeita?.cep === cepLimpo ? consultaFeita : null;
+  const buscandoCep = cepLimpo !== null && consulta === null;
+  const doCep = tipo === "ENTREGA" ? consulta?.resposta : null;
+  const taxaVista = doCep?.tipo === "taxa" ? doCep.taxa : null;
+  const foraDaArea = doCep?.tipo === "fora";
+
+  async function consultarCep(limpo: string) {
+    perguntado.current = limpo;
+    let resposta: TaxaParaCliente | null = null;
+    try {
+      const r = await fetch("/api/cardapio/entrega", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contaId, cep: limpo }),
+      });
+      if (r.ok) resposta = (await r.json()) as TaxaParaCliente;
+    } catch {
+      // Sem rede: "a combinar", e o endereço à mão. Nada trava.
+    }
+    if (perguntado.current !== limpo) return;
+    setConsultaFeita({ cep: limpo, resposta });
+    if (resposta?.endereco) {
+      setEndereco(enderecoEmTexto(resposta.endereco));
+    }
+  }
+
+  function mudarCep(texto: string) {
+    setCep(texto);
+    const limpo = limparCep(texto);
+    // O mesmo CEP só pergunta de novo quando da outra vez não deu.
+    if (limpo && (limpo !== consultaFeita?.cep || !consultaFeita.resposta)) {
+      void consultarCep(limpo);
+    }
+  }
+
   // Lido uma vez: um recarregar qualquer depois deste não repõe nada.
   useEffect(() => {
     try {
@@ -207,6 +290,7 @@ export function PedidoPeloCardapio({
       }),
     0,
   );
+  const totalComEntrega = total + (taxaVista ?? 0);
   const itensEmTexto = `${quantidadeTotal} ${quantidadeTotal === 1 ? "item" : "itens"}`;
 
   const quantidadeDe = (chave: string) =>
@@ -281,7 +365,7 @@ export function PedidoPeloCardapio({
 
   async function enviar(evento: FormEvent) {
     evento.preventDefault();
-    if (enviando) return;
+    if (enviando || foraDaArea) return;
     if (!telefoneParaWhatsApp(telefone)) {
       setErroTelefone("Confira o número, com o DDD.");
       focarPrimeiroErro();
@@ -312,8 +396,17 @@ export function PedidoPeloCardapio({
               : {}),
           })),
           dataEntregaISO: data,
+          // A taxa nunca vai: o servidor a refaz pelo CEP (`#d160`).
           entrega:
-            tipo === "ENTREGA" ? { tipo, endereco } : { tipo: "RETIRADA" },
+            tipo === "RETIRADA"
+              ? { tipo }
+              : cepLimpo
+                ? {
+                    tipo,
+                    endereco: enderecoComCep(endereco, numero, cepLimpo),
+                    cep: cepLimpo,
+                  }
+                : { tipo, endereco },
           ...(observacoes.trim() ? { observacoes } : {}),
           ...(site ? { site } : {}),
         }),
@@ -333,6 +426,9 @@ export function PedidoPeloCardapio({
             tipo,
             endereco,
             observacoes,
+            cep,
+            numero,
+            consulta: consultaFeita,
           };
           try {
             sessionStorage.setItem(
@@ -350,11 +446,13 @@ export function PedidoPeloCardapio({
       const corpo = (await resposta.json()) as {
         codigo: string | null;
         total?: Centavos;
+        entregaCalculada?: boolean;
         link?: string;
       };
       setEnviado({
         codigo: corpo.codigo,
-        total: corpo.total ?? total,
+        total: corpo.total ?? totalComEntrega,
+        entregaCalculada: corpo.entregaCalculada ?? false,
         ...(corpo.link ? { link: location.origin + corpo.link } : {}),
         itens: carrinho.map((l) => ({
           nome: l.produto.nome,
@@ -486,7 +584,7 @@ export function PedidoPeloCardapio({
             </Opcao>
           ))}
         </div>
-        {tipo === "ENTREGA" && (
+        {tipo === "ENTREGA" && !porCep && (
           <Campo
             rotulo="Endereço"
             required
@@ -497,6 +595,70 @@ export function PedidoPeloCardapio({
             value={endereco}
             onChange={(e) => setEndereco(e.target.value)}
           />
+        )}
+        {tipo === "ENTREGA" && porCep && (
+          <>
+            <Campo
+              rotulo="CEP"
+              inputMode="numeric"
+              autoComplete="postal-code"
+              placeholder="00000-000"
+              maxLength={9}
+              value={cep}
+              onChange={(e) => mudarCep(e.target.value)}
+            />
+            {/* O que o CEP disse, lido em voz alta quando muda. */}
+            <div aria-live="polite">
+              {buscandoCep ? (
+                <p className="text-label text-ink-muted">Procurando o CEP…</p>
+              ) : foraDaArea ? (
+                <div className="space-y-3">
+                  <p className="flex items-start gap-2 text-body text-ink">
+                    <MapPinOff
+                      aria-hidden
+                      className="mt-0.5 size-5 shrink-0 text-negative"
+                      strokeWidth={1.75}
+                    />
+                    A {quem} não entrega nesse endereço. Você pode retirar.
+                  </p>
+                  <Botao larguraTotal onClick={() => setTipo("RETIRADA")}>
+                    Mudar para retirar
+                  </Botao>
+                </div>
+              ) : taxaVista !== null ? (
+                <p className="num text-body text-ink">
+                  Entrega:{" "}
+                  <span className="font-semibold">
+                    {formatarMoeda(taxaVista)}
+                  </span>
+                </p>
+              ) : consulta ? (
+                <p className="text-label text-ink-muted">
+                  A taxa de entrega a {quem} combina com você.
+                </p>
+              ) : null}
+            </div>
+            <Campo
+              rotulo="Endereço"
+              required
+              minLength={5}
+              maxLength={150}
+              autoComplete="street-address"
+              value={endereco}
+              onChange={(e) => setEndereco(e.target.value)}
+            />
+            {doCep?.endereco && (
+              <Campo
+                rotulo="Número e complemento"
+                required
+                maxLength={30}
+                autoComplete="address-line2"
+                placeholder="120, apto 302"
+                value={numero}
+                onChange={(e) => setNumero(e.target.value)}
+              />
+            )}
+          </>
         )}
       </fieldset>
 
@@ -602,6 +764,7 @@ export function PedidoPeloCardapio({
               total: enviado.total,
               dataEntregaISO: enviado.dataEntregaISO,
               entrega: enviado.entrega,
+              entregaCalculada: enviado.entregaCalculada,
               link: enviado.link,
             }),
           )}
@@ -641,9 +804,13 @@ export function PedidoPeloCardapio({
       <div className="mb-3 flex items-baseline justify-between gap-3">
         <span className="text-label text-ink-muted">
           Total
-          {tipo === "ENTREGA" && <span className="block">sem a entrega</span>}
+          {tipo === "ENTREGA" && (
+            <span className="block">
+              {taxaVista !== null ? "com a entrega" : "sem a entrega"}
+            </span>
+          )}
         </span>
-        <Dinheiro centavos={total} tamanho="xl" />
+        <Dinheiro centavos={totalComEntrega} tamanho="xl" />
       </div>
       <Botao
         type="submit"
@@ -652,6 +819,8 @@ export function PedidoPeloCardapio({
         tamanho="lg"
         larguraTotal
         carregando={enviando}
+        // Fora da área, o "Mudar para retirar" está logo acima.
+        disabled={foraDaArea}
       >
         {enviando ? "Enviando…" : "Enviar pedido"}
       </Botao>
@@ -660,21 +829,24 @@ export function PedidoPeloCardapio({
           <p className="text-label text-negative">
             {MENSAGEM_FALHA_PEDIDO_CARDAPIO[falha]}
           </p>
-          {(falha === "cheio" || falha === "fechado") && linkContato && (
-            <a
-              href={linkContato}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={classesBotao({ larguraTotal: true })}
-            >
-              <MessageCircle
-                aria-hidden
-                className="size-5"
-                strokeWidth={1.75}
-              />
-              Falar no WhatsApp
-            </a>
-          )}
+          {(falha === "cheio" ||
+            falha === "fechado" ||
+            falha === "fora-da-area") &&
+            linkContato && (
+              <a
+                href={linkContato}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={classesBotao({ larguraTotal: true })}
+              >
+                <MessageCircle
+                  aria-hidden
+                  className="size-5"
+                  strokeWidth={1.75}
+                />
+                Falar no WhatsApp
+              </a>
+            )}
         </div>
       ) : (
         negocio.whatsapp && (
@@ -815,7 +987,9 @@ export function PedidoPeloCardapio({
               })}
             >
               <span>Ver pedido · {itensEmTexto}</span>
-              <span className="font-semibold">{formatarMoeda(total)}</span>
+              <span className="font-semibold">
+                {formatarMoeda(totalComEntrega)}
+              </span>
             </button>
           </div>
         </div>

@@ -10183,3 +10183,37 @@ ao "a combinar" para todas é apagar `entrega` à mão; a sessão B decide se pr
 **Consequência.** Um serviço pago novo, com teto na cota diária e alerta de orçamento. O CEP
 digitado pela dona sai para o ViaCEP e para o Google; o da cliente, na B, também, e
 `/privacidade` ganha o parágrafo antes do deploy da B (texto de quem conduz o projeto).
+
+**Sessão B (2026-10-10), a cliente.**
+
+- **`POST /api/cardapio/entrega`** (`{ contaId, cep }`, sem login): `lerContaDoCardapio` e a
+  mesma `montarCardapio` do handler (fechado = 409), sem `configuracao.entrega` = 404, e então
+  `taxaDoCep` em `lib/server/endereco.ts` (ViaCEP e Google em paralelo, `taxaDeEntrega` com o
+  bairro do ViaCEP e as coordenadas do Google). **Lê o que a página lê**, e não "só a
+  configuração" como a seção 3 da spec dizia: o "cardápio aberto" é o da `montarCardapio`,
+  que precisa das fichas, e uma segunda opinião sobre o que está aberto é o que o handler já
+  recusa. A resposta passa por **`taxaParaCliente`** (`domain/entrega.ts`), que tira o
+  `porque`: `{ tipo, taxa?, endereco }`, com teste das chaves.
+- **A página sabe só que há regra**: `Cardapio.negocio.entregaPorCep?: true`, e nada da regra
+  (raio, faixas, origem, bairros) sai na página; teste confere.
+- **O handler refaz** com o mesmo `taxaDoCep` quando há regra e o corpo traz `cep`;
+  `pedidoDoCardapio` recebe `taxaDaEntrega` e grava `entrega.taxa`, soma por
+  `derivarPedido({ taxaEntrega })` e recusa `fora` com **`fora-da-area`** (400). Taxa no corpo
+  é descartada pelo esquema. `ENTREGA` sem `cep` continua "a combinar", taxa zero: é a página
+  aberta antes do deploy, e quem tira o CEP de propósito só ganha um orçamento que a dona
+  confere. A resposta ganha `entregaCalculada`, que põe "com a entrega" no aviso.
+- **A mensagem de `fora-da-area` não leva o nome** ("A gente não entrega nesse endereço…", e
+  não "A {quem}…" da spec): `MENSAGEM_FALHA_PEDIDO_CARDAPIO` é uma tabela fixa para toda loja.
+  A frase com o nome é a da página, ao lado do CEP, que é onde a cliente a lê quase sempre; a
+  do handler só aparece quando a página e o servidor discordam.
+- **O endereço é montado pela página**: "Endereço" preenchido com "Rua · Bairro · Cidade" do
+  ViaCEP (editável), "Número e complemento" só quando o CEP trouxe endereço, e o gravado é
+  "Rua, número · Bairro · Cidade · CEP 52020-000". Nenhum campo novo em `Pedido`.
+- **A consulta do CEP vai junto no `sessionStorage`** do recarregar do `mudou`, com o CEP e o
+  número: a página volta sem perguntar de novo, e sem `useEffect` para isso. Uma consulta que
+  falhou é refeita ao redigitar o mesmo CEP.
+- **Sem botão de tirar a regra** (o `#d321` deixava para a B): a spec não pede, e voltar ao
+  "a combinar" continua sendo apagar `entrega` à mão.
+- `ponytail:` taxa calculada de **zero** (faixa grátis) aparece como "a combinar" no
+  acompanhamento da 117, que lê taxa zero de orçamento como não combinada. Um
+  `entrega.calculada` quando ela tiver faixa grátis.

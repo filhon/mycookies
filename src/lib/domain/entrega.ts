@@ -95,6 +95,29 @@ export function limparCep(texto: string): string | null {
   return digitos.length === 8 ? digitos : null;
 }
 
+/** `"50010000"` → `"50010-000"`. */
+export function cepFormatado(cep: string): string {
+  return `${cep.slice(0, 5)}-${cep.slice(5)}`;
+}
+
+/**
+ * O que `/api/cardapio/entrega` devolve à cliente (spec 118, sessão B): a taxa
+ * ou o `fora`, e o endereço do CEP dela. **Nunca o `porque`**: com três CEPs e
+ * as distâncias, dá para achar a casa da dona (`#d322`).
+ */
+export type TaxaParaCliente =
+  | { tipo: "taxa"; taxa: Centavos; endereco: EnderecoDoCep | null }
+  | { tipo: "fora" | "a-combinar"; endereco: EnderecoDoCep | null };
+
+export function taxaParaCliente(
+  resultado: TaxaDeEntrega,
+  endereco: EnderecoDoCep | null,
+): TaxaParaCliente {
+  return resultado.tipo === "taxa"
+    ? { tipo: "taxa", taxa: resultado.taxa, endereco }
+    : { tipo: resultado.tipo, endereco };
+}
+
 const taxa = z.number().int().min(0);
 const km = z.number().positive().max(RAIO_MAXIMO_KM);
 

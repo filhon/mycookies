@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  cepFormatado,
   distanciaKm,
   esquemaEntrega,
   limparCep,
   taxaDeEntrega,
+  taxaParaCliente,
 } from "@/lib/domain/entrega";
 import type { RegraDeEntrega } from "@/lib/types";
 
@@ -153,5 +155,53 @@ describe("limparCep", () => {
     expect(limparCep("50.010-000")).toBe("50010000");
     expect(limparCep("50010000")).toBe("50010000");
     expect(limparCep("5001000")).toBeNull();
+  });
+});
+
+describe("taxaParaCliente (sessão B, #d322)", () => {
+  const ENDERECO = {
+    logradouro: "Rua das Flores",
+    bairro: "Graças",
+    cidade: "Recife",
+    uf: "PE",
+  };
+
+  it("nunca leva a distância, a faixa nem coordenada: só tipo, taxa e endereço", () => {
+    const casos = [
+      taxaDeEntrega(REGRA, { coordenadas: aoNorte(4.2) }),
+      taxaDeEntrega(REGRA, { coordenadas: aoNorte(20) }),
+      taxaDeEntrega(REGRA, { bairro: "Candeias" }),
+      taxaDeEntrega(REGRA, { bairro: "Espinheiro" }),
+      taxaDeEntrega({ ...REGRA, origem: undefined }, {}),
+    ];
+    for (const resultado of casos) {
+      const resposta = taxaParaCliente(resultado, ENDERECO);
+      expect(
+        Object.keys(resposta).every((k) =>
+          ["tipo", "taxa", "endereco"].includes(k),
+        ),
+      ).toBe(true);
+      expect(JSON.stringify(resposta)).not.toMatch(/km|lat|lng|porque|ateKm/);
+    }
+  });
+
+  it("a taxa, o fora e o a combinar", () => {
+    expect(
+      taxaParaCliente(
+        taxaDeEntrega(REGRA, { coordenadas: aoNorte(4.2) }),
+        null,
+      ),
+    ).toEqual({ tipo: "taxa", taxa: 800, endereco: null });
+    expect(
+      taxaParaCliente(taxaDeEntrega(REGRA, { bairro: "candeias" }), ENDERECO),
+    ).toEqual({ tipo: "fora", endereco: ENDERECO });
+    expect(taxaParaCliente({ tipo: "a-combinar" }, null)).toEqual({
+      tipo: "a-combinar",
+      endereco: null,
+    });
+  });
+
+  it("cepFormatado", () => {
+    expect(cepFormatado("52020000")).toBe("52020-000");
   });
 });
