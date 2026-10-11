@@ -112,10 +112,10 @@ Em 360 e 1440 px, nos dois temas:
 
 ## Critérios de aceite
 
-- [ ] O mosaico saiu; o combo sem foto mostra uma foto de opção, pela regra de `fotoDoCombo`.
-- [ ] `escolhasEmTexto` com o texto novo e a contagem sem as esgotadas, testado.
-- [ ] "Sem foto" em "Seu cardápio" para o marcado sem foto, com ícone e texto.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `#d327` escrito com a nota no `#d315`;
+- [x] O mosaico saiu; o combo sem foto mostra uma foto de opção, pela regra de `fotoDoCombo`.
+- [x] `escolhasEmTexto` com o texto novo e a contagem sem as esgotadas, testado.
+- [x] "Sem foto" em "Seu cardápio" para o marcado sem foto, com ícone e texto.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `#d327` escrito com a nota no `#d315`;
       `ESTADO.md` e `novidades.ts` atualizados.
 
 ---

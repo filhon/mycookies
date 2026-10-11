@@ -16,6 +16,7 @@ import {
   CloudOff,
   Copy,
   ExternalLink,
+  ImageOff,
   QrCode,
   Share2,
   Store,
@@ -54,8 +55,10 @@ import {
   problemaDaPromocao,
   RECADO_MAXIMO,
   sugerirApelido,
+  tipoDaFoto,
   type FalhaApelido,
 } from "@/lib/domain/cardapio";
+import { temEscolhas } from "@/lib/domain/custoFicha";
 import { dataISODe, diaVizinho, rotuloDiaPorExtenso } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
 import { contagemDoPronto, temPronto } from "@/lib/domain/producao";
@@ -140,6 +143,12 @@ export function SeuCardapio({
     [podem, configuracao],
   );
   const naPagina = podem.filter((ficha) => marcadas.has(ficha.id)).length;
+  const comboSemFoto = podem.some(
+    (ficha) =>
+      marcadas.has(ficha.id) &&
+      temEscolhas(ficha) &&
+      !tipoDaFoto(ficha.fotoUrl),
+  );
 
   // Quantidade limitada (sessão D, `#d164`): só o marcado que tem pote.
   const [hoje] = useState(() => dataISODe(new Date()));
@@ -528,6 +537,17 @@ export function SeuCardapio({
                               <span className="min-w-0 flex-1 wrap-break-word text-body text-ink">
                                 {ficha.nome}
                               </span>
+                              {/* Só o marcado: o desmarcado não vai sair (`#d327`). */}
+                              {marcada && !tipoDaFoto(ficha.fotoUrl) && (
+                                <span className="flex shrink-0 items-center gap-1 text-label text-ink-muted">
+                                  <ImageOff
+                                    aria-hidden
+                                    className="size-4"
+                                    strokeWidth={1.75}
+                                  />
+                                  Sem foto
+                                </span>
+                              )}
                               <Dinheiro
                                 centavos={ficha.precificacao.precoVenda}
                                 tamanho="sm"
@@ -541,6 +561,12 @@ export function SeuCardapio({
                   </div>
                 ))}
               </div>
+              {comboSemFoto && (
+                <p className="mt-3 text-label text-ink-muted">
+                  Combo sem foto aparece com a foto de um dos sabores. A foto do
+                  combo montado se põe no produto, em Produtos.
+                </p>
+              )}
               {noLimite && (
                 <p className="mt-3 text-label text-ink-muted">
                   O cardápio mostra até {LIMITE_DO_CARDAPIO} produtos. Desmarque

@@ -11,6 +11,7 @@ import {
   montarCardapio,
   economiaDoCombo,
   escolhasEmTexto,
+  fotoDoCombo,
   limitadasComContagem,
   maisPedidosDoCardapio,
   MINIMO_PARA_DESTACAR,
@@ -1078,16 +1079,71 @@ describe("montarCardapio com combos", () => {
     ).toBe(700);
   });
 
-  it("escolhasEmTexto: uma escolha e duas", () => {
-    expect(escolhasEmTexto([{ quantidade: 4, categoria: "Cookie" }])).toBe(
-      "Escolha 4 · Cookie",
-    );
+  it("escolhasEmTexto: uma escolha, a esgotada fora da conta, e várias", () => {
+    const opcoes = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({ id: `o${i}`, nome: `O${i}` }));
     expect(
       escolhasEmTexto([
-        { quantidade: 2, categoria: "Cookie" },
-        { quantidade: 1, categoria: "Brownie" },
+        { quantidade: 4, categoria: "Cookie", opcoes: opcoes(5) },
       ]),
-    ).toBe("Escolha 2 · Cookie + 1 · Brownie");
+    ).toBe("4 à sua escolha, entre 5 opções");
+    expect(
+      escolhasEmTexto([
+        {
+          quantidade: 4,
+          categoria: "Cookie",
+          opcoes: [...opcoes(4), { id: "x", nome: "X", restam: 0 }],
+        },
+      ]),
+    ).toBe("4 à sua escolha, entre 4 opções");
+    expect(
+      escolhasEmTexto([
+        { quantidade: 2, categoria: "Cookie", opcoes: opcoes(2) },
+      ]),
+    ).toBe("2 à sua escolha, entre 2 opções");
+    expect(
+      escolhasEmTexto([
+        { quantidade: 2, categoria: "Cookie", opcoes: opcoes(3) },
+        { quantidade: 1, categoria: "Brownie", opcoes: opcoes(2) },
+      ]),
+    ).toBe("2 de Cookie e 1 de Brownie, à sua escolha");
+    expect(
+      escolhasEmTexto([
+        { quantidade: 2, categoria: "Cookie", opcoes: [] },
+        { quantidade: 1, categoria: "Brownie", opcoes: [] },
+        { quantidade: 1, categoria: "Pão de mel", opcoes: [] },
+      ]),
+    ).toBe("2 de Cookie, 1 de Brownie e 1 de Pão de mel, à sua escolha");
+  });
+
+  it("fotoDoCombo: a própria, a mais pedida, a primeira com foto, nenhuma", () => {
+    const escolhas = [
+      {
+        categoria: "Cookie",
+        quantidade: 4,
+        opcoes: [
+          { id: "semfoto", nome: "Sem foto" },
+          { id: "tradicional", nome: "Tradicional", fotoVersao: 1 },
+          { id: "redvelvet", nome: "Red Velvet", fotoVersao: 2 },
+        ],
+      },
+    ];
+    expect(
+      fotoDoCombo({ id: "combo", fotoVersao: 9, escolhas }, ["redvelvet"]),
+    ).toEqual({ id: "combo", versao: 9 });
+    expect(
+      fotoDoCombo({ id: "combo", escolhas }, ["brownie", "redvelvet"]),
+    ).toEqual({ id: "redvelvet", versao: 2 });
+    expect(fotoDoCombo({ id: "combo", escolhas }, [])).toEqual({
+      id: "tradicional",
+      versao: 1,
+    });
+    expect(
+      fotoDoCombo({
+        id: "combo",
+        escolhas: [{ ...escolhas[0]!, opcoes: [escolhas[0]!.opcoes[0]!] }],
+      }),
+    ).toBeNull();
   });
 
   it("opção fora da lista entra no combo, sem preço e sem economia", () => {

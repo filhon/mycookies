@@ -29,6 +29,7 @@ import {
   DIAS_A_FRENTE,
   economiaDoCombo,
   escolhasEmTexto,
+  fotoDoCombo,
   MENSAGEM_FALHA_PEDIDO_CARDAPIO,
   mensagemDeAviso,
   mensagemDeContato,
@@ -1003,6 +1004,7 @@ export function PedidoPeloCardapio({
                           : mudar({ chave: produto.id, produto }, passo)
                       }
                       aoAbrir={() => abrir(produto)}
+                      maisPedidos={cardapio.maisPedidos}
                     />
                   ))}
                 </ul>
@@ -1421,51 +1423,36 @@ function Descricao({ texto }: { texto: string }) {
 }
 
 /**
- * A foto da linha. O combo sem foto mostra as opções dele que têm (`#d315`):
- * uma ocupa o quadrado, duas a quatro dividem em 2 × 2. Sem nenhuma, nada.
+ * A foto da linha, uma só: a do produto, ou a de uma opção no combo sem foto
+ * (`fotoDoCombo`, `#d327`). Sem nenhuma, nada.
  */
 function Retrato({
   contaId,
-  produto,
+  foto,
   className,
 }: {
   contaId: string;
-  produto: ProdutoDoCardapio;
+  foto: { id: string; versao: number } | null;
   className?: string;
 }) {
-  const fotos =
-    produto.fotoVersao !== undefined
-      ? new Map([[produto.id, produto.fotoVersao]])
-      : new Map(
-          (produto.escolhas ?? [])
-            .flatMap((e) => e.opcoes)
-            .flatMap((o) =>
-              o.fotoVersao === undefined ? [] : [[o.id, o.fotoVersao] as const],
-            ),
-        );
-  const quatro = [...fotos].slice(0, 4);
-  if (quatro.length === 0) return null;
+  if (!foto) return null;
   return (
     <div
       className={cn(
-        "grid size-26 shrink-0 gap-px overflow-hidden rounded-md bg-sunken lg:size-32",
-        quatro.length > 1 && "grid-cols-2 grid-rows-2",
+        "size-26 shrink-0 overflow-hidden rounded-md bg-sunken lg:size-32",
         className,
       )}
     >
-      {quatro.map(([id, versao]) => (
-        // Sem `next/image`: a foto já tem 320px (`#d162`).
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={id}
-          src={urlDaFoto(contaId, id, versao)}
-          // O nome já está no título ao lado.
-          alt=""
-          loading="lazy"
-          decoding="async"
-          className="size-full object-cover"
-        />
-      ))}
+      {/* Sem `next/image`: a foto já tem 320px (`#d162`). */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={urlDaFoto(contaId, foto.id, foto.versao)}
+        // O nome já está no título ao lado.
+        alt=""
+        loading="lazy"
+        decoding="async"
+        className="size-full object-cover"
+      />
     </div>
   );
 }
@@ -1712,6 +1699,7 @@ function Produto({
   podeMais,
   aoMudar,
   aoAbrir,
+  maisPedidos,
 }: {
   contaId: string;
   produto: ProdutoDoCardapio;
@@ -1722,6 +1710,8 @@ function Produto({
   podeMais: boolean;
   aoMudar: (passo: number) => void;
   aoAbrir: () => void;
+  /** `cardapio.maisPedidos`, para a foto do combo sem foto (`#d327`). */
+  maisPedidos?: string[];
 }) {
   const esgotado = produto.restam === 0;
 
@@ -1774,7 +1764,7 @@ function Produto({
       </div>
       <Retrato
         contaId={contaId}
-        produto={produto}
+        foto={fotoDoCombo(produto, maisPedidos)}
         // Margem, e não `gap`: sem foto, a coluna vazia não rouba 16px do texto.
         className="col-start-2 row-span-2 row-start-1 ml-4"
       />

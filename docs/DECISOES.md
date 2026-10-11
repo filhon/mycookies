@@ -9789,7 +9789,9 @@ quem paga; o "nunca vence" do `#d141` já não valia para ela.
 ## D315 · A linha do cardápio abre a ficha do produto
 
 **Status:** vigente, menos o item "o celular não muda", revertido pelo `#d326` em 2026-10-10
-(a linha do `lg` vale em toda largura) · decidida em 2026-10-10, spec
+(a linha do `lg` vale em toda largura), e os itens do mosaico e do "Escolha 4 · Cookie" na
+linha, revertidos pelo `#d327` no mesmo dia (uma foto só, e o texto que diz o produto; a
+legenda do "Monte a sua" fica) · decidida em 2026-10-10, spec
 `112-a-ficha-do-produto-na-vitrine.md`.
 
 **Contexto.** Nos prints do cardápio público, a descrição cortava em três linhas sem saída, a
@@ -9820,7 +9822,7 @@ mais)`, a generalização de `cabeMaisUm`. Esgotado abre e diz "Esgotado", sem p
   a rota daria 404. O teste das chaves (`#d158`) aceita `fotoVersao` na opção, e só ela.
 - **Combo sem foto mostra o mosaico** das opções com foto: uma ocupa o quadrado, duas a quatro
   dividem em 2 × 2 (com duas ou três sobra quadrado vazio em `--surface-sunken`), nenhuma e o
-  quadrado some.
+  quadrado some. _(Revertido pelo `#d327`: uma foto de opção só.)_
 - **Desktop (`lg`)**: a linha vira grade; a foto (ou o mosaico) vai a 128 px e ocupa as duas
   linhas da grade, e o preço com o controle sobe para a coluna do texto, logo abaixo da
   descrição (`self-start`, e não alinhado ao pé da foto, que recriaria o vão). O celular não
@@ -10417,3 +10419,37 @@ p-1`: a caixa que rola corta em volta dela, e sem o respiro cortava o pé das p�
 schema, regra, índice, dependência, mudança no handler ou teste novo. As listas do app ("Seu
 cardápio", Produtos) seguem com o `border-y` do `DESIGN.md`. Revisitar o "+" sem texto se os
 relatos mostrarem cliente que não o reconhece.
+
+## D327 · O combo na vitrine
+
+**Status:** vigente · decidida em 2026-10-10, spec `123-o-combo-na-vitrine.md`. **Reverte o
+mosaico do `#d315`** e o "Escolha 4 · Cookie" na linha (a legenda do "Monte a sua" fica).
+
+**Contexto.** A crítica "está tão bom quanto os outros aplicativos?" sobre os prints de
+2026-10-10, item 4: os três combos da MyCookie's (4 Cookies, Degustação, Dupla) têm as mesmas
+opções e mostravam o mesmo mosaico de quatro cookies a 52 px, que não distinguia um do outro e
+dava à lista cara de colagem; "Escolha 4 · Cookie" era a mecânica do "Monte a sua" levada para a
+vitrine; e a dona não tinha como saber que o combo saía sem foto.
+
+**Decisão.**
+
+- **Uma foto só**, por `fotoDoCombo(produto, maisPedidos)` em `domain/cardapio.ts`, com teste:
+  a própria; sem ela, a da opção que aparece primeiro em `cardapio.maisPedidos` (lá só entra
+  produto com foto); sem nenhuma lá, a primeira opção com foto na ordem de `escolhas[].opcoes`;
+  sem opção com foto, nenhuma. A rota é a de sempre: a opção só tem `fotoVersao` quando está na
+  página (`#d315`).
+- **O texto diz o produto**: "4 à sua escolha, entre 5 opções" (uma escolha), contando só as
+  opções que não estão esgotadas (`restam !== 0`), porque "entre 5" com duas esgotadas promete o
+  que o "Monte a sua" não entrega; "2 de Cookie e 1 de Brownie, à sua escolha" (várias). A
+  categoria fica como ela escreveu: plural automático erra ("Pão de mel"). "Opções", e não
+  "sabores": um combo pode ser de bebida e salgado. Com uma opção só, "opção"; com todas
+  esgotadas, só "4 à sua escolha".
+- **"Sem foto" em "Seu cardápio"**: o produto marcado cuja foto não sai pela rota
+  (`!tipoDaFoto(fotoUrl)`, o mesmo teste da página) ganha `ImageOff` de 16 px e "Sem foto" em
+  `label` apagado à direita do nome; o desmarcado não ganha nada. Com algum combo marcado sem
+  foto, uma linha abaixo da lista aponta para Produtos. Nenhum link dentro da linha: ela é o
+  `<label>` da caixa de marcar, e o link roubaria o toque.
+
+**Consequência.** Nenhum schema, regra, índice, dependência ou mudança no handler. Os três
+combos com as mesmas opções saem com a mesma foto: é menos feio que o mosaico repetido, mas não
+os distingue. O que distingue é a foto do combo montado, e é para ela que o "Sem foto" aponta.

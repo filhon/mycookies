@@ -311,11 +311,48 @@ export function seloDaPromocao(
     : `${quanto} até ${rotuloDiaPorExtenso(promocaoAteISO)}`;
 }
 
-/** "Escolha 4 · Cookie", ou "Escolha 2 · Cookie + 1 · Brownie" (`#d315`). */
+/**
+ * O combo na linha, dito pelo produto e não pela mecânica (`#d327`): "4 à sua
+ * escolha, entre 5 opções", contando só as que não esgotaram; ou "2 de Cookie
+ * e 1 de Brownie, à sua escolha". A categoria fica como ela escreveu: plural
+ * automático erra. A legenda do "Monte a sua" é outra.
+ */
 export function escolhasEmTexto(
-  escolhas: { quantidade: number; categoria: string }[],
+  escolhas: { quantidade: number; categoria: string; opcoes: OpcaoDoCombo[] }[],
 ): string {
-  return `Escolha ${escolhas.map((e) => `${e.quantidade} · ${e.categoria}`).join(" + ")}`;
+  if (escolhas.length === 1) {
+    const { quantidade, opcoes } = escolhas[0]!;
+    const n = opcoes.filter((o) => o.restam !== 0).length;
+    if (n === 0) return `${quantidade} à sua escolha`;
+    return `${quantidade} à sua escolha, entre ${n} ${n === 1 ? "opção" : "opções"}`;
+  }
+  const partes = escolhas.map((e) => `${e.quantidade} de ${e.categoria}`);
+  const ultima = partes.pop()!;
+  return `${partes.join(", ")} e ${ultima}, à sua escolha`;
+}
+
+/**
+ * A foto da linha (`#d327`): a própria; no combo sem ela, a da opção que
+ * aparece primeiro em `maisPedidos` (lá só entra produto com foto) ou, sem
+ * nenhuma lá, a primeira opção com foto. Uma só: o mosaico do `#d315` saiu.
+ */
+export function fotoDoCombo(
+  produto: Pick<ProdutoDoCardapio, "id" | "fotoVersao" | "escolhas">,
+  maisPedidos: string[] = [],
+): { id: string; versao: number } | null {
+  if (produto.fotoVersao !== undefined) {
+    return { id: produto.id, versao: produto.fotoVersao };
+  }
+  const comFoto = (produto.escolhas ?? [])
+    .flatMap((e) => e.opcoes)
+    .flatMap((o) =>
+      o.fotoVersao === undefined ? [] : [{ id: o.id, versao: o.fotoVersao }],
+    );
+  return (
+    maisPedidos.flatMap((id) => comFoto.filter((o) => o.id === id))[0] ??
+    comFoto[0] ??
+    null
+  );
 }
 
 // ---------------------------------------------------------------------------

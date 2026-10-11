@@ -154,12 +154,12 @@ Em 360, 390, 1024 e 1440 px, nos dois temas:
 
 ## Critérios de aceite
 
-- [ ] A linha do produto tem o preço e o controle na coluna do texto em toda largura.
-- [ ] "+" redondo de 44 px no lugar do "Adicionar", com o mesmo nome acessível.
-- [ ] Filete só entre produtos; a barra de categorias com filete só presa.
-- [ ] Títulos de seção em `title`, 48 px antes e 12 px depois.
-- [ ] "Compartilhar" no lugar de "Mandar".
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `#d326` escrito com as notas no `#d166` e no
+- [x] A linha do produto tem o preço e o controle na coluna do texto em toda largura.
+- [x] "+" redondo de 44 px no lugar do "Adicionar", com o mesmo nome acessível.
+- [x] Filete só entre produtos; a barra de categorias com filete só presa.
+- [x] Títulos de seção em `title`, 48 px antes e 12 px depois.
+- [x] "Compartilhar" no lugar de "Mandar".
+- [x] `lint`, `typecheck`, `test` e `build` passam; `#d326` escrito com as notas no `#d166` e no
       `#d315`; `ESTADO.md` e `novidades.ts` atualizados.
 
 ---
