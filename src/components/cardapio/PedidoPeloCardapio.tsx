@@ -190,12 +190,18 @@ export function PedidoPeloCardapio({
   cardapio,
   amanha,
   primeiro,
+  pe,
 }: {
   contaId: string;
   cardapio: Cardapio;
   amanha: string;
   /** `primeiroDiaDoCardapio`: amanhã, ou depois com a agenda cheia (`#d318`). */
   primeiro: string;
+  /**
+   * O pé da loja, no fim da coluna da lista (spec 120, `#d324`): termina onde
+   * a lista termina no desktop e herda o `pb-24` da barra "Ver pedido".
+   */
+  pe?: ReactNode;
 }) {
   const { negocio } = cardapio;
   const quem = negocio.quem || negocio.nome;
@@ -932,6 +938,8 @@ export function PedidoPeloCardapio({
               </section>
             ))}
           </div>
+
+          {pe}
         </div>
 
         {/* O pedido ao lado da lista, sem painel: no desktop cabe, e a

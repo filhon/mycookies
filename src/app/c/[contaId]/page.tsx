@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
-import { cache } from "react";
-import { AtSign, CalendarDays, MessageCircle, Wallet } from "lucide-react";
+import { cache, type ReactNode } from "react";
+import { AtSign, MessageCircle } from "lucide-react";
 import { MandarOCardapio } from "@/components/cardapio/MandarOCardapio";
 import { PedidoPeloCardapio } from "@/components/cardapio/PedidoPeloCardapio";
 import { estiloDaLoja } from "@/components/cardapio/estiloDaLoja";
@@ -124,32 +124,97 @@ export default async function PaginaCardapio({ params }: Props) {
         cardapio={cardapio}
         amanha={diaVizinho(hoje, 1)}
         primeiro={primeiro}
+        pe={<Pe contaId={contaId} negocio={negocio} />}
       />
-
-      <footer className="mx-4 mt-12 flex flex-col items-center gap-1 border-t border-line pt-6 text-label text-ink-muted lg:mx-0 lg:flex-row lg:justify-between">
-        <p>
-          {negocio.nome}
-          {negocio.instagram && (
-            <>
-              {" · "}
-              <span translate="no">@{negocio.instagram}</span>
-            </>
-          )}
-        </p>
-        {/* O único link do Rende na página, medido até a conta criada
-            (`#d317`). Em aba nova: o cardápio dela fica aberto. */}
-        {negocio.feitoComRende && (
-          <a
-            href="/conheca?de=cardapio"
-            target="_blank"
-            rel="noopener"
-            className="inline-flex min-h-11 items-center text-ink-muted underline-offset-2 hover:underline focus-visible:underline"
-          >
-            Cardápio feito no Rende
-          </a>
-        )}
-      </footer>
     </main>
+  );
+}
+
+/**
+ * O fecho da loja (spec 120, `#d324`): a mesma pergunta do topo para quem rolou
+ * até o fim. Mora na coluna da lista, sem filete: a última lista fecha com o
+ * dela. Links, e não botões: o primário da página é o "Adicionar".
+ */
+function Pe({
+  contaId,
+  negocio,
+}: {
+  contaId: string;
+  negocio: Cardapio["negocio"];
+}) {
+  const link =
+    "inline-flex min-h-11 items-center gap-2 text-label text-ink underline-offset-2 hover:underline focus-visible:underline";
+  return (
+    <footer className="mt-16 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+      <div className="min-w-0">
+        <div className="flex items-center gap-3">
+          {negocio.logoVersao !== undefined && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`/c/${encodeURIComponent(contaId)}/vitrine/logo?v=${negocio.logoVersao}`}
+              alt=""
+              width={40}
+              height={40}
+              loading="lazy"
+              className="size-10 shrink-0 rounded-full bg-canvas object-cover"
+            />
+          )}
+          <p className="wrap-break-word text-subheading font-semibold text-ink">
+            {negocio.nome}
+          </p>
+        </div>
+        {(negocio.whatsapp || negocio.instagram) && (
+          <div className="mt-2 flex flex-wrap gap-x-6">
+            {negocio.whatsapp && (
+              <a
+                href={linkDoWhatsApp(
+                  negocio.whatsapp,
+                  mensagemDeContato(negocio),
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Falar no WhatsApp"
+                className={link}
+              >
+                <MessageCircle
+                  aria-hidden
+                  className="size-4 shrink-0 text-ink-muted"
+                  strokeWidth={1.75}
+                />
+                WhatsApp
+              </a>
+            )}
+            {negocio.instagram && (
+              <a
+                href={`https://instagram.com/${encodeURIComponent(negocio.instagram)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={link}
+              >
+                <AtSign
+                  aria-hidden
+                  className="size-4 shrink-0 text-ink-muted"
+                  strokeWidth={1.75}
+                />
+                <span translate="no">@{negocio.instagram}</span>
+              </a>
+            )}
+          </div>
+        )}
+      </div>
+      {/* O único link do Rende na página, medido até a conta criada
+          (`#d317`). Em aba nova: o cardápio dela fica aberto. */}
+      {negocio.feitoComRende && (
+        <a
+          href="/conheca?de=cardapio"
+          target="_blank"
+          rel="noopener"
+          className="inline-flex min-h-11 items-center self-start text-label text-ink-muted underline-offset-2 hover:underline focus-visible:underline lg:self-auto"
+        >
+          Cardápio feito no Rende
+        </a>
+      )}
+    </footer>
   );
 }
 
@@ -169,6 +234,7 @@ function Topo({
 }) {
   const base = `/c/${encodeURIComponent(contaId)}/vitrine`;
   const temFaixa = negocio.capaVersao !== undefined || !!negocio.cor;
+  const comLogo = negocio.logoVersao !== undefined;
 
   return (
     <header>
@@ -185,14 +251,16 @@ function Topo({
         negocio.cor && <div className="h-28 bg-loja lg:mt-6 lg:rounded-lg" />
       )}
 
+      {/* Pelo topo, e não pelo pé (spec 120, `#d324`): alinhado pelo pé do
+          logo, o texto alto subia até encostar na capa. */}
       <div
         className={cn(
-          "flex flex-col gap-4 px-4 lg:flex-row lg:items-end lg:justify-between lg:px-6",
+          "flex flex-col gap-4 px-4 lg:flex-row lg:items-start lg:justify-between lg:px-6",
           !temFaixa && "pt-10",
         )}
       >
-        <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-end lg:gap-6">
-          {negocio.logoVersao !== undefined && (
+        <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:gap-6">
+          {comLogo && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={`${base}/logo?v=${negocio.logoVersao}`}
@@ -208,7 +276,9 @@ function Topo({
           <div
             className={cn(
               "min-w-0",
-              temFaixa && negocio.logoVersao === undefined && "pt-6",
+              // Com logo, o texto começa 20 px abaixo da capa, e não pelo pé
+              // do logo; sem logo, o respiro de sempre.
+              temFaixa && (comLogo ? "lg:pt-5" : "pt-6"),
             )}
           >
             <h1 className="wrap-break-word text-balance font-display text-display font-semibold text-ink lg:text-[2.25rem]">
@@ -220,32 +290,16 @@ function Topo({
               </p>
             )}
             {/* Antes de pedir (spec 115, `#d318`): o que a cliente perguntaria
-                no WhatsApp, antes do formulário. Cada linha só com dado. */}
-            <ul className="mt-3 flex flex-col gap-1.5 text-label text-ink">
-              <li className="flex items-start gap-2">
-                <CalendarDays
-                  aria-hidden
-                  className="mt-0.5 size-4 shrink-0"
-                  strokeWidth={1.75}
-                />
-                Pedidos para a partir de {aPartirDe}
-              </li>
+                no WhatsApp, antes do formulário. Cada fato só com dado, e o
+                rótulo no lugar do ícone (spec 120, `#d324`). */}
+            <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
+              <Fato rotulo="Pedidos">A partir de {aPartirDe}</Fato>
               {negocio.pagamento && (
-                <li className="flex items-start gap-2">
-                  <Wallet
-                    aria-hidden
-                    className="mt-0.5 size-4 shrink-0"
-                    strokeWidth={1.75}
-                  />
-                  <span>
-                    <span className="sr-only">Pagamento: </span>
-                    {negocio.pagamento}
-                  </span>
-                </li>
+                <Fato rotulo="Pagamento">{negocio.pagamento}</Fato>
               )}
-            </ul>
+            </dl>
             {negocio.recado && (
-              <p className="mt-2 max-w-[48ch] whitespace-pre-line wrap-break-word text-body text-ink">
+              <p className="mt-4 max-w-[48ch] whitespace-pre-line wrap-break-word text-body text-ink">
                 {negocio.recado}
               </p>
             )}
@@ -255,7 +309,12 @@ function Topo({
         {/* Para quem só quer perguntar "tem pra hoje?": é o motivo mais comum
             de abrir o link da bio, e o pedido não é o único caminho. E para
             quem gostou mandar à amiga (spec 114). */}
-        <div className="flex flex-wrap gap-2">
+        <div
+          className={cn(
+            "flex flex-wrap gap-2",
+            temFaixa && (comLogo ? "lg:pt-5" : "lg:pt-6"),
+          )}
+        >
           {negocio.whatsapp && (
             <a
               href={linkDoWhatsApp(
@@ -290,5 +349,17 @@ function Topo({
         </div>
       </div>
     </header>
+  );
+}
+
+/** Um fato da faixa "antes de pedir": o rótulo na voz da legenda, e o dado. */
+function Fato({ rotulo, children }: { rotulo: string; children: ReactNode }) {
+  return (
+    <div>
+      <dt className="text-micro font-semibold uppercase tracking-[0.08em] text-ink-muted">
+        {rotulo}
+      </dt>
+      <dd className="text-label font-medium text-ink">{children}</dd>
+    </div>
   );
 }

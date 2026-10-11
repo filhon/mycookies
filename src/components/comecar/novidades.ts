@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-10",
+    titulo: "O topo e o fim do cardápio",
+    frase:
+      "No cardápio, o nome da loja não encosta mais na capa, os pedidos e o pagamento aparecem com rótulo, e o fim da lista mostra seu nome com o WhatsApp e o Instagram.",
+    href: "/configuracao#a-sua-marca",
+  },
+  {
+    dataISO: "2026-10-10",
     titulo: "O aviso de pedido novo no celular",
     frase:
       "Em “Configuração”, ative o aviso neste aparelho: quando uma cliente manda pedido pelo cardápio, o celular toca, mesmo com o Rende fechado. Com ele aberto, aparece uma faixa no topo.",

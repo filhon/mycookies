@@ -10274,3 +10274,47 @@ criadoEm, atualizadoEm, v }`. Ativar de novo regrava o documento inteiro sem ler
 **Consequência.** Uma subcoleção, uma variável pública (`NEXT_PUBLIC_FIREBASE_VAPID_KEY`,
 `DEPLOY.md` § 15). Nenhuma regra, índice ou dependência. Responder pela notificação, outros
 avisos e e-mail do pedido novo continuam fora.
+
+## D324 · O topo e o pé do cardápio, e o selo que não entra
+
+**Status:** vigente · decidida em 2026-10-10, spec `120-o-topo-e-o-pe-do-cardapio.md`.
+
+**Contexto.** A crítica do cardápio público sobre os prints de 2026-10-10: no desktop o nome
+encostava na capa (a linha do logo e do texto alinhava pelo pé, e o logo desce 56 px abaixo
+dela), as linhas "antes de pedir" liam como lista com marcador trocado, e o rodapé repetia o
+nome em cinza, com um filete paralelo ao da última lista, mais largo que ela e coberto pela
+barra "Ver pedido" no celular. Junto veio o pedido de um selo de "conta verificada" para quem
+paga o Completo.
+
+**Decisão.**
+
+- **O topo alinha pelo topo** (`lg:items-start`). Com logo e faixa, o texto começa 20 px
+  abaixo da capa (`lg:pt-5`); sem logo, o `pt-6` de antes; sem faixa, o `pt-10`. Os botões
+  recebem o mesmo recuo no `lg` e ficam na altura do nome. O celular não muda.
+- **"Antes de pedir" é uma `<dl>`** de fatos lado a lado (`flex-wrap`): "Pedidos · A partir de
+  amanhã" e "Pagamento · Pix, cartão ou dinheiro", o `<dt>` na voz da legenda (`micro` 600,
+  caixa alta). **Sem ícone**: o rótulo diz o que o ícone tentava dizer, e o `sr-only` sai.
+- **O pé mora na coluna da lista**: `PedidoPeloCardapio` ganha `pe?: ReactNode`, desenhado
+  depois da última seção. Termina onde a lista termina no desktop e herda o `pb-24` da barra.
+  Sem filete (`mt-16`): a última lista já fecha com o dela.
+- **O pé é o fecho da loja**: logo de 40 px, o nome em `subheading`, e WhatsApp e Instagram
+  como **links de texto**, e não botões (o primário da página é o "Adicionar"). Topo e pé
+  repetem os contatos de propósito: quem rolou tudo e não achou é quem vai perguntar. O
+  "Cardápio feito no Rende" continua a regra do `#d147`, abaixo no celular e à direita no
+  desktop.
+- **O selo de verificação não entra.**
+  - O cardápio já é do Completo (`RECURSOS_DO_PACOTE.COMPLETO`); fora dele só o teste abre a
+    página. O selo não separaria Completo de Essencial, separaria a conta em teste, e diria
+    "não verificada" à cliente dela justamente nos dias em que queremos que ela assine.
+  - Verificada por quem? A cliente da confeiteira não conhece o Rende, e a página é da loja
+    (`#d166`). Selo de verificação promete identidade e idoneidade conferidas, e o Rende não
+    confere CNPJ, endereço nem documento: promessa sem dado, o que o `#d166` já recusou.
+  - Badge é anti-referência do `PRODUCT.md`.
+  - O que o pagamento já compra na página: o cardápio em si, e tirar o "Cardápio feito no
+    Rende" (`ocultarFeitoCom`, `#d147`).
+  - Revisitar se o Rende um dia verificar algo de verdade (CNPJ, por exemplo) **e** o selo
+    disser o que foi verificado.
+
+**Consequência.** Só desenho, em `page.tsx` e `PedidoPeloCardapio.tsx`. Nenhum schema, regra,
+índice, dependência ou teste novo. Endereço, horário e mapa no pé continuam fora: o recado da
+115 cobre.
