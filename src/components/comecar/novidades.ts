@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-10",
+    titulo: "O cardápio em duas colunas no computador",
+    frase:
+      "Aberto no computador, o cardápio fica mais largo e mostra os produtos lado a lado, em duas colunas, e a cliente rola menos.",
+    href: "/configuracao#a-sua-marca",
+  },
+  {
+    dataISO: "2026-10-10",
     titulo: "O combo com uma foto só no cardápio",
     frase:
       "No cardápio, o combo sem foto aparece com a foto de um dos sabores, e não mais com quatro espremidas, e diz quantos vêm. Em “Seu cardápio”, o produto marcado sem foto aparece com “Sem foto”.",

@@ -95,10 +95,10 @@ Em 1024, 1280, 1440 e 1920 px, nos dois temas:
 
 ## Critérios de aceite
 
-- [ ] `max-w-7xl` na página.
-- [ ] Duas colunas quando a coluna da lista tem 720 px ou mais, por consulta de contêiner.
-- [ ] Sem cartão: a mesma linha, com filete só entre linhas da grade.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `#d328` escrito com a nota no `#d166`;
+- [x] `max-w-7xl` na página.
+- [x] Duas colunas quando a coluna da lista tem 720 px ou mais, por consulta de contêiner.
+- [x] Sem cartão: a mesma linha, com filete só entre linhas da grade.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `#d328` escrito com a nota no `#d166`;
       `ESTADO.md` e `novidades.ts` atualizados.
 
 ---

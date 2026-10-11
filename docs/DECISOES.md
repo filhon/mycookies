@@ -5287,7 +5287,9 @@ enchimento apertado). As correções da crítica entraram junto com o design.
   - o "+" deixou de flutuar sobre a foto e virou "Adicionar" na linha do preço, porque sem foto
     ele flutuaria no nada (o rótulo foi revertido pelo `#d326`: voltou a ser "+", redondo, no
     mesmo lugar);
-  - a web usa a mesma lista com divisórias do celular, e não a grade de cartões com elevação;
+  - a web usa a mesma lista com divisórias do celular, e não a grade de cartões com elevação
+    (continua; desde o `#d328`, em 2026-10-10, em duas colunas quando a coluna da lista tem
+    45 rem ou mais, ainda sem cartão);
   - "sacola" virou "pedido";
   - as pílulas de categoria são âncoras, sem estado "ativa", porque uma pílula ativa que não
     segue a rolagem mente;
@@ -10453,3 +10455,33 @@ vitrine; e a dona não tinha como saber que o combo saía sem foto.
 **Consequência.** Nenhum schema, regra, índice, dependência ou mudança no handler. Os três
 combos com as mesmas opções saem com a mesma foto: é menos feio que o mosaico repetido, mas não
 os distingue. O que distingue é a foto do combo montado, e é para ela que o "Sem foto" aponta.
+
+## D328 · O cardápio no computador
+
+**Status:** vigente · decidida em 2026-10-10, spec `124-o-cardapio-no-computador.md`.
+
+**Contexto.** A crítica "está tão bom quanto os outros aplicativos?" sobre os prints de
+2026-10-10, item 6: a 1511 px, a página era um cardápio de celular alargado, com `max-w-6xl`, a
+lista numa coluna de ≈ 630 px para ≈ 300 px de conteúdo e ≈ 180 px de papel vazio em cada
+lateral. A cliente rolava o dobro do que precisaria.
+
+**Decisão.**
+
+- **A página para em `max-w-7xl`** (1280 px), o topo junto. Com o `lg:px-10`, o pedido ao lado
+  (25 rem, `#d325`) e o vão de 40 px, a coluna da lista fica com ≈ 760 px.
+- **Duas colunas por consulta de contêiner, e não de tela**: a coluna da lista é `@container`,
+  e o `<ul>` de cada seção vira `@[45rem]:grid-cols-2` com `gap-x-8`. O pedido ao lado come
+  440 px, então só de 1280 px para cima a coluna passa dos 720 px; de 1024 a 1279 px e no
+  celular, uma coluna, como antes.
+- **A mesma linha do `#d326`, sem cartão**: o `#d166` recusou a grade de cartões, e a recusa
+  continua. Duas colunas, e não três: três de 240 px espremeriam o texto ao lado da foto.
+- **O filete é o `border-t` de cada produto**, porque o `divide-y` não funciona em grade:
+  `first:border-t-0` e, em duas colunas, `@[45rem]:nth-2:border-t-0`. A grade estica as duas
+  células de uma linha à mesma altura, então os dois filetes se alinham num só traço com o vão
+  no meio, e o controle de cada uma fica logo abaixo do texto dela (o `self-start` do `#d326`).
+- **Seção com um produto só fica com a célula à esquerda**, e a direita vazia: esticar às duas
+  colunas devolveria a linha de 760 px.
+
+**Consequência.** Só desenho, em `page.tsx` e `PedidoPeloCardapio.tsx`. Nenhum schema, regra,
+índice, dependência, mudança no handler ou teste novo. "Os mais pedidos" segue em três colunas,
+agora de ≈ 240 px. O "Monte a sua" e o pedido ao lado não mudam.

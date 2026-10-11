@@ -107,7 +107,7 @@ export default async function PaginaCardapio({ params }: Props) {
   return (
     <main
       style={estiloDaLoja(negocio.cor)}
-      className="mx-auto w-full max-w-6xl pb-12 lg:px-10"
+      className="mx-auto w-full max-w-7xl pb-12 lg:px-10"
     >
       <Topo
         contaId={contaId}

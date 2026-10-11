@@ -928,8 +928,13 @@ export function PedidoPeloCardapio({
   return (
     <>
       <div className="mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_25rem] lg:items-start lg:gap-10">
+        {/* Contêiner: a lista passa a duas colunas pela largura dela, e não
+            da tela, porque o pedido ao lado come 440 px (`#d328`). */}
         <div
-          className={cn("px-4 lg:px-0", quantidadeTotal > 0 && "pb-24 lg:pb-0")}
+          className={cn(
+            "@container px-4 lg:px-0",
+            quantidadeTotal > 0 && "pb-24 lg:pb-0",
+          )}
         >
           {maisPedidos.length > 0 && (
             <MaisPedidos
@@ -973,7 +978,9 @@ export function PedidoPeloCardapio({
 
           {/* 48px do fim de uma lista ao título seguinte (o `pt-4` mais o
               `space-y-8`), 12px do título ao primeiro produto; filete só entre
-              produtos (`#d326`). */}
+              produtos (`#d326`). A partir de 45rem de coluna, duas colunas da
+              mesma linha, sem cartão; o filete é o `border-t` de cada produto,
+              porque o `divide-y` não funciona em grade (`#d328`). */}
           <div className="mt-2 space-y-8">
             {cardapio.secoes.map((secao, i) => (
               <section
@@ -985,7 +992,7 @@ export function PedidoPeloCardapio({
                 <h2 className="font-display text-title font-semibold text-ink">
                   {secao.categoria}
                 </h2>
-                <ul className="mt-3 divide-y divide-line">
+                <ul className="mt-3 @[45rem]:grid @[45rem]:grid-cols-2 @[45rem]:gap-x-8">
                   {secao.produtos.map((produto) => (
                     <Produto
                       key={produto.id}
@@ -1736,7 +1743,7 @@ function Produto({
   };
 
   return (
-    <li className="relative grid grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_1fr] py-4">
+    <li className="relative grid grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_1fr] border-t border-line py-4 first:border-t-0 @[45rem]:nth-2:border-t-0">
       <div className="col-start-1 row-start-1">
         <h3 className="wrap-break-word text-body font-semibold text-ink">
           <button
