@@ -83,10 +83,10 @@ Em 1024, 1280 e 1920 px, nos dois temas; e 360 px para conferir que nada mudou:
 
 ## Critérios de aceite
 
-- [ ] Grade de quatro colunas a partir de `lg`, com cabeçalho por corredor.
-- [ ] Campo ao lado dos números que ela compara.
-- [ ] Celular inalterado.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `#d334` escrito; `DESIGN.md`, `ESTADO.md` e
+- [x] Grade de quatro colunas a partir de `lg`, com cabeçalho por corredor.
+- [x] Campo ao lado dos números que ela compara.
+- [x] Celular inalterado.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `#d334` escrito; `DESIGN.md`, `ESTADO.md` e
       `novidades.ts` atualizados.
 
 ---

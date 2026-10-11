@@ -25,6 +25,14 @@ export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-11",
     titulo:
+      "No computador, a contagem mostra a última contagem e a projeção lado a lado",
+    frase:
+      "Cada material vira uma linha com a última contagem, o que projetamos depois das fornadas e o campo, um ao lado do outro.",
+    href: "/insumos/contagem",
+  },
+  {
+    dataISO: "2026-10-11",
+    titulo:
       "Depois de contar, veja o que acabou e o que sumiu da despensa, em reais",
     frase:
       "Ao salvar a contagem, aparece o que acabou, o que estava diferente do esperado e quanto vale o que você contou.",

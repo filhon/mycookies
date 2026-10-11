@@ -18,6 +18,7 @@ import type {
 } from "@/lib/domain/estoque";
 import type { ProjecaoDoInsumo } from "@/lib/domain/producao";
 import { formatarQuantidade } from "@/lib/domain/unidades";
+import { useDesktop } from "@/lib/hooks/useDispositivo";
 import type { UnidadeBase } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -26,6 +27,13 @@ const POR_EXTENSO: Record<UnidadeBase, string> = {
   ml: "mililitros",
   un: "unidades",
 };
+
+/**
+ * As quatro colunas do desktop (`#d334`): material, última contagem,
+ * projetamos e hoje. "Hoje" tem 13rem, e não os 9rem da spec: o "Igual" mais o
+ * campo de 128px não cabem em 144px.
+ */
+export const COLUNAS_CONTAGEM = "lg:grid-cols-[minmax(0,1fr)_9rem_9rem_13rem]";
 
 /**
  * Uma linha da contagem: o nome, o campo, e a frase que explica o número velho.
@@ -50,6 +58,10 @@ const POR_EXTENSO: Record<UnidadeBase, string> = {
  *
  * O "Igual" (`#d330`) não contradiz isso: é um gesto dela, por linha, e só
  * aparece onde o número anotado ainda pode ser o da prateleira.
+ *
+ * **No desktop** (`#d334`), a mesma `<li>` vira grade: nome, última contagem,
+ * projeção e campo lado a lado. Um campo só, para o Enter e o rascunho não
+ * conhecerem duas linhas; o que muda de lugar é o texto em volta dele.
  */
 export function LinhaContagem({
   linha,
@@ -103,6 +115,28 @@ export function LinhaContagem({
   const tamanho = formatarQuantidade(linha.tamanhoEmbalagem, linha.unidadeBase);
   const extenso = POR_EXTENSO[linha.unidadeBase];
 
+  // No desktop (`#d334`) os números vão para as colunas, e embaixo do nome fica
+  // só a palavra de atenção. O que o campo diz desce para baixo dele.
+  const desktop = useDesktop();
+  const id = `contagem-${linha.insumoId}`;
+  const { contagem } = linha;
+  const soPalavra = atencao && !contado && !ilegivel && !procedencia;
+  const projetada = comForno && contagem.quantidade !== null;
+  const estado = ilegivel
+    ? "não deu para ler este número"
+    : (procedencia ??
+      (contado ? consequencia(valor, unidade, linha, true) : null));
+  const descritores = desktop
+    ? [
+        soPalavra && `${id}-referencia`,
+        contagem.anotado !== null && `${id}-ultima`,
+        projetada && `${id}-projecao`,
+        estado && `${id}-estado`,
+      ]
+        .filter(Boolean)
+        .join(" ") || undefined
+    : `${id}-referencia`;
+
   /** Em 360px o botão desce para a linha da referência, para o nome não sumir. */
   const botaoIgual = (className: string) => (
     <button
@@ -123,11 +157,18 @@ export function LinhaContagem({
   );
 
   return (
-    <li className={cn("px-4 py-3 lg:px-5", contado && "bg-sunken")}>
-      <div className="flex items-center gap-3">
+    <li
+      className={cn(
+        "px-4 py-3 lg:grid lg:items-center lg:gap-x-6 lg:px-5",
+        COLUNAS_CONTAGEM,
+        contado && "bg-sunken",
+      )}
+    >
+      {/* `lg:contents`: no desktop os filhos viram as células da grade. */}
+      <div className="flex items-center gap-3 lg:contents">
         <div className="min-w-0 flex-1">
           <label
-            htmlFor={`contagem-${linha.insumoId}`}
+            htmlFor={id}
             className="block truncate text-body font-medium text-ink"
           >
             {linha.nome}
@@ -135,9 +176,10 @@ export function LinhaContagem({
 
           <div className="flex items-center gap-2">
             <p
-              id={`contagem-${linha.insumoId}-referencia`}
+              id={`${id}-referencia`}
               className={cn(
                 "num mt-0.5 flex min-w-0 flex-1 items-start gap-1.5 text-label",
+                !soPalavra && "lg:hidden",
                 ilegivel
                   ? "text-negative"
                   : contado && !procedencia
@@ -193,51 +235,103 @@ export function LinhaContagem({
           </div>
         </div>
 
-        {igual && botaoIgual("hidden min-[400px]:inline-flex")}
+        {/* ---- desktop: as duas colunas que ela compara ---- */}
+        <div id={`${id}-ultima`} className="num hidden text-right lg:block">
+          <span className="sr-only">Última contagem, </span>
+          {contagem.anotado !== null && (
+            <>
+              <p className="text-body text-ink">
+                {formatarQuantidade(contagem.anotado, linha.unidadeBase)}
+                <span className="sr-only">,</span>
+              </p>
+              <p className="text-label text-ink-muted">
+                {contagem.frescor === "NUNCA" ? "anotados" : haQuanto(contagem)}
+              </p>
+            </>
+          )}
+        </div>
+        <div id={`${id}-projecao`} className="num hidden text-right lg:block">
+          {projetada && projecao && (
+            <>
+              <span className="sr-only">Projetamos, </span>
+              <p className="text-body text-ink">
+                {formatarQuantidade(projecao.disponivel, linha.unidadeBase)}
+                <span className="sr-only">,</span>
+              </p>
+              <p className="text-label text-ink-muted">
+                {projecao.fornadas === 1
+                  ? "1 fornada"
+                  : `${projecao.fornadas} fornadas`}
+              </p>
+            </>
+          )}
+        </div>
 
-        <div className="relative w-32 shrink-0">
-          <input
-            id={`contagem-${linha.insumoId}`}
-            data-contagem
-            // Teclado numérico com vírgula, e não `type="number"`: a seta de
-            // incremento não serve para contar despensa, e o teclado do celular
-            // precisa oferecer a vírgula decimal.
-            inputMode="decimal"
-            enterKeyHint="next"
-            autoComplete="off"
-            placeholder="—"
-            value={texto}
-            aria-describedby={`contagem-${linha.insumoId}-referencia`}
-            aria-invalid={ilegivel ? true : undefined}
-            onChange={(evento) => aoMudar(evento.target.value)}
-            onKeyDown={andarParaOProximo}
-            className={cn(
-              BASE_CONTROLE,
-              "num pr-12 text-right font-semibold",
-              ilegivel ? "border-negative" : "border-line-strong",
-            )}
-          />
-          {/* Comprado de um em um, as duas unidades seriam a mesma: sem botão. */}
-          {linha.tamanhoEmbalagem > 1 ? (
-            <button
-              type="button"
-              onClick={aoTrocarUnidade}
-              aria-label={
-                emEmbalagem
-                  ? `Contando em embalagens de ${tamanho}. Contar em ${extenso}`
-                  : `Contando em ${extenso}. Contar em embalagens de ${tamanho}`
-              }
-              className="toque absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-md text-label font-medium text-brand-ink underline decoration-dotted underline-offset-4 hover:bg-brand-100"
+        {/* No celular `contents`, e nada muda; no desktop, a célula "Hoje". */}
+        <div className="contents lg:block">
+          <div className="contents lg:flex lg:items-center lg:justify-end lg:gap-2">
+            {igual && botaoIgual("hidden min-[400px]:inline-flex")}
+
+            <div className="relative w-32 shrink-0">
+              <input
+                id={id}
+                data-contagem
+                // Teclado numérico com vírgula, e não `type="number"`: a seta de
+                // incremento não serve para contar despensa, e o teclado do celular
+                // precisa oferecer a vírgula decimal.
+                inputMode="decimal"
+                enterKeyHint="next"
+                autoComplete="off"
+                placeholder="—"
+                value={texto}
+                aria-describedby={descritores}
+                aria-invalid={ilegivel ? true : undefined}
+                onChange={(evento) => aoMudar(evento.target.value)}
+                onKeyDown={andarParaOProximo}
+                className={cn(
+                  BASE_CONTROLE,
+                  "num pr-12 text-right font-semibold",
+                  ilegivel ? "border-negative" : "border-line-strong",
+                )}
+              />
+              {/* Comprado de um em um, as duas unidades seriam a mesma: sem botão. */}
+              {linha.tamanhoEmbalagem > 1 ? (
+                <button
+                  type="button"
+                  onClick={aoTrocarUnidade}
+                  aria-label={
+                    emEmbalagem
+                      ? `Contando em embalagens de ${tamanho}. Contar em ${extenso}`
+                      : `Contando em ${extenso}. Contar em embalagens de ${tamanho}`
+                  }
+                  className="toque absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-md text-label font-medium text-brand-ink underline decoration-dotted underline-offset-4 hover:bg-brand-100"
+                >
+                  {emEmbalagem ? "emb" : linha.unidadeBase}
+                </button>
+              ) : (
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-label text-ink-muted"
+                >
+                  {linha.unidadeBase}
+                </span>
+              )}
+            </div>
+          </div>
+          {estado && (
+            <p
+              id={`${id}-estado`}
+              className={cn(
+                "num mt-1 hidden text-right text-label lg:block",
+                ilegivel
+                  ? "text-negative"
+                  : procedencia
+                    ? "text-ink-muted"
+                    : "text-ink",
+              )}
             >
-              {emEmbalagem ? "emb" : linha.unidadeBase}
-            </button>
-          ) : (
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-label text-ink-muted"
-            >
-              {linha.unidadeBase}
-            </span>
+              {estado}
+            </p>
           )}
         </div>
       </div>
@@ -291,7 +385,8 @@ function referencia(
         <span className="font-medium text-attention">
           {nunca ? "nunca contada" : "vencida"}
         </span>
-        {resto && ` · ${resto}`}
+        {/* No desktop o resto está nas colunas (`#d334`). */}
+        {resto && <span className="lg:hidden"> · {resto}</span>}
       </>
     );
   }
@@ -302,22 +397,28 @@ function referencia(
   }
 
   // A projeção é o melhor palpite, e por isso vem primeiro.
-  const dias = contagem.idadeEmDias ?? 0;
-  const quando =
-    dias === 0 ? "hoje" : `há ${dias} ${dias === 1 ? "dia" : "dias"}`;
   const fornadas =
     projecao.fornadas === 1 ? "1 fornada" : `${projecao.fornadas} fornadas`;
-  return `projetamos ${formatarQuantidade(projecao.disponivel, unidadeBase)} · ${quanto} contados ${quando}, ${fornadas} depois`;
+  return `projetamos ${formatarQuantidade(projecao.disponivel, unidadeBase)} · ${quanto} contados ${haQuanto(contagem)}, ${fornadas} depois`;
+}
+
+/** "há 15 dias", sem o "contada" de `rotuloDeIdade`: a coluna já diz o que é. */
+function haQuanto(contagem: LinhaDeContagem["contagem"]): string {
+  if (contagem.frescor === "VENCIDA") return "há mais de um mês";
+  const dias = contagem.idadeEmDias ?? 0;
+  return dias === 0 ? "hoje" : `há ${dias} ${dias === 1 ? "dia" : "dias"}`;
 }
 
 /**
  * O número que ela acabou de digitar, com a consequência dele. Em embalagem, a
- * conta inteira: "2,5 embalagens de 395 g = 987,5 g, contados hoje".
+ * conta inteira: "2,5 embalagens de 395 g = 987,5 g, contados hoje". `curta`
+ * é a da célula de 13rem no desktop: "2,5 emb. = 987,5 g".
  */
 function consequencia(
   valor: number,
   unidade: UnidadeDoCampo,
   linha: LinhaDeContagem,
+  curta = false,
 ): string {
   if (valor === 0) return "zero: conferido, e não tem";
 
@@ -332,8 +433,8 @@ function consequencia(
 
   if (unidade === "base") return igualAUltima ? fecho : `${quanto}, ${fecho}`;
 
-  const embalagens = `${valor.toLocaleString("pt-BR", {
-    maximumFractionDigits: 3,
-  })} ${valor < 2 ? "embalagem" : "embalagens"}`;
+  const numero = valor.toLocaleString("pt-BR", { maximumFractionDigits: 3 });
+  if (curta) return `${numero} emb. = ${quanto}`;
+  const embalagens = `${numero} ${valor < 2 ? "embalagem" : "embalagens"}`;
   return `${embalagens} de ${formatarQuantidade(tamanhoEmbalagem, unidadeBase)} = ${quanto}, ${fecho}`;
 }

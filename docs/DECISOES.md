@@ -10656,3 +10656,38 @@ que vale dinheiro.
 
 **Consequência.** Um toque a mais até a lista. A diferença não é guardada: um histórico de "o que
 sumiu por mês" seria schema novo, e é outra spec se ela pedir.
+
+---
+
+## D334 · A contagem no computador
+
+**Status:** vigente · decidida em 2026-10-11, spec `129-a-contagem-no-computador.md`.
+
+**Contexto.** A 1864 px, a linha da contagem tinha o nome numa ponta, o campo na outra e ≈ 600 px
+vazios no meio; os três números que ela compara (o anotado, a projeção e o que digita) estavam em
+três lugares. O desktop é onde ela confere e corrige (`PRODUCT.md`, contexto 4).
+
+**Decisão.**
+
+- **A mesma `<li>` vira grade a partir de `lg`**, o padrão de Materiais (`#d225`) e Produtos
+  (`#d228`): Material · Última contagem · Projetamos · Hoje, em
+  `minmax(0,1fr) 9rem 9rem 13rem` (`COLUNAS_CONTAGEM`), dentro da coluna de 1024 px (`#d129`).
+- **"Hoje" tem 13rem, e não os 9rem da spec.** O "Igual" (`#d330`, ≈ 60 px) mais o campo de
+  128 px da 125 não cabem em 144 px. O campo continua `w-32` e alinhado à direita, para os campos
+  ficarem numa coluna só entre linhas com e sem "Igual".
+- **Um campo só.** O arranjo do celular é o mesmo DOM: o invólucro flex vira `lg:contents` e as
+  células novas são `hidden lg:block`. Dois campos (um por arranjo, como `LinhaInsumo`) quebrariam
+  o Enter da 127, que anda pelos `input[data-contagem]`, e o `id` do rótulo.
+- **Embaixo do nome, só a palavra** ("nunca contada", "vencida", com o triângulo, `#d331`). A
+  frase da referência some no desktop; o número dela está nas colunas. O que o campo diz
+  (consequência, procedência da compra, "não deu para ler") desce para baixo dele, à direita; em
+  embalagem, curto: "2,5 emb. = 987,5 g".
+- **`aria-describedby` muda com a largura** (`useDesktop`): no celular, a frase de sempre; no
+  desktop, as células (cada uma com o rótulo em `sr-only`, "Última contagem, 540 g, há 15 dias")
+  e o texto embaixo do campo. Apontar para os dois arranjos leria os números duas vezes, porque o
+  `display: none` referenciado direto entra na descrição.
+- **Cabeçalho de colunas por corredor**, sob o `h2`, micro 600 caixa alta, `aria-hidden`.
+
+**Consequência.** O leitor de tela lê "540 g", e não "540 gramas" como o roteiro da spec pede: não
+há formatador por extenso com kg e l, e criar um para isto seria outra spec. Sem coluna em reais:
+o valor está no resumo da 128 (`#d333`).

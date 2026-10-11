@@ -10,7 +10,7 @@ import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { Pilulas } from "@/components/ui/Pilulas";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
-import { LinhaContagem } from "./LinhaContagem";
+import { COLUNAS_CONTAGEM, LinhaContagem } from "./LinhaContagem";
 import { RodapeContagem } from "./RodapeContagem";
 import { agruparPorCorredor, ROTULO_CORREDOR } from "@/lib/domain/corredores";
 import { dataISODe } from "@/lib/domain/datas";
@@ -556,7 +556,7 @@ export function TelaContagem() {
               >
                 <h2
                   id={`corredor-${corredor.categoria}`}
-                  className="flex items-baseline justify-between gap-3 border-b border-line px-4 pb-3 pt-4 text-subheading font-semibold text-ink lg:px-5"
+                  className="flex items-baseline justify-between gap-3 border-b border-line px-4 pb-3 pt-4 text-subheading font-semibold text-ink lg:border-b-0 lg:px-5 lg:pb-2"
                 >
                   {ROTULO_CORREDOR[corredor.categoria]}
                   <span
@@ -579,6 +579,20 @@ export function TelaContagem() {
                     </span>
                   </span>
                 </h2>
+                {/* Para quem vê: cada célula da linha leva o rótulo em
+                    `sr-only` (`#d334`). */}
+                <div
+                  aria-hidden
+                  className={cn(
+                    "hidden gap-x-6 border-b border-line px-5 pb-2 text-micro font-semibold uppercase tracking-wide text-ink-muted lg:grid",
+                    COLUNAS_CONTAGEM,
+                  )}
+                >
+                  <span>Material</span>
+                  <span className="text-right">Última contagem</span>
+                  <span className="text-right">Projetamos</span>
+                  <span className="text-right">Hoje</span>
+                </div>
                 <ul className="divide-y divide-line">
                   {corredor.itens.map((linha) => (
                     <LinhaContagem
