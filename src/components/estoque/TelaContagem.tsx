@@ -15,13 +15,22 @@ import { RodapeContagem } from "./RodapeContagem";
 import { agruparPorCorredor, ROTULO_CORREDOR } from "@/lib/domain/corredores";
 import { dataISODe } from "@/lib/domain/datas";
 import {
+  daBaseParaCampo,
   linhasParaContar,
+  naBase,
   numeroContado,
   resumoDaContagem,
   textoContado,
+  unidadeDoCampo,
+  type LinhaDeContagem,
+  type UnidadeDoCampo,
 } from "@/lib/domain/estoque";
 import { projecaoDoInsumo } from "@/lib/domain/producao";
 import { lerSemente, limparSemente } from "@/lib/estado/sementeDaContagem";
+import {
+  guardarUnidadeDaContagem,
+  lerUnidadesDaContagem,
+} from "@/lib/estado/unidadesDaContagem";
 import { colInsumos } from "@/lib/firebase/colecoes";
 import {
   salvarContagem,
@@ -59,6 +68,16 @@ export function TelaContagem() {
   const [hoje] = useState(() => dataISODe(new Date()));
   const [digitados, setDigitados] = useState<Record<string, string>>({});
   const [falha, setFalha] = useState<string | null>(null);
+
+  // A unidade de cada linha (`#d329`): a que ela trocou nesta contagem, senão a
+  // que ela deixou no aparelho, senão o padrão de `unidadeDoCampo`.
+  const [guardadas] = useState(lerUnidadesDaContagem);
+  const [unidades, setUnidades] = useState<Record<string, UnidadeDoCampo>>({});
+  const unidadeDe = (linha: LinhaDeContagem) =>
+    unidadeDoCampo(
+      linha,
+      unidades[linha.insumoId] ?? guardadas[linha.insumoId],
+    );
 
   // A semente é lida uma vez, na montagem, e só é apagada depois de os campos
   // nascerem: consumi-la aqui deixaria a tela sem semente se ela chegasse antes
@@ -131,12 +150,19 @@ export function TelaContagem() {
     if (semeados.current || !semente || todas.length === 0) return;
     semeados.current = true;
 
+    const semeadas = todas.filter((linha) => linha.sugestao !== null);
     setDigitados(
       Object.fromEntries(
-        todas
-          .filter((linha) => linha.sugestao !== null)
-          .map((linha) => [linha.insumoId, textoContado(linha.sugestao ?? 0)]),
+        semeadas.map((linha) => [
+          linha.insumoId,
+          textoContado(linha.sugestao ?? 0),
+        ]),
       ),
+    );
+    // A sugestão é uma soma em base, e escrita em embalagens daria "4,1012658":
+    // a linha semeada abre em base, qualquer que seja a escolha guardada.
+    setUnidades(
+      Object.fromEntries(semeadas.map((linha) => [linha.insumoId, "base"])),
     );
     limparSemente();
   }, [todas, semente]);
@@ -144,10 +170,67 @@ export function TelaContagem() {
   const valores = useMemo(() => {
     const mapa: Record<string, number | null> = {};
     for (const linha of todas) {
-      mapa[linha.insumoId] = numeroContado(digitados[linha.insumoId] ?? "");
+      const valor = numeroContado(digitados[linha.insumoId] ?? "");
+      mapa[linha.insumoId] =
+        valor === null
+          ? null
+          : naBase(
+              valor,
+              unidadeDoCampo(
+                linha,
+                unidades[linha.insumoId] ?? guardadas[linha.insumoId],
+              ),
+              linha.tamanhoEmbalagem,
+            );
     }
     return mapa;
-  }, [todas, digitados]);
+  }, [todas, digitados, unidades, guardadas]);
+
+  function escrever(insumoId: string, texto: string) {
+    setDigitados((anteriores) => ({ ...anteriores, [insumoId]: texto }));
+  }
+
+  /** Trocar com número digitado converte o número: é o mesmo, dito de outro jeito. */
+  function trocarUnidade(linha: LinhaDeContagem) {
+    const de = unidadeDe(linha);
+    const para: UnidadeDoCampo = de === "base" ? "embalagem" : "base";
+    const valor = numeroContado(digitados[linha.insumoId] ?? "");
+    if (valor !== null) {
+      escrever(
+        linha.insumoId,
+        daBaseParaCampo(
+          naBase(valor, de, linha.tamanhoEmbalagem),
+          para,
+          linha.tamanhoEmbalagem,
+        ),
+      );
+    }
+    setUnidades((anteriores) => ({ ...anteriores, [linha.insumoId]: para }));
+    guardarUnidadeDaContagem(linha.insumoId, para);
+  }
+
+  /**
+   * "Igual" (`#d330`): o número anotado, na unidade da linha. Quando a conta
+   * em embalagens não fecha (1000 g em latas de 395 g), a linha passa a base
+   * nesta contagem: confirmar o mesmo número não pode gravar 1000,14 g.
+   */
+  function confirmarIgual(linha: LinhaDeContagem) {
+    const anotado = linha.contagem.anotado;
+    if (anotado === null) return;
+    const unidade = unidadeDe(linha);
+    const texto = daBaseParaCampo(anotado, unidade, linha.tamanhoEmbalagem);
+    const volta = naBase(
+      numeroContado(texto) ?? -1,
+      unidade,
+      linha.tamanhoEmbalagem,
+    );
+    if (volta === anotado) {
+      escrever(linha.insumoId, texto);
+      return;
+    }
+    setUnidades((anteriores) => ({ ...anteriores, [linha.insumoId]: "base" }));
+    escrever(linha.insumoId, textoContado(anotado));
+  }
 
   // Inclusive o que a compra semeou: a proposta que sai da contagem é trabalho
   // perdido também (`DECISOES.md#d134`).
@@ -302,12 +385,10 @@ export function TelaContagem() {
                     projecao={projecoes.get(linha.insumoId)}
                     origem={semente?.origem}
                     texto={digitados[linha.insumoId] ?? ""}
-                    aoMudar={(texto) =>
-                      setDigitados((anteriores) => ({
-                        ...anteriores,
-                        [linha.insumoId]: texto,
-                      }))
-                    }
+                    unidade={unidadeDe(linha)}
+                    aoMudar={(texto) => escrever(linha.insumoId, texto)}
+                    aoTrocarUnidade={() => trocarUnidade(linha)}
+                    aoIgual={() => confirmarIgual(linha)}
                   />
                 ))}
               </ul>

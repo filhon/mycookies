@@ -278,6 +278,8 @@ export interface InsumoParaContar extends InsumoContado {
   nome: string;
   categoria: CategoriaInsumo;
   unidadeBase: UnidadeBase;
+  /** O tamanho da embalagem, em unidade base: a lata de 395 g é 395. */
+  quantidadeBase: number;
   arquivado?: boolean;
 }
 
@@ -287,6 +289,8 @@ export interface LinhaDeContagem {
   nome: string;
   categoria: CategoriaInsumo;
   unidadeBase: UnidadeBase;
+  /** O `quantidadeBase` do insumo: quanto há numa embalagem, em base (`#d329`). */
+  tamanhoEmbalagem: number;
   contagem: ContagemDoInsumo;
   /** O que entrou pela compra, em unidade base. Zero quando não há compra. */
   entrada: number;
@@ -316,6 +320,7 @@ export function linhasParaContar(
         nome: insumo.nome,
         categoria: insumo.categoria,
         unidadeBase: insumo.unidadeBase,
+        tamanhoEmbalagem: insumo.quantidadeBase,
         contagem,
         entrada,
         sugestao: sugestaoDaContagem(contagem, entrada),
@@ -391,6 +396,49 @@ export function numeroContado(texto: string): number | null {
  */
 export function textoContado(valor: number): string {
   return String(Number(valor.toFixed(3))).replace(".", ",");
+}
+
+/**
+ * Em que o campo da contagem está (`#d329`): em embalagens, como a coisa está
+ * na prateleira, ou na unidade base, que é o que se grava.
+ */
+export type UnidadeDoCampo = "embalagem" | "base";
+
+/**
+ * A unidade em que a linha abre. Embalagem de uma unidade base só tem uma
+ * unidade, e vale `base`. Sem escolha dela, g e ml abrem em embalagem — ninguém
+ * pesa a despensa — e un abre em base: ovo e adesivo se contam soltos.
+ */
+export function unidadeDoCampo(
+  linha: Pick<LinhaDeContagem, "unidadeBase" | "tamanhoEmbalagem">,
+  escolhida?: UnidadeDoCampo,
+): UnidadeDoCampo {
+  if (!(linha.tamanhoEmbalagem > 1)) return "base";
+  return escolhida ?? (linha.unidadeBase === "un" ? "base" : "embalagem");
+}
+
+/**
+ * O número do campo em unidade base. Arredonda em três casas pelo mesmo motivo
+ * de `textoContado`: 3 × 0,1 não pode virar 0,30000000000000004 gravado.
+ */
+export function naBase(
+  valor: number,
+  unidade: UnidadeDoCampo,
+  quantidadeBase: number,
+): number {
+  if (unidade === "base") return valor;
+  return Number((valor * quantidadeBase).toFixed(3));
+}
+
+/** O inverso de `naBase`, já como texto de campo. */
+export function daBaseParaCampo(
+  valorBase: number,
+  unidade: UnidadeDoCampo,
+  quantidadeBase: number,
+): string {
+  return textoContado(
+    unidade === "base" ? valorBase : valorBase / quantidadeBase,
+  );
 }
 
 export interface ResumoDaContagem {

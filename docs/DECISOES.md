@@ -1659,6 +1659,9 @@ contagem.
 Contagem é por insumo, e não por despensa: o que ela não contou continua com a data que tinha e
 vence no prazo dele.
 
+_(Nota de 2026-10-11, `#d330`: o campo continua nascendo vazio; o "Igual" é um ato dela, por
+linha.)_
+
 ---
 
 ## D60 · A contagem tem prazo, e o prazo é do domínio
@@ -10485,3 +10488,60 @@ lateral. A cliente rolava o dobro do que precisaria.
 **Consequência.** Só desenho, em `page.tsx` e `PedidoPeloCardapio.tsx`. Nenhum schema, regra,
 índice, dependência, mudança no handler ou teste novo. "Os mais pedidos" segue em três colunas,
 agora de ≈ 240 px. O "Monte a sua" e o pedido ao lado não mudam.
+
+---
+
+## D329 · Contar em embalagens
+
+**Status:** vigente · decidida em 2026-10-11, spec `125-contar-como-esta-na-prateleira.md`.
+
+**Contexto.** A contagem pedia gramas de tudo o que tem peso: "2,72 kg" de leite condensado é
+sete latas na prateleira, e a conta `7 × 395` ficava na cabeça dela, linha por linha. O Rende já
+sabe o tamanho de cada embalagem (`quantidadeBase`) e não usava isso aqui.
+
+**Decisão.**
+
+- **O sufixo do campo vira botão** quando `quantidadeBase > 1`, e alterna entre a base ("g",
+  "ml", "un") e "emb". Material comprado de um em um fica com o sufixo mudo de antes.
+- **Trocar com número digitado converte**, e não apaga: "2" em embalagens de 395 g vira "790".
+- **g e ml abrem em embalagem, un em base.** A escolha dela fica no aparelho, por material, em
+  `localStorage` (`rende:contagem:unidades`, `lib/estado/unidadesDaContagem.ts`).
+- **A linha semeada pela compra abre em base**, qualquer que seja a escolha guardada: a sugestão é
+  uma soma em base, e em embalagens daria "4,1012658". A procedência da compra só aparece com a
+  linha em base, que é onde o texto bate com a sugestão.
+- **"emb", e não "lata" ou "pacote"**: o sistema não sabe o nome da embalagem. O tamanho está no
+  `aria-label` e na frase da consequência ("2,5 embalagens de 395 g = 987,5 g, contados hoje").
+- **Fração em vez de campo misto**: a lata aberta pela metade é "0,5".
+- A conversão mora no domínio (`naBase`, `daBaseParaCampo`, `unidadeDoCampo`) e arredonda em três
+  casas, como `textoContado`.
+
+**Consequência.** A gravação não muda: `valores` já sai em base, e `salvar` e `resumoDaContagem`
+são os de antes. Ida e volta de um número que não é múltiplo da embalagem perde precisão no
+terceiro decimal (1000 g → 2,532 emb → 1000,14 g); a frase da consequência mostra o número que
+vai ser gravado, e é ali que ela confere. `/fichas/contagem` (`#d97`) não muda: o pote se conta
+em unidades de rendimento.
+
+---
+
+## D330 · "Igual" confirma o número que não mudou
+
+**Status:** vigente · decidida em 2026-10-11, spec `125-contar-como-esta-na-prateleira.md`.
+
+**Contexto.** Encontrar o mesmo número é uma das contagens mais valiosas (`#d58`), e confirmar os
+192 adesivos de ontem era digitar 1-9-2.
+
+**Decisão.** Na linha **intocada**, com contagem `FRESCA` ou `ENVELHECENDO` e **sem fornada desde
+então**, um botão terciário "Igual" escreve o número anotado no campo, na unidade da linha. A
+consequência passa a dizer "igual à última, conferido hoje", e dali em diante é um campo como
+outro qualquer: apagar desfaz e o botão volta.
+
+- Não aparece em linha vencida, nunca contada ou com fornada desde a contagem: ali o número velho
+  já não é o da prateleira, e o atalho convidaria a confirmá-lo sem olhar.
+- Quando o anotado não fecha em embalagens inteiras ou com três casas (1000 g em latas de 395 g),
+  o "Igual" passa a linha para base nesta contagem, sem guardar a escolha: confirmar o mesmo
+  número não pode gravar 1000,14 g.
+- Na linha do campo a partir de 400 px; abaixo disso, na linha da referência, à direita, para o
+  nome não cair abaixo de ≈ 120 px. É o mesmo botão desenhado nos dois lugares, um escondido.
+
+**Consequência.** Não contradiz o `#d59`: semente é o default que ela não escolheu, e o "Igual" é
+um gesto dela, por linha. Se o uso mostrar trinta "Iguais" em dez segundos, o atalho sai.

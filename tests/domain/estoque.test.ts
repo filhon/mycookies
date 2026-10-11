@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   contagemDoInsumo,
+  daBaseParaCampo,
   entradasDaLista,
   entradasDaNota,
   estoqueParaLista,
@@ -8,12 +9,14 @@ import {
   IDADE_FRESCA_DIAS,
   IDADE_VENCE_DIAS,
   linhasParaContar,
+  naBase,
   numeroContado,
   procedenciaDaSugestao,
   resumoDaContagem,
   rotuloDeIdade,
   sugestaoDaContagem,
   textoContado,
+  unidadeDoCampo,
   type InsumoParaContar,
 } from "@/lib/domain/estoque";
 
@@ -31,6 +34,7 @@ function insumo(
     nome: parcial.id,
     categoria: "INGREDIENTE",
     unidadeBase: "g",
+    quantidadeBase: 1000,
     arquivado: false,
     ...parcial,
   };
@@ -499,6 +503,70 @@ describe("textoContado", () => {
     // que ela digitaria nem que queira dizer alguma coisa na despensa.
     expect(textoContado(999.9999999999999)).toBe("1000");
     expect(textoContado(1479.9999999999998)).toBe("1480");
+  });
+});
+
+describe("contar em embalagens (#d329)", () => {
+  it("embalagem inteira: 7 latas de 395 g são 2765 g", () => {
+    expect(naBase(7, "embalagem", 395)).toBe(2765);
+    expect(daBaseParaCampo(2765, "embalagem", 395)).toBe("7");
+  });
+
+  it("fração: a lata aberta pela metade", () => {
+    expect(naBase(2.5, "embalagem", 395)).toBe(987.5);
+    expect(naBase(0.5, "embalagem", 395)).toBe(197.5);
+  });
+
+  it("ida e volta sem resíduo de ponto flutuante", () => {
+    expect(naBase(3, "embalagem", 0.1)).toBe(0.3);
+    expect(daBaseParaCampo(0.3, "embalagem", 0.1)).toBe("3");
+    const texto = daBaseParaCampo(naBase(2, "embalagem", 395), "base", 395);
+    expect(texto).toBe("790");
+    expect(
+      naBase(
+        numeroContado(daBaseParaCampo(790, "embalagem", 395)) ?? -1,
+        "embalagem",
+        395,
+      ),
+    ).toBe(790);
+  });
+
+  it("em base o número passa como está", () => {
+    expect(naBase(192, "base", 30)).toBe(192);
+    expect(daBaseParaCampo(1620, "base", 1000)).toBe("1620");
+  });
+
+  it("g e ml abrem em embalagem, un em base, e a escolha dela vence", () => {
+    expect(unidadeDoCampo({ unidadeBase: "g", tamanhoEmbalagem: 395 })).toBe(
+      "embalagem",
+    );
+    expect(unidadeDoCampo({ unidadeBase: "ml", tamanhoEmbalagem: 1000 })).toBe(
+      "embalagem",
+    );
+    expect(unidadeDoCampo({ unidadeBase: "un", tamanhoEmbalagem: 30 })).toBe(
+      "base",
+    );
+    expect(
+      unidadeDoCampo({ unidadeBase: "un", tamanhoEmbalagem: 30 }, "embalagem"),
+    ).toBe("embalagem");
+  });
+
+  it("embalagem de uma unidade só não tem duas unidades", () => {
+    expect(
+      unidadeDoCampo({ unidadeBase: "un", tamanhoEmbalagem: 1 }, "embalagem"),
+    ).toBe("base");
+    expect(unidadeDoCampo({ unidadeBase: "g", tamanhoEmbalagem: 1 })).toBe(
+      "base",
+    );
+  });
+
+  it("a linha leva o tamanho da embalagem do insumo", () => {
+    const [linha] = linhasParaContar(
+      [insumo({ id: "leite", quantidadeBase: 395 })],
+      SEM_ENTRADAS,
+      HOJE,
+    );
+    expect(linha?.tamanhoEmbalagem).toBe(395);
   });
 });
 

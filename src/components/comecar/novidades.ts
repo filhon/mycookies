@@ -23,6 +23,13 @@ export interface Novidade {
  */
 export const NOVIDADES: readonly Novidade[] = [
   {
+    dataISO: "2026-10-11",
+    titulo: "Contar em latas e pacotes",
+    frase:
+      "Na contagem, conte em latas e pacotes, e confirme com um toque o que não mudou.",
+    href: "/insumos/contagem",
+  },
+  {
     dataISO: "2026-10-10",
     titulo: "O cardápio em duas colunas no computador",
     frase:
