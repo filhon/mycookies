@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-11",
+    titulo: "A contagem abre no que precisa ser conferido",
+    frase:
+      "A contagem abre no que está vencido, nunca foi contado ou passou pelo forno, e cada corredor diz quantas linhas já foram.",
+    href: "/insumos/contagem",
+  },
+  {
+    dataISO: "2026-10-11",
     titulo: "Contar em latas e pacotes",
     frase:
       "Na contagem, conte em latas e pacotes, e confirme com um toque o que não mudou.",

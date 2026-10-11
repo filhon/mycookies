@@ -10545,3 +10545,36 @@ outro qualquer: apagar desfaz e o botão volta.
 
 **Consequência.** Não contradiz o `#d59`: semente é o default que ela não escolheu, e o "Igual" é
 um gesto dela, por linha. Se o uso mostrar trinta "Iguais" em dez segundos, o atalho sai.
+
+## D331 · A contagem abre no que precisa ser conferido
+
+**Status:** vigente · decidida em 2026-10-11, spec `126-o-que-conferir-primeiro.md`.
+
+**Contexto.** Trinta e cinco linhas de peso idêntico: "contada há 1 dia" e "nunca contada" no
+mesmo cinza. A pergunta "o que eu preciso conferir hoje?" se respondia lendo as 35 frases, e o
+sistema já sabia a resposta pelo frescor (`#d60`) e pelas fornadas desde a contagem (`#d87`).
+
+**Decisão.** Contagem cíclica: contar pouco, sempre, começando pelo mais velho.
+
+- **Ícone e palavra.** Vencida e nunca contada abrem a referência com `TriangleAlert` 14 px e a
+  palavra ("vencida ·", "nunca contada") em `--attention`; o selo de `/insumos` (`#d61`) não cabe
+  na linha da referência, então é ícone e palavra soltos. O triângulo é `aria-hidden`; a palavra
+  é lida. Com fornada desde a contagem não há ícone (é o forno trabalhando, não atenção), mas a
+  projeção abre a frase: "projetamos 510 g · 540 g contados há 15 dias, 1 fornada depois".
+- **O recorte.** `precisaConferir(linha, projecao)` em `domain/estoque.ts`: tudo menos a fresca
+  sem fornada (envelhecendo entra: é a próxima a vencer). Sem semente da compra, as pílulas
+  "Precisa conferir (N)" e "A despensa inteira (T)" usam o mesmo `Pilulas` do recorte da compra,
+  e a tela abre no recorte quando 0 < N < T. Fora disso, sem pílulas: escolher entre a lista e
+  ela mesma é ruído. Com semente, só as pílulas da compra, como antes.
+- **Congelado.** O recorte é decidido uma vez, com materiais e fornadas carregados, e refeito só
+  ao trocar de pílula, sem o que já ganhou número: a linha não some debaixo do dedo, e sai ao
+  voltar para o recorte. A decisão roda no render, e não num efeito, para a despensa inteira não
+  piscar antes do recorte.
+- **O rodapé conta o tocado fora da tela.** Antes contava só as linhas visíveis; com o recorte
+  refeito, a linha contada que saiu dele zeraria o rodapé e travaria o salvar. Agora conta as
+  visíveis mais as tocadas que o recorte esconde, nos dois recortes.
+- **Cada corredor diz quantas.** "4 de 26" à direita do `h2`, em `label` `--ink-muted`
+  `tabular-nums`, das linhas visíveis do corredor; completo, `Check` e o número em `--positive`.
+
+**Consequência.** Se "envelhecendo" deixar o recorte grande demais na prática, ele sai e fica só
+vencida, nunca e fornada. Sem busca até a conta passar de 60 materiais.

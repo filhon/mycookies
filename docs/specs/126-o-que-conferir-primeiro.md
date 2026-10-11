@@ -110,12 +110,12 @@ Em 360 px e 1280 px, nos dois temas:
 
 ## Critérios de aceite
 
-- [ ] Vencida e nunca contada com triângulo e palavra em `--attention`.
-- [ ] A projeção vem antes do número velho na frase.
-- [ ] Abre em "Precisa conferir" quando o recorte não é vazio nem a despensa inteira.
-- [ ] Linha contada não some do recorte enquanto a tela está aberta.
-- [ ] Contagem por corredor no título.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `#d331` escrito; `ESTADO.md` e `novidades.ts`
+- [x] Vencida e nunca contada com triângulo e palavra em `--attention`.
+- [x] A projeção vem antes do número velho na frase.
+- [x] Abre em "Precisa conferir" quando o recorte não é vazio nem a despensa inteira.
+- [x] Linha contada não some do recorte enquanto a tela está aberta.
+- [x] Contagem por corredor no título.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `#d331` escrito; `ESTADO.md` e `novidades.ts`
       atualizados.
 
 ---

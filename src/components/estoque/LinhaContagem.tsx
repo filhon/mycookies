@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, ShoppingBasket } from "lucide-react";
+import type { ReactNode } from "react";
+import { Check, ShoppingBasket, TriangleAlert } from "lucide-react";
 import { BASE_CONTROLE } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
@@ -89,6 +90,8 @@ export function LinhaContagem({
   // A frase do forno também pode quebrar: cortá-la esconderia a projeção, que
   // é a parte que ela veio conferir.
   const comForno = !!projecao && projecao.fornadas > 0;
+  const atencao =
+    linha.contagem.frescor === "VENCIDA" || linha.contagem.frescor === "NUNCA";
 
   // Com fornada desde a contagem, o número velho já não é o da prateleira, e o
   // atalho convidaria a confirmá-lo sem olhar.
@@ -148,13 +151,21 @@ export function LinhaContagem({
                   className="mt-0.5 size-3.5 shrink-0 text-ink-subtle"
                   strokeWidth={2}
                 />
-              ) : (
-                contado &&
+              ) : contado ? (
                 !ilegivel && (
                   <Check
                     aria-hidden
                     className="mt-0.5 size-3.5 shrink-0 text-positive"
                     strokeWidth={2.5}
+                  />
+                )
+              ) : (
+                !ilegivel &&
+                atencao && (
+                  <TriangleAlert
+                    aria-hidden
+                    className="mt-0.5 size-3.5 shrink-0 text-attention"
+                    strokeWidth={2}
                   />
                 )
               )}
@@ -236,30 +247,49 @@ export function LinhaContagem({
  * O que está gravado hoje, com a idade — é a frase que explica por que a lista
  * de compras está comprando o que ela acha que já tem.
  *
- * Com fornada depois da contagem, a frase diz quantas e o que projetamos:
- * "1,2 kg · contada há 5 dias · 2 fornadas desde então, projetamos 674 g". É o
- * que a deixa desconfiar sozinha de um número que o forno já mexeu.
+ * Com fornada depois da contagem, a projeção abre a frase (`#d331`):
+ * "projetamos 674 g · 1,2 kg contados há 5 dias, 2 fornadas depois". É o que a
+ * deixa desconfiar sozinha de um número que o forno já mexeu.
  */
 function referencia(
   linha: LinhaDeContagem,
   projecao: ProjecaoDoInsumo | undefined,
-): string {
+): ReactNode {
   const { contagem, unidadeBase } = linha;
-  if (contagem.anotado === null) return "nunca contada";
+  const quanto =
+    contagem.anotado === null
+      ? null
+      : formatarQuantidade(contagem.anotado, unidadeBase);
 
-  const quanto = formatarQuantidade(contagem.anotado, unidadeBase);
-  if (contagem.frescor === "NUNCA") return `${quanto} anotados, sem contagem`;
+  // Vencida e nunca contada são as que mais precisam de olho (`#d331`): a
+  // palavra vem primeiro, em atenção, e o triângulo ao lado dela.
+  if (contagem.frescor === "NUNCA" || contagem.frescor === "VENCIDA") {
+    const nunca = contagem.frescor === "NUNCA";
+    const resto = nunca
+      ? quanto && `${quanto} anotados`
+      : `${quanto} · ${rotuloDeIdade(contagem)}`;
+    return (
+      <>
+        <span className="font-medium text-attention">
+          {nunca ? "nunca contada" : "vencida"}
+        </span>
+        {resto && ` · ${resto}`}
+      </>
+    );
+  }
 
   const base = `${quanto} · ${rotuloDeIdade(contagem)}`;
   if (!projecao || projecao.fornadas === 0 || contagem.quantidade === null) {
     return base;
   }
 
+  // A projeção é o melhor palpite, e por isso vem primeiro.
+  const dias = contagem.idadeEmDias ?? 0;
+  const quando =
+    dias === 0 ? "hoje" : `há ${dias} ${dias === 1 ? "dia" : "dias"}`;
   const fornadas =
-    projecao.fornadas === 1
-      ? "1 fornada desde então"
-      : `${projecao.fornadas} fornadas desde então`;
-  return `${base} · ${fornadas}, projetamos ${formatarQuantidade(projecao.disponivel, unidadeBase)}`;
+    projecao.fornadas === 1 ? "1 fornada" : `${projecao.fornadas} fornadas`;
+  return `projetamos ${formatarQuantidade(projecao.disponivel, unidadeBase)} · ${quanto} contados ${quando}, ${fornadas} depois`;
 }
 
 /**

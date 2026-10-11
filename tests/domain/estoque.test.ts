@@ -11,6 +11,7 @@ import {
   linhasParaContar,
   naBase,
   numeroContado,
+  precisaConferir,
   procedenciaDaSugestao,
   resumoDaContagem,
   rotuloDeIdade,
@@ -598,5 +599,31 @@ describe("resumoDaContagem", () => {
 
     expect(resumoDaContagem(linhas, {}).contadas).toBe(0);
     expect(resumoDaContagem(linhas, {}).intocadas).toBe(5);
+  });
+});
+
+describe("precisaConferir (#d331)", () => {
+  const linha = (contadoEm?: string, estoque: number | null = 500) => ({
+    contagem: contagemDoInsumo(
+      { estoqueAtual: estoque, estoqueContadoEmISO: contadoEm ?? null },
+      HOJE,
+    ),
+  });
+
+  it("fresca sem fornada fica de fora", () => {
+    expect(precisaConferir(linha("2026-09-02"))).toBe(false);
+    expect(precisaConferir(linha("2026-09-02"), { fornadas: 0 })).toBe(false);
+  });
+
+  it("fresca com fornada desde a contagem entra", () => {
+    expect(precisaConferir(linha("2026-09-02"), { fornadas: 1 })).toBe(true);
+  });
+
+  it("envelhecendo, vencida e nunca entram", () => {
+    expect(precisaConferir(linha("2026-08-20"))).toBe(true);
+    expect(precisaConferir(linha("2026-07-01"))).toBe(true);
+    expect(precisaConferir(linha(undefined, null))).toBe(true);
+    // Número sem data também é nunca.
+    expect(precisaConferir(linha(undefined, 90))).toBe(true);
   });
 });

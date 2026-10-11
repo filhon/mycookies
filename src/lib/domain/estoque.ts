@@ -154,6 +154,21 @@ export function estoqueParaLista(
   return contagemDoInsumo(insumo, hojeISO).quantidade ?? 0;
 }
 
+/**
+ * O recorte "Precisa conferir" da contagem (`#d331`): vencida, nunca contada,
+ * envelhecendo, ou com fornada desde a contagem. Só a fresca sem forno fica de
+ * fora: é o único número que ainda é o da prateleira.
+ *
+ * Recebe a projeção pela forma, e não pelo tipo de `producao.ts`, que importa
+ * este módulo.
+ */
+export function precisaConferir(
+  linha: { contagem: ContagemDoInsumo },
+  projecao?: { fornadas: number },
+): boolean {
+  return linha.contagem.frescor !== "FRESCA" || (projecao?.fornadas ?? 0) > 0;
+}
+
 /** "contada hoje", "contada há 12 dias", "contada há mais de um mês", "nunca contada". */
 export function rotuloDeIdade(contagem: ContagemDoInsumo): string {
   if (contagem.frescor === "NUNCA") return "nunca contada";

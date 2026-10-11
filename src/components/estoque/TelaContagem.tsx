@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { orderBy, query, where } from "firebase/firestore";
-import { Plus, ShoppingBasket } from "lucide-react";
+import { Check, Plus, ShoppingBasket } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
@@ -19,6 +19,7 @@ import {
   linhasParaContar,
   naBase,
   numeroContado,
+  precisaConferir,
   resumoDaContagem,
   textoContado,
   unidadeDoCampo,
@@ -39,6 +40,7 @@ import {
 import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
 import { useColecao } from "@/lib/hooks/useColecao";
 import type { Fornada, Insumo } from "@/lib/types";
+import { cn } from "@/lib/utils/cn";
 import { useContaId } from "@/providers/AuthProvider";
 
 /**
@@ -110,21 +112,28 @@ export function TelaContagem() {
     erro,
     pendente,
   } = useColecao<Insumo>(consulta);
-  const { dados: fornadas } = useColecao<Fornada>(consultaProducao);
+  const { dados: fornadas, carregando: carregandoFornadas } =
+    useColecao<Fornada>(consultaProducao);
+
+  // Sem compra, a tela abre no que precisa de conferência (`#d331`). O recorte
+  // é congelado ao abrir e ao trocar de pílula: a linha que ganha número não
+  // some debaixo do dedo. `undefined` é "ainda não decidido"; `null`, a
+  // despensa inteira.
+  const [recorte, setRecorte] = useState<Set<string> | null>();
+  const [comPilulas, setComPilulas] = useState(false);
 
   const todas = useMemo(
     () => linhasParaContar(insumos, semente?.entradas ?? SEM_ENTRADAS, hoje),
     [insumos, semente, hoje],
   );
   const linhas = useMemo(() => {
-    if (!soDaCompra || !semente) return todas;
-    const recorte = todas.filter((linha) =>
-      semente.entradas.has(linha.insumoId),
-    );
+    const filtro = semente ? soDaCompra && semente.entradas : recorte;
+    if (!filtro) return todas;
+    const visiveis = todas.filter((linha) => filtro.has(linha.insumoId));
     // Recorte vazio é a despensa inteira, e não a tela vazia: acontece quando
     // o insumo que a nota acabou de cadastrar ainda não chegou do cache.
-    return recorte.length > 0 ? recorte : todas;
-  }, [todas, soDaCompra, semente]);
+    return visiveis.length > 0 ? visiveis : todas;
+  }, [todas, soDaCompra, semente, recorte]);
 
   /** O que o forno levou de cada insumo desde a contagem dele (`#d87`). */
   const projecoes = useMemo(
@@ -186,6 +195,30 @@ export function TelaContagem() {
     return mapa;
   }, [todas, digitados, unidades, guardadas]);
 
+  /** O que precisa de olho e ainda não ganhou número nesta contagem. */
+  const aConferir = useMemo(
+    () =>
+      todas
+        .filter(
+          (linha) =>
+            valores[linha.insumoId] === null &&
+            precisaConferir(linha, projecoes.get(linha.insumoId)),
+        )
+        .map((linha) => linha.insumoId),
+    [todas, valores, projecoes],
+  );
+
+  // Decide uma vez, com os materiais e as fornadas na mão. Recorte vazio ou
+  // igual à despensa inteira não tem pílula: seria escolher a lista entre ela
+  // mesma. Durante o render, e não num efeito, para a lista inteira não piscar
+  // antes do recorte.
+  if (recorte === undefined && !carregando && !carregandoFornadas) {
+    const util =
+      !semente && aConferir.length > 0 && aConferir.length < todas.length;
+    setComPilulas(util);
+    setRecorte(util ? new Set(aConferir) : null);
+  }
+
   function escrever(insumoId: string, texto: string) {
     setDigitados((anteriores) => ({ ...anteriores, [insumoId]: texto }));
   }
@@ -237,10 +270,17 @@ export function TelaContagem() {
   const sujo = Object.values(valores).some((quantidade) => quantidade !== null);
   const guarda = useGuardaDeSaida(sujo);
 
-  // O rodapé conta o que está na tela; salvar grava tudo o que foi tocado,
-  // inclusive o que o recorte esconde.
+  // O rodapé conta o que está na tela e o que ela já tocou fora dela: salvar
+  // grava tudo o que foi tocado, inclusive o que o recorte esconde, e o rodapé
+  // não pode dizer zero com número digitado (`#d331`).
+  const naTela = new Set(linhas.map((linha) => linha.insumoId));
   const resumo = resumoDaContagem(
-    linhas.map((linha) => linha.insumoId),
+    todas
+      .filter(
+        (linha) =>
+          naTela.has(linha.insumoId) || valores[linha.insumoId] !== null,
+      )
+      .map((linha) => linha.insumoId),
     valores,
   );
   const corredores = agruparPorCorredor(linhas);
@@ -331,8 +371,27 @@ export function TelaContagem() {
         />
       )}
 
+      {/* Sem compra, o mesmo mecanismo: o recorte do que precisa de olho. Ele
+          se refaz ao trocar de pílula, e o que já ganhou número sai dele. */}
+      {comPilulas && (
+        <Pilulas
+          className="mt-4"
+          rotulo="O que contar"
+          numerico
+          opcoes={[
+            {
+              valor: true,
+              rotulo: `Precisa conferir (${recorte?.size ?? aConferir.length})`,
+            },
+            { valor: false, rotulo: `A despensa inteira (${todas.length})` },
+          ]}
+          valor={!!recorte}
+          aoMudar={(precisa) => setRecorte(precisa ? new Set(aConferir) : null)}
+        />
+      )}
+
       <div className="mt-4 space-y-4 pb-52 lg:pb-44">
-        {carregando ? (
+        {carregando || (!semente && recorte === undefined) ? (
           <div role="status" aria-label="Carregando" className="space-y-4">
             {[0, 1].map((indice) => (
               <Esqueleto key={indice} className="h-56 rounded-lg" />
@@ -365,35 +424,62 @@ export function TelaContagem() {
             />
           </div>
         ) : (
-          corredores.map((corredor) => (
-            <section
-              key={corredor.categoria}
-              aria-labelledby={`corredor-${corredor.categoria}`}
-              className="overflow-hidden rounded-lg border border-line bg-surface"
-            >
-              <h2
-                id={`corredor-${corredor.categoria}`}
-                className="border-b border-line px-4 pb-3 pt-4 text-subheading font-semibold text-ink lg:px-5"
+          corredores.map((corredor) => {
+            // Como o rodapé, conta as linhas visíveis do corredor.
+            const { contadas, total } = resumoDaContagem(
+              corredor.itens.map((linha) => linha.insumoId),
+              valores,
+            );
+            const completo = contadas === total;
+            return (
+              <section
+                key={corredor.categoria}
+                aria-labelledby={`corredor-${corredor.categoria}`}
+                className="overflow-hidden rounded-lg border border-line bg-surface"
               >
-                {ROTULO_CORREDOR[corredor.categoria]}
-              </h2>
-              <ul className="divide-y divide-line">
-                {corredor.itens.map((linha) => (
-                  <LinhaContagem
-                    key={linha.insumoId}
-                    linha={linha}
-                    projecao={projecoes.get(linha.insumoId)}
-                    origem={semente?.origem}
-                    texto={digitados[linha.insumoId] ?? ""}
-                    unidade={unidadeDe(linha)}
-                    aoMudar={(texto) => escrever(linha.insumoId, texto)}
-                    aoTrocarUnidade={() => trocarUnidade(linha)}
-                    aoIgual={() => confirmarIgual(linha)}
-                  />
-                ))}
-              </ul>
-            </section>
-          ))
+                <h2
+                  id={`corredor-${corredor.categoria}`}
+                  className="flex items-baseline justify-between gap-3 border-b border-line px-4 pb-3 pt-4 text-subheading font-semibold text-ink lg:px-5"
+                >
+                  {ROTULO_CORREDOR[corredor.categoria]}
+                  <span
+                    className={cn(
+                      "num flex items-center gap-1 text-label font-normal tabular-nums",
+                      completo ? "text-positive" : "text-ink-muted",
+                    )}
+                  >
+                    {completo && (
+                      <Check
+                        aria-hidden
+                        className="size-3.5"
+                        strokeWidth={2.5}
+                      />
+                    )}
+                    {contadas} de {total}
+                    <span className="sr-only">
+                      {" "}
+                      {total === 1 ? "contado" : "contados"}
+                    </span>
+                  </span>
+                </h2>
+                <ul className="divide-y divide-line">
+                  {corredor.itens.map((linha) => (
+                    <LinhaContagem
+                      key={linha.insumoId}
+                      linha={linha}
+                      projecao={projecoes.get(linha.insumoId)}
+                      origem={semente?.origem}
+                      texto={digitados[linha.insumoId] ?? ""}
+                      unidade={unidadeDe(linha)}
+                      aoMudar={(texto) => escrever(linha.insumoId, texto)}
+                      aoTrocarUnidade={() => trocarUnidade(linha)}
+                      aoIgual={() => confirmarIgual(linha)}
+                    />
+                  ))}
+                </ul>
+              </section>
+            );
+          })
         )}
 
         {falha && (
