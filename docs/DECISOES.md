@@ -5248,6 +5248,7 @@ painel diz em uma linha que o riscado precisa ser o que ela cobra fora da promo�
 ## D166 · A página é da loja: capa, logo e cor dela, e o Rende numa linha de rodapé
 
 **Status:** vigente, menos o item do selo "o mais pedido", revertido pelo `#d316` em
+2026-10-10, e o rótulo "Adicionar", que virou o "+" redondo no mesmo lugar pelo `#d326` em
 2026-10-10 · decidida em 2026-09-23, na spec `031-cardapio-publico.md` (sessão F).
 
 **Contexto.** Quem conduz o projeto pediu ao Claude Design a tela do cardápio público
@@ -5284,7 +5285,8 @@ enchimento apertado). As correções da crítica entraram junto com o design.
   - "volta na próxima": uma promessa sem dado.
 - **O que a crítica mudou no desenho:**
   - o "+" deixou de flutuar sobre a foto e virou "Adicionar" na linha do preço, porque sem foto
-    ele flutuaria no nada;
+    ele flutuaria no nada (o rótulo foi revertido pelo `#d326`: voltou a ser "+", redondo, no
+    mesmo lugar);
   - a web usa a mesma lista com divisórias do celular, e não a grade de cartões com elevação;
   - "sacola" virou "pedido";
   - as pílulas de categoria são âncoras, sem estado "ativa", porque uma pílula ativa que não
@@ -9786,7 +9788,9 @@ quem paga; o "nunca vence" do `#d141` já não valia para ela.
 
 ## D315 · A linha do cardápio abre a ficha do produto
 
-**Status:** vigente · decidida em 2026-10-10, spec `112-a-ficha-do-produto-na-vitrine.md`.
+**Status:** vigente, menos o item "o celular não muda", revertido pelo `#d326` em 2026-10-10
+(a linha do `lg` vale em toda largura) · decidida em 2026-10-10, spec
+`112-a-ficha-do-produto-na-vitrine.md`.
 
 **Contexto.** Nos prints do cardápio público, a descrição cortava em três linhas sem saída, a
 foto de 104 px não abria, os combos à escolha eram três linhas iguais ("Você escolhe os
@@ -9820,7 +9824,7 @@ mais)`, a generalização de `cabeMaisUm`. Esgotado abre e diz "Esgotado", sem p
 - **Desktop (`lg`)**: a linha vira grade; a foto (ou o mosaico) vai a 128 px e ocupa as duas
   linhas da grade, e o preço com o controle sobe para a coluna do texto, logo abaixo da
   descrição (`self-start`, e não alinhado ao pé da foto, que recriaria o vão). O celular não
-  muda (`#d166`).
+  muda (`#d166`). _(Revertido pelo `#d326`: vale em toda largura.)_
 - **"· un" sai**; o rótulo da unidade só aparece quando não é `un`.
 
 **Consequência.** Nenhum campo, regra, índice ou dependência. O que sai para fora cresce em um
@@ -10367,3 +10371,49 @@ regra, índice, dependência, mudança no handler ou teste novo. Os outros `fiel
 (`SeuCardapio`, `EntregaDoCardapio`, `EscolhaDeOrdem`, `TelaConfiguracao`, `assinatura`,
 `FormularioPedido`, `FormularioTransacao`, `FormularioFicha`, "Monte a sua") ganham o mesmo
 mínimo zerado; nenhum dependia do `min-content`, e o roteiro da spec os confere.
+
+## D326 · A lista do cardápio
+
+**Status:** vigente · decidida em 2026-10-10, spec `122-a-lista-do-cardapio.md`. **Reverte em
+parte o `#d315`** ("o celular não muda") **e o `#d166`** (o rótulo "Adicionar"; o lugar fica).
+
+**Contexto.** A crítica "está tão bom quanto os outros aplicativos?" sobre os prints de
+2026-10-10: no celular, o preço e o controle moravam numa linha própria abaixo da foto, e cada
+produto ocupava ≈ 180 px (o combo sem descrição deixava ≈ 60 px de nada); oito "Adicionar" com
+contorno pesavam mais que o nome e o preço; a barra de categorias e cada lista tinham filetes
+paralelos fazendo o trabalho do espaço e do título; os títulos de seção, em `heading`, ficavam
+um degrau acima do nome do produto; e "Mandar", ao lado de um cardápio, podia ser mandar o
+pedido.
+
+**Decisão.**
+
+- **A linha do `lg` vale em toda largura**: grade `[minmax(0,1fr)_auto]` × `[auto_1fr]`, a foto
+  (104 px no celular, 128 px no `lg`) ocupando as duas linhas à direita, e o preço com o
+  controle na coluna do texto, logo abaixo (`self-start`). A linha quebra (`flex-wrap`) no pior
+  caso, preço riscado e passo a 360 px, e o controle fica à direita (`ml-auto`). O que espremia
+  a 360 px era o "Adicionar" escrito, e não a grade.
+- **A descrição corta em duas linhas no celular** e três no `lg`; a ficha mostra o resto.
+- **O "+" no lugar do "Adicionar"**: redondo, 44 px, contorno `--border-strong`, só o `Plus`, o
+  mesmo nome acessível ("Adicionar {nome}"). Na linha do preço, nunca sobre a foto (a razão do
+  `#d166` continua de pé). No pedido, o passo na cor da loja, como antes. O combo à escolha tem
+  sempre o "+", e o "N no pedido" desce para debaixo do preço, na voz do "Restam".
+- **Filete só entre produtos** (`divide-y`, sem `border-y`) nas seções e no "Monte a sua", a
+  regra do `#d325`. **A barra de categorias tem filete só presa**: um sentinela de 1 px antes
+  da `<nav>` e um `IntersectionObserver` marcam `data-presa`; a borda existe sempre,
+  transparente, e só troca de cor, sem mexer na altura. A rolagem das pílulas ganhou `-m-1
+p-1`: a caixa que rola corta em volta dela, e sem o respiro cortava o pé das pílulas e o anel
+  de foco.
+- **O pedido ao lado fica com a borda de fora**: `--surface` e `--canvas` quase não se
+  distinguem no claro, e sem ela a caixa some. A barra "Ver pedido" do celular fica com o
+  filete de cima: é fixa, e o conteúdo passa por baixo.
+- **Títulos de seção em `title`** (24 px, `font-display` 600), "Os mais pedidos" também: 1,5
+  vez o nome do produto. 48 px do fim de uma lista ao título seguinte, 12 px do título à lista.
+- **"Compartilhar"**, e "Compartilhar o cardápio" de nome acessível. Abaixo de `sm`, só o
+  `Share2` (o texto `sr-only sm:not-sr-only`): com o texto inteiro, os três botões do topo
+  passam dos 328 px. Copiado, o ícone vira o visto, e "Link copiado" fica no nome e no
+  `status`; o resto do `#d317` não muda.
+
+**Consequência.** Só desenho, em `PedidoPeloCardapio.tsx` e `MandarOCardapio.tsx`. Nenhum
+schema, regra, índice, dependência, mudança no handler ou teste novo. As listas do app ("Seu
+cardápio", Produtos) seguem com o `border-y` do `DESIGN.md`. Revisitar o "+" sem texto se os
+relatos mostrarem cliente que não o reconhece.

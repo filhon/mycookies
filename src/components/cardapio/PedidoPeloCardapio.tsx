@@ -291,6 +291,19 @@ export function PedidoPeloCardapio({
 
   const idFormulario = useId();
 
+  // A barra de categorias presa: o sentinela antes dela saiu por cima da tela.
+  const sentinela = useRef<HTMLDivElement>(null);
+  const [presa, setPresa] = useState(false);
+  useEffect(() => {
+    const alvo = sentinela.current;
+    if (!alvo) return;
+    const observador = new IntersectionObserver(([entrada]) =>
+      setPresa(!entrada!.isIntersecting && entrada!.boundingClientRect.top < 0),
+    );
+    observador.observe(alvo);
+    return () => observador.disconnect();
+  }, []);
+
   const quantidadeTotal = carrinho.reduce((s, l) => s + l.quantidade, 0);
   const total = carrinho.reduce(
     (s, l) =>
@@ -929,13 +942,21 @@ export function PedidoPeloCardapio({
           {/* Âncoras, e não filtro: a lista é uma só, e a cliente rola. Sem
               "ativa", porque uma pílula que não segue a rolagem mente. */}
           {cardapio.secoes.length > 1 && (
+            <div ref={sentinela} aria-hidden className="h-px" />
+          )}
+          {/* O sentinela fica fora da `<nav>`: preso, ele sai da tela, e ela não. */}
+          {cardapio.secoes.length > 1 && (
             <nav
               aria-label="Categorias"
+              data-presa={presa || undefined}
               // A página rola por baixo da barra: o foco e a âncora param
-              // abaixo dela, e não atrás.
-              className="sticky top-0 z-20 -mx-4 border-b border-line bg-canvas px-4 py-2 lg:mx-0 lg:px-0 [html:has(&)]:scroll-pt-16"
+              // abaixo dela, e não atrás. O filete só presa, e a borda existe
+              // sempre, transparente, para a altura não mudar (`#d326`).
+              className="sticky top-0 z-20 -mx-4 border-b border-transparent bg-canvas px-4 py-2 transition-colors duration-150 ease-quart data-presa:border-line lg:mx-0 lg:px-0 [html:has(&)]:scroll-pt-16"
             >
-              <div className="flex gap-2 overflow-x-auto">
+              {/* `-m-1 p-1`: a rolagem lateral corta em volta da caixa dela, e
+                  sem o respiro cortava o pé das pílulas e o anel de foco. */}
+              <div className="-m-1 flex gap-2 overflow-x-auto p-1">
                 {cardapio.secoes.map((secao, i) => (
                   <a
                     key={secao.categoria}
@@ -949,7 +970,10 @@ export function PedidoPeloCardapio({
             </nav>
           )}
 
-          <div className="mt-2 space-y-10">
+          {/* 48px do fim de uma lista ao título seguinte (o `pt-4` mais o
+              `space-y-8`), 12px do título ao primeiro produto; filete só entre
+              produtos (`#d326`). */}
+          <div className="mt-2 space-y-8">
             {cardapio.secoes.map((secao, i) => (
               <section
                 key={secao.categoria}
@@ -957,10 +981,10 @@ export function PedidoPeloCardapio({
                 aria-label={secao.categoria}
                 className="pt-4"
               >
-                <h2 className="font-display text-heading font-semibold text-ink">
+                <h2 className="font-display text-title font-semibold text-ink">
                   {secao.categoria}
                 </h2>
-                <ul className="mt-2 divide-y divide-line border-y border-line">
+                <ul className="mt-3 divide-y divide-line">
                   {secao.produtos.map((produto) => (
                     <Produto
                       key={produto.id}
@@ -990,7 +1014,7 @@ export function PedidoPeloCardapio({
         </div>
 
         {/* O pedido ao lado da lista, sem painel: no desktop cabe, e a
-            cliente vê o total mudar a cada "Adicionar". A anatomia é a do
+            cliente vê o total mudar a cada "+". A anatomia é a do
             `Painel`: o formulário rola, e o total com o "Enviar pedido" ficam
             fixos embaixo (`#d325`). */}
         <aside
@@ -1286,7 +1310,7 @@ function MonteOCombo({
                 </>
               )}
             </p>
-            <ul className="mt-2 divide-y divide-line border-y border-line">
+            <ul className="mt-2 divide-y divide-line">
               {escolha.opcoes.map((opcao) => {
                 const escolhidas = sabores[opcao.id] ?? 0;
                 return (
@@ -1627,7 +1651,7 @@ function MaisPedidos({
     <section aria-labelledby={idTitulo} className="pb-6">
       <h2
         id={idTitulo}
-        className="font-display text-heading font-semibold text-ink"
+        className="font-display text-title font-semibold text-ink"
       >
         Os mais pedidos
       </h2>
@@ -1673,10 +1697,9 @@ function MaisPedidos({
 
 /**
  * Uma linha de lista, com a foto à direita e só foto: o "+" não flutua sobre
- * ela, porque sem foto ele flutuaria no nada (`#d166`). No celular, o preço e o
- * controle ocupam a linha de baixo inteira: a 360px, ao lado da foto,
- * espremeriam. No desktop sobem para a coluna do texto, e a linha tem a altura
- * da foto (`#d315`).
+ * ela, porque sem foto ele flutuaria no nada (`#d166`). Em toda largura, o
+ * preço e o controle ficam na coluna do texto, logo abaixo dele, e a linha tem
+ * a altura do maior entre texto e foto (`#d315`, `#d326`).
  *
  * O nome é o botão que abre a ficha, e o alvo dele cobre a linha inteira; o
  * controle fica por cima, alvo próprio: dois alvos, nenhum dentro do outro.
@@ -1702,7 +1725,7 @@ function Produto({
 }) {
   const esgotado = produto.restam === 0;
 
-  // "Adicionar" vira `− 1 +`, e o `−` no 1 volta a ser "Adicionar": o botão
+  // O "+" vira `− 1 +`, e o `−` no 1 volta a ser o "+": o botão
   // tocado some. O foco vai para o controle novo, e não para o `body`.
   const controle = useRef<HTMLDivElement>(null);
   const devolverFoco = useRef(false);
@@ -1723,7 +1746,7 @@ function Produto({
   };
 
   return (
-    <li className="relative grid grid-cols-[minmax(0,1fr)_auto] py-4 lg:grid-rows-[auto_1fr]">
+    <li className="relative grid grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_1fr] py-4">
       <div className="col-start-1 row-start-1">
         <h3 className="wrap-break-word text-body font-semibold text-ink">
           <button
@@ -1736,7 +1759,7 @@ function Produto({
           </button>
         </h3>
         {produto.descricao && (
-          <p className="mt-1 line-clamp-3 text-label text-ink-muted">
+          <p className="mt-1 line-clamp-2 text-label text-ink-muted lg:line-clamp-3">
             {produto.descricao}
           </p>
         )}
@@ -1753,49 +1776,55 @@ function Produto({
         contaId={contaId}
         produto={produto}
         // Margem, e não `gap`: sem foto, a coluna vazia não rouba 16px do texto.
-        className="col-start-2 row-start-1 ml-4 lg:row-span-2"
+        className="col-start-2 row-span-2 row-start-1 ml-4"
       />
 
+      {/* Com o preço riscado e o passo, a 360px a linha quebra, e o controle
+          fica à direita (`ml-auto`). */}
       <div
         ref={controle}
-        className="col-span-2 mt-3 flex items-center justify-between gap-3 lg:col-span-1 lg:col-start-1 lg:row-start-2 lg:self-start"
+        className="col-start-1 row-start-2 mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 self-start"
       >
-        <PrecoDoProduto produto={produto} hoje={hoje} />
+        <div>
+          <PrecoDoProduto produto={produto} hoje={hoje} />
+          {produto.escolhas && quantidade > 0 && (
+            <p className="num text-label text-ink-muted">
+              {quantidade} no pedido
+            </p>
+          )}
+        </div>
         {/* O combo à escolha sempre abre "Monte a sua": cada unidade pode ter
             outros sabores, e a quantidade dele mora no pedido. */}
         {esgotado ? (
-          <span className="text-label font-medium text-ink-muted">
+          <span className="ml-auto text-label font-medium text-ink-muted">
             Esgotado
           </span>
         ) : quantidade === 0 || produto.escolhas ? (
-          <div className="relative flex items-center gap-2">
-            {quantidade > 0 && (
-              <span className="num text-label text-ink-muted">
-                {quantidade} no pedido
-              </span>
-            )}
-            <Botao
-              tamanho="sm"
-              disabled={!podeMais}
-              onClick={() => aoTocar(1)}
-              aria-haspopup={produto.escolhas ? "dialog" : undefined}
-              aria-label={`Adicionar ${produto.nome}`}
-              iconeInicial={
-                <Plus aria-hidden className="size-4" strokeWidth={1.75} />
-              }
-            >
-              Adicionar
-            </Botao>
-          </div>
+          <button
+            type="button"
+            disabled={!podeMais}
+            onClick={() => aoTocar(1)}
+            aria-haspopup={produto.escolhas ? "dialog" : undefined}
+            aria-label={`Adicionar ${produto.nome}`}
+            // `relative`: fica por cima do alvo da ficha.
+            className={classesBotao({
+              tamanho: "sm",
+              className: "relative ml-auto size-11 rounded-full px-0",
+            })}
+          >
+            <Plus aria-hidden className="size-5" strokeWidth={1.75} />
+          </button>
         ) : (
           // Na cor da loja: o que já está no pedido é o que tem cor na lista.
-          <Passo
-            nome={produto.nome}
-            quantidade={quantidade}
-            podeMais={quantidade < 500 && podeMais}
-            aoMudar={aoTocar}
-            naCor
-          />
+          <div className="ml-auto">
+            <Passo
+              nome={produto.nome}
+              quantidade={quantidade}
+              podeMais={quantidade < 500 && podeMais}
+              aoMudar={aoTocar}
+              naCor
+            />
+          </div>
         )}
       </div>
     </li>

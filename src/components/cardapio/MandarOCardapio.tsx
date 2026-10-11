@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Share2 } from "lucide-react";
+import { Check, Share2 } from "lucide-react";
 import { classesBotao } from "@/components/ui/estilosBotao";
 
 /**
- * "Mandar o cardápio" (spec 114, `DECISOES.md#d317`): a cliente que gostou manda
- * à amiga. A folha do sistema quando há `share`; senão, copia o link e diz
+ * "Compartilhar" (spec 114, `DECISOES.md#d317`; o rótulo é do `#d326`): a
+ * cliente que gostou manda à amiga. A folha do sistema quando há `share`; senão, copia o link e diz
  * "Link copiado" por 2 s. Cancelar a folha não diz nada.
  */
 export function MandarOCardapio({ nome }: { nome: string }) {
@@ -39,11 +39,19 @@ export function MandarOCardapio({ nome }: { nome: string }) {
         type="button"
         onClick={mandar}
         // Copiado, o nome é o que está escrito (o rótulo contém o visível).
-        aria-label={copiado ? undefined : "Mandar o cardápio"}
+        aria-label={copiado ? undefined : "Compartilhar o cardápio"}
         className={classesBotao({ tamanho: "sm" })}
       >
-        <Share2 aria-hidden className="size-4" strokeWidth={1.75} />
-        {copiado ? "Link copiado" : "Mandar"}
+        {/* Abaixo de `sm`, só o ícone: com o texto, os três botões do topo
+            quebram a fileira a 360 px. Copiado, o ícone vira o visto (`#d326`). */}
+        {copiado ? (
+          <Check aria-hidden className="size-4" strokeWidth={2} />
+        ) : (
+          <Share2 aria-hidden className="size-4" strokeWidth={1.75} />
+        )}
+        <span className="sr-only sm:not-sr-only">
+          {copiado ? "Link copiado" : "Compartilhar"}
+        </span>
       </button>
       <span role="status" className="sr-only">
         {copiado ? "Link copiado" : ""}

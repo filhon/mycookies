@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-10",
+    titulo: "O cardápio mais enxuto no celular",
+    frase:
+      "No cardápio, o preço e o “+” ficam ao lado da foto, cabem mais doces numa tela, as seções têm título maior e o botão do topo diz “Compartilhar”.",
+    href: "/configuracao#a-sua-marca",
+  },
+  {
+    dataISO: "2026-10-10",
     titulo: "O pedido pelo cardápio, mais fácil de preencher",
     frase:
       "No cardápio, o pedido não desliza mais para o lado, os próximos dias aparecem numa grade, sem rolar, o combo mostra os sabores embaixo do nome e, no computador, o total e o “Enviar pedido” ficam sempre à vista.",
