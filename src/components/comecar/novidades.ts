@@ -24,6 +24,14 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-11",
+    titulo:
+      "Depois de contar, veja o que acabou e o que sumiu da despensa, em reais",
+    frase:
+      "Ao salvar a contagem, aparece o que acabou, o que estava diferente do esperado e quanto vale o que você contou.",
+    href: "/insumos/contagem",
+  },
+  {
+    dataISO: "2026-10-11",
     titulo: "A contagem pela metade fica guardada no celular até você salvar",
     frase:
       "Se a tela apagar no meio da contagem, ela volta de onde parou, e o “próximo” do teclado leva à linha seguinte.",

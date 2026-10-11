@@ -1742,6 +1742,9 @@ há rede — ela fica pendente até a reconexão —, então um `await` aqui dei
 "salvando" exatamente no lugar em que esta tela existe para funcionar. É a dívida que `TelaNota`
 tem e aceita (`#d50`): lá a tela já exigiu rede para ler; aqui não há nada a ler de fora.
 
+> **Revisão (spec 128, `#d333`):** a tela continua não esperando o servidor; desde a 128 ela
+> mostra o resumo da contagem, na mesma rota, antes de voltar para `/compras`.
+
 O que se perde: salvar volta para `/compras` no mesmo toque, então uma falha de permissão
 apareceria numa tela que ela já deixou. É a mesma troca de `#d40`, e pelo mesmo motivo — a falha
 plausível aqui é ausência de rede, e ausência de rede não é falha.
@@ -10621,3 +10624,35 @@ lugar nenhum, e o campo que o foco alcançava podia ficar atrás do rodapé fixo
 
 **Consequência.** A guarda de saída (`#d134`) não muda. Contagem a duas mãos continua fora
 (`#d01`).
+
+---
+
+## D333 · O que a contagem encontrou
+
+**Status:** vigente · decidida em 2026-10-11, spec `128-o-que-a-contagem-encontrou.md`.
+
+**Contexto.** Salvar a contagem voltava para `/compras` no mesmo toque (`#d62`). O que ela
+descobria contando (os 600 g de Nutella que o sistema não viu sair) ficava invisível, e é a parte
+que vale dinheiro.
+
+**Decisão.**
+
+- **Salvar abre o resumo, e não volta.** O `writeBatch` continua despachado sem espera (`#d62`,
+  `#d40`); a tela troca para `ResumoDaContagem` na mesma rota. O botão primário é "Ver a lista de
+  compras"; o voltar do cabeçalho segue indo para Compras; recarregar volta à contagem vazia. A
+  guarda de saída desliga ao salvar.
+- **Retrato, e não cálculo vivo.** Os achados são calculados no toque e guardados em estado: logo
+  depois, o cache traz a contagem nova, e o esperado viraria o próprio número contado.
+- **Esperado:** a projeção, se houve fornada desde a contagem; senão, o anotado de uma contagem
+  `FRESCA` ou `ENVELHECENDO`. Vencida, nunca contada e linha semeada pela compra não têm esperado:
+  a compra sabe o que entrou, e não o que saiu.
+- **Longe** é 10% ou mais do esperado **e** pelo menos R$ 1,00; abaixo disso é balança. A
+  diferença vai com sinal, cor e `TrendingDown`/`TrendingUp`, a maior em reais primeiro, e a frase
+  diz que o sistema não sabe a causa.
+- **O valor** é `contado × custoUnidadeBase` só nas linhas contadas, **sem** a perda: com o custo
+  corrigido, um material com 20% de perda valeria na prateleira mais do que ela pagou.
+- **Centavos inteiros.** `achadosDaContagem(linhas, valores, projecoes, custos)` em
+  `domain/estoque.ts`, com teste: arredonda uma vez por linha, simétrico no sinal, e soma inteiros.
+
+**Consequência.** Um toque a mais até a lista. A diferença não é guardada: um histórico de "o que
+sumiu por mês" seria schema novo, e é outra spec se ela pedir.

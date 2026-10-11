@@ -14,7 +14,9 @@ import { LinhaContagem } from "./LinhaContagem";
 import { RodapeContagem } from "./RodapeContagem";
 import { agruparPorCorredor, ROTULO_CORREDOR } from "@/lib/domain/corredores";
 import { dataISODe } from "@/lib/domain/datas";
+import { ResumoDaContagem } from "./ResumoDaContagem";
 import {
+  achadosDaContagem,
   daBaseParaCampo,
   linhasParaContar,
   naBase,
@@ -23,6 +25,7 @@ import {
   resumoDaContagem,
   textoContado,
   unidadeDoCampo,
+  type AchadosDaContagem,
   type LinhaDeContagem,
   type UnidadeDoCampo,
 } from "@/lib/domain/estoque";
@@ -312,9 +315,19 @@ export function TelaContagem() {
     escrever(linha.insumoId, textoContado(anotado));
   }
 
+  // O resumo depois de salvar (`#d333`): o retrato do toque, e não um cálculo
+  // vivo. Depois do salvar o cache já traz a contagem nova, e o esperado
+  // passaria a ser o próprio número contado.
+  const [salvo, setSalvo] = useState<{
+    achados: AchadosDaContagem;
+    contadas: number;
+    emBranco: number;
+  } | null>(null);
+
   // Inclusive o que a compra semeou: a proposta que sai da contagem é trabalho
-  // perdido também (`DECISOES.md#d134`).
-  const sujo = Object.values(valores).some((quantidade) => quantidade !== null);
+  // perdido também (`DECISOES.md#d134`). Salva, não há o que perder.
+  const sujo =
+    !salvo && Object.values(valores).some((quantidade) => quantidade !== null);
   const guarda = useGuardaDeSaida(sujo);
 
   // O rodapé conta o que está na tela e o que ela já tocou fora dela: salvar
@@ -362,8 +375,39 @@ export function TelaContagem() {
     );
     apagarRascunho(contaId);
 
-    // Volta para onde ela veio: o efeito que ela quer ver está na outra tela.
-    void guarda.navegar("/compras");
+    // Em vez de voltar, mostra o que a contagem encontrou, com o que está em
+    // memória (`#d333`). Custo sem a perda: a perda é da receita, e não da
+    // prateleira.
+    setSalvo({
+      achados: achadosDaContagem(
+        todas,
+        valores,
+        projecoes,
+        new Map(insumos.map((insumo) => [insumo.id, insumo.custoUnidadeBase])),
+      ),
+      contadas: contagens.length,
+      emBranco: todas.length - contagens.length,
+    });
+    window.scrollTo(0, 0);
+  }
+
+  if (salvo) {
+    return (
+      <>
+        <CabecalhoPagina
+          titulo="Contar a despensa"
+          voltar={{ href: "/compras", rotulo: "Compras" }}
+          pendente={pendente}
+        />
+        <ResumoDaContagem {...salvo} />
+        {falha && (
+          <p role="alert" className="text-label text-negative">
+            {falha}
+          </p>
+        )}
+        {guarda.dialogo}
+      </>
+    );
   }
 
   return (

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  achadosDaContagem,
   contagemDoInsumo,
   daBaseParaCampo,
   entradasDaLista,
@@ -665,5 +666,117 @@ describe("lerRascunhoDaContagem (#d332)", () => {
         "2026-10-11",
       ),
     ).toBeNull();
+  });
+});
+
+describe("achadosDaContagem (#d333)", () => {
+  const insumos = [
+    insumo({ id: "nutella", ...contadoHa(18, 900) }),
+    insumo({ id: "acucar", ...contadoHa(2, 1152) }),
+    insumo({ id: "amido", ...contadoHa(15, 540) }),
+    insumo({ id: "corante", ...contadoHa(3, 30) }),
+    insumo({ id: "po", nome: "Chocolate pó" }),
+    insumo({ id: "vencida", ...contadoHa(40, 900) }),
+    insumo({ id: "semeada", ...contadoHa(5, 900) }),
+  ];
+  const linhas = linhasParaContar(insumos, new Map([["semeada", 1000]]), HOJE);
+  const custos = new Map([
+    ["nutella", 4],
+    ["acucar", 0.5],
+    ["amido", 2],
+    ["corante", 10],
+    ["po", 3],
+    ["vencida", 4],
+    ["semeada", 4],
+  ]);
+  const projecoes = new Map([["amido", { fornadas: 1, disponivel: 510 }]]);
+  const achados = achadosDaContagem(
+    linhas,
+    {
+      nutella: 300,
+      acucar: 1150,
+      amido: 200,
+      corante: 0,
+      po: 400,
+      vencida: 100,
+      semeada: 100,
+    },
+    projecoes,
+    custos,
+  );
+  const porId = new Map(
+    achados.diferencas.map((d) => [d.linha.insumoId, d] as const),
+  );
+
+  it("lista o que ficou longe, a maior diferença primeiro", () => {
+    expect(achados.diferencas.map((d) => d.linha.insumoId)).toEqual([
+      "nutella",
+      "amido",
+      "corante",
+    ]);
+    expect(porId.get("nutella")).toMatchObject({
+      contado: 300,
+      esperado: 900,
+      centavos: -2400,
+    });
+  });
+
+  it("a projeção tem precedência sobre o anotado", () => {
+    expect(porId.get("amido")).toMatchObject({ esperado: 510, centavos: -620 });
+  });
+
+  it("vencida, nunca contada e semeada não têm esperado", () => {
+    expect(porId.has("vencida")).toBe(false);
+    expect(porId.has("po")).toBe(false);
+    expect(porId.has("semeada")).toBe(false);
+    expect(porId.has("acucar")).toBe(false);
+  });
+
+  it("zero é zerada e, com esperado, diferença", () => {
+    expect(achados.zeradas.map((l) => l.insumoId)).toEqual(["corante"]);
+    expect(porId.get("corante")?.centavos).toBe(-300);
+  });
+
+  it("vale só o que foi contado, em centavos inteiros", () => {
+    // 1200 + 575 + 400 + 0 + 1200 + 400 + 400
+    expect(achados.valorContado).toBe(4175);
+  });
+
+  it("os dois limiares precisam valer", () => {
+    const uma = (estoque: number, custo: number, contado: number) =>
+      achadosDaContagem(
+        linhasParaContar(
+          [insumo({ id: "x", ...contadoHa(1, estoque) })],
+          SEM_ENTRADAS,
+          HOJE,
+        ),
+        { x: contado },
+        new Map(),
+        new Map([["x", custo]]),
+      ).diferencas.length;
+
+    // 20%, mas R$ 0,10: balança.
+    expect(uma(100, 0.5, 80)).toBe(0);
+    // R$ 5,00, mas 5%: balança.
+    expect(uma(1000, 10, 950)).toBe(0);
+    // 10% exatos e R$ 10,00: entra, para menos e para mais.
+    expect(uma(1000, 10, 900)).toBe(1);
+    expect(uma(900, 10, 990)).toBe(1);
+  });
+
+  it("arredonda uma vez por linha e soma inteiros", () => {
+    const tres = ["a", "b", "c"].map((id) => insumo({ id }));
+    const { valorContado } = achadosDaContagem(
+      linhasParaContar(tres, SEM_ENTRADAS, HOJE),
+      { a: 1000, b: 1000, c: 3 },
+      new Map(),
+      new Map([
+        ["a", 1.495],
+        ["b", 0.1],
+        ["c", 0.5],
+      ]),
+    );
+    expect(valorContado).toBe(1495 + 100 + 2);
+    expect(Number.isInteger(valorContado)).toBe(true);
   });
 });

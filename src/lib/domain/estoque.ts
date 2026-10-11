@@ -494,6 +494,94 @@ export function resumoDaContagem(
 }
 
 // ---------------------------------------------------------------------------
+// O que a contagem encontrou (`#d333`)
+
+export interface DiferencaDaContagem {
+  linha: LinhaDeContagem;
+  contado: number;
+  esperado: number;
+  /** `(contado − esperado) × custo`, com sinal: negativo é o que sumiu. */
+  centavos: number;
+}
+
+export interface AchadosDaContagem {
+  zeradas: LinhaDeContagem[];
+  /** A maior diferença em reais primeiro. */
+  diferencas: DiferencaDaContagem[];
+  /** Só as linhas contadas: o que ficou em branco ninguém conferiu. */
+  valorContado: number;
+}
+
+/**
+ * O que o sistema esperava encontrar na prateleira: a projeção, se o forno
+ * passou desde a contagem; senão, o número anotado de uma contagem que ainda
+ * vale. Vencida e nunca contada não têm esperado, e a linha semeada pela compra
+ * também não: a compra sabe o que entrou, e não o que saiu.
+ */
+function esperadoDaLinha(
+  linha: LinhaDeContagem,
+  projecao?: { fornadas: number; disponivel: number },
+): number | null {
+  if (linha.sugestao !== null || linha.contagem.quantidade === null) {
+    return null;
+  }
+  return projecao && projecao.fornadas > 0
+    ? projecao.disponivel
+    : linha.contagem.quantidade;
+}
+
+/**
+ * Quantidade vezes custo fracionado, arredondada uma vez e simétrica no sinal:
+ * −2,5 centavos e +2,5 centavos são o mesmo tamanho de diferença.
+ */
+function centavosDe(quantidade: number, custoUnidadeBase: number): number {
+  const valor =
+    quantidade * (Number.isFinite(custoUnidadeBase) ? custoUnidadeBase : 0);
+  return Math.sign(valor) * Math.round(Math.abs(valor));
+}
+
+/**
+ * O resumo depois de salvar: o que acabou, o que ficou longe do esperado, e
+ * quanto vale o que ela contou. `custos` é o `custoUnidadeBase` **sem** a perda:
+ * a perda é da receita, e não da prateleira.
+ *
+ * Longe é **10% ou mais** do esperado **e** pelo menos R$ 1,00: os dois.
+ * Recebe a projeção pela forma, como `precisaConferir`.
+ */
+export function achadosDaContagem(
+  linhas: LinhaDeContagem[],
+  valores: Record<string, number | null>,
+  projecoes: Map<string, { fornadas: number; disponivel: number }>,
+  custos: Map<string, number>,
+): AchadosDaContagem {
+  const zeradas: LinhaDeContagem[] = [];
+  const diferencas: DiferencaDaContagem[] = [];
+  let valorContado = 0;
+
+  for (const linha of linhas) {
+    const contado = valores[linha.insumoId];
+    if (contado === null || contado === undefined) continue;
+    const custo = custos.get(linha.insumoId) ?? 0;
+
+    valorContado += centavosDe(contado, custo);
+    if (contado === 0) zeradas.push(linha);
+
+    const esperado = esperadoDaLinha(linha, projecoes.get(linha.insumoId));
+    if (esperado === null) continue;
+    const delta = contado - esperado;
+    const centavos = centavosDe(delta, custo);
+    // Abaixo dos dois limiares é balança, e não despensa. `× 10` e não
+    // `× 0,1`: 0,1 × 900 em ponto flutuante passa de 90.
+    if (Math.abs(delta) * 10 >= esperado && Math.abs(centavos) >= 100) {
+      diferencas.push({ linha, contado, esperado, centavos });
+    }
+  }
+
+  diferencas.sort((a, b) => Math.abs(b.centavos) - Math.abs(a.centavos));
+  return { zeradas, diferencas, valorContado };
+}
+
+// ---------------------------------------------------------------------------
 // O rascunho da contagem (`#d332`)
 
 /**

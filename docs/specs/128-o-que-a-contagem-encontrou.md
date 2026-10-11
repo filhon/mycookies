@@ -114,11 +114,11 @@ Em 360 px e 1280 px, nos dois temas:
 
 ## Critérios de aceite
 
-- [ ] Salvar não espera o servidor e abre o resumo.
-- [ ] "Acabou", "Diferente do que esperávamos" (com os dois limiares) e "O que você contou vale".
-- [ ] Diferença com sinal, cor e ícone; frase honesta sobre a causa.
-- [ ] Dinheiro em centavos inteiros no domínio, com testes.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `#d333` e a nota no `#d62` escritos;
+- [x] Salvar não espera o servidor e abre o resumo.
+- [x] "Acabou", "Diferente do que esperávamos" (com os dois limiares) e "O que você contou vale".
+- [x] Diferença com sinal, cor e ícone; frase honesta sobre a causa.
+- [x] Dinheiro em centavos inteiros no domínio, com testes.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `#d333` e a nota no `#d62` escritos;
       `ESTADO.md` e `novidades.ts` atualizados.
 
 ---
