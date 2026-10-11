@@ -8,6 +8,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
+import { flushSync } from "react-dom";
 import {
   Check,
   MapPinOff,
@@ -47,7 +48,7 @@ import {
 } from "@/lib/domain/entrega";
 import { formatarMoeda } from "@/lib/domain/money";
 import { FOTO_LADO_PX } from "@/lib/domain/orcamento";
-import { nomeComEscolhas, subtotalDoItem } from "@/lib/domain/pedido";
+import { subtotalDoItem } from "@/lib/domain/pedido";
 import { linkDoWhatsApp, telefoneParaWhatsApp } from "@/lib/domain/whatsapp";
 import { useDesktop } from "@/lib/hooks/useDispositivo";
 import type { Centavos } from "@/lib/types";
@@ -68,8 +69,11 @@ import { cn } from "@/lib/utils/cn";
 
 type Tipo = "RETIRADA" | "ENTREGA";
 
-/** Os dias que viram botão em "Para quando?"; depois deles, "Outro dia". */
-const DIAS_EM_BOTAO = 14;
+/**
+ * Os dias que viram botão em "Para quando?"; depois deles, "Outro dia". Sete e
+ * mais ele fecham duas linhas de quatro, sem rolagem (`#d325`).
+ */
+const DIAS_EM_BOTAO = 7;
 
 const DIA_DA_SEMANA = new Intl.DateTimeFormat("pt-BR", { weekday: "short" });
 
@@ -103,16 +107,6 @@ function comoItem(linha: Linha) {
       quantidade: e.quantidade,
     })),
   };
-}
-
-function nomeDa(linha: LinhaSemQuantidade): string {
-  return nomeComEscolhas({
-    nomeSnapshot: linha.produto.nome,
-    escolhas: linha.escolhas?.map((e) => ({
-      quantidade: e.quantidade,
-      nomeSnapshot: e.nome,
-    })),
-  });
 }
 
 /** A resposta de `/api/cardapio/entrega` para um CEP; `resposta: null` é não ter conseguido. */
@@ -222,7 +216,18 @@ export function PedidoPeloCardapio({
   const [tipo, setTipo] = useState<Tipo>(guardado.tipo ?? "RETIRADA");
   const [endereco, setEndereco] = useState(guardado.endereco ?? "");
   const [observacoes, setObservacoes] = useState(guardado.observacoes ?? "");
+  // O recado começa recolhido; com um já escrito (o recarregar do `mudou`), aberto.
+  const [recadoAberto, setRecadoAberto] = useState(
+    Boolean(guardado.observacoes),
+  );
+  const recado = useRef<HTMLDivElement>(null);
   const [site, setSite] = useState("");
+
+  function abrirRecado() {
+    // Desenha o campo antes de focar: o botão tocado some no mesmo render.
+    flushSync(() => setRecadoAberto(true));
+    recado.current?.querySelector("textarea")?.focus();
+  }
 
   // O CEP (spec 118): só com a regra dela, que nunca chega aqui (`#d322`).
   const porCep = negocio.entregaPorCep === true;
@@ -515,23 +520,37 @@ export function PedidoPeloCardapio({
     <form
       id={idFormulario}
       onSubmit={(evento) => void enviar(evento)}
-      className="space-y-6"
+      className="space-y-8"
     >
-      <ul className="divide-y divide-line border-y border-line">
+      {/* Filete só entre itens: com um item, nenhum (`#d325`). */}
+      <ul className="divide-y divide-line">
         {/* Trocar o sabor é tirar e montar de novo: um editor de
             escolha aqui seria um painel dentro de outro. */}
         {carrinho.map((linha) => (
-          <li key={linha.chave} className="flex items-center gap-3 py-3">
+          <li
+            key={linha.chave}
+            className="flex items-start gap-3 py-3 first:pt-0 last:pb-0"
+          >
             <div className="min-w-0 flex-1">
               <p className="wrap-break-word text-body font-medium text-ink">
-                {nomeDa(linha)}
+                {linha.produto.nome}
               </p>
+              {/* Os sabores na linha de baixo, e não entre parênteses no
+                  nome: numa coluna estreita, o nome espremia (`#d325`). */}
+              {linha.escolhas && (
+                <p className="wrap-break-word text-label text-ink-muted">
+                  {linha.escolhas
+                    .map((e) => `${e.quantidade} ${e.nome}`)
+                    .join(" · ")}
+                </p>
+              )}
               <Dinheiro
                 centavos={subtotalDoItem({
                   quantidade: linha.quantidade,
                   precoUnitario: linha.produto.preco,
                 })}
                 tamanho="sm"
+                className="mt-1"
               />
             </div>
             <Passo
@@ -544,193 +563,225 @@ export function PedidoPeloCardapio({
         ))}
       </ul>
 
-      <Campo
-        rotulo="Seu nome"
-        required
-        minLength={2}
-        maxLength={80}
-        autoComplete="name"
-        value={nome}
-        onChange={(e) => setNome(e.target.value)}
-      />
-      <Campo
-        rotulo="Seu WhatsApp"
-        required
-        type="tel"
-        inputMode="tel"
-        autoComplete="tel"
-        placeholder="(81) 98888-7777"
-        erro={erroTelefone}
-        value={telefone}
-        onChange={(e) => setTelefone(e.target.value)}
-      />
+      <div className="space-y-4">
+        <h3 className="text-subheading font-semibold text-ink">Seus dados</h3>
+        <Campo
+          rotulo="Seu nome"
+          required
+          minLength={2}
+          maxLength={80}
+          autoComplete="name"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+        />
+        <Campo
+          rotulo="Seu WhatsApp"
+          required
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder="(81) 98888-7777"
+          erro={erroTelefone}
+          value={telefone}
+          onChange={(e) => setTelefone(e.target.value)}
+        />
+      </div>
 
-      <fieldset className="space-y-3">
-        <legend className="text-label font-medium text-ink">
-          Como você recebe?
-        </legend>
-        <div className="grid grid-cols-2 gap-1 rounded-lg bg-sunken p-1">
-          {(
-            [
-              ["RETIRADA", "Retiro"],
-              ["ENTREGA", "Entrega"],
-            ] as const
-          ).map(([valor, rotulo]) => (
-            <Opcao
-              key={valor}
-              name="tipo"
-              marcada={tipo === valor}
-              aoMarcar={() => setTipo(valor)}
-              className="h-11 rounded-md"
-            >
-              {tipo === valor && (
-                <Check aria-hidden className="size-4" strokeWidth={2} />
-              )}
-              {rotulo}
-            </Opcao>
-          ))}
-        </div>
-        {tipo === "ENTREGA" && !porCep && (
-          <Campo
-            rotulo="Endereço"
-            required
-            minLength={5}
-            maxLength={200}
-            autoComplete="street-address"
-            dica={`A taxa de entrega a ${quem} combina com você.`}
-            value={endereco}
-            onChange={(e) => setEndereco(e.target.value)}
-          />
-        )}
-        {tipo === "ENTREGA" && porCep && (
-          <>
-            <Campo
-              rotulo="CEP"
-              inputMode="numeric"
-              autoComplete="postal-code"
-              placeholder="00000-000"
-              maxLength={9}
-              value={cep}
-              onChange={(e) => mudarCep(e.target.value)}
-            />
-            {/* O que o CEP disse, lido em voz alta quando muda. */}
-            <div aria-live="polite">
-              {buscandoCep ? (
-                <p className="text-label text-ink-muted">Procurando o CEP…</p>
-              ) : foraDaArea ? (
-                <div className="space-y-3">
-                  <p className="flex items-start gap-2 text-body text-ink">
-                    <MapPinOff
-                      aria-hidden
-                      className="mt-0.5 size-5 shrink-0 text-negative"
-                      strokeWidth={1.75}
-                    />
-                    A {quem} não entrega nesse endereço. Você pode retirar.
-                  </p>
-                  <Botao larguraTotal onClick={() => setTipo("RETIRADA")}>
-                    Mudar para retirar
-                  </Botao>
-                </div>
-              ) : taxaVista !== null ? (
-                <p className="num text-body text-ink">
-                  Entrega:{" "}
-                  <span className="font-semibold">
-                    {formatarMoeda(taxaVista)}
-                  </span>
-                </p>
-              ) : consulta ? (
-                <p className="text-label text-ink-muted">
-                  A taxa de entrega a {quem} combina com você.
-                </p>
-              ) : null}
-            </div>
+      <div className="space-y-4">
+        <h3 className="text-subheading font-semibold text-ink">
+          Como e quando
+        </h3>
+        <fieldset className="space-y-3">
+          <legend className="text-label font-medium text-ink">
+            Como você recebe?
+          </legend>
+          <div className="grid grid-cols-2 gap-1 rounded-lg bg-sunken p-1">
+            {(
+              [
+                ["RETIRADA", "Retiro"],
+                ["ENTREGA", "Entrega"],
+              ] as const
+            ).map(([valor, rotulo]) => (
+              <Opcao
+                key={valor}
+                name="tipo"
+                marcada={tipo === valor}
+                aoMarcar={() => setTipo(valor)}
+                className="h-11 rounded-md"
+              >
+                {tipo === valor && (
+                  <Check aria-hidden className="size-4" strokeWidth={2} />
+                )}
+                {rotulo}
+              </Opcao>
+            ))}
+          </div>
+          {tipo === "ENTREGA" && !porCep && (
             <Campo
               rotulo="Endereço"
               required
               minLength={5}
-              maxLength={150}
+              maxLength={200}
               autoComplete="street-address"
+              dica={`A taxa de entrega a ${quem} combina com você.`}
               value={endereco}
               onChange={(e) => setEndereco(e.target.value)}
             />
-            {doCep?.endereco && (
+          )}
+          {tipo === "ENTREGA" && porCep && (
+            <>
               <Campo
-                rotulo="Número e complemento"
-                required
-                maxLength={30}
-                autoComplete="address-line2"
-                placeholder="120, apto 302"
-                value={numero}
-                onChange={(e) => setNumero(e.target.value)}
+                rotulo="CEP"
+                inputMode="numeric"
+                autoComplete="postal-code"
+                placeholder="00000-000"
+                maxLength={9}
+                value={cep}
+                onChange={(e) => mudarCep(e.target.value)}
               />
-            )}
-          </>
-        )}
-      </fieldset>
+              {/* O que o CEP disse, lido em voz alta quando muda. */}
+              <div aria-live="polite">
+                {buscandoCep ? (
+                  <p className="text-label text-ink-muted">Procurando o CEP…</p>
+                ) : foraDaArea ? (
+                  <div className="space-y-3">
+                    <p className="flex items-start gap-2 text-body text-ink">
+                      <MapPinOff
+                        aria-hidden
+                        className="mt-0.5 size-5 shrink-0 text-negative"
+                        strokeWidth={1.75}
+                      />
+                      A {quem} não entrega nesse endereço. Você pode retirar.
+                    </p>
+                    <Botao larguraTotal onClick={() => setTipo("RETIRADA")}>
+                      Mudar para retirar
+                    </Botao>
+                  </div>
+                ) : taxaVista !== null ? (
+                  <p className="num text-body text-ink">
+                    Entrega:{" "}
+                    <span className="font-semibold">
+                      {formatarMoeda(taxaVista)}
+                    </span>
+                  </p>
+                ) : consulta ? (
+                  <p className="text-label text-ink-muted">
+                    A taxa de entrega a {quem} combina com você.
+                  </p>
+                ) : null}
+              </div>
+              <Campo
+                rotulo="Endereço"
+                required
+                minLength={5}
+                maxLength={150}
+                autoComplete="street-address"
+                value={endereco}
+                onChange={(e) => setEndereco(e.target.value)}
+              />
+              {doCep?.endereco && (
+                <Campo
+                  rotulo="Número e complemento"
+                  required
+                  maxLength={30}
+                  autoComplete="address-line2"
+                  placeholder="120, apto 302"
+                  value={numero}
+                  onChange={(e) => setNumero(e.target.value)}
+                />
+              )}
+            </>
+          )}
+        </fieldset>
 
-      {/* Os próximos dias como botão, e o calendário só para quem precisa
+        {/* Os próximos dias como botão, e o calendário só para quem precisa
           de um dia mais longe: a escolha comum custa um toque. */}
-      <fieldset className="space-y-3">
-        <legend className="text-label font-medium text-ink">
-          Para quando?
-        </legend>
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 py-1">
-          {dias.map((dia) => (
+        <fieldset className="space-y-3">
+          <legend className="text-label font-medium text-ink">
+            Para quando?
+          </legend>
+          {/* Grade fixa de quatro: com a agenda curta, as células não esticam. */}
+          <div className="grid grid-cols-4 gap-2">
+            {dias.map((dia) => (
+              <Opcao
+                key={dia}
+                name="dia"
+                required
+                marcada={!outroDia && data === dia}
+                aoMarcar={() => {
+                  setOutroDia(false);
+                  setData(dia);
+                }}
+                className="h-16 flex-col gap-0 rounded-md border"
+              >
+                <span className="text-micro">
+                  {dia === amanha ? "amanhã" : semana(dia)}
+                </span>
+                <span className="num text-body font-semibold">
+                  {diaEMes(dia)}
+                </span>
+              </Opcao>
+            ))}
             <Opcao
-              key={dia}
               name="dia"
               required
-              marcada={!outroDia && data === dia}
+              marcada={outroDia}
               aoMarcar={() => {
-                setOutroDia(false);
-                setData(dia);
+                setOutroDia(true);
+                setData("");
               }}
-              className="h-16 w-16 shrink-0 flex-col gap-0 rounded-md border"
+              className="h-16 rounded-md border px-2 text-center leading-tight"
             >
-              <span className="text-micro">
-                {dia === amanha ? "amanhã" : semana(dia)}
-              </span>
-              <span className="num text-body font-semibold">
-                {diaEMes(dia)}
-              </span>
+              Outro dia
             </Opcao>
-          ))}
-          <Opcao
-            name="dia"
-            required
-            marcada={outroDia}
-            aoMarcar={() => {
-              setOutroDia(true);
-              setData("");
-            }}
-            className="h-16 shrink-0 rounded-md border px-4"
-          >
-            Outro dia
-          </Opcao>
-        </div>
-        {outroDia && (
-          <Campo
-            rotulo="Qual dia?"
-            required
-            type="date"
-            min={primeiro}
-            max={ultimoDia}
-            value={data}
-            onChange={(e) => setData(e.target.value)}
+          </div>
+          {outroDia && (
+            <Campo
+              rotulo="Qual dia?"
+              required
+              type="date"
+              min={primeiro}
+              max={ultimoDia}
+              value={data}
+              onChange={(e) => setData(e.target.value)}
+            />
+          )}
+          <p className="text-label text-ink-muted">
+            A {quem} confirma se dá para esse dia.
+          </p>
+        </fieldset>
+      </div>
+
+      {/* Recolhido: a maioria não escreve, e uma área vazia grande pesa.
+          O botão fica na ordem do formulário, achável (`#d325`). */}
+      <div ref={recado} className="space-y-4">
+        {recadoAberto ? (
+          <AreaTexto
+            rotulo={`Recado pra ${quem}`}
+            dica="Opcional. Uma alergia, o nome pro cartão, o que precisar."
+            maxLength={500}
+            value={observacoes}
+            onChange={(e) => setObservacoes(e.target.value)}
           />
+        ) : (
+          <Botao
+            variante="terciaria"
+            onClick={abrirRecado}
+            className="-ml-4"
+            iconeInicial={
+              <Plus aria-hidden className="size-4" strokeWidth={1.75} />
+            }
+          >
+            Recado pra {quem}
+            <span className="text-label font-normal text-ink-muted">
+              opcional
+            </span>
+          </Botao>
         )}
         <p className="text-label text-ink-muted">
-          A {quem} confirma se dá para esse dia.
+          Seus dados vão só para {negocio.nome}, para combinar este pedido.
         </p>
-      </fieldset>
-
-      <AreaTexto
-        rotulo={`Recado pra ${quem}`}
-        dica="Opcional. Uma alergia, o nome pro cartão, o que precisar."
-        maxLength={500}
-        value={observacoes}
-        onChange={(e) => setObservacoes(e.target.value)}
-      />
+      </div>
 
       {/* O pote de mel (`#d161`): fora da tela e da ordem de foco, com
           um nome que nenhum preenchedor automático conhece. */}
@@ -749,10 +800,6 @@ export function PedidoPeloCardapio({
           />
         </label>
       </div>
-
-      <p className="text-label text-ink-muted">
-        Seus dados vão só para {negocio.nome}, para combinar este pedido.
-      </p>
     </form>
   );
 
@@ -866,7 +913,7 @@ export function PedidoPeloCardapio({
 
   return (
     <>
-      <div className="mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_23.25rem] lg:items-start lg:gap-10">
+      <div className="mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_25rem] lg:items-start lg:gap-10">
         <div
           className={cn("px-4 lg:px-0", quantidadeTotal > 0 && "pb-24 lg:pb-0")}
         >
@@ -943,14 +990,16 @@ export function PedidoPeloCardapio({
         </div>
 
         {/* O pedido ao lado da lista, sem painel: no desktop cabe, e a
-            cliente vê o total mudar a cada "Adicionar". */}
+            cliente vê o total mudar a cada "Adicionar". A anatomia é a do
+            `Painel`: o formulário rola, e o total com o "Enviar pedido" ficam
+            fixos embaixo (`#d325`). */}
         <aside
           aria-label="Seu pedido"
-          className="hidden rounded-lg border border-line bg-surface lg:sticky lg:top-6 lg:block lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto"
+          className="hidden rounded-lg border border-line bg-surface lg:sticky lg:top-6 lg:flex lg:max-h-[calc(100dvh-3rem)] lg:flex-col"
         >
           {desktop && (
             <>
-              <div className="flex items-baseline justify-between gap-3 border-b border-line px-5 py-4">
+              <div className="flex shrink-0 items-baseline justify-between gap-3 border-b border-line px-5 py-4">
                 <h2 className="font-display text-heading font-semibold text-ink">
                   {enviado ? "Pedido enviado" : "Seu pedido"}
                 </h2>
@@ -970,10 +1019,14 @@ export function PedidoPeloCardapio({
                   </p>
                 </div>
               ) : (
-                <div className="space-y-6 px-5 pt-4">
-                  {corpo}
-                  {rodape}
-                </div>
+                <>
+                  <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5">
+                    {corpo}
+                  </div>
+                  <div className="shrink-0 border-t border-line px-5 pt-4">
+                    {rodape}
+                  </div>
+                </>
               )}
             </>
           )}

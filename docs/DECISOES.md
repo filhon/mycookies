@@ -10318,3 +10318,52 @@ paga o Completo.
 **Consequência.** Só desenho, em `page.tsx` e `PedidoPeloCardapio.tsx`. Nenhum schema, regra,
 índice, dependência ou teste novo. Endereço, horário e mapa no pé continuam fora: o recado da
 115 cobre.
+
+## D325 · O pedido sem aperto
+
+**Status:** vigente · decidida em 2026-10-10, spec `121-o-pedido-sem-aperto.md`.
+
+**Contexto.** A crítica do cardápio público sobre os prints de 2026-10-10: o formulário do
+pedido rolava para o lado (no desktop o nome e o WhatsApp saíam pela esquerda; no celular a
+folha abria deslocada), os dias se escondiam numa faixa que rolava, o combo espremia o nome em
+cinco linhas, havia três filetes em 200 px, os seis controles tinham o mesmo peso, e no desktop
+o total e o "Enviar pedido" ficavam abaixo da dobra do próprio pedido.
+
+**Decisão.**
+
+- **A rolagem lateral se corrige na raiz**: `fieldset { min-inline-size: 0; }` na camada
+  `base` de `globals.css`. O `fieldset` do navegador cresce até `min-content`, e a faixa de 14
+  dias (≈ 1.000 px) o arrastava para fora da coluna; o preflight do Tailwind não zera esse
+  mínimo. Uma linha para todo `fieldset` do app, e **nada de `overflow-x-hidden`** no `Painel`
+  ou no `<aside>`: esconderia o próximo transbordo e cortaria o anel de foco.
+- **Os dias em grade**: `DIAS_EM_BOTAO` de 14 para **7**, `grid grid-cols-4 gap-2`, "Outro dia"
+  como oitava célula. Duas linhas de quatro, sem rolagem. A agenda curta deixa células vazias, e
+  as outras não esticam. Encomenda para daqui a dez dias é a exceção, e "Outro dia" está a um
+  toque.
+- **O combo**: nome em `body` 500, os sabores abaixo em `label` apagado, separados por " · ", e
+  o subtotal abaixo; o passo no topo à direita (`items-start`). `nomeDa` sai da tela; a mensagem
+  do WhatsApp e o pedido gravado não mudam.
+- **Filete só entre itens** (`divide-y`, sem `border-y`): um item, nenhum filete. O cabeçalho e
+  o rodapé do `<aside>` têm as bordas do `Painel` e mais nenhuma.
+- **Três grupos**, 32 px entre eles e 16 px dentro: os itens (sem título, o painel já se chama
+  "Seu pedido"), **"Seus dados"** e **"Como e quando"**, com `h3` em `subheading` 600. Os
+  `legend` continuam: são o nome do controle, e o `h3` é o do grupo. Sem caixa e sem filete.
+- **O recado recolhido**: um botão terciário com `Plus`, "Recado pra {quem}" e "opcional" em
+  apagado, dentro do próprio botão (o leitor de tela lê os dois). Tocar desenha o `AreaTexto`
+  (`flushSync`) e leva o foco para ele. Com recado já escrito (o `sessionStorage` do `mudou`),
+  abre aberto. Esconde de quem tem alergia o lugar de dizer, e por isso fica na ordem do
+  formulário, e não num menu.
+- **O `<aside>` com a anatomia do `Painel`**, sem virar `Painel` (`#d166`): `flex flex-col`
+  no teto de antes, cabeçalho fixo, corpo que rola, rodapé fixo com o total e o "Enviar
+  pedido". A coluna passa a **25 rem**, ≈ 360 px úteis, a largura para a qual o formulário foi
+  desenhado.
+- **Uma folha, e não passos**, no celular. Passos acrescentariam "Continuar" e "Voltar" dentro
+  de uma folha que já tem o gesto de fechar, e a cliente deixaria de ver o item enquanto escolhe
+  o dia. Revisitar se o formulário crescer (pagamento escolhido na página, por exemplo) a ponto
+  de não caber em duas rolagens do celular.
+
+**Consequência.** Só desenho, em `globals.css` e `PedidoPeloCardapio.tsx`. Nenhum schema,
+regra, índice, dependência, mudança no handler ou teste novo. Os outros `fieldset` do app
+(`SeuCardapio`, `EntregaDoCardapio`, `EscolhaDeOrdem`, `TelaConfiguracao`, `assinatura`,
+`FormularioPedido`, `FormularioTransacao`, `FormularioFicha`, "Monte a sua") ganham o mesmo
+mínimo zerado; nenhum dependia do `min-content`, e o roteiro da spec os confere.

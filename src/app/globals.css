@@ -283,6 +283,13 @@
     overscroll-behavior-y: none;
   }
 
+  /* O `fieldset` do navegador cresce até o conteúdo mais largo (`min-content`)
+     e sai da coluna; o preflight zera margem e enchimento, mas não isto
+     (spec 121, `#d325`). */
+  fieldset {
+    min-inline-size: 0;
+  }
+
   :focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: 2px;

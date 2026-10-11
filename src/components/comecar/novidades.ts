@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-10",
+    titulo: "O pedido pelo cardápio, mais fácil de preencher",
+    frase:
+      "No cardápio, o pedido não desliza mais para o lado, os próximos dias aparecem numa grade, sem rolar, o combo mostra os sabores embaixo do nome e, no computador, o total e o “Enviar pedido” ficam sempre à vista.",
+    href: "/configuracao#a-sua-marca",
+  },
+  {
+    dataISO: "2026-10-10",
     titulo: "O topo e o fim do cardápio",
     frase:
       "No cardápio, o nome da loja não encosta mais na capa, os pedidos e o pagamento aparecem com rótulo, e o fim da lista mostra seu nome com o WhatsApp e o Instagram.",

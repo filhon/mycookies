@@ -161,13 +161,13 @@ Em 360, 390, 1024, 1280 e 1440 px, nos dois temas:
 
 ## Critérios de aceite
 
-- [ ] Nenhuma rolagem lateral no pedido, pela linha do `fieldset`, e não por esconder o
+- [x] Nenhuma rolagem lateral no pedido, pela linha do `fieldset`, e não por esconder o
       transbordo.
-- [ ] Os dias em grade de quatro colunas, sete dias e "Outro dia".
-- [ ] O combo com nome, sabores e preço em linhas próprias.
-- [ ] Divisória só entre itens; três grupos com título; o recado recolhido.
-- [ ] No desktop, o total e o "Enviar pedido" sempre à vista.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `#d325` escrito; `ESTADO.md` e
+- [x] Os dias em grade de quatro colunas, sete dias e "Outro dia".
+- [x] O combo com nome, sabores e preço em linhas próprias.
+- [x] Divisória só entre itens; três grupos com título; o recado recolhido.
+- [x] No desktop, o total e o "Enviar pedido" sempre à vista.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `#d325` escrito; `ESTADO.md` e
       `novidades.ts` atualizados.
 
 ---
