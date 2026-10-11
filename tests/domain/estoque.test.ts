@@ -8,6 +8,7 @@ import {
   frescorDaContagem,
   IDADE_FRESCA_DIAS,
   IDADE_VENCE_DIAS,
+  lerRascunhoDaContagem,
   linhasParaContar,
   naBase,
   numeroContado,
@@ -625,5 +626,44 @@ describe("precisaConferir (#d331)", () => {
     expect(precisaConferir(linha(undefined, null))).toBe(true);
     // Número sem data também é nunca.
     expect(precisaConferir(linha(undefined, 90))).toBe(true);
+  });
+});
+
+describe("lerRascunhoDaContagem (#d332)", () => {
+  const rascunho = {
+    v: 1,
+    dia: "2026-10-11",
+    digitados: { farinha: "2,5", leite: "0" },
+    unidades: { farinha: "embalagem" },
+    salvoEm: 1,
+  };
+
+  it("devolve o rascunho do mesmo dia", () => {
+    expect(
+      lerRascunhoDaContagem(JSON.stringify(rascunho), "2026-10-11"),
+    ).toEqual(rascunho);
+  });
+
+  it("descarta o de outro dia", () => {
+    expect(
+      lerRascunhoDaContagem(JSON.stringify(rascunho), "2026-10-12"),
+    ).toBeNull();
+  });
+
+  it("descarta vazio, quebrado e de outra versão", () => {
+    expect(lerRascunhoDaContagem(null, "2026-10-11")).toBeNull();
+    expect(lerRascunhoDaContagem("{", "2026-10-11")).toBeNull();
+    expect(
+      lerRascunhoDaContagem(
+        JSON.stringify({ ...rascunho, v: 2 }),
+        "2026-10-11",
+      ),
+    ).toBeNull();
+    expect(
+      lerRascunhoDaContagem(
+        JSON.stringify({ ...rascunho, digitados: {} }),
+        "2026-10-11",
+      ),
+    ).toBeNull();
   });
 });

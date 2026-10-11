@@ -104,12 +104,12 @@ Dois atritos de teclado, nos 35 campos:
 
 ## Critérios de aceite
 
-- [ ] Rascunho do dia restaurado, com faixa e "Começar de novo"; o de outro dia descartado.
-- [ ] Semente não é sobrescrita pelo rascunho, nem o apaga.
-- [ ] Salvar apaga o rascunho.
-- [ ] Enter anda para o próximo campo visível.
-- [ ] Campo com foco visível acima do rodapé (ou a parte retirada com o motivo no `ESTADO.md`).
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `#d332` escrito; `ESTADO.md` e `novidades.ts`
+- [x] Rascunho do dia restaurado, com faixa e "Começar de novo"; o de outro dia descartado.
+- [x] Semente não é sobrescrita pelo rascunho, nem o apaga.
+- [x] Salvar apaga o rascunho.
+- [x] Enter anda para o próximo campo visível.
+- [x] Campo com foco visível acima do rodapé (ou a parte retirada com o motivo no `ESTADO.md`).
+- [x] `lint`, `typecheck`, `test` e `build` passam; `#d332` escrito; `ESTADO.md` e `novidades.ts`
       atualizados.
 
 ---

@@ -29,21 +29,29 @@ export function RodapeContagem({
 
   return (
     <RodapeFixo>
-      <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 px-4 py-3 lg:px-5">
+      {/* O `scroll-padding` no `html` enquanto o rodapé existe (o padrão do
+          `#d239`): o campo que o foco alcança para acima dele, e não atrás.
+          Com o teclado aberto, o rodapé vira uma linha só: "12 de 35" e o
+          botão (`#d332`). */}
+      <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 px-4 py-3 apertado:flex-nowrap apertado:items-center lg:px-5 [html:has(&)]:scroll-pb-56 apertado:[html:has(&)]:scroll-pb-24 lg:[html:has(&)]:scroll-pb-40">
         <div className="min-w-0">
-          <p className="text-micro font-medium uppercase tracking-wide text-ink-subtle">
+          <p className="text-micro font-medium uppercase tracking-wide text-ink-subtle apertado:hidden">
             {rotulo}
           </p>
-          <p className="num mt-0.5 text-heading font-semibold text-ink">
-            {contadas} de {total} {contadas === 1 ? "contado" : "contados"}
-            {zeradas > 0 && (
-              <>
-                <span className="mx-1.5 font-normal text-ink-subtle">·</span>
-                <span className="text-body font-medium text-ink-muted">
-                  {zeradas} {zeradas === 1 ? "zerado" : "zerados"}
-                </span>
-              </>
-            )}
+          <p className="num mt-0.5 text-heading font-semibold text-ink apertado:mt-0">
+            {contadas} de {total}
+            <span className="apertado:hidden">
+              {" "}
+              {contadas === 1 ? "contado" : "contados"}
+              {zeradas > 0 && (
+                <>
+                  <span className="mx-1.5 font-normal text-ink-subtle">·</span>
+                  <span className="text-body font-medium text-ink-muted">
+                    {zeradas} {zeradas === 1 ? "zerado" : "zerados"}
+                  </span>
+                </>
+              )}
+            </span>
           </p>
         </div>
 

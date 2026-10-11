@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 import { Check, ShoppingBasket, TriangleAlert } from "lucide-react";
 import { BASE_CONTROLE } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -198,6 +198,7 @@ export function LinhaContagem({
         <div className="relative w-32 shrink-0">
           <input
             id={`contagem-${linha.insumoId}`}
+            data-contagem
             // Teclado numérico com vírgula, e não `type="number"`: a seta de
             // incremento não serve para contar despensa, e o teclado do celular
             // precisa oferecer a vírgula decimal.
@@ -209,6 +210,7 @@ export function LinhaContagem({
             aria-describedby={`contagem-${linha.insumoId}-referencia`}
             aria-invalid={ilegivel ? true : undefined}
             onChange={(evento) => aoMudar(evento.target.value)}
+            onKeyDown={andarParaOProximo}
             className={cn(
               BASE_CONTROLE,
               "num pr-12 text-right font-semibold",
@@ -241,6 +243,22 @@ export function LinhaContagem({
       </div>
     </li>
   );
+}
+
+/**
+ * O "próximo" do teclado (`#d332`): Enter leva ao campo seguinte da tela, na
+ * ordem do DOM, inclusive de um corredor para o outro. Só o que está na tela
+ * existe no DOM, então o recorte já vale. No último, nada: salvar é o botão.
+ */
+function andarParaOProximo(evento: KeyboardEvent<HTMLInputElement>) {
+  if (evento.key !== "Enter") return;
+  evento.preventDefault();
+  const campos = Array.from(
+    document.querySelectorAll<HTMLInputElement>("input[data-contagem]"),
+  );
+  const proximo = campos[campos.indexOf(evento.currentTarget) + 1];
+  proximo?.focus();
+  proximo?.select();
 }
 
 /**

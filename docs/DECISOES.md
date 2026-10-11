@@ -10578,3 +10578,46 @@ sistema já sabia a resposta pelo frescor (`#d60`) e pelas fornadas desde a cont
 
 **Consequência.** Se "envelhecendo" deixar o recorte grande demais na prática, ele sai e fica só
 vencida, nunca e fornada. Sem busca até a conta passar de 60 materiais.
+
+---
+
+## D332 · A contagem que não se perde
+
+**Status:** vigente · decidida em 2026-10-11, spec `127-a-contagem-que-nao-se-perde.md`.
+
+**Contexto.** Os números da contagem moravam num `useState`. A guarda de saída protege a
+navegação dentro do app, e não a tela que apaga, o WhatsApp que toca ou o iPhone que mata o PWA
+em segundo plano: vinte e cinco linhas voltavam a zero. No teclado, o "próximo" não levava a
+lugar nenhum, e o campo que o foco alcançava podia ficar atrás do rodapé fixo.
+
+**Decisão.**
+
+- **O rascunho fica no aparelho**, em `localStorage`, chave `rende:contagem:{contaId}`:
+  `{ v: 1, dia, digitados, unidades?, salvoEm }`, gravado a cada mudança (o retrato da abertura
+  não conta, para não trocar a hora), em `lib/utils/rascunhoDaContagem.ts`, tudo em `try/catch`
+  como o da porta (`#d189`). Linha apagada até o vazio sai dele; sem linha nenhuma, ele some.
+- **Só o de hoje volta.** `lerRascunhoDaContagem(texto, hoje)` em `domain/estoque.ts`, com
+  teste, descarta o de outro dia em silêncio: a contagem é datada pelo dia (`#d57`), e salvar
+  hoje o que ela viu ontem é o erro que a 007 existe para impedir. Quem começa às 23h50 e
+  termina 0h10 perde o rascunho, e é o preço.
+- **Sem semente, ele volta** aos campos e às unidades, e uma faixa diz "Continuando a contagem
+  das 14h10: 12 linhas já digitadas." com "Começar de novo" (terciário), que limpa campos e
+  rascunho e decide o recorte de novo (`#d331`). Sem modal: continuar é não fazer nada.
+- **Com semente, ele não volta e não é apagado**, e a contagem semeada não grava rascunho: a
+  compra é outro começo, e o rascunho de antes continua lá se ela sair sem salvar.
+- **Salvar apaga o rascunho**, com ou sem semente.
+- **No aparelho, e não no Firestore**: seria schema novo e escrita a cada toque, para um dado que
+  só faz sentido no celular em que ela está contando.
+- **Enter anda.** `onKeyDown` no campo leva o foco ao próximo `input[data-contagem]` na ordem do
+  DOM, com o texto selecionado; só o que está na tela existe no DOM, então o recorte já vale. No
+  último, nada: salvar é o botão.
+- **O foco para acima do rodapé** pelo padrão do `#d239`: `[html:has(&)]:scroll-padding-bottom`
+  enquanto o rodapé existe (14rem, com teclado 6rem, no desktop 10rem), em `RodapeContagem`, e
+  não `scroll-margin` em cada linha com `scrollIntoView` no `onFocus`, que a spec sugeria: o
+  padrão já existe e não pede JavaScript. O problema foi confirmado pela leitura (Android com
+  `resizes-content`, rodapé em `bottom-0` com o teclado), e não no aparelho.
+- **Com teclado, o rodapé fica numa linha**: o rótulo e "contados · N zerados" somem em
+  `apertado`, e ficam "12 de 35" e o botão. `/fichas/contagem` herda, e está bem assim.
+
+**Consequência.** A guarda de saída (`#d134`) não muda. Contagem a duas mãos continua fora
+(`#d01`).

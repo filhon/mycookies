@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { orderBy, query, where } from "firebase/firestore";
-import { Check, Plus, ShoppingBasket } from "lucide-react";
+import { Check, History, Plus, ShoppingBasket } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
@@ -41,7 +41,24 @@ import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
 import { useColecao } from "@/lib/hooks/useColecao";
 import type { Fornada, Insumo } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
+import {
+  apagarRascunho,
+  guardarRascunho,
+  lerRascunho,
+} from "@/lib/utils/rascunhoDaContagem";
 import { useContaId } from "@/providers/AuthProvider";
+
+/** "14h10", como ela diz a hora. */
+function horaDe(instante: number): string {
+  const data = new Date(instante);
+  return `${data.getHours()}h${String(data.getMinutes()).padStart(2, "0")}`;
+}
+
+function linhasJaDigitadas(quantas: number): string {
+  return quantas === 1
+    ? "1 linha já digitada"
+    : `${quantas} linhas já digitadas`;
+}
 
 /**
  * Sem compra atrás dela, a tela nasce com todos os campos vazios. O mapa vazio
@@ -68,24 +85,46 @@ export function TelaContagem() {
   // O dia congela na abertura: a contagem começada às 23h50 é datada no dia em
   // que ela a começou, e não em dois dias diferentes conforme a linha.
   const [hoje] = useState(() => dataISODe(new Date()));
-  const [digitados, setDigitados] = useState<Record<string, string>>({});
-  const [falha, setFalha] = useState<string | null>(null);
-
-  // A unidade de cada linha (`#d329`): a que ela trocou nesta contagem, senão a
-  // que ela deixou no aparelho, senão o padrão de `unidadeDoCampo`.
-  const [guardadas] = useState(lerUnidadesDaContagem);
-  const [unidades, setUnidades] = useState<Record<string, UnidadeDoCampo>>({});
-  const unidadeDe = (linha: LinhaDeContagem) =>
-    unidadeDoCampo(
-      linha,
-      unidades[linha.insumoId] ?? guardadas[linha.insumoId],
-    );
 
   // A semente é lida uma vez, na montagem, e só é apagada depois de os campos
   // nascerem: consumi-la aqui deixaria a tela sem semente se ela chegasse antes
   // dos insumos, que é exatamente o caso quando a lista vem do cache.
   const [semente] = useState(lerSemente);
   const semeados = useRef(false);
+
+  // A contagem pela metade que ficou no aparelho (`#d332`), só a de hoje. Com
+  // semente ela não volta e não é apagada: a compra é outro começo, e o
+  // rascunho continua lá se ela sair sem salvar.
+  const [retomado, setRetomado] = useState(() =>
+    semente ? null : lerRascunho(contaId, hoje),
+  );
+  const [digitados, setDigitados] = useState<Record<string, string>>(
+    () => retomado?.digitados ?? {},
+  );
+  const [falha, setFalha] = useState<string | null>(null);
+
+  // A unidade de cada linha (`#d329`): a que ela trocou nesta contagem, senão a
+  // que ela deixou no aparelho, senão o padrão de `unidadeDoCampo`.
+  const [guardadas] = useState(lerUnidadesDaContagem);
+  const [unidades, setUnidades] = useState<Record<string, UnidadeDoCampo>>(
+    () => retomado?.unidades ?? {},
+  );
+  const unidadeDe = (linha: LinhaDeContagem) =>
+    unidadeDoCampo(
+      linha,
+      unidades[linha.insumoId] ?? guardadas[linha.insumoId],
+    );
+
+  // A cada mudança, o rascunho. O retrato da abertura não é mudança: regravá-lo
+  // só trocaria a hora que a faixa mostra.
+  const [abertura] = useState({ digitados, unidades });
+  useEffect(() => {
+    if (semente) return;
+    if (digitados === abertura.digitados && unidades === abertura.unidades) {
+      return;
+    }
+    guardarRascunho(contaId, hoje, digitados, unidades);
+  }, [semente, abertura, contaId, hoje, digitados, unidades]);
 
   // Vinda da nota, a tela abre recortada no que a nota trouxe: uma nota de
   // cinco linhas abria trinta e quatro campos, e ela caçava os cinco. É um
@@ -223,6 +262,14 @@ export function TelaContagem() {
     setDigitados((anteriores) => ({ ...anteriores, [insumoId]: texto }));
   }
 
+  /** Limpa campos e rascunho, e o recorte se decide de novo sem o que ela tinha digitado. */
+  function comecarDeNovo() {
+    setDigitados({});
+    setUnidades({});
+    setRetomado(null);
+    setRecorte(undefined);
+  }
+
   /** Trocar com número digitado converte o número: é o mesmo, dito de outro jeito. */
   function trocarUnidade(linha: LinhaDeContagem) {
     const de = unidadeDe(linha);
@@ -313,6 +360,7 @@ export function TelaContagem() {
     salvarContagem(contaId, contagens, hoje).catch(() =>
       setFalha("Não deu para salvar a contagem agora."),
     );
+    apagarRascunho(contaId);
 
     // Volta para onde ela veio: o efeito que ela quer ver está na outra tela.
     void guarda.navegar("/compras");
@@ -369,6 +417,31 @@ export function TelaContagem() {
           valor={soDaCompra}
           aoMudar={setSoDaCompra}
         />
+      )}
+
+      {/* O que voltou do aparelho, com a hora: ela reconhece a contagem dela
+          antes de continuar. Sem modal: continuar é não fazer nada. */}
+      {retomado && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg border border-line bg-sunken py-1 pl-4 pr-1 text-label text-ink">
+          <p className="flex items-start gap-2.5 py-2">
+            <History
+              aria-hidden
+              className="mt-0.5 size-4 shrink-0 text-ink-muted"
+              strokeWidth={1.75}
+            />
+            <span>
+              Continuando a contagem das {horaDe(retomado.salvoEm)}:{" "}
+              {linhasJaDigitadas(Object.keys(retomado.digitados).length)}.
+            </span>
+          </p>
+          <button
+            type="button"
+            onClick={comecarDeNovo}
+            className={classesBotao({ variante: "terciaria", tamanho: "sm" })}
+          >
+            Começar de novo
+          </button>
+        </div>
       )}
 
       {/* Sem compra, o mesmo mecanismo: o recorte do que precisa de olho. Ele

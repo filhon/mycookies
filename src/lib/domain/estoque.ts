@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type {
   CategoriaInsumo,
   DataISO,
@@ -490,4 +491,50 @@ export function resumoDaContagem(
     intocadas: chaves.length - contadas,
     total: chaves.length,
   };
+}
+
+// ---------------------------------------------------------------------------
+// O rascunho da contagem (`#d332`)
+
+/**
+ * A contagem pela metade, guardada no aparelho a cada toque, para a tela que o
+ * sistema matou em segundo plano voltar de onde parou. Só o texto dos campos e a
+ * unidade de cada linha: o resto se refaz dos materiais.
+ */
+export interface RascunhoDaContagem {
+  v: 1;
+  dia: DataISO;
+  digitados: Record<string, string>;
+  unidades?: Record<string, UnidadeDoCampo>;
+  salvoEm: number;
+}
+
+const esquemaRascunho = z.object({
+  v: z.literal(1),
+  dia: z.string(),
+  digitados: z.record(z.string(), z.string()),
+  unidades: z.record(z.string(), z.enum(["embalagem", "base"])).optional(),
+  salvoEm: z.number(),
+});
+
+/**
+ * O rascunho de hoje, ou `null` em qualquer dúvida. **O de outro dia é
+ * descartado**: a contagem é datada pelo dia (`#d57`), e restaurar os números de
+ * ontem para salvá-los hoje dataria hoje o que ela viu ontem.
+ */
+export function lerRascunhoDaContagem(
+  texto: string | null,
+  hoje: DataISO,
+): RascunhoDaContagem | null {
+  if (!texto) return null;
+  let bruto: unknown;
+  try {
+    bruto = JSON.parse(texto);
+  } catch {
+    return null;
+  }
+  const lido = esquemaRascunho.safeParse(bruto);
+  if (!lido.success || lido.data.dia !== hoje) return null;
+  if (Object.keys(lido.data.digitados).length === 0) return null;
+  return { ...lido.data, dia: hoje };
 }
