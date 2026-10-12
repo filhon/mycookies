@@ -10934,3 +10934,43 @@ nenhum.
 **Consequência.** O nome do material entra na frase como ela o cadastrou, com a maiúscula: o sistema
 não sabe que "Nutella" é marca e "Chocolate meio amargo" não. Ovo fica "2 un de Ovo", e não "2 ovos":
 plural de nome livre seria adivinhar.
+
+## D341 · A margem que parece multiplicador
+
+**Status:** vigente · decidida em 2026-10-12, spec `136-a-margem-que-parece-multiplicador.md`.
+
+**Contexto.** O Cookie Cacau com Nutella estava com "Quero que sobre 2,5%": custo R$ 6,78, sugerido
+R$ 6,95, e só o arredondamento para R$ 7,90 deixava a frase do rodapé positiva. Ela quase certamente
+quis multiplicar por 2,5, a regra da apostila. No mesmo print, "Taxa de cartão 0%" numa conta com
+crédito a 4,99%. A tela aceitava os dois calada.
+
+**Decisão.**
+
+- **`conferirPrecificacao` em `precificacao.ts`**, pura, devolve `{ campo, tipo, sugestao }`.
+  `MARGEM_PARECE_MULTIPLICADOR` de 1 a 6, inclusive, sugere `MARKUP` com o mesmo número;
+  `MARGEM_BAIXA` acima de 0 e abaixo de 10, fora da primeira; `TAXA_ZERADA` com taxa 0 e alguma
+  forma **ativa** com `taxaPercentual > 0`, sugerindo a maior e o nome dela. A forma desligada
+  fica fora, como em `maiorTaxaAtiva`; a forma só com taxa fixa não conta.
+- **Por que 6 e 10.** Abaixo de 1 não há multiplicador que dê preço acima do custo, e 6× é o maior
+  múltiplo que se vê em confeitaria; ninguém pede que sobrem 3% do preço. Abaixo de 10% a sobra mal
+  cobre uma pesagem errada ou um doce quebrado, mas pode ser item de entrada ou promoção.
+- **Atenção, e não negativo.** `TriangleAlert` e tinta `--attention`: o número pode ser decisão
+  dela. Negativo é para o que já está perdendo dinheiro.
+- **Não bloqueia.** O "Salvar" ignora os avisos, e não há "ignorar" gravado: o aviso some quando o
+  número muda. Gravar a dispensa seria campo novo para um caso que o próximo toque resolve.
+- **A consequência é a sobra no sugerido, antes do arredondamento** (`sobraNoSugerido`): é o que o
+  método pede, e o que a frase "Sobrar 2,5% do preço é R$ 0,17" afirma. Com o arredondado, a frase
+  diria R$ 1,12 e esconderia o engano atrás do arredondamento. Usa `calcularPrecoSugerido` sobre o
+  custo unitário que `derivarFicha` já deu, e não `derivarFicha` de novo como a spec escreveu: o
+  custo não depende do método, e a conta é a mesma.
+- **Sem custo, sem aviso de margem.** A ficha nova sem materiais teria "R$ 0,00" nas duas frases;
+  o aviso aparece quando o primeiro material entra. O da taxa não depende de custo.
+- **Na Configuração, só a margem.** Lá a taxa de cartão não é campo: vem de `maiorTaxaAtiva`, e
+  `TAXA_ZERADA` não tem como disparar. A frase usa o doce de exemplo do `#d286` ("no doce de
+  R$ 4,00") no lugar de "por unidade", porque não há produto.
+- **`AvisosDoPreco`** mora em `components/fichas/` e serve às duas telas; quem chama decide o que o
+  botão faz (`setValue` no formulário, `setEstado` na Configuração).
+
+**Consequência.** "Seu {nome} cobra" usa o nome como ela cadastrou a forma; com um nome feminino o
+possessivo sai errado, e foi aceito por ser raro em forma de pagamento. Se a Maynara disser que os
+2,5% eram de propósito, a regra 1 cai e o intervalo inteiro vira `MARGEM_BAIXA` (spec, § 4).

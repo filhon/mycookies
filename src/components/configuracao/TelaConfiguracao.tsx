@@ -37,6 +37,7 @@ import { Realce } from "@/components/ui/Realce";
 import { RodapeFixo } from "@/components/ui/RodapeFixo";
 import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
 import { BlocoConfiguracao } from "./BlocoConfiguracao";
+import { AvisosDoPreco } from "@/components/fichas/AvisosDoPreco";
 import { LinhaDoAviso } from "@/components/conta/AvisoNoAparelho";
 import { BlocoTema } from "./BlocoTema";
 import { CustoPorHora } from "./CustoPorHora";
@@ -64,6 +65,7 @@ import {
 import { formatarMoeda, parseParaNumero } from "@/lib/domain/money";
 import {
   calcularPrecoSugerido,
+  conferirPrecificacao,
   somaTaxas,
   verificarPreco,
 } from "@/lib/domain/precificacao";
@@ -598,6 +600,16 @@ function ConfiguracaoDaDona() {
     dados.precificacao,
     estado.formasPagamento,
   );
+  // O padrão é onde o engano começa: toda ficha nova nasce dele (`#d341`).
+  // A taxa vem das formas, então aqui só a margem tem o que conferir.
+  const parametrosPadrao = parametrosDePreco(
+    dados.precificacao,
+    estado.formasPagamento,
+  );
+  const avisosDoPadrao = conferirPrecificacao(
+    parametrosPadrao,
+    estado.formasPagamento,
+  );
 
   // A frase do "Fazer a conta" que divide pelas horas do mês: sem elas, diz
   // onde pôr (`#d286`).
@@ -1031,17 +1043,39 @@ function ConfiguracaoDaDona() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 {estado.metodoPadrao === "MARGEM" ? (
-                  <Campo
-                    rotulo="Quero que sobre"
-                    inputMode="decimal"
-                    sufixo="%"
-                    value={estado.margemPadrao}
-                    erro={erros.margemPadrao}
-                    dica="Do preço de venda, depois de descontar custo e taxas."
-                    onChange={(evento) =>
-                      definir("margemPadrao", evento.target.value)
-                    }
-                  />
+                  <div className="space-y-3">
+                    <Campo
+                      rotulo="Quero que sobre"
+                      inputMode="decimal"
+                      sufixo="%"
+                      value={estado.margemPadrao}
+                      erro={erros.margemPadrao}
+                      dica="Do preço de venda, depois de descontar custo e taxas."
+                      onChange={(evento) =>
+                        definir("margemPadrao", evento.target.value)
+                      }
+                    />
+                    <AvisosDoPreco
+                      avisos={avisosDoPadrao}
+                      campo="margemDesejada"
+                      custoUnitario={CUSTO_EXEMPLO}
+                      parametros={parametrosPadrao}
+                      porUnidade={`no doce de ${formatarMoeda(CUSTO_EXEMPLO)}`}
+                      aoAceitar={(aviso) => {
+                        if (aviso.tipo !== "MARGEM_PARECE_MULTIPLICADOR")
+                          return;
+                        setSalvo(false);
+                        setEstado(
+                          (anterior) =>
+                            anterior && {
+                              ...anterior,
+                              metodoPadrao: "MARKUP",
+                              markupPadrao: texto(aviso.sugestao.markup),
+                            },
+                        );
+                      }}
+                    />
+                  </div>
                 ) : (
                   <Campo
                     rotulo="Multiplico o custo por"

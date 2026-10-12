@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-12",
+    titulo: "O preço avisa quando a margem parece um multiplicador",
+    frase:
+      "Pedir que sobre 2,5% do preço quase sempre era multiplicar o custo por 2,5: a tela diz quanto sobra em cada caso e troca num toque. A taxa de cartão zerada também avisa, com a da sua maquininha.",
+    href: "/fichas",
+  },
+  {
+    dataISO: "2026-10-12",
     titulo: "Cada material mostra quanto pesa no custo do produto",
     frase:
       "Na receita, cada material ganha um traço com a parte dele no custo, uma frase diz quais pesam mais, e o campo do rendimento diz quanto pesa a massa de cada unidade.",

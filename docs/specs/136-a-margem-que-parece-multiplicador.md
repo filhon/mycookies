@@ -98,10 +98,10 @@ errada para ela e o limite cai para a regra 2 só.
 
 ## Critérios de aceite
 
-- [ ] Os três avisos, com a consequência em reais e a saída num toque.
-- [ ] Nenhum aviso bloqueia o salvamento.
-- [ ] A Configuração confere o padrão.
-- [ ] Testes novos passam; portão de conclusão passa; `#d341`, `ESTADO.md`, `novidades.ts`.
+- [x] Os três avisos, com a consequência em reais e a saída num toque.
+- [x] Nenhum aviso bloqueia o salvamento.
+- [x] A Configuração confere o padrão.
+- [x] Testes novos passam; portão de conclusão passa; `#d341`, `ESTADO.md`, `novidades.ts`.
 
 ---
 

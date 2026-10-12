@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { Bloco } from "@/components/ui/Bloco";
 import { Botao } from "@/components/ui/Botao";
+import { AvisosDoPreco } from "./AvisosDoPreco";
 import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
 import {
   AreaTexto,
@@ -84,7 +85,9 @@ import {
   FOTO_MAX_BYTES,
 } from "@/lib/domain/orcamento";
 import {
+  conferirPrecificacao,
   verificarPreco,
+  type AvisoPrecificacao,
   type ParametrosPreco,
 } from "@/lib/domain/precificacao";
 import {
@@ -496,6 +499,32 @@ export function FormularioFicha({
     precificacao,
     precoVenda: valores.precoManual ? valores.precoVenda : null,
   });
+
+  // Os números que quase sempre são engano (`#d341`). Só avisam.
+  const avisosDoPreco = conferirPrecificacao(
+    precificacao,
+    configuracao?.formasPagamento ?? [],
+  );
+  const avisosDe = (campo: AvisoPrecificacao["campo"]) => (
+    <AvisosDoPreco
+      avisos={avisosDoPreco}
+      campo={campo}
+      custoUnitario={derivado.custo.custoUnitario}
+      parametros={precificacao}
+      porUnidade="por unidade"
+      aoAceitar={(aviso) => {
+        if (aviso.tipo === "MARGEM_PARECE_MULTIPLICADOR") {
+          form.setValue("metodo", "MARKUP");
+          form.setValue("markup", texto(aviso.sugestao.markup));
+        } else if (aviso.tipo === "TAXA_ZERADA") {
+          form.setValue(
+            "taxaCartaoConsiderada",
+            texto(aviso.sugestao.taxaCartaoConsiderada),
+          );
+        }
+      }}
+    />
+  );
 
   // A parte de cada linha no custo dos materiais (`#d340`). No kit, o todo
   // são as três listas: produtos de dentro, escolhas e embalagem.
@@ -1526,14 +1555,17 @@ export function FormularioFicha({
 
             <div className="grid gap-4 sm:grid-cols-2">
               {valores.metodo === "MARGEM" ? (
-                <Campo
-                  rotulo="Quero que sobre"
-                  inputMode="decimal"
-                  sufixo="%"
-                  dica="Do preço de venda, depois de descontar custo e taxas."
-                  erro={form.formState.errors.margemDesejada?.message}
-                  {...form.register("margemDesejada")}
-                />
+                <div className="space-y-3">
+                  <Campo
+                    rotulo="Quero que sobre"
+                    inputMode="decimal"
+                    sufixo="%"
+                    dica="Do preço de venda, depois de descontar custo e taxas."
+                    erro={form.formState.errors.margemDesejada?.message}
+                    {...form.register("margemDesejada")}
+                  />
+                  {avisosDe("margemDesejada")}
+                </div>
               ) : (
                 <Campo
                   rotulo="Multiplico o custo por"
@@ -1546,14 +1578,17 @@ export function FormularioFicha({
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Campo
-                rotulo="Taxa de cartão"
-                inputMode="decimal"
-                sufixo="%"
-                dica="A maior das suas formas de pagamento: o preço que fecha nela fecha em todas."
-                erro={form.formState.errors.taxaCartaoConsiderada?.message}
-                {...form.register("taxaCartaoConsiderada")}
-              />
+              <div className="space-y-3">
+                <Campo
+                  rotulo="Taxa de cartão"
+                  inputMode="decimal"
+                  sufixo="%"
+                  dica="A maior das suas formas de pagamento: o preço que fecha nela fecha em todas."
+                  erro={form.formState.errors.taxaCartaoConsiderada?.message}
+                  {...form.register("taxaCartaoConsiderada")}
+                />
+                {avisosDe("taxaCartaoConsiderada")}
+              </div>
               <Campo
                 rotulo="Outras taxas"
                 inputMode="decimal"

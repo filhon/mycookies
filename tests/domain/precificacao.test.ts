@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { derivarFicha } from "@/lib/domain/custoFicha";
 import { formatarPercentual, formatarValor } from "@/lib/domain/money";
+import type { FormaPagamento } from "@/lib/types";
 import {
   calcularPrecoSugerido,
+  conferirPrecificacao,
   lerPedidoDeBusca,
+  sobraNoSugerido,
   somaTaxas,
   verificarPreco,
   type ParametrosPreco,
@@ -261,5 +264,125 @@ describe("lerPedidoDeBusca", () => {
 
   it("número sozinho é a quantidade de tudo", () => {
     expect(lerPedidoDeBusca("30")).toEqual({ quantidade: 30, termo: "" });
+  });
+});
+
+describe("conferirPrecificacao (spec 136)", () => {
+  const forma = (
+    nome: string,
+    taxaPercentual: number,
+    extra: Partial<FormaPagamento> = {},
+  ): FormaPagamento => ({
+    id: nome,
+    nome,
+    tipo: "CREDITO",
+    taxaPercentual,
+    taxaFixa: 0,
+    prazoRecebimentoDias: 30,
+    ativo: true,
+    ...extra,
+  });
+  const margem = (margemDesejada: number) =>
+    conferirPrecificacao(
+      { metodo: "MARGEM", margemDesejada, taxaCartaoConsiderada: 5 },
+      [],
+    ).map((aviso) => aviso.tipo);
+
+  it("de 1 a 6 parece multiplicador, e sugere multiplicar pelo mesmo número", () => {
+    expect(
+      conferirPrecificacao(
+        { metodo: "MARGEM", margemDesejada: 2.5, taxaCartaoConsiderada: 5 },
+        [],
+      ),
+    ).toEqual([
+      {
+        campo: "margemDesejada",
+        tipo: "MARGEM_PARECE_MULTIPLICADOR",
+        sugestao: { metodo: "MARKUP", markup: 2.5 },
+      },
+    ]);
+    expect(margem(1)).toEqual(["MARGEM_PARECE_MULTIPLICADOR"]);
+    expect(margem(6)).toEqual(["MARGEM_PARECE_MULTIPLICADOR"]);
+  });
+
+  it("abaixo de 10 e fora do multiplicador é margem baixa", () => {
+    expect(margem(6.01)).toEqual(["MARGEM_BAIXA"]);
+    expect(margem(8)).toEqual(["MARGEM_BAIXA"]);
+    expect(margem(0.5)).toEqual(["MARGEM_BAIXA"]);
+  });
+
+  it("10 ou mais, zero, ou método multiplicar: nada", () => {
+    expect(margem(10)).toEqual([]);
+    expect(margem(30)).toEqual([]);
+    expect(margem(0)).toEqual([]);
+    expect(
+      conferirPrecificacao(
+        { metodo: "MARKUP", margemDesejada: 2.5, taxaCartaoConsiderada: 5 },
+        [],
+      ),
+    ).toEqual([]);
+  });
+
+  it("taxa zero com maquininha sugere a maior taxa ativa, com o nome", () => {
+    expect(
+      conferirPrecificacao(
+        { metodo: "MARKUP", margemDesejada: 30, taxaCartaoConsiderada: 0 },
+        [
+          forma("Pix", 0),
+          forma("Débito", 1.99),
+          forma("Crédito", 4.99),
+          forma("Antiga", 9, { ativo: false }),
+        ],
+      ),
+    ).toEqual([
+      {
+        campo: "taxaCartaoConsiderada",
+        tipo: "TAXA_ZERADA",
+        sugestao: { taxaCartaoConsiderada: 4.99, nome: "Crédito" },
+      },
+    ]);
+  });
+
+  it("sem formas de pagamento, ou só com taxa fixa, a taxa zero está certa", () => {
+    const zerada = {
+      metodo: "MARGEM",
+      margemDesejada: 30,
+      taxaCartaoConsiderada: 0,
+    } as const;
+    expect(conferirPrecificacao(zerada, [])).toEqual([]);
+    expect(
+      conferirPrecificacao(zerada, [forma("Link", 0, { taxaFixa: 99 })]),
+    ).toEqual([]);
+  });
+
+  it("a taxa preenchida não avisa, mesmo abaixo da maior", () => {
+    expect(
+      conferirPrecificacao(
+        { metodo: "MARGEM", margemDesejada: 30, taxaCartaoConsiderada: 1.99 },
+        [forma("Crédito", 4.99)],
+      ),
+    ).toEqual([]);
+  });
+});
+
+describe("sobraNoSugerido", () => {
+  const base: ParametrosPreco = {
+    metodo: "MARGEM",
+    markup: 0,
+    margemDesejada: 2.5,
+    taxaCartaoConsiderada: 0,
+    outrasTaxas: 0,
+    arredondamento: "CENTAVO_90",
+  };
+
+  it("o caso do print: 2,5% são R$ 0,17; multiplicar por 2,5 sobram R$ 10,17", () => {
+    expect(sobraNoSugerido(678, base)).toBe(17);
+    expect(
+      sobraNoSugerido(678, { ...base, metodo: "MARKUP", markup: 2.5 }),
+    ).toBe(1017);
+  });
+
+  it("sem preço possível, nulo", () => {
+    expect(sobraNoSugerido(678, { ...base, margemDesejada: 100 })).toBeNull();
   });
 });

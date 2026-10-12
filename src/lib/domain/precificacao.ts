@@ -1,5 +1,6 @@
 import type {
   Centavos,
+  FormaPagamento,
   MetodoPrecificacao,
   Percentual,
   RegraArredondamento,
@@ -124,6 +125,111 @@ export function verificarPreco(
       precoVenda > 0 ? duasCasas((lucroUnitario / precoVenda) * 100) : 0,
     markupReal: custoUnitario > 0 ? duasCasas(precoVenda / custoUnitario) : 0,
   };
+}
+
+/**
+ * Até 6, a margem digitada é quase sempre o multiplicador da apostila (2, 2,5,
+ * 3) no campo errado: sobrar 2,5% do preço não paga nem a maquininha, e 6× é o
+ * maior múltiplo que se vê em confeitaria. A partir de 1 porque abaixo disso
+ * não há multiplicador que dê preço acima do custo (`#d341`).
+ */
+const MARGEM_QUE_PARECE_MULTIPLICADOR = { de: 1, ate: 6 };
+
+/**
+ * Abaixo de 10% o preço mal cobre um erro de pesagem ou um doce que quebra.
+ * Pode ser decisão dela (um item de entrada, uma promoção), e por isso é aviso,
+ * e não erro (`#d341`).
+ */
+const MARGEM_BAIXA_ABAIXO_DE = 10;
+
+export type AvisoPrecificacao =
+  | {
+      campo: "margemDesejada";
+      tipo: "MARGEM_PARECE_MULTIPLICADOR";
+      sugestao: { metodo: "MARKUP"; markup: number };
+    }
+  | { campo: "margemDesejada"; tipo: "MARGEM_BAIXA"; sugestao: null }
+  | {
+      campo: "taxaCartaoConsiderada";
+      tipo: "TAXA_ZERADA";
+      sugestao: { taxaCartaoConsiderada: Percentual; nome: string };
+    };
+
+/**
+ * Os dois números que quase sempre são engano (`#d341`): a margem de um dígito
+ * e a taxa de cartão zerada numa conta que tem maquininha. Só avisa; nada aqui
+ * impede de salvar.
+ */
+export function conferirPrecificacao(
+  parametros: Pick<
+    ParametrosPreco,
+    "metodo" | "margemDesejada" | "taxaCartaoConsiderada"
+  >,
+  formasPagamento: FormaPagamento[],
+): AvisoPrecificacao[] {
+  const avisos: AvisoPrecificacao[] = [];
+  const margem = parametros.margemDesejada;
+
+  if (parametros.metodo === "MARGEM") {
+    if (
+      margem >= MARGEM_QUE_PARECE_MULTIPLICADOR.de &&
+      margem <= MARGEM_QUE_PARECE_MULTIPLICADOR.ate
+    ) {
+      avisos.push({
+        campo: "margemDesejada",
+        tipo: "MARGEM_PARECE_MULTIPLICADOR",
+        sugestao: { metodo: "MARKUP", markup: margem },
+      });
+    } else if (margem > 0 && margem < MARGEM_BAIXA_ABAIXO_DE) {
+      avisos.push({
+        campo: "margemDesejada",
+        tipo: "MARGEM_BAIXA",
+        sugestao: null,
+      });
+    }
+  }
+
+  if (parametros.taxaCartaoConsiderada === 0) {
+    // A forma desligada não cobra de ninguém (`maiorTaxaAtiva`).
+    const maisCara = formasPagamento.reduce<FormaPagamento | null>(
+      (maior, forma) =>
+        forma.ativo && forma.taxaPercentual > (maior?.taxaPercentual ?? 0)
+          ? forma
+          : maior,
+      null,
+    );
+    if (maisCara) {
+      avisos.push({
+        campo: "taxaCartaoConsiderada",
+        tipo: "TAXA_ZERADA",
+        sugestao: {
+          taxaCartaoConsiderada: maisCara.taxaPercentual,
+          nome: maisCara.nome,
+        },
+      });
+    }
+  }
+
+  return avisos;
+}
+
+/**
+ * O que sobra por unidade no preço que o método pede, antes do arredondamento:
+ * a consequência em reais de cada aviso de `conferirPrecificacao`. `null` sem
+ * preço possível.
+ */
+export function sobraNoSugerido(
+  custoUnitario: Centavos,
+  parametros: ParametrosPreco,
+): Centavos | null {
+  const resultado = calcularPrecoSugerido(custoUnitario, parametros);
+  return resultado.ok
+    ? verificarPreco(
+        resultado.precoSugerido,
+        custoUnitario,
+        somaTaxas(parametros),
+      ).lucroUnitario
+    : null;
 }
 
 /** Acima disto o número é engano de digitação, e não pedido (spec 047). */
