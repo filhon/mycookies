@@ -11446,3 +11446,68 @@ aquele pedido já tinha massa (`#d91`).
 **Consequência.** A bancada pelo pedido pode abrir em zero pedido da receita (o item mudou e o
 pedido não foi salvo): sem frase, em 1 fornada, e a massa continua ligada a ele. O menu da linha
 no celular fica para quando houver um segundo item para ele.
+
+## D354 · A folha segue o status
+
+**Status:** vigente · decidida em 2026-10-12, spec `147-a-folha-que-se-le-sozinha.md`. **Reverte**
+uma linha do `#d108`/017: o quadrado vazio em `--surface-sunken` da linha sem foto, com a
+aprovação do Filipe ao pedir a 147.
+
+**Contexto.** Nos prints de 2026-10-12 (P-261009-6F5) a folha dizia "Orçamento" num pedido
+confirmado, o quadrado bege do combo sem foto lia como imagem quebrada, a data aparecia duas
+vezes e a hora nenhuma, e o subtotal repetia o total.
+
+**Decisão.**
+
+- **O título e o fecho seguem `pedido.status`; o resto da folha não.** `rotuloDaFolha`:
+  "Orçamento", "Pedido confirmado" (confirmado, em produção, pronto) ou "Pedido entregue". Fora do
+  orçamento sai a linha "Aprovado por" e a frase "Para aprovar…"; a assinatura dela fica
+  (`PeDaFolha` ganha `aprovacao`, verdadeiro por padrão para a prévia da Configuração).
+- **Abaixo do total, fora do orçamento:** "Sinal pago" e "Falta pagar" quando há sinal, ou "Pago"
+  com `Check` quando pago, por `faltaPagar`. Sem sinal e sem pagamento, nada: o que falta é o
+  total. Não é recibo e não se chama recibo.
+- **A validade só existe no orçamento.** `montarOrcamento` não leva `validoAteISO` de pedido
+  confirmado: "Este orçamento vale até…" num papel que diz "Pedido confirmado" se contradiz. A
+  tela também não avisa validade vencida nem ausente fora do orçamento.
+- **Cancelado não tem folha.** A rota mostra o aviso e "Voltar ao pedido".
+- **A célula sem foto fica vazia, sem fundo.** O combo sem foto própria mostra as fotos das
+  escolhas com ficha viva, até duas, 12,5 mm cada e 40% sobrepostas (a segunda à direita e
+  atrás). O nome do combo é `nomeSnapshot` sozinho; o que tem dentro vai para `composicao`
+  (`resumoDasEscolhas`), a linha antes da descrição.
+- **A hora vem depois do dia, " · às 15:00"**, em "HH:MM" como a agenda e o WhatsApp mostram;
+  a spec escreveu "15h" como exemplo e "o mesmo formato da agenda" como regra, e a regra venceu.
+  O Combinado perde a frase do dia; o endereço fica, "Entrega na …".
+- **Subtotal só com desconto ou entrega.**
+- **A tela:** a barra no eixo da folha (`max-w-[210mm] mx-auto`); no celular (`< md`) o primário é
+  "Mandar pra cliente", o mesmo `mensagemDoPedido` da ficha do pedido, do documento gravado, com o
+  link do acompanhamento, e "Salvar em PDF" desce para secundário sem a frase de explicação; no
+  desktop, a ordem de antes. Orçamento sem validade ganha, para ela, "Sem data de validade: o
+  preço vale até você mudar." com "Pôr uma data".
+
+**Consequência.** Uma folha impressa antes de confirmar e outra depois dizem coisas diferentes
+do mesmo código, e é o certo: o papel diz em que pé o pedido estava no dia da impressão.
+
+## D355 · O Pix na folha
+
+**Status:** vigente · decidida em 2026-10-12, spec `147-a-folha-que-se-le-sozinha.md`.
+
+**Contexto.** As `instrucoes` da forma têm quebra de linha, e a folha as emendava numa frase só,
+logo o trecho que a cliente precisa copiar.
+
+**Decisão.**
+
+- **O QR só nas condições do `#d320`:** `pixDoPedido` (exportada de `acompanhamento.ts`, com o
+  parâmetro estreitado para `status`, `formaPagamentoId` e `codigo`) decide. Fora do orçamento,
+  não cancelado, com o que falta, e forma Pix com chave, nome e cidade. O valor é o que falta.
+- **SVG desenhado por `uqr`, síncrono, na própria folha:** um `path` com uma casa por módulo
+  escuro, `fill-ink`, 28 mm, ECC M, sem borda no desenho (o papel e o `gap` de 5 mm são a zona de
+  silêncio). Sem PNG e sem rede; o `uqr` entra no pacote da rota da folha e da Configuração (a
+  prévia importa `PeDaFolha` do mesmo módulo), alguns KB.
+- **Com o QR, as instruções saem**, como no WhatsApp (`#d278`): fica "Pagamento por Pix." e o QR
+  com "Pix de R$ Y · aponte a câmera do app do banco". **No pedido pago, saem também**: chave
+  embaixo de "Pago" é convite a pagar de novo.
+- **Sem QR, as instruções saem como ela escreveu**, uma entrada de `frasesDoCombinado` por linha
+  dela, sem ponto acrescentado e sem linha vazia.
+
+**Consequência.** O QR depende de a forma ter os três dados do Pix; a forma só com `instrucoes`
+continua em texto, agora legível.

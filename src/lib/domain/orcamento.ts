@@ -5,10 +5,12 @@ import type {
   DataISO,
   FichaTecnica,
   Pedido,
+  StatusPedido,
 } from "@/lib/types";
+import { pixDoPedido } from "./acompanhamento";
 import { SUFIXO_UNIDADE_RENDIMENTO } from "./custoFicha";
-import { diaVizinho, rotuloDataCompleta, rotuloDiaPorExtenso } from "./datas";
-import { nomeComEscolhas, subtotalDoItem } from "./pedido";
+import { diaVizinho, rotuloDataCompleta } from "./datas";
+import { faltaPagar, resumoDasEscolhas, subtotalDoItem } from "./pedido";
 
 /**
  * O orçamento em papel: a folha A4 que a empresa lê sem a Maynara junto.
@@ -73,11 +75,18 @@ export function situacaoDaValidade(
 }
 
 export interface LinhaDoOrcamento {
-  /** `nomeSnapshot` com as escolhas do combo entre parênteses. */
+  /** `nomeSnapshot` sozinho: o que tem dentro do combo vai em `composicao`. */
   nome: string;
+  /** "1 Cookie Pistache + 1 Cookie Red Velvet", só no combo (`resumoDasEscolhas`). */
+  composicao?: string;
   /** Da ficha viva; ausente em ficha arquivada ou sem descrição (`#d108`). */
   descricao?: string;
   fotoUrl?: string;
+  /**
+   * Combo sem foto própria: as fotos das escolhas com ficha viva, até duas,
+   * que a folha sobrepõe. Vazia quando a linha tem foto própria.
+   */
+  fotosDasEscolhas: string[];
   quantidade: number;
   /** 'un', 'porções', 'g', 'ml', da ficha viva; 'un' quando a ficha se foi. */
   unidade: string;
@@ -100,8 +109,11 @@ export interface Orcamento {
     feitoCom: boolean;
   };
   codigo: string;
+  /** O título e o fecho seguem o status; o resto da folha não (`#d354`). */
+  status: StatusPedido;
   /** O dia da impressão, e não um campo gravado (`#d110`). */
   emitidoEmISO: DataISO;
+  /** Só no orçamento: pedido confirmado não tem preço por vencer (`#d354`). */
   validoAteISO?: DataISO;
   empresa: string;
   linhas: LinhaDoOrcamento[];
@@ -114,10 +126,26 @@ export interface Orcamento {
   entrega: {
     tipo: "RETIRADA" | "ENTREGA";
     dataISO: DataISO;
+    /** "HH:MM", quando foi combinada (`#d251`). */
+    hora?: string;
     endereco?: string;
   };
   formaNome?: string;
   formaInstrucoes?: string;
+  pago: boolean;
+  /** O sinal recebido, enquanto o pedido não está quitado. */
+  sinal?: Centavos;
+  /** `faltaPagar`, a mesma do acompanhamento. */
+  falta: Centavos;
+  /** O copia e cola do que falta, para o QR: `pixDoPedido` (`#d355`). */
+  pix?: string;
+}
+
+/** O rótulo do topo da folha (`#d354`). A folha o desenha em caixa alta. */
+export function rotuloDaFolha(status: StatusPedido): string {
+  if (status === "ORCAMENTO") return "Orçamento";
+  if (status === "ENTREGUE") return "Pedido entregue";
+  return "Pedido confirmado";
 }
 
 // O que cada documento precisa entregar. `Pick` em vez do tipo inteiro pelo
@@ -126,15 +154,21 @@ export interface Orcamento {
 export type PedidoParaOrcar = Pick<
   Pedido,
   | "codigo"
+  | "status"
   | "clienteNome"
   | "itens"
   | "subtotal"
   | "desconto"
   | "total"
   | "dataEntregaISO"
+  | "horaEntrega"
   | "formaPagamentoId"
   | "validoAteISO"
-> & { entrega: Pick<Pedido["entrega"], "tipo" | "taxa" | "endereco"> };
+  | "pago"
+> & {
+  entrega: Pick<Pedido["entrega"], "tipo" | "taxa" | "endereco">;
+  sinal?: { valor: Centavos } | null;
+};
 
 /** A foto e a descrição vêm da ficha viva (`#d108`). */
 export type FichaParaOrcar = Pick<
@@ -209,10 +243,24 @@ export function montarOrcamento(entrada: {
   // linha sai sem foto e sem descrição.
   const linhas: LinhaDoOrcamento[] = pedido.itens.map((item) => {
     const ficha = fichas.get(item.fichaTecnicaId);
+    const foto = ficha?.fotoUrl?.trim();
+    // Combo sem foto própria mostra as receitas de dentro, pela mesma regra
+    // da ficha viva: escolha arquivada não tem foto (`#d108`).
+    const fotosDasEscolhas = foto
+      ? []
+      : (item.escolhas ?? [])
+          .map((escolha) => fichas.get(escolha.fichaTecnicaId)?.fotoUrl?.trim())
+          .filter((url): url is string => !!url)
+          .slice(0, 2);
     return {
-      nome: nomeComEscolhas(item),
+      nome: item.nomeSnapshot,
+      ...opcional(
+        "composicao",
+        item.escolhas?.length ? resumoDasEscolhas(item.escolhas) : undefined,
+      ),
       ...opcional("descricao", ficha?.descricao),
-      ...opcional("fotoUrl", ficha?.fotoUrl),
+      ...opcional("fotoUrl", foto),
+      fotosDasEscolhas,
       quantidade: item.quantidade,
       unidade: ficha
         ? SUFIXO_UNIDADE_RENDIMENTO[ficha.unidadeRendimento]
@@ -227,15 +275,21 @@ export function montarOrcamento(entrada: {
         (item) => item.id === pedido.formaPagamentoId,
       )
     : undefined;
+  const falta = faltaPagar(pedido);
+  const pix = pixDoPedido(pedido, configuracao?.formasPagamento ?? [], falta);
+  const orcamento = pedido.status === "ORCAMENTO";
 
   return {
     negocio: negocioDaFolha(conta, configuracao),
     codigo: pedido.codigo,
+    status: pedido.status,
     emitidoEmISO: hojeISO,
-    ...opcional("validoAteISO", pedido.validoAteISO),
+    ...opcional("validoAteISO", orcamento ? pedido.validoAteISO : undefined),
     empresa: pedido.clienteNome,
     linhas,
-    temFoto: linhas.some((linha) => !!linha.fotoUrl),
+    temFoto: linhas.some(
+      (linha) => !!linha.fotoUrl || linha.fotosDasEscolhas.length > 0,
+    ),
     subtotal: pedido.subtotal,
     desconto: pedido.desconto,
     taxaEntrega: pedido.entrega.taxa,
@@ -243,10 +297,15 @@ export function montarOrcamento(entrada: {
     entrega: {
       tipo: pedido.entrega.tipo,
       dataISO: pedido.dataEntregaISO,
+      ...opcional("hora", pedido.horaEntrega),
       ...opcional("endereco", pedido.entrega.endereco),
     },
     ...opcional("formaNome", forma?.nome),
     ...opcional("formaInstrucoes", forma?.instrucoes),
+    pago: pedido.pago,
+    ...(pedido.sinal && !pedido.pago ? { sinal: pedido.sinal.valor } : {}),
+    falta,
+    ...(pix ? { pix } : {}),
   };
 }
 
@@ -256,34 +315,32 @@ function frase(texto: string): string {
 }
 
 /**
- * "na quarta-feira", mas "no sábado": os dias úteis são femininos e o fim de
- * semana é masculino. O WhatsApp contorna com "em"; a folha fala como se fala.
+ * As linhas do bloco "Combinado", na ordem, só as que têm o que dizer. O dia
+ * não entra: o topo já diz (spec 147).
+ *
+ * As instruções saem como ela as escreveu, uma linha por linha dela, sem ponto
+ * acrescentado: é o trecho que a cliente copia. Com o QR (`pix`) elas dão
+ * lugar a ele, e no pedido pago saem, como no WhatsApp (`#d278`, `#d355`).
  */
-function noDia(iso: DataISO): string {
-  const dia = rotuloDiaPorExtenso(iso);
-  return `${/^(sábado|domingo)/.test(dia) ? "no" : "na"} ${dia}`;
-}
-
-/** As frases do bloco "Combinado", na ordem, só as que têm o que dizer. */
 export function frasesDoCombinado(orcamento: Orcamento): string[] {
   const frases: string[] = [];
 
   if (orcamento.formaNome) {
-    const pagamento = frase(`Pagamento por ${orcamento.formaNome}`);
-    const instrucoes = orcamento.formaInstrucoes?.trim();
-    frases.push(instrucoes ? `${pagamento} ${frase(instrucoes)}` : pagamento);
+    frases.push(frase(`Pagamento por ${orcamento.formaNome}`));
+    if (!orcamento.pix && !orcamento.pago) {
+      frases.push(
+        ...(orcamento.formaInstrucoes ?? "")
+          .split("\n")
+          .map((linha) => linha.trim())
+          .filter(Boolean),
+      );
+    }
   }
 
   const { entrega } = orcamento;
-  const onde =
-    entrega.tipo === "ENTREGA" && entrega.endereco
-      ? `, na ${entrega.endereco}`
-      : "";
-  frases.push(
-    frase(
-      `${entrega.tipo === "ENTREGA" ? "Entrega" : "Retirada"} ${noDia(entrega.dataISO)}${onde}`,
-    ),
-  );
+  if (entrega.tipo === "ENTREGA" && entrega.endereco) {
+    frases.push(frase(`Entrega na ${entrega.endereco}`));
+  }
 
   if (orcamento.validoAteISO) {
     frases.push(

@@ -3,14 +3,20 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState, type CSSProperties } from "react";
 import { query, where } from "firebase/firestore";
-import { ArrowLeft, Printer, TriangleAlert } from "lucide-react";
+import { ArrowLeft, MessageCircle, Printer, TriangleAlert } from "lucide-react";
 import { Botao } from "@/components/ui/Botao";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { PedidoNaoEncontrado } from "./EditorPedido";
 import { FolhaOrcamento } from "./FolhaOrcamento";
+import { useLinkDoAcompanhamento } from "./useLinkDoAcompanhamento";
 import { dataISODe, rotuloDataCompleta } from "@/lib/domain/datas";
 import { montarOrcamento, situacaoDaValidade } from "@/lib/domain/orcamento";
+import {
+  linkDoWhatsApp,
+  mensagemDoPedido,
+  telefoneParaWhatsApp,
+} from "@/lib/domain/whatsapp";
 import { colFichas, docConfiguracao, docPedido } from "@/lib/firebase/colecoes";
 import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
 import type { ConfiguracaoGeral, FichaTecnica, Pedido } from "@/lib/types";
@@ -49,6 +55,7 @@ export function TelaOrcamento({ id }: { id: string }) {
   const fichas = useColecao<FichaTecnica>(consultaFichas);
   const configuracao = useDocumento<ConfiguracaoGeral>(referenciaConfiguracao);
   const pedido = useDocumento<Pedido>(referenciaPedido);
+  const acompanhamento = useLinkDoAcompanhamento(pedido.dado);
 
   // `zoom` da folha pela largura do contêiner sobre os 794 px do A4, medido
   // por `ResizeObserver`. Nunca passa de 1: em tela larga a folha é do tamanho
@@ -85,40 +92,131 @@ export function TelaOrcamento({ id }: { id: string }) {
 
   if (!pedido.dado) return <PedidoNaoEncontrado />;
 
+  const voltar = (
+    <Link
+      href={`/pedidos/${id}`}
+      className={classesBotao({ variante: "secundaria", tamanho: "lg" })}
+    >
+      <ArrowLeft aria-hidden className="size-5" strokeWidth={1.75} />
+      Voltar ao pedido
+    </Link>
+  );
+
+  // Uma folha de pedido cancelado circulando é o defeito (spec 147).
+  if (pedido.dado.status === "CANCELADO") {
+    return (
+      <div className="pt-4 lg:pt-6">
+        <p className="max-w-[60ch] text-body">
+          Este pedido foi cancelado. A folha não sai de pedido cancelado.
+        </p>
+        <div className="mt-4">{voltar}</div>
+      </div>
+    );
+  }
+
+  const salvo = pedido.dado;
   const orcamento = montarOrcamento({
-    pedido: pedido.dado,
+    pedido: salvo,
     fichas: fichas.dados,
     conta,
     configuracao: configuracao.dado,
     hojeISO: hoje,
   });
   const situacao = situacaoDaValidade(orcamento.validoAteISO, hoje);
+  const proposta = salvo.status === "ORCAMENTO";
+  const forma = configuracao.dado?.formasPagamento.find(
+    (item) => item.id === salvo.formaPagamentoId,
+  );
+  // O mesmo resumo da ficha do pedido, do documento gravado.
+  const mensagem = mensagemDoPedido(
+    {
+      negocio: configuracao.dado?.nomeNegocio ?? "",
+      codigo: salvo.codigo,
+      clienteNome: salvo.clienteNome,
+      itens: salvo.itens,
+      subtotal: salvo.subtotal,
+      desconto: salvo.desconto,
+      taxaEntrega: salvo.entrega.taxa,
+      total: salvo.total,
+      entrega: {
+        tipo: salvo.entrega.tipo,
+        dataISO: salvo.dataEntregaISO,
+        hora: salvo.horaEntrega,
+        endereco: salvo.entrega.endereco ?? undefined,
+      },
+      formaNome: forma?.nome,
+      formaInstrucoes: forma?.instrucoes,
+      formaPix: forma?.pix,
+      pago: salvo.pago,
+      sinal: salvo.sinal?.valor,
+    },
+    acompanhamento.link,
+  );
+  const imprimir = () => window.print();
+  const iconeImprimir = (
+    <Printer aria-hidden className="size-5" strokeWidth={1.75} />
+  );
 
   return (
     <div className="pt-4 lg:pt-6 print:pt-0">
-      <div className="print:hidden">
+      {/* A barra no eixo da folha: a mesma largura máxima e a mesma margem. */}
+      <div className="mx-auto max-w-[210mm] print:hidden">
+        {/* No celular a folha a 45% não se lê: o primário é mandar o resumo
+            com o link; no desktop, a ordem de sempre (spec 147). */}
         <div className="flex flex-wrap items-center gap-3">
-          <Link
-            href={`/pedidos/${id}`}
-            className={classesBotao({ variante: "secundaria", tamanho: "lg" })}
+          {voltar}
+          <a
+            href={linkDoWhatsApp(
+              telefoneParaWhatsApp(salvo.clienteTelefone),
+              mensagem,
+            )}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={acompanhamento.garantir}
+            className={classesBotao({
+              variante: "primaria",
+              tamanho: "lg",
+              className: "md:hidden",
+            })}
           >
-            <ArrowLeft aria-hidden className="size-5" strokeWidth={1.75} />
-            Voltar ao pedido
-          </Link>
+            <MessageCircle aria-hidden className="size-5" strokeWidth={1.75} />
+            Mandar pra cliente
+          </a>
+          <Botao
+            variante="secundaria"
+            tamanho="lg"
+            onClick={imprimir}
+            iconeInicial={iconeImprimir}
+            className="md:hidden"
+          >
+            Salvar em PDF
+          </Botao>
           <Botao
             variante="primaria"
             tamanho="lg"
-            onClick={() => window.print()}
-            iconeInicial={
-              <Printer aria-hidden className="size-5" strokeWidth={1.75} />
-            }
+            onClick={imprimir}
+            iconeInicial={iconeImprimir}
+            className="hidden md:inline-flex"
           >
             Salvar em PDF
           </Botao>
         </div>
-        <p className="mt-2 text-label text-ink-muted">
+        <p className="mt-2 hidden text-label text-ink-muted md:block">
           Abre a impressão do aparelho. Escolha &ldquo;Salvar como PDF&rdquo;.
         </p>
+
+        {/* Para ela, e não para a cliente: a folha não diz nada. */}
+        {proposta && !orcamento.validoAteISO && (
+          <p className="mt-3 max-w-[60ch] text-label text-ink-muted">
+            Sem data de validade: o preço vale até você mudar.{" "}
+            <Link
+              href={`/pedidos/${id}`}
+              className="font-medium text-brand-ink underline underline-offset-2"
+            >
+              Pôr uma data
+            </Link>
+          </p>
+        )}
 
         {/* O aviso é para ela, e não para a empresa: a folha não muda. */}
         {situacao === "vencido" && orcamento.validoAteISO && (

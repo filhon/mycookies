@@ -5,6 +5,7 @@ import {
   FOTO_MAX_BYTES,
   frasesDoCombinado,
   montarOrcamento,
+  rotuloDaFolha,
   situacaoDaValidade,
   tamanhoDoDataUrl,
   temAlpha,
@@ -40,6 +41,8 @@ function ficha(
 // O pedido da Tal Eventos Ltda., número por número.
 const PEDIDO: PedidoParaOrcar = {
   codigo: "P-260915-K3F",
+  status: "ORCAMENTO",
+  pago: false,
   clienteNome: "Tal Eventos Ltda.",
   itens: [
     {
@@ -122,6 +125,7 @@ describe("montarOrcamento", () => {
         nome: "Cookie Tradicional",
         quantidade: 50,
         unidade: "un",
+        fotosDasEscolhas: [],
         precoUnitario: 1000,
         subtotal: 50000,
       },
@@ -129,6 +133,7 @@ describe("montarOrcamento", () => {
         nome: "Cookie Red Velvet",
         quantidade: 30,
         unidade: "un",
+        fotosDasEscolhas: [],
         precoUnitario: 1300,
         subtotal: 39000,
       },
@@ -136,6 +141,7 @@ describe("montarOrcamento", () => {
         nome: "Cookie Pistachio",
         quantidade: 20,
         unidade: "un",
+        fotosDasEscolhas: [],
         precoUnitario: 1500,
         subtotal: 30000,
       },
@@ -158,8 +164,9 @@ describe("montarOrcamento", () => {
 
   it("escreve o combinado do caso de aceite, palavra por palavra", () => {
     expect(frasesDoCombinado(montar())).toEqual([
-      "Pagamento por Pix. Chave: 81 98696-6176 (Maynara).",
-      "Entrega na quarta-feira, 30 de setembro, na Av. Boa Viagem, 1200.",
+      "Pagamento por Pix.",
+      "Chave: 81 98696-6176 (Maynara)",
+      "Entrega na Av. Boa Viagem, 1200.",
       "Este orçamento vale até 22 de setembro de 2026.",
     ]);
   });
@@ -177,28 +184,23 @@ describe("montarOrcamento", () => {
     expect(orcamento.taxaEntrega).toBe(0);
     expect(orcamento.validoAteISO).toBeUndefined();
     expect(frasesDoCombinado(orcamento)).toEqual([
-      "Pagamento por Pix. Chave: 81 98696-6176 (Maynara).",
-      "Entrega na quarta-feira, 30 de setembro.",
+      "Pagamento por Pix.",
+      "Chave: 81 98696-6176 (Maynara)",
     ]);
   });
 
-  it("na retirada diz o dia e não o endereço, mesmo com o campo preenchido", () => {
+  it("na retirada não diz o endereço, mesmo com o campo preenchido", () => {
     const orcamento = montar({
       ...PEDIDO,
       entrega: { tipo: "RETIRADA", taxa: 0, endereco: "Av. Boa Viagem, 1200" },
     });
 
     expect(orcamento.entrega.endereco).toBe("Av. Boa Viagem, 1200");
-    expect(frasesDoCombinado(orcamento)[1]).toBe(
-      "Retirada na quarta-feira, 30 de setembro.",
-    );
-  });
-
-  it("fala do sábado no masculino", () => {
-    const orcamento = montar({ ...PEDIDO, dataEntregaISO: "2026-09-19" });
-    expect(frasesDoCombinado(orcamento)[1]).toBe(
-      "Entrega no sábado, 19 de setembro, na Av. Boa Viagem, 1200.",
-    );
+    expect(frasesDoCombinado(orcamento)).toEqual([
+      "Pagamento por Pix.",
+      "Chave: 81 98696-6176 (Maynara)",
+      "Este orçamento vale até 22 de setembro de 2026.",
+    ]);
   });
 
   it("some com a frase do pagamento sem forma, e para no nome sem instruções", () => {
@@ -213,53 +215,97 @@ describe("montarOrcamento", () => {
     expect(frasesDoCombinado(semInstrucoes)[0]).toBe("Pagamento por Pix.");
   });
 
-  it("não dobra o ponto quando as instruções já terminam com um", () => {
+  it("não põe nem dobra ponto nas instruções: saem como ela escreveu", () => {
     const orcamento = montar(PEDIDO, {
       configuracao: {
         ...CONFIGURACAO,
         formasPagamento: [forma("pix", "Pix", "Chave: 81 98696-6176.")],
       },
     });
-    expect(frasesDoCombinado(orcamento)[0]).toBe(
-      "Pagamento por Pix. Chave: 81 98696-6176.",
-    );
+    expect(frasesDoCombinado(orcamento).slice(0, 2)).toEqual([
+      "Pagamento por Pix.",
+      "Chave: 81 98696-6176.",
+    ]);
   });
 
-  it("escreve o combo com as escolhas entre parênteses, como o WhatsApp", () => {
-    const orcamento = montar({
-      ...PEDIDO,
-      itens: [
-        {
-          fichaTecnicaId: "combo",
-          nomeSnapshot: "Combo dupla",
-          quantidade: 3,
-          precoUnitario: 2000,
-          custoUnitarioSnapshot: 900,
-          subtotal: 6000,
-          escolhas: [
-            {
-              fichaTecnicaId: "tradicional",
-              nomeSnapshot: "Tradicional",
-              quantidade: 1,
-              custoUnitarioSnapshot: 400,
-            },
-            {
-              fichaTecnicaId: "red-velvet",
-              nomeSnapshot: "Red Velvet",
-              quantidade: 1,
-              custoUnitarioSnapshot: 500,
-            },
-          ],
-        },
-      ],
+  it("põe o nome do combo sozinho e o que tem dentro na composição, com as fotos das escolhas (147, caso 4)", () => {
+    const orcamento = montar(
+      {
+        ...PEDIDO,
+        itens: [
+          {
+            fichaTecnicaId: "combo",
+            nomeSnapshot: "Combo Dupla",
+            quantidade: 1,
+            precoUnitario: 3700,
+            custoUnitarioSnapshot: 1500,
+            subtotal: 3700,
+            escolhas: [
+              {
+                fichaTecnicaId: "pistache",
+                nomeSnapshot: "Cookie Pistache 120g",
+                quantidade: 1,
+                custoUnitarioSnapshot: 700,
+              },
+              {
+                fichaTecnicaId: "red-velvet",
+                nomeSnapshot: "Cookie Red Velvet 120g",
+                quantidade: 1,
+                custoUnitarioSnapshot: 800,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        fichas: [
+          ficha("combo"),
+          { ...ficha("pistache"), fotoUrl: "data:image/png;base64,PPPP" },
+          ficha("red-velvet"),
+        ],
+      },
+    );
+
+    // A composição sai de `resumoDasEscolhas`, a mesma função do WhatsApp.
+    expect(orcamento.linhas[0]?.nome).toBe("Combo Dupla");
+    expect(orcamento.linhas[0]?.composicao).toBe(
+      "1 Cookie Pistache 120g + 1 Cookie Red Velvet 120g",
+    );
+    expect(orcamento.linhas[0]?.fotosDasEscolhas).toEqual([
+      "data:image/png;base64,PPPP",
+    ]);
+    expect(orcamento.temFoto).toBe(true);
+  });
+
+  it("combo com foto própria não leva as fotos das escolhas, e para em duas", () => {
+    const escolha = (id: string) => ({
+      fichaTecnicaId: id,
+      nomeSnapshot: id,
+      quantidade: 1,
+      custoUnitarioSnapshot: 100,
+    });
+    const item = {
+      ...PEDIDO.itens[0]!,
+      fichaTecnicaId: "combo",
+      escolhas: [escolha("a"), escolha("b"), escolha("c")],
+    };
+    const comFoto = (id: string) => ({
+      ...ficha(id),
+      fotoUrl: `data:image/jpeg;base64,${id}`,
     });
 
-    // O mesmo texto do WhatsApp, pela mesma função: duas seriam duas ordens
-    // esperando para divergir.
-    expect(orcamento.linhas[0]?.nome).toBe(
-      "Combo dupla (1 Tradicional + 1 Red Velvet)",
+    const semPropria = montar(
+      { ...PEDIDO, itens: [item] },
+      { fichas: [ficha("combo"), comFoto("a"), comFoto("b"), comFoto("c")] },
     );
-    expect(orcamento.linhas[0]?.subtotal).toBe(6000);
+    expect(semPropria.linhas[0]?.fotosDasEscolhas).toHaveLength(2);
+
+    const propria = montar(
+      { ...PEDIDO, itens: [item] },
+      { fichas: [comFoto("combo"), comFoto("a")] },
+    );
+    expect(propria.linhas[0]?.fotoUrl).toBe("data:image/jpeg;base64,combo");
+    expect(propria.linhas[0]?.fotosDasEscolhas).toEqual([]);
   });
 
   it("ficha arquivada sai com o nome congelado, sem foto, sem descrição e em 'un'", () => {
@@ -269,6 +315,7 @@ describe("montarOrcamento", () => {
       nome: "Cookie Tradicional",
       quantidade: 50,
       unidade: "un",
+      fotosDasEscolhas: [],
       precoUnitario: 1000,
       subtotal: 50000,
     });
@@ -425,6 +472,100 @@ describe("montarOrcamento", () => {
     expect(oculto.negocio.feitoCom).toBe(false);
     expect(montar().negocio.feitoCom).toBe(true);
     expect(semConfiguracao.negocio.feitoCom).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A folha segue o status (spec 147, `#d354` e `#d355`)
+// ---------------------------------------------------------------------------
+
+describe("a folha segue o status", () => {
+  // O pedido da Juliana: R$ 37,00, retirada, Pix com os três dados.
+  const PIX_COMPLETO: FormaPagamento = {
+    ...forma(
+      "pix",
+      "Pix",
+      "Beneficiária: Maynara\nNu Pagamentos\nChave: (81) 98696-6176",
+    ),
+    pix: { chave: "81986966176", nome: "Maynara", cidade: "Recife" },
+  };
+  const JULIANA: PedidoParaOrcar = {
+    ...PEDIDO,
+    codigo: "P-261009-6F5",
+    clienteNome: "Juliana Oliveira",
+    itens: [
+      {
+        ...PEDIDO.itens[0]!,
+        quantidade: 1,
+        precoUnitario: 3700,
+        subtotal: 3700,
+      },
+    ],
+    subtotal: 3700,
+    desconto: 0,
+    total: 3700,
+    dataEntregaISO: "2026-10-13",
+    entrega: { tipo: "RETIRADA", taxa: 0 },
+  };
+  const comPix = (pedido: Partial<PedidoParaOrcar>) =>
+    montar(
+      { ...JULIANA, ...pedido },
+      { configuracao: { ...CONFIGURACAO, formasPagamento: [PIX_COMPLETO] } },
+    );
+
+  it("no orçamento, 'Orçamento' e nada de QR, mesmo com o Pix completo (caso 1)", () => {
+    const orcamento = comPix({});
+    expect(orcamento.status).toBe("ORCAMENTO");
+    expect(rotuloDaFolha(orcamento.status)).toBe("Orçamento");
+    expect(orcamento).not.toHaveProperty("pix");
+    expect(orcamento.falta).toBe(3700);
+  });
+
+  it("confirmado com sinal: o que falta, e o Pix desse valor (caso 2)", () => {
+    const orcamento = comPix({
+      status: "CONFIRMADO",
+      sinal: { valor: 1000 },
+    });
+    expect(rotuloDaFolha(orcamento.status)).toBe("Pedido confirmado");
+    expect(orcamento.sinal).toBe(1000);
+    expect(orcamento.falta).toBe(2700);
+    expect(orcamento.pix).toContain("540527.00");
+    expect(orcamento.pix).toContain("P2610096F5");
+    // Com o QR, as instruções dão lugar a ele.
+    expect(frasesDoCombinado(orcamento)).toEqual(["Pagamento por Pix."]);
+  });
+
+  it("pago: sem Pix, sem sinal e sem as instruções (caso 3)", () => {
+    const orcamento = comPix({
+      status: "ENTREGUE",
+      pago: true,
+      sinal: { valor: 1000 },
+    });
+    expect(rotuloDaFolha(orcamento.status)).toBe("Pedido entregue");
+    expect(orcamento.pago).toBe(true);
+    expect(orcamento.falta).toBe(0);
+    expect(orcamento).not.toHaveProperty("pix");
+    expect(orcamento).not.toHaveProperty("sinal");
+    expect(frasesDoCombinado(orcamento)).toEqual(["Pagamento por Pix."]);
+  });
+
+  it("as instruções de três linhas saem em três linhas, e o dia não entra (caso 5)", () => {
+    const frases = frasesDoCombinado(comPix({ validoAteISO: undefined }));
+    expect(frases).toEqual([
+      "Pagamento por Pix.",
+      "Beneficiária: Maynara",
+      "Nu Pagamentos",
+      "Chave: (81) 98696-6176",
+    ]);
+    expect(
+      frases.some((frase) => /^(Retirada|Entrega) n[ao] /.test(frase)),
+    ).toBe(false);
+  });
+
+  it("lê a hora combinada (caso 6), e cala a validade fora do orçamento", () => {
+    expect(comPix({ horaEntrega: "15:00" }).entrega.hora).toBe("15:00");
+    expect(comPix({}).entrega).not.toHaveProperty("hora");
+    expect(comPix({ status: "CONFIRMADO" })).not.toHaveProperty("validoAteISO");
   });
 });
 

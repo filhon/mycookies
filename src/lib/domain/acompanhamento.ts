@@ -104,9 +104,10 @@ function rotuloDoPasso(
 /**
  * O Pix só de um valor que a dona confirmou: fora do orçamento, não
  * cancelado, com o que falta, e a forma do pedido é Pix com os três dados.
+ * A folha do pedido usa a mesma regra para o QR (`#d355`).
  */
-function pixDoPedido(
-  pedido: PedidoAcompanhado,
+export function pixDoPedido(
+  pedido: Pick<Pedido, "status" | "formaPagamentoId" | "codigo">,
   formas: FormaPagamento[],
   falta: Centavos,
 ): string | undefined {

@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-12",
+    titulo: "A folha do pedido diz em que pé ele está",
+    frase:
+      "Confirmado, ela mostra o sinal, o que falta e o QR do Pix com esse valor; no orçamento, os dados do Pix saem linha por linha, do jeito que você escreveu.",
+    href: "/pedidos",
+  },
+  {
+    dataISO: "2026-10-12",
     titulo: "A bancada abre pelo pedido",
     frase:
       'Cada receita do pedido tem "Abrir na bancada": ela começa no que aquele pedido ainda pede, e a massa que você registra já sai ligada a ele.',
