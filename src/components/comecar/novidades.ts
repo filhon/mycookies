@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-12",
+    titulo: "O recheio pronto sai do pote",
+    frase:
+      "Conte o recheio que você fez antes em Contar o que está pronto: a massa que leva ele tira do pote, e os ingredientes dele ficam na despensa.",
+    href: "/fichas/contagem",
+  },
+  {
+    dataISO: "2026-10-12",
     titulo: "O recheio entra em outra receita",
     frase:
       "Cadastre o recheio ou a massa base rendendo em gramas e busque pelo nome em O que vai dentro de outro produto: o custo dele segue os ingredientes, em todo produto que o usa.",

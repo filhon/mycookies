@@ -554,7 +554,10 @@ function LinhaPronto({
 
   const contagem = esperado?.contagem;
   const semMovimento =
-    !!esperado && esperado.fornadas === 0 && esperado.pedidos === 0;
+    !!esperado &&
+    esperado.fornadas === 0 &&
+    esperado.pedidos === 0 &&
+    esperado.usadas === 0;
   // Vencida sempre; nunca contada só com fornada na janela (`#d335`): sem
   // ela, nada indica que haja algo no pote.
   const atencao =
@@ -730,6 +733,7 @@ function LinhaPronto({
                 {[
                   esperado.feitas > 0 && `+${numero(esperado.feitas)} massa`,
                   esperado.saiu > 0 && `−${numero(esperado.saiu)} pedidos`,
+                  esperado.usadas > 0 && `−${numero(esperado.usadas)} receitas`,
                 ]
                   .filter(Boolean)
                   .join(" · ")}
@@ -854,7 +858,7 @@ function referencia(
   const anotado = contagem.anotado ?? 0;
   if (
     esperado.esperado === null ||
-    (esperado.fornadas === 0 && esperado.pedidos === 0)
+    (esperado.fornadas === 0 && esperado.pedidos === 0 && esperado.usadas === 0)
   ) {
     return `${quanto(anotado, unidade)} · ${rotuloDeIdade(contagem)}`;
   }
@@ -864,6 +868,7 @@ function referencia(
     esperado.feitas > 0 && `+${numero(esperado.feitas)} da massa`,
     esperado.saiu > 0 &&
       `−${numero(esperado.saiu)} em ${esperado.pedidos} ${esperado.pedidos === 1 ? "pedido" : "pedidos"}`,
+    esperado.usadas > 0 && `−${numero(esperado.usadas)} em outras receitas`,
   ].filter(Boolean);
   return `esperamos ${quanto(esperado.esperado, unidade)} · ${parcelas.join(", ")}`;
 }

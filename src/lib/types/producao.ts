@@ -18,6 +18,24 @@ export interface ConsumoDaFornada {
   quantidade: number;
 }
 
+/**
+ * O preparo que a fornada tirou do pote, em vez dos ingredientes (`#d346`).
+ * Congelado como o `consumo` (`#d88`).
+ */
+export interface TiradoDoPote {
+  /** A ficha do preparo. */
+  fichaId: string;
+  nomeSnapshot: string;
+  /** Na unidade de rendimento do preparo: g ou ml. */
+  quantidade: number;
+  /**
+   * Os ingredientes que o pote poupou, físicos, como no `consumo`. Não saem da
+   * despensa (o preparo já tirou, na fornada dele); servem ao abate do pedido,
+   * que pede esses ingredientes na explosão (`#d91`).
+   */
+  emIngredientes: ConsumoDaFornada[];
+}
+
 export interface Fornada extends DocumentoBase {
   fichaId: string;
   nomeSnapshot: string;
@@ -30,6 +48,8 @@ export interface Fornada extends DocumentoBase {
   dataISO: DataISO;
   /** O que ESTA fornada tirou da despensa. Congelado (`#d88`). */
   consumo: ConsumoDaFornada[];
+  /** O preparo que veio do pote. Ausente em fornada sem preparo contado. */
+  doPote?: TiradoDoPote[];
   /** Quando ela fez a massa para um pedido específico (`#d91`). */
   pedidoId?: string;
   observacao?: string;

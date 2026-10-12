@@ -12,7 +12,12 @@ import { despachar } from "./despachar";
 import { diaVizinho } from "@/lib/domain/datas";
 import { IDADE_VENCE_DIAS } from "@/lib/domain/estoque";
 import { VERSAO_SCHEMA } from "@/lib/types";
-import type { ConsumoDaFornada, DataISO, Fornada } from "@/lib/types";
+import type {
+  ConsumoDaFornada,
+  DataISO,
+  Fornada,
+  TiradoDoPote,
+} from "@/lib/types";
 
 /**
  * A fornada no banco: um documento por fornada, e nada mais.
@@ -51,6 +56,7 @@ export interface DadosFornada {
   unidadeRendimento: Fornada["unidadeRendimento"];
   dataISO: DataISO;
   consumo: ConsumoDaFornada[];
+  doPote?: TiradoDoPote[];
   pedidoId?: string;
   observacao?: string;
 }
@@ -64,7 +70,7 @@ export interface DadosFornada {
 export function registrarFornada(contaId: string, dados: DadosFornada): string {
   const referencia = doc(colFornadas(contaId));
   const momento = Timestamp.now();
-  const { pedidoId, observacao, ...resto } = dados;
+  const { doPote, pedidoId, observacao, ...resto } = dados;
 
   despachar(
     setDoc(referencia, {
@@ -72,6 +78,7 @@ export function registrarFornada(contaId: string, dados: DadosFornada): string {
       v: VERSAO_SCHEMA,
       ...resto,
       // Spread condicional: `undefined` não é valor que o Firestore aceite.
+      ...(doPote?.length ? { doPote } : {}),
       ...(pedidoId ? { pedidoId } : {}),
       ...(observacao ? { observacao } : {}),
       criadoEm: momento,

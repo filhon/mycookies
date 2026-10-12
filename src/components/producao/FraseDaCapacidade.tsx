@@ -95,6 +95,12 @@ export function FraseDoPronto({
           massa para {texto(projecao.feitas)} desde então
         </>
       )}
+      {projecao.usadas > 0 && (
+        <>
+          <Separador />
+          {rotuloDaQuantidade(projecao.usadas, unidade)} em outras receitas
+        </>
+      )}
     </Frase>
   );
 }

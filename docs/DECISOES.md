@@ -11135,3 +11135,44 @@ lista e na fornada; antes parava na caixa. O que não muda: o preparo usado por 
 pode mudar de unidade sem aviso no editor dele, e é a receita que o usa que avisa ao ser aberta.
 `usoDoMaterial` ("Onde entra") continua mostrando só quem usa o material direto, como já era com
 o kit.
+
+## D346 · O preparo no pote
+
+**Status:** vigente · decidida em 2026-10-12, spec `140-a-receita-dentro-da-receita.md` (sessão
+140-B). Responde ao item 3 da seção 2 da spec, como ela propunha.
+
+**Contexto.** A Maynara pode fazer o recheio antes (congelado em bolinhas) ou junto com a massa
+do cookie. Na 140-A a fornada do cookie sempre descontava os ingredientes do recheio, o que conta
+duas vezes a Nutella quando o recheio já tinha saído da despensa na fornada dele.
+
+**Decisão.**
+
+- **O pote já existia.** O preparo é receita, então `temPronto` vale para ele: aparece em "Contar
+  o que está pronto", em gramas, e a fornada dele soma no pote pela projeção de sempre. Nenhuma
+  tela nova de contagem.
+- **A fornada tira do pote o que ele tem, e o resto sai dos ingredientes.** `potesDosPreparos` lê
+  o pote de cada preparo direto da receita pela projeção (só com contagem que vale);
+  `tirarDoPote` tira `min(pote, o que a fornada pede)` e tira do `consumo` os ingredientes dessa
+  parte, pro rata. Pote nunca contado, vencido ou contado em zero é "fiz junto": tudo dos
+  ingredientes, como na 140-A. A regra é automática, sem pergunta na folha: o pote contado é a
+  resposta dela.
+- **Schema aditivo:** `Fornada.doPote?: TiradoDoPote[]` (`fichaId`, `nomeSnapshot`,
+  `quantidade` em g/ml e `emIngredientes`, os ingredientes que o pote poupou, físicos). Ausente
+  em fornada sem preparo do pote. Nenhuma regra muda: as regras não olham campo de fornada.
+- **A projeção do pote desconta:** `projecaoDoPronto` ganhou `usadas`, o que a massa de outras
+  fichas tirou deste pote depois da contagem (o dia da contagem continua opaco, `#d89`), e
+  `prontos` passou a ter piso zero. A contagem do pronto diz "−320 em outras receitas", conta isso
+  como movimento (`precisaConferirOPote`) e a frase do pote no produto também.
+- **`emIngredientes` existe pelo abate do pedido** (`#d91`): a explosão do pedido pede os
+  ingredientes do recheio, e sem eles no abate a lista mandaria comprar o recheio de uma massa
+  já feita. `produzidoParaPedidos` soma `consumo` e `emIngredientes`. A despensa não lê
+  `emIngredientes`: esses saíram na fornada do recheio.
+- **A folha da fornada** mostra "Sai do pote" antes de "Sai da despensa", com "você tem → fica",
+  ou "o pote tem X · os outros Y saem dos ingredientes" quando não dá; e diz em uma linha qual
+  preparo está sem pote contado.
+
+**Consequência.** Ficam de fora, com `ponytail:` onde cabe: a fornada de um kit não abre o pote
+do preparo da receita de dentro; a capacidade ("dá N fornadas") e o piso ainda contam os
+ingredientes do preparo mesmo com o pote cheio; a lista de compras não abate o pote do preparo,
+como já não abatia o pote de produto nenhum. Recheio feito e nunca contado continua contando
+duas vezes, e a saída é a que a folha já oferece depois da fornada dele: contar o pote.

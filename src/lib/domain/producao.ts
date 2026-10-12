@@ -5,9 +5,11 @@ import type {
   EscolhaDoKit,
   Percentual,
   TipoFicha,
+  TiradoDoPote,
   UnidadeBase,
   UnidadeRendimento,
 } from "@/lib/types";
+import { ehPreparo } from "./custoFicha";
 import {
   contagemDoInsumo,
   estoqueParaLista,
@@ -64,6 +66,8 @@ export interface FornadaRegistrada {
   arquivado: boolean;
   dataISO: DataISO;
   consumo: ConsumoDaFornada[];
+  /** O preparo que veio do pote (`#d346`): entra no abate do pedido, não na despensa. */
+  doPote?: Partial<TiradoDoPote>[];
   pedidoId?: string;
   /** Ausente é "ela não disse" (`#d139`); `aproveitamento` devolve 1 sem eles. */
   unidadesProduzidas?: number;
@@ -79,8 +83,8 @@ export interface FornadaRegistrada {
  *
  * É `insumosPorLote` — a mesma regra dos níveis (kit, receita, preparo) que a
  * lista de compras usa — passado por `quantidadeFisica`. A receita com preparo
- * desconta os ingredientes dele, pro rata (`#d345`): o pote do preparo é da
- * 140-B. O que sai do armário é o que sai do
+ * desconta os ingredientes dele, pro rata (`#d345`); o que vier do pote sai
+ * depois, em `tirarDoPote` (`#d346`). O que sai do armário é o que sai do
  * armário, e a perda faz parte dele. Insumo que sumiu do cadastro entra sem
  * perda: não há de onde tirá-la, e zero é a leitura honesta.
  *
@@ -89,7 +93,7 @@ export interface FornadaRegistrada {
  * uma fornada, e a lista de compras já diz o que ficou de fora.
  */
 export function consumoPorLote(
-  ficha: FichaParaProduzir,
+  ficha: FichaParaExplodir,
   fichas: FichaParaExplodir[],
   insumos: { id: string; perdaPercentual: Percentual }[],
 ): ConsumoDaFornada[] {
@@ -139,6 +143,91 @@ export function fornadaGravavel(
       quantidade: linha.quantidade * lotes,
     })),
   };
+}
+
+/**
+ * O que está no pote de cada preparo que a ficha leva, pela projeção: só os
+ * contados, com contagem que vale (`#d346`). Preparo fora do mapa sai dos
+ * ingredientes, como na 140-A.
+ */
+export function potesDosPreparos(
+  ficha: { componentes: { fichaId: string }[] },
+  fichas: (FichaComPronto & {
+    tipo: TipoFicha;
+    unidadeRendimento: UnidadeRendimento;
+  })[],
+  fornadas: FornadaDaFicha[],
+  hojeISO: DataISO,
+): Map<string, number> {
+  const potes = new Map<string, number>();
+  for (const componente of ficha.componentes) {
+    const preparo = fichas.find((atual) => atual.id === componente.fichaId);
+    if (!preparo || !ehPreparo(preparo)) continue;
+    const { prontos } = projecaoDoPronto(fornadas, preparo, hojeISO);
+    if (prontos !== null) potes.set(preparo.id, prontos);
+  }
+  return potes;
+}
+
+/**
+ * O preparo que sai do pote, e não da despensa (`#d346`): a massa do cookie
+ * leva o recheio que ela fez antes e contou.
+ *
+ * Por preparo da ficha, sai do pote o que a fornada pede dele, até o que o
+ * pote tem (`potes`, de `potesDosPreparos`). Os ingredientes dessa parte saem
+ * do `consumo`, pro rata, pelo mesmo `consumoPorLote`; o resto do preparo
+ * continua saindo da despensa, porque o que faltou no pote ela fez junto.
+ * Pote contado em zero é "fiz junto", e sai tudo dos ingredientes.
+ *
+ * Só o preparo direto da ficha: a fornada de um kit não abre o pote do
+ * recheio da receita de dentro.
+ */
+// ponytail: kit → receita → pote do preparo fica de fora; descer um nível
+// aqui quando a fornada de caixa com receita recheada aparecer na operação.
+export function tirarDoPote(
+  ficha: FichaParaExplodir,
+  gravavel: { lotes: number; consumo: ConsumoDaFornada[] },
+  fichas: FichaParaExplodir[],
+  insumos: { id: string; perdaPercentual: Percentual }[],
+  potes: Map<string, number>,
+): { consumo: ConsumoDaFornada[]; doPote: TiradoDoPote[] } {
+  const restaNoPote = new Map(potes);
+  const poupado = new Map<string, number>();
+  const doPote: TiradoDoPote[] = [];
+
+  for (const componente of ficha.componentes) {
+    const tem = restaNoPote.get(componente.fichaId) ?? 0;
+    const preparo = fichas.find((atual) => atual.id === componente.fichaId);
+    if (!preparo || preparo.arquivado || !(preparo.rendimento > 0)) continue;
+
+    const pede = Math.max(0, componente.quantidade) * gravavel.lotes;
+    const quantidade = Math.min(tem, pede);
+    if (!(quantidade > FOLGA)) continue;
+    restaNoPote.set(preparo.id, tem - quantidade);
+
+    const fracao = quantidade / preparo.rendimento;
+    const emIngredientes = consumoPorLote(preparo, fichas, insumos).map(
+      (linha) => ({ ...linha, quantidade: linha.quantidade * fracao }),
+    );
+    for (const linha of emIngredientes) {
+      poupado.set(
+        linha.insumoId,
+        (poupado.get(linha.insumoId) ?? 0) + linha.quantidade,
+      );
+    }
+    doPote.push({
+      fichaId: preparo.id,
+      nomeSnapshot: preparo.nome,
+      quantidade,
+      emIngredientes,
+    });
+  }
+
+  const consumo = gravavel.consumo.flatMap((linha) => {
+    const resta = linha.quantidade - (poupado.get(linha.insumoId) ?? 0);
+    return resta > FOLGA ? [{ ...linha, quantidade: resta }] : [];
+  });
+  return { consumo, doPote };
 }
 
 // ---------------------------------------------------------------------------
@@ -363,8 +452,13 @@ export function produzidoParaPedidos(
 
     // O que quebrou volta a ser promessa: o abate encolhe na fração
     // aproveitada, e a lista volta a comprar o que precisa refazer (`#d140`).
+    // O preparo do pote também virou massa para o pedido (`#d346`).
     const fator = aproveitamento(fornada);
-    for (const linha of fornada.consumo) {
+    const linhas = [
+      ...fornada.consumo,
+      ...(fornada.doPote ?? []).flatMap((pote) => pote.emIngredientes ?? []),
+    ];
+    for (const linha of linhas) {
       produzido.set(
         linha.insumoId,
         (produzido.get(linha.insumoId) ?? 0) + linha.quantidade * fator,
@@ -690,6 +784,8 @@ export interface FornadaDaFicha {
   pedidoId?: string;
   /** Ausente é "ela não disse", e não zero (`#d139`). */
   perdidas?: number;
+  /** O preparo que esta massa tirou do pote de outra ficha (`#d346`). */
+  doPote?: Partial<TiradoDoPote>[];
 }
 
 /** O que a contagem do pronto precisa saber de uma ficha. `FichaTecnica` serve. */
@@ -733,7 +829,9 @@ export interface ProjecaoDoPronto {
   fornadas: number;
   /** Para quantas unidades elas fizeram massa. */
   feitas: number;
-  /** O que a contagem disse, mais a massa feita depois dela. `null` sem contagem que valha. */
+  /** O que a massa de outras fichas tirou deste pote: é o preparo (`#d346`). */
+  usadas: number;
+  /** A contagem, mais a massa feita, menos a usada. `null` sem contagem que valha. */
   prontos: number | null;
 }
 
@@ -743,6 +841,9 @@ export interface ProjecaoDoPronto {
  * contagem é opaco, e a fornada do mesmo dia já está dentro do número que ela
  * contou. O que saiu do pote (vendido, entregue) o sistema não vê, e é a
  * contagem seguinte quem conserta, como na despensa.
+ *
+ * O preparo é a exceção que o sistema vê: a massa que levou o recheio do pote
+ * grava quanto levou (`#d346`), e a projeção desconta. Nunca abaixo de zero.
  */
 export function projecaoDoPronto(
   fornadas: FornadaDaFicha[],
@@ -751,22 +852,32 @@ export function projecaoDoPronto(
 ): ProjecaoDoPronto {
   const contagem = contagemDoPronto(ficha, hojeISO);
   const contadoEm = ficha.estoqueProntoContadoEmISO;
-  const desde =
+  const janela =
     contagem.quantidade === null || !contadoEm
       ? []
       : fornadas.filter(
-          (fornada) =>
-            !fornada.arquivado &&
-            fornada.fichaId === ficha.id &&
-            fornada.dataISO > contadoEm,
+          (fornada) => !fornada.arquivado && fornada.dataISO > contadoEm,
         );
+  const desde = janela.filter((fornada) => fornada.fichaId === ficha.id);
   const feitas = desde.reduce((soma, fornada) => soma + vendaveis(fornada), 0);
+  const usadas = janela.reduce(
+    (soma, fornada) =>
+      soma +
+      (fornada.doPote ?? [])
+        .filter((pote) => pote.fichaId === ficha.id)
+        .reduce((parcial, pote) => parcial + (pote.quantidade ?? 0), 0),
+    0,
+  );
 
   return {
     contagem,
     fornadas: desde.length,
     feitas,
-    prontos: contagem.quantidade === null ? null : contagem.quantidade + feitas,
+    usadas,
+    prontos:
+      contagem.quantidade === null
+        ? null
+        : Math.max(0, contagem.quantidade + feitas - usadas),
   };
 }
 

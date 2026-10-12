@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Check, TriangleAlert } from "lucide-react";
+import { listarNomes } from "@/components/producao/FraseDaCapacidade";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, Seletor } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { Painel } from "@/components/ui/Painel";
 import {
+  ehPreparo,
   rotuloDaQuantidade,
   SUFIXO_UNIDADE_RENDIMENTO,
 } from "@/lib/domain/custoFicha";
@@ -19,6 +21,8 @@ import {
   contagemDoPronto,
   disponivelParaProducao,
   fornadaGravavel,
+  potesDosPreparos,
+  tirarDoPote,
 } from "@/lib/domain/producao";
 import { formatarQuantidade } from "@/lib/domain/unidades";
 import { guardarSementeDoPronto } from "@/lib/estado/sementeDoPronto";
@@ -134,13 +138,50 @@ export function PainelFornada({
     [ficha, fichas, insumos],
   );
 
+  // O pote de cada preparo da receita, pela projeção (`#d346`): o recheio que
+  // ela fez antes e contou sai dele, e não dos ingredientes.
+  const potes = useMemo(
+    () =>
+      ficha
+        ? potesDosPreparos(ficha, fichas, fornadas, hoje)
+        : new Map<string, number>(),
+    [ficha, fichas, fornadas, hoje],
+  );
+
   const unidades = parseParaNumero(estado.unidades);
   const gravavel = ficha
     ? fornadaGravavel(ficha, Math.max(0, unidades), umLote)
     : null;
   const lotes = gravavel?.lotes ?? 0;
+  const comPote =
+    ficha && gravavel
+      ? tirarDoPote(ficha, gravavel, fichas, insumos, potes)
+      : null;
 
-  const linhas = (gravavel?.consumo ?? []).map((linha) => {
+  const doPote = (comPote?.doPote ?? []).map((tirado) => {
+    const tem = potes.get(tirado.fichaId) ?? 0;
+    const pede = (ficha?.componentes ?? [])
+      .filter((componente) => componente.fichaId === tirado.fichaId)
+      .reduce((soma, componente) => soma + componente.quantidade * lotes, 0);
+    const preparo = fichas.find((atual) => atual.id === tirado.fichaId);
+    return {
+      ...tirado,
+      unidade: (preparo?.unidadeRendimento === "ml" ? "ml" : "g") as "g" | "ml",
+      tem,
+      // O pote não deu para tudo: o resto ela faz junto, dos ingredientes.
+      resto: Math.max(0, pede - tirado.quantidade),
+    };
+  });
+
+  // Preparo sem pote contado: sai dos ingredientes, e a folha diz por quê.
+  const semPote = (ficha?.componentes ?? []).flatMap((componente) => {
+    const preparo = fichas.find((atual) => atual.id === componente.fichaId);
+    return preparo && ehPreparo(preparo) && !potes.has(preparo.id)
+      ? [preparo.nome]
+      : [];
+  });
+
+  const linhas = (comPote?.consumo ?? []).map((linha) => {
     const insumo = porId.get(linha.insumoId);
     const contagem = insumo ? contagemDoInsumo(insumo, hoje) : null;
     // Sem contagem que valha não há projeção: `null`, e não zero.
@@ -175,7 +216,7 @@ export function PainelFornada({
   }
 
   function salvar() {
-    if (!ficha || !gravavel) return;
+    if (!ficha || !gravavel || !comPote) return;
 
     if (!(gravavel.unidadesProduzidas > 0)) {
       setErro("Diga para quantas unidades você fez massa.");
@@ -194,7 +235,8 @@ export function PainelFornada({
       unidadesProduzidas: gravavel.unidadesProduzidas,
       unidadeRendimento: ficha.unidadeRendimento,
       dataISO: estado.dataISO,
-      consumo: gravavel.consumo,
+      consumo: comPote.consumo,
+      doPote: comPote.doPote,
       pedidoId: pedido?.id,
     });
     setRegistrada({ ficha, unidades: gravavel.unidadesProduzidas });
@@ -370,13 +412,52 @@ export function PainelFornada({
         {/* A consequência, antes de salvar. Cada linha diz o que sai, o que
             ela tem pela projeção e o que fica — ou que não há contagem que
             valha, caso em que não há projeção a fazer descer. */}
+        {/* O preparo que ela fez antes e contou (`#d346`): sai do pote, e os
+            ingredientes dele ficam na despensa. */}
+        {doPote.length > 0 && (
+          <div className="-mx-5">
+            <h3 className="px-5 text-label font-medium text-ink">
+              Sai do pote
+            </h3>
+            <ul className="mt-1.5 divide-y divide-line border-y border-line">
+              {doPote.map((tirado) => (
+                <li
+                  key={tirado.fichaId}
+                  className="flex min-h-14 items-center justify-between gap-3 px-5 py-2.5"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-body text-ink">
+                      {tirado.nomeSnapshot}
+                    </span>
+                    <span className="num mt-0.5 block text-label text-ink-muted">
+                      {tirado.resto > 0
+                        ? `o pote tem ${formatarQuantidade(tirado.tem, tirado.unidade)} · os outros ${formatarQuantidade(tirado.resto, tirado.unidade)} saem dos ingredientes`
+                        : `você tem ${formatarQuantidade(tirado.tem, tirado.unidade)} → fica ${formatarQuantidade(tirado.tem - tirado.quantidade, tirado.unidade)}`}
+                    </span>
+                  </span>
+                  <span className="num shrink-0 text-body font-semibold text-ink">
+                    {formatarQuantidade(tirado.quantidade, tirado.unidade)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="-mx-5">
           <h3 className="px-5 text-label font-medium text-ink">
             Sai da despensa
           </h3>
+          {semPote.length > 0 && (
+            <p className="mt-1 max-w-[60ch] px-5 text-label text-ink-muted">
+              {listarNomes(semPote)} sem pote contado: sai dos ingredientes.
+            </p>
+          )}
           {linhas.length === 0 ? (
             <p className="mt-1.5 px-5 text-label text-ink-muted">
-              Este produto não tem materiais cadastrados. Nada sai da despensa.
+              {doPote.length > 0
+                ? "Tudo vem do pote. Nada sai da despensa."
+                : "Este produto não tem materiais cadastrados. Nada sai da despensa."}
             </p>
           ) : (
             <ul className="mt-1.5 divide-y divide-line border-y border-line">

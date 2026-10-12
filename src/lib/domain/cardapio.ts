@@ -918,7 +918,7 @@ export function esperadoNoPote(
 
 /**
  * O recorte "Precisa conferir" da contagem do pronto (`#d335`): vencida,
- * envelhecendo, fornada ou pedido desde a contagem, ou nunca contada **com**
+ * envelhecendo, fornada, pedido ou preparo usado (`#d346`) desde a contagem, ou nunca contada **com**
  * fornada na janela. A nunca contada sem fornada fica de fora: nada indica que
  * haja algo no pote, e é o produto feito na hora.
  */
@@ -928,7 +928,8 @@ export function precisaConferirOPote(esperado: EsperadoNoPote): boolean {
     frescor === "VENCIDA" ||
     frescor === "ENVELHECENDO" ||
     esperado.fornadas > 0 ||
-    esperado.pedidos > 0
+    esperado.pedidos > 0 ||
+    esperado.usadas > 0
   );
 }
 

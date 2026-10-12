@@ -44,7 +44,7 @@ Ao terminar uma página, mude a linha dela aqui (status, data, specs).
 | Clientes               | `/clientes`                               | `src/app/(app)/clientes/page.tsx`                                        | ✅ melhorada | 2026-10-09 | 105–109 |
 | Contagem da despensa   | `/insumos/contagem`                       | `src/app/(app)/(coluna)/insumos/contagem/page.tsx`                       | ✅ melhorada | 2026-10-11 | 125–129 |
 | Contagem do pronto     | `/fichas/contagem`                        | `src/app/(app)/(coluna)/fichas/contagem/page.tsx`                        | ✅ melhorada | 2026-10-12 | 130–133 |
-| Produto (abrir / novo) | `/fichas/[id]`                            | `src/app/(app)/(coluna)/fichas/[id]/page.tsx`                            | ⬜ pendente  |            |         |
+| Produto (abrir / novo) | `/fichas/[id]`                            | `src/app/(app)/(coluna)/fichas/[id]/page.tsx`                            | ✅ melhorada | 2026-10-12 | 134–140 |
 | Orçamento em papel     | `/pedidos/[id]/orcamento`                 | `src/app/(app)/(coluna)/pedidos/[id]/orcamento/page.tsx`                 | ⬜ pendente  |            |         |
 | Relatório do MEI       | `/financeiro/relatorio-mei/[competencia]` | `src/app/(app)/(coluna)/financeiro/relatorio-mei/[competencia]/page.tsx` | ⬜ pendente  |            |         |
 
@@ -87,14 +87,17 @@ Ao terminar uma página, mude a linha dela aqui (status, data, specs).
 - **`/conheca` está parcial** porque a crítica de 2026-09-24 ("crítica da página de venda") é
   anterior ao procedimento com prints e não foi feita com `/frontend-design`; a 067 veio de
   conversa, não de crítica. Vale refazer com o prompt acima.
-- **Nasceram de spec, nunca foram auditadas:** `/fichas/[id]` (várias specs tocaram no editor,
-  nenhuma crítica o olhou inteiro), `/pedidos/[id]/orcamento` (017), `/financeiro/relatorio-mei/...` (074),
-  `/cadastro` (027), `/redefinir-senha` (042), `/assinatura` (028, 110), a página do pedido da
-  cliente (117) e as cinco páginas de preço (037, 068).
+- **`/fichas/[id]` foi auditada em 2026-10-12** (a crítica dos prints do editor de produto,
+  oito itens): 134 a 140, com a 140 em duas sessões (140-A, o preparo no custo; 140-B, o preparo
+  no pote). Os roteiros de navegador da 138, da 139 e da 140 seguem por rodar, e a pergunta da 140
+  à Maynara ("faz recheio que vai em mais de um produto?") segue em aberto (`ESTADO.md`).
+- **Nasceram de spec, nunca foram auditadas:** `/pedidos/[id]/orcamento` (017),
+  `/financeiro/relatorio-mei/...` (074), `/cadastro` (027), `/redefinir-senha` (042),
+  `/assinatura` (028, 110), a página do pedido da cliente (117) e as cinco páginas de preço
+  (037, 068).
 - **A ordem sugerida para as pendentes**, pelo que pesa no uso e na venda:
-  1. `/fichas/[id]`, a tela do preço, que é o motivo de o Rende existir.
-  2. `/cadastro` e `/assinatura`, a porta de entrada e a de pagamento.
-  3. A página do pedido da cliente, que é o Rende visto por quem compra.
-  4. `/pedidos/[id]/orcamento` e o relatório do MEI, que saem em papel.
-  5. As cinco páginas de preço, com a mesma crítica valendo para as cinco.
-  6. `/redefinir-senha`, `/assinatura/confirmando`, `/termos`, `/privacidade`, `/offline`.
+  1. `/cadastro` e `/assinatura`, a porta de entrada e a de pagamento.
+  2. A página do pedido da cliente, que é o Rende visto por quem compra.
+  3. `/pedidos/[id]/orcamento` e o relatório do MEI, que saem em papel.
+  4. As cinco páginas de preço, com a mesma crítica valendo para as cinco.
+  5. `/redefinir-senha`, `/assinatura/confirmando`, `/termos`, `/privacidade`, `/offline`.

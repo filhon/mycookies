@@ -26,6 +26,8 @@ import {
   reservaDeProducao,
   projecaoDoPronto,
   prontosLivres,
+  potesDosPreparos,
+  tirarDoPote,
   reservadoNoPronto,
   vendaveis,
   type FichaParaProduzir,
@@ -1773,5 +1775,129 @@ describe("faltasDaLista: a falta dita uma vez, acima da lista (#d231)", () => {
         capacidade("da", 1, "Farinha"),
       ]),
     ).toEqual({ produtos: 0, materiais: [] });
+  });
+});
+
+describe("o preparo no pote (#d346)", () => {
+  // O recheio rende 1 kg: 800 g de Nutella e 200 g de creme de leite. O
+  // cookie recheado rende 20 e leva 500 g de farinha e 320 g de recheio.
+  const RECHEIO = {
+    id: "recheio",
+    nome: "Recheio de Nutella",
+    tipo: "SIMPLES" as const,
+    arquivado: false,
+    rendimento: 1000,
+    unidadeRendimento: "g" as const,
+    itens: [
+      { insumoId: "nutella", nomeSnapshot: "Nutella", quantidade: 800 },
+      { insumoId: "creme", nomeSnapshot: "Creme de leite", quantidade: 200 },
+    ],
+    componentes: [],
+    estoqueProntoAtual: 1000,
+    estoqueProntoContadoEmISO: "2026-09-08",
+  };
+  const RECHEADO = {
+    id: "recheado",
+    nome: "Cookie recheado",
+    tipo: "SIMPLES" as const,
+    arquivado: false,
+    rendimento: 20,
+    unidadeRendimento: "un" as const,
+    itens: [
+      { insumoId: "chocolate", nomeSnapshot: "Chocolate", quantidade: 500 },
+    ],
+    componentes: [
+      {
+        fichaId: "recheio",
+        nomeSnapshot: "Recheio de Nutella",
+        quantidade: 320,
+      },
+    ],
+  };
+  const FICHAS_RECHEIO = [RECHEIO, RECHEADO];
+  const SEM_PERDA = ["chocolate", "nutella", "creme"].map((id) => ({
+    id,
+    perdaPercentual: 0,
+  }));
+
+  function fornada(potes: Map<string, number>) {
+    const gravavel = fornadaGravavel(
+      RECHEADO,
+      20,
+      consumoPorLote(RECHEADO, FICHAS_RECHEIO, SEM_PERDA),
+    );
+    return tirarDoPote(RECHEADO, gravavel, FICHAS_RECHEIO, SEM_PERDA, potes);
+  }
+  const quanto = (consumo: { insumoId: string; quantidade: number }[]) =>
+    Object.fromEntries(consumo.map((l) => [l.insumoId, l.quantidade]));
+
+  it("potesDosPreparos: só o preparo com contagem que vale, pela projeção", () => {
+    expect(potesDosPreparos(RECHEADO, FICHAS_RECHEIO, [], HOJE)).toEqual(
+      new Map([["recheio", 1000]]),
+    );
+    const semContagem = { ...RECHEIO, estoqueProntoContadoEmISO: null };
+    expect(
+      potesDosPreparos(RECHEADO, [semContagem, RECHEADO], [], HOJE).size,
+    ).toBe(0);
+  });
+
+  it("pote que dá: o recheio sai dele, e os ingredientes dele ficam na despensa", () => {
+    const { consumo, doPote } = fornada(new Map([["recheio", 1000]]));
+    expect(quanto(consumo)).toEqual({ chocolate: 500 });
+    expect(doPote).toHaveLength(1);
+    expect(doPote[0]).toMatchObject({ fichaId: "recheio", quantidade: 320 });
+    expect(quanto(doPote[0]?.emIngredientes ?? [])).toEqual({
+      nutella: 256,
+      creme: 64,
+    });
+  });
+
+  it("pote que não dá: tira o que tem, e o resto sai dos ingredientes", () => {
+    const { consumo, doPote } = fornada(new Map([["recheio", 200]]));
+    expect(doPote[0]?.quantidade).toBe(200);
+    const despensa = quanto(consumo);
+    expect(despensa.chocolate).toBe(500);
+    expect(despensa.nutella).toBeCloseTo(96);
+    expect(despensa.creme).toBeCloseTo(24);
+  });
+
+  it("sem pote contado, ou contado em zero: sai tudo dos ingredientes, como na 140-A", () => {
+    for (const potes of [new Map(), new Map([["recheio", 0]])]) {
+      const { consumo, doPote } = fornada(potes);
+      expect(doPote).toEqual([]);
+      expect(quanto(consumo)).toEqual({
+        chocolate: 500,
+        nutella: 256,
+        creme: 64,
+      });
+    }
+  });
+
+  it("projecaoDoPronto: a massa que levou o recheio desconta do pote dele", () => {
+    const usou = {
+      arquivado: false,
+      fichaId: "recheado",
+      unidadesProduzidas: 20,
+      dataISO: "2026-09-09",
+      doPote: [{ fichaId: "recheio", quantidade: 320 }],
+    };
+    const projecao = projecaoDoPronto([usou], RECHEIO, HOJE);
+    expect(projecao.usadas).toBe(320);
+    expect(projecao.prontos).toBe(680);
+    // O pote do próprio cookie não perde nada, e o dia da contagem é opaco.
+    expect(
+      projecaoDoPronto([{ ...usou, dataISO: "2026-09-08" }], RECHEIO, HOJE)
+        .prontos,
+    ).toBe(1000);
+  });
+
+  it("produzidoParaPedidos: o recheio do pote também virou massa para o pedido", () => {
+    const { consumo, doPote } = fornada(new Map([["recheio", 1000]]));
+    const produzido = produzidoParaPedidos(
+      [{ arquivado: false, dataISO: HOJE, consumo, doPote, pedidoId: "p1" }],
+      ["p1"],
+    );
+    expect(produzido.get("nutella")).toBe(256);
+    expect(produzido.get("chocolate")).toBe(500);
   });
 });
