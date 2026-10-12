@@ -403,7 +403,7 @@ function referencia(
 }
 
 /** "há 15 dias", sem o "contada" de `rotuloDeIdade`: a coluna já diz o que é. */
-function haQuanto(contagem: LinhaDeContagem["contagem"]): string {
+export function haQuanto(contagem: LinhaDeContagem["contagem"]): string {
   if (contagem.frescor === "VENCIDA") return "há mais de um mês";
   const dias = contagem.idadeEmDias ?? 0;
   return dias === 0 ? "hoje" : `há ${dias} ${dias === 1 ? "dia" : "dias"}`;

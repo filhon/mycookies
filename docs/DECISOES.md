@@ -10820,3 +10820,35 @@ aparecia em lugar nenhum.
 **Consequência.** Um toque a mais até Produtos. Nada é guardado: o histórico do que sumiu por
 mês continua sendo schema, e outra spec. "O que está pronto vale" diz "nos N produtos contados
 hoje" mesmo quando um deles não tem preço e ficou fora da soma.
+
+---
+
+## D338 · O pote no computador
+
+**Status:** vigente · decidida em 2026-10-12, spec `133-o-pote-no-computador.md`.
+
+**Contexto.** A 1864 px, a linha da contagem do pronto tinha o nome numa ponta, o campo na outra e
+≈ 640 px vazios no meio: o mesmo print que a 129 consertou na despensa (`#d334`).
+
+**Decisão.**
+
+- **A grade do `#d334`, sem constante nova.** `LinhaPronto` usa `COLUNAS_CONTAGEM` de
+  `LinhaContagem.tsx`: Produto · Última contagem · Esperamos · Hoje. "Hoje" fica com os 13rem da
+  despensa, e não ganha a irmã de 9rem que a spec previa: sem "−"/"+" no desktop, o "Igual" mais o
+  campo de 112 px ainda não cabem em 144 px.
+- **Um campo só**, como na despensa: o invólucro do celular vira `lg:contents` e as células novas
+  são `hidden lg:block`. O Enter da 131 e o rascunho continuam vendo uma linha.
+- **Os números com o sufixo do campo**: "16 un", "3 porções", e não "16 unidades", para caberem
+  na coluna. A idade é `haQuanto`, exportada da despensa ("há 8 dias", "há mais de um mês").
+- **Esperamos** só com esperado e movimento (fornada ou pedido): o número e, embaixo, as parcelas
+  que não são zero, "+12 massa · −19 pedidos". Sem movimento, a célula fica vazia: o esperado
+  seria a própria última contagem.
+- **Embaixo do nome, só a palavra** ("nunca contada", "vencida", com o triângulo, nas regras do
+  `#d335`); a frase de referência não aparece no desktop. Consequência, procedência da massa e
+  "não deu para ler" descem para baixo do campo.
+- **Cabeçalho de colunas uma vez**, acima da lista (aqui não há corredor), `aria-hidden`, e cada
+  célula com o rótulo em `sr-only`; `aria-describedby` troca com `useDesktop`, pelo mesmo motivo
+  do `#d334`.
+
+**Consequência.** O leitor de tela lê "16 un", e não "16 unidades", como na despensa. Sem coluna em
+reais: o valor está no resumo (`#d337`).

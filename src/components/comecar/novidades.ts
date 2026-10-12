@@ -25,6 +25,14 @@ export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-12",
     titulo:
+      "No computador, a contagem do pronto mostra a última contagem e o esperado lado a lado",
+    frase:
+      "Na tela grande, cada produto vira uma linha com a última contagem, o que esperamos no pote e o campo de hoje, um ao lado do outro.",
+    href: "/fichas/contagem",
+  },
+  {
+    dataISO: "2026-10-12",
+    titulo:
       "Depois de contar o que está pronto, veja o que falta para os pedidos e o que saiu sem pedido",
     frase:
       "Ao salvar, a contagem mostra o pote que não dá para os pedidos abertos, o que acabou, o que sumiu sem passar pelo app e quanto vale o que está pronto.",

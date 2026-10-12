@@ -11,7 +11,11 @@ import {
   Plus,
   TriangleAlert,
 } from "lucide-react";
-import { andarParaOProximo } from "@/components/estoque/LinhaContagem";
+import {
+  andarParaOProximo,
+  COLUNAS_CONTAGEM,
+  haQuanto,
+} from "@/components/estoque/LinhaContagem";
 import { RodapeContagem } from "@/components/estoque/RodapeContagem";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { ResumoDoPote } from "@/components/producao/ResumoDoPote";
@@ -59,6 +63,7 @@ import {
 import { salvarContagemDoPronto } from "@/lib/firebase/mutations/estoque";
 import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
 import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
+import { useDesktop } from "@/lib/hooks/useDispositivo";
 import type {
   ConfiguracaoGeral,
   FichaTecnica,
@@ -453,24 +458,42 @@ export function TelaContagemPronto() {
             />
           </div>
         ) : (
-          <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
-            {linhas.map((ficha) => (
-              <LinhaPronto
-                key={ficha.id}
-                ficha={ficha}
-                esperado={esperados.get(ficha.id)}
-                proposto={
-                  ficha.id === semeada?.id && sugestao !== null
-                    ? sugestao
-                    : null
-                }
-                entrada={semente?.unidades ?? 0}
-                texto={digitados[ficha.id] ?? ""}
-                aoMudar={(texto) => escrever(ficha.id, texto)}
-                aoIgual={(anotado) => escrever(ficha.id, textoContado(anotado))}
-              />
-            ))}
-          </ul>
+          <div className="overflow-hidden rounded-lg border border-line bg-surface">
+            {/* Para quem vê: cada célula da linha leva o rótulo em `sr-only`
+                (`#d338`, o `#d334` da despensa). */}
+            <div
+              aria-hidden
+              className={cn(
+                "hidden gap-x-6 border-b border-line px-5 pb-2 pt-3 text-micro font-semibold uppercase tracking-wide text-ink-muted lg:grid",
+                COLUNAS_CONTAGEM,
+              )}
+            >
+              <span>Produto</span>
+              <span className="text-right">Última contagem</span>
+              <span className="text-right">Esperamos</span>
+              <span className="text-right">Hoje</span>
+            </div>
+            <ul className="divide-y divide-line">
+              {linhas.map((ficha) => (
+                <LinhaPronto
+                  key={ficha.id}
+                  ficha={ficha}
+                  esperado={esperados.get(ficha.id)}
+                  proposto={
+                    ficha.id === semeada?.id && sugestao !== null
+                      ? sugestao
+                      : null
+                  }
+                  entrada={semente?.unidades ?? 0}
+                  texto={digitados[ficha.id] ?? ""}
+                  aoMudar={(texto) => escrever(ficha.id, texto)}
+                  aoIgual={(anotado) =>
+                    escrever(ficha.id, textoContado(anotado))
+                  }
+                />
+              ))}
+            </ul>
+          </div>
         )}
 
         {falha && (
@@ -494,7 +517,11 @@ export function TelaContagemPronto() {
   );
 }
 
-/** Uma ficha na contagem: o nome, o campo e a frase que explica o número velho. */
+/**
+ * Uma ficha na contagem: o nome, o campo e a frase que explica o número velho.
+ * No desktop (`#d338`), a grade da despensa (`#d334`): nome, última contagem,
+ * esperado e campo lado a lado, com um campo só.
+ */
 function LinhaPronto({
   ficha,
   esperado,
@@ -541,6 +568,35 @@ function LinhaPronto({
     anotado !== null &&
     (contagem?.frescor === "FRESCA" || contagem?.frescor === "ENVELHECENDO");
 
+  const consequencia =
+    valor === null
+      ? null
+      : valor === 0
+        ? "zero: conferido, e não tem"
+        : contagem?.frescor !== "NUNCA" && valor === anotado
+          ? "igual à última, conferido hoje"
+          : `${quanto(valor, unidade)}, contadas hoje`;
+  const estado = ilegivel
+    ? "não deu para ler este número"
+    : (procedencia ?? consequencia);
+
+  // No desktop (`#d338`) os números vão para as colunas, embaixo do nome fica
+  // só a palavra de atenção, e o que o campo diz desce para baixo dele.
+  const desktop = useDesktop();
+  const id = `pronto-${ficha.id}`;
+  const soPalavra = atencao && !contado && !ilegivel && !procedencia;
+  const esperada = !!esperado && esperado.esperado !== null && !semMovimento;
+  const descritores = desktop
+    ? [
+        soPalavra && `${id}-referencia`,
+        anotado !== null && `${id}-ultima`,
+        esperada && `${id}-esperado`,
+        estado && `${id}-estado`,
+      ]
+        .filter(Boolean)
+        .join(" ") || undefined
+    : `${id}-referencia`;
+
   // "−" e "+" no celular (`#d336`): unidade e porção se contam no dedo. Com
   // eles o "Igual" fica na linha da frase até o `lg`, e o "un" sai do campo.
   const noDedo = unidade === "un" || unidade === "porcao";
@@ -582,12 +638,22 @@ function LinhaPronto({
     </button>
   );
 
+  const medida = (valor: number) =>
+    `${numero(valor)} ${SUFIXO_UNIDADE_RENDIMENTO[unidade]}`;
+
   return (
-    <li className={cn("px-4 py-3 lg:px-5", contado && "bg-sunken")}>
-      <div className="flex items-center gap-3">
+    <li
+      className={cn(
+        "px-4 py-3 lg:grid lg:items-center lg:gap-x-6 lg:px-5",
+        COLUNAS_CONTAGEM,
+        contado && "bg-sunken",
+      )}
+    >
+      {/* `lg:contents`: no desktop os filhos viram as células da grade. */}
+      <div className="flex items-center gap-3 lg:contents">
         <div className="min-w-0 flex-1">
           <label
-            htmlFor={`pronto-${ficha.id}`}
+            htmlFor={id}
             className="line-clamp-2 text-body font-medium text-ink"
           >
             {/* Os nomes só diferem no fim (sabor, gramatura): cortar o fim é
@@ -596,9 +662,10 @@ function LinhaPronto({
           </label>
           <div className="flex items-center gap-2">
             <p
-              id={`pronto-${ficha.id}-referencia`}
+              id={`${id}-referencia`}
               className={cn(
                 "num mt-0.5 flex min-w-0 flex-1 items-start gap-1.5 text-label",
+                !soPalavra && "lg:hidden",
                 ilegivel
                   ? "text-negative"
                   : contado && !procedencia
@@ -630,70 +697,116 @@ function LinhaPronto({
                   />
                 )
               )}
-              <span>
-                {ilegivel
-                  ? "não deu para ler este número"
-                  : (procedencia ??
-                    (contado
-                      ? valor === 0
-                        ? "zero: conferido, e não tem"
-                        : contagem?.frescor !== "NUNCA" && valor === anotado
-                          ? "igual à última, conferido hoje"
-                          : `${quanto(valor, unidade)}, contadas hoje`
-                      : referencia(esperado, unidade, atencao)))}
-              </span>
+              <span>{estado ?? referencia(esperado, unidade, atencao)}</span>
             </p>
             {igual && botaoIgual(noDedo ? "lg:hidden" : "min-[400px]:hidden")}
           </div>
         </div>
 
-        {igual &&
-          botaoIgual(
-            noDedo ? "hidden lg:inline-flex" : "hidden min-[400px]:inline-flex",
+        {/* ---- desktop: as duas colunas que ela compara ---- */}
+        <div id={`${id}-ultima`} className="num hidden text-right lg:block">
+          {anotado !== null && contagem && (
+            <>
+              <span className="sr-only">Última contagem, </span>
+              <p className="text-body text-ink">
+                {medida(anotado)}
+                <span className="sr-only">,</span>
+              </p>
+              <p className="text-label text-ink-muted">
+                {contagem.frescor === "NUNCA" ? "anotadas" : haQuanto(contagem)}
+              </p>
+            </>
           )}
-        <div className="flex shrink-0 items-center gap-2">
-          {noDedo && botaoPasso(-1)}
-          <div
-            className={cn(
-              "relative shrink-0",
-              unidade === "un" ? "w-15 lg:w-28" : "w-28",
-            )}
-          >
-            <input
-              id={`pronto-${ficha.id}`}
-              data-contagem
-              inputMode="decimal"
-              enterKeyHint="next"
-              autoComplete="off"
-              placeholder="—"
-              value={texto}
-              aria-label={
-                unidade === "un" ? `${ficha.nome}, em unidades` : undefined
-              }
-              aria-describedby={`pronto-${ficha.id}-referencia`}
-              aria-invalid={ilegivel ? true : undefined}
-              onChange={(evento) => aoMudar(evento.target.value)}
-              onKeyDown={andarParaOProximo}
-              className={cn(
-                BASE_CONTROLE,
-                "num text-right font-semibold",
-                unidade === "un"
-                  ? "px-1 text-center lg:pl-3 lg:pr-14 lg:text-right"
-                  : "pr-14",
-                ilegivel ? "border-negative" : "border-line-strong",
+        </div>
+        <div id={`${id}-esperado`} className="num hidden text-right lg:block">
+          {esperada && esperado.esperado !== null && (
+            <>
+              <span className="sr-only">Esperamos, </span>
+              <p className="text-body text-ink">
+                {medida(esperado.esperado)}
+                <span className="sr-only">,</span>
+              </p>
+              <p className="text-label text-ink-muted">
+                {[
+                  esperado.feitas > 0 && `+${numero(esperado.feitas)} massa`,
+                  esperado.saiu > 0 && `−${numero(esperado.saiu)} pedidos`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* No celular `contents`, e nada muda; no desktop, a célula "Hoje". */}
+        <div className="contents lg:block">
+          <div className="contents lg:flex lg:items-center lg:justify-end lg:gap-2">
+            {igual &&
+              botaoIgual(
+                noDedo
+                  ? "hidden lg:inline-flex"
+                  : "hidden min-[400px]:inline-flex",
               )}
-            />
-            <span
-              aria-hidden
+            <div className="flex shrink-0 items-center gap-2">
+              {noDedo && botaoPasso(-1)}
+              <div
+                className={cn(
+                  "relative shrink-0",
+                  unidade === "un" ? "w-15 lg:w-28" : "w-28",
+                )}
+              >
+                <input
+                  id={id}
+                  data-contagem
+                  inputMode="decimal"
+                  enterKeyHint="next"
+                  autoComplete="off"
+                  placeholder="—"
+                  value={texto}
+                  aria-label={
+                    unidade === "un" ? `${ficha.nome}, em unidades` : undefined
+                  }
+                  aria-describedby={descritores}
+                  aria-invalid={ilegivel ? true : undefined}
+                  onChange={(evento) => aoMudar(evento.target.value)}
+                  onKeyDown={andarParaOProximo}
+                  className={cn(
+                    BASE_CONTROLE,
+                    "num text-right font-semibold",
+                    unidade === "un"
+                      ? "px-1 text-center lg:pl-3 lg:pr-14 lg:text-right"
+                      : "pr-14",
+                    ilegivel ? "border-negative" : "border-line-strong",
+                  )}
+                />
+                <span
+                  aria-hidden
+                  className={cn(
+                    "pointer-events-none absolute inset-y-0 right-3 items-center text-label text-ink-muted",
+                    unidade === "un" ? "hidden lg:flex" : "flex",
+                  )}
+                >
+                  {SUFIXO_UNIDADE_RENDIMENTO[unidade]}
+                </span>
+              </div>
+              {noDedo && botaoPasso(1)}
+            </div>
+          </div>
+          {estado && (
+            <p
+              id={`${id}-estado`}
               className={cn(
-                "pointer-events-none absolute inset-y-0 right-3 items-center text-label text-ink-muted",
-                unidade === "un" ? "hidden lg:flex" : "flex",
+                "num mt-1 hidden text-right text-label lg:block",
+                ilegivel
+                  ? "text-negative"
+                  : procedencia
+                    ? "text-ink-muted"
+                    : "text-ink",
               )}
             >
-              {SUFIXO_UNIDADE_RENDIMENTO[unidade]}
-            </span>
-          </div>
-          {noDedo && botaoPasso(1)}
+              {estado}
+            </p>
+          )}
         </div>
       </div>
       <span aria-live="polite" className="sr-only">
@@ -731,7 +844,9 @@ function referencia(
   if (contagem.frescor === "VENCIDA") {
     return (
       <>
-        {palavra("vencida")} · {rotuloDeIdade(contagem)}
+        {palavra("vencida")}
+        {/* No desktop o resto está nas colunas (`#d338`). */}
+        <span className="lg:hidden"> · {rotuloDeIdade(contagem)}</span>
       </>
     );
   }
