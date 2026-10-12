@@ -84,10 +84,10 @@ sabe disso (o `ponytail` da 140-B). A 143 leva o aviso para dentro do preparo ab
 
 ## Critérios de aceite
 
-- [ ] Frase de capacidade na bancada, sem `prometido`.
-- [ ] Aviso por linha só no contado que não dá, com triângulo e palavra.
-- [ ] Muda com as pílulas, que nunca travam.
-- [ ] Portão de conclusão passa; `#d348`, `ESTADO.md`, `novidades.ts`.
+- [x] Frase de capacidade na bancada, sem `prometido`.
+- [x] Aviso por linha só no contado que não dá, com triângulo e palavra.
+- [x] Muda com as pílulas, que nunca travam.
+- [x] Portão de conclusão passa; `#d348`, `ESTADO.md`, `novidades.ts`.
 
 ---
 

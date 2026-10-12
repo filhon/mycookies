@@ -11214,3 +11214,37 @@ quanto falta, e o peso da bolinha só no editor, longe de onde se porciona.
 
 **Consequência.** Com `un`, "1 ovos" na ½ fornada: o nome é o do cadastro, e plural pelo número
 seria adivinhar. Agrupar ingredientes ("Secos", "Úmidos") pede schema e espera ela pedir.
+
+## D348 · O que falta antes de começar
+
+**Status:** vigente · decidida em 2026-10-12, spec `142-o-que-falta-antes-de-comecar.md`. Da
+crítica dos prints da bancada de 2026-10-12, item 6.
+
+**Contexto.** A despensa só aparecia na bancada depois da massa, na folha do "Fiz a massa" ("Sai
+da despensa"). Ela descobria na metade que a Nutella não dava, e o Rende já sabia a resposta antes
+(`capacidadeDaFicha`, `#d94`).
+
+**Decisão.**
+
+- **A frase das fornadas** é a `FraseDaCapacidade` longa de sempre, sob "Rende N" e a massa.
+  Nenhuma frase nova.
+- **Sem `prometido`.** A capacidade da lista de produtos desconta os pedidos abertos porque
+  responde "dá para vender mais?" (`#d95`); a bancada responde "dá para fazer agora?", e a massa
+  de agora é quase sempre a dos próprios pedidos. Descontar seria contar a mesma farinha duas
+  vezes. É `capacidadeDaFicha(ficha, fichas, insumos, consumoDesdeAContagem(fornadas, insumos),
+hoje)`, com o que a bancada já carrega: nenhuma consulta nova.
+- **O aviso na linha** só vai no material direto **contado** cujo `tem` é menor que
+  `precisaPorLote × fornadas` (físico, com a perda, na unidade base): `TriangleAlert` + "tem 300 g"
+  em `label`, tinta `--attention`, escrito como a bancada escreve a quantidade
+  (`quantidadeNaBancada`). Muda com as pílulas. Uma comparação só, então fica na tela e não vira
+  função de domínio.
+- **Sem aviso para quem não tem contagem.** A frase já diz "Nutella sem contagem"; marcar dez
+  linhas com isso seria ruído.
+- **As pílulas não travam.** Ela pode fazer 3 fornadas com o que tem na geladeira e nunca contou:
+  o sistema faz a conta, ela decide.
+
+**Consequência.** O preparo aberto não avisa: a linha dele é a ficha, que não casa com linha da
+capacidade, e a capacidade ainda conta os ingredientes do preparo mesmo com o pote contado
+(`#d346`). A 143 leva o aviso para dentro do preparo. Como `precisaPorLote` inclui a perda, a
+linha que pede "240 g" pode avisar "tem 245 g" num material com perda: o aviso é sobre o que sai
+da despensa, não sobre o que vai na tigela.

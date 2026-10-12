@@ -5,9 +5,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { orderBy, query, where } from "firebase/firestore";
-import { Check, CookingPot, Package, RotateCcw } from "lucide-react";
+import {
+  Check,
+  CookingPot,
+  Package,
+  RotateCcw,
+  TriangleAlert,
+} from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
-import { listarNomes } from "@/components/producao/FraseDaCapacidade";
+import {
+  FraseDaCapacidade,
+  listarNomes,
+} from "@/components/producao/FraseDaCapacidade";
 import { PainelFornada } from "@/components/producao/PainelFornada";
 import { Botao } from "@/components/ui/Botao";
 import { Esqueleto } from "@/components/ui/Esqueleto";
@@ -23,7 +32,12 @@ import {
   escalarItens,
   FORNADAS_DA_BANCADA,
   passosDoPreparo,
+  quantidadeNaBancada,
 } from "@/lib/domain/preparo";
+import {
+  capacidadeDaFicha,
+  consumoDesdeAContagem,
+} from "@/lib/domain/producao";
 import { colFichas, colInsumos } from "@/lib/firebase/colecoes";
 import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
 import { useColecao } from "@/lib/hooks/useColecao";
@@ -216,6 +230,26 @@ function Bancada({
     marcas.passos.includes(indice),
   ).length;
 
+  // "Dá para fazer agora?", e não "dá para vender mais?": sem `prometido`,
+  // porque a massa de agora é quase sempre a dos próprios pedidos (`#d348`).
+  const capacidade = capacidadeDaFicha(
+    ficha,
+    fichas,
+    insumos,
+    consumoDesdeAContagem(fornadas, insumos),
+    hoje,
+  );
+  // Só o contado que não dá; o preparo não casa com linha da capacidade e
+  // fica sem aviso até a 143. As pílulas não travam: ela decide.
+  const naoDa = new Map(
+    (capacidade?.insumos ?? []).flatMap((linha) =>
+      linha.tem !== null &&
+      linha.tem + 1e-6 < linha.precisaPorLote * marcas.fator
+        ? [[linha.insumoId, quantidadeNaBancada(linha.tem, linha.unidadeBase)]]
+        : [],
+    ),
+  );
+
   return (
     <>
       <CabecalhoPagina
@@ -250,6 +284,9 @@ function Bancada({
             </span>
             {massa && <span>{massa}</span>}
           </p>
+          {capacidade && (
+            <FraseDaCapacidade capacidade={capacidade} className="mt-2" />
+          )}
         </section>
 
         {/* Sem passos, nada de segunda coluna vazia: a lista fica numa
@@ -272,30 +309,47 @@ function Bancada({
               tudo="Tudo na tigela"
             />
             <ul className="mt-3 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
-              {ingredientes.map((item) => (
-                <li key={item.insumoId}>
-                  <LinhaMarcavel
-                    feito={marcas.itens.includes(item.insumoId)}
-                    aoTocar={() =>
-                      setMarcas({
-                        ...marcas,
-                        itens: alternar(marcas.itens, item.insumoId),
-                      })
-                    }
-                    marcador={null}
-                    className="min-h-16 items-center"
-                  >
-                    {/* A letra da bancada, maior que a do app: é a única
+              {ingredientes.map((item) => {
+                const tem = naoDa.get(item.insumoId);
+                return (
+                  <li key={item.insumoId}>
+                    <LinhaMarcavel
+                      feito={marcas.itens.includes(item.insumoId)}
+                      aoTocar={() =>
+                        setMarcas({
+                          ...marcas,
+                          itens: alternar(marcas.itens, item.insumoId),
+                        })
+                      }
+                      marcador={null}
+                      className="min-h-16 items-center"
+                    >
+                      {/* A letra da bancada, maior que a do app: é a única
                         tela que se lê a meio metro (`#d347`). */}
-                    <span className="min-w-0 flex-1 text-heading">
-                      {item.nomeSnapshot}
-                    </span>
-                    <span className="num shrink-0 text-title font-semibold">
-                      {item.rotulo}
-                    </span>
-                  </LinhaMarcavel>
-                </li>
-              ))}
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-heading">
+                          {item.nomeSnapshot}
+                        </span>
+                        {/* O triângulo e a palavra levam o aviso; a cor não
+                          decide sozinha (`#d348`). */}
+                        {tem && (
+                          <span className="num mt-0.5 flex items-center gap-1.5 text-label text-attention">
+                            <TriangleAlert
+                              aria-hidden
+                              className="size-3.5 shrink-0"
+                              strokeWidth={2}
+                            />
+                            tem {tem}
+                          </span>
+                        )}
+                      </span>
+                      <span className="num shrink-0 text-title font-semibold">
+                        {item.rotulo}
+                      </span>
+                    </LinhaMarcavel>
+                  </li>
+                );
+              })}
             </ul>
             {embalagem.length > 0 && (
               <p className="mt-3 flex items-start gap-2 text-label text-ink-muted">

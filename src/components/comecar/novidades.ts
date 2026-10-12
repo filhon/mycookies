@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-12",
+    titulo: "A bancada avisa, antes de começar, o ingrediente que não dá",
+    frase:
+      "Abra a receita na bancada e escolha as fornadas: ela diz quantas a despensa dá e marca o ingrediente contado que não chega.",
+    href: "/fichas",
+  },
+  {
+    dataISO: "2026-10-12",
     titulo:
       "Na bancada, a letra ficou maior e a massa diz quanto pesa cada bolinha",
     frase:
