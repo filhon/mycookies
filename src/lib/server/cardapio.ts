@@ -31,13 +31,15 @@ import {
   type ResumoMensal,
   type VitrineDoCardapio,
 } from "@/lib/types";
+import type { DocumentReference } from "firebase-admin/firestore";
 import { adminDb, credencialDisponivel } from "./firebaseAdmin";
 
 /**
  * As leituras do cardápio público (spec 031, `DECISOES.md#d158`): a página, o
  * pedido e a foto, e o pedido que a cliente acompanha (spec 117, `#d320`). Sem
  * login: quem decide o que sai é `montarCardapio`, `entraNoCardapio` e
- * `acompanhamentoDoPedido`, e nada daqui escreve.
+ * `acompanhamentoDoPedido`, e nada daqui escreve: a aprovação do orçamento
+ * (`#d358`) passa por `pedidoPelaChave` e grava na rota dela.
  *
  * O `Timestamp` do Admin SDK tem o mesmo `toMillis()` do cliente, que é tudo o
  * que o domínio chama; por isso os `as` abaixo.
@@ -229,24 +231,32 @@ export async function lerContaDoCardapio(contaId: string): Promise<{
 }
 
 /**
- * O pedido que a cliente acompanha (spec 117, `#d320`): o pedido, a conta e a
- * configuração, e só sai o que `acompanhamentoDoPedido` deixa passar. Chave
- * errada, pedido arquivado, conta encerrada ou sem o cardápio no pacote: `null`,
- * o mesmo não encontrado, que não diz se o pedido existe.
+ * O pedido de quem tem a chave (spec 117, `#d320`), com a conta e a
+ * configuração: a mesma porta para ler o acompanhamento e para aprovar o
+ * orçamento (spec 149, `#d358`). Chave errada, pedido arquivado, conta
+ * encerrada ou sem o cardápio no pacote: `null`, o mesmo não encontrado, que
+ * não diz se o pedido existe.
  */
-export async function lerAcompanhamento(
+export async function pedidoPelaChave(
   endereco: string,
   pedidoId: string,
   chave: string,
-): Promise<Acompanhamento | null> {
+): Promise<{
+  contaId: string;
+  conta: Conta;
+  configuracao: ConfiguracaoGeral | undefined;
+  pedido: Pedido;
+  referencia: DocumentReference;
+} | null> {
   const contaId = await contaDoEndereco(endereco);
   if (!contaId || !ID.test(pedidoId) || !ID.test(chave)) return null;
 
   const db = adminDb();
+  const referencia = db.collection(caminhos.pedidos(contaId)).doc(pedidoId);
   const [contaSnap, configuracaoSnap, pedidoSnap] = await db.getAll(
     db.doc(caminhos.conta(contaId)),
     db.doc(caminhos.configuracaoGeral(contaId)),
-    db.collection(caminhos.pedidos(contaId)).doc(pedidoId),
+    referencia,
   );
   if (!contaSnap?.exists || !pedidoSnap?.exists) return null;
 
@@ -267,8 +277,49 @@ export async function lerAcompanhamento(
     return null;
   }
 
-  const configuracao = configuracaoSnap?.data() as
-    ConfiguracaoGeral | undefined;
+  return {
+    contaId,
+    conta,
+    configuracao: configuracaoSnap?.data() as ConfiguracaoGeral | undefined,
+    pedido,
+    referencia,
+  };
+}
+
+/**
+ * O pedido que a cliente acompanha (spec 117, `#d320`): o pedido pela chave,
+ * a vitrine e as fichas do pedido (`#d357`), e só sai o que
+ * `acompanhamentoDoPedido` deixa passar.
+ */
+export async function lerAcompanhamento(
+  endereco: string,
+  pedidoId: string,
+  chave: string,
+): Promise<Acompanhamento | null> {
+  const achado = await pedidoPelaChave(endereco, pedidoId, chave);
+  if (!achado) return null;
+  const { contaId, conta, configuracao, pedido } = achado;
+  const db = adminDb();
+
+  // A foto e a descrição de cada linha e o logo, como na folha (`#d357`): as
+  // fichas do pedido e das escolhas, e a vitrine, só depois da chave conferir.
+  const colecao = db.collection(caminhos.fichas(contaId));
+  const ids = [
+    ...new Set(
+      pedido.itens.flatMap((item) => [
+        item.fichaTecnicaId,
+        ...(item.escolhas ?? []).map((escolha) => escolha.fichaTecnicaId),
+      ]),
+    ),
+  ].filter((id) => ID.test(id));
+  const [vitrine, fichasSnap] = await Promise.all([
+    lerVitrine(contaId),
+    ids.length ? db.getAll(...ids.map((id) => colecao.doc(id))) : [],
+  ]);
+  const fichas = fichasSnap
+    .filter((snap) => snap.exists)
+    .map((snap) => ({ id: snap.id, ...snap.data() }) as FichaTecnica);
+
   const whatsapp = telefoneParaWhatsApp(configuracao?.contato?.telefone);
   return acompanhamentoDoPedido(
     pedido,
@@ -276,9 +327,12 @@ export async function lerAcompanhamento(
       nome: conta.nome,
       quem: conta.proprietaria.trim().split(/\s+/)[0] ?? "",
       ...(whatsapp ? { whatsapp } : {}),
+      logo: vitrine?.logo,
+      condicoes: configuracao?.condicoes,
     },
     configuracao?.formasPagamento ?? [],
     hojeEmBrasilia(new Date()),
+    fichas,
   );
 }
 

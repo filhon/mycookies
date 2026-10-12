@@ -12,6 +12,7 @@ import {
   Truck,
   type LucideIcon,
 } from "lucide-react";
+import { AprovarOrcamento } from "@/components/cardapio/AprovarOrcamento";
 import { BotaoCopiar } from "@/components/ui/BotaoCopiar";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -25,7 +26,8 @@ import { cn } from "@/lib/utils/cn";
  * O pedido que a cliente acompanha (spec 117, `DECISOES.md#d320`): o link só
  * deste pedido, aberto sem login. Lido no servidor com o Admin SDK, como o
  * cardápio (`#d158`); a regra continua sem nada público. Só sai o que
- * `acompanhamentoDoPedido` deixa passar.
+ * `acompanhamentoDoPedido` deixa passar. No orçamento, é a folha na tela
+ * (spec 149, `#d357`), com "Aprovar orçamento" enquanto pode (`#d358`).
  *
  * Sem `revalidate`: o status muda, e cada pedido é aberto poucas vezes. Sem
  * atualização ao vivo: a cliente recarrega.
@@ -65,8 +67,34 @@ export default async function PaginaDoPedido({ params }: Props) {
 
   return (
     <main className="mx-auto w-full max-w-xl px-4 pb-12 pt-10">
+      {/* O topo da folha na tela (`#d357`): o logo dela e o nome, e embaixo o
+          que é e para quem. Sem logo, só a linha. */}
+      {negocio.logo && (
+        <div className="mb-4 flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={negocio.logo}
+            alt=""
+            className="size-14 shrink-0 rounded-full object-cover"
+          />
+          <p className="font-display text-subheading font-semibold text-ink">
+            {negocio.nome}
+          </p>
+        </div>
+      )}
       <p className="text-label text-ink-muted">
-        {negocio.nome} · pedido <span className="num">{visto.codigo}</span>
+        {visto.para ? (
+          <>
+            Orçamento <span className="num">{visto.codigo}</span> · para{" "}
+            {visto.para}
+          </>
+        ) : (
+          <>
+            {/* Com o logo, o nome já está logo acima. */}
+            {negocio.logo ? "Pedido" : `${negocio.nome} · pedido`}{" "}
+            <span className="num">{visto.codigo}</span>
+          </>
+        )}
       </p>
       <h1 className="mt-1 text-balance font-display text-title font-semibold text-ink">
         {visto.situacao}
@@ -102,16 +130,40 @@ export default async function PaginaDoPedido({ params }: Props) {
         <h2 id="o-que-vai" className="text-subheading text-ink">
           O que vai
         </h2>
+        {/* As linhas como no cardápio: o texto e o valor à esquerda, a foto à
+            direita e só foto (`#d357`). Sem foto, o texto ocupa a linha.
+            ponytail: a foto vai dentro da página como `data:` URL, e não pela
+            rota do cardápio (`#d162`), que exige o produto no cardápio aberto.
+            Um orçamento de 3 linhas pesa uns 500 KB; se pesar, uma rota de foto
+            com a chave do pedido, como a do cardápio. */}
         <ul className="mt-2 divide-y divide-line border-y border-line">
           {visto.itens.map((item, i) => (
-            <li
-              key={i}
-              className="flex items-baseline justify-between gap-3 py-3"
-            >
-              <span className="min-w-0 wrap-break-word text-body text-ink">
-                <span className="num">{item.quantidade}</span> × {item.nome}
-              </span>
-              <Dinheiro centavos={item.subtotal} />
+            <li key={i} className="flex items-start gap-4 py-4">
+              <div className="min-w-0 flex-1">
+                <p className="wrap-break-word text-body font-semibold text-ink">
+                  <span className="num">{item.quantidade}</span> × {item.nome}
+                </p>
+                {item.descricao && (
+                  <p className="mt-1 line-clamp-2 text-label text-ink-muted">
+                    {item.descricao}
+                  </p>
+                )}
+                <p className="mt-2">
+                  <Dinheiro centavos={item.subtotal} />
+                </p>
+              </div>
+              {item.fotoUrl && (
+                <div className="size-26 shrink-0 overflow-hidden rounded-md bg-sunken">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={item.fotoUrl}
+                    // O nome já está ao lado.
+                    alt=""
+                    decoding="async"
+                    className="size-full object-cover"
+                  />
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -146,6 +198,29 @@ export default async function PaginaDoPedido({ params }: Props) {
       </section>
 
       <Pagamento visto={visto} />
+
+      {/* O combinado de sempre, com as linhas dela, como no pé da folha. */}
+      {negocio.condicoes && (
+        <section aria-labelledby="condicoes" className="mt-8">
+          <h2 id="condicoes" className="text-subheading text-ink">
+            Condições
+          </h2>
+          <p className="mt-2 max-w-[68ch] whitespace-pre-line text-label text-ink-muted">
+            {negocio.condicoes}
+          </p>
+        </section>
+      )}
+
+      {/* Depois das condições: aprova quem já leu tudo (`#d358`). */}
+      {visto.podeAprovar && (
+        <AprovarOrcamento
+          endereco={contaId}
+          pedidoId={pedidoId}
+          chave={chave}
+          nomeInicial={visto.para ?? ""}
+          quem={negocio.quem}
+        />
+      )}
 
       {negocio.whatsapp && (
         <a

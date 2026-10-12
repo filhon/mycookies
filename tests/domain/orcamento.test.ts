@@ -568,6 +568,15 @@ describe("a folha segue o status", () => {
     expect(comPix({}).entrega).not.toHaveProperty("hora");
     expect(comPix({ status: "CONFIRMADO" })).not.toHaveProperty("validoAteISO");
   });
+
+  it("aprovado pelo link: quem e quando, só no orçamento (`#d358`)", () => {
+    const aprovacao = { nome: "Ana Souza", emISO: "2026-09-16" };
+    expect(montar({ ...PEDIDO, aprovacao }).aprovacao).toEqual(aprovacao);
+    expect(montar(PEDIDO)).not.toHaveProperty("aprovacao");
+    expect(
+      montar({ ...PEDIDO, status: "CONFIRMADO", aprovacao }),
+    ).not.toHaveProperty("aprovacao");
+  });
 });
 
 // ---------------------------------------------------------------------------

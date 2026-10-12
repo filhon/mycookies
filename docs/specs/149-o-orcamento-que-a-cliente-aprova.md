@@ -88,9 +88,9 @@ Timestamp.now(), nome }` e `v`, pelo Admin SDK. Nome com 1 a 80 caracteres. Repe
 
 ## Critérios de aceite
 
-- [ ] 149-A: o link no orçamento mostra a versão na tela da folha; QR na folha impressa.
-- [ ] 149-B: aprovar grava `aprovacao`, aparece em Esperando você, no aviso e no editor.
-- [ ] Portão nas duas sessões; `#d357` e `#d358`; `ESTADO.md` e `novidades.ts`.
+- [x] 149-A: o link no orçamento mostra a versão na tela da folha; QR na folha impressa.
+- [x] 149-B: aprovar grava `aprovacao`, aparece em Esperando você, no aviso e no editor.
+- [x] Portão nas duas sessões; `#d357` e `#d358`; `ESTADO.md` e `novidades.ts`.
 
 ## Fora de escopo
 

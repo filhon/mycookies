@@ -9,6 +9,7 @@ import {
   Ban,
   CalendarDays,
   Check,
+  CheckCheck,
   CookingPot,
   MessageCircle,
   Plus,
@@ -103,6 +104,7 @@ import {
   diaVizinho,
   rotuloDia,
   rotuloDiaCurto,
+  rotuloDiaNoAno,
 } from "@/lib/domain/datas";
 import { HORIZONTE_MAXIMO } from "@/lib/domain/listaCompras";
 import {
@@ -1231,6 +1233,22 @@ export function FormularioPedido({
 
           {pedido ? (
             <section aria-label="Em que pé está" className="space-y-4">
+              {/* A cliente aprovou pelo link (`#d358`): o fato, e o
+                  "Confirmar pedido" logo abaixo é a resposta dela. */}
+              {pedido.aprovacao && (
+                <p className="flex items-center gap-2 text-body text-ink">
+                  <CheckCheck
+                    aria-hidden
+                    className="size-5 shrink-0 text-positive"
+                    strokeWidth={1.75}
+                  />
+                  Aprovado por {pedido.aprovacao.nome} pelo link, em{" "}
+                  {rotuloDiaNoAno(
+                    dataISODe(pedido.aprovacao.em.toDate()),
+                    hoje,
+                  )}
+                </p>
+              )}
               {status === "CANCELADO" ? (
                 <div className="flex flex-wrap items-center gap-2">
                   <SeloStatus status={status} />

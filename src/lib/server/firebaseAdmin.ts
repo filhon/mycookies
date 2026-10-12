@@ -32,7 +32,8 @@ import { getMessaging, type Messaging } from "firebase-admin/messaging";
  * `montarCardapio` deixa passar (`DECISOES.md#d158`).
  *
  * **Sem login, só lê** `/c/[contaId]/pedido/[pedidoId]/[chave]` (spec 117,
- * `DECISOES.md#d320`): o pedido, a conta e a configuração, e só devolve o que
+ * `DECISOES.md#d320`): o pedido, a conta, a configuração, a vitrine e as fichas
+ * do pedido (`#d357`), e só devolve o que
  * `acompanhamentoDoPedido` deixa passar, com a chave conferida por
  * `timingSafeEqual`.
  *
@@ -56,6 +57,11 @@ import { getMessaging, type Messaging } from "firebase-admin/messaging";
  * Depois da resposta, o mesmo handler lê `aparelhos` e manda o aviso de pedido
  * novo (spec 119, `DECISOES.md#d323`, `src/lib/server/avisos.ts`), e só escreve
  * `ativo: false` no aparelho cujo token o FCM recusou.
+ *
+ * **Sem login, escreve** `/api/pedido/aprovar` (spec 149, `DECISOES.md#d358`):
+ * com a chave do link conferida pela mesma porta da página do acompanhamento,
+ * um `update` só de `aprovacao` e `v` num orçamento que ainda pode ser
+ * aprovado; nunca o status. Depois da resposta, o aviso, como no pedido novo.
  *
  * Verificar a assinatura do JWT à mão, para não mexer no `package.json`, está
  * descartado. O projeto desenha gráfico à mão para não pegar dependência

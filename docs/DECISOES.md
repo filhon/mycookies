@@ -11546,3 +11546,100 @@ mensagem, separado da folha, ou não ia.
 **Consequência.** Quem nunca abriu o painel do cardápio não tem a vitrine no cache: offline, a
 folha sai sem logo, como antes. A biblioteca da calculadora (`#d191`) espalha a configuração
 gravada em `corpoDaConfiguracao`, então as condições passam por ela intactas.
+
+## D357 · O link do orçamento é a folha na tela
+
+**Status:** vigente · decidida em 2026-10-12, spec `149-o-orcamento-que-a-cliente-aprova.md`
+(sessão A). Aprovações da spec tomadas como dadas pelo pedido de implementá-la, como na 117:
+o que sai para fora (3) e o texto (4). Nenhum campo novo nesta sessão; `Pedido.aprovacao` e a
+rota de escrita são da 149-B (`#d358`).
+
+**Contexto.** A folha da 147 e da 148 ganhou foto, descrição, logo e condições; o link da 117
+continuava com a lista e o total. O mesmo orçamento contava duas histórias, e no celular, onde a
+cliente abre, o link era o pobre.
+
+**Decisão.**
+
+- **A lista fechada do `#d320` abre em quatro chaves e uma condicional.** Por item, `descricao?`
+  e `fotoUrl?` da ficha viva (`#d108`: arquivada ou ausente, nada); o combo sem foto própria leva
+  a foto da primeira escolha com foto, uma só, como a linha do cardápio (`#d327`). No negócio,
+  `logo?` (da vitrine, `#d356`) e `condicoes?` (só a margem tirada). E **`para?`, o nome da
+  cliente, só no orçamento**: a spec desenha "Orçamento P-… · para Juliana Oliveira" e a 149-B
+  preenche o "Seu nome" com ele. Fora do orçamento o nome continua fora, e o teste das chaves
+  continua procurando o telefone, o `clienteId` e a chave em todos.
+- **`lerAcompanhamento` lê a vitrine e as fichas do pedido e das escolhas** (um `getAll`), só
+  depois da chave conferir. São leituras a mais por abertura, sem cache, como a 117.
+- **A foto vai dentro da página como `data:` URL**, e não pela rota do cardápio (`#d162`): a rota
+  exige o produto no cardápio aberto, e o orçamento é justamente o que não está no cardápio.
+  Marcado `ponytail:` na página: se pesar, uma rota de foto com a chave do pedido.
+- **Uma página só para todos os status.** O logo, as linhas com foto e as condições aparecem no
+  pedido confirmado também (é o mesmo dado e a folha confirmada também os tem); o que é do
+  orçamento é o topo "Orçamento {código} · para {nome}", a validade e o vencido.
+- **Vencido é a frase do pé**, como o cancelado: "Este orçamento venceu em 9 de outubro de 2026.
+  Fale com a Maynara para um preço novo.", com a data completa (`rotuloDataCompleta`; "venceu em
+  sexta-feira" não se fala), e o botão "Falar com a…" que a página já tem é o WhatsApp. Vence
+  hoje ainda vale.
+- **O QR do link na folha**, 22 mm, no lugar da frase "Para aprovar…" do bloco do Combinado, com
+  "Para aprovar, aponte a câmera." e, embaixo, "Ou responda pelo WhatsApp, ou assine abaixo e
+  devolva esta folha.": o papel continua servindo a quem não aponta câmera. O `QrDoPix` virou
+  `Qr` (o mesmo desenho, o tamanho por classe). Sem link (conta sem o cardápio no pacote), a
+  frase de antes. **Imprimir o orçamento chama `garantirChavePublica`**: o QR leva a chave, e um
+  papel com chave provisória abriria um não encontrado.
+- **Na tela da folha, enquanto `ORCAMENTO`**, "Mandar pra cliente" é o primário também no
+  desktop e "Salvar em PDF" desce para secundário. Fora do orçamento, a ordem da 147.
+
+**Consequência.** O link encaminhado mostra a quem recebe o nome da cliente, enquanto orçamento,
+além do que a 117 já mostrava. A 149-A sozinha leva o QR "Para aprovar" a uma página sem botão:
+publicar com a 149-B.
+
+## D358 · A cliente aprova; ela confirma
+
+**Status:** vigente · decidida em 2026-10-12, spec `149-o-orcamento-que-a-cliente-aprova.md`
+(sessão B). Aprovações da spec tomadas como dadas pelo pedido de implementá-la: (1) o schema
+aditivo `Pedido.aprovacao?: { em: Timestamp; nome: string }` e (2) a escrita pública
+`POST /api/pedido/aprovar`. Nenhuma regra, índice ou dependência.
+
+**Contexto.** O "ok" da empresa chegava no meio do WhatsApp, e o orçamento continuava
+`ORCAMENTO` até a Maynara lembrar. A 149-A pôs o QR "Para aprovar" no papel e a folha na tela; faltava
+o botão.
+
+**Decisão.**
+
+- **A rota grava só `aprovacao` e `v`, nunca o status.** O aparelho dela é offline-first: um
+  `CONFIRMADO` escrito pelo servidor podia ser desfeito pela edição dela que sobe da fila. Um
+  campo que só o servidor escreve não briga com nada, porque o app só faz `updateDoc` de campos
+  nomeados depois da criação. E confirmar é dela (agenda, despensa).
+- **A chave do link é a credencial, pela mesma porta da página.** `pedidoPelaChave` saiu de
+  `lerAcompanhamento` (endereço → conta, `timingSafeEqual`, arquivado, conta encerrada,
+  `permite(…, "cardapio")`), e a rota a usa: chave errada e pedido inexistente são o mesmo 404.
+  O corpo recebe o endereço do link (apelido ou id) como `contaId`.
+- **`podeAprovar(pedido, hojeISO)` em `domain/acompanhamento.ts`**: orçamento, sem
+  `aprovacao`, dentro da validade (vence hoje ainda vale; **sem validade, vale**). A página
+  mostra o botão e a rota grava pela mesma função. Fora dela, 409.
+- **Idempotente.** Já aprovado responde 200 sem escrever nem avisar. Dois toques no mesmo
+  segundo gravam duas vezes (`ponytail:` na rota): a página desabilita o botão enquanto envia.
+- **O nome**: 1 a 80 caracteres depois do `trim` (`NOME_DE_QUEM_APROVA_MAX`), preenchido com o
+  `para` da 149-A e editável, com a dica "Se for por uma empresa, o nome de quem aprova."
+  Aprovado, a página se refaz no servidor (`router.refresh`) e a frase do topo vira "Aprovado por
+  Ana Souza em 12 de outubro. A Maynara vai confirmar a data." A aprovação vale mais que o
+  vencido: foi dada dentro da validade. A validade some da página.
+- **Esperando você.** `esperaDoCardapio` passou a incluir o orçamento com `aprovacao` de
+  qualquer origem (o número em "Pedidos" conta junto); na lista, a linha "{cliente} aprovou o
+  orçamento" (`CheckCheck` em positivo) vem antes das do cardápio, com "por {nome}" quando quem
+  aprovou não é o nome do pedido, e "Confirmar" ao lado do link, que chama `mudarStatusPedido`
+  como o botão do editor.
+- **O aviso** é o da 119, pelo mesmo `avisarAparelhos` no `after`: título "Orçamento aprovado",
+  corpo "Juliana aprovou o orçamento P-…" com o primeiro nome **da cliente do pedido** (é por ele
+  que ela acha o pedido), tag `aprovado-{id}`, para não substituir o aviso de pedido novo. A
+  faixa do app aberto passou a usar o título que chega, no lugar do "Pedido novo pelo cardápio"
+  fixo.
+- **No editor**, acima da trilha: "Aprovado por Ana Souza pelo link, em 12 de outubro", com o
+  ícone, enquanto o campo existir (confirmado também: é história do pedido).
+- **Na folha**, só no orçamento: a linha "Aprovado por" vira "Aprovado por Ana Souza pelo link, em
+  12 de outubro de 2026", sem traço, e o QR "Para aprovar" sai. O dia é convertido no aparelho
+  (`TelaOrcamento`), porque `Timestamp` não atravessa para `domain/orcamento.ts`; no
+  acompanhamento, o domínio chama `toMillis()` e põe no fuso de Brasília, como o servidor faz com
+  o resto.
+
+**Consequência.** Um orçamento cancelado e reaberto continua com a aprovação antiga e volta a
+Esperando você. Recusar, pedir mudança e cobrar sinal na aprovação continuam fora (spec 149).

@@ -1471,3 +1471,22 @@ export function avisoDePedidoNovo(pedido: {
     tag: `pedido-${pedido.id}`,
   };
 }
+
+/**
+ * O aviso do orçamento aprovado pelo link (spec 149, `#d358`): "Juliana
+ * aprovou o orçamento P-261009-6F5". O nome é o da cliente do pedido, e não o
+ * de quem digitou: é por ele que ela acha o pedido.
+ */
+export function avisoDeOrcamentoAprovado(pedido: {
+  id: string;
+  clienteNome: string;
+  codigo: string;
+}): AvisoDePedidoNovo {
+  const nome = pedido.clienteNome.trim().split(/\s+/)[0] || "A cliente";
+  return {
+    titulo: "Orçamento aprovado",
+    corpo: `${nome} aprovou o orçamento ${pedido.codigo}`,
+    url: `/pedidos/${pedido.id}`,
+    tag: `aprovado-${pedido.id}`,
+  };
+}

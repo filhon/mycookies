@@ -322,6 +322,16 @@ describe("transicoesPermitidas", () => {
       false,
     );
   });
+
+  it("espera também o orçamento aprovado pelo link, de qualquer origem (`#d358`)", () => {
+    const aprovacao = { nome: "Ana Souza" };
+    expect(esperaDoCardapio({ status: "ORCAMENTO", aprovacao })).toBe(true);
+    expect(
+      esperaDoCardapio({ status: "ORCAMENTO", origem: "CARDAPIO", aprovacao }),
+    ).toBe(true);
+    // Confirmado, a aprovação continua gravada, e a espera acabou.
+    expect(esperaDoCardapio({ status: "CONFIRMADO", aprovacao })).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------

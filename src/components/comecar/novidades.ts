@@ -24,6 +24,20 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-12",
+    titulo: "A cliente aprova o orçamento pelo link",
+    frase:
+      'Um toque em "Aprovar orçamento" e o celular avisa; o pedido aparece em Esperando você, e você confirma a data.',
+    href: "/pedidos",
+  },
+  {
+    dataISO: "2026-10-12",
+    titulo: "O link do orçamento mostra o mesmo que a folha",
+    frase:
+      "A cliente abre no celular com as fotos, as descrições, a validade e as suas condições; e a folha impressa ganha o QR desse link.",
+    href: "/pedidos",
+  },
+  {
+    dataISO: "2026-10-12",
     titulo: "A folha leva o seu logo e as suas condições",
     frase:
       "O logo do cardápio abre a folha, e o que você repete para toda cliente (alergênicos, validade, cancelamento) você escreve uma vez em A sua marca.",

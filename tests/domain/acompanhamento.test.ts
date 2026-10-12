@@ -3,6 +3,8 @@ import {
   acompanhamentoDoPedido,
   caminhoDoAcompanhamento,
   chavePublicaDe,
+  podeAprovar,
+  type FichaAcompanhada,
 } from "@/lib/domain/acompanhamento";
 import { brCodePix } from "@/lib/domain/pix";
 import type { FormaPagamento, Pedido, StatusPedido } from "@/lib/types";
@@ -97,8 +99,30 @@ function pedido(mudancas: Partial<Pedido> = {}): Pedido {
   };
 }
 
+/** As fichas vivas: a foto e a descrição de cada linha (`#d357`). */
+const FICHAS: FichaAcompanhada[] = [
+  {
+    id: "tradicional",
+    arquivado: false,
+    fotoUrl: "data:image/jpeg;base64,TRAD",
+    descricao: " Massa amanteigada ",
+  },
+  { id: "dupla", arquivado: false },
+  { id: "nutella", arquivado: false, fotoUrl: "data:image/jpeg;base64,NUT" },
+];
+
 const acompanhar = (mudancas: Partial<Pedido> = {}, formas = [PIX, CARTAO]) =>
-  acompanhamentoDoPedido(pedido(mudancas), NEGOCIO, formas, HOJE);
+  acompanhamentoDoPedido(
+    pedido(mudancas),
+    {
+      ...NEGOCIO,
+      logo: "data:image/png;base64,LOGO",
+      condicoes: "  Sinal de 50%.\nCancelamento até 3 dias antes.  ",
+    },
+    formas,
+    HOJE,
+    FICHAS,
+  );
 
 describe("chavePublicaDe", () => {
   it("16 bytes viram 22 caracteres base64url", () => {
@@ -133,6 +157,7 @@ describe("acompanhamentoDoPedido", () => {
         "pago",
         "passos",
         "pix",
+        "podeAprovar",
         "sinal",
         "situacao",
         "subtotal",
@@ -141,18 +166,26 @@ describe("acompanhamentoDoPedido", () => {
       ].sort(),
     );
     expect(Object.keys(visto.negocio).sort()).toEqual([
+      "condicoes",
+      "logo",
       "nome",
       "quem",
       "whatsapp",
     ]);
     expect(Object.keys(visto.entrega).sort()).toEqual(["endereco", "tipo"]);
-    for (const item of visto.itens) {
-      expect(Object.keys(item).sort()).toEqual([
-        "nome",
-        "quantidade",
-        "subtotal",
-      ]);
-    }
+    expect(Object.keys(visto.itens[0]!).sort()).toEqual([
+      "descricao",
+      "fotoUrl",
+      "nome",
+      "quantidade",
+      "subtotal",
+    ]);
+    expect(Object.keys(visto.itens[1]!).sort()).toEqual([
+      "fotoUrl",
+      "nome",
+      "quantidade",
+      "subtotal",
+    ]);
     const tudo = JSON.stringify(visto);
     for (const proibido of [
       "sem castanha",
@@ -170,6 +203,46 @@ describe("acompanhamentoDoPedido", () => {
     }
   });
 
+  it("a linha e o negócio como na folha (`#d357`)", () => {
+    const visto = acompanhar();
+    expect(visto.itens[0]).toMatchObject({
+      descricao: "Massa amanteigada",
+      fotoUrl: "data:image/jpeg;base64,TRAD",
+    });
+    // O combo sem foto própria leva a da primeira escolha com foto.
+    expect(visto.itens[1]!.fotoUrl).toBe("data:image/jpeg;base64,NUT");
+    expect(visto.negocio.condicoes).toBe(
+      "Sinal de 50%.\nCancelamento até 3 dias antes.",
+    );
+    expect(visto.negocio.logo).toBe("data:image/png;base64,LOGO");
+  });
+
+  it("ficha arquivada ou ausente: a linha sem foto e sem descrição", () => {
+    const visto = acompanhamentoDoPedido(
+      pedido(),
+      NEGOCIO,
+      [],
+      HOJE,
+      FICHAS.map((ficha) => ({ ...ficha, arquivado: true })),
+    );
+    for (const item of visto.itens) {
+      expect(Object.keys(item).sort()).toEqual([
+        "nome",
+        "quantidade",
+        "subtotal",
+      ]);
+    }
+  });
+
+  it("o orçamento: para quem, e o telefone continua fora", () => {
+    const visto = acompanhar({ status: "ORCAMENTO" });
+    expect(visto.para).toBe("Ana Beatriz");
+    const tudo = JSON.stringify(visto);
+    for (const proibido of ["99999-0000", "cliente-1", "segredo"]) {
+      expect(tudo).not.toContain(proibido);
+    }
+  });
+
   it("o orçamento: a frase, sem passo feito, taxa a combinar, validade", () => {
     const visto = acompanhar({
       status: "ORCAMENTO",
@@ -183,10 +256,58 @@ describe("acompanhamentoDoPedido", () => {
     expect(visto.pix).toBeUndefined();
   });
 
-  it("a validade vencida não aparece", () => {
+  it("vencido: a frase do preço novo, sem validade", () => {
+    const visto = acompanhar({
+      status: "ORCAMENTO",
+      validoAteISO: "2026-10-09",
+    });
+    expect(visto.validoAte).toBeUndefined();
+    expect(visto.situacao).toBe(
+      "Este orçamento venceu em 9 de outubro de 2026. Fale com a Maynara para um preço novo.",
+    );
+  });
+
+  it("vencido não tem o botão", () => {
     expect(
-      acompanhar({ status: "ORCAMENTO", validoAteISO: "2026-10-09" }).validoAte,
-    ).toBeUndefined();
+      acompanhar({ status: "ORCAMENTO", validoAteISO: "2026-10-09" })
+        .podeAprovar,
+    ).toBe(false);
+    expect(acompanhar({ status: "ORCAMENTO" }).podeAprovar).toBe(true);
+    expect(acompanhar().podeAprovar).toBe(false);
+  });
+
+  it("aprovado: quem e quando, sem botão e sem validade (`#d358`)", () => {
+    const visto = acompanhar({
+      status: "ORCAMENTO",
+      // Vencido depois de aprovado: a aprovação vale mais.
+      validoAteISO: "2026-10-09",
+      aprovacao: {
+        nome: "Ana Souza",
+        // 23h de Brasília do dia 8 já é dia 9 em UTC.
+        em: { toMillis: () => Date.parse("2026-10-08T23:30:00-03:00") },
+      } as Pedido["aprovacao"],
+    });
+    expect(visto.situacao).toBe(
+      "Aprovado por Ana Souza em 8 de outubro. A Maynara vai confirmar a data.",
+    );
+    expect(visto.podeAprovar).toBe(false);
+    expect(visto.validoAte).toBeUndefined();
+  });
+
+  it("aprovado e confirmado: a trilha de sempre", () => {
+    const visto = acompanhar({
+      aprovacao: {
+        nome: "Ana Souza",
+        em: { toMillis: () => 0 },
+      } as Pedido["aprovacao"],
+    });
+    expect(visto.situacao).toBe("Confirmado");
+  });
+
+  it("vence hoje ainda vale", () => {
+    const visto = acompanhar({ status: "ORCAMENTO", validoAteISO: HOJE });
+    expect(visto.situacao).toBe("A Maynara vai confirmar");
+    expect(visto.validoAte).toBe("sábado, 10 de outubro");
   });
 
   it.each<[StatusPedido, string, string, number]>([
@@ -257,5 +378,28 @@ describe("acompanhamentoDoPedido", () => {
     );
     expect(visto.situacao).toBe("A MyCookie's vai confirmar");
     expect(Object.keys(visto.negocio).sort()).toEqual(["nome", "quem"]);
+  });
+});
+
+describe("podeAprovar (spec 149, `#d358`)", () => {
+  const orcamento = { status: "ORCAMENTO" as StatusPedido };
+
+  it("os quatro nãos", () => {
+    expect(podeAprovar({ status: "CONFIRMADO" }, HOJE)).toBe(false);
+    expect(podeAprovar({ status: "CANCELADO" }, HOJE)).toBe(false);
+    expect(
+      podeAprovar({ ...orcamento, validoAteISO: "2026-10-09" }, HOJE),
+    ).toBe(false);
+    expect(
+      podeAprovar({ ...orcamento, aprovacao: { nome: "Ana" } }, HOJE),
+    ).toBe(false);
+  });
+
+  it("o sim: dentro da validade, vence hoje ou sem validade", () => {
+    expect(
+      podeAprovar({ ...orcamento, validoAteISO: "2026-10-17" }, HOJE),
+    ).toBe(true);
+    expect(podeAprovar({ ...orcamento, validoAteISO: HOJE }, HOJE)).toBe(true);
+    expect(podeAprovar(orcamento, HOJE)).toBe(true);
   });
 });

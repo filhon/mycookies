@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   achadosDoPote,
   apelidoValido,
+  avisoDeOrcamentoAprovado,
   avisoDePedidoNovo,
   sugerirApelido,
   corDaLoja,
@@ -1011,6 +1012,23 @@ describe("avisoDePedidoNovo (spec 119)", () => {
     expect(
       avisoDePedidoNovo({ ...pedido, itens: [{ quantidade: 1.5 }] }).corpo,
     ).toMatch(/^Ana · 1,5 itens · /);
+  });
+});
+
+describe("avisoDeOrcamentoAprovado (spec 149)", () => {
+  it("o primeiro nome da cliente e o código, com tag própria", () => {
+    expect(
+      avisoDeOrcamentoAprovado({
+        id: "abc",
+        clienteNome: " Juliana Oliveira ",
+        codigo: "P-261009-6F5",
+      }),
+    ).toEqual({
+      titulo: "Orçamento aprovado",
+      corpo: "Juliana aprovou o orçamento P-261009-6F5",
+      url: "/pedidos/abc",
+      tag: "aprovado-abc",
+    });
   });
 });
 

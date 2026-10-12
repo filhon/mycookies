@@ -8,7 +8,7 @@ import type {
   StatusPedido,
   VitrineDoCardapio,
 } from "@/lib/types";
-import { pixDoPedido } from "./acompanhamento";
+import { opcional, pixDoPedido } from "./acompanhamento";
 import { SUFIXO_UNIDADE_RENDIMENTO } from "./custoFicha";
 import { diaVizinho, rotuloDataCompleta } from "./datas";
 import { faltaPagar, resumoDasEscolhas, subtotalDoItem } from "./pedido";
@@ -144,6 +144,8 @@ export interface Orcamento {
   falta: Centavos;
   /** O copia e cola do que falta, para o QR: `pixDoPedido` (`#d355`). */
   pix?: string;
+  /** Aprovado pelo link, só no orçamento (spec 149, `#d358`). */
+  aprovacao?: { nome: string; emISO: DataISO };
 }
 
 /** O rótulo do topo da folha (`#d354`). A folha o desenha em caixa alta. */
@@ -173,6 +175,8 @@ export type PedidoParaOrcar = Pick<
 > & {
   entrega: Pick<Pedido["entrega"], "tipo" | "taxa" | "endereco">;
   sinal?: { valor: Centavos } | null;
+  /** O dia em que a cliente aprovou, já no fuso do aparelho (`#d358`). */
+  aprovacao?: { nome: string; emISO: DataISO };
 };
 
 /** A foto e a descrição vêm da ficha viva (`#d108`). */
@@ -191,15 +195,6 @@ export type ConfiguracaoParaOrcar = Pick<
   | "condicoes"
   | "ocultarFeitoCom"
 >;
-
-/** Só entra no objeto o que tem valor: ausência é ausência, e não `undefined`. */
-function opcional<K extends string>(
-  chave: K,
-  valor: string | undefined | null,
-): Partial<Record<K, string>> {
-  const limpo = valor?.trim();
-  return limpo ? ({ [chave]: limpo } as Record<K, string>) : {};
-}
 
 /**
  * O pé da folha: o contato, a frase, as condições, a assinatura e o "feito
@@ -319,6 +314,14 @@ export function montarOrcamento(entrada: {
     ...(pedido.sinal && !pedido.pago ? { sinal: pedido.sinal.valor } : {}),
     falta,
     ...(pix ? { pix } : {}),
+    ...(orcamento && pedido.aprovacao
+      ? {
+          aprovacao: {
+            nome: pedido.aprovacao.nome,
+            emISO: pedido.aprovacao.emISO,
+          },
+        }
+      : {}),
   };
 }
 

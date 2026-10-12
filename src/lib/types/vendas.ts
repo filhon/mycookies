@@ -210,6 +210,13 @@ export interface Pedido extends DocumentoBase {
    * ganha uma no primeiro "Mandar o resumo". Arquivar o pedido revoga o link.
    */
   chavePublica?: string;
+
+  /**
+   * A cliente aprovou o orçamento pelo link (spec 149, `DECISOES.md#d358`):
+   * quando e o nome que ela digitou. Escrito só por `/api/pedido/aprovar`, e
+   * nunca muda o status: confirmar continua sendo dela.
+   */
+  aprovacao?: { em: Timestamp; nome: string };
 }
 
 export interface ItemListaCompras {

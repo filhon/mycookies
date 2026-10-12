@@ -8,6 +8,7 @@ import { renovarAviso } from "@/lib/firebase/avisos";
 import { useAuth } from "@/providers/AuthProvider";
 
 interface PedidoNovo {
+  titulo: string;
   corpo: string;
   url: string;
   tag: string;
@@ -19,6 +20,8 @@ const DURACAO_MS = 8000;
  * O pedido novo com o app aberto (spec 119, `#d323`): o `sw.ts` acha a janela
  * visível e manda a mensagem no lugar da notificação do sistema. A faixa fica
  * 8 segundos; o número em "Pedidos" sobe sozinho, pela assinatura de sempre.
+ * O orçamento aprovado pelo link (spec 149, `#d358`) chega pela mesma faixa,
+ * com o título dele.
  *
  * Mora no layout de `(app)`, e é daqui que o token do aparelho se renova a
  * cada abertura.
@@ -48,6 +51,7 @@ export function AvisoDePedido() {
   }, [pedido]);
 
   // O corpo é "Ana · 6 itens · R$ 112,00 · para …"; a faixa leva nome e valor.
+  // O da aprovação não tem "·", e vai inteiro.
   const partes = pedido?.corpo.split(" · ") ?? [];
   const resumo = [partes[0], partes[2]].filter(Boolean).join(" · ");
 
@@ -67,8 +71,7 @@ export function AvisoDePedido() {
             strokeWidth={1.75}
           />
           <span className="min-w-0 flex-1 py-2">
-            <span className="font-semibold">Pedido novo pelo cardápio:</span>{" "}
-            {resumo}
+            <span className="font-semibold">{pedido.titulo}:</span> {resumo}
           </span>
           <Link
             href={pedido.url as Route}

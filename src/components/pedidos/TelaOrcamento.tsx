@@ -130,7 +130,14 @@ export function TelaOrcamento({ id }: { id: string }) {
 
   const salvo = pedido.dado;
   const orcamento = montarOrcamento({
-    pedido: salvo,
+    pedido: {
+      ...salvo,
+      // O dia em que a cliente aprovou, no fuso do aparelho (`#d358`).
+      aprovacao: salvo.aprovacao && {
+        nome: salvo.aprovacao.nome,
+        emISO: dataISODe(salvo.aprovacao.em.toDate()),
+      },
+    },
     fichas: fichas.dados,
     conta,
     configuracao: configuracao.dado,
@@ -167,7 +174,12 @@ export function TelaOrcamento({ id }: { id: string }) {
     },
     acompanhamento.link,
   );
-  const imprimir = () => window.print();
+  // O QR da folha leva a chave: sem ela gravada, o papel abriria um não
+  // encontrado (`#d357`).
+  const imprimir = () => {
+    if (proposta) acompanhamento.garantir();
+    window.print();
+  };
   const iconeImprimir = (
     <Printer aria-hidden className="size-5" strokeWidth={1.75} />
   );
@@ -177,7 +189,9 @@ export function TelaOrcamento({ id }: { id: string }) {
       {/* A barra no eixo da folha: a mesma largura máxima e a mesma margem. */}
       <div className="mx-auto max-w-[210mm] print:hidden">
         {/* No celular a folha a 45% não se lê: o primário é mandar o resumo
-            com o link; no desktop, a ordem de sempre (spec 147). */}
+            com o link (spec 147). No orçamento, também no desktop: o link é o
+            caminho e o PDF, o anexo (`#d357`). Fora dele, no desktop, a ordem
+            de sempre. */}
         <div className="flex flex-wrap items-center gap-3">
           {voltar}
           <a
@@ -191,7 +205,7 @@ export function TelaOrcamento({ id }: { id: string }) {
             className={classesBotao({
               variante: "primaria",
               tamanho: "lg",
-              className: "md:hidden",
+              className: proposta ? undefined : "md:hidden",
             })}
           >
             <MessageCircle aria-hidden className="size-5" strokeWidth={1.75} />
@@ -202,19 +216,21 @@ export function TelaOrcamento({ id }: { id: string }) {
             tamanho="lg"
             onClick={imprimir}
             iconeInicial={iconeImprimir}
-            className="md:hidden"
+            className={proposta ? undefined : "md:hidden"}
           >
             Salvar em PDF
           </Botao>
-          <Botao
-            variante="primaria"
-            tamanho="lg"
-            onClick={imprimir}
-            iconeInicial={iconeImprimir}
-            className="hidden md:inline-flex"
-          >
-            Salvar em PDF
-          </Botao>
+          {!proposta && (
+            <Botao
+              variante="primaria"
+              tamanho="lg"
+              onClick={imprimir}
+              iconeInicial={iconeImprimir}
+              className="hidden md:inline-flex"
+            >
+              Salvar em PDF
+            </Botao>
+          )}
         </div>
         <p className="mt-2 hidden text-label text-ink-muted md:block">
           Abre a impressão do aparelho. Escolha &ldquo;Salvar como PDF&rdquo;.
@@ -255,7 +271,10 @@ export function TelaOrcamento({ id }: { id: string }) {
         style={{ "--folha-zoom": zoom } as CSSProperties}
         className="mt-6 print:mt-0"
       >
-        <FolhaOrcamento orcamento={orcamento} />
+        <FolhaOrcamento
+          orcamento={orcamento}
+          link={proposta ? acompanhamento.link : undefined}
+        />
       </div>
     </div>
   );

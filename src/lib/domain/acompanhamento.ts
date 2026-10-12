@@ -1,11 +1,17 @@
 import type {
   Centavos,
   DataISO,
+  FichaTecnica,
   FormaPagamento,
   Pedido,
   StatusPedido,
 } from "@/lib/types";
-import { rotuloDiaPorExtenso } from "./datas";
+import {
+  hojeEmBrasilia,
+  rotuloDataCompleta,
+  rotuloDiaNoAno,
+  rotuloDiaPorExtenso,
+} from "./datas";
 import { faltaPagar, nomeComEscolhas, quantidadeEmTexto } from "./pedido";
 import { brCodePix } from "./pix";
 
@@ -33,18 +39,38 @@ export function caminhoDoAcompanhamento(
 }
 
 export interface Acompanhamento {
-  negocio: { nome: string; quem: string; whatsapp?: string };
+  negocio: {
+    nome: string;
+    quem: string;
+    whatsapp?: string;
+    /** O logo da vitrine, `data:` URL, como na folha (`#d356`, `#d357`). */
+    logo?: string;
+    /** O combinado de sempre, com as linhas dela (`#d356`). */
+    condicoes?: string;
+  };
   codigo: string;
+  /** Para quem é o orçamento: o nome da cliente, só no orçamento (`#d357`). */
+  para?: string;
   /** A frase do pé em que está, na voz da confeiteira. */
   situacao: string;
   /** Os quatro passos depois do orçamento; vazia no cancelado. */
   passos: { rotulo: string; feito: boolean; atual: boolean }[];
-  /** "Este orçamento vale até …", só no orçamento e enquanto vale. */
+  /** "Este orçamento vale até …", só enquanto `podeAprovar`. */
   validoAte?: string;
+  /** O botão "Aprovar orçamento" (spec 149, `#d358`): `podeAprovar`. */
+  podeAprovar: boolean;
   dia: string;
   hora?: string;
   entrega: { tipo: "RETIRADA" | "ENTREGA"; endereco?: string };
-  itens: { quantidade: string; nome: string; subtotal: Centavos }[];
+  itens: {
+    quantidade: string;
+    nome: string;
+    subtotal: Centavos;
+    /** Da ficha viva, como na folha (`#d108`). */
+    descricao?: string;
+    /** Da ficha viva; o combo sem foto própria leva a da primeira escolha. */
+    fotoUrl?: string;
+  }[];
   subtotal: Centavos;
   /** `null` é "a combinar": o orçamento com taxa zero de quem pediu entrega. */
   taxaEntrega: Centavos | null;
@@ -72,7 +98,47 @@ type PedidoAcompanhado = Pick<
   | "sinal"
   | "formaPagamentoId"
   | "validoAteISO"
+  | "clienteNome"
+  | "aprovacao"
 >;
+
+/** A foto e a descrição vêm da ficha viva (`#d108`); arquivada não conta. */
+export type FichaAcompanhada = Pick<
+  FichaTecnica,
+  "id" | "fotoUrl" | "descricao" | "arquivado"
+>;
+
+/** Só entra no objeto o que tem valor: ausência é ausência, e não `undefined`. */
+export function opcional<K extends string>(
+  chave: K,
+  valor: string | undefined | null,
+): Partial<Record<K, string>> {
+  const limpo = valor?.trim();
+  return limpo ? ({ [chave]: limpo } as Record<K, string>) : {};
+}
+
+/** O nome de quem aprova: 1 a 80 caracteres, depois do `trim` (`#d358`). */
+export const NOME_DE_QUEM_APROVA_MAX = 80;
+
+/**
+ * O orçamento pode ser aprovado pelo link (spec 149, `#d358`): ainda é
+ * orçamento, dentro da validade (vence hoje ainda vale; sem validade, vale) e
+ * ninguém aprovou. A rota e a página perguntam a mesma coisa.
+ */
+export function podeAprovar(
+  pedido: {
+    status: StatusPedido;
+    validoAteISO?: DataISO;
+    aprovacao?: unknown;
+  },
+  hojeISO: DataISO,
+): boolean {
+  return (
+    pedido.status === "ORCAMENTO" &&
+    !pedido.aprovacao &&
+    !(pedido.validoAteISO && pedido.validoAteISO < hojeISO)
+  );
+}
 
 /** Os passos depois do orçamento. O orçamento é a frase, não um passo. */
 const PASSOS: StatusPedido[] = [
@@ -124,11 +190,24 @@ export function acompanhamentoDoPedido(
   negocio: Acompanhamento["negocio"],
   formas: FormaPagamento[],
   hojeISO: DataISO,
+  fichas: FichaAcompanhada[] = [],
 ): Acompanhamento {
   const tipo = pedido.entrega.tipo;
   const quem = negocio.quem || negocio.nome;
   const cancelado = pedido.status === "CANCELADO";
   const orcamento = pedido.status === "ORCAMENTO";
+  const vencido =
+    orcamento && !!pedido.validoAteISO && pedido.validoAteISO < hojeISO;
+  // A aprovação vale mais que o vencido: foi dada dentro da validade.
+  const aprovado = orcamento ? pedido.aprovacao : undefined;
+  const aprovadoEm =
+    aprovado &&
+    rotuloDiaNoAno(hojeEmBrasilia(new Date(aprovado.em.toMillis())), hojeISO);
+  const aberto = podeAprovar(pedido, hojeISO);
+  const vivas = new Map(
+    fichas.filter((f) => !f.arquivado).map((f) => [f.id, f]),
+  );
+  const fotoDe = (id: string) => vivas.get(id)?.fotoUrl?.trim() || undefined;
   const atual = PASSOS.indexOf(pedido.status);
   const falta = faltaPagar(pedido);
   const pix = pixDoPedido(pedido, formas, falta);
@@ -139,13 +218,20 @@ export function acompanhamentoDoPedido(
       nome: negocio.nome,
       quem,
       ...(negocio.whatsapp ? { whatsapp: negocio.whatsapp } : {}),
+      ...opcional("logo", negocio.logo),
+      ...opcional("condicoes", negocio.condicoes),
     },
     codigo: pedido.codigo,
+    ...opcional("para", orcamento ? pedido.clienteNome : undefined),
     situacao: cancelado
       ? `Este pedido foi cancelado. Fale com a ${quem} se tiver dúvida.`
-      : orcamento
-        ? `A ${quem} vai confirmar`
-        : rotuloDoPasso(pedido.status, tipo),
+      : aprovado
+        ? `Aprovado por ${aprovado.nome} em ${aprovadoEm}. A ${quem} vai confirmar a data.`
+        : vencido
+          ? `Este orçamento venceu em ${rotuloDataCompleta(pedido.validoAteISO!)}. Fale com a ${quem} para um preço novo.`
+          : orcamento
+            ? `A ${quem} vai confirmar`
+            : rotuloDoPasso(pedido.status, tipo),
     passos: cancelado
       ? []
       : PASSOS.map((passo, i) => ({
@@ -153,9 +239,10 @@ export function acompanhamentoDoPedido(
           feito: i < atual,
           atual: i === atual,
         })),
-    ...(orcamento && pedido.validoAteISO && pedido.validoAteISO >= hojeISO
+    ...(aberto && pedido.validoAteISO
       ? { validoAte: rotuloDiaPorExtenso(pedido.validoAteISO) }
       : {}),
+    podeAprovar: aberto,
     dia: rotuloDiaPorExtenso(pedido.dataEntregaISO),
     ...(pedido.horaEntrega ? { hora: pedido.horaEntrega } : {}),
     entrega: {
@@ -166,6 +253,14 @@ export function acompanhamentoDoPedido(
       quantidade: quantidadeEmTexto(item.quantidade),
       nome: nomeComEscolhas(item),
       subtotal: item.subtotal,
+      ...opcional("descricao", vivas.get(item.fichaTecnicaId)?.descricao),
+      ...opcional(
+        "fotoUrl",
+        fotoDe(item.fichaTecnicaId) ??
+          (item.escolhas ?? [])
+            .map((escolha) => fotoDe(escolha.fichaTecnicaId))
+            .find(Boolean),
+      ),
     })),
     subtotal: pedido.subtotal,
     taxaEntrega:

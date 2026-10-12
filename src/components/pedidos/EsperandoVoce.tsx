@@ -4,7 +4,8 @@ import type { Route } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { CalendarClock, HandCoins, Inbox } from "lucide-react";
+import { CalendarClock, CheckCheck, HandCoins, Inbox } from "lucide-react";
+import { Botao } from "@/components/ui/Botao";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { dataISODe, diaVizinho, rotuloAgenda } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
@@ -17,6 +18,7 @@ import {
 import {
   consultaAgenda,
   consultaEntreguesEmAberto,
+  mudarStatusPedido,
 } from "@/lib/firebase/mutations/pedidos";
 import { useColecao } from "@/lib/hooks/useColecao";
 import type { DataISO, Pedido } from "@/lib/types";
@@ -26,7 +28,8 @@ import { useContaId, usePapel } from "@/providers/AuthProvider";
 const POR_TIPO = 3;
 
 /**
- * O que pede resposta dela (spec 046, `#d213`): o pedido que a cliente fez pelo
+ * O que pede resposta dela (spec 046, `#d213`): o orçamento que a cliente
+ * aprovou pelo link (spec 149, `#d358`), o pedido que a cliente fez pelo
  * cardápio, o pedido que passou do dia e o dinheiro de entrega feita que não
  * entrou. Não existe quando está vazio: sem título, sem "tudo em dia".
  *
@@ -50,7 +53,9 @@ export function EsperandoVoce() {
 
   // A agenda vem por data de entrega: o pedido do cardápio para hoje e amanhã
   // já chega no topo, sem ordenar de novo.
-  const peloCardapio = agenda.dados.filter(esperaDoCardapio);
+  const espera = agenda.dados.filter(esperaDoCardapio);
+  const aprovados = espera.filter((pedido) => pedido.aprovacao);
+  const peloCardapio = espera.filter((pedido) => !pedido.aprovacao);
   // O orçamento esquecido não é "isso saiu?": continua só em `/pedidos`. O
   // mais recente primeiro, que é o que ela ainda lembra.
   const passaram = agenda.dados
@@ -63,7 +68,7 @@ export function EsperandoVoce() {
   // Carregando não vira esqueleto, e erro não vira aviso: a lista pode não
   // existir, e a agenda logo abaixo já diz quando a rede falhou.
   if (agenda.carregando || entregues.carregando) return null;
-  if (peloCardapio.length === 0 && passaram.length === 0 && receber.total === 0)
+  if (espera.length === 0 && passaram.length === 0 && receber.total === 0)
     return null;
 
   return (
@@ -76,6 +81,13 @@ export function EsperandoVoce() {
       </h2>
 
       <ul className="mt-3 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
+        {aprovados.slice(0, POR_TIPO).map((pedido) => (
+          <li key={pedido.id}>
+            <LinhaAprovado pedido={pedido} hoje={hoje} contaId={contaId} />
+          </li>
+        ))}
+        <MaisN resto={aprovados.length - POR_TIPO} />
+
         {peloCardapio.slice(0, POR_TIPO).map((pedido) => (
           <li key={pedido.id}>
             <LinhaPedidoDoCardapio pedido={pedido} hoje={hoje} />
@@ -162,6 +174,54 @@ function LinhaPedidoDoCardapio({
       }
       direita={<Dinheiro centavos={pedido.total} tamanho="sm" />}
     />
+  );
+}
+
+/**
+ * A cliente aprovou pelo link (`#d358`): a linha leva ao pedido, e "Confirmar"
+ * faz o mesmo que o botão do editor. Quem aprovou só aparece quando não é o
+ * nome do pedido: na empresa, quem aprova não é a empresa.
+ */
+function LinhaAprovado({
+  pedido,
+  hoje,
+  contaId,
+}: {
+  pedido: Pedido;
+  hoje: DataISO;
+  contaId: string;
+}) {
+  const quem = pedido.aprovacao?.nome.trim();
+  return (
+    <div className="flex items-center">
+      <div className="min-w-0 flex-1">
+        <Linha
+          href={`/pedidos/${pedido.id}` as Route}
+          icone={
+            <CheckCheck
+              aria-hidden
+              className="size-5 shrink-0 text-positive"
+              strokeWidth={1.75}
+            />
+          }
+          titulo={`${pedido.clienteNome} aprovou o orçamento`}
+          detalhe={[
+            quem && quem !== pedido.clienteNome.trim() ? `por ${quem}` : "",
+            resumoDosItens(pedido.itens, 1),
+            rotuloAgenda(pedido.dataEntregaISO, hoje),
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        />
+      </div>
+      <Botao
+        tamanho="sm"
+        className="mr-3 shrink-0"
+        onClick={() => void mudarStatusPedido(contaId, pedido, "CONFIRMADO")}
+      >
+        Confirmar
+      </Botao>
+    </div>
   );
 }
 

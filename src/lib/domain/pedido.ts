@@ -568,14 +568,19 @@ export function passouDoDia(
 
 /**
  * A cliente pediu pelo cardápio e ela ainda não respondeu, de qualquer data: a
- * primeira linha de "Esperando você" e o número em "Pedidos" (`#d235`). Sai
- * quando ela confirma ou cancela.
+ * primeira linha de "Esperando você" e o número em "Pedidos" (`#d235`). O
+ * orçamento que a cliente aprovou pelo link também espera, de qualquer origem
+ * (spec 149, `#d358`). Sai quando ela confirma ou cancela.
  */
 export function esperaDoCardapio(pedido: {
   status: StatusPedido;
   origem?: "CARDAPIO";
+  aprovacao?: unknown;
 }): boolean {
-  return pedido.status === "ORCAMENTO" && pedido.origem === "CARDAPIO";
+  return (
+    pedido.status === "ORCAMENTO" &&
+    (pedido.origem === "CARDAPIO" || !!pedido.aprovacao)
+  );
 }
 
 export interface AReceber {

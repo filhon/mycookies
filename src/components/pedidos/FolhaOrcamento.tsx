@@ -26,7 +26,14 @@ import { cn } from "@/lib/utils/cn";
  * `.folha` fixa os tokens claros (spec 017). **Nenhuma classe `dark:` aqui
  * dentro**: passaria por cima deles.
  */
-export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
+export function FolhaOrcamento({
+  orcamento,
+  link,
+}: {
+  orcamento: Orcamento;
+  /** O link do acompanhamento, para o QR de aprovar no orçamento (`#d357`). */
+  link?: string;
+}) {
   const { negocio, entrega } = orcamento;
   const entregaEmCasa = entrega.tipo === "ENTREGA";
   // O título e o fecho seguem o status; o resto da folha não (`#d354`).
@@ -231,35 +238,56 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
           ))}
           {orcamento.pix && (
             <div className="mt-[8pt] flex items-center gap-[5mm]">
-              <QrDoPix codigo={orcamento.pix} />
+              <Qr texto={orcamento.pix} className="size-[28mm]" />
               <p>
                 Pix de {formatarMoeda(orcamento.falta)} · aponte a câmera do app
                 do banco
               </p>
             </div>
           )}
-          {proposta && (
-            <p className="mt-[10pt]">
-              Para aprovar, é só responder pelo WhatsApp ou assinar abaixo e
-              devolver esta folha.
-            </p>
+          {/* Com o link, quem recebe o papel aprova pelo celular (`#d357`).
+              Já aprovado, nada de "para aprovar" (`#d358`). */}
+          {orcamento.aprovacao ? null : proposta && link ? (
+            <div className="mt-[10pt] flex items-center gap-[5mm]">
+              <Qr texto={link} className="size-[22mm]" />
+              <p>
+                Para aprovar, aponte a câmera.
+                <br />
+                Ou responda pelo WhatsApp, ou assine abaixo e devolva esta
+                folha.
+              </p>
+            </div>
+          ) : (
+            proposta && (
+              <p className="mt-[10pt]">
+                Para aprovar, é só responder pelo WhatsApp ou assinar abaixo e
+                devolver esta folha.
+              </p>
+            )
           )}
         </div>
       </section>
 
-      <PeDaFolha negocio={negocio} aprovacao={proposta} />
+      <PeDaFolha
+        negocio={negocio}
+        aprovacao={proposta}
+        aprovadoPor={
+          orcamento.aprovacao &&
+          `Aprovado por ${orcamento.aprovacao.nome} pelo link, em ${rotuloDataCompleta(orcamento.aprovacao.emISO)}`
+        }
+      />
     </article>
   );
 }
 
 /**
- * O QR do Pix em SVG, desenhado aqui (`#d355`): sem PNG, sem rede, nítido no
- * papel em qualquer tamanho. Um caminho só, uma casa por módulo escuro, na
- * tinta da folha. Sem a zona de silêncio no desenho: o papel em volta é ela,
- * e o `gap` ao lado a garante.
+ * O QR em SVG, desenhado aqui (`#d355`), do Pix e do link (`#d357`): sem PNG,
+ * sem rede, nítido no papel em qualquer tamanho. Um caminho só, uma casa por
+ * módulo escuro, na tinta da folha. Sem a zona de silêncio no desenho: o papel
+ * em volta é ela, e o `gap` ao lado a garante.
  */
-function QrDoPix({ codigo }: { codigo: string }) {
-  const { data, size } = encode(codigo, { ecc: "M", border: 0 });
+function Qr({ texto, className }: { texto: string; className: string }) {
+  const { data, size } = encode(texto, { ecc: "M", border: 0 });
   const caminho = data
     .flatMap((linha, y) =>
       linha.map((escuro, x) => (escuro ? `M${x} ${y}h1v1h-1z` : "")),
@@ -270,7 +298,7 @@ function QrDoPix({ codigo }: { codigo: string }) {
       viewBox={`0 0 ${size} ${size}`}
       shapeRendering="crispEdges"
       aria-hidden
-      className="size-[28mm] shrink-0 fill-ink"
+      className={cn("shrink-0 fill-ink", className)}
     >
       <path d={caminho} />
     </svg>
@@ -298,14 +326,17 @@ function Foto({ url, className }: { url: string; className?: string }) {
  * com o formulário no lugar do gravado (spec 087, `#d289`). `flex-wrap` e
  * `max-w-full` só agem na coluna estreita da prévia: no A4 as duas linhas
  * cabem lado a lado. Fora do orçamento, a linha "Aprovado por" sai e fica a
- * assinatura dela (`#d354`).
+ * assinatura dela (`#d354`). Aprovado pelo link, a linha vira a frase de quem
+ * aprovou, sem traço para assinar (`#d358`).
  */
 export function PeDaFolha({
   negocio,
   aprovacao = true,
+  aprovadoPor,
 }: {
   negocio: Orcamento["negocio"];
   aprovacao?: boolean;
+  aprovadoPor?: string;
 }) {
   return (
     <>
@@ -344,10 +375,14 @@ export function PeDaFolha({
         {aprovacao && (
           <div className="w-[70mm] max-w-full">
             <div className="h-[16mm]" />
-            <div className="border-t-[0.5pt] border-line-strong pt-[4pt]">
-              <p className="font-semibold">Aprovado por</p>
-              <p className="text-ink-subtle">Nome, cargo e data</p>
-            </div>
+            {aprovadoPor ? (
+              <p className="pt-[4pt] font-semibold">{aprovadoPor}</p>
+            ) : (
+              <div className="border-t-[0.5pt] border-line-strong pt-[4pt]">
+                <p className="font-semibold">Aprovado por</p>
+                <p className="text-ink-subtle">Nome, cargo e data</p>
+              </div>
+            )}
           </div>
         )}
       </section>
