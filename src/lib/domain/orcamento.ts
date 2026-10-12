@@ -6,6 +6,7 @@ import type {
   FichaTecnica,
   Pedido,
   StatusPedido,
+  VitrineDoCardapio,
 } from "@/lib/types";
 import { pixDoPedido } from "./acompanhamento";
 import { SUFIXO_UNIDADE_RENDIMENTO } from "./custoFicha";
@@ -105,6 +106,10 @@ export interface Orcamento {
     assinaturaDataUrl?: string;
     /** A frase dela no rodapé (`#d127`). */
     frase?: string;
+    /** O logo da vitrine do cardápio, `data:` URL (`#d356`). */
+    logo?: string;
+    /** O combinado de sempre, com as linhas dela (`#d356`). */
+    condicoes?: string;
     /** Some quando `ocultarFeitoCom` (spec 028, `#d147`). */
     feitoCom: boolean;
   };
@@ -183,6 +188,7 @@ export type ConfiguracaoParaOrcar = Pick<
   | "contato"
   | "assinaturaDataUrl"
   | "frase"
+  | "condicoes"
   | "ocultarFeitoCom"
 >;
 
@@ -196,8 +202,9 @@ function opcional<K extends string>(
 }
 
 /**
- * O pé da folha: o contato, a frase, a assinatura e o "feito com". A folha lê
- * a configuração gravada; a prévia da Configuração passa o formulário, para
+ * O pé da folha: o contato, a frase, as condições, a assinatura e o "feito
+ * com"; e o logo do topo, da vitrine do cardápio (`#d356`). A folha lê a
+ * configuração gravada; a prévia da Configuração passa o formulário, para
  * mostrar a folha enquanto ela digita (spec 087, `#d289`).
  */
 export function negocioDaFolha(
@@ -209,9 +216,11 @@ export function negocioDaFolha(
       | "contato"
       | "assinaturaDataUrl"
       | "frase"
+      | "condicoes"
       | "ocultarFeitoCom"
     >
   > | null,
+  vitrine?: Pick<VitrineDoCardapio, "logo"> | null,
 ): Orcamento["negocio"] {
   return {
     nome: configuracao?.nomeNegocio?.trim() || conta.nome,
@@ -223,6 +232,8 @@ export function negocioDaFolha(
     ),
     ...opcional("assinaturaDataUrl", configuracao?.assinaturaDataUrl),
     ...opcional("frase", configuracao?.frase),
+    ...opcional("logo", vitrine?.logo),
+    ...opcional("condicoes", configuracao?.condicoes),
     feitoCom: !configuracao?.ocultarFeitoCom,
   };
 }
@@ -233,9 +244,11 @@ export function montarOrcamento(entrada: {
   fichas: FichaParaOrcar[];
   conta: Pick<Conta, "nome" | "proprietaria">;
   configuracao: ConfiguracaoParaOrcar | null;
+  /** `configuracao/vitrine`, pelo logo (`#d356`); ausente = sem logo. */
+  vitrine?: Pick<VitrineDoCardapio, "logo"> | null;
   hojeISO: DataISO;
 }): Orcamento {
-  const { pedido, conta, configuracao, hojeISO } = entrada;
+  const { pedido, conta, configuracao, vitrine, hojeISO } = entrada;
   const fichas = new Map(entrada.fichas.map((ficha) => [ficha.id, ficha]));
 
   // A foto e a descrição vêm da ficha viva; o preço e o nome, do pedido
@@ -280,7 +293,7 @@ export function montarOrcamento(entrada: {
   const orcamento = pedido.status === "ORCAMENTO";
 
   return {
-    negocio: negocioDaFolha(conta, configuracao),
+    negocio: negocioDaFolha(conta, configuracao, vitrine),
     codigo: pedido.codigo,
     status: pedido.status,
     emitidoEmISO: hojeISO,

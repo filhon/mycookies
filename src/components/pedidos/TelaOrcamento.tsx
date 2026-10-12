@@ -17,9 +17,19 @@ import {
   mensagemDoPedido,
   telefoneParaWhatsApp,
 } from "@/lib/domain/whatsapp";
-import { colFichas, docConfiguracao, docPedido } from "@/lib/firebase/colecoes";
+import {
+  colFichas,
+  docConfiguracao,
+  docPedido,
+  docVitrine,
+} from "@/lib/firebase/colecoes";
 import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
-import type { ConfiguracaoGeral, FichaTecnica, Pedido } from "@/lib/types";
+import type {
+  ConfiguracaoGeral,
+  FichaTecnica,
+  Pedido,
+  VitrineDoCardapio,
+} from "@/lib/types";
 import { useAuth, useContaId } from "@/providers/AuthProvider";
 
 /** 210 mm a 96 dpi: a largura da folha sem encolher. */
@@ -51,9 +61,12 @@ export function TelaOrcamento({ id }: { id: string }) {
     [contaId],
   );
   const referenciaPedido = useMemo(() => docPedido(contaId, id), [contaId, id]);
+  // O logo da folha é o da vitrine (`#d356`); quem tem cardápio já o tem no cache.
+  const referenciaVitrine = useMemo(() => docVitrine(contaId), [contaId]);
 
   const fichas = useColecao<FichaTecnica>(consultaFichas);
   const configuracao = useDocumento<ConfiguracaoGeral>(referenciaConfiguracao);
+  const vitrine = useDocumento<VitrineDoCardapio>(referenciaVitrine);
   const pedido = useDocumento<Pedido>(referenciaPedido);
   const acompanhamento = useLinkDoAcompanhamento(pedido.dado);
 
@@ -79,6 +92,7 @@ export function TelaOrcamento({ id }: { id: string }) {
   if (
     fichas.carregando ||
     configuracao.carregando ||
+    vitrine.carregando ||
     pedido.carregando ||
     !conta
   ) {
@@ -120,6 +134,7 @@ export function TelaOrcamento({ id }: { id: string }) {
     fichas: fichas.dados,
     conta,
     configuracao: configuracao.dado,
+    vitrine: vitrine.dado,
     hojeISO: hoje,
   });
   const situacao = situacaoDaValidade(orcamento.validoAteISO, hoje);

@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-12",
+    titulo: "A folha leva o seu logo e as suas condições",
+    frase:
+      "O logo do cardápio abre a folha, e o que você repete para toda cliente (alergênicos, validade, cancelamento) você escreve uma vez em A sua marca.",
+    href: "/configuracao#a-sua-marca",
+  },
+  {
+    dataISO: "2026-10-12",
     titulo: "A folha do pedido diz em que pé ele está",
     frase:
       "Confirmado, ela mostra o sinal, o que falta e o QR do Pix com esse valor; no orçamento, os dados do Pix saem linha por linha, do jeito que você escreveu.",

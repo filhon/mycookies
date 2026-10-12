@@ -27,7 +27,7 @@ import {
   SeuCardapio,
 } from "@/components/conta/SeuCardapio";
 import { Botao } from "@/components/ui/Botao";
-import { Campo, Seletor } from "@/components/ui/Campo";
+import { AreaTexto, Campo, Seletor } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { CampoImagem } from "@/components/ui/CampoImagem";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
@@ -81,6 +81,7 @@ import {
 } from "@/lib/domain/orcamento";
 import { PeDaFolha } from "@/components/pedidos/FolhaOrcamento";
 import {
+  CONDICOES_MAX,
   errosDeLinha,
   errosPorCampo,
   esquemaConfiguracao,
@@ -118,6 +119,9 @@ import { cn } from "@/lib/utils/cn";
 
 /** O doce de exemplo da faixa do preço padrão (`#d286`). */
 const CUSTO_EXEMPLO = 400;
+
+/** Acima disso, as condições mostram quanto falta para o limite (spec 148). */
+const CONDICOES_AVISO = 500;
 
 /** "No crédito, sobram…": a forma que mais cobra, pelo tipo, e não pelo nome. */
 const NA_FORMA: Record<TipoPagamento, string> = {
@@ -267,6 +271,7 @@ interface EstadoConfiguracao {
   instagram: string;
   assinaturaDataUrl: string | null;
   frase: string;
+  condicoes: string;
   /** Tira o "feito com Rende" da folha (spec 028, `#d147`). */
   ocultarFeitoCom: boolean;
 }
@@ -304,6 +309,7 @@ function estadoInicial(
     instagram: dado?.contato?.instagram ?? "",
     assinaturaDataUrl: dado?.assinaturaDataUrl ?? null,
     frase: dado?.frase ?? "",
+    condicoes: dado?.condicoes ?? "",
     ocultarFeitoCom: dado?.ocultarFeitoCom ?? false,
   };
 }
@@ -328,6 +334,7 @@ function paraDados(estado: EstadoConfiguracao): DadosConfiguracao {
     ...(estado.nomeNegocio ? { nomeNegocio: estado.nomeNegocio } : {}),
     contato: { telefone: estado.telefone, instagram: estado.instagram },
     frase: estado.frase,
+    condicoes: estado.condicoes,
     ...(estado.assinaturaDataUrl && {
       assinaturaDataUrl: estado.assinaturaDataUrl,
     }),
@@ -680,6 +687,7 @@ function ConfiguracaoDaDona() {
       contato: dados.contato,
       assinaturaDataUrl: dados.assinaturaDataUrl,
       frase: dados.frase,
+      condicoes: dados.condicoes,
     });
 
     if (!resultado.success) {
@@ -1194,6 +1202,29 @@ function ConfiguracaoDaDona() {
                 onChange={(evento) => definir("frase", evento.target.value)}
                 erro={erros.frase}
               />
+
+              {/* O combinado de sempre, no fim de toda folha (`#d356`). O
+                  contador só aparece perto do limite. */}
+              <div className="space-y-1">
+                <AreaTexto
+                  rotulo="Condições de sempre"
+                  dica="Sai em toda folha. Alergênicos, validade, cancelamento: o que você repete para toda cliente."
+                  placeholder={
+                    "Contém glúten, leite e ovos.\nConsumir em até 5 dias.\nCancelamento até 48 h antes."
+                  }
+                  maxLength={CONDICOES_MAX}
+                  value={estado.condicoes}
+                  onChange={(evento) =>
+                    definir("condicoes", evento.target.value)
+                  }
+                  erro={erros.condicoes}
+                />
+                {estado.condicoes.length > CONDICOES_AVISO && (
+                  <p className="num text-right text-micro text-ink-muted">
+                    {estado.condicoes.length}/{CONDICOES_MAX}
+                  </p>
+                )}
+              </div>
 
               {/* Assinantes podem tirar a linha do Rende do rodapé; em teste,
                   só a explicação — a linha da assinatura mora em "A sua

@@ -11511,3 +11511,38 @@ logo o trecho que a cliente precisa copiar.
 
 **Consequência.** O QR depende de a forma ter os três dados do Pix; a forma só com `instrucoes`
 continua em texto, agora legível.
+
+## D356 · O logo da vitrine e o combinado de sempre na folha
+
+**Status:** vigente · decidida em 2026-10-12, spec `148-a-marca-e-o-combinado-de-sempre.md`.
+**Reverte** o "Fora de escopo" da 087 em "Logo na folha", com a aprovação do Filipe ao pedir a 148. Schema aditivo aprovado: `ConfiguracaoGeral.condicoes?: string`.
+
+**Contexto.** Na crítica da folha de 2026-10-12, comparada com ferramentas de proposta pagas
+(Qwilr, PandaDoc, HoneyBook, Square Estimates, Jobber), o topo era um nome em negrito, e o que ela
+repete para toda cliente (alergênicos, validade, cancelamento, sinal) não tinha lugar: ia na
+mensagem, separado da folha, ou não ia.
+
+**Decisão.**
+
+- **O logo da vitrine é o logo da folha.** A 087 perguntava "a folha é dela ou do cardápio?"; as
+  duas são dela (`#d127`). `TelaOrcamento` lê `configuracao/vitrine` ao lado de `geral` e espera os
+  dois; `montarOrcamento` recebe `vitrine` e `negocioDaFolha` ganhou o terceiro argumento opcional
+  (a spec dizia "segundo": o segundo já era a configuração). No topo à esquerda, 18 mm, recortado
+  em círculo como na vitrine, sem borda nem fundo, o nome ao lado. Sem logo, a folha de antes.
+  **Sem a cor dela na folha**: o papel continua papel.
+- **A prévia de "A sua marca" não mostra o logo**: ela é o pé da folha, e o logo é o topo. A
+  Configuração continua sem ler a vitrine (só o painel do cardápio a lê, `#d166`).
+- **`condicoes`** mora em `configuracao/geral` ao lado de `frase`: texto livre até 600
+  (`CONDICOES_MAX`), linhas como ela escreveu, só a margem em volta tirada. Gravado como `frase`,
+  `trim() || deleteField()`, e não por spread condicional como a spec dizia: com `merge: true`, a
+  chave ausente deixaria no documento as condições que ela acabou de apagar.
+- **Na folha, o bloco "Condições" abre o `PeDaFolha`**, depois do Combinado e antes das
+  assinaturas, 9 pt `--ink-muted`, `whitespace-pre-line`. Mora no `PeDaFolha` para a prévia da
+  Configuração o mostrar sem outro componente. Vazio ou só espaços, o bloco não existe.
+- **Na Configuração**, "Condições de sempre" é um `AreaTexto` depois da frase; o contador
+  "n/600" só aparece acima de 500.
+- **Não entra no acompanhamento**: a lista fechada do `#d320` só abre na 149.
+
+**Consequência.** Quem nunca abriu o painel do cardápio não tem a vitrine no cache: offline, a
+folha sai sem logo, como antes. A biblioteca da calculadora (`#d191`) espalha a configuração
+gravada em `corpoDaConfiguracao`, então as condições passam por ela intactas.

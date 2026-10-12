@@ -5,6 +5,7 @@ import {
   FOTO_MAX_BYTES,
   frasesDoCombinado,
   montarOrcamento,
+  negocioDaFolha,
   rotuloDaFolha,
   situacaoDaValidade,
   tamanhoDoDataUrl,
@@ -634,5 +635,32 @@ describe("situacaoDaValidade", () => {
   it("compara pelo calendário, e não pelo texto do mês", () => {
     expect(situacaoDaValidade("2026-10-01", "2026-09-30")).toBe("valido");
     expect(situacaoDaValidade("2025-12-31", "2026-01-01")).toBe("vencido");
+  });
+});
+
+describe("o logo e as condições da folha (spec 148)", () => {
+  const LOGO = "data:image/png;base64,iVBORw0KGgo=";
+
+  it("o logo vem da vitrine, e sem ela a folha não tem logo", () => {
+    expect(negocioDaFolha(CONTA, CONFIGURACAO, { logo: LOGO }).logo).toBe(LOGO);
+    expect(negocioDaFolha(CONTA, CONFIGURACAO)).not.toHaveProperty("logo");
+    expect(negocioDaFolha(CONTA, CONFIGURACAO, {})).not.toHaveProperty("logo");
+    expect(montar(PEDIDO, { vitrine: { logo: LOGO } }).negocio.logo).toBe(LOGO);
+    expect(montar().negocio).not.toHaveProperty("logo");
+  });
+
+  it("as condições saem com as linhas dela, sem a margem em volta", () => {
+    const negocio = negocioDaFolha(CONTA, {
+      ...CONFIGURACAO,
+      condicoes: "\n  Contém glúten.\nConsumir em até 5 dias.  \n",
+    });
+    expect(negocio.condicoes).toBe("Contém glúten.\nConsumir em até 5 dias.");
+    expect(negocioDaFolha(CONTA, CONFIGURACAO)).not.toHaveProperty("condicoes");
+  });
+
+  it("condições só de espaços não viram bloco", () => {
+    expect(
+      negocioDaFolha(CONTA, { ...CONFIGURACAO, condicoes: "  \n \n " }),
+    ).not.toHaveProperty("condicoes");
   });
 });

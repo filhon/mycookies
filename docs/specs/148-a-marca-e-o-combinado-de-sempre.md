@@ -59,10 +59,10 @@ caracteres; (2) **reverter o "Fora de escopo" da 087** em "Logo na folha"; (3) o
 
 ## Critérios de aceite
 
-- [ ] Logo da vitrine no topo da folha, degradando sem ele.
-- [ ] `condicoes` escrito pela Configuração e lido pela folha e pela prévia.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] `#d356`; `ESTADO.md` e `novidades.ts`.
+- [x] Logo da vitrine no topo da folha, degradando sem ele.
+- [x] `condicoes` escrito pela Configuração e lido pela folha e pela prévia.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] `#d356`; `ESTADO.md` e `novidades.ts`.
 
 ## Fora de escopo
 

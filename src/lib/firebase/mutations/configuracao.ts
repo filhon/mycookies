@@ -101,6 +101,7 @@ export function corpoDaConfiguracao(dados: DadosConfiguracao) {
     }),
     assinaturaDataUrl: dados.assinaturaDataUrl || deleteField(),
     frase: dados.frase?.trim() || deleteField(),
+    condicoes: dados.condicoes?.trim() || deleteField(),
     ocultarFeitoCom: dados.ocultarFeitoCom || deleteField(),
     atualizadoEm: Timestamp.now(),
   };

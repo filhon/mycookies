@@ -100,6 +100,11 @@ export interface ConfiguracaoGeral {
   contato?: { telefone?: string; instagram?: string };
   /** Uma frase sua, para o rodapé do orçamento (spec 033, `DECISOES.md#d127`). */
   frase?: string;
+  /**
+   * O combinado de sempre (spec 148, `DECISOES.md#d356`): validade, alergênicos,
+   * cancelamento. Até 600 caracteres, linhas como ela escreveu; sai em toda folha.
+   */
+  condicoes?: string;
   /** Tira a linha "feito com Rende" da folha (spec 028, `DECISOES.md#d147`). Só `true`. */
   ocultarFeitoCom?: true;
   /**
@@ -170,6 +175,8 @@ export interface DadosConfiguracao {
   assinaturaDataUrl?: string;
   /** A frase dela no rodapé (`#d127`). */
   frase?: string;
+  /** As condições de toda folha (`#d356`). */
+  condicoes?: string;
   /** Tira o "feito com Rende" da folha (spec 028, `#d147`). */
   ocultarFeitoCom?: true;
 }

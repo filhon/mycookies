@@ -17,8 +17,8 @@ import { cn } from "@/lib/utils/cn";
  * A folha A4 do orçamento. Só apresentação: nenhum hook, nenhuma conta.
  *
  * **A folha é dela, e não nossa** (`DECISOES.md#d127`): o cabeçalho é o nome
- * do negócio em display, sem logotipo — nem o dela, que não existe, nem o do
- * Rende. O total é o único bloco cheio, em `ink`; o Rende aparece como o
+ * do negócio em display, com o logo da vitrine dela quando há (`#d356`), e
+ * nunca o do Rende. O total é o único bloco cheio, em `ink`; o Rende aparece como o
  * manual manda, uma linha apagada no rodapé, e a frase dela vem da
  * configuração, entre o contato e essa linha. Nenhum outro fundo, nenhuma
  * borda lateral, nenhum cartão dentro de cartão. As medidas são em ponto e
@@ -38,9 +38,21 @@ export function FolhaOrcamento({ orcamento }: { orcamento: Orcamento }) {
   return (
     <article className="folha mx-auto flex flex-col text-[10.5pt] leading-[1.45] shadow-raised">
       <header className="flex items-start justify-between gap-6 border-b-2 border-line-strong pb-4">
-        <p className="font-display text-[20pt] font-bold leading-none">
-          {negocio.nome}
-        </p>
+        {/* O logo é o da vitrine, recortado em círculo como lá (`#d356`), sem
+            borda nem fundo: o papel em volta já é claro nos dois temas. */}
+        <div className="flex min-w-0 items-center gap-[5mm]">
+          {negocio.logo && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={negocio.logo}
+              alt=""
+              className="size-[18mm] shrink-0 rounded-full object-cover"
+            />
+          )}
+          <p className="font-display text-[20pt] font-bold leading-none">
+            {negocio.nome}
+          </p>
+        </div>
         <div className="text-right">
           <Rotulo>{rotuloDaFolha(orcamento.status)}</Rotulo>
           <p className="num text-[13pt] font-semibold leading-tight">
@@ -297,6 +309,17 @@ export function PeDaFolha({
 }) {
   return (
     <>
+      {/* O combinado de sempre, depois do Combinado do pedido (`#d356`), com
+          as linhas que ela escreveu. Vazio, o bloco não existe. */}
+      {negocio.condicoes && (
+        <section className="mt-[16pt] break-inside-avoid">
+          <Rotulo>Condições</Rotulo>
+          <p className="mt-[4pt] max-w-[68ch] whitespace-pre-line text-[9pt] text-ink-muted">
+            {negocio.condicoes}
+          </p>
+        </section>
+      )}
+
       {/* Coladas ao fim do conteúdo, e não ao pé da página: uma folha de três
           itens não deve ter um vão de 15 cm antes da assinatura. */}
       <section className="mt-[20pt] flex flex-wrap gap-8 break-inside-avoid">

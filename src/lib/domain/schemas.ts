@@ -81,6 +81,9 @@ export const esquemaFormaPagamento = z
 
 export type EntradaFormaPagamento = z.infer<typeof esquemaFormaPagamento>;
 
+/** As condições de toda folha (spec 148, `#d356`): três ou quatro linhas. */
+export const CONDICOES_MAX = 600;
+
 /**
  * Os cinco blocos da tela de configuração em um esquema só, porque eles são
  * gravados juntos em um documento só.
@@ -152,6 +155,15 @@ export const esquemaConfiguracao = z.object({
     .string()
     .trim()
     .max(80, "A frase precisa caber numa linha: até 80 letras.")
+    .optional(),
+  // O combinado de sempre, no fim da folha (`#d356`).
+  condicoes: z
+    .string()
+    .trim()
+    .max(
+      CONDICOES_MAX,
+      `As condições precisam caber no fim da folha: até ${CONDICOES_MAX} letras.`,
+    )
     .optional(),
   // Tira o "feito com Rende" da folha (spec 028, `#d147`).
   ocultarFeitoCom: z.literal(true).optional(),
