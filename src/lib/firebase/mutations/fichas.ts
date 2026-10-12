@@ -59,6 +59,8 @@ export interface DadosFicha {
   categoria: string;
   /** Como ela apresenta o produto na folha do orçamento (spec 017). Vazio apaga. */
   descricao?: string;
+  /** Um passo por linha (`DECISOES.md#d342`). Vazio apaga. */
+  modoPreparo?: string;
   /** A miniatura como `data:` URL (`DECISOES.md#d109`). `null` tira a foto. */
   fotoUrl?: string | null;
   tipo: TipoFicha;
@@ -131,6 +133,7 @@ export function corpoDaFicha(dados: DadosFicha) {
     nomeBusca: chaveDeBusca(dados.nome),
     categoria: dados.categoria.trim(),
     ...(dados.descricao?.trim() && { descricao: dados.descricao.trim() }),
+    ...(dados.modoPreparo?.trim() && { modoPreparo: dados.modoPreparo.trim() }),
     ...(dados.fotoUrl && { fotoUrl: dados.fotoUrl }),
     tipo: dados.tipo,
     rendimento: dados.rendimento,
@@ -232,10 +235,12 @@ export async function atualizarFicha(
     updateDoc(docFicha(contaId, fichaId), {
       ...corpoDaFicha(dados),
       // Chave ausente em `updateDoc` deixa o valor velho no lugar: tirar a
-      // foto e limpar a descrição precisam apagar, e não esconder.
+      // foto e limpar a descrição ou o preparo precisam apagar, e não esconder.
       ...(dados.fotoUrl === null && { fotoUrl: deleteField() }),
       ...(dados.descricao !== undefined &&
         !dados.descricao.trim() && { descricao: deleteField() }),
+      ...(dados.modoPreparo !== undefined &&
+        !dados.modoPreparo.trim() && { modoPreparo: deleteField() }),
       atualizadoEm: agora(),
     }),
   );

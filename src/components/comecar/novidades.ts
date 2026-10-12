@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-12",
+    titulo: "O produto guarda o modo de preparo",
+    frase:
+      "Na receita, o bloco Como se faz guarda o passo a passo, um passo por linha: cole do caderno ou do WhatsApp e ele fica junto das quantidades.",
+    href: "/fichas",
+  },
+  {
+    dataISO: "2026-10-12",
     titulo: "O preço avisa quando a margem parece um multiplicador",
     frase:
       "Pedir que sobre 2,5% do preço quase sempre era multiplicar o custo por 2,5: a tela diz quanto sobra em cada caso e troca num toque. A taxa de cartão zerada também avisa, com a da sua maquininha.",

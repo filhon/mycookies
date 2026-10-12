@@ -16,6 +16,7 @@ import {
   ChevronDown,
   CookingPot,
   Hand,
+  ListOrdered,
   Package,
   Percent,
   Plus,
@@ -95,7 +96,7 @@ import {
   quebraDaFicha,
   temPronto,
 } from "@/lib/domain/producao";
-import { DESCRICAO_MAX, esquemaFicha } from "@/lib/domain/schemas";
+import { DESCRICAO_MAX, esquemaFicha, PREPARO_MAX } from "@/lib/domain/schemas";
 import {
   formatarQuantidade,
   paraBase,
@@ -150,6 +151,7 @@ interface ValoresFicha {
   nome: string;
   categoria: string;
   descricao: string;
+  modoPreparo: string;
   /** O `data:` URL já reduzido, ou `null` sem foto (`DECISOES.md#d109`). */
   fotoUrl: string | null;
   tipo: TipoFicha;
@@ -210,6 +212,7 @@ function valoresIniciais(
       nome: "",
       categoria: "",
       descricao: "",
+      modoPreparo: "",
       fotoUrl: null,
       tipo: "SIMPLES",
       // Rendimento e tempo nascem vazios porque não há de onde derivá-los:
@@ -237,6 +240,7 @@ function valoresIniciais(
     nome: ficha.nome,
     categoria: ficha.categoria,
     descricao: ficha.descricao ?? "",
+    modoPreparo: ficha.modoPreparo ?? "",
     fotoUrl: ficha.fotoUrl ?? null,
     tipo: ficha.tipo,
     rendimento: texto(ficha.rendimento),
@@ -718,6 +722,7 @@ export function FormularioFicha({
       nome: valores.nome,
       categoria: valores.categoria,
       descricao: valores.descricao,
+      modoPreparo: valores.modoPreparo,
       tipo: valores.tipo,
       rendimento,
       unidadeRendimento: valores.unidadeRendimento,
@@ -768,6 +773,7 @@ export function FormularioFicha({
       nome: valores.nome,
       categoria: valores.categoria,
       descricao: valores.descricao,
+      modoPreparo: valores.modoPreparo,
       fotoUrl: valores.fotoUrl,
       tipo: valores.tipo,
       rendimento,
@@ -1502,6 +1508,39 @@ export function FormularioFicha({
               })}
             </ListaDeLinhas>
           </Bloco>
+
+          {/* Texto, e não lista de campos (`#d342`): cola do caderno e do
+              WhatsApp, e a bancada só precisa das linhas. */}
+          {!ehKit && (
+            <Bloco
+              icone={ListOrdered}
+              titulo="Como se faz"
+              descricao="Um passo por linha. Na bancada, cada linha vira um passo."
+            >
+              <AreaTexto
+                rotulo="Modo de preparo"
+                rows={6}
+                // Cresce com o texto onde o navegador sabe; onde não sabe, as
+                // 6 linhas rolam. O piso é o das 6 linhas mais o respiro.
+                style={{
+                  fieldSizing: "content",
+                  minHeight: "calc(6lh + 1.25rem + 2px)",
+                }}
+                placeholder={
+                  "Bata a manteiga com os açúcares até clarear.\nJunte o ovo e a baunilha, depois a farinha peneirada.\nAsse a 180 °C por 12 minutos."
+                }
+                dica={
+                  valores.modoPreparo.length > 3500 && (
+                    <span className="num text-micro">
+                      {valores.modoPreparo.length}/{PREPARO_MAX}
+                    </span>
+                  )
+                }
+                erro={form.formState.errors.modoPreparo?.message}
+                {...form.register("modoPreparo")}
+              />
+            </Bloco>
+          )}
 
           <Bloco
             icone={Receipt}

@@ -10974,3 +10974,34 @@ crédito a 4,99%. A tela aceitava os dois calada.
 **Consequência.** "Seu {nome} cobra" usa o nome como ela cadastrou a forma; com um nome feminino o
 possessivo sai errado, e foi aceito por ser raro em forma de pagamento. Se a Maynara disser que os
 2,5% eram de propósito, a regra 1 cai e o intervalo inteiro vira `MARGEM_BAIXA` (spec, § 4).
+
+## D342 · O modo de preparo é texto, um passo por linha
+
+**Status:** vigente · decidida em 2026-10-12, spec `137-como-se-faz.md`.
+
+**Contexto.** O `PRODUCT.md` põe a cozinha como o primeiro contexto de uso, e o Rende guardava as
+quantidades sem a receita: a ordem, o forno a 180 °C e os 12 minutos moravam no caderno. O campo
+`FichaTecnica.modoPreparo?: string` existia no tipo desde a sessão 2 e nunca foi escrito nem lido.
+
+**Decisão.**
+
+- **Texto, e não lista de campos.** Uma linha é um passo, linha em branco é ignorada. É mais rápido
+  de colar do caderno e do WhatsApp, e a bancada (138) só precisa das linhas. Sem negrito, lista ou
+  título: a 002 já tinha deixado "modo de preparo com formatação" fora.
+- **Quem lê é `passosDoPreparo` em `domain/preparo.ts`**, e não em `custoFicha.ts`: não é custo.
+  Corta em `\n`, apara cada linha (o `\r` do que vem do Windows sai junto) e tira as vazias. Não
+  tira numeração escrita à mão ("1. Bata…"): se a 138 numerar, ela decide.
+- **Bloco "Como se faz"** (`ListOrdered`) logo depois de "O que vai dentro", só na receita. O campo
+  cresce com o texto por `field-sizing: content`, com piso de 6 linhas; onde o navegador não sabe
+  (Firefox hoje), as 6 linhas rolam. Sem JavaScript de autoaltura.
+- **`PREPARO_MAX` de 4.000 caracteres** em `esquemaFicha`, com o contador depois de 3.500, como o da
+  descrição. Cabe a receita longa do caderno com folga e barra o colar acidental de uma conversa.
+- **Vazio não grava campo.** `corpoDaFicha` só põe `modoPreparo` com texto; `atualizarFicha` apaga
+  com `deleteField()` quando ela limpa, como a descrição. Campo opcional já no tipo: nenhuma mudança
+  de schema, `v` continua `VERSAO_SCHEMA`.
+- **Nunca público.** `montarCardapio` e `montarOrcamento` copiam campo por campo e não levam o
+  preparo; o teste de chaves do `#d158` cobre o cardápio.
+
+**Consequência.** A ficha que vira kit guarda o preparo escondido em vez de apagá-lo: o bloco some,
+o texto fica, e volta se ela desfizer a troca. Apagar texto dela sem pedir seria pior que um campo
+sem leitor.

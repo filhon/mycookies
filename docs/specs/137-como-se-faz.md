@@ -66,10 +66,10 @@ formatação: texto, um passo por linha.
 
 ## Critérios de aceite
 
-- [ ] O bloco grava e lê `modoPreparo`; vazio não grava campo.
-- [ ] `passosDoPreparo` testada.
-- [ ] Nunca no cardápio nem na folha.
-- [ ] Portão de conclusão passa; `#d342`, `ESTADO.md`, `novidades.ts`.
+- [x] O bloco grava e lê `modoPreparo`; vazio não grava campo.
+- [x] `passosDoPreparo` testada.
+- [x] Nunca no cardápio nem na folha.
+- [x] Portão de conclusão passa; `#d342`, `ESTADO.md`, `novidades.ts`.
 
 ---
 

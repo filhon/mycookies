@@ -165,6 +165,9 @@ const MINUTOS_MAXIMOS_PRODUCAO = 24 * 60;
 /** Duas frases na folha do orçamento (spec 017); o `line-clamp-2` é a rede. */
 export const DESCRICAO_MAX = 240;
 
+/** Uma receita longa do caderno cabe com folga (spec 137, `#d342`). */
+export const PREPARO_MAX = 4000;
+
 /**
  * A ficha inteira em um esquema só, validada no salvamento sobre os números já
  * convertidos — o mesmo caminho do cadastro de insumo.
@@ -181,6 +184,11 @@ export const esquemaFicha = z
       .string()
       .trim()
       .max(DESCRICAO_MAX, "Duas frases bastam: até 240 caracteres.")
+      .optional(),
+    modoPreparo: z
+      .string()
+      .trim()
+      .max(PREPARO_MAX, "O modo de preparo vai até 4.000 caracteres.")
       .optional(),
     tipo: z.enum(["SIMPLES", "KIT"]),
     rendimento: z.number().positive("Diga quantas unidades saem de um lote."),
