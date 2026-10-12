@@ -25,6 +25,14 @@ export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-12",
     titulo:
+      "Conte o que está pronto no − e no +, e a contagem pela metade fica guardada",
+    frase:
+      "No celular, cada pote ganha botões para contar de um em um, o nome aparece inteiro, e se o app fechar no meio a contagem volta de onde parou.",
+    href: "/fichas/contagem",
+  },
+  {
+    dataISO: "2026-10-12",
+    titulo:
       "Na contagem do que está pronto, veja quanto deveria ter em cada pote",
     frase:
       "Cada produto mostra a última contagem, mais a massa feita, menos o que saiu em pedido, e a tela abre no que precisa ser conferido.",

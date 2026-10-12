@@ -9,33 +9,41 @@ import type { DataISO } from "@/lib/types";
  * A contagem pela metade no `localStorage` (spec 127, `DECISOES.md#d332`), no
  * padrão do rascunho da porta (`#d189`): navegador que bloqueia armazenamento
  * lança no acesso, tudo em `try/catch`, e quem não pode guardar conta como antes.
+ *
+ * Uma chave por tela (`#d336`): a despensa e o pronto contam coisas diferentes,
+ * e um rascunho não pode voltar na tela do outro.
  */
 
-const chave = (contaId: string) => `rende:contagem:${contaId}`;
+export const chaveDaDespensa = (contaId: string) => `rende:contagem:${contaId}`;
+export const chaveDoPronto = (contaId: string) =>
+  `rende:contagem-pronto:${contaId}`;
 
 export function lerRascunho(
-  contaId: string,
+  chave: string,
   hoje: DataISO,
 ): RascunhoDaContagem | null {
   try {
-    return lerRascunhoDaContagem(localStorage.getItem(chave(contaId)), hoje);
+    return lerRascunhoDaContagem(localStorage.getItem(chave), hoje);
   } catch {
     return null;
   }
 }
 
-/** Linha apagada até o vazio sai do rascunho; sem linha nenhuma, ele some. */
+/**
+ * Linha apagada até o vazio sai do rascunho; sem linha nenhuma, ele some. O
+ * pronto não tem unidade por linha, e guarda só `digitados`.
+ */
 export function guardarRascunho(
-  contaId: string,
+  chave: string,
   dia: DataISO,
   digitados: Record<string, string>,
-  unidades: Record<string, UnidadeDoCampo>,
+  unidades?: Record<string, UnidadeDoCampo>,
 ): void {
   const preenchidos = Object.fromEntries(
     Object.entries(digitados).filter(([, texto]) => texto.trim() !== ""),
   );
   if (Object.keys(preenchidos).length === 0) {
-    apagarRascunho(contaId);
+    apagarRascunho(chave);
     return;
   }
   try {
@@ -46,15 +54,15 @@ export function guardarRascunho(
       unidades,
       salvoEm: Date.now(),
     };
-    localStorage.setItem(chave(contaId), JSON.stringify(rascunho));
+    localStorage.setItem(chave, JSON.stringify(rascunho));
   } catch {
     // Sem armazenamento, sem rascunho.
   }
 }
 
-export function apagarRascunho(contaId: string): void {
+export function apagarRascunho(chave: string): void {
   try {
-    localStorage.removeItem(chave(contaId));
+    localStorage.removeItem(chave);
   } catch {
     // Idem.
   }

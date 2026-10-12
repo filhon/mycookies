@@ -415,6 +415,19 @@ export function textoContado(valor: number): string {
 }
 
 /**
+ * O "−" e o "+" do pote (`#d336`): de um em um, sem arredondar o fracionado.
+ * Vazio + 1 é 1, e nunca o esperado + 1: o "+" que partisse do palpite faria a
+ * contagem confirmá-lo sem olhar. Abaixo de zero não desce, e o que não dá para
+ * ler fica como está.
+ */
+export function passoDaContagem(texto: string, sinal: 1 | -1): string {
+  if (texto.trim() === "") return sinal === 1 ? "1" : texto;
+  const valor = numeroContado(texto);
+  if (valor === null) return texto;
+  return textoContado(Math.max(0, valor + sinal));
+}
+
+/**
  * Em que o campo da contagem está (`#d329`): em embalagens, como a coisa está
  * na prateleira, ou na unidade base, que é o que se grava.
  */

@@ -46,6 +46,7 @@ import type { Fornada, Insumo } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 import {
   apagarRascunho,
+  chaveDaDespensa,
   guardarRascunho,
   lerRascunho,
 } from "@/lib/utils/rascunhoDaContagem";
@@ -99,7 +100,7 @@ export function TelaContagem() {
   // semente ela não volta e não é apagada: a compra é outro começo, e o
   // rascunho continua lá se ela sair sem salvar.
   const [retomado, setRetomado] = useState(() =>
-    semente ? null : lerRascunho(contaId, hoje),
+    semente ? null : lerRascunho(chaveDaDespensa(contaId), hoje),
   );
   const [digitados, setDigitados] = useState<Record<string, string>>(
     () => retomado?.digitados ?? {},
@@ -126,7 +127,7 @@ export function TelaContagem() {
     if (digitados === abertura.digitados && unidades === abertura.unidades) {
       return;
     }
-    guardarRascunho(contaId, hoje, digitados, unidades);
+    guardarRascunho(chaveDaDespensa(contaId), hoje, digitados, unidades);
   }, [semente, abertura, contaId, hoje, digitados, unidades]);
 
   // Vinda da nota, a tela abre recortada no que a nota trouxe: uma nota de
@@ -373,7 +374,7 @@ export function TelaContagem() {
     salvarContagem(contaId, contagens, hoje).catch(() =>
       setFalha("Não deu para salvar a contagem agora."),
     );
-    apagarRascunho(contaId);
+    apagarRascunho(chaveDaDespensa(contaId));
 
     // Em vez de voltar, mostra o que a contagem encontrou, com o que está em
     // memória (`#d333`). Custo sem a perda: a perda é da receita, e não da

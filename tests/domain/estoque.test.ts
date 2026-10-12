@@ -13,6 +13,7 @@ import {
   linhasParaContar,
   naBase,
   numeroContado,
+  passoDaContagem,
   precisaConferir,
   procedenciaDaSugestao,
   resumoDaContagem,
@@ -506,6 +507,30 @@ describe("textoContado", () => {
     // que ela digitaria nem que queira dizer alguma coisa na despensa.
     expect(textoContado(999.9999999999999)).toBe("1000");
     expect(textoContado(1479.9999999999998)).toBe("1480");
+  });
+});
+
+describe("passoDaContagem (#d336)", () => {
+  it("o + no vazio escreve 1; o − no vazio não escreve nada", () => {
+    expect(passoDaContagem("", 1)).toBe("1");
+    expect(passoDaContagem("  ", -1)).toBe("  ");
+  });
+
+  it("anda de um em um e não desce de zero", () => {
+    expect(passoDaContagem("7", -1)).toBe("6");
+    expect(passoDaContagem("16", 1)).toBe("17");
+    expect(passoDaContagem("0", -1)).toBe("0");
+  });
+
+  it("fracionado anda sem arredondar", () => {
+    expect(passoDaContagem("0,5", 1)).toBe("1,5");
+    expect(passoDaContagem("1,5", -1)).toBe("0,5");
+    expect(passoDaContagem("0,5", -1)).toBe("0");
+  });
+
+  it("o ilegível fica como está", () => {
+    expect(passoDaContagem("abc", 1)).toBe("abc");
+    expect(passoDaContagem("-3", -1)).toBe("-3");
   });
 });
 

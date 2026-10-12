@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { orderBy, query, where } from "firebase/firestore";
-import { Check, CookingPot, Plus, TriangleAlert } from "lucide-react";
+import {
+  Check,
+  CookingPot,
+  History,
+  Minus,
+  Plus,
+  TriangleAlert,
+} from "lucide-react";
+import { andarParaOProximo } from "@/components/estoque/LinhaContagem";
 import { RodapeContagem } from "@/components/estoque/RodapeContagem";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { BASE_CONTROLE } from "@/components/ui/Campo";
@@ -25,6 +33,7 @@ import { dataISODe, diaVizinho } from "@/lib/domain/datas";
 import {
   IDADE_VENCE_DIAS,
   numeroContado,
+  passoDaContagem,
   resumoDaContagem,
   rotuloDeIdade,
   sugestaoDaContagem,
@@ -51,6 +60,17 @@ import type {
 } from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
 import { cn } from "@/lib/utils/cn";
+import {
+  apagarRascunho,
+  chaveDoPronto,
+  guardarRascunho,
+  lerRascunho,
+} from "@/lib/utils/rascunhoDaContagem";
+
+function horaDe(instante: number): string {
+  const data = new Date(instante);
+  return `${data.getHours()}h${String(data.getMinutes()).padStart(2, "0")}`;
+}
 
 function quanto(valor: number, unidade: UnidadeRendimento): string {
   return rotuloDaQuantidade(valor, unidade);
@@ -69,14 +89,29 @@ export function TelaContagemPronto() {
   const contaId = useContaId();
 
   const [hoje] = useState(() => dataISODe(new Date()));
-  const [digitados, setDigitados] = useState<Record<string, string>>({});
-  const [falha, setFalha] = useState<string | null>(null);
 
   // Lida uma vez e apagada só depois de o campo nascer, como na despensa: as
   // fichas podem chegar do cache depois da tela.
   const [semente] = useState(lerSementeDoPronto);
   const semeado = useRef(false);
   const [soEsta, setSoEsta] = useState(() => lerSementeDoPronto() !== null);
+
+  // A contagem pela metade, a de hoje (`#d336`, o mesmo `#d332` da despensa).
+  // Com semente da fornada ela não volta e não é apagada.
+  const [retomado, setRetomado] = useState(() =>
+    semente ? null : lerRascunho(chaveDoPronto(contaId), hoje),
+  );
+  const [digitados, setDigitados] = useState<Record<string, string>>(
+    () => retomado?.digitados ?? {},
+  );
+  const [falha, setFalha] = useState<string | null>(null);
+
+  // O retrato da abertura não é mudança: regravá-lo só trocaria a hora da faixa.
+  const [abertura] = useState(digitados);
+  useEffect(() => {
+    if (semente || digitados === abertura) return;
+    guardarRascunho(chaveDoPronto(contaId), hoje, digitados);
+  }, [semente, abertura, contaId, hoje, digitados]);
 
   const consulta = useMemo(
     () =>
@@ -204,6 +239,13 @@ export function TelaContagemPronto() {
     setDigitados((anteriores) => ({ ...anteriores, [fichaId]: texto }));
   }
 
+  /** Limpa campos e rascunho, e o recorte se decide de novo. */
+  function comecarDeNovo() {
+    setDigitados({});
+    setRetomado(null);
+    setRecorte(undefined);
+  }
+
   // Inclusive o que a fornada semeou: a proposta que sai da contagem é
   // trabalho perdido também (`DECISOES.md#d134`).
   const sujo = Object.values(valores).some((quantidade) => quantidade !== null);
@@ -233,6 +275,7 @@ export function TelaContagemPronto() {
     salvarContagemDoPronto(contaId, contagens, hoje).catch(() =>
       setFalha("Não deu para salvar a contagem agora."),
     );
+    apagarRascunho(chaveDoPronto(contaId));
     void guarda.navegar("/fichas");
   }
 
@@ -276,6 +319,32 @@ export function TelaContagemPronto() {
           valor={soEsta}
           aoMudar={setSoEsta}
         />
+      )}
+
+      {retomado && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg border border-line bg-sunken py-1 pl-4 pr-1 text-label text-ink">
+          <p className="flex items-start gap-2.5 py-2">
+            <History
+              aria-hidden
+              className="mt-0.5 size-4 shrink-0 text-ink-muted"
+              strokeWidth={1.75}
+            />
+            <span>
+              Continuando a contagem das {horaDe(retomado.salvoEm)}:{" "}
+              {Object.keys(retomado.digitados).length === 1
+                ? "1 produto já contado"
+                : `${Object.keys(retomado.digitados).length} produtos já contados`}
+              .
+            </span>
+          </p>
+          <button
+            type="button"
+            onClick={comecarDeNovo}
+            className={classesBotao({ variante: "terciaria", tamanho: "sm" })}
+          >
+            Começar de novo
+          </button>
+        </div>
       )}
 
       {comPilulas && (
@@ -417,6 +486,31 @@ function LinhaPronto({
     anotado !== null &&
     (contagem?.frescor === "FRESCA" || contagem?.frescor === "ENVELHECENDO");
 
+  // "−" e "+" no celular (`#d336`): unidade e porção se contam no dedo. Com
+  // eles o "Igual" fica na linha da frase até o `lg`, e o "un" sai do campo.
+  const noDedo = unidade === "un" || unidade === "porcao";
+  const [anuncio, setAnuncio] = useState("");
+  function passo(sinal: 1 | -1) {
+    const novo = passoDaContagem(texto, sinal);
+    aoMudar(novo);
+    setAnuncio(`${ficha.nome}: ${novo}`);
+  }
+  const botaoPasso = (sinal: 1 | -1) => (
+    <button
+      type="button"
+      onClick={() => passo(sinal)}
+      disabled={sinal === 1 ? ilegivel : !valor}
+      aria-label={`${sinal === 1 ? "Um a mais" : "Um a menos"} de ${ficha.nome}`}
+      className={classesBotao({ className: "w-11 shrink-0 px-0 lg:hidden" })}
+    >
+      {sinal === 1 ? (
+        <Plus aria-hidden className="size-5" strokeWidth={2} />
+      ) : (
+        <Minus aria-hidden className="size-5" strokeWidth={2} />
+      )}
+    </button>
+  );
+
   /** Em 360px o botão desce para a linha da referência, para o nome não sumir. */
   const botaoIgual = (className: string) => (
     <button
@@ -439,8 +533,10 @@ function LinhaPronto({
         <div className="min-w-0 flex-1">
           <label
             htmlFor={`pronto-${ficha.id}`}
-            className="block truncate text-body font-medium text-ink"
+            className="line-clamp-2 text-body font-medium text-ink"
           >
+            {/* Os nomes só diferem no fim (sabor, gramatura): cortar o fim é
+                cortar o que distingue (`#d336`). */}
             {ficha.nome}
           </label>
           <div className="flex items-center gap-2">
@@ -492,36 +588,62 @@ function LinhaPronto({
                       : referencia(esperado, unidade, atencao)))}
               </span>
             </p>
-            {igual && botaoIgual("min-[400px]:hidden")}
+            {igual && botaoIgual(noDedo ? "lg:hidden" : "min-[400px]:hidden")}
           </div>
         </div>
 
-        {igual && botaoIgual("hidden min-[400px]:inline-flex")}
-        <div className="relative w-28 shrink-0">
-          <input
-            id={`pronto-${ficha.id}`}
-            inputMode="decimal"
-            enterKeyHint="next"
-            autoComplete="off"
-            placeholder="—"
-            value={texto}
-            aria-describedby={`pronto-${ficha.id}-referencia`}
-            aria-invalid={ilegivel ? true : undefined}
-            onChange={(evento) => aoMudar(evento.target.value)}
+        {igual &&
+          botaoIgual(
+            noDedo ? "hidden lg:inline-flex" : "hidden min-[400px]:inline-flex",
+          )}
+        <div className="flex shrink-0 items-center gap-2">
+          {noDedo && botaoPasso(-1)}
+          <div
             className={cn(
-              BASE_CONTROLE,
-              "num pr-14 text-right font-semibold",
-              ilegivel ? "border-negative" : "border-line-strong",
+              "relative shrink-0",
+              unidade === "un" ? "w-15 lg:w-28" : "w-28",
             )}
-          />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-label text-ink-muted"
           >
-            {SUFIXO_UNIDADE_RENDIMENTO[unidade]}
-          </span>
+            <input
+              id={`pronto-${ficha.id}`}
+              data-contagem
+              inputMode="decimal"
+              enterKeyHint="next"
+              autoComplete="off"
+              placeholder="—"
+              value={texto}
+              aria-label={
+                unidade === "un" ? `${ficha.nome}, em unidades` : undefined
+              }
+              aria-describedby={`pronto-${ficha.id}-referencia`}
+              aria-invalid={ilegivel ? true : undefined}
+              onChange={(evento) => aoMudar(evento.target.value)}
+              onKeyDown={andarParaOProximo}
+              className={cn(
+                BASE_CONTROLE,
+                "num text-right font-semibold",
+                unidade === "un"
+                  ? "px-1 text-center lg:pl-3 lg:pr-14 lg:text-right"
+                  : "pr-14",
+                ilegivel ? "border-negative" : "border-line-strong",
+              )}
+            />
+            <span
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute inset-y-0 right-3 items-center text-label text-ink-muted",
+                unidade === "un" ? "hidden lg:flex" : "flex",
+              )}
+            >
+              {SUFIXO_UNIDADE_RENDIMENTO[unidade]}
+            </span>
+          </div>
+          {noDedo && botaoPasso(1)}
         </div>
       </div>
+      <span aria-live="polite" className="sr-only">
+        {anuncio}
+      </span>
     </li>
   );
 }

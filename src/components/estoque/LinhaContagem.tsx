@@ -344,7 +344,7 @@ export function LinhaContagem({
  * ordem do DOM, inclusive de um corredor para o outro. Só o que está na tela
  * existe no DOM, então o recorte já vale. No último, nada: salvar é o botão.
  */
-function andarParaOProximo(evento: KeyboardEvent<HTMLInputElement>) {
+export function andarParaOProximo(evento: KeyboardEvent<HTMLInputElement>) {
   if (evento.key !== "Enter") return;
   evento.preventDefault();
   const campos = Array.from(

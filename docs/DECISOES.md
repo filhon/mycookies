@@ -10738,3 +10738,43 @@ Cinco das dez linhas eram "nunca contada" de produtos feitos na hora, no mesmo c
 **Consequência.** O esperado não é gravado: `#d97` continua. Pedido de um kit que foi arquivado não
 desconta os componentes, porque a consulta de fichas só traz as vivas, como no `restamNoPote`. Sem campo
 "não guardo pronto" na ficha: volta se um produto guardado em pote ficar meses sem fornada.
+
+---
+
+## D336 · O pote no polegar
+
+**Status:** vigente · decidida em 2026-10-12, spec `131-o-pote-no-polegar.md`.
+
+**Contexto.** Contar o pote é contar poucas unidades, com o dedo, e o teclado decimal cobria
+metade da tela para um algarismo. Em 360 px o nome era cortado no fim, que é onde os nomes da
+MyCookie's diferem ("Mini Cookie Red Velvet 40g" contra "Cookie Red Velvet 120g"). A despensa
+ganhou rascunho e Enter na 127 (`#d332`); o pronto, não.
+
+**Decisão.**
+
+- **"−" e "+" abaixo de `lg`, só em `un` e `porcao`**: botões secundários de 44 × 48 px (a altura
+  do campo, `BASE_CONTROLE`), `Minus`/`Plus` 20 px, 8 px entre os alvos (`DESIGN.md`).
+  `aria-label` "Um a menos de …" / "Um a mais de …"; uma região `aria-live` por linha anuncia
+  "Cookie Oreo 120g: 3" depois do toque, porque o foco fica no botão e o campo não é relido.
+- **`passoDaContagem(texto, sinal)`** em `domain/estoque.ts`, com teste: vazio + 1 é 1, e não o
+  esperado + 1 (o "+" que partisse do palpite da 130 confirmaria o palpite sem olhar o pote); de
+  1 em 1, sem arredondar o fracionado (0,5 + 1 = 1,5); nunca abaixo de zero; ilegível fica.
+  "−" desabilitado no vazio, no zero e no ilegível; "+" só no ilegível.
+- **Em `un` o campo encolhe para 60 px**, centrado e sem o sufixo "un" abaixo de `lg`; o
+  `aria-label` do campo passa a ser "{nome}, em unidades". Em porção, "porções" fica e o campo
+  segue com 112 px. No desktop nada muda.
+- **Com os botões, o "Igual" (`#d330`) fica na linha da frase até `lg`**, e não ao lado do campo
+  a partir de 400 px: não cabe ao lado de "−", campo e "+".
+- **O nome em `line-clamp-2`**: a linha cresce só no produto de nome longo. A regra da spec de
+  descer os botões para a linha da frase quando um nome real vai a três linhas **não foi feita**:
+  depende de medir os produtos dela em 360 px (roteiro, item 4), e volta se dois forem a três.
+- **O rascunho do `#d332`, em chave própria** `rende:contagem-pronto:{contaId}`.
+  `rascunhoDaContagem.ts` passa a receber a chave (`chaveDaDespensa`, `chaveDoPronto`) e
+  `unidades` vira opcional: o pronto guarda só `digitados`. Mesmas regras: só o de hoje, faixa
+  "Continuando a contagem das 14h10: 4 produtos já contados." com "Começar de novo", com semente
+  da fornada não volta nem é apagado, salvar apaga.
+- **Enter anda**: o campo ganha `data-contagem` e o `andarParaOProximo` de `LinhaContagem`, agora
+  exportado. O `scroll-padding` vem do `RodapeContagem`, que já era o mesmo.
+
+**Consequência.** Sem vibração no toque (o iPhone não tem `navigator.vibrate` no PWA) e sem
+pressionar e segurar: volta se ela contar mais de 30 de um produto.

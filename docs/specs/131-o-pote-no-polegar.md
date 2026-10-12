@@ -106,11 +106,11 @@ Em 360 px, nos dois temas, e 1280 px para conferir que nada mudou:
 
 ## Critérios de aceite
 
-- [ ] "−" e "+" abaixo de `lg`, em `un` e `porcao`, com as regras do vazio e do zero.
-- [ ] Nome em até duas linhas.
-- [ ] Rascunho do dia com faixa e "Começar de novo", em chave própria.
-- [ ] Enter anda para o próximo campo.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `#d336` escrito; `ESTADO.md` e `novidades.ts`
+- [x] "−" e "+" abaixo de `lg`, em `un` e `porcao`, com as regras do vazio e do zero.
+- [~] Nome em até duas linhas.
+- [x] Rascunho do dia com faixa e "Começar de novo", em chave própria.
+- [x] Enter anda para o próximo campo.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `#d336` escrito; `ESTADO.md` e `novidades.ts`
       atualizados.
 
 ---
