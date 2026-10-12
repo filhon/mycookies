@@ -11363,3 +11363,86 @@ a tela não apaga (`useTelaAcesa`). Depois de recarregar a aba, os relógios vol
 volta no próximo toque no botão de um passo; a vibração e a linha não dependem dele. Registrar a
 massa leva ao produto, e o relógio que ainda contava só toca quando ela volta à bancada, já como
 "Pronto".
+
+## D352 · A fornada que os pedidos pedem
+
+**Status:** vigente · decidida em 2026-10-12, spec `146-a-fornada-que-os-pedidos-pedem.md`,
+sessão **A** (a sugestão). Da crítica dos prints da bancada de 2026-10-12, item 11. **Reabre** o
+"Fora de escopo" da 138 em "Escala por unidades desejadas", com a aprovação do Filipe ao pedir a
+146-A; as duas decisões da seção 2 da spec ficaram como propostas (meia fornada como passo,
+abrir já na sugestão). A entrada pelo pedido é a 146-B.
+
+**Contexto.** A bancada abria em 1 fornada, sempre, e ela fazia de cabeça, com o app aberto ao
+lado, a conta que o Rende já tinha: os pedidos abertos, a massa feita para eles e o pote.
+
+**Decisão.**
+
+- **`faltaFazer`** em `domain/producao.ts`: o que os pedidos da lista pedem da receita, menos a
+  massa feita para eles, menos os prontos livres, piso zero. Recebe a projeção do pote e calcula o
+  dono como `reservadoNoPronto` (`min(feito, pedem)`), para o resto do pote não contar duas vezes.
+  Os pedidos são os de `entraNaLista` até `HORIZONTE_MAXIMO`, o recorte da despensa.
+- **O kit abre** nas receitas fixas de dentro, por unidade do kit (`quantidade ÷ rendimento`),
+  nos dois lados: 3 caixas com 6 pedem 18 cookies, e a massa da caixa feita para o
+  pedido cobre os cookies dela, que a projeção do pote do cookie não soma. Só `tipo: "KIT"` abre: o
+  preparo dentro da receita é grama, e não unidade pedida. **`reservadoNoPronto` passou a abrir o
+  kit também** (ganhou `fichas`), e caiu o `ponytail` dele: a massa de cookie feita para um pedido
+  de caixa tem dono no pote do cookie. Sem isso, a bancada e a lista de produtos discordariam.
+- **A frase**, acima das pílulas, em `label` `--ink-muted` com `ClipboardList`: "Os pedidos até
+  sábado pedem 40 · 6 prontos · faltam 34", com "faltam 34" em 600 `--ink`. "prontos" é o que
+  cobre: a massa feita para eles mais os livres, até o que pedem. A data é a entrega mais longe
+  entre os pedidos que pedem a receita, por `rotuloAte` ("de hoje", "até amanhã", o dia da semana
+  até seis dias, "até 19 de outubro" depois). Faltando zero, "Os pedidos até sábado já estão
+  cobertos". Nenhum pedido pede a receita: nenhuma frase ("cobertos" sem pedido seria mentira).
+- **A bancada abre** nas fornadas que cobrem, para cima em meia fornada (`fornadasQueCobrem`: 34 ÷
+  16 = 2,125 → 2½), **só quando a aba não tem escolha guardada**; zero abre em 1. Para isso a
+  bancada espera os pedidos e as fornadas antes de montar: a sugestão é o estado inicial, e não
+  um efeito que troca a pílula na mão dela.
+- **A pílula** fora de ½ · 1 · 2 · 3 entra na ordem; a da sugestão leva "pedidos" embaixo, em
+  `micro`, dentro dos 44 px (`OpcaoPilula.detalhe`). **Também quando a sugestão é 1, 2 ou 3**: a
+  palavra diz por que a bancada abriu ali. A fornada guardada na aba entra nas pílulas mesmo fora
+  delas, para nunca ficar nenhuma marcada.
+
+**Consequência.** A sugestão é só a primeira leitura: ela troca à vontade, e a troca fica na aba.
+Quem quer 34 exatos digita na folha da fornada.
+A fornada registrada na bancada ainda não leva o pedido: é a 146-B.
+
+## D353 · A bancada aberta pelo pedido
+
+**Status:** vigente · decidida em 2026-10-12, spec `146-a-fornada-que-os-pedidos-pedem.md`,
+sessão **B** (a entrada pelo pedido). **Reabre** o "Fora de escopo" da 138 em "Bancada a partir
+da lista de produtos ou de um pedido", com a aprovação do Filipe ao pedir a 146-B.
+
+**Contexto.** A bancada só abria pelo editor do produto, e a fornada registrada nela não levava
+pedido: a massa feita para a Ana entrava no pote como livre, e a lista de compras não sabia que
+aquele pedido já tinha massa (`#d91`).
+
+**Decisão.**
+
+- **`/fichas/{id}/bancada?pedido={pedidoId}`.** A bancada lê o pedido pelo documento
+  (`useDocumento`), e não pela consulta da lista: o pedido de entrega fora do horizonte também
+  abre. Arquivado, cancelado ou inexistente, o parâmetro é ignorado e a bancada abre como pelo
+  produto. O parâmetro é lido no cliente (`useSearchParams`), e a página do cache serve
+  às duas entradas.
+- **A conta é a do pedido.** `faltaFazer` com só ele: o que ele pede, menos a massa feita para
+  ele, menos o pote que os **outros** pedidos da lista não reservaram (`reservadoNoPronto` sem
+  ele), para o pote não ser prometido duas vezes. A frase fica no singular: "O pedido de Ana
+  pede 12 · faltam 12", ou "O pedido de Ana já está coberto"; a pílula da sugestão leva
+  "pedido" embaixo.
+- **Outra aba.** A chave da aba ganha o pedido (`rende:bancada:{fichaId}:{pedidoId}`): a escolha
+  e as marcas da bancada aberta pelo produto não decidem a massa do pedido, e vice-versa. Os
+  relógios também ficam separados; é o preço da chave simples.
+- **A fornada sai ligada.** O `PainelFornada` recebe o pedido, como pelo editor do pedido, e a
+  descrição diz "Para o pedido de …". "Voltar" e o fim do registro levam ao pedido, e não ao
+  produto.
+- **No editor do pedido**, cada item de receita (`SIMPLES` com o que pesar) do pedido salvo e não
+  cancelado ganha "Abrir na bancada", `Link` terciário `sm` com `CookingPot`, ao lado de "Anotar
+  neste item". Combo e kit não ganham: a bancada é de receita, e a receita de dentro do kit não é
+  um item.
+- **Na lista de produtos**, a linha não tem menu: ela é um link inteiro para o produto, e criar
+  um menu de linha era um padrão novo. "Na bancada" entrou no `PainelProduto`, o detalhe da linha
+  no desktop, ao lado de "Abrir produto". No celular, o toque da linha leva ao produto, e o
+  produto já tem "Abrir na bancada".
+
+**Consequência.** A bancada pelo pedido pode abrir em zero pedido da receita (o item mudou e o
+pedido não foi salvo): sem frase, em 1 fornada, e a massa continua ligada a ele. O menu da linha
+no celular fica para quando houver um segundo item para ele.

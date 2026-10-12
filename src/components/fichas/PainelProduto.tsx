@@ -1,8 +1,9 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
 import { useEffect, useRef, type KeyboardEvent } from "react";
-import { RefreshCw, TrendingDown, X } from "lucide-react";
+import { CookingPot, RefreshCw, TrendingDown, X } from "lucide-react";
 import {
   FraseDaCapacidade,
   FraseDoPronto,
@@ -241,10 +242,21 @@ export function PainelProduto({
         </div>
       </div>
 
-      <footer className="border-t border-line px-5 py-4">
+      {/* A bancada é atalho do produto, nunca o clique da linha (`#d353`). */}
+      <footer className="flex gap-3 border-t border-line px-5 py-4">
+        {ficha.tipo === "SIMPLES" &&
+          ficha.itens.length + ficha.componentes.length > 0 && (
+            <Link
+              href={`/fichas/${ficha.id}/bancada` as Route}
+              className={classesBotao({ className: "flex-1" })}
+            >
+              <CookingPot aria-hidden className="size-4" strokeWidth={1.75} />
+              Na bancada
+            </Link>
+          )}
         <Link
           href={`/fichas/${ficha.id}`}
-          className={classesBotao({ larguraTotal: true })}
+          className={classesBotao({ className: "flex-1" })}
         >
           Abrir produto
         </Link>

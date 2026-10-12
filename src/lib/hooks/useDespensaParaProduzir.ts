@@ -91,6 +91,6 @@ export function contextoDaCapacidade(
   return {
     consumo: consumoDesdeAContagem(fornadas, insumos),
     prometido: prometidoParaPedidos(abertos, fichas, insumos, fornadas),
-    reservado: reservadoNoPronto(abertos, fornadas),
+    reservado: reservadoNoPronto(abertos, fornadas, fichas),
   };
 }

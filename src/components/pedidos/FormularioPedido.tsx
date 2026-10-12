@@ -1612,6 +1612,16 @@ export function FormularioPedido({
                         aoUsarPrecoDeHoje={() => usarPrecoDeHoje(linha.chave)}
                         aoRemover={() => removerLinha(linha.chave)}
                         erro={errosItens[indice]}
+                        // Só a receita que a bancada abre, e do pedido salvo:
+                        // a massa sai ligada a ele (`#d353`).
+                        bancada={
+                          pedido &&
+                          pedido.status !== "CANCELADO" &&
+                          ficha?.tipo === "SIMPLES" &&
+                          ficha.itens.length + ficha.componentes.length > 0
+                            ? (`/fichas/${ficha.id}/bancada?pedido=${pedido.id}` as Route)
+                            : undefined
+                        }
                       >
                         {/* A escolha abre embaixo da linha, sem painel e sem
                           modal: em 360px é uma lista curta com −/+. */}

@@ -1,8 +1,18 @@
 "use client";
 
+import type { Route } from "next";
+import Link from "next/link";
 import { Children, useState, type ReactNode } from "react";
-import { Minus, NotebookPen, Plus, RefreshCw, Trash2 } from "lucide-react";
+import {
+  CookingPot,
+  Minus,
+  NotebookPen,
+  Plus,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
 import { Botao } from "@/components/ui/Botao";
+import { classesBotao } from "@/components/ui/estilosBotao";
 import { BASE_CONTROLE, Campo } from "@/components/ui/Campo";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Selo } from "@/components/ui/Selo";
@@ -42,6 +52,7 @@ export function LinhaItemPedido({
   aoUsarPrecoDeHoje,
   aoRemover,
   erro,
+  bancada,
   children,
 }: {
   nome: string;
@@ -59,6 +70,8 @@ export function LinhaItemPedido({
   aoUsarPrecoDeHoje: () => void;
   aoRemover: () => void;
   erro?: string;
+  /** A bancada já ligada a este pedido (`#d353`); só receita de pedido salvo. */
+  bancada?: Route;
   /** O que a despensa diz sobre esta quantidade, embaixo da linha. */
   children?: ReactNode;
 }) {
@@ -184,18 +197,38 @@ export function LinhaItemPedido({
           }}
         />
       ) : (
-        !nota && (
-          <Botao
-            tamanho="sm"
-            variante="terciaria"
-            className="-ml-2 mt-1"
-            onClick={() => setAnotando(true)}
-            iconeInicial={
-              <NotebookPen aria-hidden className="size-4" strokeWidth={1.75} />
-            }
-          >
-            Anotar neste item
-          </Botao>
+        (!nota || bancada) && (
+          <div className="-ml-2 mt-1 flex flex-wrap gap-x-2">
+            {!nota && (
+              <Botao
+                tamanho="sm"
+                variante="terciaria"
+                onClick={() => setAnotando(true)}
+                iconeInicial={
+                  <NotebookPen
+                    aria-hidden
+                    className="size-4"
+                    strokeWidth={1.75}
+                  />
+                }
+              >
+                Anotar neste item
+              </Botao>
+            )}
+            {/* Link: a guarda de saída (`#d132`) precisa ver um `<a>`. */}
+            {bancada && (
+              <Link
+                href={bancada}
+                className={classesBotao({
+                  tamanho: "sm",
+                  variante: "terciaria",
+                })}
+              >
+                <CookingPot aria-hidden className="size-4" strokeWidth={1.75} />
+                Abrir na bancada
+              </Link>
+            )}
+          </div>
         )
       )}
     </li>

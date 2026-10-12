@@ -2,7 +2,7 @@
 
 import type { Route } from "next";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Fragment,
   useEffect,
@@ -19,6 +19,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  ClipboardList,
   CookingPot,
   Info,
   Package,
@@ -43,7 +44,8 @@ import {
   fraseDaMassa,
   rotuloDaQuantidade,
 } from "@/lib/domain/custoFicha";
-import { dataISODe } from "@/lib/domain/datas";
+import { dataISODe, diaVizinho, rotuloAte } from "@/lib/domain/datas";
+import { entraNaLista, HORIZONTE_MAXIMO } from "@/lib/domain/listaCompras";
 import {
   escalarItens,
   FORNADAS_DA_BANCADA,
@@ -59,27 +61,32 @@ import {
 import {
   capacidadeDaFicha,
   consumoDesdeAContagem,
+  faltaFazer,
+  fornadasQueCobrem,
   potesDosPreparos,
+  projecaoDoPronto,
+  reservadoNoPronto,
+  type FaltaFazer,
 } from "@/lib/domain/producao";
-import { colFichas, colInsumos } from "@/lib/firebase/colecoes";
-import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
-import { useColecao } from "@/lib/hooks/useColecao";
+import { colFichas, docPedido } from "@/lib/firebase/colecoes";
+import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
+import { useDespensaParaProduzir } from "@/lib/hooks/useDespensaParaProduzir";
 import { useTelaAcesa } from "@/lib/hooks/useTelaAcesa";
 import type {
   DataISO,
   FichaTecnica,
   Fornada,
   Insumo,
+  Pedido,
   UnidadeBase,
 } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 import { novoId } from "@/lib/utils/id";
 import { useContaId } from "@/providers/AuthProvider";
 
-const OPCOES_FORNADAS = FORNADAS_DA_BANCADA.map((valor) => ({
-  valor,
-  rotulo: valor === 0.5 ? "½" : String(valor),
-}));
+/** "½", "2", "2½": a fornada anda de meia em meia. */
+const rotuloDasFornadas = (valor: number) =>
+  `${Math.floor(valor) || ""}${valor % 1 ? "½" : ""}`;
 
 /**
  * A receita para ler durante a produção (`DECISOES.md#d343`): só leitura, a
@@ -93,16 +100,14 @@ export function ReceitaNaBancada({ id }: { id: string }) {
   const contaId = useContaId();
   const router = useRouter();
   const [hoje] = useState(() => dataISODe(new Date()));
-
-  const consultaInsumos = useMemo(
-    () =>
-      query(
-        colInsumos(contaId),
-        where("arquivado", "==", false),
-        orderBy("nomeBusca"),
-      ),
-    [contaId],
+  // Aberta pelo pedido (`#d353`): as fornadas dele, e a massa ligada a ele.
+  const pedidoId = useSearchParams().get("pedido");
+  const referenciaPedido = useMemo(
+    () => (pedidoId ? docPedido(contaId, pedidoId) : null),
+    [contaId, pedidoId],
   );
+  const doPedido = useDocumento<Pedido>(referenciaPedido);
+
   // Todas as fichas, e não só esta: a folha resolve os componentes por elas.
   const consultaFichas = useMemo(
     () =>
@@ -113,16 +118,24 @@ export function ReceitaNaBancada({ id }: { id: string }) {
       ),
     [contaId],
   );
-  const consultaProducao = useMemo(
-    () => consultaFornadas(contaId, hoje),
-    [contaId, hoje],
+  const fichas = useColecao<FichaTecnica>(consultaFichas);
+  // Os pedidos e as fornadas também esperam: a bancada abre nas fornadas que
+  // os pedidos pedem, e isso é o estado inicial, não um efeito (`#d352`).
+  const { pedidos, insumos, fornadas, ...despensa } = useDespensaParaProduzir(
+    contaId,
+    hoje,
   );
 
-  const insumos = useColecao<Insumo>(consultaInsumos);
-  const fichas = useColecao<FichaTecnica>(consultaFichas);
-  const fornadas = useColecao<Fornada>(consultaProducao);
-
-  const carregando = insumos.carregando || fichas.carregando;
+  const carregando =
+    despensa.carregando || fichas.carregando || doPedido.carregando;
+  // Arquivado ou cancelado não recebe massa, como no editor do pedido: a
+  // bancada abre como se viesse do produto.
+  const pedido =
+    doPedido.dado &&
+    !doPedido.dado.arquivado &&
+    doPedido.dado.status !== "CANCELADO"
+      ? doPedido.dado
+      : undefined;
   const ficha = fichas.dados.find((candidata) => candidata.id === id);
   // Kit não tem receita, e ficha sem material não tem o que pesar: o editor
   // é quem diz o que falta (e o arquivado ou o endereço errado, também).
@@ -153,6 +166,8 @@ export function ReceitaNaBancada({ id }: { id: string }) {
       fichas={fichas.dados}
       insumos={insumos.dados}
       fornadas={fornadas.dados}
+      pedidos={pedidos.dados}
+      pedido={pedido}
       hoje={hoje}
       pendente={fornadas.pendente}
     />
@@ -192,24 +207,28 @@ const FOLGA_DO_RODAPE = [
   { pagina: "pb-72 lg:pb-76", passo: "scroll-mb-68 lg:scroll-mb-72" },
 ] as const;
 
-const chaveDaAba = (fichaId: string) => `rende:bancada:${fichaId}`;
+// Pelo pedido, outra aba: a massa dele não herda a escolha nem as marcas da
+// bancada aberta pelo produto (`#d353`).
+const chaveDaAba = (fichaId: string, pedidoId?: string) =>
+  `rende:bancada:${fichaId}${pedidoId ? `:${pedidoId}` : ""}`;
 
 /**
  * Da aba, e nunca do Firestore (`#d343`): a marca é da fornada de agora, e a
  * esquecida de ontem seria um ingrediente pulado hoje. Fechar a aba limpa.
+ * `null` é a aba sem escolha guardada: aí valem os pedidos (`#d352`).
  */
-function lerMarcas(fichaId: string): Marcas {
+function lerMarcas(chave: string): Marcas | null {
   try {
-    const guardado = sessionStorage.getItem(chaveDaAba(fichaId));
-    return guardado ? { ...SEM_MARCAS, ...JSON.parse(guardado) } : SEM_MARCAS;
+    const guardado = sessionStorage.getItem(chave);
+    return guardado ? { ...SEM_MARCAS, ...JSON.parse(guardado) } : null;
   } catch {
-    return SEM_MARCAS;
+    return null;
   }
 }
 
-function guardarMarcas(fichaId: string, marcas: Marcas) {
+function guardarMarcas(chave: string, marcas: Marcas) {
   try {
-    sessionStorage.setItem(chaveDaAba(fichaId), JSON.stringify(marcas));
+    sessionStorage.setItem(chave, JSON.stringify(marcas));
   } catch {
     // Aba privada ou cheia: a marca vive só na tela, e ainda serve.
   }
@@ -227,6 +246,8 @@ function Bancada({
   fichas,
   insumos,
   fornadas,
+  pedidos,
+  pedido,
   hoje,
   pendente,
 }: {
@@ -235,12 +256,64 @@ function Bancada({
   fichas: FichaTecnica[];
   insumos: Insumo[];
   fornadas: Fornada[];
+  pedidos: Pedido[];
+  /** Aberta pelo pedido: a conta é a dele, e a fornada sai ligada a ele. */
+  pedido?: Pedido;
   hoje: DataISO;
   pendente: boolean;
 }) {
   const router = useRouter();
   const doProduto = `/fichas/${ficha.id}` as Route;
-  const [marcas, setMarcasNaTela] = useState(() => lerMarcas(ficha.id));
+  // Volta para onde veio: o pedido, ou o produto.
+  const voltar = pedido
+    ? { href: `/pedidos/${pedido.id}` as Route, rotulo: "Pedido" }
+    : { href: doProduto, rotulo: "Produto" };
+  const chave = chaveDaAba(ficha.id, pedido?.id);
+
+  // Os pedidos da lista de compras, o mesmo recorte da despensa (`#d352`).
+  const limite = diaVizinho(hoje, HORIZONTE_MAXIMO);
+  const daLista = pedidos.filter((atual) => entraNaLista(atual, hoje, limite));
+  const pote = projecaoDoPronto(fornadas, ficha, hoje).prontos;
+  // Pelo pedido, só ele pede; do pote, só o que os outros não têm (`#d353`).
+  const falta = pedido
+    ? faltaFazer(
+        ficha.id,
+        [pedido],
+        fichas,
+        fornadas,
+        pote === null
+          ? null
+          : Math.max(
+              0,
+              pote -
+                (reservadoNoPronto(
+                  daLista.filter((atual) => atual.id !== pedido.id),
+                  fornadas,
+                  fichas,
+                ).get(ficha.id) ?? 0),
+            ),
+      )
+    : faltaFazer(ficha.id, daLista, fichas, fornadas, pote);
+  const sugestao = fornadasQueCobrem(falta.faltam, ficha.rendimento);
+
+  // A aba sem escolha abre nas fornadas que cobrem; ela troca à vontade.
+  const [marcas, setMarcasNaTela] = useState(
+    () => lerMarcas(chave) ?? { ...SEM_MARCAS, fator: sugestao ?? 1 },
+  );
+  // A pílula dos pedidos entra só fora de ½ · 1 · 2 · 3; a guardada, sempre.
+  const opcoesFornadas = [
+    ...new Set<number>([
+      ...FORNADAS_DA_BANCADA,
+      ...(sugestao === null ? [] : [sugestao]),
+      marcas.fator,
+    ]),
+  ]
+    .sort((a, b) => a - b)
+    .map((valor) => ({
+      valor,
+      rotulo: rotuloDasFornadas(valor),
+      detalhe: valor === sugestao ? (pedido ? "pedido" : "pedidos") : undefined,
+    }));
   const [painel, setPainel] = useState({ aberto: false, chave: "" });
   const [registrada, setRegistrada] = useState(false);
 
@@ -248,7 +321,7 @@ function Bancada({
 
   function setMarcas(novas: Marcas) {
     setMarcasNaTela(novas);
-    guardarMarcas(ficha.id, novas);
+    guardarMarcas(chave, novas);
   }
 
   // Começar de novo e registrar a massa limpam as marcas, não o forno.
@@ -367,7 +440,7 @@ function Bancada({
     <>
       <CabecalhoPagina
         titulo={ficha.nome}
-        voltar={{ href: doProduto, rotulo: "Produto" }}
+        voltar={voltar}
         pendente={pendente}
       />
 
@@ -379,11 +452,16 @@ function Bancada({
           >
             Quantas fornadas
           </h2>
+          <FraseDosPedidos
+            falta={falta}
+            hoje={hoje}
+            clienteNome={pedido?.clienteNome}
+          />
           <Pilulas
             className="mt-3"
             rotulo="Quantas fornadas"
             numerico
-            opcoes={OPCOES_FORNADAS}
+            opcoes={opcoesFornadas}
             valor={marcas.fator}
             aoMudar={(fator) => setMarcas({ ...marcas, fator })}
           />
@@ -675,7 +753,7 @@ function Bancada({
           setPainel({ aberto: false, chave: painel.chave });
           // "Contar o que está pronto" também fecha por aqui, e a navegação
           // do link dele vem depois desta: a última vence.
-          if (registrada) router.push(doProduto);
+          if (registrada) router.push(voltar.href);
         }}
         aoRegistrar={() => {
           setRegistrada(true);
@@ -687,8 +765,57 @@ function Bancada({
         insumos={insumos}
         fornadas={fornadas}
         hoje={hoje}
+        pedido={pedido}
       />
     </>
+  );
+}
+
+const quantos = (n: number) =>
+  n.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+
+/**
+ * Quanto os pedidos ainda pedem desta receita (`#d352`), acima das pílulas: a
+ * conta que ela fazia de cabeça com o app aberto ao lado. Nenhum pedido, nada.
+ * Pelo pedido, a frase é dele, no singular (`#d353`).
+ */
+function FraseDosPedidos({
+  falta,
+  hoje,
+  clienteNome,
+}: {
+  falta: FaltaFazer;
+  hoje: DataISO;
+  clienteNome?: string;
+}) {
+  if (falta.ateISO === null) return null;
+  const um = clienteNome !== undefined;
+  const quem = um
+    ? `O pedido de ${clienteNome}`
+    : `Os pedidos ${rotuloAte(falta.ateISO, hoje)}`;
+  return (
+    <p className="num mt-2 flex items-start gap-2 text-label text-ink-muted">
+      <ClipboardList
+        aria-hidden
+        className="mt-0.5 size-4 shrink-0"
+        strokeWidth={1.75}
+      />
+      <span>
+        {falta.faltam === 0 ? (
+          `${quem} ${um ? "já está coberto" : "já estão cobertos"}`
+        ) : (
+          <>
+            {quem} {um ? "pede" : "pedem"} {quantos(falta.pedem)}
+            {falta.prontos > 0 &&
+              ` · ${quantos(falta.prontos)} ${falta.prontos === 1 ? "pronto" : "prontos"}`}
+            {" · "}
+            <span className="font-semibold text-ink">
+              faltam {quantos(falta.faltam)}
+            </span>
+          </>
+        )}
+      </span>
+    </p>
   );
 }
 

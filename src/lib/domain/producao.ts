@@ -881,6 +881,86 @@ export function projecaoDoPronto(
   };
 }
 
+/** O que abrir um kit precisa saber de uma ficha. `FichaTecnica` serve. */
+export interface FichaParaPedir {
+  id: string;
+  tipo: TipoFicha;
+  rendimento: number;
+  componentes: { fichaId: string; quantidade: number }[];
+}
+
+/**
+ * `quantidade` de `fichaId`, contada nela mesma e, no kit, nas receitas fixas
+ * de dentro, por unidade do kit: 2 caixas com 6 são 2 caixas e 12 cookies. Só
+ * o kit abre; o preparo dentro da receita é grama, e não unidade pedida.
+ */
+function somarAbrindoOKit(
+  fichaId: string,
+  quantidade: number,
+  kits: Map<string, FichaParaPedir>,
+  somar: (fichaId: string, quantidade: number) => void,
+) {
+  somar(fichaId, quantidade);
+  const kit = kits.get(fichaId);
+  if (!kit || !(kit.rendimento > 0)) return;
+  for (const componente of kit.componentes) {
+    somar(
+      componente.fichaId,
+      (componente.quantidade * quantidade) / kit.rendimento,
+    );
+  }
+}
+
+const kitsDe = (fichas: FichaParaPedir[]) =>
+  new Map(
+    fichas.flatMap((ficha) =>
+      ficha.tipo === "KIT" ? [[ficha.id, ficha]] : [],
+    ),
+  );
+
+/**
+ * O que os pedidos pedem, por ficha: os itens, as escolhas de combo (`#d103`)
+ * e as receitas fixas de dentro do kit. É o mesmo recorte para o dono no pote
+ * e para a bancada, para as duas nunca discordarem (`#d352`).
+ */
+function pedidoPorFicha(
+  pedidos: PedidoParaExplodir[],
+  fichas: FichaParaPedir[],
+): Map<string, number> {
+  const kits = kitsDe(fichas);
+  const pedido = new Map<string, number>();
+  const pedir = (fichaId: string, quantidade: number) =>
+    pedido.set(fichaId, (pedido.get(fichaId) ?? 0) + quantidade);
+
+  for (const atual of pedidos) {
+    for (const item of atual.itens) {
+      somarAbrindoOKit(item.fichaTecnicaId, item.quantidade, kits, pedir);
+      for (const escolha of item.escolhas ?? []) {
+        pedir(escolha.fichaTecnicaId, escolha.quantidade * item.quantidade);
+      }
+    }
+  }
+  return pedido;
+}
+
+/** A massa de cada ficha feita para os pedidos da lista, vendável. */
+function feitoParaPedidos(
+  pedidos: PedidoParaExplodir[],
+  fornadas: FornadaDaFicha[],
+): Map<string, number> {
+  const naLista = new Set(pedidos.map((pedido) => pedido.id));
+  const feito = new Map<string, number>();
+  for (const fornada of fornadas) {
+    if (fornada.arquivado || !fornada.pedidoId) continue;
+    if (!naLista.has(fornada.pedidoId)) continue;
+    feito.set(
+      fornada.fichaId,
+      (feito.get(fornada.fichaId) ?? 0) + vendaveis(fornada),
+    );
+  }
+  return feito;
+}
+
 /**
  * O que está no pote mas tem dono, por ficha: a massa já feita para os pedidos
  * abertos, até o que eles pedem.
@@ -893,45 +973,89 @@ export function projecaoDoPronto(
  *
  * As escolhas de um combo contam como unidades pedidas da receita escolhida
  * (`#d103`): 3 combos com "1 tradicional" pedem 3 tradicionais, e a massa
- * feita para eles tem dono no pote do tradicional.
+ * feita para eles tem dono no pote do tradicional. As receitas fixas do kit
+ * também (`#d352`): a massa de cookie feita para um pedido de caixa é dele.
  */
-// ponytail: o componente fixo de um kit continua agregado pela ficha do kit;
-// se a massa de uma ficha de dentro feita para um pedido de caixa aparecer na
-// operação, o abate passa a explodir `componentes` como já explode `escolhas`.
 export function reservadoNoPronto(
   pedidos: PedidoParaExplodir[],
   fornadas: FornadaDaFicha[],
+  fichas: FichaParaPedir[],
 ): Map<string, number> {
-  const naLista = new Set(pedidos.map((pedido) => pedido.id));
-  const pedido = new Map<string, number>();
-  const feito = new Map<string, number>();
-
-  const pedir = (fichaId: string, quantidade: number) =>
-    pedido.set(fichaId, (pedido.get(fichaId) ?? 0) + quantidade);
-
-  for (const atual of pedidos) {
-    for (const item of atual.itens) {
-      pedir(item.fichaTecnicaId, item.quantidade);
-      for (const escolha of item.escolhas ?? []) {
-        pedir(escolha.fichaTecnicaId, escolha.quantidade * item.quantidade);
-      }
-    }
-  }
-  for (const fornada of fornadas) {
-    if (fornada.arquivado || !fornada.pedidoId) continue;
-    if (!naLista.has(fornada.pedidoId)) continue;
-    feito.set(
-      fornada.fichaId,
-      (feito.get(fornada.fichaId) ?? 0) + vendaveis(fornada),
-    );
-  }
-
+  const pedido = pedidoPorFicha(pedidos, fichas);
   const reservado = new Map<string, number>();
-  for (const [fichaId, quantidade] of feito) {
+  for (const [fichaId, quantidade] of feitoParaPedidos(pedidos, fornadas)) {
     const dono = Math.min(quantidade, pedido.get(fichaId) ?? 0);
     if (dono > 0) reservado.set(fichaId, dono);
   }
   return reservado;
+}
+
+export interface FaltaFazer {
+  /** O que os pedidos da lista pedem desta ficha. */
+  pedem: number;
+  /** O que já cobre: a massa feita para eles e os prontos livres, até o que pedem. */
+  prontos: number;
+  /** `pedem − prontos`. */
+  faltam: number;
+  /** A entrega mais longe entre os pedidos que pedem esta ficha. `null` sem nenhum. */
+  ateISO: DataISO | null;
+}
+
+/**
+ * Quanto os pedidos ainda pedem desta ficha (`#d352`): o que os pedidos da
+ * lista pedem, menos a massa já feita para eles, menos os prontos livres. Piso
+ * zero.
+ *
+ * `pote` é a projeção do pronto (`projecaoDoPronto().prontos`), `null` sem
+ * contagem: aí só a massa feita para os pedidos cobre. A massa de um kit feita
+ * para o pedido cobre as receitas de dentro, que não estão no pote delas.
+ */
+export function faltaFazer(
+  fichaId: string,
+  pedidos: (PedidoParaExplodir & { dataEntregaISO: DataISO })[],
+  fichas: FichaParaPedir[],
+  fornadas: FornadaDaFicha[],
+  pote: number | null,
+): FaltaFazer {
+  let pedem = 0;
+  let ateISO: DataISO | null = null;
+  for (const pedido of pedidos) {
+    const desta = pedidoPorFicha([pedido], fichas).get(fichaId) ?? 0;
+    if (!(desta > 0)) continue;
+    pedem += desta;
+    if (ateISO === null || pedido.dataEntregaISO > ateISO) {
+      ateISO = pedido.dataEntregaISO;
+    }
+  }
+
+  const kits = kitsDe(fichas);
+  let noPote = 0;
+  let noKit = 0;
+  for (const [feitaId, quantidade] of feitoParaPedidos(pedidos, fornadas)) {
+    somarAbrindoOKit(feitaId, quantidade, kits, (id, unidades) => {
+      if (id !== fichaId) return;
+      if (feitaId === fichaId) noPote += unidades;
+      else noKit += unidades;
+    });
+  }
+  // O mesmo dono no pote de `reservadoNoPronto`: o resto do pote é livre.
+  const reservado = Math.min(noPote, pedem);
+  const livres = pote === null ? 0 : Math.max(0, pote - reservado);
+  const prontos = Math.min(pedem, reservado + noKit + livres);
+
+  return { pedem, prontos, faltam: pedem - prontos, ateISO };
+}
+
+/**
+ * As fornadas que cobrem `unidades`, para cima em meia fornada (`#d352`): 34
+ * de uma receita de 16 são 2,125, e a bancada abre em 2½. Zero é `null`.
+ */
+export function fornadasQueCobrem(
+  unidades: number,
+  rendimento: number,
+): number | null {
+  if (!(unidades > FOLGA) || !(rendimento > 0)) return null;
+  return Math.ceil((unidades / rendimento) * 2 - FOLGA) / 2;
 }
 
 /** Os prontos sem dono: a projeção menos o reservado. Nunca negativo, `null` sem contagem. */

@@ -10,6 +10,7 @@ import {
   diasNoMes,
   diaVizinho,
   rotuloAgenda,
+  rotuloAte,
   rotuloCompetencia,
   rotuloDataCompleta,
   rotuloDiaNoAno,
@@ -153,5 +154,16 @@ describe("rotuloDiaNoAno", () => {
     expect(rotuloDiaNoAno("2025-09-12", "2026-10-05")).toBe(
       "12 de setembro de 2025",
     );
+  });
+});
+
+describe("rotuloAte", () => {
+  it("hoje, amanhã, o dia da semana até seis dias, a data depois", () => {
+    // 2026-10-12 é segunda-feira.
+    expect(rotuloAte("2026-10-12", "2026-10-12")).toBe("de hoje");
+    expect(rotuloAte("2026-10-13", "2026-10-12")).toBe("até amanhã");
+    expect(rotuloAte("2026-10-17", "2026-10-12")).toBe("até sábado");
+    expect(rotuloAte("2026-10-18", "2026-10-12")).toBe("até domingo");
+    expect(rotuloAte("2026-10-19", "2026-10-12")).toBe("até 19 de outubro");
   });
 });

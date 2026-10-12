@@ -3,6 +3,8 @@ import { cn } from "@/lib/utils/cn";
 export interface OpcaoPilula<V extends string | number | boolean> {
   valor: V;
   rotulo: string;
+  /** Uma palavra embaixo do rótulo, em `micro`: de onde veio a opção (`#d352`). */
+  detalhe?: string;
 }
 
 /**
@@ -58,7 +60,16 @@ export function Pilulas<V extends string | number | boolean>({
                 : "border border-line-strong text-ink-muted hover:bg-sunken active:bg-sunken",
             )}
           >
-            {opcao.rotulo}
+            {opcao.detalhe ? (
+              <span className="flex flex-col items-center leading-none">
+                {opcao.rotulo}
+                <span className="mt-0.5 text-micro font-normal">
+                  {opcao.detalhe}
+                </span>
+              </span>
+            ) : (
+              opcao.rotulo
+            )}
           </button>
         );
       })}

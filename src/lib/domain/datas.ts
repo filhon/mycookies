@@ -202,6 +202,23 @@ export function rotuloDiaNoAno(iso: DataISO, hoje: DataISO): string {
     : rotuloDataCompleta(iso);
 }
 
+const SO_O_DIA_DA_SEMANA = new Intl.DateTimeFormat("pt-BR", {
+  weekday: "long",
+});
+
+/**
+ * 'de hoje', 'até amanhã', 'até sábado' na semana, 'até 24 de outubro' depois
+ * dela: o fim de um recorte, como ela fala dele ("os pedidos até sábado").
+ */
+export function rotuloAte(iso: DataISO, hoje: DataISO): string {
+  if (iso <= hoje) return "de hoje";
+  if (iso === diaVizinho(hoje, 1)) return "até amanhã";
+  if (diasEntre(hoje, iso) < 7) {
+    return `até ${SO_O_DIA_DA_SEMANA.format(dataDeISO(iso))}`;
+  }
+  return `até ${rotuloDiaNoAno(iso, hoje)}`;
+}
+
 /**
  * 'Hoje', 'Amanhã', 'Ontem' ou 'Sábado, 12 de setembro' — o cabeçalho de um dia
  * na agenda.

@@ -45,6 +45,7 @@ Ao terminar uma página, mude a linha dela aqui (status, data, specs).
 | Contagem da despensa   | `/insumos/contagem`                       | `src/app/(app)/(coluna)/insumos/contagem/page.tsx`                       | ✅ melhorada | 2026-10-11 | 125–129 |
 | Contagem do pronto     | `/fichas/contagem`                        | `src/app/(app)/(coluna)/fichas/contagem/page.tsx`                        | ✅ melhorada | 2026-10-12 | 130–133 |
 | Produto (abrir / novo) | `/fichas/[id]`                            | `src/app/(app)/(coluna)/fichas/[id]/page.tsx`                            | ✅ melhorada | 2026-10-12 | 134–140 |
+| Na bancada             | `/fichas/[id]/bancada`                    | `src/app/(app)/fichas/[id]/bancada/page.tsx`                             | ✅ melhorada | 2026-10-12 | 141–146 |
 | Orçamento em papel     | `/pedidos/[id]/orcamento`                 | `src/app/(app)/(coluna)/pedidos/[id]/orcamento/page.tsx`                 | ⬜ pendente  |            |         |
 | Relatório do MEI       | `/financeiro/relatorio-mei/[competencia]` | `src/app/(app)/(coluna)/financeiro/relatorio-mei/[competencia]/page.tsx` | ⬜ pendente  |            |         |
 
@@ -91,6 +92,12 @@ Ao terminar uma página, mude a linha dela aqui (status, data, specs).
   oito itens): 134 a 140, com a 140 em duas sessões (140-A, o preparo no custo; 140-B, o preparo
   no pote). Os roteiros de navegador da 138, da 139 e da 140 seguem por rodar, e a pergunta da 140
   à Maynara ("faz recheio que vai em mais de um produto?") segue em aberto (`ESTADO.md`).
+- **`/fichas/[id]/bancada` foi auditada em 2026-10-12** (a crítica dos prints da bancada em
+  360 px e 1920 px, onze itens). A página nasceu da 138: 141 (itens 1 a 5), 142 (6), 143 (7),
+  144 (8 e 9), 145 (10) e 146 (11), com a 146 em duas sessões (146-A, a sugestão; 146-B, a
+  entrada pelo pedido). Os roteiros de navegador de 141 a 146 seguem por rodar. A pergunta da 146
+  à Maynara ("parte dos pedidos ou faz sempre a mesma e congela?") segue em aberto, e o menu da
+  linha da lista de produtos no celular ficou de fora da 146-B (`#d353`).
 - **Nasceram de spec, nunca foram auditadas:** `/pedidos/[id]/orcamento` (017),
   `/financeiro/relatorio-mei/...` (074), `/cadastro` (027), `/redefinir-senha` (042),
   `/assinatura` (028, 110), a página do pedido da cliente (117) e as cinco páginas de preço

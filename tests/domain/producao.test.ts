@@ -14,8 +14,10 @@ import {
   contagemDoPronto,
   custoPorVendavel,
   disponivelParaProducao,
+  faltaFazer,
   faltaPara,
   faltasDaLista,
+  fornadasQueCobrem,
   fichasAbaixoDoPiso,
   fornadaGravavel,
   fornadasDesdeAContagem,
@@ -1180,6 +1182,7 @@ describe("o que está pronto", () => {
       reservadoNoPronto(
         [PEDIDO_DE_12],
         [massa({ dataISO: "2026-09-09", pedidoId: "p1" })],
+        [],
       ).get("cookie"),
     ).toBe(12);
 
@@ -1194,6 +1197,7 @@ describe("o que está pronto", () => {
             unidadesProduzidas: 5,
           }),
         ],
+        [],
       ).get("cookie"),
     ).toBe(5);
   });
@@ -1206,6 +1210,7 @@ describe("o que está pronto", () => {
         massa({ dataISO: "2026-09-09", pedidoId: "entregue" }),
         massa({ dataISO: "2026-09-09", pedidoId: "p1", arquivado: true }),
       ],
+      [],
     );
     expect(reservado.size).toBe(0);
   });
@@ -1277,7 +1282,7 @@ describe("o que está pronto", () => {
       },
       HOJE,
     );
-    const reservado = reservadoNoPronto([PEDIDO_DE_12], [massaDoPedido]);
+    const reservado = reservadoNoPronto([PEDIDO_DE_12], [massaDoPedido], []);
     const livres = prontosLivres(pronto, reservado.get("cookie") ?? 0);
 
     expect(livres).toBe(13);
@@ -1326,6 +1331,7 @@ describe("quebra", () => {
         },
       ],
       [{ ...semQuebra, pedidoId: "p1" }],
+      [],
     );
     expect(reservado.get("cookie")).toBe(25);
 
@@ -1515,6 +1521,7 @@ describe("quebra", () => {
         },
       ],
       [massaDoPedido],
+      [],
     );
     expect(reservado.get("cookie")).toBe(22);
     expect(prontosLivres(pronto, reservado.get("cookie") ?? 0)).toBe(10);
@@ -1692,6 +1699,7 @@ describe("o combo à escolha produz pelas receitas escolhidas", () => {
     const reservado = reservadoNoPronto(
       [PEDIDO_DE_3_COMBOS],
       [massaParaOPedido],
+      [],
     );
     expect(reservado.get("cookie")).toBe(3);
     expect(reservado.has("combo-dupla")).toBe(false);
@@ -1716,6 +1724,7 @@ describe("o combo à escolha produz pelas receitas escolhidas", () => {
           pedidoId: "p1",
         },
       ],
+      [],
     );
     expect(reservado.get("nutella")).toBe(3);
   });
@@ -1899,5 +1908,132 @@ describe("o preparo no pote (#d346)", () => {
     );
     expect(produzido.get("nutella")).toBe(256);
     expect(produzido.get("chocolate")).toBe(500);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A fornada que os pedidos pedem (`#d352`): o que pedem, menos a massa feita
+// para eles, menos os prontos livres; a caixa abre nas receitas de dentro.
+// ---------------------------------------------------------------------------
+
+describe("faltaFazer", () => {
+  const FICHAS_COM_TIPO = [
+    { ...COOKIE, tipo: "SIMPLES" as const },
+    { ...CAIXA_COM_6, tipo: "KIT" as const },
+  ];
+  const pedido = (
+    id: string,
+    dataEntregaISO: string,
+    fichaTecnicaId: string,
+    quantidade: number,
+  ) => ({
+    id,
+    dataEntregaISO,
+    itens: [{ fichaTecnicaId, nomeSnapshot: fichaTecnicaId, quantidade }],
+  });
+  const massa = (
+    fichaId: string,
+    unidadesProduzidas: number,
+    pedidoId?: string,
+  ): FornadaDaFicha => ({
+    arquivado: false,
+    dataISO: "2026-09-09",
+    fichaId,
+    unidadesProduzidas,
+    pedidoId,
+  });
+
+  it("40 pedidos e 6 prontos livres: faltam 34, e a bancada abre em 2½ de 16", () => {
+    const falta = faltaFazer(
+      "cookie",
+      [
+        pedido("p1", "2026-09-11", "cookie", 30),
+        pedido("p2", "2026-09-12", "cookie", 10),
+        pedido("p3", "2026-09-20", "outra", 5),
+      ],
+      FICHAS_COM_TIPO,
+      [],
+      6,
+    );
+    expect(falta).toEqual({
+      pedem: 40,
+      prontos: 6,
+      faltam: 34,
+      ateISO: "2026-09-12",
+    });
+    expect(fornadasQueCobrem(falta.faltam, 16)).toBe(2.5);
+  });
+
+  it("a massa feita para o pedido cobre, e o resto do pote não conta duas vezes", () => {
+    // Massa para 25 no pedido de 12; o pote projeta os 25. Outro pedido de 20:
+    // 12 com dono, 13 livres, faltam 7.
+    const falta = faltaFazer(
+      "cookie",
+      [
+        pedido("p1", "2026-09-11", "cookie", 12),
+        pedido("p2", "2026-09-11", "cookie", 20),
+      ],
+      FICHAS_COM_TIPO,
+      [massa("cookie", 25, "p1")],
+      25,
+    );
+    expect(falta).toMatchObject({ pedem: 32, prontos: 25, faltam: 7 });
+  });
+
+  it("sem contagem, só a massa feita para os pedidos cobre", () => {
+    const falta = faltaFazer(
+      "cookie",
+      [pedido("p1", "2026-09-11", "cookie", 12)],
+      FICHAS_COM_TIPO,
+      [massa("cookie", 5, "p1")],
+      null,
+    );
+    expect(falta).toMatchObject({ pedem: 12, prontos: 5, faltam: 7 });
+  });
+
+  it("a caixa com 6 pede 6 cookies, e a massa da caixa feita para o pedido cobre", () => {
+    const pedidos = [pedido("p1", "2026-09-11", "caixa6", 3)];
+    expect(faltaFazer("cookie", pedidos, FICHAS_COM_TIPO, [], 0)).toMatchObject(
+      { pedem: 18, faltam: 18 },
+    );
+    expect(
+      faltaFazer(
+        "cookie",
+        pedidos,
+        FICHAS_COM_TIPO,
+        [massa("caixa6", 2, "p1")],
+        0,
+      ),
+    ).toMatchObject({ pedem: 18, prontos: 12, faltam: 6 });
+  });
+
+  it("pote que sobra é piso zero; nenhum pedido é zero, sem data", () => {
+    expect(
+      faltaFazer(
+        "cookie",
+        [pedido("p1", "2026-09-11", "cookie", 12)],
+        FICHAS_COM_TIPO,
+        [],
+        50,
+      ),
+    ).toMatchObject({ pedem: 12, prontos: 12, faltam: 0 });
+    expect(faltaFazer("cookie", [], FICHAS_COM_TIPO, [], 50)).toEqual({
+      pedem: 0,
+      prontos: 0,
+      faltam: 0,
+      ateISO: null,
+    });
+    expect(fornadasQueCobrem(0, 16)).toBeNull();
+    expect(fornadasQueCobrem(32, 16)).toBe(2);
+    expect(fornadasQueCobrem(1, 16)).toBe(0.5);
+  });
+
+  it("reservadoNoPronto: a massa de cookie feita para um pedido de caixa é dele", () => {
+    const reservado = reservadoNoPronto(
+      [pedido("p1", "2026-09-11", "caixa6", 2)],
+      [massa("cookie", 20, "p1")],
+      FICHAS_COM_TIPO,
+    );
+    expect(reservado.get("cookie")).toBe(12);
   });
 });
