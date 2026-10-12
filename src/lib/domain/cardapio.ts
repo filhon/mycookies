@@ -20,7 +20,9 @@ import {
   contagemDoPronto,
   projecaoDoPronto,
   temPronto,
+  type FichaComPronto,
   type FornadaDaFicha,
+  type ProjecaoDoPronto,
 } from "./producao";
 import {
   competenciaDeISO,
@@ -849,6 +851,85 @@ export function restamNoPote(entrada: {
     restam.set(ficha.id, Math.max(0, Math.floor(prontos - levam)));
   }
   return restam;
+}
+
+export interface EsperadoNoPote extends ProjecaoDoPronto {
+  /** Quantos pedidos levaram desta ficha em `saiu`. */
+  pedidos: number;
+  /** As unidades desta ficha nos pedidos que já saíram desde a contagem. */
+  saiu: number;
+  /** `prontos − saiu`, nunca abaixo de zero. `null` sem contagem que valha. */
+  esperado: number | null;
+}
+
+/**
+ * O que a contagem do pronto espera achar no pote (`#d335`): a projeção do
+ * `#d97` menos o que saiu em pedido desde a contagem. Irmã de `restamNoPote`,
+ * com outra pergunta: o que está **fisicamente** no pote. Só sai o pedido
+ * entregue, ou cujo dia passou; orçamento, cancelado e o de hoje ainda não
+ * entregue continuam lá.
+ *
+ * Em `NUNCA`, `fornadas` conta as fornadas da ficha que a consulta trouxe: sem
+ * contagem, toda fornada da janela é "desde a contagem", e é o que diz se há
+ * algo no pote para conferir.
+ */
+export function esperadoNoPote(
+  ficha: FichaComPronto,
+  fornadas: FornadaDaFicha[],
+  pedidos: Pick<Pedido, "status" | "arquivado" | "dataEntregaISO" | "itens">[],
+  kits: Pick<FichaTecnica, "id" | "componentes">[],
+  hojeISO: DataISO,
+): EsperadoNoPote {
+  const projecao = projecaoDoPronto(fornadas, ficha, hojeISO);
+  const contadoEm = ficha.estoqueProntoContadoEmISO;
+
+  let saiu = 0;
+  let quantos = 0;
+  if (projecao.prontos !== null && contadoEm) {
+    for (const pedido of pedidos) {
+      if (
+        pedido.arquivado ||
+        pedido.status === "ORCAMENTO" ||
+        pedido.status === "CANCELADO" ||
+        pedido.dataEntregaISO <= contadoEm ||
+        (pedido.status !== "ENTREGUE" && pedido.dataEntregaISO >= hojeISO)
+      ) {
+        continue;
+      }
+      const leva = unidadesPorFicha(pedido.itens, kits).get(ficha.id) ?? 0;
+      if (leva === 0) continue;
+      saiu += leva;
+      quantos += 1;
+    }
+  }
+
+  return {
+    ...projecao,
+    fornadas:
+      projecao.contagem.frescor === "NUNCA"
+        ? fornadas.filter((f) => !f.arquivado && f.fichaId === ficha.id).length
+        : projecao.fornadas,
+    pedidos: quantos,
+    saiu,
+    esperado:
+      projecao.prontos === null ? null : Math.max(0, projecao.prontos - saiu),
+  };
+}
+
+/**
+ * O recorte "Precisa conferir" da contagem do pronto (`#d335`): vencida,
+ * envelhecendo, fornada ou pedido desde a contagem, ou nunca contada **com**
+ * fornada na janela. A nunca contada sem fornada fica de fora: nada indica que
+ * haja algo no pote, e é o produto feito na hora.
+ */
+export function precisaConferirOPote(esperado: EsperadoNoPote): boolean {
+  const { frescor } = esperado.contagem;
+  return (
+    frescor === "VENCIDA" ||
+    frescor === "ENVELHECENDO" ||
+    esperado.fornadas > 0 ||
+    esperado.pedidos > 0
+  );
 }
 
 /** A ficha limitada que o pedido leva além do que resta, ou `null`. */

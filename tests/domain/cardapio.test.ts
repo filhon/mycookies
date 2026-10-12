@@ -5,7 +5,9 @@ import {
   sugerirApelido,
   corDaLoja,
   entraNoCardapio,
+  esperadoNoPote,
   esquemaPedidoDoCardapio,
+  precisaConferirOPote,
   mensagemDeAviso,
   mensagemDeContato,
   montarCardapio,
@@ -1896,5 +1898,120 @@ describe("a taxa de entrega no cardápio (spec 118)", () => {
         entregaCalculada: true,
       }),
     ).toContain(`Total ${formatarMoeda(12000)} com a entrega, para receber`);
+  });
+});
+
+// Spec 130 (`#d335`): o que o pote deveria ter. Contado 16 em 17/09, hoje 23/09.
+const POTE = ficha({
+  id: "tradicional",
+  estoqueProntoAtual: 16,
+  estoqueProntoContadoEmISO: "2026-09-17",
+});
+const esperado = (
+  pedidos: ReturnType<typeof pedidoD>[],
+  fornadas = [] as (typeof FORNADA)[],
+) => esperadoNoPote(POTE, fornadas, pedidos, [CAIXA], HOJE);
+
+describe("esperado no pote", () => {
+  it("entregue antes da contagem não sai", () => {
+    const e = esperado([
+      pedidoD("ENTREGUE", "2026-09-16", [linha("tradicional", 4)]),
+    ]);
+    expect(e).toMatchObject({ saiu: 0, pedidos: 0, esperado: 16 });
+  });
+
+  it("orçamento e cancelado não saem", () => {
+    const e = esperado([
+      pedidoD("ORCAMENTO", "2026-09-20", [linha("tradicional", 4)]),
+      pedidoD("CANCELADO", "2026-09-20", [linha("tradicional", 5)]),
+    ]);
+    expect(e).toMatchObject({ saiu: 0, esperado: 16 });
+  });
+
+  it("o de hoje ainda não entregue não sai; entregue, sai", () => {
+    expect(
+      esperado([pedidoD("CONFIRMADO", HOJE, [linha("tradicional", 4)])]).saiu,
+    ).toBe(0);
+    expect(
+      esperado([pedidoD("ENTREGUE", HOJE, [linha("tradicional", 4)])]).saiu,
+    ).toBe(4);
+  });
+
+  it("ontem não marcado como entregue sai", () => {
+    const e = esperado([
+      pedidoD("CONFIRMADO", "2026-09-22", [linha("tradicional", 4)]),
+    ]);
+    expect(e).toMatchObject({ saiu: 4, pedidos: 1, esperado: 12 });
+  });
+
+  it("combo e kit descontam a ficha de dentro, e a massa soma", () => {
+    const e = esperado(
+      [
+        pedidoD("ENTREGUE", "2026-09-20", [
+          linha("dupla", 2, ["tradicional", "redvelvet"]),
+        ]),
+        pedidoD("PRONTO", "2026-09-21", [linha("caixa", 1)]),
+        pedidoD("ENTREGUE", "2026-09-21", [linha("redvelvet", 9)]),
+      ],
+      [{ ...FORNADA, dataISO: "2026-09-19" }],
+    );
+    // 16 + 12 − (2 + 3), em 2 pedidos: o do Red Velvet não leva Tradicional.
+    expect(e).toMatchObject({ feitas: 12, saiu: 5, pedidos: 2, esperado: 23 });
+  });
+
+  it("nunca abaixo de zero", () => {
+    const e = esperado([
+      pedidoD("ENTREGUE", "2026-09-20", [linha("tradicional", 40)]),
+    ]);
+    expect(e.esperado).toBe(0);
+  });
+
+  it("sem contagem que valha, esperado é null", () => {
+    const nunca = ficha({ id: "tradicional" });
+    expect(esperadoNoPote(nunca, [], [], [], HOJE).esperado).toBeNull();
+  });
+});
+
+describe("precisa conferir o pote", () => {
+  const de = (
+    parcial: Partial<FichaTecnica>,
+    fornadas = [] as (typeof FORNADA)[],
+    pedidos = [] as ReturnType<typeof pedidoD>[],
+  ) =>
+    precisaConferirOPote(
+      esperadoNoPote(
+        ficha({ id: "tradicional", ...parcial }),
+        fornadas,
+        pedidos,
+        [],
+        HOJE,
+      ),
+    );
+
+  it("fresca sem movimento fica de fora; com fornada ou pedido, entra", () => {
+    expect(de(POTE)).toBe(false);
+    expect(de(POTE, [{ ...FORNADA, dataISO: "2026-09-20" }])).toBe(true);
+    expect(
+      de(
+        POTE,
+        [],
+        [pedidoD("ENTREGUE", "2026-09-20", [linha("tradicional", 1)])],
+      ),
+    ).toBe(true);
+  });
+
+  it("envelhecendo e vencida entram", () => {
+    expect(
+      de({ estoqueProntoAtual: 7, estoqueProntoContadoEmISO: "2026-09-01" }),
+    ).toBe(true);
+    expect(
+      de({ estoqueProntoAtual: 7, estoqueProntoContadoEmISO: "2026-08-01" }),
+    ).toBe(true);
+  });
+
+  it("nunca contada só entra com fornada na janela", () => {
+    expect(de({})).toBe(false);
+    expect(de({}, [FORNADA])).toBe(true);
+    expect(de({}, [{ ...FORNADA, fichaId: "redvelvet" }])).toBe(false);
   });
 });

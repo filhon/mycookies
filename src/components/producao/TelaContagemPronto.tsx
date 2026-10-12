@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { orderBy, query, where } from "firebase/firestore";
-import { Check, CookingPot, Plus } from "lucide-react";
+import { Check, CookingPot, Plus, TriangleAlert } from "lucide-react";
 import { RodapeContagem } from "@/components/estoque/RodapeContagem";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { BASE_CONTROLE } from "@/components/ui/Campo";
@@ -16,8 +16,14 @@ import {
   rotuloDaQuantidade,
   SUFIXO_UNIDADE_RENDIMENTO,
 } from "@/lib/domain/custoFicha";
-import { dataISODe } from "@/lib/domain/datas";
 import {
+  esperadoNoPote,
+  precisaConferirOPote,
+  type EsperadoNoPote,
+} from "@/lib/domain/cardapio";
+import { dataISODe, diaVizinho } from "@/lib/domain/datas";
+import {
+  IDADE_VENCE_DIAS,
   numeroContado,
   resumoDaContagem,
   rotuloDeIdade,
@@ -26,7 +32,6 @@ import {
 } from "@/lib/domain/estoque";
 import {
   contagemDoPronto,
-  projecaoDoPronto,
   temPronto,
   type ProjecaoDoPronto,
 } from "@/lib/domain/producao";
@@ -34,11 +39,16 @@ import {
   lerSementeDoPronto,
   limparSementeDoPronto,
 } from "@/lib/estado/sementeDoPronto";
-import { colFichas } from "@/lib/firebase/colecoes";
+import { colFichas, colPedidos } from "@/lib/firebase/colecoes";
 import { salvarContagemDoPronto } from "@/lib/firebase/mutations/estoque";
 import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
 import { useColecao } from "@/lib/hooks/useColecao";
-import type { FichaTecnica, Fornada, UnidadeRendimento } from "@/lib/types";
+import type {
+  FichaTecnica,
+  Fornada,
+  Pedido,
+  UnidadeRendimento,
+} from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
 import { cn } from "@/lib/utils/cn";
 
@@ -82,21 +92,42 @@ export function TelaContagemPronto() {
     [contaId, hoje],
   );
 
+  // A janela das fornadas: contagem mais velha que isso já venceu e não tem
+  // esperado (`#d335`). A forma de `AgendaHoje`, que já tem índice.
+  const consultaPedidos = useMemo(
+    () =>
+      query(
+        colPedidos(contaId),
+        where("arquivado", "==", false),
+        where("dataEntregaISO", ">=", diaVizinho(hoje, -IDADE_VENCE_DIAS)),
+        orderBy("dataEntregaISO"),
+      ),
+    [contaId, hoje],
+  );
+
   const { dados, carregando, erro, pendente } =
     useColecao<FichaTecnica>(consulta);
-  const { dados: fornadas } = useColecao<Fornada>(consultaProducao);
-  // Só receita tem pote: o kit é o agregado das receitas de dentro.
+  const { dados: fornadas, carregando: carregandoFornadas } =
+    useColecao<Fornada>(consultaProducao);
+  const { dados: pedidos, carregando: carregandoPedidos } =
+    useColecao<Pedido>(consultaPedidos);
+  // Só receita tem pote: o kit é o agregado das receitas de dentro, e é por
+  // ele que o pedido de combo desconta do pote de cada uma.
   const fichas = useMemo(() => dados.filter(temPronto), [dados]);
+  const kits = useMemo(
+    () => dados.filter((ficha) => !temPronto(ficha)),
+    [dados],
+  );
 
-  const projecoes = useMemo(
+  const esperados = useMemo(
     () =>
       new Map(
         fichas.map((ficha) => [
           ficha.id,
-          projecaoDoPronto(fornadas, ficha, hoje),
+          esperadoNoPote(ficha, fornadas, pedidos, kits, hoje),
         ]),
       ),
-    [fornadas, fichas, hoje],
+    [fornadas, pedidos, kits, fichas, hoje],
   );
 
   const semeada = semente
@@ -107,8 +138,22 @@ export function TelaContagemPronto() {
       ? sugestaoDaContagem(contagemDoPronto(semeada, hoje), semente.unidades)
       : null;
 
-  // O recorte cai para todas quando a ficha semeada ainda não chegou.
-  const linhas = soEsta && semeada ? [semeada] : fichas;
+  // Sem semente, a tela abre no que precisa de olho (`#d335`, as regras do
+  // `#d331`): congelado ao abrir e ao trocar de pílula. `undefined` é "ainda
+  // não decidido"; `null`, todos.
+  const [recorte, setRecorte] = useState<Set<string> | null>();
+  const [comPilulas, setComPilulas] = useState(false);
+
+  // Recorte vazio cai para todas: acontece quando a ficha semeada ainda não
+  // chegou do cache.
+  const recortadas = semente
+    ? soEsta && semeada
+      ? [semeada]
+      : []
+    : recorte
+      ? fichas.filter((ficha) => recorte.has(ficha.id))
+      : [];
+  const linhas = recortadas.length > 0 ? recortadas : fichas;
 
   useEffect(() => {
     if (semeado.current || !semente || !semeada || sugestao === null) return;
@@ -125,13 +170,52 @@ export function TelaContagemPronto() {
     return mapa;
   }, [fichas, digitados]);
 
+  /** O que precisa de olho e ainda não ganhou número nesta contagem. */
+  const aConferir = useMemo(
+    () =>
+      fichas
+        .filter((ficha) => {
+          const esperado = esperados.get(ficha.id);
+          return (
+            valores[ficha.id] === null &&
+            !!esperado &&
+            precisaConferirOPote(esperado)
+          );
+        })
+        .map((ficha) => ficha.id),
+    [fichas, valores, esperados],
+  );
+
+  // Decide uma vez, com fichas, fornadas e pedidos na mão, durante o render
+  // para a lista inteira não piscar antes do recorte (`#d331`).
+  if (
+    recorte === undefined &&
+    !carregando &&
+    !carregandoFornadas &&
+    !carregandoPedidos
+  ) {
+    const util =
+      !semente && aConferir.length > 0 && aConferir.length < fichas.length;
+    setComPilulas(util);
+    setRecorte(util ? new Set(aConferir) : null);
+  }
+
+  function escrever(fichaId: string, texto: string) {
+    setDigitados((anteriores) => ({ ...anteriores, [fichaId]: texto }));
+  }
+
   // Inclusive o que a fornada semeou: a proposta que sai da contagem é
   // trabalho perdido também (`DECISOES.md#d134`).
   const sujo = Object.values(valores).some((quantidade) => quantidade !== null);
   const guarda = useGuardaDeSaida(sujo);
 
+  // O que está na tela e o que ela já tocou fora dela: salvar grava tudo o
+  // que foi tocado, e o rodapé não pode dizer zero com número digitado.
+  const naTela = new Set(linhas.map((ficha) => ficha.id));
   const resumo = resumoDaContagem(
-    linhas.map((ficha) => ficha.id),
+    fichas
+      .filter((ficha) => naTela.has(ficha.id) || valores[ficha.id] !== null)
+      .map((ficha) => ficha.id),
     valores,
   );
 
@@ -194,8 +278,25 @@ export function TelaContagemPronto() {
         />
       )}
 
+      {comPilulas && (
+        <Pilulas
+          className="mt-4"
+          rotulo="O que contar"
+          numerico
+          opcoes={[
+            {
+              valor: true,
+              rotulo: `Precisa conferir (${recorte?.size ?? aConferir.length})`,
+            },
+            { valor: false, rotulo: `Todos (${fichas.length})` },
+          ]}
+          valor={!!recorte}
+          aoMudar={(precisa) => setRecorte(precisa ? new Set(aConferir) : null)}
+        />
+      )}
+
       <div className="mt-4 pb-52 lg:pb-44">
-        {carregando ? (
+        {carregando || (!semente && recorte === undefined) ? (
           <div role="status" aria-label="Carregando" className="space-y-4">
             {[0, 1].map((indice) => (
               <Esqueleto key={indice} className="h-56 rounded-lg" />
@@ -233,7 +334,7 @@ export function TelaContagemPronto() {
               <LinhaPronto
                 key={ficha.id}
                 ficha={ficha}
-                projecao={projecoes.get(ficha.id)}
+                esperado={esperados.get(ficha.id)}
                 proposto={
                   ficha.id === semeada?.id && sugestao !== null
                     ? sugestao
@@ -241,12 +342,8 @@ export function TelaContagemPronto() {
                 }
                 entrada={semente?.unidades ?? 0}
                 texto={digitados[ficha.id] ?? ""}
-                aoMudar={(texto) =>
-                  setDigitados((anteriores) => ({
-                    ...anteriores,
-                    [ficha.id]: texto,
-                  }))
-                }
+                aoMudar={(texto) => escrever(ficha.id, texto)}
+                aoIgual={(anotado) => escrever(ficha.id, textoContado(anotado))}
               />
             ))}
           </ul>
@@ -276,20 +373,22 @@ export function TelaContagemPronto() {
 /** Uma ficha na contagem: o nome, o campo e a frase que explica o número velho. */
 function LinhaPronto({
   ficha,
-  projecao,
+  esperado,
   proposto,
   entrada,
   texto,
   aoMudar,
+  aoIgual,
 }: {
   ficha: FichaTecnica;
-  projecao?: ProjecaoDoPronto;
+  esperado?: EsperadoNoPote;
   /** O que a fornada propôs para esta linha, ou `null`. */
   proposto: number | null;
   /** As unidades da fornada que semeou. */
   entrada: number;
   texto: string;
   aoMudar: (texto: string) => void;
+  aoIgual: (anotado: number) => void;
 }) {
   const unidade = ficha.unidadeRendimento;
   const digitado = texto.trim().length > 0;
@@ -298,9 +397,41 @@ function LinhaPronto({
   const contado = valor !== null;
   // A procedência vale enquanto o campo ainda é o que a fornada propôs.
   const procedencia =
-    proposto !== null && texto === textoContado(proposto) && projecao
-      ? procedenciaDoPronto(projecao, entrada, unidade)
+    proposto !== null && texto === textoContado(proposto) && esperado
+      ? procedenciaDoPronto(esperado, entrada, unidade)
       : null;
+
+  const contagem = esperado?.contagem;
+  const semMovimento =
+    !!esperado && esperado.fornadas === 0 && esperado.pedidos === 0;
+  // Vencida sempre; nunca contada só com fornada na janela (`#d335`): sem
+  // ela, nada indica que haja algo no pote.
+  const atencao =
+    contagem?.frescor === "VENCIDA" ||
+    (contagem?.frescor === "NUNCA" && !semMovimento);
+  // "Igual" (`#d330`): só onde o número velho ainda pode ser o do pote.
+  const anotado = contagem?.anotado ?? null;
+  const igual =
+    !digitado &&
+    semMovimento &&
+    anotado !== null &&
+    (contagem?.frescor === "FRESCA" || contagem?.frescor === "ENVELHECENDO");
+
+  /** Em 360px o botão desce para a linha da referência, para o nome não sumir. */
+  const botaoIgual = (className: string) => (
+    <button
+      type="button"
+      onClick={() => anotado !== null && aoIgual(anotado)}
+      aria-label={`Igual à última contagem: ${quanto(anotado ?? 0, unidade)}`}
+      className={classesBotao({
+        variante: "terciaria",
+        tamanho: "sm",
+        className: cn("shrink-0", className),
+      })}
+    >
+      Igual
+    </button>
+  );
 
   return (
     <li className={cn("px-4 py-3 lg:px-5", contado && "bg-sunken")}>
@@ -312,46 +443,60 @@ function LinhaPronto({
           >
             {ficha.nome}
           </label>
-          <p
-            id={`pronto-${ficha.id}-referencia`}
-            className={cn(
-              "num mt-0.5 flex items-start gap-1.5 text-label",
-              ilegivel
-                ? "text-negative"
-                : contado && !procedencia
-                  ? "text-ink"
-                  : "text-ink-muted",
-            )}
-          >
-            {procedencia ? (
-              <CookingPot
-                aria-hidden
-                className="mt-0.5 size-3.5 shrink-0 text-ink-subtle"
-                strokeWidth={2}
-              />
-            ) : (
-              contado &&
-              !ilegivel && (
-                <Check
+          <div className="flex items-center gap-2">
+            <p
+              id={`pronto-${ficha.id}-referencia`}
+              className={cn(
+                "num mt-0.5 flex min-w-0 flex-1 items-start gap-1.5 text-label",
+                ilegivel
+                  ? "text-negative"
+                  : contado && !procedencia
+                    ? "text-ink"
+                    : "text-ink-muted",
+              )}
+            >
+              {procedencia ? (
+                <CookingPot
                   aria-hidden
-                  className="mt-0.5 size-3.5 shrink-0 text-positive"
-                  strokeWidth={2.5}
+                  className="mt-0.5 size-3.5 shrink-0 text-ink-subtle"
+                  strokeWidth={2}
                 />
-              )
-            )}
-            <span>
-              {ilegivel
-                ? "não deu para ler este número"
-                : (procedencia ??
-                  (contado
-                    ? valor === 0
-                      ? "zero: conferido, e não tem"
-                      : `${quanto(valor, unidade)}, contadas hoje`
-                    : referencia(projecao, unidade)))}
-            </span>
-          </p>
+              ) : contado ? (
+                !ilegivel && (
+                  <Check
+                    aria-hidden
+                    className="mt-0.5 size-3.5 shrink-0 text-positive"
+                    strokeWidth={2.5}
+                  />
+                )
+              ) : (
+                !ilegivel &&
+                atencao && (
+                  <TriangleAlert
+                    aria-hidden
+                    className="mt-0.5 size-3.5 shrink-0 text-attention"
+                    strokeWidth={2}
+                  />
+                )
+              )}
+              <span>
+                {ilegivel
+                  ? "não deu para ler este número"
+                  : (procedencia ??
+                    (contado
+                      ? valor === 0
+                        ? "zero: conferido, e não tem"
+                        : contagem?.frescor !== "NUNCA" && valor === anotado
+                          ? "igual à última, conferido hoje"
+                          : `${quanto(valor, unidade)}, contadas hoje`
+                      : referencia(esperado, unidade, atencao)))}
+              </span>
+            </p>
+            {igual && botaoIgual("min-[400px]:hidden")}
+          </div>
         </div>
 
+        {igual && botaoIgual("hidden min-[400px]:inline-flex")}
         <div className="relative w-28 shrink-0">
           <input
             id={`pronto-${ficha.id}`}
@@ -381,19 +526,54 @@ function LinhaPronto({
   );
 }
 
-/** "13 unidades · contada há 2 dias · massa para 25 desde então, projetamos 38". */
+function numero(valor: number): string {
+  return valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+}
+
+/**
+ * O esperado primeiro (`#d335`): "esperamos 9 unidades · 16 contadas há 8
+ * dias, +12 da massa, −19 em 4 pedidos", cada parcela só se não for zero. Sem
+ * movimento, "7 unidades · contada há 23 dias". Vencida e nunca contada com
+ * fornada abrem com a palavra em atenção (o triângulo vem de fora).
+ */
 function referencia(
-  projecao: ProjecaoDoPronto | undefined,
+  esperado: EsperadoNoPote | undefined,
   unidade: UnidadeRendimento,
-): string {
-  const anotado = projecao?.contagem.anotado;
-  if (!projecao || anotado === null || anotado === undefined) {
-    return "nunca contada";
+  atencao: boolean,
+): ReactNode {
+  const palavra = (texto: string) =>
+    atencao ? (
+      <span className="font-medium text-attention">{texto}</span>
+    ) : (
+      texto
+    );
+  if (!esperado || esperado.contagem.frescor === "NUNCA") {
+    return palavra("nunca contada");
   }
-  const { contagem } = projecao;
-  const base = `${quanto(anotado, unidade)} · ${rotuloDeIdade(contagem)}`;
-  if (projecao.fornadas === 0 || projecao.prontos === null) return base;
-  return `${base} · massa para ${quanto(projecao.feitas, unidade)} desde então, projetamos ${quanto(projecao.prontos, unidade)}`;
+  const { contagem } = esperado;
+  if (contagem.frescor === "VENCIDA") {
+    return (
+      <>
+        {palavra("vencida")} · {rotuloDeIdade(contagem)}
+      </>
+    );
+  }
+
+  const anotado = contagem.anotado ?? 0;
+  if (
+    esperado.esperado === null ||
+    (esperado.fornadas === 0 && esperado.pedidos === 0)
+  ) {
+    return `${quanto(anotado, unidade)} · ${rotuloDeIdade(contagem)}`;
+  }
+  const dias = contagem.idadeEmDias ?? 0;
+  const parcelas = [
+    `${numero(anotado)} contadas ${dias === 0 ? "hoje" : `há ${dias} ${dias === 1 ? "dia" : "dias"}`}`,
+    esperado.feitas > 0 && `+${numero(esperado.feitas)} da massa`,
+    esperado.saiu > 0 &&
+      `−${numero(esperado.saiu)} em ${esperado.pedidos} ${esperado.pedidos === 1 ? "pedido" : "pedidos"}`,
+  ].filter(Boolean);
+  return `esperamos ${quanto(esperado.esperado, unidade)} · ${parcelas.join(", ")}`;
 }
 
 /** De onde a sugestão saiu: as mesmas três frases da despensa, com a massa no lugar da nota. */

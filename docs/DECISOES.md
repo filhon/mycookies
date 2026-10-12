@@ -2985,6 +2985,10 @@ inteira (uma linha por ficha) pelo mesmo argumento do `#d50`, e a entrada dela m
 reserva de produção (`#d96`) **não** olha o pote: "sempre poder fazer uma fornada" é sobre a
 despensa, e cookie pronto não é farinha.
 
+**Nota (130, `#d335`).** A contagem mostra o esperado com a saída dos pedidos (`esperadoNoPote`:
+projeção menos o que foi entregue, ou cujo dia passou, desde a contagem); o pote gravado continua
+medição, e o esperado é leitura, como a projeção.
+
 ## D98 · Os dados para pagar moram na forma de pagamento, e não no código
 
 **Status:** vigente · decidida em 2026-09-11, fora de spec (pedido direto de quem conduz o projeto)
@@ -10691,3 +10695,46 @@ três lugares. O desktop é onde ela confere e corrige (`PRODUCT.md`, contexto 4
 **Consequência.** O leitor de tela lê "540 g", e não "540 gramas" como o roteiro da spec pede: não
 há formatador por extenso com kg e l, e criar um para isto seria outra spec. Sem coluna em reais:
 o valor está no resumo da 128 (`#d333`).
+
+---
+
+## D335 · O que o pote deveria ter
+
+**Status:** vigente · decidida em 2026-10-12, spec `130-o-que-o-pote-deveria-ter.md`.
+
+**Contexto.** A contagem do pronto mostrava dez linhas de peso igual, e o único número era o da
+última contagem ("7 unidades · contada há 23 dias"), que não desce: a projeção do `#d97` só soma a
+massa. O sistema sabe quantos cookies saíram em pedido, e o cardápio já faz essa conta (`#d164`).
+Cinco das dez linhas eram "nunca contada" de produtos feitos na hora, no mesmo cinza do Tradicional.
+
+**Decisão.**
+
+- **`esperadoNoPote(ficha, fornadas, pedidos, kits, hoje)`** em `domain/cardapio.ts`, ao lado de
+  `restamNoPote`, para `unidadesPorFicha` não precisar descer: a projeção mais `pedidos`, `saiu` e
+  `esperado = max(0, prontos − saiu)`, `null` sem contagem que valha. Sai só o pedido não
+  arquivado, fora de `ORCAMENTO` e `CANCELADO`, com entrega depois da contagem, e que **já saiu**:
+  `ENTREGUE`, ou com o dia passado. O de hoje ainda não entregue continua no pote.
+- **Diferente do `restamNoPote`**, que desconta também o futuro e o orçamento: o cardápio pergunta
+  o que não pode vender duas vezes, a contagem pergunta o que está fisicamente no pote.
+- **Em `NUNCA`, `fornadas` conta as da janela** que a consulta trouxe: sem contagem, toda fornada
+  é "desde a contagem", e é o que diz se há algo no pote.
+- **A frase diz o esperado primeiro**: "esperamos 9 unidades · 16 contadas há 8 dias, +12 da
+  massa, −19 em 4 pedidos", com massa e pedidos só quando não são zero. A contagem fica sempre,
+  porque carrega a idade. Sem movimento, a frase de antes.
+- **Atenção com ícone e palavra**: vencida sempre, e nunca contada só com fornada na janela. A
+  palavra vai em `--attention` e o resto da frase em `--ink-muted`, como na despensa (`#d331`), e
+  não a frase inteira em atenção como a spec dizia.
+- **O recorte**: `precisaConferirOPote` (vencida, envelhecendo, fornada ou pedido desde a
+  contagem, nunca com fornada), com as regras do `#d331`: pílulas "Precisa conferir (N)" e
+  "Todos (T)" só sem semente e com 0 < N < T, decidido no render depois de fichas, fornadas e
+  pedidos chegarem, congelado até trocar de pílula. O rodapé conta o visível mais o tocado fora
+  dele, também no recorte da semente.
+- **"Igual"** (`#d330`) só em linha intocada, fresca ou envelhecendo, sem fornada **e sem pedido**
+  desde a contagem.
+- **A leitura dos pedidos** é a forma de `AgendaHoje` (`arquivado ==`, `dataEntregaISO >=` hoje
+  menos `IDADE_VENCE_DIAS`, `orderBy`), com o índice que já existe. Os kits vêm da mesma consulta
+  de fichas.
+
+**Consequência.** O esperado não é gravado: `#d97` continua. Pedido de um kit que foi arquivado não
+desconta os componentes, porque a consulta de fichas só traz as vivas, como no `restamNoPote`. Sem campo
+"não guardo pronto" na ficha: volta se um produto guardado em pote ficar meses sem fornada.
