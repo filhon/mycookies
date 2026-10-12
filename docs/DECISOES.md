@@ -10897,3 +10897,40 @@ numa ponta, o custo na outra e ≈ 600 px de papel no meio.
 não "Quantidade, 320 g" como o roteiro da spec escreve. Na janela de 1536 px o formulário encolhe
 para caber a coluna, como no pedido. A ordem dos blocos (a produção no topo, "Mais detalhes" antes
 da receita) continua a de antes: pede roteiro com a Maynara.
+
+## D340 · O que pesa no custo
+
+**Status:** vigente · decidida em 2026-10-12, spec `135-o-que-pesa-no-custo.md`.
+
+**Contexto.** O Cookie Cacau com Nutella tem quinze materiais, e a Nutella sozinha é quase 40% deles.
+A tela mostrava isso como um número entre quinze, na mesma tinta dos R$ 0,09 do papel manteiga. E o
+peso da massa, que diz se a porção de "120g" e o rendimento de 16 são verdade, não existia em lugar
+nenhum.
+
+**Decisão.**
+
+- **A parte é sobre a soma da lista, não sobre o lote.** `parteDoCusto` em `custoFicha.ts` divide o
+  custo da linha pela soma de materiais e embalagem. A hora dela, o gás e as despesas fixas não são
+  ingrediente: "Nutella é 20% do lote" dilui a pergunta que a tela responde, "o que eu troco?".
+  Percentual inteiro, arredondado linha a linha; a soma pode não dar 100.
+- **No kit, o todo são as três listas:** produtos de dentro, escolhas da cliente (pela mais cara,
+  `#d101`) e embalagem. A escolha leva o número ao lado do custo, sem traço: ela não tem nome para
+  o traço ficar embaixo. Deixá-la fora da soma inflaria a parte dos produtos num combo.
+- **Traço de 4 px sob o nome** (`--border-strong` na trilha, `--brand-as-ink` no preenchimento), da
+  largura da parte, e o número em `label` `--ink-muted`. No celular o número vai **embaixo** do
+  custo, e não ao lado como a spec escreveu: campo de 96 px, seletor de 80 px, custo e "40%" passam
+  dos 280 px da linha em 360. No desktop, a quarta coluna da grade do `#d339`, "Parte", de 3,5rem.
+- **A frase dos que mais pesam** (`osQueMaisPesam`): os mais caros até a soma passar da metade, no
+  máximo três; a soma arredondada uma vez, e não a soma dos arredondados. Só na receita e com 4
+  linhas ou mais. Sem ícone, sem tom, nome sem link.
+- **O peso da massa conta só o que está em gramas** (`pesoDaMassa`), fora a embalagem. O que está em
+  ml ou un é dito pelo nome ("fora 2 un de Ovo e 5 ml de Essência de baunilha"), nunca convertido:
+  densidade de essência e peso médio de ovo seriam número inventado com cara de certo. Com mais de
+  dois de fora, só o primeiro nome e "mais N". O "≈ 114 g por unidade" some sem rendimento.
+- **A frase do peso fica embaixo do par "Rende · Em"**, e não como `dica` do campo "Rende": em
+  360 px a coluna do campo tem 190 px, e a frase iria a seis linhas. Sem `aria-describedby`; o
+  leitor de tela a encontra logo depois do seletor "Em". Só com rendimento em `un` ou `porcao`.
+
+**Consequência.** O nome do material entra na frase como ela o cadastrou, com a maiúscula: o sistema
+não sabe que "Nutella" é marca e "Chocolate meio amargo" não. Ovo fica "2 un de Ovo", e não "2 ovos":
+plural de nome livre seria adivinhar.

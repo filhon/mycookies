@@ -18,11 +18,12 @@ const CLASSES_QUANTIDADE = cn(
 
 /**
  * As colunas do desktop (`#d339`): o nome, a quantidade com a unidade, o custo
- * da linha e o botão de remover. A quantidade tem 12rem porque o campo de 96px
- * mais o seletor de unidade de 80px precisam caber lado a lado.
+ * da linha, a parte dela no custo (`#d340`) e o botão de remover. A quantidade
+ * tem 12rem porque o campo de 96px mais o seletor de unidade de 80px precisam
+ * caber lado a lado.
  */
 export const COLUNAS_ITEM_FICHA =
-  "lg:grid-cols-[minmax(0,1fr)_12rem_8rem_2.75rem]";
+  "lg:grid-cols-[minmax(0,1fr)_12rem_8rem_3.5rem_2.75rem]";
 
 /**
  * O cabeçalho das colunas, uma vez acima da lista. `aria-hidden`: cada célula
@@ -40,6 +41,7 @@ export function CabecalhoItensFicha({ primeira }: { primeira: string }) {
       <span>{primeira}</span>
       <span>Quantidade</span>
       <span className="text-right">Custo</span>
+      <span className="text-right">Parte</span>
     </div>
   );
 }
@@ -61,6 +63,7 @@ function Linha({
   controles,
   detalhe,
   custoLinha,
+  parte,
   aoRemover,
   rotuloRemover,
   erro,
@@ -73,6 +76,8 @@ function Linha({
   /** A consequência, embaixo dos controles. */
   detalhe?: ReactNode;
   custoLinha: Centavos;
+  /** A parte da linha no custo dos materiais, em % (`#d340`). */
+  parte: number;
   aoRemover: () => void;
   rotuloRemover: string;
   erro?: string;
@@ -90,15 +95,31 @@ function Linha({
       <div className={cn("flex items-start gap-3", grade && "lg:contents")}>
         <div className={cn("min-w-0 flex-1", grade && "lg:contents")}>
           {nome && (
-            <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="truncate text-body font-medium text-ink">
-                {grade && (
-                  <span className="sr-only hidden lg:inline">{colunas}, </span>
-                )}
-                {nome}
+            <div className="min-w-0">
+              <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="truncate text-body font-medium text-ink">
+                  {grade && (
+                    <span className="sr-only hidden lg:inline">
+                      {colunas},{" "}
+                    </span>
+                  )}
+                  {nome}
+                </span>
+                {etiqueta}
+              </p>
+              {/* A medida da linha é traço sob o nome, nunca fundo da linha
+                  (`DESIGN.md` § Seção no papel). O número diz o mesmo ao lado
+                  do custo. */}
+              <span
+                aria-hidden
+                className="mt-1.5 block h-1 rounded-full bg-line-strong"
+              >
+                <span
+                  style={{ width: `${Math.min(parte, 100)}%` }}
+                  className="block h-full rounded-full bg-brand-ink"
+                />
               </span>
-              {etiqueta}
-            </p>
+            </div>
           )}
 
           <div
@@ -113,11 +134,26 @@ function Linha({
             ) : (
               controles
             )}
-            <span className="ml-auto text-right">
-              {grade && (
-                <span className="sr-only hidden lg:inline">Custo, </span>
+            {/* No celular, a parte embaixo do custo: ao lado, com o campo e o
+                seletor, não cabe em 360px. No desktop, cada um na sua coluna. */}
+            <span
+              className={cn(
+                "ml-auto flex flex-col items-end",
+                grade && "lg:contents",
               )}
-              <Dinheiro centavos={custoLinha} />
+            >
+              <span className="text-right">
+                {grade && (
+                  <span className="sr-only hidden lg:inline">Custo, </span>
+                )}
+                <Dinheiro centavos={custoLinha} />
+              </span>
+              <span className="num text-right text-label text-ink-muted">
+                {grade && (
+                  <span className="sr-only hidden lg:inline">Parte, </span>
+                )}
+                {parte}%
+              </span>
             </span>
           </div>
 
@@ -128,7 +164,7 @@ function Linha({
               role="alert"
               className={cn(
                 "mt-1.5 text-label text-negative",
-                grade && "lg:order-last lg:col-span-3",
+                grade && "lg:order-last lg:col-span-4",
               )}
             >
               {erro}
@@ -154,6 +190,7 @@ export function LinhaItemFicha({
   ehEmbalagem,
   unidades,
   custoLinha,
+  parte,
   campoQuantidade,
   campoUnidade,
   aoRemover,
@@ -164,6 +201,7 @@ export function LinhaItemFicha({
   /** Só as unidades compatíveis com a unidade base do insumo. */
   unidades: UnidadeCompra[];
   custoLinha: Centavos;
+  parte: number;
   campoQuantidade: UseFormRegisterReturn;
   campoUnidade: UseFormRegisterReturn;
   aoRemover: () => void;
@@ -176,6 +214,7 @@ export function LinhaItemFicha({
       nome={nome}
       etiqueta={ehEmbalagem ? <Selo tom="neutro">Embalagem</Selo> : undefined}
       custoLinha={custoLinha}
+      parte={parte}
       aoRemover={aoRemover}
       rotuloRemover={`Tirar ${nome} do produto`}
       erro={erro}
@@ -219,6 +258,7 @@ export function LinhaComponenteFicha({
   nome,
   custoUnitario,
   custoLinha,
+  parte,
   campoQuantidade,
   aoRemover,
   erro,
@@ -226,6 +266,7 @@ export function LinhaComponenteFicha({
   nome: string;
   custoUnitario: Centavos;
   custoLinha: Centavos;
+  parte: number;
   campoQuantidade: UseFormRegisterReturn;
   aoRemover: () => void;
   erro?: string;
@@ -234,6 +275,7 @@ export function LinhaComponenteFicha({
     <Linha
       nome={nome}
       custoLinha={custoLinha}
+      parte={parte}
       aoRemover={aoRemover}
       rotuloRemover={`Tirar ${nome} do kit`}
       erro={erro}
@@ -268,6 +310,7 @@ export function LinhaEscolhaFicha({
   opcoes,
   maisCara,
   custoLinha,
+  parte,
   campoQuantidade,
   campoCategoria,
   aoRemover,
@@ -278,6 +321,7 @@ export function LinhaEscolhaFicha({
   opcoes: string[];
   maisCara: Centavos;
   custoLinha: Centavos;
+  parte: number;
   campoQuantidade: UseFormRegisterReturn;
   campoCategoria: UseFormRegisterReturn;
   aoRemover: () => void;
@@ -286,6 +330,7 @@ export function LinhaEscolhaFicha({
   return (
     <Linha
       custoLinha={custoLinha}
+      parte={parte}
       aoRemover={aoRemover}
       rotuloRemover="Tirar esta escolha do kit"
       erro={erro}

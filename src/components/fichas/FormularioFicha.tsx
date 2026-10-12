@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type ReactNode } from "react";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
 import {
   useFieldArray,
   useForm,
@@ -39,7 +39,11 @@ import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { EntradaContagemPronto } from "@/components/producao/EntradaContagemPronto";
 import { FornadasRecentes } from "@/components/producao/FornadasRecentes";
-import { FraseDoPronto } from "@/components/producao/FraseDaCapacidade";
+import {
+  FraseDoPronto,
+  listarNomes,
+  texto as inteiro,
+} from "@/components/producao/FraseDaCapacidade";
 import { FraseDaQuebra } from "@/components/producao/FraseDaQuebra";
 import { PainelFornada } from "@/components/producao/PainelFornada";
 import {
@@ -60,6 +64,9 @@ import {
   derivarFicha,
   ehEmbalagem,
   opcoesDaEscolha,
+  osQueMaisPesam,
+  parteDoCusto,
+  pesoDaMassa,
   podeSerComponente,
   ROTULO_PARCELA,
   ROTULO_UNIDADE_RENDIMENTO,
@@ -86,7 +93,11 @@ import {
   temPronto,
 } from "@/lib/domain/producao";
 import { DESCRICAO_MAX, esquemaFicha } from "@/lib/domain/schemas";
-import { paraBase, unidadesCompativeis } from "@/lib/domain/unidades";
+import {
+  formatarQuantidade,
+  paraBase,
+  unidadesCompativeis,
+} from "@/lib/domain/unidades";
 import {
   CONFIGURACAO_SUGERIDA,
   precificacaoPadraoDaConta,
@@ -485,6 +496,56 @@ export function FormularioFicha({
     precificacao,
     precoVenda: valores.precoManual ? valores.precoVenda : null,
   });
+
+  // A parte de cada linha no custo dos materiais (`#d340`). No kit, o todo
+  // são as três listas: produtos de dentro, escolhas e embalagem.
+  const linhasDeMaterial = itensResolvidos.map((item) => ({
+    id: item.insumoId,
+    nome: item.nomeSnapshot,
+    custo: custoLinhaItem(item),
+  }));
+  const partes = parteDoCusto([
+    ...linhasDeMaterial,
+    ...componentesResolvidos.map((componente) => ({
+      id: componente.fichaId,
+      custo: custoLinhaComponente(componente),
+    })),
+    ...escolhasResolvidas.map((escolha, indice) => ({
+      id: `escolha-${indice}`,
+      custo: custoDasEscolhas([escolha], fichas, ficha?.id).maximo,
+    })),
+  ]);
+  const maisPesam = ehKit ? null : osQueMaisPesam(linhasDeMaterial);
+
+  const peso = pesoDaMassa(itensResolvidos, rendimento);
+  const fraseDaMassa =
+    !ehKit &&
+    peso.gramas > 0 &&
+    (valores.unidadeRendimento === "un" ||
+      valores.unidadeRendimento === "porcao")
+      ? [
+          `A massa pesa ${inteiro(peso.gramas)} g`,
+          peso.semPeso.length > 0 &&
+            `, fora ${
+              peso.semPeso.length > 2
+                ? listarNomes(
+                    peso.semPeso.map((item) => item.nomeSnapshot),
+                    1,
+                  )
+                : listarNomes(
+                    peso.semPeso.map(
+                      (item) =>
+                        `${formatarQuantidade(item.quantidade, item.unidadeBase)} de ${item.nomeSnapshot}`,
+                    ),
+                  )
+            }`,
+          peso.porUnidade > 0 &&
+            `: ≈ ${inteiro(peso.porUnidade)} g por ${valores.unidadeRendimento === "un" ? "unidade" : "porção"} antes do forno`,
+          ".",
+        ]
+          .filter(Boolean)
+          .join("")
+      : null;
 
   // O kit gravado dividido pelo que vai dentro (`#d227`): a caixa inteira
   // custa o lote, e a faixa diz o que sobra dela ao preço de hoje.
@@ -1041,7 +1102,7 @@ export function FormularioFicha({
               />
 
               {!ehKit && (
-                <div className="grid grid-cols-[1fr_8rem] gap-3">
+                <div className="grid grid-cols-[1fr_8rem] gap-x-3 gap-y-1.5">
                   <Campo
                     rotulo="Rende"
                     required
@@ -1057,6 +1118,13 @@ export function FormularioFicha({
                       </option>
                     ))}
                   </Seletor>
+                  {/* O peso da massa (`#d340`), embaixo do par "Rende · Em" e
+                      não só do campo: em 360px a coluna do "Rende" tem 190px. */}
+                  {fraseDaMassa && (
+                    <p className="num col-span-2 text-label text-ink-muted">
+                      {fraseDaMassa}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -1251,6 +1319,7 @@ export function FormularioFicha({
                       nome={componente.nomeSnapshot}
                       custoUnitario={componente.custoUnitarioSnapshot}
                       custoLinha={custoLinhaComponente(componente)}
+                      parte={partes.get(componente.fichaId) ?? 0}
                       campoQuantidade={form.register(
                         `componentes.${indice}.quantidade`,
                       )}
@@ -1313,6 +1382,7 @@ export function FormularioFicha({
                       opcoes={opcoes.map((opcao) => opcao.nome)}
                       maisCara={maisCara}
                       custoLinha={Math.round(maisCara * escolha.quantidade)}
+                      parte={partes.get(`escolha-${indice}`) ?? 0}
                       campoQuantidade={form.register(
                         `escolhas.${indice}.quantidade`,
                       )}
@@ -1352,6 +1422,21 @@ export function FormularioFicha({
               />
             </div>
 
+            {/* Informação, e não aviso: sem ícone e sem tom. O nome não é link,
+                o caminho para Materiais já está na faixa do preço médio. */}
+            {maisPesam && (
+              <p className="text-body text-ink lg:ml-8">
+                {maisPesam.nomes.map((nome, i) => (
+                  <Fragment key={i}>
+                    {i > 0 && (i === maisPesam.nomes.length - 1 ? " e " : ", ")}
+                    <strong className="font-semibold">{nome}</strong>
+                  </Fragment>
+                ))}{" "}
+                {maisPesam.nomes.length === 1 ? "é" : "são"}{" "}
+                <span className="num">{maisPesam.parte}%</span> dos materiais.
+              </p>
+            )}
+
             <ListaDeLinhas
               vazio={
                 ehKit
@@ -1372,6 +1457,7 @@ export function FormularioFicha({
                     ehEmbalagem={ehEmbalagem(item.categoria)}
                     unidades={item.unidades}
                     custoLinha={custoLinhaItem(item)}
+                    parte={partes.get(item.insumoId) ?? 0}
                     campoQuantidade={form.register(
                       `itens.${indice}.quantidade`,
                     )}

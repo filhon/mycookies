@@ -9,6 +9,7 @@ import type {
   Percentual,
   ResumoProduto,
   TipoFicha,
+  UnidadeBase,
   UnidadeRendimento,
 } from "@/lib/types";
 import { custoDeMinutos } from "./custosOperacionais";
@@ -323,6 +324,91 @@ export function calcularCustoFicha(
       entrada.rendimento > 0
         ? Math.round(custoTotalLote / entrada.rendimento)
         : 0,
+  };
+}
+
+/** Uma linha da lista "O que vai dentro", para a parte dela no custo. */
+export interface LinhaComCusto {
+  id: string;
+  nome: string;
+  custo: Centavos;
+}
+
+/**
+ * A parte de cada linha no custo dos materiais, em percentual inteiro
+ * (`#d340`). O todo é a soma das linhas da lista, materiais e embalagem, e não
+ * o lote: a hora dela não é ingrediente, e "Nutella é 20% do lote" esconde a
+ * pergunta "o que eu troco?". Arredondada uma a uma, a soma pode não dar 100.
+ */
+export function parteDoCusto(
+  linhas: Pick<LinhaComCusto, "id" | "custo">[],
+): Map<string, number> {
+  const total = linhas.reduce((soma, linha) => soma + linha.custo, 0);
+  return new Map(
+    linhas.map((linha) => [
+      linha.id,
+      total > 0 ? Math.round((linha.custo / total) * 100) : 0,
+    ]),
+  );
+}
+
+/**
+ * Os que mais pesam, para a frase do bloco (`#d340`): os mais caros até a soma
+ * passar da metade, no máximo três. Só com 4 linhas ou mais: com três, os
+ * números já cabem no olho. `parte` é a soma deles, arredondada uma vez só.
+ */
+export function osQueMaisPesam(
+  linhas: LinhaComCusto[],
+): { nomes: string[]; parte: number } | null {
+  const total = linhas.reduce((soma, linha) => soma + linha.custo, 0);
+  if (linhas.length < 4 || total <= 0) return null;
+
+  const nomes: string[] = [];
+  let soma = 0;
+  for (const linha of [...linhas].sort((a, b) => b.custo - a.custo)) {
+    if (nomes.length === 3 || soma * 2 >= total) break;
+    nomes.push(linha.nome);
+    soma += linha.custo;
+  }
+  return { nomes, parte: Math.round((soma / total) * 100) };
+}
+
+/** O que `pesoDaMassa` lê de uma linha. `ItemDaFicha` serve. */
+export interface ItemParaPeso {
+  nomeSnapshot: string;
+  categoria: CategoriaInsumo;
+  unidadeBase: UnidadeBase;
+  quantidade: number;
+}
+
+export interface PesoDaMassa {
+  gramas: number;
+  /** Arredondado ao grama. Zero sem rendimento. */
+  porUnidade: number;
+  /** O que entra na massa sem peso conhecido: ml e un, na ordem da receita. */
+  semPeso: ItemParaPeso[];
+}
+
+/**
+ * Quanto pesa a massa de um lote e quanto dá por unidade (`#d340`): a soma do
+ * que está em gramas, fora a embalagem. O que está em ml ou em un fica fora e
+ * é dito pelo nome: densidade de essência e peso de ovo seriam número
+ * inventado com cara de certo.
+ */
+export function pesoDaMassa(
+  itens: ItemParaPeso[],
+  rendimento: number,
+): PesoDaMassa {
+  const massa = itens.filter(
+    (item) => !ehEmbalagem(item.categoria) && item.quantidade > 0,
+  );
+  const gramas = massa
+    .filter((item) => item.unidadeBase === "g")
+    .reduce((soma, item) => soma + item.quantidade, 0);
+  return {
+    gramas,
+    porUnidade: rendimento > 0 ? Math.round(gramas / rendimento) : 0,
+    semPeso: massa.filter((item) => item.unidadeBase !== "g"),
   };
 }
 

@@ -96,10 +96,10 @@ Logo abaixo da busca, antes da lista, quando a receita tem 4 ou mais materiais:
 
 ## Critérios de aceite
 
-- [ ] Toda linha com traço e porcentagem; a quarta coluna no desktop.
-- [ ] A frase dos que mais pesam, só com 4+ materiais.
-- [ ] O peso da massa sem inventar densidade.
-- [ ] Testes novos passam; portão de conclusão passa; `#d340`, `ESTADO.md`, `novidades.ts`.
+- [~] Toda linha com traço e porcentagem; a quarta coluna no desktop.
+- [x] A frase dos que mais pesam, só com 4+ materiais.
+- [x] O peso da massa sem inventar densidade.
+- [x] Testes novos passam; portão de conclusão passa; `#d340`, `ESTADO.md`, `novidades.ts`.
 
 ---
 

@@ -14,6 +14,9 @@ import {
   kitDividido,
   levaDoKit,
   opcoesDaEscolha,
+  osQueMaisPesam,
+  parteDoCusto,
+  pesoDaMassa,
   ordenarFichas,
   sobraMudouDeVerdade,
   podeSerComponente,
@@ -1312,4 +1315,109 @@ describe("refazerCustoPelaConfiguracao", () => {
       );
     },
   );
+});
+
+describe("parteDoCusto (#d340)", () => {
+  // O Cookie Cacau com Nutella do print: R$ 53,44 de materiais.
+  const cookie = [
+    { id: "nutella", nome: "Nutella", custo: 2112 },
+    { id: "chocolate", nome: "Chocolate meio amargo", custo: 820 },
+    { id: "farinha", nome: "Farinha", custo: 900 },
+    { id: "manteiga", nome: "Manteiga", custo: 1503 },
+    { id: "papel", nome: "Papel manteiga", custo: 9 },
+  ];
+
+  it("dá a parte de cada linha sobre a soma da lista", () => {
+    const partes = parteDoCusto(cookie);
+    expect(partes.get("nutella")).toBe(40);
+    expect(partes.get("papel")).toBe(0);
+  });
+
+  it("lista vazia e custo zero não dividem por zero", () => {
+    expect(parteDoCusto([]).size).toBe(0);
+    expect(parteDoCusto([{ id: "a", custo: 0 }]).get("a")).toBe(0);
+  });
+
+  it("a frase leva os mais caros até passar da metade", () => {
+    expect(osQueMaisPesam(cookie)).toEqual({
+      nomes: ["Nutella", "Manteiga"],
+      parte: 68,
+    });
+  });
+
+  it("um só que passa da metade vai sozinho", () => {
+    const linhas = [
+      { id: "a", nome: "A", custo: 60 },
+      { id: "b", nome: "B", custo: 20 },
+      { id: "c", nome: "C", custo: 10 },
+      { id: "d", nome: "D", custo: 10 },
+    ];
+    expect(osQueMaisPesam(linhas)).toEqual({ nomes: ["A"], parte: 60 });
+  });
+
+  it("no máximo três, mesmo sem chegar à metade", () => {
+    const linhas = Array.from({ length: 10 }, (_, i) => ({
+      id: String(i),
+      nome: String(i),
+      custo: 10,
+    }));
+    expect(osQueMaisPesam(linhas)?.nomes).toHaveLength(3);
+    expect(osQueMaisPesam(linhas)?.parte).toBe(30);
+  });
+
+  it("sem frase com menos de quatro linhas ou custo zero", () => {
+    expect(osQueMaisPesam(cookie.slice(0, 3))).toBeNull();
+    expect(
+      osQueMaisPesam(cookie.map((linha) => ({ ...linha, custo: 0 }))),
+    ).toBeNull();
+  });
+});
+
+describe("pesoDaMassa (#d340)", () => {
+  const item = (
+    nomeSnapshot: string,
+    quantidade: number,
+    unidadeBase: "g" | "ml" | "un" = "g",
+    categoria: "INGREDIENTE" | "EMBALAGEM" = "INGREDIENTE",
+  ) => ({ nomeSnapshot, quantidade, unidadeBase, categoria });
+
+  it("soma os gramas e diz o que ficou fora", () => {
+    const peso = pesoDaMassa(
+      [
+        item("Farinha", 826),
+        item("Nutella", 320),
+        item("Manteiga", 680),
+        item("Ovo", 2, "un"),
+        item("Essência de baunilha", 5, "ml"),
+      ],
+      16,
+    );
+    expect(peso.gramas).toBe(1826);
+    expect(peso.porUnidade).toBe(114);
+    expect(peso.semPeso.map((i) => i.nomeSnapshot)).toEqual([
+      "Ovo",
+      "Essência de baunilha",
+    ]);
+  });
+
+  it("receita só em un não tem peso", () => {
+    const peso = pesoDaMassa([item("Ovo", 4, "un")], 4);
+    expect(peso.gramas).toBe(0);
+    expect(peso.porUnidade).toBe(0);
+  });
+
+  it("embalagem em gramas fica fora da soma e da frase", () => {
+    const peso = pesoDaMassa(
+      [item("Farinha", 500), item("Fita", 30, "g", "EMBALAGEM")],
+      10,
+    );
+    expect(peso.gramas).toBe(500);
+    expect(peso.semPeso).toEqual([]);
+  });
+
+  it("rendimento zero dá a massa, sem o por unidade", () => {
+    const peso = pesoDaMassa([item("Farinha", 500)], 0);
+    expect(peso.gramas).toBe(500);
+    expect(peso.porUnidade).toBe(0);
+  });
 });

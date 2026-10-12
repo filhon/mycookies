@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-12",
+    titulo: "Cada material mostra quanto pesa no custo do produto",
+    frase:
+      "Na receita, cada material ganha um traço com a parte dele no custo, uma frase diz quais pesam mais, e o campo do rendimento diz quanto pesa a massa de cada unidade.",
+    href: "/fichas",
+  },
+  {
+    dataISO: "2026-10-12",
     titulo: "No computador, o preço do produto fica ao lado da receita",
     frase:
       "Na tela grande, o preço, o que sobra e o custo do lote ficam numa coluna à direita enquanto você mexe na receita, e os materiais viram colunas de quantidade e custo.",
