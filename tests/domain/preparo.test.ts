@@ -4,6 +4,9 @@ import {
   mencoesNoPasso,
   passosDoPreparo,
   preparoNaBancada,
+  relogio,
+  rotuloDoTempo,
+  tempoNoPasso,
   temQuantidadeEscrita,
 } from "@/lib/domain/preparo";
 
@@ -152,6 +155,60 @@ describe("temQuantidadeEscrita (#d350)", () => {
       "Bata a manteiga",
     ])
       expect(temQuantidadeEscrita(passo), passo).toBe(false);
+  });
+});
+
+describe("tempoNoPasso (#d351)", () => {
+  it("minutos, horas e segundos, com e sem espaço", () => {
+    const casos: [string, number][] = [
+      ["Asse por 12 minutos.", 720],
+      ["Asse por 12 min", 720],
+      ["asse 12min", 720],
+      ["Leve à geladeira por 1 hora", 3600],
+      ["Descanse 2 horas", 7200],
+      ["Asse por 1h30", 5400],
+      ["Asse por 1h30min", 5400],
+      ["Asse por 1 hora e 30 minutos", 5400],
+      ["Micro-ondas por 30 segundos", 30],
+      ["Micro-ondas por 30s", 30],
+      ["Deixe descansar por meia hora", 1800],
+      ["Asse por 1,5 hora", 5400],
+    ];
+    for (const [passo, segundos] of casos)
+      expect(tempoNoPasso(passo), passo).toBe(segundos);
+  });
+
+  it("faixa vale o menor", () => {
+    expect(tempoNoPasso("Asse de 10 a 12 minutos")).toBe(600);
+    expect(tempoNoPasso("Asse 12-10 min")).toBe(600);
+    expect(tempoNoPasso("Asse até dourar, 15 ou 18 minutos")).toBe(900);
+  });
+
+  it("o primeiro tempo, e o que não é tempo não casa", () => {
+    expect(tempoNoPasso("Asse a 180 °C por 12 minutos")).toBe(720);
+    expect(tempoNoPasso("Bata 3 minutos e descanse 30 minutos")).toBe(180);
+    expect(tempoNoPasso("Junte 2 a 3 ovos e bata 5 minutos")).toBe(300);
+    expect(tempoNoPasso("Descanse 1 hora 2 ovos")).toBe(3600);
+    for (const passo of ["Asse a 180 graus", "Junte 560 g", "Bata a manteiga"])
+      expect(tempoNoPasso(passo), passo).toBeNull();
+  });
+});
+
+describe("rotuloDoTempo e relogio (#d351)", () => {
+  it("o botão diz o tempo como se escreve", () => {
+    expect(rotuloDoTempo(720)).toBe("12 min");
+    expect(rotuloDoTempo(5400)).toBe("1h30");
+    expect(rotuloDoTempo(3600)).toBe("1 h");
+    expect(rotuloDoTempo(90)).toBe("1 min 30 s");
+    expect(rotuloDoTempo(30)).toBe("30 s");
+  });
+
+  it("o relógio conta para baixo e para no zero", () => {
+    expect(relogio(702)).toBe("11:42");
+    expect(relogio(701.2)).toBe("11:42");
+    expect(relogio(5)).toBe("0:05");
+    expect(relogio(3725)).toBe("1:02:05");
+    expect(relogio(-3)).toBe("0:00");
   });
 });
 

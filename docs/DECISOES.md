@@ -11324,3 +11324,42 @@ dizendo 560 g em 2 fornadas, o único lugar da bancada que mentia com a escala.
 (o plural só se acrescenta). "Leite condensado" sozinho casa o "leite" de "leite em pó" se o pó não
 for ingrediente da receita: a regra 2 só enxerga a lista da receita. Os passos casam os
 ingredientes da massa e os preparos pelo nome; os de dentro do preparo, não.
+
+## D351 · O relógio do passo
+
+**Status:** vigente · decidida em 2026-10-12, spec `145-o-relogio-do-passo.md`. Da crítica dos
+prints da bancada de 2026-10-12, item 10. **Reabre** o "Fora de escopo" da 138 ("Temporizador. O
+do forno e o do celular existem."), com a aprovação do Filipe e a resposta da Maynara.
+
+**Contexto.** O relógio do celular é sair do Rende com a mão suja e voltar procurando o passo; o
+do forno mede uma assadeira só, e com duas, uma entrando depois da outra, ela contava de cabeça.
+
+**Decisão.**
+
+- **O tempo escrito vira botão.** `tempoNoPasso` em `domain/preparo.ts` lê o **primeiro** tempo do
+  passo, em segundos: "12 minutos", "12 min", "1 hora", "2 horas", "1h30", "1h30min", "1 hora e 30
+  minutos", "30 segundos", "30s", "meia hora", "1,5 hora". **Faixa** ("10 a 12", "10-12", "15 ou
+  18") vale o **menor**: é a hora de olhar o forno, não de tirar. Os minutos depois da hora só valem
+  colados ou com a unidade: "1 hora 2 ovos" é 1 hora. Um botão por passo, mesmo com dois tempos
+  escritos: o nome da spec era `temposNoPasso`, e ficou no singular porque devolve um.
+- **No passo**, à direita, `Botao` secundário `sm` (44 px) com `Timer` e o tempo
+  (`rotuloDoTempo`: "12 min", "1h30", "1 h"), irmão da linha que marca e nunca dentro dela. Desliga
+  quando o passo já conta ou há três contando.
+- **A faixa** fica no `RodapeFixo`, acima do "Fiz a massa": o começo do passo cortado pela largura,
+  o que falta (`relogio`: "11:42", "1:02:05") e "Parar". Até três, um por linha. Embaixo, uma vez,
+  "Toca com a bancada aberta.". O fim da página e a margem de rolagem do passo da vez crescem com o
+  número de linhas.
+- **No zero**, a linha vira "Pronto: …" com `BellRing`, fundo e tinta de atenção e "Desligar", em
+  `role="alert"`. A cada dois segundos, `navigator.vibrate(200)` e um bipe de 880 Hz feito com
+  `AudioContext`, sem arquivo de som, até ela tocar na linha. O `AudioContext` nasce e é retomado
+  no toque do botão do passo, que é o gesto que o navegador exige.
+- **O fim é horário** (`Date.now() + duração`) e mora nas marcas da aba (`sessionStorage`, `#d343`),
+  com a duração ao lado para o relógio nunca mostrar mais que o tempo dado. Sair e voltar mantém o
+  relógio certo. "Começar de novo" e registrar a massa limpam as marcas, **não os relógios**: o
+  forno não sabe da tigela.
+
+**Consequência.** Sem push, nada toca com o app fechado ou a tela bloqueada; com a bancada aberta
+a tela não apaga (`useTelaAcesa`). Depois de recarregar a aba, os relógios voltam, mas o som só
+volta no próximo toque no botão de um passo; a vibração e a linha não dependem dele. Registrar a
+massa leva ao produto, e o relógio que ainda contava só toca quando ela volta à bancada, já como
+"Pronto".

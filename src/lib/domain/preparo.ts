@@ -160,6 +160,58 @@ export function temQuantidadeEscrita(passo: string): boolean {
   return QUANTIDADE_ESCRITA.test(chaveDeBusca(passo));
 }
 
+const NUMERO = "(\\d+(?:[.,]\\d+)?)";
+const MINUTOS = "(?:min|minutos?)";
+/**
+ * "12 minutos", "10 a 12 min", "1h30", "1 hora e 30 minutos", "30 segundos",
+ * "meia hora". Os minutos depois da hora só valem colados ("1h30") ou com a
+ * unidade ("1 hora e 30 min"): "1 hora 2 ovos" não é 1h02.
+ */
+const TEMPO = new RegExp(
+  `(?<!${LETRA})(?:${NUMERO}\\s*(?:a|ate|ou|-|–)\\s*)?${NUMERO}\\s*` +
+    `(?:(h|horas?)(?:\\s*(?:e\\s*)?(\\d{1,2})\\s*${MINUTOS}|(\\d{2}))?|(${MINUTOS})|(s|seg|segundos?))(?!${LETRA})` +
+    `|(?<!${LETRA})meia hora(?!${LETRA})`,
+  "u",
+);
+
+const numero = (texto: string) => Number(texto.replace(",", "."));
+
+/**
+ * O primeiro tempo escrito no passo, em segundos, ou `null` (`#d351`). Faixa
+ * ("10 a 12 minutos") vale o menor: é a hora de olhar o forno, não de tirar.
+ */
+export function tempoNoPasso(passo: string): number | null {
+  const achado = TEMPO.exec(chaveDeBusca(passo));
+  if (!achado) return null;
+  const [, faixa, valor, hora, minutosDepois, minutosColados, minuto] = achado;
+  if (!valor) return 30 * 60; // meia hora
+  const quanto = faixa ? Math.min(numero(faixa), numero(valor)) : numero(valor);
+  const extra = numero(minutosDepois ?? minutosColados ?? "0") * 60;
+  const segundos = Math.round(
+    hora ? quanto * 3600 + extra : minuto ? quanto * 60 : quanto,
+  );
+  return segundos > 0 ? segundos : null;
+}
+
+/** 720 → "12 min", 5400 → "1h30", 3600 → "1 h", 90 → "1 min 30 s". */
+export function rotuloDoTempo(segundos: number): string {
+  const h = Math.floor(segundos / 3600);
+  const min = Math.floor((segundos % 3600) / 60);
+  const s = segundos % 60;
+  if (h > 0) return min > 0 ? `${h}h${String(min).padStart(2, "0")}` : `${h} h`;
+  if (min > 0) return s > 0 ? `${min} min ${s} s` : `${min} min`;
+  return `${s} s`;
+}
+
+/** O que falta, em relógio: 702 → "11:42", 3725 → "1:02:05". Nunca negativo. */
+export function relogio(segundos: number): string {
+  const total = Math.max(0, Math.ceil(segundos));
+  const h = Math.floor(total / 3600);
+  const mm = String(Math.floor((total % 3600) / 60)).padStart(h ? 2 : 1, "0");
+  const ss = String(total % 60).padStart(2, "0");
+  return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
 /**
  * O preparo aberto na bancada da receita de cima (`#d349`): o que o pote dá e
  * os ingredientes de dentro, na quantidade que esta massa pede.

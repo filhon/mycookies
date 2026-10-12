@@ -9,6 +9,7 @@
 **Aprovações pedidas:** **reabrir a decisão da 138**. Nada começa sem ela e sem a resposta da
 Maynara abaixo.
 **Decisões a registrar:** `#d351`, se aprovada.
+**Aprovada** em 2026-10-12 (a 138 reaberta, a Maynara respondeu) e codificada; ver `#d351`.
 
 ---
 
