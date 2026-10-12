@@ -10852,3 +10852,48 @@ hoje" mesmo quando um deles não tem preço e ficou fora da soma.
 
 **Consequência.** O leitor de tela lê "16 un", e não "16 unidades", como na despensa. Sem coluna em
 reais: o valor está no resumo (`#d337`).
+
+---
+
+## D339 · O produto no computador
+
+**Status:** vigente · decidida em 2026-10-12, spec `134-o-produto-no-computador.md`.
+
+**Contexto.** A 1864 px, o número que ela abre o produto para ver (custo, preço e sobra) morava
+numa tira de 1024 px colada na borda de baixo do monitor; "O custo do lote", com a faixa de
+composição, só aparecia depois dos quinze materiais; e cada linha de material tinha a quantidade
+numa ponta, o custo na outra e ≈ 600 px de papel no meio.
+
+**Decisão.**
+
+- **A coluna do pedido (`#d274`), a partir de `2xl`.** `/fichas/[id]` saiu de `(coluna)` e põe a
+  própria largura: `max-w-5xl`, e `max-w-324` a partir de `2xl`. A grade é a mesma,
+  `minmax(0,59rem) 20rem`, e a coluna fica presa sob o cabeçalho com rolagem própria. Nela, de
+  cima para baixo: custo da unidade, sugerido com "Usar", o campo "Preço de venda", a frase da
+  sobra e, embaixo, "O custo do lote" com a faixa, as parcelas, o lote inteiro e a divisão. Sem
+  botão: o "Salvar" é do cabeçalho (`#d271`). Abaixo de `2xl`, o rodapé de sempre.
+- **Um miolo, duas cascas, trocadas por consulta de mídia.** `PainelPreco` desenha `MioloPreco`
+  (métricas, campo e `explicar()`) dentro de `RodapeFixo` ou da `<aside>`, conforme
+  `useMediaQuery("(min-width: 96rem)")`, o `2xl` do Tailwind. Diferente do pedido, cujo resumo é
+  só leitura e vai duas vezes no DOM com `2xl:hidden` / `hidden 2xl:block`: aqui o miolo tem o
+  campo de preço, e dois campos seriam dois "Preço de venda" no formulário. Um só existe, e o Tab
+  o alcança uma vez. O teclado aberto (`apertado:`, `#d75`) segue no miolo, sem mudança.
+- **O custo do lote vai duas vezes, como o resumo do pedido.** É só leitura: o mesmo fragmento no
+  bloco da esquerda, com `2xl:hidden`, e na coluna. O mesmo número em dois lugares da mesma tela
+  seria dois lugares para conferir.
+- **O que vai dentro vira grade a partir de `lg`**, dentro da coluna de 1024 px, como a contagem
+  (`#d334`): Material · Quantidade · Custo e o botão de remover, em
+  `minmax(0,1fr) 12rem 8rem 2.75rem` (`COLUNAS_ITEM_FICHA`, exportada de `LinhaItemFicha.tsx` para
+  a 135 acrescentar a quarta). A quantidade tem 12rem porque o campo de 96 px e o seletor de
+  unidade de 80 px vão lado a lado. A mesma `<li>`: os invólucros do celular viram `lg:contents`
+  e o erro desce para uma linha própria, sob as três colunas (`lg:order-last`). Os produtos do kit
+  usam a mesma grade, com "Produto" na primeira coluna e "× R$ 1,20" na da quantidade; a escolha
+  da cliente fica como está, porque o detalhe embaixo não cabe em coluna.
+- **Cabeçalho de colunas uma vez**, acima da lista e só com linha nela, `aria-hidden`; o nome e o
+  custo levam o rótulo em `sr-only` só no desktop. A quantidade não: o campo já se chama
+  "Quantidade de Nutella", como o campo "Hoje" da contagem.
+
+**Consequência.** O leitor de tela lê "Quantidade de Nutella, 320", com a unidade logo depois, e
+não "Quantidade, 320 g" como o roteiro da spec escreve. Na janela de 1536 px o formulário encolhe
+para caber a coluna, como no pedido. A ordem dos blocos (a produção no topo, "Mais detalhes" antes
+da receita) continua a de antes: pede roteiro com a Maynara.

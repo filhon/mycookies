@@ -6,8 +6,9 @@ import type { ReactNode } from "react";
  * dentro, então os editores continuam alinhados com o rodapé de preço. As
  * tabelas de `/fichas`, `/insumos` e `/pedidos` ficam fora deste grupo e ocupam
  * a largura que têm (`#d225`, `#d253`); os editores delas continuam aqui,
- * menos o de pedido, que põe a própria largura para o resumo à direita em
- * `2xl` (`#d274`), e a Configuração, pelo custo por hora (`#d283`).
+ * menos o de pedido e o de produto, que põem a própria largura para a coluna à
+ * direita em `2xl` (`#d274`, `#d339`), e a Configuração, pelo custo por hora
+ * (`#d283`).
  *
  * Na impressão a folha do orçamento é a página inteira (`#d106`).
  */

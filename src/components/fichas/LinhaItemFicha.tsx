@@ -17,11 +17,43 @@ const CLASSES_QUANTIDADE = cn(
 );
 
 /**
+ * As colunas do desktop (`#d339`): o nome, a quantidade com a unidade, o custo
+ * da linha e o botão de remover. A quantidade tem 12rem porque o campo de 96px
+ * mais o seletor de unidade de 80px precisam caber lado a lado.
+ */
+export const COLUNAS_ITEM_FICHA =
+  "lg:grid-cols-[minmax(0,1fr)_12rem_8rem_2.75rem]";
+
+/**
+ * O cabeçalho das colunas, uma vez acima da lista. `aria-hidden`: cada célula
+ * já diz o próprio rótulo ao leitor de tela.
+ */
+export function CabecalhoItensFicha({ primeira }: { primeira: string }) {
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "hidden gap-x-6 px-5 pb-2 text-micro font-semibold uppercase tracking-wide text-ink-muted lg:grid",
+        COLUNAS_ITEM_FICHA,
+      )}
+    >
+      <span>{primeira}</span>
+      <span>Quantidade</span>
+      <span className="text-right">Custo</span>
+    </div>
+  );
+}
+
+/**
  * O esqueleto comum das duas listas do editor: nome em cima, quantidade e
  * custo da linha embaixo, e o botão de remover sempre no mesmo lugar.
  *
  * Linha com divisória, e não cartão: isto é uma tabela de receita, e cartão
  * dentro de cartão seria a segunda caixa em volta do mesmo dado.
+ *
+ * Com `colunas`, a mesma `<li>` vira colunas a partir de `lg` (`#d339`): os
+ * invólucros do celular viram `lg:contents` e o erro desce para uma linha
+ * própria, embaixo das três colunas.
  */
 function Linha({
   nome,
@@ -32,6 +64,7 @@ function Linha({
   aoRemover,
   rotuloRemover,
   erro,
+  colunas,
 }: {
   /** Sem nome, os controles são a primeira linha: é o caso da escolha. */
   nome?: string;
@@ -43,23 +76,47 @@ function Linha({
   aoRemover: () => void;
   rotuloRemover: string;
   erro?: string;
+  /** O nome da primeira coluna ("Material", "Produto"); sem ele, sem grade. */
+  colunas?: string;
 }) {
+  const grade = colunas !== undefined;
   return (
-    <li className="px-4 py-3 lg:px-5">
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
+    <li
+      className={cn(
+        "px-4 py-3 lg:px-5",
+        grade && ["lg:grid lg:items-center lg:gap-x-6", COLUNAS_ITEM_FICHA],
+      )}
+    >
+      <div className={cn("flex items-start gap-3", grade && "lg:contents")}>
+        <div className={cn("min-w-0 flex-1", grade && "lg:contents")}>
           {nome && (
-            <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
               <span className="truncate text-body font-medium text-ink">
+                {grade && (
+                  <span className="sr-only hidden lg:inline">{colunas}, </span>
+                )}
                 {nome}
               </span>
               {etiqueta}
             </p>
           )}
 
-          <div className={cn("flex items-center gap-2", nome && "mt-2")}>
-            {controles}
+          <div
+            className={cn(
+              "flex items-center gap-2",
+              nome && "mt-2",
+              grade && "lg:contents",
+            )}
+          >
+            {grade ? (
+              <div className="flex items-center gap-2">{controles}</div>
+            ) : (
+              controles
+            )}
             <span className="ml-auto text-right">
+              {grade && (
+                <span className="sr-only hidden lg:inline">Custo, </span>
+              )}
               <Dinheiro centavos={custoLinha} />
             </span>
           </div>
@@ -67,7 +124,13 @@ function Linha({
           {detalhe && <div className="mt-1.5">{detalhe}</div>}
 
           {erro && (
-            <p role="alert" className="mt-1.5 text-label text-negative">
+            <p
+              role="alert"
+              className={cn(
+                "mt-1.5 text-label text-negative",
+                grade && "lg:order-last lg:col-span-3",
+              )}
+            >
               {erro}
             </p>
           )}
@@ -116,6 +179,7 @@ export function LinhaItemFicha({
       aoRemover={aoRemover}
       rotuloRemover={`Tirar ${nome} do produto`}
       erro={erro}
+      colunas="Material"
       controles={
         <>
           <input
@@ -173,6 +237,7 @@ export function LinhaComponenteFicha({
       aoRemover={aoRemover}
       rotuloRemover={`Tirar ${nome} do kit`}
       erro={erro}
+      colunas="Produto"
       controles={
         <>
           <input

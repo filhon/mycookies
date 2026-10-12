@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-12",
+    titulo: "No computador, o preço do produto fica ao lado da receita",
+    frase:
+      "Na tela grande, o preço, o que sobra e o custo do lote ficam numa coluna à direita enquanto você mexe na receita, e os materiais viram colunas de quantidade e custo.",
+    href: "/fichas",
+  },
+  {
+    dataISO: "2026-10-12",
     titulo:
       "No computador, a contagem do pronto mostra a última contagem e o esperado lado a lado",
     frase:

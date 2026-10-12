@@ -1,0 +1,100 @@
+# Auditoria de páginas
+
+Controle do procedimento "o que a página X não tem comparada a serviços que faturam com
+assinatura", rodado página a página com `/impeccable` e `/frontend-design` sobre prints de
+celular e desktop. Cada crítica vira uma série de specs; a página conta como **melhorada**
+quando a série inteira está codificada.
+
+Levantado em 2026-10-12 a partir do campo **Origem** das specs e de `docs/ESTADO.md`.
+"Codificada" não quer dizer publicada nem com roteiro de navegador rodado: isso continua em
+`ESTADO.md`.
+
+## O prompt
+
+```
+Use o /impeccable e o /frontend-design e me responda:
+
+O que a minha página "X" @página_X não tem comparada a outros serviços, similares ou não,
+que faturam milhares de reais por mês com assinatura? O que temos e podemos melhorar
+substancialmente?
+
+Não analise apenas o código, me visualize os prints que anexei.
+
+Escreva spec (ou specs) para implementação com os achados.
+```
+
+Ao terminar uma página, mude a linha dela aqui (status, data, specs).
+
+---
+
+## App (logada)
+
+| Página                 | Rota                                      | Arquivo                                                                  | Status       | Crítica    | Specs   |
+| ---------------------- | ----------------------------------------- | ------------------------------------------------------------------------ | ------------ | ---------- | ------- |
+| Hoje                   | `/`                                       | `src/app/(app)/(coluna)/page.tsx`                                        | ✅ melhorada | 2026-09-25 | 045–048 |
+| Materiais              | `/insumos`                                | `src/app/(app)/insumos/page.tsx`                                         | ✅ melhorada | 2026-09-26 | 049–052 |
+| Produtos               | `/fichas`                                 | `src/app/(app)/fichas/page.tsx`                                          | ✅ melhorada | 2026-09-26 | 053–056 |
+| Pedidos                | `/pedidos`                                | `src/app/(app)/pedidos/page.tsx`                                         | ✅ melhorada | 2026-10-01 | 062–066 |
+| Caixa                  | `/financeiro`                             | `src/app/(app)/(coluna)/financeiro/page.tsx`                             | ✅ melhorada | 2026-10-02 | 069–074 |
+| Pedido (abrir / novo)  | `/pedidos/[id]`                           | `src/app/(app)/pedidos/[id]/page.tsx`                                    | ✅ melhorada | 2026-10-02 | 075–081 |
+| Configuração           | `/configuracao`                           | `src/app/(app)/configuracao/page.tsx`                                    | ✅ melhorada | 2026-10-03 | 082–087 |
+| Ler uma nota           | `/insumos/nota`                           | `src/app/(app)/(coluna)/insumos/nota/page.tsx`                           | ✅ melhorada | 2026-10-05 | 088–092 |
+| Como funciona          | `/comecar`                                | `src/app/(app)/(coluna)/comecar/page.tsx`                                | ✅ melhorada | 2026-10-08 | 093–097 |
+| Compras                | `/compras`                                | `src/app/(app)/(coluna)/compras/page.tsx`                                | ✅ melhorada | 2026-10-08 | 098–104 |
+| Clientes               | `/clientes`                               | `src/app/(app)/clientes/page.tsx`                                        | ✅ melhorada | 2026-10-09 | 105–109 |
+| Contagem da despensa   | `/insumos/contagem`                       | `src/app/(app)/(coluna)/insumos/contagem/page.tsx`                       | ✅ melhorada | 2026-10-11 | 125–129 |
+| Contagem do pronto     | `/fichas/contagem`                        | `src/app/(app)/(coluna)/fichas/contagem/page.tsx`                        | ✅ melhorada | 2026-10-12 | 130–133 |
+| Produto (abrir / novo) | `/fichas/[id]`                            | `src/app/(app)/(coluna)/fichas/[id]/page.tsx`                            | ⬜ pendente  |            |         |
+| Orçamento em papel     | `/pedidos/[id]/orcamento`                 | `src/app/(app)/(coluna)/pedidos/[id]/orcamento/page.tsx`                 | ⬜ pendente  |            |         |
+| Relatório do MEI       | `/financeiro/relatorio-mei/[competencia]` | `src/app/(app)/(coluna)/financeiro/relatorio-mei/[competencia]/page.tsx` | ⬜ pendente  |            |         |
+
+## Estrutura comum (não é página, mas aparece em todas)
+
+| Peça                                     | Status       | Crítica    | Specs   |
+| ---------------------------------------- | ------------ | ---------- | ------- |
+| Barra lateral, cabeçalho, barra de baixo | ✅ melhorada | 2026-09-30 | 057–060 |
+
+## Entrada e assinatura
+
+| Página                   | Rota                      | Arquivo                                          | Status       | Crítica    | Specs   |
+| ------------------------ | ------------------------- | ------------------------------------------------ | ------------ | ---------- | ------- |
+| Entrar                   | `/login`                  | `src/app/(auth)/login/page.tsx`                  | ✅ melhorada | 2026-09-25 | 041–043 |
+| Criar conta              | `/cadastro`               | `src/app/(auth)/cadastro/page.tsx`               | ⬜ pendente  |            |         |
+| Senha nova               | `/redefinir-senha`        | `src/app/(auth)/redefinir-senha/page.tsx`        | ⬜ pendente  |            |         |
+| Assinatura               | `/assinatura`             | `src/app/(auth)/assinatura/page.tsx`             | ⬜ pendente  |            |         |
+| Confirmando a assinatura | `/assinatura/confirmando` | `src/app/(auth)/assinatura/confirmando/page.tsx` | ⬜ pendente  |            |         |
+| Termos                   | `/termos`                 | `src/app/(auth)/termos/page.tsx`                 | ⬜ pendente  |            |         |
+| Privacidade              | `/privacidade`            | `src/app/(auth)/privacidade/page.tsx`            | ⬜ pendente  |            |         |
+
+## Públicas
+
+| Página                         | Rota                                       | Arquivo                                                    | Status       | Crítica    | Specs            |
+| ------------------------------ | ------------------------------------------ | ---------------------------------------------------------- | ------------ | ---------- | ---------------- |
+| Página do Rende (venda)        | `/conheca`                                 | `src/app/conheca/page.tsx`                                 | 🟡 parcial   | 2026-09-24 | 038–040, 067     |
+| Cardápio público               | `/c/[contaId]`                             | `src/app/c/[contaId]/page.tsx`                             | ✅ melhorada | 2026-10-10 | 112–116, 120–124 |
+| Pedido que a cliente acompanha | `/c/[contaId]/pedido/[pedidoId]/[chave]`   | `src/app/c/[contaId]/pedido/[pedidoId]/[chave]/page.tsx`   | ⬜ pendente  |            |                  |
+| Preço de doces                 | `/como-calcular-o-preco-de-doces`          | `src/app/como-calcular-o-preco-de-doces/page.tsx`          | ⬜ pendente  |            |                  |
+| Preço do bolo de pote          | `/como-calcular-o-preco-do-bolo-de-pote`   | `src/app/como-calcular-o-preco-do-bolo-de-pote/page.tsx`   | ⬜ pendente  |            |                  |
+| Preço do bolo por quilo        | `/como-calcular-o-preco-do-bolo-por-quilo` | `src/app/como-calcular-o-preco-do-bolo-por-quilo/page.tsx` | ⬜ pendente  |            |                  |
+| Preço do brigadeiro            | `/como-calcular-o-preco-do-brigadeiro`     | `src/app/como-calcular-o-preco-do-brigadeiro/page.tsx`     | ⬜ pendente  |            |                  |
+| Preço do cookie                | `/como-calcular-o-preco-do-cookie`         | `src/app/como-calcular-o-preco-do-cookie/page.tsx`         | ⬜ pendente  |            |                  |
+| Sem rede                       | `/offline`                                 | `src/app/offline/page.tsx`                                 | ⬜ pendente  |            |                  |
+
+---
+
+## Notas
+
+- **`/conheca` está parcial** porque a crítica de 2026-09-24 ("crítica da página de venda") é
+  anterior ao procedimento com prints e não foi feita com `/frontend-design`; a 067 veio de
+  conversa, não de crítica. Vale refazer com o prompt acima.
+- **Nasceram de spec, nunca foram auditadas:** `/fichas/[id]` (várias specs tocaram no editor,
+  nenhuma crítica o olhou inteiro), `/pedidos/[id]/orcamento` (017), `/financeiro/relatorio-mei/...` (074),
+  `/cadastro` (027), `/redefinir-senha` (042), `/assinatura` (028, 110), a página do pedido da
+  cliente (117) e as cinco páginas de preço (037, 068).
+- **A ordem sugerida para as pendentes**, pelo que pesa no uso e na venda:
+  1. `/fichas/[id]`, a tela do preço, que é o motivo de o Rende existir.
+  2. `/cadastro` e `/assinatura`, a porta de entrada e a de pagamento.
+  3. A página do pedido da cliente, que é o Rende visto por quem compra.
+  4. `/pedidos/[id]/orcamento` e o relatório do MEI, que saem em papel.
+  5. As cinco páginas de preço, com a mesma crítica valendo para as cinco.
+  6. `/redefinir-senha`, `/assinatura/confirmando`, `/termos`, `/privacidade`, `/offline`.

@@ -13,7 +13,11 @@ import {
   formatarPercentual,
 } from "@/lib/domain/money";
 import type { Centavos } from "@/lib/types";
+import { useMediaQuery } from "@/lib/hooks/useDispositivo";
 import { cn } from "@/lib/utils/cn";
+
+/** O `2xl` do Tailwind: a partir dele o preço é coluna, e não rodapé. */
+const LARGO = "(min-width: 96rem)";
 
 type Tom = "neutro" | "positivo" | "atencao" | "negativo";
 
@@ -53,27 +57,74 @@ function Metrica({
   );
 }
 
-/**
- * O painel que fica preso ao pé da tela enquanto ela monta a receita.
- *
- * Preso porque a pergunta que trouxe a Maynara até aqui — "quanto sobra pra
- * mim?" — não pode depender de rolar até o fim de uma lista de ingredientes.
- * Custo, preço e sobra ficam juntos: preço sozinho não informa nada.
- */
-export function PainelPreco({
-  derivado,
-  precoManual,
-  rendimentoValido,
-  aoMudarPreco,
-  aoUsarSugerido,
-}: {
+interface PropsPreco {
   derivado: DerivadosFicha;
   /** A usuária sobrescreveu o preço sugerido. */
   precoManual: boolean;
   rendimentoValido: boolean;
   aoMudarPreco: (centavos: Centavos) => void;
   aoUsarSugerido: () => void;
+}
+
+/**
+ * O painel que fica preso enquanto ela monta a receita.
+ *
+ * Preso porque a pergunta que trouxe a Maynara até aqui — "quanto sobra pra
+ * mim?" — não pode depender de rolar até o fim de uma lista de ingredientes.
+ * Custo, preço e sobra ficam juntos: preço sozinho não informa nada.
+ *
+ * Duas cascas do mesmo miolo (`#d339`): o rodapé abaixo de `2xl` e, a partir
+ * dele, a coluna à direita do formulário, com o custo do lote embaixo. A troca
+ * é por consulta de mídia, e não por CSS, porque o miolo tem o campo de preço:
+ * desenhado duas vezes, seriam dois campos com o mesmo nome no formulário.
+ */
+export function PainelPreco({
+  custoDoLote,
+  ...props
+}: PropsPreco & {
+  /** A faixa e as parcelas, que na coluna moram embaixo do preço. */
+  custoDoLote: ReactNode;
 }) {
+  const largo = useMediaQuery(LARGO);
+
+  if (!largo) {
+    return (
+      // `noPe`: o editor não tem navegação inferior no celular (`#d152`).
+      <RodapeFixo noPe>
+        <MioloPreco {...props} />
+      </RodapeFixo>
+    );
+  }
+
+  // Presa logo abaixo do cabeçalho, como o resumo do pedido (`#d274`), com
+  // rolagem própria se o kit for longo. Sem botão: o "Salvar" é do cabeçalho.
+  return (
+    <aside
+      aria-label="Preço e custo"
+      className="sticky top-[calc(var(--fundo-cabecalho,0px)+1rem)] mt-4 max-h-[calc(100dvh-var(--fundo-cabecalho,0px)-2rem)] overflow-y-auto rounded-lg border border-line bg-surface"
+    >
+      <MioloPreco {...props} emColuna />
+      <section aria-labelledby="custo-do-lote-coluna" className="px-5 py-4">
+        <h2
+          id="custo-do-lote-coluna"
+          className="text-micro font-medium uppercase tracking-wide text-ink-muted"
+        >
+          O custo do lote
+        </h2>
+        <div className="mt-3 space-y-4">{custoDoLote}</div>
+      </section>
+    </aside>
+  );
+}
+
+function MioloPreco({
+  derivado,
+  precoManual,
+  rendimentoValido,
+  aoMudarPreco,
+  aoUsarSugerido,
+  emColuna = false,
+}: PropsPreco & { emColuna?: boolean }) {
   const { custo, verificacao } = derivado;
   const lucro = verificacao.lucroUnitario;
 
@@ -186,12 +237,12 @@ export function PainelPreco({
   const { tom, correcao, icone, mensagem } = explicar();
 
   return (
-    // `noPe`: o editor não tem navegação inferior no celular (`#d152`).
-    <RodapeFixo noPe>
+    <>
       {/* Em espaço apertado os três cabem numa linha só: o rótulo encurta, os
           vãos fecham e o campo estreita. O `flex-wrap` fica de rede — num
           aparelho estreito com preço de três dígitos ele quebra em duas linhas
-          em vez de o número ser cortado pelo `overflow-hidden` do cartão. */}
+          em vez de o número ser cortado pelo `overflow-hidden` do cartão. Na
+          coluna o campo ocupa a largura e desce para baixo dos dois números. */}
       <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 px-4 py-3 apertado:gap-x-3 lg:px-5">
         <div className="flex gap-5 apertado:gap-3">
           <Metrica
@@ -228,7 +279,7 @@ export function PainelPreco({
           valor={derivado.precoVenda}
           aoMudar={aoMudarPreco}
           rotuloSomeApertado
-          className="w-36 shrink-0 apertado:w-32"
+          className={emColuna ? "w-full" : "w-36 shrink-0 apertado:w-32"}
         />
       </div>
 
@@ -240,12 +291,13 @@ export function PainelPreco({
         className={cn(
           "flex items-start gap-2.5 border-t px-4 py-2.5 text-label lg:px-5",
           TONS[tom],
+          emColuna && "border-b",
           !correcao && "apertado:hidden",
         )}
       >
         {icone}
         <p className="max-w-[64ch]">{mensagem}</p>
       </div>
-    </RodapeFixo>
+    </>
   );
 }

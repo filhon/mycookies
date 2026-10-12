@@ -43,6 +43,7 @@ import { FraseDoPronto } from "@/components/producao/FraseDaCapacidade";
 import { FraseDaQuebra } from "@/components/producao/FraseDaQuebra";
 import { PainelFornada } from "@/components/producao/PainelFornada";
 import {
+  CabecalhoItensFicha,
   LinhaComponenteFicha,
   LinhaEscolhaFicha,
   LinhaItemFicha,
@@ -718,6 +719,109 @@ export function FormularioFicha({
 
   const titulo = valores.nome.trim() || (ficha ? ficha.nome : "Novo produto");
 
+  // Desenhado duas vezes, como o resumo do pedido (`#d274`): no bloco da
+  // coluna da esquerda abaixo de `2xl`, e embaixo do preço a partir dele.
+  // Só leitura, sem campo: o DOM dobrado não pesa na ordem do Tab.
+  const custoDoLote = (
+    <>
+      {/* A faixa de composição (`#d126`): as linhas abaixo são a legenda,
+        e a de "Seu trabalho" é a única colorida, para casar com o
+        segmento âmbar. Custo zero, faixa nenhuma. */}
+      <FaixaDeComposicao
+        segmentos={composicaoDoLote(derivado.custo)}
+        className="mb-4 max-w-xl"
+      />
+      {/* Recibo, não tabela: a coluna para antes da borda para o rótulo e o
+        valor não ficarem em pontas opostas da tela. */}
+      <dl className="max-w-xl space-y-2 text-label">
+        <Parcela
+          rotulo={ROTULO_PARCELA.custoInsumos}
+          valor={derivado.custo.custoInsumos}
+        />
+        <Parcela
+          rotulo={ROTULO_PARCELA.custoEmbalagem}
+          valor={derivado.custo.custoEmbalagem}
+        />
+        {ehKit && (
+          <Parcela
+            rotulo={ROTULO_PARCELA.custoComponentes}
+            valor={derivado.custo.custoComponentes}
+          />
+        )}
+        {kitComEscolhas && (
+          <Parcela
+            rotulo={ROTULO_PARCELA.custoEscolhas}
+            valor={derivado.custo.custoEscolhas}
+          />
+        )}
+        <Parcela
+          rotulo={ROTULO_PARCELA.custoMaoDeObra}
+          valor={derivado.custo.custoMaoDeObra}
+          destaque
+        />
+        <Parcela
+          rotulo={ROTULO_PARCELA.custoEnergiaGas}
+          valor={derivado.custo.custoEnergiaGas}
+        />
+        <Parcela
+          rotulo={ROTULO_PARCELA.custoIndireto}
+          valor={derivado.custo.custoIndireto}
+        />
+
+        <div className="flex items-baseline justify-between gap-4 border-t border-line pt-2">
+          <dt className="font-medium text-ink">Custo do lote inteiro</dt>
+          <dd>
+            <Dinheiro centavos={derivado.custo.custoTotalLote} />
+          </dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-4">
+          <dt className="text-ink-muted">
+            Dividido por{" "}
+            {rendimento > 0
+              ? rotuloDaQuantidade(rendimento, valores.unidadeRendimento)
+              : `— ${ROTULO_UNIDADE_RENDIMENTO[valores.unidadeRendimento]}`}
+          </dt>
+          <dd>
+            <Dinheiro centavos={derivado.custo.custoUnitario} />
+          </dd>
+        </div>
+      </dl>
+
+      {/* O custo de referência sem a faixa é um número que ela não tem
+        como conferir: a mais barata e a mais cara, por unidade. */}
+      {kitComEscolhas &&
+        rendimento > 0 &&
+        custoEscolhas.minimo !== custoEscolhas.maximo && (
+          <p className="num text-label text-ink-muted">
+            Custa de{" "}
+            {formatarMoeda(
+              Math.round(
+                (derivado.custo.custoTotalLote -
+                  custoEscolhas.maximo +
+                  custoEscolhas.minimo) /
+                  rendimento,
+              ),
+            )}{" "}
+            a {formatarMoeda(derivado.custo.custoUnitario)} conforme a escolha.
+            O preço fecha na mais cara, e por isso fecha em todas.
+          </p>
+        )}
+      {custoEscolhas.semOpcao.length > 0 && (
+        <p className="flex items-start gap-2 text-label text-attention">
+          <TriangleAlert
+            aria-hidden
+            className="mt-0.5 size-4 shrink-0"
+            strokeWidth={1.75}
+          />
+          <span>
+            Nenhuma receita serve em {custoEscolhas.semOpcao.join(", ")}: essa
+            parte do custo está zerada até haver uma.
+          </span>
+        </p>
+      )}
+    </>
+  );
+
   return (
     <>
       <CabecalhoPagina
@@ -744,270 +848,581 @@ export function FormularioFicha({
         </p>
       )}
 
-      {/* Espaço no pé para o painel de preço não cobrir o último bloco. */}
-      <div className="mt-4 space-y-4 pb-32 lg:pb-40">
-        {/* Sem configuração salva, a ficha calcula com a sugerida inteira e
+      {/* A partir de `2xl` o preço é a coluna à direita, presa (`#d339`). */}
+      <div className="2xl:grid 2xl:grid-cols-[minmax(0,59rem)_20rem] 2xl:items-start 2xl:gap-8">
+        {/* Espaço no pé para o painel de preço não cobrir o último bloco. */}
+        <div className="mt-4 space-y-4 pb-32 lg:pb-40 2xl:pb-8">
+          {/* Sem configuração salva, a ficha calcula com a sugerida inteira e
             diz isso (`DECISOES.md#d114`): zero também é um número inventado,
             e o pior deles. */}
-        {configuracao === null && (
-          <Faixa tom="atencao">
-            <p>
-              Seu tempo está a{" "}
-              {formatarMoeda(
-                CONFIGURACAO_SUGERIDA.operacional.valorHoraTrabalho,
-              )}{" "}
-              a hora, e o gás e a energia no valor sugerido. Ajuste em
-              Configuração e veja o preço mudar.
-            </p>
-            <Link
-              href="/configuracao"
-              className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-brand-ink underline underline-offset-2"
-            >
-              <Settings aria-hidden className="size-4" strokeWidth={1.75} />
-              Informar meus custos operacionais
-            </Link>
-          </Faixa>
-        )}
+          {configuracao === null && (
+            <Faixa tom="atencao">
+              <p>
+                Seu tempo está a{" "}
+                {formatarMoeda(
+                  CONFIGURACAO_SUGERIDA.operacional.valorHoraTrabalho,
+                )}{" "}
+                a hora, e o gás e a energia no valor sugerido. Ajuste em
+                Configuração e veja o preço mudar.
+              </p>
+              <Link
+                href="/configuracao"
+                className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-brand-ink underline underline-offset-2"
+              >
+                <Settings aria-hidden className="size-4" strokeWidth={1.75} />
+                Informar meus custos operacionais
+              </Link>
+            </Faixa>
+          )}
 
-        {/* Ela salvou e escolheu zero: decisão dela, e não ausência de
+          {/* Ela salvou e escolheu zero: decisão dela, e não ausência de
             configuração. */}
-        {configuracao !== null && rateioZerado && (
-          <Faixa tom="atencao">
-            <p>
-              Seu tempo de trabalho, o gás e as despesas fixas ainda não entram
-              neste preço: o rateio está zerado. O custo abaixo é só o dos
-              materiais.
-            </p>
-            <Link
-              href="/configuracao"
-              className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-brand-ink underline underline-offset-2"
-            >
-              <Settings aria-hidden className="size-4" strokeWidth={1.75} />
-              Informar meus custos operacionais
-            </Link>
-          </Faixa>
-        )}
+          {configuracao !== null && rateioZerado && (
+            <Faixa tom="atencao">
+              <p>
+                Seu tempo de trabalho, o gás e as despesas fixas ainda não
+                entram neste preço: o rateio está zerado. O custo abaixo é só o
+                dos materiais.
+              </p>
+              <Link
+                href="/configuracao"
+                className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-brand-ink underline underline-offset-2"
+              >
+                <Settings aria-hidden className="size-4" strokeWidth={1.75} />
+                Informar meus custos operacionais
+              </Link>
+            </Faixa>
+          )}
 
-        {/* O insumo da biblioteca que ela ainda não conferiu (`#d114`). Some
+          {/* O insumo da biblioteca que ela ainda não conferiu (`#d114`). Some
             sozinha conforme ela corrige o preço em Insumos. */}
-        {nomesComPrecoMedio.length > 0 && (
-          <Faixa tom="atencao">
-            <p>
-              {fraseDosPrecoMedio(nomesComPrecoMedio)} O seu chocolate custa
-              isso mesmo? Corrija em Materiais e o preço se refaz.
-            </p>
-            <Link
-              href="/insumos"
-              className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-brand-ink underline underline-offset-2"
-            >
-              Ir para Materiais
-            </Link>
-          </Faixa>
-        )}
+          {nomesComPrecoMedio.length > 0 && (
+            <Faixa tom="atencao">
+              <p>
+                {fraseDosPrecoMedio(nomesComPrecoMedio)} O seu chocolate custa
+                isso mesmo? Corrija em Materiais e o preço se refaz.
+              </p>
+              <Link
+                href="/insumos"
+                className="toque mt-2 inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-brand-ink underline underline-offset-2"
+              >
+                Ir para Materiais
+              </Link>
+            </Faixa>
+          )}
 
-        {ficha?.custoDesatualizado && (
-          <Faixa tom="atencao">
-            <p>
-              O preço de um material deste produto mudou depois do último
-              cálculo. Os números aqui já são os de agora: salve para gravá-los
-              e tirar o aviso.
-            </p>
-            <Botao
-              tamanho="sm"
-              className="mt-2"
-              onClick={() => void salvar()}
-              carregando={salvando}
-            >
-              Recalcular e salvar
-            </Botao>
-          </Faixa>
-        )}
-
-        {/* É a tela do produto, e é onde ela está quando acabou de fazer a
-            massa daquele produto. Vem antes da receita porque a receita ela já
-            sabe. */}
-        {podeAssar && (
-          <div className="rounded-lg border border-line bg-surface px-4 py-3 lg:px-5">
-            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-              <p className="flex min-w-0 items-start gap-2.5 text-label text-ink-muted">
-                <CookingPot
-                  aria-hidden
-                  className="mt-0.5 size-4 shrink-0 text-ink-muted"
-                  strokeWidth={1.75}
-                />
-                <span className="max-w-[48ch]">
-                  Fez a massa? Registrar a fornada desconta a despensa até a
-                  próxima contagem.
-                </span>
+          {ficha?.custoDesatualizado && (
+            <Faixa tom="atencao">
+              <p>
+                O preço de um material deste produto mudou depois do último
+                cálculo. Os números aqui já são os de agora: salve para
+                gravá-los e tirar o aviso.
               </p>
               <Botao
                 tamanho="sm"
-                onClick={() =>
-                  setFornada({ aberto: true, chave: `fornada-${novoId()}` })
-                }
+                className="mt-2"
+                onClick={() => void salvar()}
+                carregando={salvando}
               >
-                Fiz a massa
+                Recalcular e salvar
               </Botao>
-            </div>
-
-            {/* O que está pronto: a contagem do pote, um nível acima da
-                despensa (13D). Sem contagem que valha a frase some, e o
-                atalho fica. */}
-            {ficha && pronto && (
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line pt-3">
-                {pronto.prontos === null ? (
-                  <p className="max-w-[48ch] text-label text-ink-muted">
-                    {pronto.contagem.frescor === "VENCIDA"
-                      ? "A contagem do que está pronto venceu."
-                      : "Você ainda não contou o que está pronto deste produto."}
-                  </p>
-                ) : (
-                  <FraseDoPronto
-                    projecao={pronto}
-                    unidade={ficha.unidadeRendimento}
-                  />
-                )}
-                <EntradaContagemPronto tamanho="sm" />
-              </div>
-            )}
-
-            {/* O custo real por unidade vendável, com a quebra das últimas
-                massas anotadas (026). Some sem nenhuma anotação: nada muda
-                para quem nunca tocar no botão "Quebrou". */}
-            {ficha && quebra && (
-              <div className="mt-3 border-t border-line pt-3">
-                <FraseDaQuebra quebra={quebra} ficha={ficha} />
-              </div>
-            )}
-
-            {/* As desta ficha, com o desfazer: a massa registrada por engano
-                precisa sair da projeção, e arquivar é o único caminho. */}
-            {fornadasDaFicha.length > 0 && (
-              <div className="mt-4">
-                <FornadasRecentes
-                  contaId={contaId}
-                  fornadas={fornadasDaFicha}
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        <Bloco
-          icone={Tag}
-          titulo={ehKit ? "O kit" : "A receita"}
-          descricao={
-            ehKit
-              ? "O nome e quanto tempo a montagem toma do começo ao fim: bancada e embalagem."
-              : "O nome, quanto sai de um lote e quanto tempo ele toma do começo ao fim: forno, bancada e embalagem."
-          }
-        >
-          {kitDividido && (
-            <Faixa tom="atencao">
-              <p className="num">
-                Este kit está dividido por {texto(rendimento)}. Se{" "}
-                {formatarMoeda(derivado.precoVenda)} é o preço da caixa inteira,
-                ela custa {formatarMoeda(derivado.custo.custoTotalLote)} e{" "}
-                {palavraSobra(sobraDaCaixa)}{" "}
-                {formatarMoeda(Math.abs(sobraDaCaixa))}, já com a maquininha.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  form.setValue("rendimento", "1");
-                  form.setValue("unidadeRendimento", "un");
-                }}
-                className="toque mt-2 inline-flex items-center rounded-md text-label font-semibold text-brand-ink underline underline-offset-2"
-              >
-                É o preço da caixa inteira
-              </button>
             </Faixa>
           )}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Campo
-              rotulo="Nome"
-              required
-              autoFocus={!ficha}
-              placeholder="Cookie de chocolate meio amargo"
-              erro={form.formState.errors.nome?.message}
-              {...form.register("nome")}
-            />
 
-            {!ehKit && (
-              <div className="grid grid-cols-[1fr_8rem] gap-3">
-                <Campo
-                  rotulo="Rende"
-                  required
-                  inputMode="decimal"
-                  placeholder="20"
-                  erro={form.formState.errors.rendimento?.message}
-                  {...form.register("rendimento")}
-                />
-                <Seletor rotulo="Em" {...form.register("unidadeRendimento")}>
-                  {UNIDADES_RENDIMENTO.map((unidade) => (
-                    <option key={unidade} value={unidade}>
-                      {ROTULO_UNIDADE_RENDIMENTO[unidade]}
-                    </option>
-                  ))}
-                </Seletor>
+          {/* É a tela do produto, e é onde ela está quando acabou de fazer a
+            massa daquele produto. Vem antes da receita porque a receita ela já
+            sabe. */}
+          {podeAssar && (
+            <div className="rounded-lg border border-line bg-surface px-4 py-3 lg:px-5">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+                <p className="flex min-w-0 items-start gap-2.5 text-label text-ink-muted">
+                  <CookingPot
+                    aria-hidden
+                    className="mt-0.5 size-4 shrink-0 text-ink-muted"
+                    strokeWidth={1.75}
+                  />
+                  <span className="max-w-[48ch]">
+                    Fez a massa? Registrar a fornada desconta a despensa até a
+                    próxima contagem.
+                  </span>
+                </p>
+                <Botao
+                  tamanho="sm"
+                  onClick={() =>
+                    setFornada({ aberto: true, chave: `fornada-${novoId()}` })
+                  }
+                >
+                  Fiz a massa
+                </Botao>
               </div>
+
+              {/* O que está pronto: a contagem do pote, um nível acima da
+                despensa (13D). Sem contagem que valha a frase some, e o
+                atalho fica. */}
+              {ficha && pronto && (
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line pt-3">
+                  {pronto.prontos === null ? (
+                    <p className="max-w-[48ch] text-label text-ink-muted">
+                      {pronto.contagem.frescor === "VENCIDA"
+                        ? "A contagem do que está pronto venceu."
+                        : "Você ainda não contou o que está pronto deste produto."}
+                    </p>
+                  ) : (
+                    <FraseDoPronto
+                      projecao={pronto}
+                      unidade={ficha.unidadeRendimento}
+                    />
+                  )}
+                  <EntradaContagemPronto tamanho="sm" />
+                </div>
+              )}
+
+              {/* O custo real por unidade vendável, com a quebra das últimas
+                massas anotadas (026). Some sem nenhuma anotação: nada muda
+                para quem nunca tocar no botão "Quebrou". */}
+              {ficha && quebra && (
+                <div className="mt-3 border-t border-line pt-3">
+                  <FraseDaQuebra quebra={quebra} ficha={ficha} />
+                </div>
+              )}
+
+              {/* As desta ficha, com o desfazer: a massa registrada por engano
+                precisa sair da projeção, e arquivar é o único caminho. */}
+              {fornadasDaFicha.length > 0 && (
+                <div className="mt-4">
+                  <FornadasRecentes
+                    contaId={contaId}
+                    fornadas={fornadasDaFicha}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          <Bloco
+            icone={Tag}
+            titulo={ehKit ? "O kit" : "A receita"}
+            descricao={
+              ehKit
+                ? "O nome e quanto tempo a montagem toma do começo ao fim: bancada e embalagem."
+                : "O nome, quanto sai de um lote e quanto tempo ele toma do começo ao fim: forno, bancada e embalagem."
+            }
+          >
+            {kitDividido && (
+              <Faixa tom="atencao">
+                <p className="num">
+                  Este kit está dividido por {texto(rendimento)}. Se{" "}
+                  {formatarMoeda(derivado.precoVenda)} é o preço da caixa
+                  inteira, ela custa{" "}
+                  {formatarMoeda(derivado.custo.custoTotalLote)} e{" "}
+                  {palavraSobra(sobraDaCaixa)}{" "}
+                  {formatarMoeda(Math.abs(sobraDaCaixa))}, já com a maquininha.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    form.setValue("rendimento", "1");
+                    form.setValue("unidadeRendimento", "un");
+                  }}
+                  className="toque mt-2 inline-flex items-center rounded-md text-label font-semibold text-brand-ink underline underline-offset-2"
+                >
+                  É o preço da caixa inteira
+                </button>
+              </Faixa>
             )}
-
-            <Campo
-              rotulo="Tempo de produção"
-              inputMode="decimal"
-              sufixo="min"
-              placeholder="90"
-              erro={form.formState.errors.tempoProducaoMinutos?.message}
-              dica="É o que paga a sua hora, o gás e a luz."
-              {...form.register("tempoProducaoMinutos")}
-            />
-          </div>
-        </Bloco>
-
-        <details
-          open={temMaisDetalhes || erroNosDetalhes}
-          className="group rounded-lg border border-line bg-surface"
-        >
-          <summary className="toque flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-subheading font-semibold text-ink">
-            Mais detalhes
-            <span className="flex min-w-0 items-center gap-2">
-              <span
-                aria-hidden
-                className="truncate text-label font-normal text-ink-muted group-open:hidden"
-              >
-                receita ou kit, categoria, reserva, descrição, foto
-              </span>
-              <ChevronDown
-                aria-hidden
-                className="size-5 shrink-0 text-ink-muted transition-transform duration-150 ease-quart group-open:rotate-180"
-                strokeWidth={1.75}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Campo
+                rotulo="Nome"
+                required
+                autoFocus={!ficha}
+                placeholder="Cookie de chocolate meio amargo"
+                erro={form.formState.errors.nome?.message}
+                {...form.register("nome")}
               />
-            </span>
-          </summary>
 
-          <div className="space-y-4 border-t border-line px-4 py-4">
+              {!ehKit && (
+                <div className="grid grid-cols-[1fr_8rem] gap-3">
+                  <Campo
+                    rotulo="Rende"
+                    required
+                    inputMode="decimal"
+                    placeholder="20"
+                    erro={form.formState.errors.rendimento?.message}
+                    {...form.register("rendimento")}
+                  />
+                  <Seletor rotulo="Em" {...form.register("unidadeRendimento")}>
+                    {UNIDADES_RENDIMENTO.map((unidade) => (
+                      <option key={unidade} value={unidade}>
+                        {ROTULO_UNIDADE_RENDIMENTO[unidade]}
+                      </option>
+                    ))}
+                  </Seletor>
+                </div>
+              )}
+
+              <Campo
+                rotulo="Tempo de produção"
+                inputMode="decimal"
+                sufixo="min"
+                placeholder="90"
+                erro={form.formState.errors.tempoProducaoMinutos?.message}
+                dica="É o que paga a sua hora, o gás e a luz."
+                {...form.register("tempoProducaoMinutos")}
+              />
+            </div>
+          </Bloco>
+
+          <details
+            open={temMaisDetalhes || erroNosDetalhes}
+            className="group rounded-lg border border-line bg-surface"
+          >
+            <summary className="toque flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-subheading font-semibold text-ink">
+              Mais detalhes
+              <span className="flex min-w-0 items-center gap-2">
+                <span
+                  aria-hidden
+                  className="truncate text-label font-normal text-ink-muted group-open:hidden"
+                >
+                  receita ou kit, categoria, reserva, descrição, foto
+                </span>
+                <ChevronDown
+                  aria-hidden
+                  className="size-5 shrink-0 text-ink-muted transition-transform duration-150 ease-quart group-open:rotate-180"
+                  strokeWidth={1.75}
+                />
+              </span>
+            </summary>
+
+            <div className="space-y-4 border-t border-line px-4 py-4">
+              <fieldset>
+                <legend className="text-label font-medium text-ink">
+                  O que você está montando
+                </legend>
+                <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
+                  {TIPOS.map((opcao) => {
+                    const ativo = valores.tipo === opcao.valor;
+                    return (
+                      <button
+                        key={opcao.valor}
+                        type="button"
+                        aria-pressed={ativo}
+                        onClick={() => trocarTipo(opcao.valor)}
+                        className={cn(
+                          "rounded-md border p-3 text-left transition-colors duration-150 ease-quart",
+                          ativo
+                            ? "border-brand-ink bg-brand-100"
+                            : "border-line-strong hover:bg-sunken",
+                        )}
+                      >
+                        <span className="flex items-center gap-1.5 text-label font-semibold text-ink">
+                          {ativo && (
+                            <Check
+                              aria-hidden
+                              className="size-4 shrink-0 text-brand-ink"
+                              strokeWidth={2}
+                            />
+                          )}
+                          {opcao.titulo}
+                        </span>
+                        <span className="mt-1 block text-label text-ink-muted">
+                          {opcao.explicacao}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {aviso && (
+                  <p
+                    role="status"
+                    className="mt-2 text-label text-ink-muted"
+                    aria-live="polite"
+                  >
+                    {aviso}
+                  </p>
+                )}
+              </fieldset>
+
+              <Campo
+                rotulo="Categoria"
+                list="categorias-de-ficha"
+                placeholder="Cookie"
+                dica="Serve para agrupar na lista e no relatório de vendas."
+                erro={form.formState.errors.categoria?.message}
+                {...form.register("categoria")}
+              />
+              <datalist id="categorias-de-ficha">
+                {categoriasConhecidas.map((categoria) => (
+                  <option key={categoria} value={categoria} />
+                ))}
+              </datalist>
+
+              {/* O piso é por ficha, e mora na tela onde ela já pensa neste
+                produto (`#d96`). Nasce em zero: ligado, é a única coisa que faz a
+                lista de compras crescer sem pedido nenhum atrás. Some no kit com
+                escolhas: reservar "1 combo" não diz de que sabor, e a reserva é
+                das receitas. */}
+              {!kitComEscolhas && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Campo
+                    rotulo="Fornadas de reserva"
+                    inputMode="numeric"
+                    sufixo={
+                      parseParaNumero(valores.fornadasMinimas) === 1
+                        ? "fornada"
+                        : "fornadas"
+                    }
+                    erro={form.formState.errors.fornadasMinimas?.message}
+                    dica="Sempre poder fazer esta quantidade. Quando a despensa não der mais isso, o que falta entra na lista de compras. Zero desliga."
+                    {...form.register("fornadasMinimas")}
+                  />
+                </div>
+              )}
+
+              {/* Os dois vão na folha do orçamento (spec 017), e só nela: a lista
+                de fichas continua lista, sem miniatura. */}
+              <AreaTexto
+                rotulo="Como você apresenta"
+                rows={2}
+                placeholder="Massa amanteigada com gotas de chocolate, crocante por fora e macia por dentro, recheada com brigadeiro."
+                dica={
+                  <span className="flex justify-between gap-3">
+                    <span>
+                      Vai na folha do orçamento. Duas frases: o que é, o que tem
+                      dentro.
+                    </span>
+                    {valores.descricao.length > 200 && (
+                      <span className="num shrink-0 text-micro">
+                        {valores.descricao.length}/{DESCRICAO_MAX}
+                      </span>
+                    )}
+                  </span>
+                }
+                erro={form.formState.errors.descricao?.message}
+                {...form.register("descricao")}
+              />
+
+              <CampoImagem
+                rotulo="Foto"
+                dica="A miniatura ao lado do produto na folha. Um PNG com fundo transparente sai solto sobre o papel, como no cardápio; uma foto comum sai num quadrado."
+                valor={valores.fotoUrl}
+                aoMudar={(dataUrl) => form.setValue("fotoUrl", dataUrl)}
+                reducao={{
+                  ladoMaximo: FOTO_LADO_PX,
+                  formato: "image/jpeg",
+                  qualidade: 0.8,
+                }}
+                maxBytes={FOTO_MAX_BYTES}
+                comAlpha={{ maxBytes: FOTO_COM_ALPHA_MAX_BYTES }}
+                rotuloEscolher="Escolher foto"
+                rotuloTirar="Tirar a foto"
+              />
+            </div>
+          </details>
+
+          {ehKit && (
+            <Bloco
+              icone={ChefHat}
+              titulo="O que vai no kit"
+              descricao="Os produtos prontos que entram nesta caixa. Um kit não leva outro kit dentro."
+              recuado={false}
+            >
+              <div className="lg:ml-8">
+                <BuscaItem
+                  rotulo="Adicionar produto ao kit"
+                  placeholder="Buscar receita"
+                  opcoes={opcoesComponente}
+                  aoEscolher={adicionarComponente}
+                  semResultado="Nenhuma receita com esse nome. Só produtos do tipo receita podem entrar em um kit."
+                />
+              </div>
+
+              <ListaDeLinhas
+                vazio="Nenhum produto no kit ainda. Busque acima e toque para adicionar."
+                cabecalho={<CabecalhoItensFicha primeira="Produto" />}
+                erro={erroDaLista(errosComponentes)}
+                quantidade={listaComponentes.fields.length}
+              >
+                {listaComponentes.fields.map((campo, indice) => {
+                  const componente = componentesResolvidos[indice];
+                  if (!componente) return null;
+                  return (
+                    <LinhaComponenteFicha
+                      key={campo.id}
+                      nome={componente.nomeSnapshot}
+                      custoUnitario={componente.custoUnitarioSnapshot}
+                      custoLinha={custoLinhaComponente(componente)}
+                      campoQuantidade={form.register(
+                        `componentes.${indice}.quantidade`,
+                      )}
+                      aoRemover={() => listaComponentes.remove(indice)}
+                      erro={
+                        componente.arquivado
+                          ? "Este produto foi arquivado e não tem mais custo. Tire-o do kit ou reative o cadastro."
+                          : erroDaLinha(errosComponentes, indice)
+                      }
+                    />
+                  );
+                })}
+              </ListaDeLinhas>
+            </Bloco>
+          )}
+
+          {ehKit && (
+            <Bloco
+              icone={Hand}
+              titulo="O que a cliente escolhe"
+              descricao="O preço é fixo e ela escolhe os sabores. Por categoria: um sabor novo entra no combo no dia em que nasce."
+              recuado={false}
+            >
+              <div className="lg:ml-8">
+                <Botao
+                  tamanho="sm"
+                  onClick={adicionarEscolha}
+                  disabled={categoriasDeEscolha.length === 0}
+                  iconeInicial={
+                    <Plus aria-hidden className="size-4" strokeWidth={1.75} />
+                  }
+                >
+                  Adicionar uma escolha
+                </Botao>
+                {categoriasDeEscolha.length === 0 && (
+                  <p className="mt-2 text-label text-ink-muted">
+                    Cadastre pelo menos uma receita com categoria para a cliente
+                    ter o que escolher.
+                  </p>
+                )}
+              </div>
+
+              <ListaDeLinhas
+                vazio="Sem escolha, o kit é uma caixa de conteúdo fixo: o que vai nele está na lista de cima."
+                erro={erroDaLista(errosEscolhas)}
+                quantidade={listaEscolhas.fields.length}
+              >
+                {listaEscolhas.fields.map((campo, indice) => {
+                  const escolha = escolhasResolvidas[indice];
+                  if (!escolha) return null;
+                  const opcoes = opcoesDaEscolha(escolha, fichas, ficha?.id);
+                  const maisCara = Math.max(
+                    0,
+                    ...opcoes.map((opcao) => opcao.custoUnitario),
+                  );
+                  return (
+                    <LinhaEscolhaFicha
+                      key={campo.id}
+                      categorias={categoriasDeEscolha}
+                      opcoes={opcoes.map((opcao) => opcao.nome)}
+                      maisCara={maisCara}
+                      custoLinha={Math.round(maisCara * escolha.quantidade)}
+                      campoQuantidade={form.register(
+                        `escolhas.${indice}.quantidade`,
+                      )}
+                      campoCategoria={form.register(
+                        `escolhas.${indice}.categoria`,
+                      )}
+                      aoRemover={() => listaEscolhas.remove(indice)}
+                      erro={erroDaLinha(errosEscolhas, indice)}
+                    />
+                  );
+                })}
+              </ListaDeLinhas>
+            </Bloco>
+          )}
+
+          <Bloco
+            icone={ehKit ? Package : ChefHat}
+            titulo={ehKit ? "Embalagem do kit" : "O que vai dentro"}
+            descricao={
+              ehKit
+                ? "A caixa, o laço e a etiqueta do próprio kit."
+                : "Ingredientes e embalagem, na quantidade que um lote consome."
+            }
+            recuado={false}
+          >
+            <div className="lg:ml-8">
+              <BuscaItem
+                rotulo={ehKit ? "Adicionar embalagem" : "Adicionar material"}
+                placeholder={ehKit ? "Buscar embalagem" : "Buscar material"}
+                opcoes={opcoesInsumo}
+                aoEscolher={adicionarInsumo}
+                semResultado={
+                  ehKit
+                    ? "Nenhuma embalagem com esse nome. Cadastre-a em Materiais, na categoria Embalagem."
+                    : "Nenhum material com esse nome. Cadastre-o em Materiais primeiro."
+                }
+              />
+            </div>
+
+            <ListaDeLinhas
+              vazio={
+                ehKit
+                  ? "Sem embalagem, o kit sai pelo custo dos produtos de dentro."
+                  : "Nenhum material ainda. Busque acima e toque para adicionar."
+              }
+              cabecalho={<CabecalhoItensFicha primeira="Material" />}
+              erro={erroDaLista(errosItens)}
+              quantidade={listaItens.fields.length}
+            >
+              {listaItens.fields.map((campo, indice) => {
+                const item = itensResolvidos[indice];
+                if (!item) return null;
+                return (
+                  <LinhaItemFicha
+                    key={campo.id}
+                    nome={item.nomeSnapshot}
+                    ehEmbalagem={ehEmbalagem(item.categoria)}
+                    unidades={item.unidades}
+                    custoLinha={custoLinhaItem(item)}
+                    campoQuantidade={form.register(
+                      `itens.${indice}.quantidade`,
+                    )}
+                    campoUnidade={form.register(`itens.${indice}.unidade`)}
+                    aoRemover={() => listaItens.remove(indice)}
+                    erro={
+                      item.arquivado
+                        ? "Este material foi arquivado e não tem mais preço. Tire-o do produto ou reative o cadastro."
+                        : erroDaLinha(errosItens, indice)
+                    }
+                  />
+                );
+              })}
+            </ListaDeLinhas>
+          </Bloco>
+
+          <Bloco
+            icone={Receipt}
+            titulo="O custo do lote"
+            descricao="A conta que a sua concorrente não fez."
+            className="2xl:hidden"
+          >
+            {custoDoLote}
+          </Bloco>
+
+          <Bloco
+            icone={Percent}
+            titulo="Como calcular o preço"
+            descricao="A taxa entra aqui porque ela sai do seu lucro, não do bolso da cliente."
+          >
             <fieldset>
               <legend className="text-label font-medium text-ink">
-                O que você está montando
+                Método
               </legend>
               <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
-                {TIPOS.map((opcao) => {
-                  const ativo = valores.tipo === opcao.valor;
+                {METODOS.map((metodo) => {
+                  const ativo = valores.metodo === metodo.valor;
                   return (
                     <button
-                      key={opcao.valor}
+                      key={metodo.valor}
                       type="button"
                       aria-pressed={ativo}
-                      onClick={() => trocarTipo(opcao.valor)}
+                      onClick={() => form.setValue("metodo", metodo.valor)}
                       className={cn(
-                        "rounded-md border p-3 text-left transition-colors duration-150 ease-quart",
+                        "toque rounded-md border px-3 text-left text-label font-semibold transition-colors duration-150 ease-quart",
                         ativo
-                          ? "border-brand-ink bg-brand-100"
-                          : "border-line-strong hover:bg-sunken",
+                          ? "border-brand-ink bg-brand-100 text-ink"
+                          : "border-line-strong text-ink hover:bg-sunken",
                       )}
                     >
-                      <span className="flex items-center gap-1.5 text-label font-semibold text-ink">
+                      <span className="flex items-center gap-1.5">
                         {ativo && (
                           <Check
                             aria-hidden
@@ -1015,502 +1430,114 @@ export function FormularioFicha({
                             strokeWidth={2}
                           />
                         )}
-                        {opcao.titulo}
-                      </span>
-                      <span className="mt-1 block text-label text-ink-muted">
-                        {opcao.explicacao}
+                        {metodo.titulo}
                       </span>
                     </button>
                   );
                 })}
               </div>
-              {aviso && (
-                <p
-                  role="status"
-                  className="mt-2 text-label text-ink-muted"
-                  aria-live="polite"
-                >
-                  {aviso}
-                </p>
-              )}
             </fieldset>
 
-            <Campo
-              rotulo="Categoria"
-              list="categorias-de-ficha"
-              placeholder="Cookie"
-              dica="Serve para agrupar na lista e no relatório de vendas."
-              erro={form.formState.errors.categoria?.message}
-              {...form.register("categoria")}
-            />
-            <datalist id="categorias-de-ficha">
-              {categoriasConhecidas.map((categoria) => (
-                <option key={categoria} value={categoria} />
-              ))}
-            </datalist>
-
-            {/* O piso é por ficha, e mora na tela onde ela já pensa neste
-                produto (`#d96`). Nasce em zero: ligado, é a única coisa que faz a
-                lista de compras crescer sem pedido nenhum atrás. Some no kit com
-                escolhas: reservar "1 combo" não diz de que sabor, e a reserva é
-                das receitas. */}
-            {!kitComEscolhas && (
-              <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {valores.metodo === "MARGEM" ? (
                 <Campo
-                  rotulo="Fornadas de reserva"
-                  inputMode="numeric"
-                  sufixo={
-                    parseParaNumero(valores.fornadasMinimas) === 1
-                      ? "fornada"
-                      : "fornadas"
-                  }
-                  erro={form.formState.errors.fornadasMinimas?.message}
-                  dica="Sempre poder fazer esta quantidade. Quando a despensa não der mais isso, o que falta entra na lista de compras. Zero desliga."
-                  {...form.register("fornadasMinimas")}
+                  rotulo="Quero que sobre"
+                  inputMode="decimal"
+                  sufixo="%"
+                  dica="Do preço de venda, depois de descontar custo e taxas."
+                  erro={form.formState.errors.margemDesejada?.message}
+                  {...form.register("margemDesejada")}
                 />
-              </div>
-            )}
-
-            {/* Os dois vão na folha do orçamento (spec 017), e só nela: a lista
-                de fichas continua lista, sem miniatura. */}
-            <AreaTexto
-              rotulo="Como você apresenta"
-              rows={2}
-              placeholder="Massa amanteigada com gotas de chocolate, crocante por fora e macia por dentro, recheada com brigadeiro."
-              dica={
-                <span className="flex justify-between gap-3">
-                  <span>
-                    Vai na folha do orçamento. Duas frases: o que é, o que tem
-                    dentro.
-                  </span>
-                  {valores.descricao.length > 200 && (
-                    <span className="num shrink-0 text-micro">
-                      {valores.descricao.length}/{DESCRICAO_MAX}
-                    </span>
-                  )}
-                </span>
-              }
-              erro={form.formState.errors.descricao?.message}
-              {...form.register("descricao")}
-            />
-
-            <CampoImagem
-              rotulo="Foto"
-              dica="A miniatura ao lado do produto na folha. Um PNG com fundo transparente sai solto sobre o papel, como no cardápio; uma foto comum sai num quadrado."
-              valor={valores.fotoUrl}
-              aoMudar={(dataUrl) => form.setValue("fotoUrl", dataUrl)}
-              reducao={{
-                ladoMaximo: FOTO_LADO_PX,
-                formato: "image/jpeg",
-                qualidade: 0.8,
-              }}
-              maxBytes={FOTO_MAX_BYTES}
-              comAlpha={{ maxBytes: FOTO_COM_ALPHA_MAX_BYTES }}
-              rotuloEscolher="Escolher foto"
-              rotuloTirar="Tirar a foto"
-            />
-          </div>
-        </details>
-
-        {ehKit && (
-          <Bloco
-            icone={ChefHat}
-            titulo="O que vai no kit"
-            descricao="Os produtos prontos que entram nesta caixa. Um kit não leva outro kit dentro."
-            recuado={false}
-          >
-            <div className="lg:ml-8">
-              <BuscaItem
-                rotulo="Adicionar produto ao kit"
-                placeholder="Buscar receita"
-                opcoes={opcoesComponente}
-                aoEscolher={adicionarComponente}
-                semResultado="Nenhuma receita com esse nome. Só produtos do tipo receita podem entrar em um kit."
-              />
-            </div>
-
-            <ListaDeLinhas
-              vazio="Nenhum produto no kit ainda. Busque acima e toque para adicionar."
-              erro={erroDaLista(errosComponentes)}
-              quantidade={listaComponentes.fields.length}
-            >
-              {listaComponentes.fields.map((campo, indice) => {
-                const componente = componentesResolvidos[indice];
-                if (!componente) return null;
-                return (
-                  <LinhaComponenteFicha
-                    key={campo.id}
-                    nome={componente.nomeSnapshot}
-                    custoUnitario={componente.custoUnitarioSnapshot}
-                    custoLinha={custoLinhaComponente(componente)}
-                    campoQuantidade={form.register(
-                      `componentes.${indice}.quantidade`,
-                    )}
-                    aoRemover={() => listaComponentes.remove(indice)}
-                    erro={
-                      componente.arquivado
-                        ? "Este produto foi arquivado e não tem mais custo. Tire-o do kit ou reative o cadastro."
-                        : erroDaLinha(errosComponentes, indice)
-                    }
-                  />
-                );
-              })}
-            </ListaDeLinhas>
-          </Bloco>
-        )}
-
-        {ehKit && (
-          <Bloco
-            icone={Hand}
-            titulo="O que a cliente escolhe"
-            descricao="O preço é fixo e ela escolhe os sabores. Por categoria: um sabor novo entra no combo no dia em que nasce."
-            recuado={false}
-          >
-            <div className="lg:ml-8">
-              <Botao
-                tamanho="sm"
-                onClick={adicionarEscolha}
-                disabled={categoriasDeEscolha.length === 0}
-                iconeInicial={
-                  <Plus aria-hidden className="size-4" strokeWidth={1.75} />
-                }
-              >
-                Adicionar uma escolha
-              </Botao>
-              {categoriasDeEscolha.length === 0 && (
-                <p className="mt-2 text-label text-ink-muted">
-                  Cadastre pelo menos uma receita com categoria para a cliente
-                  ter o que escolher.
-                </p>
+              ) : (
+                <Campo
+                  rotulo="Multiplico o custo por"
+                  inputMode="decimal"
+                  sufixo="×"
+                  erro={form.formState.errors.markup?.message}
+                  {...form.register("markup")}
+                />
               )}
             </div>
 
-            <ListaDeLinhas
-              vazio="Sem escolha, o kit é uma caixa de conteúdo fixo: o que vai nele está na lista de cima."
-              erro={erroDaLista(errosEscolhas)}
-              quantidade={listaEscolhas.fields.length}
-            >
-              {listaEscolhas.fields.map((campo, indice) => {
-                const escolha = escolhasResolvidas[indice];
-                if (!escolha) return null;
-                const opcoes = opcoesDaEscolha(escolha, fichas, ficha?.id);
-                const maisCara = Math.max(
-                  0,
-                  ...opcoes.map((opcao) => opcao.custoUnitario),
-                );
-                return (
-                  <LinhaEscolhaFicha
-                    key={campo.id}
-                    categorias={categoriasDeEscolha}
-                    opcoes={opcoes.map((opcao) => opcao.nome)}
-                    maisCara={maisCara}
-                    custoLinha={Math.round(maisCara * escolha.quantidade)}
-                    campoQuantidade={form.register(
-                      `escolhas.${indice}.quantidade`,
-                    )}
-                    campoCategoria={form.register(
-                      `escolhas.${indice}.categoria`,
-                    )}
-                    aoRemover={() => listaEscolhas.remove(indice)}
-                    erro={erroDaLinha(errosEscolhas, indice)}
-                  />
-                );
-              })}
-            </ListaDeLinhas>
-          </Bloco>
-        )}
-
-        <Bloco
-          icone={ehKit ? Package : ChefHat}
-          titulo={ehKit ? "Embalagem do kit" : "O que vai dentro"}
-          descricao={
-            ehKit
-              ? "A caixa, o laço e a etiqueta do próprio kit."
-              : "Ingredientes e embalagem, na quantidade que um lote consome."
-          }
-          recuado={false}
-        >
-          <div className="lg:ml-8">
-            <BuscaItem
-              rotulo={ehKit ? "Adicionar embalagem" : "Adicionar material"}
-              placeholder={ehKit ? "Buscar embalagem" : "Buscar material"}
-              opcoes={opcoesInsumo}
-              aoEscolher={adicionarInsumo}
-              semResultado={
-                ehKit
-                  ? "Nenhuma embalagem com esse nome. Cadastre-a em Materiais, na categoria Embalagem."
-                  : "Nenhum material com esse nome. Cadastre-o em Materiais primeiro."
-              }
-            />
-          </div>
-
-          <ListaDeLinhas
-            vazio={
-              ehKit
-                ? "Sem embalagem, o kit sai pelo custo dos produtos de dentro."
-                : "Nenhum material ainda. Busque acima e toque para adicionar."
-            }
-            erro={erroDaLista(errosItens)}
-            quantidade={listaItens.fields.length}
-          >
-            {listaItens.fields.map((campo, indice) => {
-              const item = itensResolvidos[indice];
-              if (!item) return null;
-              return (
-                <LinhaItemFicha
-                  key={campo.id}
-                  nome={item.nomeSnapshot}
-                  ehEmbalagem={ehEmbalagem(item.categoria)}
-                  unidades={item.unidades}
-                  custoLinha={custoLinhaItem(item)}
-                  campoQuantidade={form.register(`itens.${indice}.quantidade`)}
-                  campoUnidade={form.register(`itens.${indice}.unidade`)}
-                  aoRemover={() => listaItens.remove(indice)}
-                  erro={
-                    item.arquivado
-                      ? "Este material foi arquivado e não tem mais preço. Tire-o do produto ou reative o cadastro."
-                      : erroDaLinha(errosItens, indice)
-                  }
-                />
-              );
-            })}
-          </ListaDeLinhas>
-        </Bloco>
-
-        <Bloco
-          icone={Receipt}
-          titulo="O custo do lote"
-          descricao="A conta que a sua concorrente não fez."
-        >
-          {/* A faixa de composição (`#d126`): as linhas abaixo são a legenda,
-              e a de "Seu trabalho" é a única colorida, para casar com o
-              segmento âmbar. Custo zero, faixa nenhuma. */}
-          <FaixaDeComposicao
-            segmentos={composicaoDoLote(derivado.custo)}
-            className="mb-4 max-w-xl"
-          />
-          {/* Recibo, não tabela: a coluna para antes da borda para o rótulo e o
-              valor não ficarem em pontas opostas da tela. */}
-          <dl className="max-w-xl space-y-2 text-label">
-            <Parcela
-              rotulo={ROTULO_PARCELA.custoInsumos}
-              valor={derivado.custo.custoInsumos}
-            />
-            <Parcela
-              rotulo={ROTULO_PARCELA.custoEmbalagem}
-              valor={derivado.custo.custoEmbalagem}
-            />
-            {ehKit && (
-              <Parcela
-                rotulo={ROTULO_PARCELA.custoComponentes}
-                valor={derivado.custo.custoComponentes}
-              />
-            )}
-            {kitComEscolhas && (
-              <Parcela
-                rotulo={ROTULO_PARCELA.custoEscolhas}
-                valor={derivado.custo.custoEscolhas}
-              />
-            )}
-            <Parcela
-              rotulo={ROTULO_PARCELA.custoMaoDeObra}
-              valor={derivado.custo.custoMaoDeObra}
-              destaque
-            />
-            <Parcela
-              rotulo={ROTULO_PARCELA.custoEnergiaGas}
-              valor={derivado.custo.custoEnergiaGas}
-            />
-            <Parcela
-              rotulo={ROTULO_PARCELA.custoIndireto}
-              valor={derivado.custo.custoIndireto}
-            />
-
-            <div className="flex items-baseline justify-between gap-4 border-t border-line pt-2">
-              <dt className="font-medium text-ink">Custo do lote inteiro</dt>
-              <dd>
-                <Dinheiro centavos={derivado.custo.custoTotalLote} />
-              </dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-4">
-              <dt className="text-ink-muted">
-                Dividido por{" "}
-                {rendimento > 0
-                  ? rotuloDaQuantidade(rendimento, valores.unidadeRendimento)
-                  : `— ${ROTULO_UNIDADE_RENDIMENTO[valores.unidadeRendimento]}`}
-              </dt>
-              <dd>
-                <Dinheiro centavos={derivado.custo.custoUnitario} />
-              </dd>
-            </div>
-          </dl>
-
-          {/* O custo de referência sem a faixa é um número que ela não tem
-              como conferir: a mais barata e a mais cara, por unidade. */}
-          {kitComEscolhas &&
-            rendimento > 0 &&
-            custoEscolhas.minimo !== custoEscolhas.maximo && (
-              <p className="num text-label text-ink-muted">
-                Custa de{" "}
-                {formatarMoeda(
-                  Math.round(
-                    (derivado.custo.custoTotalLote -
-                      custoEscolhas.maximo +
-                      custoEscolhas.minimo) /
-                      rendimento,
-                  ),
-                )}{" "}
-                a {formatarMoeda(derivado.custo.custoUnitario)} conforme a
-                escolha. O preço fecha na mais cara, e por isso fecha em todas.
-              </p>
-            )}
-          {custoEscolhas.semOpcao.length > 0 && (
-            <p className="flex items-start gap-2 text-label text-attention">
-              <TriangleAlert
-                aria-hidden
-                className="mt-0.5 size-4 shrink-0"
-                strokeWidth={1.75}
-              />
-              <span>
-                Nenhuma receita serve em {custoEscolhas.semOpcao.join(", ")}:
-                essa parte do custo está zerada até haver uma.
-              </span>
-            </p>
-          )}
-        </Bloco>
-
-        <Bloco
-          icone={Percent}
-          titulo="Como calcular o preço"
-          descricao="A taxa entra aqui porque ela sai do seu lucro, não do bolso da cliente."
-        >
-          <fieldset>
-            <legend className="text-label font-medium text-ink">Método</legend>
-            <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
-              {METODOS.map((metodo) => {
-                const ativo = valores.metodo === metodo.valor;
-                return (
-                  <button
-                    key={metodo.valor}
-                    type="button"
-                    aria-pressed={ativo}
-                    onClick={() => form.setValue("metodo", metodo.valor)}
-                    className={cn(
-                      "toque rounded-md border px-3 text-left text-label font-semibold transition-colors duration-150 ease-quart",
-                      ativo
-                        ? "border-brand-ink bg-brand-100 text-ink"
-                        : "border-line-strong text-ink hover:bg-sunken",
-                    )}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      {ativo && (
-                        <Check
-                          aria-hidden
-                          className="size-4 shrink-0 text-brand-ink"
-                          strokeWidth={2}
-                        />
-                      )}
-                      {metodo.titulo}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </fieldset>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {valores.metodo === "MARGEM" ? (
+            <div className="grid gap-4 sm:grid-cols-2">
               <Campo
-                rotulo="Quero que sobre"
+                rotulo="Taxa de cartão"
                 inputMode="decimal"
                 sufixo="%"
-                dica="Do preço de venda, depois de descontar custo e taxas."
-                erro={form.formState.errors.margemDesejada?.message}
-                {...form.register("margemDesejada")}
+                dica="A maior das suas formas de pagamento: o preço que fecha nela fecha em todas."
+                erro={form.formState.errors.taxaCartaoConsiderada?.message}
+                {...form.register("taxaCartaoConsiderada")}
               />
-            ) : (
               <Campo
-                rotulo="Multiplico o custo por"
+                rotulo="Outras taxas"
                 inputMode="decimal"
-                sufixo="×"
-                erro={form.formState.errors.markup?.message}
-                {...form.register("markup")}
+                sufixo="%"
+                dica="Imposto ou comissão de aplicativo. Se não tem, deixe zero."
+                erro={form.formState.errors.outrasTaxas?.message}
+                {...form.register("outrasTaxas")}
               />
-            )}
-          </div>
+            </div>
+          </Bloco>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Campo
-              rotulo="Taxa de cartão"
-              inputMode="decimal"
-              sufixo="%"
-              dica="A maior das suas formas de pagamento: o preço que fecha nela fecha em todas."
-              erro={form.formState.errors.taxaCartaoConsiderada?.message}
-              {...form.register("taxaCartaoConsiderada")}
-            />
-            <Campo
-              rotulo="Outras taxas"
-              inputMode="decimal"
-              sufixo="%"
-              dica="Imposto ou comissão de aplicativo. Se não tem, deixe zero."
-              erro={form.formState.errors.outrasTaxas?.message}
-              {...form.register("outrasTaxas")}
-            />
-          </div>
-        </Bloco>
-
-        {ficha &&
-          (confirmandoArquivo ? (
-            <div className="rounded-lg border border-negative/30 bg-negative-soft p-4">
-              <p className="text-label text-ink">
-                Arquivar <strong className="font-semibold">{ficha.nome}</strong>
-                ? Ele sai da lista e da busca, mas continua nos pedidos antigos
-                e nos kits que o usam, para o histórico de custo não se perder.
-              </p>
-              <div className="mt-3 flex gap-2">
+          {ficha &&
+            (confirmandoArquivo ? (
+              <div className="rounded-lg border border-negative/30 bg-negative-soft p-4">
+                <p className="text-label text-ink">
+                  Arquivar{" "}
+                  <strong className="font-semibold">{ficha.nome}</strong>? Ele
+                  sai da lista e da busca, mas continua nos pedidos antigos e
+                  nos kits que o usam, para o histórico de custo não se perder.
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <Botao
+                    tamanho="sm"
+                    onClick={() => setConfirmandoArquivo(false)}
+                    disabled={salvando}
+                  >
+                    Cancelar
+                  </Botao>
+                  <Botao
+                    tamanho="sm"
+                    variante="perigo"
+                    carregando={salvando}
+                    onClick={() => void arquivar()}
+                  >
+                    Arquivar mesmo assim
+                  </Botao>
+                </div>
+              </div>
+            ) : (
+              <div className="border-t border-line pt-5">
                 <Botao
-                  tamanho="sm"
-                  onClick={() => setConfirmandoArquivo(false)}
-                  disabled={salvando}
-                >
-                  Cancelar
-                </Botao>
-                <Botao
-                  tamanho="sm"
                   variante="perigo"
-                  carregando={salvando}
-                  onClick={() => void arquivar()}
+                  tamanho="sm"
+                  onClick={() => setConfirmandoArquivo(true)}
+                  iconeInicial={
+                    <Archive
+                      aria-hidden
+                      className="size-4"
+                      strokeWidth={1.75}
+                    />
+                  }
                 >
-                  Arquivar mesmo assim
+                  Arquivar produto
                 </Botao>
               </div>
-            </div>
-          ) : (
-            <div className="border-t border-line pt-5">
-              <Botao
-                variante="perigo"
-                tamanho="sm"
-                onClick={() => setConfirmandoArquivo(true)}
-                iconeInicial={
-                  <Archive aria-hidden className="size-4" strokeWidth={1.75} />
-                }
-              >
-                Arquivar produto
-              </Botao>
-            </div>
-          ))}
-      </div>
+            ))}
+        </div>
 
-      <PainelPreco
-        derivado={derivado}
-        precoManual={valores.precoManual}
-        rendimentoValido={rendimento > 0}
-        aoMudarPreco={(centavos) => {
-          form.setValue("precoManual", true);
-          form.setValue("precoVenda", centavos);
-        }}
-        aoUsarSugerido={() => form.setValue("precoManual", false)}
-      />
+        <PainelPreco
+          derivado={derivado}
+          precoManual={valores.precoManual}
+          rendimentoValido={rendimento > 0}
+          aoMudarPreco={(centavos) => {
+            form.setValue("precoManual", true);
+            form.setValue("precoVenda", centavos);
+          }}
+          aoUsarSugerido={() => form.setValue("precoManual", false)}
+          custoDoLote={custoDoLote}
+        />
+      </div>
 
       {ficha && podeAssar && (
         <PainelFornada
@@ -1565,11 +1592,14 @@ function Faixa({ tom, children }: { tom: "atencao"; children: ReactNode }) {
 function ListaDeLinhas({
   quantidade,
   vazio,
+  cabecalho,
   erro,
   children,
 }: {
   quantidade: number;
   vazio: string;
+  /** Os nomes das colunas do desktop (`#d339`), só com linha na lista. */
+  cabecalho?: ReactNode;
   erro?: string;
   children: ReactNode;
 }) {
@@ -1578,9 +1608,12 @@ function ListaDeLinhas({
       {quantidade === 0 ? (
         <p className="px-4 text-label text-ink-muted lg:px-5">{vazio}</p>
       ) : (
-        <ul className="divide-y divide-line border-y border-line">
-          {children}
-        </ul>
+        <>
+          {cabecalho}
+          <ul className="divide-y divide-line border-y border-line">
+            {children}
+          </ul>
+        </>
       )}
       {erro && (
         <p role="alert" className="mt-3 px-4 text-label text-negative lg:px-5">
