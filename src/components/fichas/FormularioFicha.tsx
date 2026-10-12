@@ -16,6 +16,7 @@ import {
   ChefHat,
   ChevronDown,
   CookingPot,
+  Copy,
   Hand,
   ListOrdered,
   Package,
@@ -202,9 +203,23 @@ function texto(numero: number): string {
 function valoresIniciais(
   ficha: FichaTecnica | undefined,
   configuracao: ConfiguracaoGeral | null,
+  origem?: FichaTecnica,
 ): ValoresFicha {
   const padrao =
     configuracao?.precificacao ?? CONFIGURACAO_SUGERIDA.precificacao;
+
+  // A variação é a origem com outro nome (`#d344`). Sem reserva, porque ligada
+  // ela faz a lista de compras crescer sem pedido (`#d96`), e sem o preço
+  // manual: o preço da origem não vale para outra receita.
+  if (!ficha && origem) {
+    return {
+      ...valoresIniciais(origem, configuracao),
+      nome: `${origem.nome} (variação)`,
+      fornadasMinimas: "0",
+      precoManual: false,
+      precoVenda: 0,
+    };
+  }
 
   if (!ficha) {
     // A mesma função que a biblioteca usa para montar a ficha-modelo
@@ -281,6 +296,7 @@ function valoresIniciais(
 export function FormularioFicha({
   contaId,
   ficha,
+  origem,
   insumos,
   fichas,
   fornadas,
@@ -290,6 +306,8 @@ export function FormularioFicha({
 }: {
   contaId: string;
   ficha?: FichaTecnica;
+  /** A ficha de que esta nova é variação: só preenche, nada mais (`#d344`). */
+  origem?: FichaTecnica;
   insumos: Insumo[];
   fichas: FichaTecnica[];
   /** As fornadas recentes, para a folha de registrar projetar a despensa. */
@@ -298,7 +316,9 @@ export function FormularioFicha({
   configuracao: ConfiguracaoGeral | null;
   pendente: boolean;
 }) {
-  const [iniciais] = useState(() => valoresIniciais(ficha, configuracao));
+  const [iniciais] = useState(() =>
+    valoresIniciais(ficha, configuracao, origem),
+  );
   const form = useForm<ValoresFicha>({ defaultValues: iniciais });
 
   const listaItens = useFieldArray({ control: form.control, name: "itens" });
@@ -355,7 +375,8 @@ export function FormularioFicha({
    * nasce com valor — e todos nascem, em `valoresIniciais`.
    */
   const valores = useWatch({ control: form.control }) as ValoresFicha;
-  const sujo = JSON.stringify(valores) !== JSON.stringify(iniciais);
+  // A variação nasce suja: preenchida não é gravada, e sair sem salvar perde.
+  const sujo = !!origem || JSON.stringify(valores) !== JSON.stringify(iniciais);
   const guarda = useGuardaDeSaida(sujo);
 
   const mapaInsumos = useMemo(
@@ -367,15 +388,19 @@ export function FormularioFicha({
     [fichas],
   );
   // Um insumo arquivado depois de entrar na receita some da consulta. O nome
-  // continua na própria ficha, e é dele que a linha vive até ela decidir.
+  // continua na própria ficha (ou na origem da variação), e é dele que a linha
+  // vive até ela decidir.
+  const guardada = ficha ?? origem;
   const snapshotItens = useMemo(
-    () => new Map((ficha?.itens ?? []).map((item) => [item.insumoId, item])),
-    [ficha],
+    () => new Map((guardada?.itens ?? []).map((item) => [item.insumoId, item])),
+    [guardada],
   );
   const snapshotComponentes = useMemo(
     () =>
-      new Map((ficha?.componentes ?? []).map((item) => [item.fichaId, item])),
-    [ficha],
+      new Map(
+        (guardada?.componentes ?? []).map((item) => [item.fichaId, item]),
+      ),
+    [guardada],
   );
 
   const categoriasConhecidas = useMemo(
@@ -394,11 +419,11 @@ export function FormularioFicha({
   // ficha-modelo da biblioteca vem com "Cookies" e é a primeira tela que
   // ela vê (`DECISOES.md#d116`).
   const temMaisDetalhes =
-    !!ficha &&
-    (ficha.tipo === "KIT" ||
-      (ficha.fornadasMinimas ?? 0) > 0 ||
-      !!ficha.descricao ||
-      !!ficha.fotoUrl);
+    !!guardada &&
+    (guardada.tipo === "KIT" ||
+      (!!ficha && (ficha.fornadasMinimas ?? 0) > 0) ||
+      !!guardada.descricao ||
+      !!guardada.fotoUrl);
   const erroNosDetalhes = !!(
     form.formState.errors.tipo ||
     form.formState.errors.categoria ||
@@ -927,6 +952,8 @@ export function FormularioFicha({
     <>
       <CabecalhoPagina
         titulo={titulo}
+        descricao={origem && `Variação de ${origem.nome}`}
+        descricaoSempreVisivel
         voltar={{ href: "/fichas", rotulo: "Produtos" }}
         pendente={pendente}
         acao={
@@ -1150,6 +1177,13 @@ export function FormularioFicha({
                 autoFocus={!ficha}
                 placeholder="Cookie de chocolate meio amargo"
                 erro={form.formState.errors.nome?.message}
+                // O nome da variação é provisório: selecionado, ela digita
+                // por cima. Depois que ela mexeu, o foco não apaga nada.
+                onFocus={(evento) => {
+                  if (origem && evento.currentTarget.value === iniciais.nome) {
+                    evento.currentTarget.select();
+                  }
+                }}
                 {...form.register("nome")}
               />
 
@@ -1684,7 +1718,16 @@ export function FormularioFicha({
                 </div>
               </div>
             ) : (
-              <div className="border-t border-line pt-5">
+              <div className="flex flex-wrap gap-2 border-t border-line pt-5">
+                {/* Link: a guarda de saída (`#d132`) precisa ver um `<a>`. A
+                    variação copia a ficha gravada, não o que está na tela. */}
+                <Link
+                  href={`/fichas/nova?de=${ficha.id}` as Route}
+                  className={classesBotao({ tamanho: "sm" })}
+                >
+                  <Copy aria-hidden className="size-4" strokeWidth={1.75} />
+                  Fazer uma variação
+                </Link>
                 <Botao
                   variante="perigo"
                   tamanho="sm"

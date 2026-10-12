@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-12",
+    titulo: "Um sabor novo começa da receita de outro",
+    frase:
+      "No pé do produto, Fazer uma variação abre um produto novo com os materiais, a embalagem, o tempo e o preparo deste: troque o que muda, dê o nome e salve.",
+    href: "/fichas",
+  },
+  {
+    dataISO: "2026-10-12",
     titulo: "A receita abre em letra grande na bancada",
     frase:
       "No produto, Abrir na bancada mostra a receita para ler de longe, com a tela acesa: escolha quantas fornadas, toque no que já foi para a tigela e registre a massa no fim.",

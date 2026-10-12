@@ -34,7 +34,14 @@ export const ID_FICHA_NOVA = "nova";
  * de montagem — em vez de virarem um efeito que reescreve o que a usuária já
  * começou a digitar.
  */
-export function EditorFicha({ id }: { id: string }) {
+export function EditorFicha({
+  id,
+  origemId,
+}: {
+  id: string;
+  /** A ficha de que a nova é variação (`#d344`). */
+  origemId?: string;
+}) {
   const contaId = useContaId();
   const ehNova = id === ID_FICHA_NOVA;
   const [hoje] = useState(() => dataISODe(new Date()));
@@ -82,6 +89,12 @@ export function EditorFicha({ id }: { id: string }) {
   const ficha = ehNova
     ? undefined
     : fichas.dados.find((candidata) => candidata.id === id);
+  // Origem que não está na consulta (arquivada, id errado) é produto novo
+  // vazio, sem aviso: o endereço é dela, não de um link compartilhado.
+  const origem =
+    ehNova && origemId
+      ? fichas.dados.find((candidata) => candidata.id === origemId)
+      : undefined;
 
   if (carregando) {
     return (
@@ -115,8 +128,11 @@ export function EditorFicha({ id }: { id: string }) {
 
   return (
     <FormularioFicha
+      // Os valores iniciais são de montagem: outra origem, outro formulário.
+      key={origem?.id ?? id}
       contaId={contaId}
       ficha={ficha}
+      origem={origem}
       insumos={insumos.dados}
       fichas={fichas.dados}
       fornadas={fornadas.dados}

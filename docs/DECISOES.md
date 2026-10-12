@@ -11043,3 +11043,38 @@ multiplicada de cabeça. A 137 deu o modo de preparo; faltava onde lê-lo.
 
 **Consequência.** O passo é a linha do preparo: numeração escrita à mão ("1. Bata…") aparece ao lado
 do número da lista. A 137 deixou o texto como ela escreveu, e tirar seria adivinhar.
+
+## D344 · A variação
+
+**Status:** vigente · decidida em 2026-10-12, spec `139-a-variacao.md`.
+
+**Contexto.** A mesma massa de cookie vira Nutella, Red Velvet, Pistache, e no Rende cada sabor
+novo era um produto vazio: quinze materiais buscados um a um para mudar dois. A 002 deixou o
+duplicar fora.
+
+**Decisão.**
+
+- **"Fazer uma variação"** (`Copy`), secundário, no pé do produto salvo, à esquerda do "Arquivar
+  produto". É um link para `/fichas/nova?de={id}`, para a guarda de saída (`#d132`) vê-lo: com
+  edição por salvar ela pergunta, e a variação copia a ficha **gravada**, não a tela.
+- **Formulário preenchido, e não documento.** `page.tsx` lê `searchParams.de`, `EditorFicha` acha
+  a origem na consulta de fichas que já existe e `valoresIniciais` reaproveita o ramo da ficha
+  salva: tipo, categoria, rendimento, tempo, itens, componentes, escolhas, método, margem ou
+  multiplicador, taxas, descrição, foto e modo de preparo. Nada grava até o "Salvar", que cria
+  uma ficha nova pelo caminho de sempre. A variação nasce suja: voltar sem salvar pergunta.
+- **O nome** é "{nome} (variação)", selecionado no foco enquanto ela não mexeu nele. O cabeçalho
+  diz "Variação de {nome}" na linha da descrição, também no celular: depois de renomear, é o único
+  lugar que lembra de onde veio.
+- **O preço manual não vem** (`precoManual: false`). O preço da origem fechava no custo dela; a
+  variação troca ingredientes, e herdar o número seria um preço com cara de decidido sobre um custo
+  que ninguém olhou. Ela nasce com o sugerido do custo dela.
+- **A reserva não vem** (`fornadasMinimas: 0`, `#d96`). Ligada, a reserva faz a lista de compras
+  crescer sem pedido; copiada, dobraria a compra sem ela ter pedido. Pote, fornadas, contagem e
+  quebra são da ficha gravada e não existem antes do primeiro salvamento.
+- **Origem fora da consulta** (arquivada, id errado): produto novo vazio, sem aviso. O endereço é
+  dela, não de um link compartilhado.
+- **O mapeamento ficou no componente**, como ramo de `valoresIniciais`: são quatro campos sobre o
+  ramo da ficha salva, que já não tinha teste de domínio. O roteiro da spec cobre.
+
+**Consequência.** O material arquivado da origem chega à variação com o nome guardado nela e o erro
+de sempre na linha; salvar para até ela tirá-lo, como na ficha de onde veio.

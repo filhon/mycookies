@@ -67,9 +67,9 @@ deixou fora, como o modo de preparo.
 
 ## Critérios de aceite
 
-- [ ] A variação abre preenchida e só grava no "Salvar".
-- [ ] Reserva, pote e preço manual não vêm.
-- [ ] Portão de conclusão passa; `#d344`, `ESTADO.md`, `novidades.ts`.
+- [x] A variação abre preenchida e só grava no "Salvar".
+- [x] Reserva, pote e preço manual não vêm.
+- [x] Portão de conclusão passa; `#d344`, `ESTADO.md`, `novidades.ts`.
 
 ---
 
