@@ -210,7 +210,7 @@ export const esquemaFicha = z
     componentes: z.array(
       z.object({
         fichaId: z.string().min(1),
-        quantidade: z.number().positive("Diga quantas unidades entram."),
+        quantidade: z.number().positive("Diga quanto entra."),
       }),
     ),
     escolhas: z.array(
@@ -243,10 +243,15 @@ export const esquemaFicha = z
   })
   // Ficha vazia não é rascunho, é engano: ela não tem custo, e um custo zero
   // vira um preço zero que parece resposta.
-  .refine((ficha) => ficha.tipo !== "SIMPLES" || ficha.itens.length > 0, {
-    path: ["itens"],
-    message: "Uma receita precisa de pelo menos um material.",
-  })
+  .refine(
+    (ficha) =>
+      ficha.tipo !== "SIMPLES" ||
+      ficha.itens.length + ficha.componentes.length > 0,
+    {
+      path: ["itens"],
+      message: "Uma receita precisa de pelo menos um material ou preparo.",
+    },
+  )
   // Um kit é conteúdo fixo, escolha da cliente, ou os dois (`#d99`): vazio
   // dos dois lados é uma caixa sem nada dentro.
   .refine(
@@ -257,6 +262,20 @@ export const esquemaFicha = z
       path: ["componentes"],
       message:
         "Um kit precisa de pelo menos um produto dentro dele, ou de uma escolha para a cliente.",
+    },
+  )
+  // A receita em gramas ou mililitros é preparo, e preparo não leva preparo
+  // (`#d345`): é o que deixa a explosão em três níveis.
+  .refine(
+    (ficha) =>
+      ficha.tipo !== "SIMPLES" ||
+      ficha.unidadeRendimento === "un" ||
+      ficha.unidadeRendimento === "porcao" ||
+      ficha.componentes.length === 0,
+    {
+      path: ["componentes"],
+      message:
+        "O que rende em gramas ou mililitros é um preparo, e preparo não leva outro preparo. Tire o preparo da lista ou mude o rendimento para unidades.",
     },
   )
   .refine((ficha) => ficha.tipo !== "SIMPLES" || ficha.escolhas.length === 0, {

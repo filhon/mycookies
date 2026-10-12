@@ -169,7 +169,8 @@ pagante.** A troca é contida porque `src/lib/firebase/mutations/` é a única c
 
 ## D11 · Kit é ficha com componentes, com um nível de profundidade
 
-**Status:** vigente
+**Status:** revista pelo `#d345` em 2026-10-12: kit não leva kit, preparo não leva preparo, e
+são três níveis no máximo (kit, receita, preparo).
 
 **Contexto.** A Maynara vende por unidade e em caixa/kit.
 
@@ -11078,3 +11079,59 @@ duplicar fora.
 
 **Consequência.** O material arquivado da origem chega à variação com o nome guardado nela e o erro
 de sempre na linha; salvar para até ela tirá-lo, como na ficha de onde veio.
+
+## D345 · O preparo dentro da receita
+
+**Status:** vigente · decidida em 2026-10-12, spec `140-a-receita-dentro-da-receita.md` (sessão
+140-A). Revê o `#d11`. Aprovada com as duas mudanças que a spec pedia: `componentes[]` em
+`SIMPLES` e "um nível" virando três.
+
+**Contexto.** O recheio de Nutella com creme de leite vai em quatro produtos. Sem o preparo, ou
+ela repetia os ingredientes em cada um, ou cadastrava o recheio como material com preço inventado.
+
+**Decisão.**
+
+- **Preparo é a receita que rende em `g` ou `ml`** (`ehPreparo`). Sem campo novo: a unidade é que
+  tira o preparo do pedido (a busca de `FormularioPedido` o pula) e do cardápio (`entraNoCardapio`
+  já recusava o que é por peso). Quem vender brigadeiro a granel em gramas perde a venda direta;
+  o caso não existe hoje. Se aparecer, o `vendavel: false` que a spec deixou como alternativa
+  entra como decisão nova.
+- **O que entra onde** é `podeSerComponente(candidata, fichaId, em)`. No kit, a receita que se
+  vende, e o preparo não. Na receita (`em: "RECEITA"`), só o preparo. O preparo não leva preparo:
+  o `esquemaFicha` recusa `componentes` em receita `g`/`ml`. Kit, receita e preparo são **três
+  níveis no máximo**, e `insumosPorLote` desce até eles e para (`NIVEIS = 3`). A guarda de nível
+  existe para o dado que fugiu da regra, como o preparo que deixou de render em gramas depois de
+  entrar. Com ela, um ciclo para no terceiro nível em vez de virar laço.
+- **O grama não se arredonda.** O custo da linha é `custoParaComponente` × gramas: no preparo,
+  `custoTotalLote / rendimento` fracionado, gravado em `custoUnitarioSnapshot` (o tipo passou a
+  `CentavosFracionados`); na receita do kit, o `custoUnitario` de sempre. A spec dizia
+  `custoUnitario`, mas R$ 34 em 1 kg são 3,4 centavos por grama, e arredondar para 3 erra 12% em
+  toda receita que usa o recheio.
+- **Uma receita só de preparos é receita.** "Pelo menos um material" virou "pelo menos um material
+  ou preparo": o cookie montado é massa base mais recheio.
+- **O editor:** o preparo entra pela mesma busca de "O que vai dentro", com o selo "Preparo"
+  (`OpcaoBusca.selo`) e o custo por grama no detalhe, e vira linha da mesma lista, depois dos
+  materiais, em gramas, com o selo e a parte no custo. Ele conta em "os que mais pesam" e no peso
+  da massa. No custo do lote, a parcela se chama "Preparos" na receita (`ROTULO_PREPAROS`;
+  `composicaoDoLote` recebe o tipo). Trocar a receita para kit tira o preparo junto, e diz.
+  O preparo que deixou de render em `g`/`ml` fica na linha com erro e trava o salvar, como o
+  material arquivado.
+- **A bancada** (`#d343`) lista o preparo entre os ingredientes, na unidade dele.
+- **Desatualização.** A spec supunha que o kit já era marcado pelo `componenteIds`, e não era: o
+  kit só via o custo novo em `custosDeHoje`. Agora `atualizarFicha` recebe o custo de antes e,
+  quando `custoParaComponente` muda, marca `custoDesatualizado` em quem leva a ficha dentro
+  (`array-contains` em `componenteIds`, do cache sem rede). Vale para o preparo e para a receita
+  de um kit. A cascata não desce sozinha: o kit é marcado quando a receita for salva.
+  `refazerFichasPelaConfiguracao` refaz a receita com preparo e a marca, porque o preparo dela
+  também mudou e não está naquela conta. `custosDeHoje` faz três passadas (preparos, receitas,
+  kits), e `CustoDeHoje` ganhou `custoTotalLote`, de onde sai o grama de hoje.
+- **Despensa e lista de compras.** A fornada da receita desconta os ingredientes do preparo, pro
+  rata, pelo `insumosPorLote` de sempre. A spec deixava "dois níveis na lista" para a 140-B, mas
+  sem eles o kit e o combo com uma receita recheada deixariam de comprar o recheio (`#d63`).
+  Entrou aqui, na mesma função. O pote do preparo continua na 140-B.
+
+**Consequência.** Kit dentro de kit, que nunca deveria existir, passa a descer até os cookies na
+lista e na fornada; antes parava na caixa. O que não muda: o preparo usado por outra receita
+pode mudar de unidade sem aviso no editor dele, e é a receita que o usa que avisa ao ser aberta.
+`usoDoMaterial` ("Onde entra") continua mostrando só quem usa o material direto, como já era com
+o kit.

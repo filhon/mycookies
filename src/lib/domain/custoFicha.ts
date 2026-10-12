@@ -41,19 +41,61 @@ export function ehEmbalagem(categoria: CategoriaInsumo): boolean {
 }
 
 /**
- * Kit não contém kit (`DECISOES.md#d11`), e ficha nenhuma contém a si mesma.
- * O limite de um nível é o que mantém a explosão de demanda da lista de
- * compras finita e o custo auditável em uma leitura.
+ * A receita que rende em gramas ou mililitros é preparo (`DECISOES.md#d345`):
+ * a massa base, o recheio, a ganache. Entra em outra receita por peso, e não
+ * vai sozinha para o pedido nem para o cardápio.
+ */
+export function ehPreparo(ficha: {
+  tipo: TipoFicha;
+  unidadeRendimento: UnidadeRendimento;
+}): boolean {
+  return (
+    ficha.tipo === "SIMPLES" &&
+    (ficha.unidadeRendimento === "g" || ficha.unidadeRendimento === "ml")
+  );
+}
+
+/**
+ * O que entra onde (`DECISOES.md#d11`, revisto no `#d345`): no kit, a receita
+ * que se vende; na receita, o preparo. Kit não leva kit, preparo não leva
+ * preparo, e ficha nenhuma leva a si mesma. São três níveis no máximo, kit,
+ * receita e preparo, e é isso que mantém a explosão de demanda finita sem
+ * detecção de ciclo.
  */
 export function podeSerComponente(
-  candidata: { id: string; tipo: TipoFicha; arquivado: boolean },
+  candidata: {
+    id: string;
+    tipo: TipoFicha;
+    unidadeRendimento: UnidadeRendimento;
+    arquivado: boolean;
+  },
   fichaAtualId?: string,
+  em: "KIT" | "RECEITA" = "KIT",
 ): boolean {
-  return (
-    candidata.tipo === "SIMPLES" &&
-    !candidata.arquivado &&
-    candidata.id !== fichaAtualId
-  );
+  if (candidata.arquivado || candidata.id === fichaAtualId) return false;
+  return em === "KIT"
+    ? candidata.tipo === "SIMPLES" && !ehPreparo(candidata)
+    : ehPreparo(candidata);
+}
+
+/**
+ * O custo de uma unidade da ficha para quem a leva dentro. No preparo, sem
+ * arredondar: o grama de recheio a R$ 0,034 arredondado a R$ 0,03 erra 12%
+ * em toda receita que o usa (`#d345`). Na receita do kit, o `custoUnitario`
+ * gravado, como sempre.
+ */
+export function custoParaComponente(
+  ficha: Pick<
+    FichaTecnica,
+    | "tipo"
+    | "unidadeRendimento"
+    | "rendimento"
+    | "custoTotalLote"
+    | "custoUnitario"
+  >,
+): CentavosFracionados {
+  if (!ehPreparo(ficha)) return ficha.custoUnitario;
+  return ficha.rendimento > 0 ? ficha.custoTotalLote / ficha.rendimento : 0;
 }
 
 /** O kit em que a cliente escolhe o que vai dentro (`DECISOES.md#d99`). */
@@ -69,6 +111,7 @@ export interface FichaParaEscolha {
   id: string;
   nome: string;
   tipo: TipoFicha;
+  unidadeRendimento: UnidadeRendimento;
   categoria: string;
   arquivado: boolean;
   custoUnitario: Centavos;
@@ -207,8 +250,8 @@ export interface ItemParaCusto {
 }
 
 export interface ComponenteParaCusto {
-  /** `custoUnitario` da ficha componente no momento do cálculo. */
-  custoUnitarioSnapshot: Centavos;
+  /** `custoParaComponente` da ficha de dentro no momento do cálculo. */
+  custoUnitarioSnapshot: CentavosFracionados;
   quantidade: number;
 }
 
@@ -226,7 +269,7 @@ export type RateioOperacional = Pick<
 
 export interface EntradaCustoFicha {
   itens: ItemParaCusto[];
-  /** Sempre vazio em ficha simples. */
+  /** No kit, as receitas; na receita, os preparos (`#d345`). */
   componentes: ComponenteParaCusto[];
   /**
    * A parcela das escolhas, já calculada por `custoDasEscolhas` (`#d101`).
@@ -256,7 +299,7 @@ export function custoLinhaItem(item: ItemParaCusto): Centavos {
   return Math.round(item.custoUnidadeBaseCorrigido * item.quantidade);
 }
 
-/** O custo de uma linha de componente de kit. */
+/** O custo de uma linha de componente: a receita no kit, o preparo na receita. */
 export function custoLinhaComponente(
   componente: ComponenteParaCusto,
 ): Centavos {
@@ -436,18 +479,27 @@ export interface Segmento {
   destaque: boolean;
 }
 
+/** Na receita, o que vai dentro pronto é preparo, e não produto (`#d345`). */
+export const ROTULO_PREPAROS = "Preparos";
+
 /**
  * A faixa de composição é dado, nunca enfeite: só existe onde existe custo
  * calculado, com as parcelas e a ordem das linhas que o bloco já mostra.
  * Parcela zerada não vira segmento; lote zerado não tem faixa.
  */
-export function composicaoDoLote(custo: CustoFichaCalculado): Segmento[] {
+export function composicaoDoLote(
+  custo: CustoFichaCalculado,
+  tipo: TipoFicha = "KIT",
+): Segmento[] {
   const total = custo.custoTotalLote;
   if (total <= 0) return [];
   return (Object.keys(ROTULO_PARCELA) as (keyof typeof ROTULO_PARCELA)[])
     .filter((chave) => custo[chave] > 0)
     .map((chave) => ({
-      rotulo: ROTULO_PARCELA[chave],
+      rotulo:
+        chave === "custoComponentes" && tipo === "SIMPLES"
+          ? ROTULO_PREPAROS
+          : ROTULO_PARCELA[chave],
       centavos: custo[chave],
       fracao: custo[chave] / total,
       destaque: chave === "custoMaoDeObra",
@@ -618,6 +670,8 @@ export type MaterialDeHoje = Pick<
 >;
 
 export interface CustoDeHoje {
+  /** O lote inteiro de hoje: é dele que sai o grama do preparo (`#d345`). */
+  custoTotalLote: Centavos;
   custoUnitario: Centavos;
   /** O que sobra por unidade, ao preço praticado, com os materiais de hoje. */
   sobra: Centavos;
@@ -635,8 +689,11 @@ export interface CustoDeHoje {
 export function custoDeHoje(
   ficha: FichaTecnica,
   materiais: Map<string, MaterialDeHoje>,
-  /** O custo unitário de hoje das receitas, para o kit. Vazio numa receita. */
-  receitasHoje: Map<string, Centavos> = new Map(),
+  /**
+   * O custo de hoje do que vai dentro, por unidade: as receitas para o kit, o
+   * grama dos preparos para a receita (`custoParaComponente`). Vazio no preparo.
+   */
+  receitasHoje: Map<string, CentavosFracionados> = new Map(),
   /** As fichas com o custo de hoje, para a escolha do combo. */
   fichasHoje: FichaParaEscolha[] = [],
 ): CustoDeHoje {
@@ -697,6 +754,7 @@ export function custoDeHoje(
   const abaixoGravado = p.precoVenda < p.precoSugerido;
 
   return {
+    custoTotalLote: total,
     custoUnitario,
     sobra,
     culpado,
@@ -705,8 +763,9 @@ export function custoDeHoje(
 }
 
 /**
- * Toda ficha viva, de uma vez: as receitas primeiro, os kits com o custo de
- * hoje delas. Um nível, porque kit não contém kit (`#d11`).
+ * Toda ficha viva, de uma vez: os preparos primeiro, as receitas com o grama
+ * de hoje deles, os kits com o custo de hoje delas. Três passadas, porque são
+ * três níveis no máximo (`#d11`, `#d345`).
  */
 export function custosDeHoje(
   fichas: FichaTecnica[],
@@ -715,9 +774,19 @@ export function custosDeHoje(
   const porId = new Map(materiais.map((m) => [m.id, m]));
   const resultado = new Map<string, CustoDeHoje>();
 
+  const preparosHoje = new Map<string, CentavosFracionados>();
   for (const ficha of fichas) {
-    if (ficha.tipo === "SIMPLES")
-      resultado.set(ficha.id, custoDeHoje(ficha, porId));
+    if (!ehPreparo(ficha)) continue;
+    const hoje = custoDeHoje(ficha, porId);
+    resultado.set(ficha.id, hoje);
+    preparosHoje.set(
+      ficha.id,
+      custoParaComponente({ ...ficha, custoTotalLote: hoje.custoTotalLote }),
+    );
+  }
+  for (const ficha of fichas) {
+    if (ficha.tipo === "SIMPLES" && !ehPreparo(ficha))
+      resultado.set(ficha.id, custoDeHoje(ficha, porId, preparosHoje));
   }
   const receitasHoje = new Map(
     [...resultado].map(([id, hoje]) => [id, hoje.custoUnitario]),

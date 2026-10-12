@@ -1,6 +1,7 @@
 import type { Timestamp } from "firebase/firestore";
 import type {
   Centavos,
+  CentavosFracionados,
   DataISO,
   DocumentoBase,
   Percentual,
@@ -11,10 +12,12 @@ import type { MetodoPrecificacao } from "./configuracao";
 
 /**
  * SIMPLES: receita que consome insumos e rende N unidades (um lote de cookies).
+ * Rendendo em g ou ml, é preparo (`DECISOES.md#d345`): entra em outra receita.
  * KIT: caixa/combo que consome OUTRAS fichas simples, mais a própria embalagem.
  *
- * Um kit não pode conter outro kit. Um nível de profundidade mantém a explosão
- * de demanda da lista de compras finita e o custo auditável.
+ * Um kit não contém kit, e um preparo não contém preparo. Três níveis no
+ * máximo (kit, receita, preparo) mantêm a explosão de demanda da lista de
+ * compras finita e o custo auditável (`#d11`, revisto no `#d345`).
  *
  * Na tela, chama-se produto (spec 021, `#d117`).
  */
@@ -23,13 +26,20 @@ export type TipoFicha = "SIMPLES" | "KIT";
 /** Em que a ficha conta o que sai de um lote. */
 export type UnidadeRendimento = "un" | "porcao" | "g" | "ml";
 
+/** Uma ficha dentro de outra: a receita no kit, o preparo na receita. */
 export interface ComponenteKit {
   fichaId: string;
   nomeSnapshot: string;
-  /** Quantas unidades desta ficha entram no kit. */
+  /**
+   * Na unidade de rendimento da ficha de dentro: unidades da receita no kit,
+   * gramas ou mililitros do preparo na receita.
+   */
   quantidade: number;
-  /** custoUnitario da ficha componente no momento do cálculo. */
-  custoUnitarioSnapshot: Centavos;
+  /**
+   * `custoParaComponente` da ficha de dentro no momento do cálculo: o
+   * `custoUnitario` da receita, ou o grama do preparo sem arredondar (`#d345`).
+   */
+  custoUnitarioSnapshot: CentavosFracionados;
   custoLinha: Centavos;
 }
 
@@ -134,7 +144,10 @@ export interface FichaTecnica extends DocumentoBase {
    * Em um KIT, apenas a embalagem própria do kit (caixa, laço, etiqueta).
    */
   itens: ItemFichaTecnica[];
-  /** Fichas que compõem o kit. Sempre vazio em ficha SIMPLES. */
+  /**
+   * Em um KIT, as receitas que vão dentro. Em uma SIMPLES, os preparos, e só
+   * se ela não é preparo (`#d345`). Vazio em toda receita anterior à 140-A.
+   */
   componentes: ComponenteKit[];
   /**
    * O que a cliente escolhe num kit (`DECISOES.md#d99`). Ausente ou vazio:
@@ -156,7 +169,7 @@ export interface FichaTecnica extends DocumentoBase {
   // ---- Resultado do motor de custo (derivado, gravado) ----
   custoInsumos: Centavos;
   custoEmbalagem: Centavos;
-  /** Soma dos componentes, em kit. Zero em ficha simples. */
+  /** Soma dos componentes: as receitas do kit, os preparos da receita. */
   custoComponentes: Centavos;
   /**
    * A parcela das escolhas no custo, pela opção mais cara de cada uma

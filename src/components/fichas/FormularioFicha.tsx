@@ -66,14 +66,17 @@ import {
   custoDasEscolhas,
   custoLinhaComponente,
   custoLinhaItem,
+  custoParaComponente,
   derivarFicha,
   ehEmbalagem,
+  ehPreparo,
   opcoesDaEscolha,
   osQueMaisPesam,
   parteDoCusto,
   pesoDaMassa,
   podeSerComponente,
   ROTULO_PARCELA,
+  ROTULO_PREPAROS,
   ROTULO_UNIDADE_RENDIMENTO,
   rotuloDaQuantidade,
   type RateioOperacional,
@@ -349,7 +352,9 @@ export function FormularioFicha({
     ficha.itens.length + ficha.componentes.length > 0;
   // A bancada é da receita com o que pesar (`#d343`): kit não tem receita.
   const temBancada =
-    !!ficha && ficha.tipo === "SIMPLES" && ficha.itens.length > 0;
+    !!ficha &&
+    ficha.tipo === "SIMPLES" &&
+    ficha.itens.length + ficha.componentes.length > 0;
   const fornadasDaFicha = useMemo(
     () => fornadas.filter((atual) => atual.fichaId === ficha?.id),
     [fornadas, ficha],
@@ -414,6 +419,8 @@ export function FormularioFicha({
   );
 
   const ehKit = valores.tipo === "KIT";
+  // A receita leva preparo; o preparo, não (`#d345`).
+  const levaPreparo = !ehKit && !ehPreparo(valores);
 
   // Abre sobre o que é dela. A categoria fica de fora de propósito: a
   // ficha-modelo da biblioteca vem com "Cookies" e é a primeira tela que
@@ -470,6 +477,10 @@ export function FormularioFicha({
 
   function resolverComponente(linha: LinhaComponenteForm): ComponenteDaFicha & {
     arquivado: boolean;
+    /** Na receita, a unidade do preparo; ausente no kit. */
+    preparo?: UnidadeRendimento;
+    /** Entrou como preparo e deixou de render em g ou ml depois. */
+    deixouDeSerPreparo: boolean;
   } {
     const componente = mapaFichas.get(linha.fichaId);
     const guardado = snapshotComponentes.get(linha.fichaId);
@@ -479,15 +490,15 @@ export function FormularioFicha({
       nomeSnapshot:
         componente?.nome ?? guardado?.nomeSnapshot ?? "Produto removido",
       quantidade: parseParaNumero(linha.quantidade),
-      custoUnitarioSnapshot: componente?.custoUnitario ?? 0,
+      custoUnitarioSnapshot: componente ? custoParaComponente(componente) : 0,
       arquivado: !componente,
+      preparo: ehKit ? undefined : (componente?.unidadeRendimento ?? "g"),
+      deixouDeSerPreparo: !ehKit && !!componente && !ehPreparo(componente),
     };
   }
 
   const itensResolvidos = valores.itens.map(resolverItem);
-  const componentesResolvidos = ehKit
-    ? valores.componentes.map(resolverComponente)
-    : [];
+  const componentesResolvidos = valores.componentes.map(resolverComponente);
   const escolhasResolvidas: EscolhaDoKit[] = ehKit
     ? valores.escolhas.map((linha) => ({
         quantidade: parseParaNumero(linha.quantidade),
@@ -562,17 +573,23 @@ export function FormularioFicha({
 
   // A parte de cada linha no custo dos materiais (`#d340`). No kit, o todo
   // são as três listas: produtos de dentro, escolhas e embalagem.
-  const linhasDeMaterial = itensResolvidos.map((item) => ({
-    id: item.insumoId,
-    nome: item.nomeSnapshot,
-    custo: custoLinhaItem(item),
+  // Na receita, o preparo é material entre os materiais (`#d345`).
+  const linhasDeComponente = componentesResolvidos.map((componente) => ({
+    id: componente.fichaId,
+    nome: componente.nomeSnapshot,
+    custo: custoLinhaComponente(componente),
   }));
+  const linhasDeMaterial = [
+    ...itensResolvidos.map((item) => ({
+      id: item.insumoId,
+      nome: item.nomeSnapshot,
+      custo: custoLinhaItem(item),
+    })),
+    ...(ehKit ? [] : linhasDeComponente),
+  ];
   const partes = parteDoCusto([
     ...linhasDeMaterial,
-    ...componentesResolvidos.map((componente) => ({
-      id: componente.fichaId,
-      custo: custoLinhaComponente(componente),
-    })),
+    ...(ehKit ? linhasDeComponente : []),
     ...escolhasResolvidas.map((escolha, indice) => ({
       id: `escolha-${indice}`,
       custo: custoDasEscolhas([escolha], fichas, ficha?.id).maximo,
@@ -580,7 +597,24 @@ export function FormularioFicha({
   ]);
   const maisPesam = ehKit ? null : osQueMaisPesam(linhasDeMaterial);
 
-  const peso = pesoDaMassa(itensResolvidos, rendimento);
+  const peso = pesoDaMassa(
+    [
+      ...itensResolvidos,
+      ...componentesResolvidos.flatMap((componente) =>
+        componente.preparo
+          ? [
+              {
+                nomeSnapshot: componente.nomeSnapshot,
+                categoria: "INGREDIENTE",
+                unidadeBase: componente.preparo === "ml" ? "ml" : "g",
+                quantidade: componente.quantidade,
+              } as const,
+            ]
+          : [],
+      ),
+    ],
+    rendimento,
+  );
   const fraseDaMassa =
     !ehKit &&
     peso.gramas > 0 &&
@@ -655,6 +689,24 @@ export function FormularioFicha({
       nomeBusca: insumo.nomeBusca,
       detalhe: `${formatarCustoUnitario(insumo.custoUnidadeBaseCorrigido)} por ${insumo.unidadeBase}`,
     }));
+  // O preparo entra pela mesma busca dos materiais, com o selo (`#d345`).
+  const opcoesPreparo: OpcaoBusca[] = levaPreparo
+    ? fichas
+        .filter((candidata) =>
+          podeSerComponente(candidata, ficha?.id, "RECEITA"),
+        )
+        .filter(
+          (candidata) =>
+            !valores.componentes.some((l) => l.fichaId === candidata.id),
+        )
+        .map((candidata) => ({
+          id: candidata.id,
+          nome: candidata.nome,
+          nomeBusca: candidata.nomeBusca,
+          detalhe: `${formatarCustoUnitario(custoParaComponente(candidata))} por ${candidata.unidadeRendimento}`,
+          selo: "Preparo",
+        }))
+    : [];
 
   const opcoesComponente: OpcaoBusca[] = fichas
     .filter((candidata) => podeSerComponente(candidata, ficha?.id))
@@ -681,7 +733,9 @@ export function FormularioFicha({
   }
 
   function adicionarComponente(fichaId: string) {
-    listaComponentes.append({ fichaId, quantidade: "1" });
+    // No kit, uma caixa leva unidades, e 1 é o começo certo; o grama do
+    // preparo nasce vazio, como o do material.
+    listaComponentes.append({ fichaId, quantidade: ehKit ? "1" : "" });
   }
 
   /** A primeira categoria que ainda não tem escolha, para não nascer repetida. */
@@ -707,14 +761,17 @@ export function FormularioFicha({
         const insumo = mapaInsumos.get(linha.insumoId);
         return insumo ? ehEmbalagem(insumo.categoria) : false;
       });
-      const removidos = valores.itens.length - mantidos.length;
+      // O preparo sai junto: no kit, a lista de dentro é de produtos.
+      const removidos =
+        valores.itens.length - mantidos.length + valores.componentes.length;
       form.setValue("itens", mantidos);
+      form.setValue("componentes", []);
       // Kit rende um: o lote é uma caixa (`#d227`), e o campo nem aparece.
       form.setValue("rendimento", "1");
       form.setValue("unidadeRendimento", "un");
       setAviso(
         removidos > 0
-          ? `Um kit não leva ingrediente solto: ${removidos} ${removidos === 1 ? "item saiu" : "itens saíram"} da lista, e só a embalagem ficou.`
+          ? `Um kit não leva ingrediente solto nem preparo: ${removidos} ${removidos === 1 ? "item saiu" : "itens saíram"} da lista, e só a embalagem ficou.`
           : null,
       );
       return;
@@ -790,6 +847,13 @@ export function FormularioFicha({
       return;
     }
 
+    if (componentesResolvidos.some((c) => c.deixouDeSerPreparo)) {
+      setFalha(
+        "Um preparo desta receita não rende mais em gramas nem mililitros. Tire-o da lista ou volte o rendimento dele: em unidades, o custo por grama não existe.",
+      );
+      return;
+    }
+
     // A guarda do preço vem depois da validação de campo: primeiro o que está
     // errado no formulário, depois o que é impossível na conta.
     if (derivado.motivoSemPreco) {
@@ -821,7 +885,14 @@ export function FormularioFicha({
 
     setSalvando(true);
     try {
-      if (ficha) await atualizarFicha(contaId, ficha.id, dados);
+      // O custo de antes diz se quem leva esta ficha dentro envelheceu (`#d345`).
+      if (ficha)
+        await atualizarFicha(
+          contaId,
+          ficha.id,
+          dados,
+          custoParaComponente(ficha),
+        );
       else await criarFicha(contaId, dados);
       void guarda.navegar("/fichas");
     } catch {
@@ -854,7 +925,7 @@ export function FormularioFicha({
         e a de "Seu trabalho" é a única colorida, para casar com o
         segmento âmbar. Custo zero, faixa nenhuma. */}
       <FaixaDeComposicao
-        segmentos={composicaoDoLote(derivado.custo)}
+        segmentos={composicaoDoLote(derivado.custo, valores.tipo)}
         className="mb-4 max-w-xl"
       />
       {/* Recibo, não tabela: a coluna para antes da borda para o rótulo e o
@@ -868,9 +939,9 @@ export function FormularioFicha({
           rotulo={ROTULO_PARCELA.custoEmbalagem}
           valor={derivado.custo.custoEmbalagem}
         />
-        {ehKit && (
+        {(ehKit || derivado.custo.custoComponentes > 0) && (
           <Parcela
-            rotulo={ROTULO_PARCELA.custoComponentes}
+            rotulo={ehKit ? ROTULO_PARCELA.custoComponentes : ROTULO_PREPAROS}
             valor={derivado.custo.custoComponentes}
           />
         )}
@@ -1490,16 +1561,28 @@ export function FormularioFicha({
             descricao={
               ehKit
                 ? "A caixa, o laço e a etiqueta do próprio kit."
-                : "Ingredientes e embalagem, na quantidade que um lote consome."
+                : levaPreparo
+                  ? "Ingredientes, preparos e embalagem, na quantidade que um lote consome."
+                  : "Ingredientes e embalagem, na quantidade que um lote consome."
             }
             recuado={false}
           >
             <div className="lg:ml-8">
               <BuscaItem
                 rotulo={ehKit ? "Adicionar embalagem" : "Adicionar material"}
-                placeholder={ehKit ? "Buscar embalagem" : "Buscar material"}
-                opcoes={opcoesInsumo}
-                aoEscolher={adicionarInsumo}
+                placeholder={
+                  ehKit
+                    ? "Buscar embalagem"
+                    : levaPreparo
+                      ? "Buscar material ou preparo"
+                      : "Buscar material"
+                }
+                opcoes={[...opcoesInsumo, ...opcoesPreparo]}
+                aoEscolher={(id) =>
+                  mapaFichas.has(id)
+                    ? adicionarComponente(id)
+                    : adicionarInsumo(id)
+                }
                 semResultado={
                   ehKit
                     ? "Nenhuma embalagem com esse nome. Cadastre-a em Materiais, na categoria Embalagem."
@@ -1530,8 +1613,14 @@ export function FormularioFicha({
                   : "Nenhum material ainda. Busque acima e toque para adicionar."
               }
               cabecalho={<CabecalhoItensFicha primeira="Material" />}
-              erro={erroDaLista(errosItens)}
-              quantidade={listaItens.fields.length}
+              erro={
+                erroDaLista(errosItens) ??
+                (ehKit ? undefined : erroDaLista(errosComponentes))
+              }
+              quantidade={
+                listaItens.fields.length +
+                (ehKit ? 0 : listaComponentes.fields.length)
+              }
             >
               {listaItens.fields.map((campo, indice) => {
                 const item = itensResolvidos[indice];
@@ -1557,6 +1646,35 @@ export function FormularioFicha({
                   />
                 );
               })}
+              {/* O preparo, depois dos materiais (`#d345`). Fica visível
+                  também no preparo que passou a render em gramas: é por aqui
+                  que ela o tira. */}
+              {!ehKit &&
+                listaComponentes.fields.map((campo, indice) => {
+                  const componente = componentesResolvidos[indice];
+                  if (!componente) return null;
+                  return (
+                    <LinhaComponenteFicha
+                      key={campo.id}
+                      nome={componente.nomeSnapshot}
+                      preparo={componente.preparo}
+                      custoUnitario={componente.custoUnitarioSnapshot}
+                      custoLinha={custoLinhaComponente(componente)}
+                      parte={partes.get(componente.fichaId) ?? 0}
+                      campoQuantidade={form.register(
+                        `componentes.${indice}.quantidade`,
+                      )}
+                      aoRemover={() => listaComponentes.remove(indice)}
+                      erro={
+                        componente.arquivado
+                          ? "Este preparo foi arquivado e não tem mais custo. Tire-o do produto ou reative o cadastro."
+                          : componente.deixouDeSerPreparo
+                            ? "Este produto não rende mais em gramas nem mililitros, e só preparo entra numa receita. Tire-o da lista."
+                            : erroDaLinha(errosComponentes, indice)
+                      }
+                    />
+                  );
+                })}
             </ListaDeLinhas>
           </Bloco>
 

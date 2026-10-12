@@ -8,7 +8,7 @@ import { BASE_CONTROLE } from "@/components/ui/Campo";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Selo } from "@/components/ui/Selo";
 import { formatarMoeda, formatarValor } from "@/lib/domain/money";
-import type { Centavos, UnidadeCompra } from "@/lib/types";
+import type { Centavos, UnidadeCompra, UnidadeRendimento } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
 const CLASSES_QUANTIDADE = cn(
@@ -254,9 +254,15 @@ export function LinhaItemFicha({
   );
 }
 
+/**
+ * Uma ficha dentro de outra: a receita no kit, em unidades e com o custo de
+ * cada uma; ou o preparo na receita (`#d345`), em gramas ou mililitros, com o
+ * selo, como um material entre os materiais.
+ */
 export function LinhaComponenteFicha({
   nome,
   custoUnitario,
+  preparo,
   custoLinha,
   parte,
   campoQuantidade,
@@ -265,6 +271,8 @@ export function LinhaComponenteFicha({
 }: {
   nome: string;
   custoUnitario: Centavos;
+  /** A unidade do preparo. Ausente, é a receita de um kit. */
+  preparo?: UnidadeRendimento;
   custoLinha: Centavos;
   parte: number;
   campoQuantidade: UseFormRegisterReturn;
@@ -274,26 +282,33 @@ export function LinhaComponenteFicha({
   return (
     <Linha
       nome={nome}
+      etiqueta={preparo ? <Selo tom="neutro">Preparo</Selo> : undefined}
       custoLinha={custoLinha}
       parte={parte}
       aoRemover={aoRemover}
-      rotuloRemover={`Tirar ${nome} do kit`}
+      rotuloRemover={`Tirar ${nome} do ${preparo ? "produto" : "kit"}`}
       erro={erro}
-      colunas="Produto"
+      colunas={preparo ? "Material" : "Produto"}
       controles={
         <>
           <input
             type="text"
-            inputMode="numeric"
+            inputMode={preparo ? "decimal" : "numeric"}
             autoComplete="off"
-            aria-label={`Quantidade de ${nome} no kit`}
+            aria-label={
+              preparo ? `Quantidade de ${nome}` : `Quantidade de ${nome} no kit`
+            }
             aria-invalid={erro ? true : undefined}
             className={cn(CLASSES_QUANTIDADE, erro && "border-negative")}
             {...campoQuantidade}
           />
-          <span className="num text-label text-ink-muted">
-            × {formatarValor(custoUnitario)}
-          </span>
+          {preparo ? (
+            <span className="text-label text-ink-muted">{preparo}</span>
+          ) : (
+            <span className="num text-label text-ink-muted">
+              × {formatarValor(custoUnitario)}
+            </span>
+          )}
         </>
       }
     />

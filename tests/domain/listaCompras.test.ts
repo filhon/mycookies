@@ -6,6 +6,7 @@ import {
   entraNaLista,
   explodirDemanda,
   extrasDe,
+  insumosPorLote,
   faltaParaOsPedidos,
   montarLista,
   orcamentosDeFora,
@@ -176,7 +177,7 @@ function linhaDe(insumoId: string) {
 }
 
 // ---------------------------------------------------------------------------
-// A explosão, e o kit que para no primeiro nível.
+// A explosão, e o kit que desce até o terceiro nível (`#d345`).
 // ---------------------------------------------------------------------------
 
 describe("explodirDemanda", () => {
@@ -203,7 +204,7 @@ describe("explodirDemanda", () => {
     expect(explodirDemanda([PEDIDO], FICHAS).pedidoIds).toEqual(["p1"]);
   });
 
-  it("para no primeiro nível: o kit dentro do kit não é seguido", () => {
+  it("kit dentro de kit desce até o terceiro nível (`#d345`)", () => {
     const kitDeKit: FichaParaExplodir = {
       id: "cesta",
       nome: "Cesta de Natal",
@@ -235,10 +236,10 @@ describe("explodirDemanda", () => {
       demanda.linhas.map((linha) => [linha.insumoId, linha.quantidade]),
     );
 
-    // As duas caixas entram, porque são itens do componente. Os cookies dentro
-    // delas não: seriam o segundo nível, e `DECISOES.md#d11` o proíbe.
+    // Kit dentro de kit é dado fora da regra, mas cabe nos três níveis do
+    // `#d345`: as duas caixas entram, e os 12 cookies delas também.
     expect(porInsumo.get("caixa")).toBeCloseTo(2, 6);
-    expect(porInsumo.has("farinha")).toBe(false);
+    expect(porInsumo.get("farinha")).toBeCloseTo(300, 6);
   });
 
   it("dois pedidos somam no mesmo insumo, em vez de sobrescrever", () => {
@@ -1201,5 +1202,106 @@ describe("textoDaLista (#d306)", () => {
       "2026-10-15",
     );
     expect(texto).toContain("- Coco: 2 pacotes (");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spec 140-A · o preparo dentro da receita (`#d345`): kit → receita → preparo.
+// ---------------------------------------------------------------------------
+
+describe("explodirDemanda com preparo", () => {
+  const RECHEIO: FichaParaExplodir = {
+    id: "recheio",
+    nome: "Recheio de Nutella",
+    arquivado: false,
+    rendimento: 1000,
+    itens: [
+      { insumoId: "nutella", nomeSnapshot: "Nutella", quantidade: 800 },
+      { insumoId: "creme", nomeSnapshot: "Creme de leite", quantidade: 200 },
+    ],
+    componentes: [],
+  };
+  const RECHEADO: FichaParaExplodir = {
+    id: "recheado",
+    nome: "Cookie recheado",
+    arquivado: false,
+    rendimento: 10,
+    itens: [{ insumoId: "farinha", nomeSnapshot: "Farinha", quantidade: 500 }],
+    componentes: [
+      {
+        fichaId: "recheio",
+        nomeSnapshot: "Recheio de Nutella",
+        quantidade: 320,
+      },
+    ],
+  };
+  const CAIXA_COM_5: FichaParaExplodir = {
+    id: "caixa5",
+    nome: "Caixa com 5",
+    arquivado: false,
+    rendimento: 1,
+    itens: [{ insumoId: "caixa", nomeSnapshot: "Caixa", quantidade: 1 }],
+    componentes: [
+      { fichaId: "recheado", nomeSnapshot: "Cookie recheado", quantidade: 5 },
+    ],
+  };
+  const TODAS = [RECHEIO, RECHEADO, CAIXA_COM_5, COMBO_DUPLA];
+
+  it("a caixa explode a receita, e a receita explode o preparo", () => {
+    // 2 caixas × 5 = 10 cookies = 1 lote: 320 g de recheio, 32% do lote dele.
+    const demanda = porInsumo(
+      [
+        {
+          id: "p",
+          itens: [
+            { fichaTecnicaId: "caixa5", nomeSnapshot: "Caixa", quantidade: 2 },
+          ],
+        },
+      ],
+      TODAS,
+    );
+    expect(demanda.get("farinha")).toBeCloseTo(500, 6);
+    expect(demanda.get("nutella")).toBeCloseTo(256, 6);
+    expect(demanda.get("creme")).toBeCloseTo(64, 6);
+    expect(demanda.get("caixa")).toBeCloseTo(2, 6);
+    expect(demanda.has("recheio")).toBe(false);
+  });
+
+  it("a receita escolhida no combo leva o preparo junto", () => {
+    // 5 combos × 1 recheado = 0,5 lote: 160 g de recheio.
+    const demanda = porInsumo(
+      [
+        pedidoDeCombo(
+          [
+            {
+              fichaTecnicaId: "recheado",
+              nomeSnapshot: "Cookie recheado",
+              quantidade: 1,
+            },
+          ],
+          5,
+        ),
+      ],
+      TODAS,
+    );
+    expect(demanda.get("farinha")).toBeCloseTo(250, 6);
+    expect(demanda.get("nutella")).toBeCloseTo(128, 6);
+    expect(demanda.get("kraft")).toBeCloseTo(5, 6);
+  });
+
+  it("o dado que fugiu da regra (um ciclo) para no terceiro nível", () => {
+    const a: FichaParaExplodir = {
+      ...RECHEADO,
+      id: "a",
+      componentes: [{ fichaId: "b", nomeSnapshot: "B", quantidade: 10 }],
+    };
+    const b: FichaParaExplodir = {
+      ...RECHEADO,
+      id: "b",
+      componentes: [{ fichaId: "a", nomeSnapshot: "A", quantidade: 10 }],
+    };
+    const demanda = insumosPorLote(a, new Map([a, b].map((f) => [f.id, f])));
+    // 500 em A, 500 em B (10 de 10), 500 em A de novo, e para.
+    expect(demanda.get("farinha")?.quantidade).toBeCloseTo(1500, 6);
   });
 });

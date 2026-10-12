@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-12",
+    titulo: "O recheio entra em outra receita",
+    frase:
+      "Cadastre o recheio ou a massa base rendendo em gramas e busque pelo nome em O que vai dentro de outro produto: o custo dele segue os ingredientes, em todo produto que o usa.",
+    href: "/fichas",
+  },
+  {
+    dataISO: "2026-10-12",
     titulo: "Um sabor novo começa da receita de outro",
     frase:
       "No pé do produto, Fazer uma variação abre um produto novo com os materiais, a embalagem, o tempo e o preparo deste: troque o que muda, dê o nome e salve.",

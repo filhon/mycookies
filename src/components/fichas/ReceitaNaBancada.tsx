@@ -81,7 +81,9 @@ export function ReceitaNaBancada({ id }: { id: string }) {
   // é quem diz o que falta (e o arquivado ou o endereço errado, também).
   const semBancada =
     !carregando &&
-    (!ficha || ficha.tipo !== "SIMPLES" || ficha.itens.length === 0);
+    (!ficha ||
+      ficha.tipo !== "SIMPLES" ||
+      ficha.itens.length + ficha.componentes.length === 0);
 
   useEffect(() => {
     if (semBancada) router.replace(`/fichas/${id}` as Route);
@@ -178,7 +180,20 @@ function Bancada({
     guardarMarcas(ficha.id, novas);
   }
 
-  const daMassa = ficha.itens.filter((item) => !ehEmbalagem(item.categoria));
+  // O preparo vai para a tigela como um ingrediente, pesado (`#d345`).
+  const unidadeDe = new Map(fichas.map((f) => [f.id, f.unidadeRendimento]));
+  const daMassa = [
+    ...ficha.itens.filter((item) => !ehEmbalagem(item.categoria)),
+    ...ficha.componentes.map((componente) => ({
+      insumoId: componente.fichaId,
+      nomeSnapshot: componente.nomeSnapshot,
+      quantidade: componente.quantidade,
+      unidadeBase:
+        unidadeDe.get(componente.fichaId) === "ml"
+          ? ("ml" as const)
+          : ("g" as const),
+    })),
+  ];
   const embalagem = ficha.itens.filter((item) => ehEmbalagem(item.categoria));
   const ingredientes = escalarItens(daMassa, marcas.fator);
   const passos = passosDoPreparo(ficha.modoPreparo);

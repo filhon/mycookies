@@ -122,7 +122,7 @@ describe("consumoPorLote", () => {
     expect(consumoDe(consumo, "chocolate")).toBeCloseTo(90, 6);
   });
 
-  it("o componente de um componente não é seguido", () => {
+  it("o componente de um componente é seguido até o terceiro nível (`#d345`)", () => {
     const cesta: FichaParaProduzir = {
       id: "cesta",
       nome: "Cesta",
@@ -137,7 +137,8 @@ describe("consumoPorLote", () => {
 
     const consumo = consumoPorLote(cesta, [...FICHAS, cesta], PERDAS);
     expect(consumoDe(consumo, "caixa")).toBe(2);
-    expect(consumoDe(consumo, "farinha")).toBeUndefined();
+    // 12 cookies de um lote de 20: 300 g úteis de farinha, 315,79 g físicos.
+    expect(consumoDe(consumo, "farinha")).toBeCloseTo(315.789474, 5);
   });
 
   it("insumo sem cadastro entra sem perda, e não como NaN", () => {

@@ -3,6 +3,7 @@
 import { Plus } from "lucide-react";
 import { useId, useState } from "react";
 import { CampoBusca } from "./CampoBusca";
+import { Selo } from "./Selo";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 
 export interface OpcaoBusca {
@@ -11,6 +12,8 @@ export interface OpcaoBusca {
   nomeBusca: string;
   /** O custo da opção, em uma linha. É o que decide entre dois parecidos. */
   detalhe: string;
+  /** O que a separa das outras da mesma lista: "Preparo" entre materiais. */
+  selo?: string;
 }
 
 /** Mais que isso vira rolagem dentro de rolagem no celular. */
@@ -98,8 +101,11 @@ export function BuscaItem({
                       strokeWidth={2}
                     />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-body font-medium text-ink">
-                        {opcao.nome}
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="truncate text-body font-medium text-ink">
+                          {opcao.nome}
+                        </span>
+                        {opcao.selo && <Selo tom="neutro">{opcao.selo}</Selo>}
                       </span>
                       <span className="num mt-0.5 block truncate text-label text-ink-muted">
                         {opcao.detalhe}

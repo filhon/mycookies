@@ -79,7 +79,7 @@ export interface FichaParaExplodir {
   /** Quantas unidades saem de UM lote. Zero é ficha pela metade, e não zero doces. */
   rendimento: number;
   itens: { insumoId: string; nomeSnapshot: string; quantidade: number }[];
-  /** Sempre vazio em ficha simples. Em um kit, as fichas que ele leva dentro. */
+  /** No kit, as receitas; na receita, os preparos, em g ou ml (`#d345`). */
   componentes: { fichaId: string; nomeSnapshot: string; quantidade: number }[];
 }
 
@@ -147,13 +147,19 @@ function linhasDosItens(ficha: FichaParaExplodir): LinhaDeDemanda[] {
   }));
 }
 
+/** Kit, receita, preparo: abaixo do terceiro nível não se desce (`#d345`). */
+const NIVEIS = 3;
+
 /**
  * Os insumos de **um** lote da ficha, em unidade base e sem perda.
  *
- * É aqui que mora a regra do kit de um nível (`DECISOES.md#d11`): os `itens` da
- * própria ficha entram inteiros, e cada componente entra pelos itens dele,
- * multiplicados por `quantidade / rendimento` do componente. O componente de um
- * componente não existe — são dois laços, e não uma chamada recursiva.
+ * É aqui que mora a regra dos níveis (`DECISOES.md#d11`, revista no `#d345`):
+ * os `itens` da própria ficha entram inteiros, e cada componente entra pelos
+ * insumos de um lote dele, multiplicados por `quantidade / rendimento` do
+ * componente. O kit leva a receita, que leva o preparo, e é aí que para:
+ * preparo não leva preparo. `nivel` é a guarda contra o dado que fugiu da
+ * regra (um preparo que deixou de render em gramas depois de entrar), e não a
+ * regra: com ele, um ciclo para no terceiro nível, e não vira laço infinito.
  *
  * `explodirDemanda` e `consumoPorLote` (a fornada, em `producao.ts`) chamam a
  * mesma função: se a regra do kit ficasse duplicada, a primeira mudança nela
@@ -167,12 +173,13 @@ export function insumosPorLote(
   ficha: FichaParaExplodir,
   porId: Map<string, FichaParaExplodir>,
   aoPular?: (nome: string, motivo: MotivoPendencia) => void,
+  nivel = 1,
 ): Map<string, LinhaDeDemanda> {
   const destino = new Map<string, LinhaDeDemanda>();
 
   somarInsumos(linhasDosItens(ficha), 1, destino);
+  if (nivel >= NIVEIS) return destino;
 
-  // Um nível, e só um: o componente de um componente não existe.
   for (const componente of ficha.componentes) {
     const dentro = porId.get(componente.fichaId);
     // Sumida ou arquivada, o nome é o congelado no kit; sem rendimento, a
@@ -187,7 +194,11 @@ export function insumosPorLote(
     }
 
     const unidades = quantidadeUtil(componente.quantidade);
-    somarInsumos(linhasDosItens(dentro), unidades / dentro.rendimento, destino);
+    somarInsumos(
+      insumosPorLote(dentro, porId, aoPular, nivel + 1).values(),
+      unidades / dentro.rendimento,
+      destino,
+    );
   }
 
   return destino;
@@ -214,14 +225,13 @@ export function insumosPorLote(
  * (`custoFicha.ts` soma os componentes em `custoTotalLote` e só então divide
  * pelo rendimento): assim demanda e custo do mesmo pedido não podem divergir.
  *
- * A recursão para no primeiro nível por construção, em `insumosPorLote`. É o
- * que `DECISOES.md#d11` garante, e é por isso que esta função vive sem detecção
- * de ciclo.
+ * A recursão para no terceiro nível, kit, receita e preparo, em
+ * `insumosPorLote`. É o que `DECISOES.md#d11` e `#d345` garantem, e é por isso
+ * que esta função vive sem detecção de ciclo.
  *
  * **Um combo explode o que foi escolhido** (`#d103`): cada escolha entra pelos
- * itens da receita escolhida, em `quantidade × pedida ÷ rendimento`, e a
- * receita escolhida é `SIMPLES` por construção, então são os `itens` dela e
- * nada abaixo. Sem isto a lista compraria só o saquinho do combo, e deixar de
+ * insumos da receita escolhida, em `quantidade × pedida ÷ rendimento`, com o
+ * preparo dela. Sem isto a lista compraria só o saquinho do combo, e deixar de
  * comprar é o erro caro (`#d63`). Pedido sem `escolhas` explode como sempre.
  */
 export function explodirDemanda(
@@ -271,8 +281,10 @@ export function explodirDemanda(
           continue;
         }
         const unidades = quantidadeUtil(escolha.quantidade) * pedida;
+        // A receita escolhida está no segundo nível, como a do kit fixo: o
+        // preparo dela entra, e nada abaixo dele (`#d345`).
         somarInsumos(
-          linhasDosItens(receita),
+          insumosPorLote(receita, porId, anotar, 2).values(),
           unidades / receita.rendimento,
           destino,
         );

@@ -77,8 +77,10 @@ export interface FornadaRegistrada {
 /**
  * Os insumos de UM lote, físicos, com a perda de cada insumo aplicada.
  *
- * É `insumosPorLote` — a mesma regra do kit de um nível que a lista de compras
- * usa — passado por `quantidadeFisica`: o que sai do armário é o que sai do
+ * É `insumosPorLote` — a mesma regra dos níveis (kit, receita, preparo) que a
+ * lista de compras usa — passado por `quantidadeFisica`. A receita com preparo
+ * desconta os ingredientes dele, pro rata (`#d345`): o pote do preparo é da
+ * 140-B. O que sai do armário é o que sai do
  * armário, e a perda faz parte dele. Insumo que sumiu do cadastro entra sem
  * perda: não há de onde tirá-la, e zero é a leitura honesta.
  *

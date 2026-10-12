@@ -52,7 +52,11 @@ import { LinhaItemPedido } from "./LinhaItemPedido";
 import { PainelPedido } from "./PainelPedido";
 import { SeloStatus } from "./SeloStatus";
 import { TrilhaDoPedido } from "./TrilhaDoPedido";
-import { podeSerComponente, temEscolhas } from "@/lib/domain/custoFicha";
+import {
+  ehPreparo,
+  podeSerComponente,
+  temEscolhas,
+} from "@/lib/domain/custoFicha";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import { formatarMoeda, parseParaNumero } from "@/lib/domain/money";
 import { brCodePix } from "@/lib/domain/pix";
@@ -570,8 +574,9 @@ export function FormularioPedido({
   // A mesma ficha não entra duas vezes — exceto o combo à escolha, em que
   // duas linhas são duas escolhas diferentes: três "tradicional + nutella" e
   // um "dois nutella".
+  // O preparo não se vende sozinho (`#d345`): vai dentro de outra receita.
   const opcoesFicha: OpcaoBusca[] = fichas
-    .filter((ficha) => ficha.ativo)
+    .filter((ficha) => ficha.ativo && !ehPreparo(ficha))
     .filter(
       (ficha) =>
         temEscolhas(ficha) ||

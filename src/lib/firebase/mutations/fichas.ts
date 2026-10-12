@@ -17,6 +17,7 @@ import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import {
   custoLinhaComponente,
   custoLinhaItem,
+  custoParaComponente,
   derivarFicha,
   refazerCustoPelaConfiguracao,
   type RateioOperacional,
@@ -46,12 +47,13 @@ export interface ItemDaFicha {
   custoUnidadeBaseCorrigido: CentavosFracionados;
 }
 
-/** Uma ficha simples que entra em um kit. */
+/** Uma ficha dentro de outra: a receita no kit, o preparo na receita (`#d345`). */
 export interface ComponenteDaFicha {
   fichaId: string;
   nomeSnapshot: string;
   quantidade: number;
-  custoUnitarioSnapshot: Centavos;
+  /** `custoParaComponente` da ficha de dentro. */
+  custoUnitarioSnapshot: CentavosFracionados;
 }
 
 export interface DadosFicha {
@@ -230,10 +232,13 @@ export async function atualizarFicha(
   contaId: string,
   fichaId: string,
   dados: DadosFicha,
+  /** `custoParaComponente` da ficha gravada, antes desta escrita. */
+  custoAnterior?: CentavosFracionados,
 ): Promise<void> {
+  const corpo = corpoDaFicha(dados);
   despachar(
     updateDoc(docFicha(contaId, fichaId), {
-      ...corpoDaFicha(dados),
+      ...corpo,
       // Chave ausente em `updateDoc` deixa o valor velho no lugar: tirar a
       // foto e limpar a descrição ou o preparo precisam apagar, e não esconder.
       ...(dados.fotoUrl === null && { fotoUrl: deleteField() }),
@@ -244,6 +249,35 @@ export async function atualizarFicha(
       atualizadoEm: agora(),
     }),
   );
+
+  if (
+    custoAnterior !== undefined &&
+    custoParaComponente(corpo) !== custoAnterior
+  ) {
+    despachar(marcarQuemLeva(contaId, fichaId));
+  }
+}
+
+/**
+ * O custo de uma ficha mudou: quem a leva dentro, a receita que usa este
+ * preparo ou o kit que leva esta receita, passa a exibir custo velho
+ * (`#d345`). O mesmo `array-contains` de `marcarFichasDesatualizadas`, um
+ * nível acima, e o mesmo cache sem rede. Não desce a cascata: o kit de uma
+ * receita que usa o preparo é marcado quando ela salvar.
+ */
+async function marcarQuemLeva(contaId: string, fichaId: string) {
+  const quem = await getDocs(
+    query(
+      colFichas(contaId),
+      where("componenteIds", "array-contains", fichaId),
+    ),
+  );
+  if (quem.empty) return;
+  const lote = writeBatch(obterDb());
+  quem.forEach((retrato) => {
+    lote.update(retrato.ref, { v: VERSAO_SCHEMA, custoDesatualizado: true });
+  });
+  despachar(lote.commit());
 }
 
 /**
@@ -308,6 +342,9 @@ export async function refazerFichasPelaConfiguracao(
       ...refazerCustoPelaConfiguracao(ficha, operacional),
       v: VERSAO_SCHEMA,
       custoCalculadoEm: momento,
+      // A receita com preparo refaz a hora dela, mas o preparo de dentro
+      // também mudou e não está nesta conta (`#d345`): fica marcada.
+      ...(ficha.componentes.length > 0 && { custoDesatualizado: true }),
     });
   });
   if (!fichas.empty) despachar(lote.commit());

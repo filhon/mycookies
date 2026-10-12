@@ -6,6 +6,7 @@ import {
   custoDeHoje,
   custoGravado,
   custoLinhaItem,
+  custoParaComponente,
   custosDeHoje,
   derivarFicha,
   refazerCustoPelaConfiguracao,
@@ -219,6 +220,7 @@ const TRADICIONAL: FichaParaEscolha = {
   id: "trad",
   nome: "Cookie tradicional",
   tipo: "SIMPLES",
+  unidadeRendimento: "un",
   categoria: "Cookie",
   arquivado: false,
   custoUnitario: 220,
@@ -342,7 +344,13 @@ describe("temEscolhas", () => {
 });
 
 describe("podeSerComponente", () => {
-  const cookie = { id: "cookie", tipo: "SIMPLES" as const, arquivado: false };
+  const cookie = {
+    id: "cookie",
+    tipo: "SIMPLES" as const,
+    unidadeRendimento: "un" as const,
+    arquivado: false,
+  };
+  const recheio = { ...cookie, id: "recheio", unidadeRendimento: "g" as const };
 
   it("aceita ficha simples ativa", () => {
     expect(podeSerComponente(cookie, "caixa")).toBe(true);
@@ -350,13 +358,59 @@ describe("podeSerComponente", () => {
 
   it("recusa kit dentro de kit", () => {
     expect(
-      podeSerComponente({ id: "outra-caixa", tipo: "KIT", arquivado: false }),
+      podeSerComponente({ ...cookie, id: "outra-caixa", tipo: "KIT" }),
     ).toBe(false);
   });
 
   it("recusa a própria ficha e o que está arquivado", () => {
     expect(podeSerComponente(cookie, "cookie")).toBe(false);
     expect(podeSerComponente({ ...cookie, arquivado: true })).toBe(false);
+  });
+
+  it("no kit, o preparo não entra: não se vende sozinho (`#d345`)", () => {
+    expect(podeSerComponente(recheio, "caixa")).toBe(false);
+  });
+
+  it("na receita, só o preparo entra, em g ou ml (`#d345`)", () => {
+    expect(podeSerComponente(recheio, "cookie", "RECEITA")).toBe(true);
+    expect(
+      podeSerComponente(
+        { ...recheio, unidadeRendimento: "ml" },
+        "cookie",
+        "RECEITA",
+      ),
+    ).toBe(true);
+    expect(podeSerComponente(cookie, "outro", "RECEITA")).toBe(false);
+    expect(
+      podeSerComponente({ ...cookie, tipo: "KIT" }, "outro", "RECEITA"),
+    ).toBe(false);
+    expect(podeSerComponente(recheio, "recheio", "RECEITA")).toBe(false);
+    expect(
+      podeSerComponente({ ...recheio, arquivado: true }, "cookie", "RECEITA"),
+    ).toBe(false);
+  });
+});
+
+describe("custoParaComponente", () => {
+  const base = {
+    tipo: "SIMPLES" as const,
+    rendimento: 1000,
+    custoTotalLote: 3400,
+    custoUnitario: 3,
+  };
+
+  it("preparo: o grama sem arredondar (R$ 34 em 1 kg são 3,4 centavos)", () => {
+    expect(custoParaComponente({ ...base, unidadeRendimento: "g" })).toBe(3.4);
+  });
+
+  it("receita do kit: o custo unitário gravado, como sempre", () => {
+    expect(custoParaComponente({ ...base, unidadeRendimento: "un" })).toBe(3);
+  });
+
+  it("preparo sem rendimento vale zero, e não Infinity", () => {
+    expect(
+      custoParaComponente({ ...base, unidadeRendimento: "g", rendimento: 0 }),
+    ).toBe(0);
   });
 });
 
@@ -585,6 +639,7 @@ describe("custoDeHoje", () => {
 
   it("sem mudança, devolve o gravado centavo por centavo (`#d135`)", () => {
     expect(custoDeHoje(COOKIE, mapaMateriais())).toEqual({
+      custoTotalLote: 2425,
       custoUnitario: 243,
       sobra: 447,
       culpado: null,
@@ -594,6 +649,7 @@ describe("custoDeHoje", () => {
 
   it("chocolate a 6,50 c/g: unitário 293, sobra 397, culpado Chocolate, caiu", () => {
     expect(custoDeHoje(COOKIE, mapaMateriais(6.5))).toEqual({
+      custoTotalLote: 2925,
       custoUnitario: 293,
       sobra: 397,
       culpado: { nome: "Chocolate", subiu: 500 },
@@ -603,6 +659,7 @@ describe("custoDeHoje", () => {
 
   it("chocolate a 3,00 c/g: sobra sobe, sem culpado e sem cartão", () => {
     expect(custoDeHoje(COOKIE, mapaMateriais(3))).toEqual({
+      custoTotalLote: 2225,
       custoUnitario: 223,
       sobra: 467,
       culpado: null,
@@ -613,6 +670,7 @@ describe("custoDeHoje", () => {
   it("material arquivado fica fora do mapa: tudo igual ao gravado", () => {
     const semChocolate = new Map([["farinha", FARINHA]]);
     expect(custoDeHoje(COOKIE, semChocolate)).toEqual({
+      custoTotalLote: 2425,
       custoUnitario: 243,
       sobra: 447,
       culpado: null,
@@ -751,6 +809,95 @@ describe("custosDeHoje", () => {
       nome: "Cookie",
       subiu: 300,
     });
+  });
+
+  it("preparo → receita → kit: o grama de hoje sobe a receita, que sobe o kit (`#d345`)", () => {
+    const SEM_TEMPO = {
+      tempoProducaoMinutos: 0,
+      custoMaoDeObra: 0,
+      custoEnergiaGas: 0,
+      custoIndireto: 0,
+    };
+    const recheio = fichaHoje({
+      id: "recheio",
+      nome: "Recheio de Nutella",
+      rendimento: 1000,
+      unidadeRendimento: "g",
+      itens: [
+        {
+          insumoId: "nutella",
+          nomeSnapshot: "Nutella",
+          categoria: "INGREDIENTE",
+          quantidade: 800,
+          unidadeBase: "g",
+          custoLinha: 3200,
+        },
+      ],
+      insumoIds: ["nutella"],
+      invisiveis: SEM_TEMPO,
+      custoInsumos: 3200,
+      custoTotalLote: 3200,
+      custoUnitario: 3,
+    });
+    const cookie = fichaHoje({
+      componentes: [
+        {
+          fichaId: "recheio",
+          nomeSnapshot: "Recheio de Nutella",
+          quantidade: 320,
+          custoUnitarioSnapshot: 3.2,
+          custoLinha: 1024,
+        },
+      ],
+      componenteIds: ["recheio"],
+      custoComponentes: 1024,
+      custoTotalLote: 3449,
+      custoUnitario: 345,
+    });
+    const kit = fichaHoje({
+      id: "caixa-6",
+      tipo: "KIT",
+      rendimento: 1,
+      itens: [],
+      insumoIds: [],
+      componentes: [
+        {
+          fichaId: "cookie",
+          nomeSnapshot: "Cookie",
+          quantidade: 6,
+          custoUnitarioSnapshot: 345,
+          custoLinha: 2070,
+        },
+      ],
+      componenteIds: ["cookie"],
+      invisiveis: SEM_TEMPO,
+      custoInsumos: 0,
+      custoComponentes: 2070,
+      custoTotalLote: 2070,
+      custoUnitario: 2070,
+    });
+
+    // A ordem da lista não importa: o kit vem primeiro de propósito.
+    const resultado = custosDeHoje(
+      [kit, cookie, recheio],
+      [
+        FARINHA,
+        { id: "chocolate", nome: "Chocolate", custoUnidadeBaseCorrigido: 4 },
+        { id: "nutella", nome: "Nutella", custoUnidadeBaseCorrigido: 5 },
+      ],
+    );
+
+    // 800 g a 5: o lote do recheio vai a R$ 40, o grama a 4 centavos.
+    expect(resultado.get("recheio")?.custoTotalLote).toBe(4000);
+    // 320 g a 4 = 1280, eram 1024: o cookie sobe 256 no lote.
+    expect(resultado.get("cookie")?.custoTotalLote).toBe(3705);
+    expect(resultado.get("cookie")?.custoUnitario).toBe(371);
+    expect(resultado.get("cookie")?.culpado).toEqual({
+      nome: "Recheio de Nutella",
+      subiu: 256,
+    });
+    // 6 × 371 = 2226.
+    expect(resultado.get("caixa-6")?.custoUnitario).toBe(2226);
   });
 
   it("combo com escolha: a opção mais cara de hoje entra no custo (`#d101`)", () => {

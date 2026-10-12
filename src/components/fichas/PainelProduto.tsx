@@ -71,7 +71,7 @@ export function PainelProduto({
 }) {
   const ref = useRef<HTMLElement>(null);
   const custo = custoGravado(ficha);
-  const segmentos = composicaoDoLote(custo);
+  const segmentos = composicaoDoLote(custo, ficha.tipo);
   const lucro = ficha.precificacao.lucroUnitario;
   const noPrejuizo = lucro < 0;
 

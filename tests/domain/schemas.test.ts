@@ -70,3 +70,36 @@ describe("esquemaFicha · escolhas (spec 014)", () => {
     });
   });
 });
+
+describe("esquemaFicha · preparo (spec 140-A, `#d345`)", () => {
+  const RECEITA = {
+    ...COMBO,
+    tipo: "SIMPLES" as const,
+    rendimento: 10,
+    escolhas: [],
+    itens: [],
+    componentes: [{ fichaId: "recheio", quantidade: 320 }],
+  };
+
+  it("a receita só de preparos é receita", () => {
+    expect(esquemaFicha.safeParse(RECEITA).success).toBe(true);
+  });
+
+  it("o que rende em g ou ml não leva preparo", () => {
+    for (const unidadeRendimento of ["g", "ml"] as const) {
+      const resultado = esquemaFicha.safeParse({
+        ...RECEITA,
+        itens: [{ insumoId: "nutella", quantidade: 800 }],
+        unidadeRendimento,
+      });
+      expect(resultado.success).toBe(false);
+      expect(resultado.error?.issues[0]?.path).toEqual(["componentes"]);
+    }
+  });
+
+  it("receita sem material e sem preparo continua recusada", () => {
+    const resultado = esquemaFicha.safeParse({ ...RECEITA, componentes: [] });
+    expect(resultado.success).toBe(false);
+    expect(resultado.error?.issues[0]?.path).toEqual(["itens"]);
+  });
+});
