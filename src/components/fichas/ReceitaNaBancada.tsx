@@ -254,7 +254,9 @@ function Bancada({
     marcas.passos.includes(indice),
   ).length;
   // O passo da vez é o primeiro não marcado; tudo marcado, nenhum (`#d350`).
-  const agora = passos.findIndex((_, indice) => !marcas.passos.includes(indice));
+  const agora = passos.findIndex(
+    (_, indice) => !marcas.passos.includes(indice),
+  );
 
   // Marcar leva o da vez para a tela, só se ele estiver fora dela.
   const passoDaVez = useRef<HTMLLIElement>(null);

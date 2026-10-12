@@ -11311,9 +11311,9 @@ dizendo 560 g em 2 fornadas, o único lugar da bancada que mentia com a escala.
      como "Chocolate", porque o trecho já casado não casa de novo;
   2. senão, a primeira palavra do nome, de 4 letras ou mais, com plural em "s", só se nenhum
      outro ingrediente começar por ela. Com cristal e mascavo, "açúcar" sozinho não é de nenhum.
-  Só palavra inteira ("ovo" não casa "ovoide"), só a primeira menção de cada ingrediente. Na tela,
-  logo depois da palavra, o `rotulo` escalado em 600 tabular, sem caixa: é texto lido. **Na dúvida,
-  não casa**: um passo sem quantidade é o de antes; um com a quantidade errada é pior.
+     Só palavra inteira ("ovo" não casa "ovoide"), só a primeira menção de cada ingrediente. Na tela,
+     logo depois da palavra, o `rotulo` escalado em 600 tabular, sem caixa: é texto lido. **Na dúvida,
+     não casa**: um passo sem quantidade é o de antes; um com a quantidade errada é pior.
 - **O número escrito à mão.** Com fornadas ≠ 1, o passo que traz número com unidade (`g`, `kg`,
   `ml`, `l`, xícara, colher, copo, lata, caixa; `temQuantidadeEscrita`) ganha `Info` + "A
   quantidade escrita aqui é de 1 fornada." em `label`, tom informativo: não é erro dela. **O texto
