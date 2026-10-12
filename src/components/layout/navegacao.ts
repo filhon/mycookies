@@ -117,13 +117,14 @@ export function numeroDaEspera(espera: number): string {
 
 /**
  * Os dois editores não têm navegação inferior no celular: o cabeçalho tem o
- * voltar e o aparelho volta por gesto (`DECISOES.md#d152`). `/fichas/contagem`
+ * voltar e o aparelho volta por gesto (`DECISOES.md#d152`). A bancada do
+ * produto também não (`#d343`). `/fichas/contagem`
  * e a folha do orçamento ficam de fora — a contagem tem a navegação, e a folha
  * é impressão.
  */
 export function semNavegacaoInferior(caminho: string): boolean {
   return (
-    /^\/fichas\/(?!contagem$)[^/]+$/.test(caminho) ||
+    /^\/fichas\/(?!contagem$)[^/]+(\/bancada)?$/.test(caminho) ||
     /^\/pedidos\/[^/]+$/.test(caminho)
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
 import { Fragment, useMemo, useState, type ReactNode } from "react";
 import {
@@ -27,6 +28,7 @@ import {
 } from "lucide-react";
 import { Bloco } from "@/components/ui/Bloco";
 import { Botao } from "@/components/ui/Botao";
+import { classesBotao } from "@/components/ui/estilosBotao";
 import { AvisosDoPreco } from "./AvisosDoPreco";
 import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
 import {
@@ -325,6 +327,9 @@ export function FormularioFicha({
     !!ficha &&
     ficha.rendimento > 0 &&
     ficha.itens.length + ficha.componentes.length > 0;
+  // A bancada é da receita com o que pesar (`#d343`): kit não tem receita.
+  const temBancada =
+    !!ficha && ficha.tipo === "SIMPLES" && ficha.itens.length > 0;
   const fornadasDaFicha = useMemo(
     () => fornadas.filter((atual) => atual.fichaId === ficha?.id),
     [fornadas, ficha],
@@ -1038,18 +1043,30 @@ export function FormularioFicha({
                     strokeWidth={1.75}
                   />
                   <span className="max-w-[48ch]">
-                    Fez a massa? Registrar a fornada desconta a despensa até a
-                    próxima contagem.
+                    {temBancada
+                      ? "Vai fazer a massa? A bancada mostra a receita em letra grande e desconta a despensa no fim."
+                      : "Fez a massa? Registrar a fornada desconta a despensa até a próxima contagem."}
                   </span>
                 </p>
-                <Botao
-                  tamanho="sm"
-                  onClick={() =>
-                    setFornada({ aberto: true, chave: `fornada-${novoId()}` })
-                  }
-                >
-                  Fiz a massa
-                </Botao>
+                <div className="flex flex-wrap gap-2">
+                  {/* Link: a guarda de saída (`#d132`) precisa ver um `<a>`. */}
+                  {temBancada && (
+                    <Link
+                      href={`/fichas/${ficha.id}/bancada` as Route}
+                      className={classesBotao({ tamanho: "sm" })}
+                    >
+                      Abrir na bancada
+                    </Link>
+                  )}
+                  <Botao
+                    tamanho="sm"
+                    onClick={() =>
+                      setFornada({ aberto: true, chave: `fornada-${novoId()}` })
+                    }
+                  >
+                    Fiz a massa
+                  </Botao>
+                </div>
               </div>
 
               {/* O que está pronto: a contagem do pote, um nível acima da

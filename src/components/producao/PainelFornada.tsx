@@ -62,6 +62,7 @@ function texto(numero: number): string {
 export function PainelFornada({
   aberto,
   aoFechar,
+  aoRegistrar,
   contaId,
   chave: chaveAtual,
   opcoes,
@@ -73,6 +74,8 @@ export function PainelFornada({
 }: {
   aberto: boolean;
   aoFechar: () => void;
+  /** A bancada limpa as marcas quando a massa vira fornada (`#d343`). */
+  aoRegistrar?: () => void;
   contaId: string;
   /** Muda a cada abertura, para a folha não reabrir com o que ficou. */
   chave: string;
@@ -195,6 +198,7 @@ export function PainelFornada({
       pedidoId: pedido?.id,
     });
     setRegistrada({ ficha, unidades: gravavel.unidadesProduzidas });
+    aoRegistrar?.();
   }
 
   function contarOPronto() {

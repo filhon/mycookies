@@ -98,11 +98,11 @@ inteiros; `un` com meio: 2 ovos × ½ = 1 ovo; 3 ovos × ½ = "1 ½").
 
 ## Critérios de aceite
 
-- [ ] Rota de leitura, sem campo editável.
-- [ ] Escala ½ a 3, testada, nas unidades digitadas.
-- [ ] Marcas fora do Firestore.
-- [ ] Tela acesa; "Fiz a massa" com as unidades escaladas.
-- [ ] Portão de conclusão passa; `#d343`, `ESTADO.md`, `novidades.ts`.
+- [x] Rota de leitura, sem campo editável.
+- [x] Escala ½ a 3, testada, nas unidades digitadas.
+- [x] Marcas fora do Firestore.
+- [x] Tela acesa; "Fiz a massa" com as unidades escaladas.
+- [x] Portão de conclusão passa; `#d343`, `ESTADO.md`, `novidades.ts`.
 
 ---
 

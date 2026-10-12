@@ -11005,3 +11005,41 @@ quantidades sem a receita: a ordem, o forno a 180 °C e os 12 minutos moravam no
 **Consequência.** A ficha que vira kit guarda o preparo escondido em vez de apagá-lo: o bloco some,
 o texto fica, e volta se ela desfizer a troca. Apagar texto dela sem pedir seria pior que um campo
 sem leitor.
+
+## D343 · A receita na bancada
+
+**Status:** vigente · decidida em 2026-10-12, spec `138-a-receita-na-bancada.md`.
+
+**Contexto.** Na bancada o único caminho para a receita era o editor: campos de 48 px que o
+polegar sujo edita sem querer, a tela apagando, o "Salvar" âmbar no topo, e a fornada dupla
+multiplicada de cabeça. A 137 deu o modo de preparo; faltava onde lê-lo.
+
+**Decisão.**
+
+- **Rota, e não folha.** `/fichas/[id]/bancada`, fora de `(coluna)` e sem navegação inferior
+  (`semNavegacaoInferior` passou a aceitar o `/bancada`, `#d152`). Ela fica ali vinte minutos e
+  volta pelo gesto; uma folha fecharia num toque de massa na borda. Só `SIMPLES` com materiais:
+  kit, ficha vazia, arquivada ou inexistente voltam para o editor por `router.replace`. A entrada
+  é "Abrir na bancada", secundário ao lado do "Fiz a massa" na faixa do editor, só na receita.
+- **Só leitura.** Nenhum campo, nenhum "Salvar". O único âmbar é o "Fiz a massa" no pé, que abre o
+  `PainelFornada` com `rendimento × fornadas` unidades; depois de registrar, fechar a folha volta
+  ao produto. "Contar o que está pronto" também fecha por ali, e a navegação do link dele, que vem
+  depois, vence.
+- **Fornadas ½ · 1 · 2 · 3** em pílulas (`FORNADAS_DA_BANCADA`). A escala é `escalarItens` em
+  `domain/preparo.ts`: a quantidade base vezes o fator, no passo da unidade.
+- **Gramas não viram quilos.** 560 g × 2 = "1.120 g", não "1,12 kg": ela pesa na balança, em
+  gramas, e a quantidade fica na unidade em que a receita mostra (a base: o editor reabre tudo em
+  g, ml e un). Por isso `quantidadeNaBancada`, e não `formatarQuantidade`.
+- **O passo:** g e ml inteiros a partir de 10; abaixo, uma casa, para que o fermento de 2,5 g não
+  vire 3 g nem na fornada de sempre. `un` de meio em meio (3 ovos × ½ = "1 ½ un"). Nada com
+  quantidade arredonda para zero: zero é ingrediente pulado.
+- **Embalagem fora da lista** (`ehEmbalagem`: embalagem, etiqueta, armazenamento), numa linha
+  "Na embalagem: …". Não vai na massa.
+- **Marcas fora do Firestore.** Fornadas e marcas de feito vivem na tela e em `sessionStorage`
+  (`rende:bancada:{fichaId}`, com `try/catch`): sair e voltar na aba mantém, fechar a aba limpa.
+  A marca é da fornada de agora; a esquecida de ontem seria um ingrediente pulado hoje. Registrar
+  a fornada limpa as marcas e mantém as fornadas escolhidas (`PainelFornada.aoRegistrar`).
+- **Tela acesa** por `useTelaAcesa(true)` (`#d302`); sem suporte, nada acontece e nada avisa.
+
+**Consequência.** O passo é a linha do preparo: numeração escrita à mão ("1. Bata…") aparece ao lado
+do número da lista. A 137 deixou o texto como ela escreveu, e tirar seria adivinhar.
