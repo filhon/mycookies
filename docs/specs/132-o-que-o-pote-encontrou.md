@@ -118,11 +118,11 @@ Em 360 px e 1280 px, nos dois temas:
 
 ## Critérios de aceite
 
-- [ ] Salvar não espera o servidor e abre o resumo.
-- [ ] "Falta para os pedidos", "Acabou", "Saiu sem pedido" e o valor, com os limiares.
-- [ ] Sinal, cor e ícone em todo negativo e toda atenção; frase honesta sobre a causa.
-- [ ] Dinheiro em centavos inteiros no domínio, com testes.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `#d337` e a nota no `#d62` escritos;
+- [x] Salvar não espera o servidor e abre o resumo.
+- [x] "Falta para os pedidos", "Acabou", "Saiu sem pedido" e o valor, com os limiares.
+- [x] Sinal, cor e ícone em todo negativo e toda atenção; frase honesta sobre a causa.
+- [x] Dinheiro em centavos inteiros no domínio, com testes.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `#d337` e a nota no `#d62` escritos;
       `ESTADO.md` e `novidades.ts` atualizados.
 
 ---

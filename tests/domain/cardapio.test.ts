@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  achadosDoPote,
   apelidoValido,
   avisoDePedidoNovo,
   sugerirApelido,
@@ -2013,5 +2014,139 @@ describe("precisa conferir o pote", () => {
     expect(de({})).toBe(false);
     expect(de({}, [FORNADA])).toBe(true);
     expect(de({}, [{ ...FORNADA, fichaId: "redvelvet" }])).toBe(false);
+  });
+});
+
+// Spec 132 (`#d337`): o que o pote encontrou. Hoje 23/09, uma quarta.
+describe("achados do pote", () => {
+  const RV = ficha({
+    ...RED_VELVET,
+    estoqueProntoAtual: 9,
+    estoqueProntoContadoEmISO: "2026-09-20",
+  });
+  const achar = (
+    valores: Record<string, number | null>,
+    {
+      linhas = [POTE, RV],
+      pedidos = [] as ReturnType<typeof pedidoD>[],
+      esperados = new Map<string, { esperado: number | null }>([
+        ["tradicional", { esperado: 16 }],
+        ["redvelvet", { esperado: 9 }],
+      ]),
+    } = {},
+  ) => achadosDoPote(linhas, valores, esperados, pedidos, [CAIXA], HOJE);
+
+  it("sumiu pede 1 unidade e 10% juntos", () => {
+    // 15 de 16 é 1 unidade, mas 6%: balança.
+    expect(achar({ tradicional: 15 }).sumiram).toEqual([]);
+    // 0,5 de 4 é 12%, mas menos de uma unidade.
+    expect(
+      achar(
+        { tradicional: 3.5 },
+        { esperados: new Map([["tradicional", { esperado: 4 }]]) },
+      ).sumiram,
+    ).toEqual([]);
+    const { sumiram } = achar({ tradicional: 14, redvelvet: 4 });
+    // O maior em venda primeiro: 5 × R$ 13,00 antes de 2 × R$ 10,00.
+    expect(
+      sumiram.map((s) => [s.ficha.id, s.unidades, s.venda, s.custo]),
+    ).toEqual([
+      ["redvelvet", 5, 6500, 2100],
+      ["tradicional", 2, 2000, 682],
+    ]);
+  });
+
+  it("sem esperado (vencida, nunca) não sumiu nem tinha a mais", () => {
+    const achados = achar(
+      { tradicional: 2, redvelvet: 30 },
+      { esperados: new Map([["tradicional", { esperado: null }]]) },
+    );
+    expect(achados.sumiram).toEqual([]);
+    expect(achados.aMais).toBe(0);
+  });
+
+  it("a mais só conta, com os mesmos limiares", () => {
+    expect(achar({ tradicional: 20, redvelvet: 10 }).aMais).toBe(2);
+    expect(achar({ tradicional: 17 }).aMais).toBe(0);
+  });
+
+  it("zero é zerada e, com esperado, sumiu", () => {
+    const achados = achar({ redvelvet: 0 });
+    expect(achados.zeradas.map((f) => f.id)).toEqual(["redvelvet"]);
+    expect(achados.sumiram[0]).toMatchObject({ unidades: 9, venda: 11700 });
+  });
+
+  it("orçamento, cancelado, vencido e entregue ficam fora dos abertos", () => {
+    const achados = achar(
+      { tradicional: 6 },
+      {
+        pedidos: [
+          pedidoD("CONFIRMADO", "2026-09-24", [linha("tradicional", 4)]),
+          pedidoD("EM_PRODUCAO", HOJE, [linha("tradicional", 2)]),
+          pedidoD("PRONTO", "2026-09-24", [linha("tradicional", 1)]),
+          pedidoD("ORCAMENTO", "2026-09-24", [linha("tradicional", 50)]),
+          pedidoD("CANCELADO", "2026-09-24", [linha("tradicional", 50)]),
+          pedidoD("ENTREGUE", "2026-09-24", [linha("tradicional", 50)]),
+          pedidoD("CONFIRMADO", "2026-09-22", [linha("tradicional", 50)]),
+          {
+            ...pedidoD("CONFIRMADO", "2026-09-24", [linha("tradicional", 50)]),
+            arquivado: true,
+          },
+        ],
+      },
+    );
+    expect(achados.faltam).toEqual([
+      { ficha: POTE, contado: 6, levam: 7, pedidos: 3, ateISO: "2026-09-24" },
+    ]);
+  });
+
+  it("kit e combo descontam a ficha de dentro", () => {
+    const { faltam } = achar(
+      { tradicional: 6, redvelvet: 9 },
+      {
+        pedidos: [
+          pedidoD("CONFIRMADO", "2026-09-24", [linha("caixa", 1)]),
+          pedidoD("PRONTO", "2026-09-25", [
+            linha("dupla", 2, ["tradicional", "redvelvet"]),
+          ]),
+          pedidoD("CONFIRMADO", "2026-09-24", [linha("tradicional", 3)]),
+        ],
+      },
+    );
+    // 3 da caixa + 2 da dupla + 3 = 8; o Red Velvet leva 5 e tem 9.
+    expect(faltam).toEqual([
+      { ficha: POTE, contado: 6, levam: 8, pedidos: 3, ateISO: "2026-09-25" },
+    ]);
+  });
+
+  it("o valor soma só as contadas com preço, em centavos inteiros", () => {
+    const SEM_PRECO = ficha({
+      ...RECHEIO,
+      estoqueProntoAtual: 10,
+      estoqueProntoContadoEmISO: "2026-09-20",
+    });
+    const PORCAO = ficha({
+      id: "torta",
+      unidadeRendimento: "porcao",
+      custoUnitario: 333,
+      precificacao: { ...TRADICIONAL.precificacao, precoVenda: 999 },
+    });
+    const achados = achar(
+      { tradicional: 16, recheio: 2, torta: 1.5, redvelvet: null },
+      {
+        linhas: [POTE, RV, SEM_PRECO, PORCAO],
+        esperados: new Map([
+          ["tradicional", { esperado: 16 }],
+          ["recheio", { esperado: 10 }],
+        ]),
+      },
+    );
+    // 16 × 1000 + round(1,5 × 999); 16 × 341 + round(1,5 × 333).
+    expect(achados.valorVenda).toBe(16000 + 1499);
+    expect(achados.valorCusto).toBe(5456 + 500);
+    // O sem preço sumiu, sem valor.
+    expect(achados.sumiram).toEqual([
+      expect.objectContaining({ unidades: 8, venda: null, custo: null }),
+    ]);
   });
 });

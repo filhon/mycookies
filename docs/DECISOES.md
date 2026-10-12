@@ -1745,6 +1745,9 @@ tem e aceita (`#d50`): lá a tela já exigiu rede para ler; aqui não há nada a
 > **Revisão (spec 128, `#d333`):** a tela continua não esperando o servidor; desde a 128 ela
 > mostra o resumo da contagem, na mesma rota, antes de voltar para `/compras`.
 
+> **Revisão (spec 132, `#d337`):** desde a 132, o pronto também mostra o resumo, em vez de
+> voltar para `/fichas`.
+
 O que se perde: salvar volta para `/compras` no mesmo toque, então uma falha de permissão
 apareceria numa tela que ela já deixou. É a mesma troca de `#d40`, e pelo mesmo motivo — a falha
 plausível aqui é ausência de rede, e ausência de rede não é falha.
@@ -10778,3 +10781,42 @@ ganhou rascunho e Enter na 127 (`#d332`); o pronto, não.
 
 **Consequência.** Sem vibração no toque (o iPhone não tem `navigator.vibrate` no PWA) e sem
 pressionar e segurar: volta se ela contar mais de 30 de um produto.
+
+---
+
+## D337 · O que o pote encontrou
+
+**Status:** vigente · decidida em 2026-10-12, spec `132-o-que-o-pote-encontrou.md`.
+
+**Contexto.** Salvar a contagem do pronto voltava para `/fichas` no mesmo toque (`#d62`). O
+sistema sabia quanto ela contou, quanto esperava (`#d335`) e quanto os pedidos abertos levam, e
+não juntava: o pedido sem massa ela descobria na quinta, e o cookie que saiu sem pedido não
+aparecia em lugar nenhum.
+
+**Decisão.**
+
+- **Salvar abre o resumo, e não volta**, como na despensa (`#d333`): `writeBatch` despachado sem
+  espera, `ResumoDoPote` na mesma rota, a guarda de saída desliga, primário "Voltar para
+  Produtos", recarregar volta à contagem vazia. Retrato do toque, e não cálculo vivo.
+- **`ResumoDoPote` é irmão do `ResumoDaContagem`**, e não o mesmo com `if`: os achados são
+  outros. Ordem: "Contagem salva.", "Falta para os pedidos", "Acabou", "Saiu sem pedido", "O que
+  está pronto vale".
+- **`achadosDoPote(linhas, valores, esperados, pedidos, kits, hoje)` mora em `domain/cardapio.ts`**,
+  e não em `producao.ts` como a spec dizia: precisa de `unidadesPorFicha`, e `cardapio.ts` já
+  importa `producao.ts`. É o mesmo motivo do `#d335`. Ganhou `hoje`, que a assinatura da spec
+  não tinha, para o "entrega de hoje em diante".
+- **Aberto** é não arquivado, `CONFIRMADO`, `EM_PRODUCAO` ou `PRONTO`, com entrega de hoje em
+  diante. Orçamento fica de fora. A linha diz a entrega mais distante: "os pedidos até quinta
+  levam 10" (um só: "o pedido de quinta leva 10"; além de seis dias, a data). "Fiz a massa" leva à
+  ficha. A consulta de pedidos da 130 não tem fim, então já traz os abertos: nenhuma consulta nova.
+- **Saiu sem pedido** é contado abaixo do esperado por pelo menos 1 unidade **e** 10%, a preço de
+  venda, arredondado uma vez por linha; o total diz venda e custo das linhas com preço. Sem
+  `precoVenda`, a linha entra sem valor e fica fora das somas.
+- **A mais usa os mesmos limiares**, simétricos, e vira uma frase sem valor. Sozinha, ela não abre
+  a seção "Saiu sem pedido": aparece sem o título.
+- **"Acabou"** diz "o cardápio já mostra Esgotado" para a que está em `cardapio.limitados`, lido do
+  documento de configuração por `useDocumento`, como `TelaOrcamento`.
+
+**Consequência.** Um toque a mais até Produtos. Nada é guardado: o histórico do que sumiu por
+mês continua sendo schema, e outra spec. "O que está pronto vale" diz "nos N produtos contados
+hoje" mesmo quando um deles não tem preço e ficou fora da soma.

@@ -932,6 +932,158 @@ export function precisaConferirOPote(esperado: EsperadoNoPote): boolean {
   );
 }
 
+// ---------------------------------------------------------------------------
+// O que o pote encontrou (spec 132, `#d337`)
+
+/** O que o resumo do pote precisa saber de uma ficha. `FichaTecnica` serve. */
+export type FichaDoPote = Pick<
+  FichaTecnica,
+  "id" | "nome" | "custoUnitario"
+> & {
+  precificacao: Pick<FichaTecnica["precificacao"], "precoVenda">;
+};
+
+export interface FaltaNoPote<F extends FichaDoPote = FichaDoPote> {
+  ficha: F;
+  contado: number;
+  /** As unidades desta ficha nos pedidos abertos. */
+  levam: number;
+  /** Quantos pedidos abertos levam desta ficha. */
+  pedidos: number;
+  /** A entrega mais distante entre eles. */
+  ateISO: DataISO;
+}
+
+export interface SumiuDoPote<F extends FichaDoPote = FichaDoPote> {
+  ficha: F;
+  contado: number;
+  esperado: number;
+  /** `esperado − contado`, positivo. */
+  unidades: number;
+  /** A preço de venda. `null` sem `precoVenda`: a linha entra sem valor. */
+  venda: number | null;
+  /** A custo; `null` junto com `venda`, para os totais somarem as mesmas linhas. */
+  custo: number | null;
+}
+
+export interface AchadosDoPote<F extends FichaDoPote = FichaDoPote> {
+  faltam: FaltaNoPote<F>[];
+  zeradas: F[];
+  /** O maior valor em venda primeiro. */
+  sumiram: SumiuDoPote<F>[];
+  /** Quantos produtos tinham mais do que o esperado, com os mesmos limiares. */
+  aMais: number;
+  /** `contado × precoVenda` das contadas com preço. */
+  valorVenda: number;
+  valorCusto: number;
+}
+
+/** Pedido que ainda vai sair do pote: fechado e com entrega de hoje em diante. */
+const STATUS_ABERTO: ReadonlySet<Pedido["status"]> = new Set([
+  "CONFIRMADO",
+  "EM_PRODUCAO",
+  "PRONTO",
+]);
+
+/**
+ * O resumo depois de contar o pote (`#d337`): o que falta para os pedidos
+ * abertos, o que acabou, o que saiu sem pedido e quanto vale o que está pronto.
+ * Só as linhas contadas.
+ *
+ * - **Aberto**: não arquivado, `CONFIRMADO`, `EM_PRODUCAO` ou `PRONTO`, com
+ *   entrega de hoje em diante. Orçamento ainda não é pedido.
+ * - **Sumiu**: contado abaixo do esperado (`#d335`) por pelo menos 1 unidade
+ *   **e** 10%. Vencida e nunca contada não têm esperado. A mais, os mesmos
+ *   limiares, e só a contagem: é registro faltando, e não achado.
+ * - **Centavos**: `precoVenda` e `custoUnitario` são inteiros por unidade; a
+ *   porção fracionada arredonda uma vez por linha. Sem `precoVenda`, a linha
+ *   fica fora das somas.
+ */
+export function achadosDoPote<F extends FichaDoPote>(
+  linhas: F[],
+  valores: Record<string, number | null>,
+  esperados: Map<string, { esperado: number | null }>,
+  pedidos: Pick<Pedido, "status" | "arquivado" | "dataEntregaISO" | "itens">[],
+  kits: Pick<FichaTecnica, "id" | "componentes">[],
+  hojeISO: DataISO,
+): AchadosDoPote<F> {
+  const abertos = new Map<
+    string,
+    { levam: number; pedidos: number; ateISO: DataISO }
+  >();
+  for (const pedido of pedidos) {
+    if (
+      pedido.arquivado ||
+      !STATUS_ABERTO.has(pedido.status) ||
+      pedido.dataEntregaISO < hojeISO
+    ) {
+      continue;
+    }
+    for (const [fichaId, leva] of unidadesPorFicha(pedido.itens, kits)) {
+      const atual = abertos.get(fichaId);
+      abertos.set(fichaId, {
+        levam: (atual?.levam ?? 0) + leva,
+        pedidos: (atual?.pedidos ?? 0) + 1,
+        ateISO:
+          atual && atual.ateISO > pedido.dataEntregaISO
+            ? atual.ateISO
+            : pedido.dataEntregaISO,
+      });
+    }
+  }
+
+  const achados: AchadosDoPote<F> = {
+    faltam: [],
+    zeradas: [],
+    sumiram: [],
+    aMais: 0,
+    valorVenda: 0,
+    valorCusto: 0,
+  };
+
+  for (const ficha of linhas) {
+    const contado = valores[ficha.id];
+    if (contado === null || contado === undefined) continue;
+    const preco = ficha.precificacao.precoVenda;
+    const comPreco = preco > 0;
+
+    if (comPreco) {
+      achados.valorVenda += Math.round(contado * preco);
+      achados.valorCusto += Math.round(contado * ficha.custoUnitario);
+    }
+    if (contado === 0) achados.zeradas.push(ficha);
+
+    const aberto = abertos.get(ficha.id);
+    if (aberto && aberto.levam > contado) {
+      achados.faltam.push({ ficha, contado, ...aberto });
+    }
+
+    const esperado = esperados.get(ficha.id)?.esperado ?? null;
+    if (esperado === null) continue;
+    const delta = contado - esperado;
+    // Os dois limiares; `× 10` e não `× 0,1`, como no `#d333`.
+    if (Math.abs(delta) < 1 || Math.abs(delta) * 10 < esperado) continue;
+    if (delta > 0) {
+      achados.aMais += 1;
+      continue;
+    }
+    const unidades = -delta;
+    achados.sumiram.push({
+      ficha,
+      contado,
+      esperado,
+      unidades,
+      venda: comPreco ? Math.round(unidades * preco) : null,
+      custo: comPreco ? Math.round(unidades * ficha.custoUnitario) : null,
+    });
+  }
+
+  achados.sumiram.sort(
+    (a, b) => (b.venda ?? 0) - (a.venda ?? 0) || b.unidades - a.unidades,
+  );
+  return achados;
+}
+
 /** A ficha limitada que o pedido leva além do que resta, ou `null`. */
 export function passaDoQueResta(
   itens: ItemQueLeva[],

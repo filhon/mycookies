@@ -14,6 +14,7 @@ import {
 import { andarParaOProximo } from "@/components/estoque/LinhaContagem";
 import { RodapeContagem } from "@/components/estoque/RodapeContagem";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
+import { ResumoDoPote } from "@/components/producao/ResumoDoPote";
 import { BASE_CONTROLE } from "@/components/ui/Campo";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
@@ -25,8 +26,10 @@ import {
   SUFIXO_UNIDADE_RENDIMENTO,
 } from "@/lib/domain/custoFicha";
 import {
+  achadosDoPote,
   esperadoNoPote,
   precisaConferirOPote,
+  type AchadosDoPote,
   type EsperadoNoPote,
 } from "@/lib/domain/cardapio";
 import { dataISODe, diaVizinho } from "@/lib/domain/datas";
@@ -48,11 +51,16 @@ import {
   lerSementeDoPronto,
   limparSementeDoPronto,
 } from "@/lib/estado/sementeDoPronto";
-import { colFichas, colPedidos } from "@/lib/firebase/colecoes";
+import {
+  colFichas,
+  colPedidos,
+  docConfiguracao,
+} from "@/lib/firebase/colecoes";
 import { salvarContagemDoPronto } from "@/lib/firebase/mutations/estoque";
 import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
-import { useColecao } from "@/lib/hooks/useColecao";
+import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
 import type {
+  ConfiguracaoGeral,
   FichaTecnica,
   Fornada,
   Pedido,
@@ -128,7 +136,8 @@ export function TelaContagemPronto() {
   );
 
   // A janela das fornadas: contagem mais velha que isso já venceu e não tem
-  // esperado (`#d335`). A forma de `AgendaHoje`, que já tem índice.
+  // esperado (`#d335`). A forma de `AgendaHoje`, que já tem índice. Sem fim,
+  // então traz também os pedidos abertos do resumo (`#d337`).
   const consultaPedidos = useMemo(
     () =>
       query(
@@ -139,6 +148,13 @@ export function TelaContagemPronto() {
       ),
     [contaId, hoje],
   );
+
+  // Só para o "o cardápio já mostra Esgotado" do resumo (`#d164`).
+  const referenciaConfiguracao = useMemo(
+    () => docConfiguracao(contaId),
+    [contaId],
+  );
+  const configuracao = useDocumento<ConfiguracaoGeral>(referenciaConfiguracao);
 
   const { dados, carregando, erro, pendente } =
     useColecao<FichaTecnica>(consulta);
@@ -246,9 +262,18 @@ export function TelaContagemPronto() {
     setRecorte(undefined);
   }
 
+  // O resumo depois de salvar (`#d337`): o retrato do toque, como o `#d333`.
+  // Logo depois o cache traz a contagem nova, e o esperado viraria o contado.
+  const [salvo, setSalvo] = useState<{
+    achados: AchadosDoPote<FichaTecnica>;
+    contadas: number;
+    emBranco: number;
+  } | null>(null);
+
   // Inclusive o que a fornada semeou: a proposta que sai da contagem é
-  // trabalho perdido também (`DECISOES.md#d134`).
-  const sujo = Object.values(valores).some((quantidade) => quantidade !== null);
+  // trabalho perdido também (`DECISOES.md#d134`). Salva, não há o que perder.
+  const sujo =
+    !salvo && Object.values(valores).some((quantidade) => quantidade !== null);
   const guarda = useGuardaDeSaida(sujo);
 
   // O que está na tela e o que ela já tocou fora dela: salvar grava tudo o
@@ -276,7 +301,37 @@ export function TelaContagemPronto() {
       setFalha("Não deu para salvar a contagem agora."),
     );
     apagarRascunho(chaveDoPronto(contaId));
-    void guarda.navegar("/fichas");
+
+    // Em vez de voltar, mostra o que a contagem encontrou (`#d337`).
+    setSalvo({
+      achados: achadosDoPote(fichas, valores, esperados, pedidos, kits, hoje),
+      contadas: contagens.length,
+      emBranco: fichas.length - contagens.length,
+    });
+    window.scrollTo(0, 0);
+  }
+
+  if (salvo) {
+    return (
+      <>
+        <CabecalhoPagina
+          titulo="Contar o que está pronto"
+          voltar={{ href: "/fichas", rotulo: "Produtos" }}
+          pendente={pendente}
+        />
+        <ResumoDoPote
+          {...salvo}
+          limitados={new Set(configuracao.dado?.cardapio?.limitados ?? [])}
+          hoje={hoje}
+        />
+        {falha && (
+          <p role="alert" className="text-label text-negative">
+            {falha}
+          </p>
+        )}
+        {guarda.dialogo}
+      </>
+    );
   }
 
   return (
