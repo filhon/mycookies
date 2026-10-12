@@ -18,8 +18,10 @@ export function Bloco({
   acao,
   children,
   recuado = true,
+  id,
   className,
 }: {
+  id?: string;
   icone: LucideIcon;
   titulo: string;
   descricao?: ReactNode;
@@ -32,6 +34,7 @@ export function Bloco({
 }) {
   return (
     <section
+      id={id}
       className={cn(
         "overflow-hidden rounded-lg border border-line bg-surface",
         className,

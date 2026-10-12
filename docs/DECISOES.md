@@ -11176,3 +11176,41 @@ do preparo da receita de dentro; a capacidade ("dá N fornadas") e o piso ainda 
 ingredientes do preparo mesmo com o pote cheio; a lista de compras não abate o pote do preparo,
 como já não abatia o pote de produto nenhum. Recheio feito e nunca contado continua contando
 duas vezes, e a saída é a que a folha já oferece depois da fornada dele: contar o pote.
+
+## D347 · A bancada a meio metro
+
+**Status:** vigente · decidida em 2026-10-12, spec `141-a-bancada-a-meio-metro.md`. Acabamento da
+`#d343`, da crítica dos prints da bancada (360 e 1920 px).
+
+**Contexto.** A bancada é a única tela que se lê de longe, com farinha na mão, e estava na escala
+do resto do app: nome em 16 px, um anel de marcar em `--border-strong` (1,97:1), nada dizendo
+quanto falta, e o peso da bolinha só no editor, longe de onde se porciona.
+
+**Decisão.**
+
+- **Letra própria, só na bancada:** nome do ingrediente no tamanho de `heading` (400), quantidade
+  no de `title` em Figtree 600 tabular (não Archivo: é dado de lista), passo no de `subheading`
+  com entrelinha 1,6, linha de ingrediente com 64 px. O mesmo número em 360 e em 1920 px. O resto
+  do app continua na escala do `DESIGN.md`.
+- **O marcador** é um círculo de 24 px com borda de 2 px em `--ink-muted`: ali o anel é o único
+  sinal de que a linha se toca, e o `#d123` só aceita `--border-strong` onde há rótulo.
+- **Quanto já foi** fica dentro do `h2` ("4 de 12 na tigela", "2 de 6 feitos"), para o leitor de
+  tela ler com o título; some com zero, e tudo marcado diz "Tudo na tigela" com `Check`, sem
+  animação. O preparo conta como uma linha.
+- **"Começar de novo" sem confirmação.** Limpa ingredientes e passos e mantém as fornadas. Perder
+  marcas não é destrutivo, e um modal na bancada seria pior que remarcar.
+- **"2", e não "2 un".** `quantidadeNaBancada` devolve só o número para `un`: o nome da linha é a
+  unidade. g e ml continuam com a unidade.
+- **A frase da massa num lugar só:** `fraseDaMassa` em `domain/custoFicha.ts`, ao lado de
+  `pesoDaMassa`, chamada pelo editor e pela bancada. As fornadas multiplicam a massa e o que fica
+  fora; a bolinha não muda. O editor passou a dizer a mesma frase da bancada ("Massa de ≈ 1.831 g ·
+  ≈ 114 g cada antes do forno · fora 2 ovos e 5 ml de essência"), e não mais "A massa pesa…": duas
+  frases seriam duas montagens para divergir. O nome que é palavra comum vai em minúscula no meio
+  da frase ("Ovos" → "ovos"); o que não é ("ESSENCIA") fica como está no cadastro. `listarNomes`
+  desceu para o domínio junto; `FraseDaCapacidade` reexporta.
+- **Sem preparo**, o link leva a `/fichas/{id}#como-se-faz`: o editor rola até o bloco e põe o
+  foco no campo. No desktop a lista fica numa coluna só (`max-w-2xl`) em vez de uma segunda coluna
+  com uma frase.
+
+**Consequência.** Com `un`, "1 ovos" na ½ fornada: o nome é o do cadastro, e plural pelo número
+seria adivinhar. Agrupar ingredientes ("Secos", "Úmidos") pede schema e espera ela pedir.

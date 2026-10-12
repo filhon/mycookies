@@ -24,6 +24,14 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-12",
+    titulo:
+      "Na bancada, a letra ficou maior e a massa diz quanto pesa cada bolinha",
+    frase:
+      "Abra a receita na bancada: dá para ler de longe, ela conta o que já foi para a tigela e Começar de novo limpa as marcas.",
+    href: "/fichas",
+  },
+  {
+    dataISO: "2026-10-12",
     titulo: "O recheio pronto sai do pote",
     frase:
       "Conte o recheio que você fez antes em Contar o que está pronto: a massa que leva ele tira do pote, e os ingredientes dele ficam na despensa.",

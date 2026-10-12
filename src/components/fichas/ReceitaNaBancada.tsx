@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { orderBy, query, where } from "firebase/firestore";
-import { Check, CookingPot, Package } from "lucide-react";
+import { Check, CookingPot, Package, RotateCcw } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { listarNomes } from "@/components/producao/FraseDaCapacidade";
 import { PainelFornada } from "@/components/producao/PainelFornada";
@@ -13,7 +13,11 @@ import { Botao } from "@/components/ui/Botao";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { Pilulas } from "@/components/ui/Pilulas";
 import { RodapeFixo } from "@/components/ui/RodapeFixo";
-import { ehEmbalagem, rotuloDaQuantidade } from "@/lib/domain/custoFicha";
+import {
+  ehEmbalagem,
+  fraseDaMassa,
+  rotuloDaQuantidade,
+} from "@/lib/domain/custoFicha";
 import { dataISODe } from "@/lib/domain/datas";
 import {
   escalarItens,
@@ -187,6 +191,7 @@ function Bancada({
     ...ficha.componentes.map((componente) => ({
       insumoId: componente.fichaId,
       nomeSnapshot: componente.nomeSnapshot,
+      categoria: "INGREDIENTE" as const,
       quantidade: componente.quantidade,
       unidadeBase:
         unidadeDe.get(componente.fichaId) === "ml"
@@ -198,6 +203,18 @@ function Bancada({
   const ingredientes = escalarItens(daMassa, marcas.fator);
   const passos = passosDoPreparo(ficha.modoPreparo);
   const unidades = ficha.rendimento * marcas.fator;
+  const massa = fraseDaMassa(
+    daMassa,
+    ficha.rendimento,
+    ficha.unidadeRendimento,
+    marcas.fator,
+  );
+  const naTigela = ingredientes.filter((item) =>
+    marcas.itens.includes(item.insumoId),
+  ).length;
+  const feitos = passos.filter((_, indice) =>
+    marcas.passos.includes(indice),
+  ).length;
 
   return (
     <>
@@ -223,22 +240,37 @@ function Bancada({
             valor={marcas.fator}
             aoMudar={(fator) => setMarcas({ ...marcas, fator })}
           />
-          <p className="num mt-3 text-body text-ink-muted">
-            Rende{" "}
-            <span className="font-semibold text-ink">
-              {rotuloDaQuantidade(unidades, ficha.unidadeRendimento)}
+          {/* A bolinha não muda com as fornadas; a massa muda (`#d347`). */}
+          <p className="num mt-3 flex flex-wrap gap-x-4 gap-y-1 text-body text-ink-muted">
+            <span>
+              Rende{" "}
+              <span className="font-semibold text-ink">
+                {rotuloDaQuantidade(unidades, ficha.unidadeRendimento)}
+              </span>
             </span>
+            {massa && <span>{massa}</span>}
           </p>
         </section>
 
-        <div className="space-y-8 lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-10 lg:space-y-0">
+        {/* Sem passos, nada de segunda coluna vazia: a lista fica numa
+            coluna só e o convite vai embaixo (`#d347`). */}
+        <div
+          className={cn(
+            "space-y-8",
+            passos.length > 0
+              ? "lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-10 lg:space-y-0"
+              : "max-w-2xl",
+          )}
+        >
           <section aria-labelledby="bancada-ingredientes">
-            <h2
+            <TituloComContagem
               id="bancada-ingredientes"
-              className="text-subheading font-semibold text-ink"
-            >
-              Ingredientes
-            </h2>
+              titulo="Ingredientes"
+              feitos={naTigela}
+              total={ingredientes.length}
+              parcial="na tigela"
+              tudo="Tudo na tigela"
+            />
             <ul className="mt-3 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
               {ingredientes.map((item) => (
                 <li key={item.insumoId}>
@@ -251,12 +283,14 @@ function Bancada({
                       })
                     }
                     marcador={null}
-                    className="items-center"
+                    className="min-h-16 items-center"
                   >
-                    <span className="min-w-0 flex-1 text-body">
+                    {/* A letra da bancada, maior que a do app: é a única
+                        tela que se lê a meio metro (`#d347`). */}
+                    <span className="min-w-0 flex-1 text-heading">
                       {item.nomeSnapshot}
                     </span>
-                    <span className="num shrink-0 text-heading font-semibold">
+                    <span className="num shrink-0 text-title font-semibold">
                       {item.rotulo}
                     </span>
                   </LinhaMarcavel>
@@ -279,20 +313,43 @@ function Bancada({
                 </span>
               </p>
             )}
+            {/* Sem confirmação: perder marcas não é destrutivo, e um modal
+                na bancada seria pior que remarcar (`#d347`). */}
+            {naTigela + feitos > 0 && (
+              <Botao
+                variante="terciaria"
+                tamanho="sm"
+                className="mt-2 -ml-3"
+                iconeInicial={
+                  <RotateCcw
+                    aria-hidden
+                    className="size-4"
+                    strokeWidth={1.75}
+                  />
+                }
+                onClick={() =>
+                  setMarcas({ ...SEM_MARCAS, fator: marcas.fator })
+                }
+              >
+                Começar de novo
+              </Botao>
+            )}
           </section>
 
           <section aria-labelledby="bancada-preparo">
-            <h2
+            <TituloComContagem
               id="bancada-preparo"
-              className="text-subheading font-semibold text-ink"
-            >
-              Como se faz
-            </h2>
+              titulo="Como se faz"
+              feitos={feitos}
+              total={passos.length}
+              parcial="feitos"
+              tudo="Tudo feito"
+            />
             {passos.length === 0 ? (
               <p className="mt-3 max-w-[56ch] text-body text-ink-muted">
                 Este produto ainda não tem o modo de preparo.{" "}
                 <Link
-                  href={doProduto}
+                  href={`${doProduto}#como-se-faz` as Route}
                   className="font-medium text-brand-ink underline underline-offset-4"
                 >
                   Escreva no produto
@@ -318,7 +375,7 @@ function Bancada({
                       }
                       className="items-start"
                     >
-                      <span className="min-w-0 flex-1 text-body leading-[1.75]">
+                      <span className="min-w-0 flex-1 text-subheading leading-[1.6]">
                         {passo}
                       </span>
                     </LinhaMarcavel>
@@ -410,11 +467,60 @@ function LinhaMarcavel({
           <Check className="size-6 text-positive" strokeWidth={2.5} />
         ) : (
           (marcador ?? (
-            <span className="size-5 rounded-full border-2 border-line-strong" />
+            // `--ink-muted`, e não `--border-strong`: aqui o anel é o único
+            // sinal de que a linha se toca (`#d347`).
+            <span className="size-6 rounded-full border-2 border-ink-muted" />
           ))
         )}
       </span>
       {children}
     </button>
+  );
+}
+
+/**
+ * O título da seção com quanto já foi, dentro do `h2` para que o leitor de
+ * tela leia os dois juntos. Some com zero; tudo marcado leva o `Check`, sem
+ * festa: nada se mexe perto de um número que ela está lendo.
+ */
+function TituloComContagem({
+  id,
+  titulo,
+  feitos,
+  total,
+  parcial,
+  tudo,
+}: {
+  id: string;
+  titulo: string;
+  feitos: number;
+  total: number;
+  parcial: string;
+  tudo: string;
+}) {
+  return (
+    <h2
+      id={id}
+      className="flex items-baseline justify-between gap-3 text-subheading font-semibold text-ink"
+    >
+      <span>{titulo}</span>
+      {feitos > 0 && (
+        <span className="num flex items-center gap-1 text-label font-medium text-ink-muted">
+          <span className="sr-only">, </span>
+          {feitos >= total ? (
+            <>
+              <Check
+                aria-hidden
+                className="size-4 self-center text-positive"
+                strokeWidth={2.5}
+              />
+              {tudo}
+            </>
+          ) : (
+            `${feitos} de ${total} ${parcial}`
+          )}
+        </span>
+      )}
+    </h2>
   );
 }

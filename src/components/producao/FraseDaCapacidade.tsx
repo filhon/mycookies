@@ -7,7 +7,7 @@ import {
   PackageOpen,
   TriangleAlert,
 } from "lucide-react";
-import { rotuloDaQuantidade } from "@/lib/domain/custoFicha";
+import { listarNomes, rotuloDaQuantidade } from "@/lib/domain/custoFicha";
 import { rotuloDeIdade } from "@/lib/domain/estoque";
 import {
   faltaPara,
@@ -105,16 +105,8 @@ export function FraseDoPronto({
   );
 }
 
-/** "Chocolate", "Chocolate e Farinha", "Chocolate, Farinha e mais 2". */
-export function listarNomes(nomes: string[], maximo = 2): string {
-  if (nomes.length <= maximo) {
-    return nomes.length <= 1
-      ? (nomes[0] ?? "")
-      : `${nomes.slice(0, -1).join(", ")} e ${nomes[nomes.length - 1]}`;
-  }
-  const resto = nomes.length - maximo;
-  return `${nomes.slice(0, maximo).join(", ")} e mais ${resto}`;
-}
+// Mora no domínio desde a `#d347`; daqui, para não mexer nos chamadores.
+export { listarNomes };
 
 export function texto(numero: number): string {
   return numero.toLocaleString("pt-BR", { maximumFractionDigits: 0 });

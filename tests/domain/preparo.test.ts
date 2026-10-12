@@ -41,11 +41,11 @@ describe("escalarItens", () => {
     expect(escalarItens([farinha], 1)[0]?.rotulo).toBe("560 g");
   });
 
-  it("ovo vai de meio em meio", () => {
-    expect(escalarItens([ovos(2)], 2)[0]?.rotulo).toBe("4 un");
-    expect(escalarItens([ovos(2)], 0.5)[0]?.rotulo).toBe("1 un");
-    expect(escalarItens([ovos(3)], 0.5)[0]?.rotulo).toBe("1 ½ un");
-    expect(escalarItens([ovos(1)], 0.5)[0]?.rotulo).toBe("½ un");
+  it("ovo vai de meio em meio, sem o 'un' (#d347)", () => {
+    expect(escalarItens([ovos(2)], 2)[0]?.rotulo).toBe("4");
+    expect(escalarItens([ovos(2)], 0.5)[0]?.rotulo).toBe("1");
+    expect(escalarItens([ovos(3)], 0.5)[0]?.rotulo).toBe("1 ½");
+    expect(escalarItens([ovos(1)], 0.5)[0]?.rotulo).toBe("½");
   });
 
   it("grama e ml inteiros; abaixo de 10, uma casa; nunca zero", () => {

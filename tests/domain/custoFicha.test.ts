@@ -12,6 +12,7 @@ import {
   refazerCustoPelaConfiguracao,
   efeitoDosPrecosNovos,
   ehEmbalagem,
+  fraseDaMassa,
   kitDividido,
   levaDoKit,
   opcoesDaEscolha,
@@ -1566,5 +1567,55 @@ describe("pesoDaMassa (#d340)", () => {
     const peso = pesoDaMassa([item("Farinha", 500)], 0);
     expect(peso.gramas).toBe(500);
     expect(peso.porUnidade).toBe(0);
+  });
+});
+
+describe("fraseDaMassa (#d347)", () => {
+  const item = (
+    nomeSnapshot: string,
+    quantidade: number,
+    unidadeBase: "g" | "ml" | "un" = "g",
+  ) => ({
+    nomeSnapshot,
+    quantidade,
+    unidadeBase,
+    categoria: "INGREDIENTE" as const,
+  });
+  const cookie = [
+    item("Farinha", 831),
+    item("Nutella", 320),
+    item("Manteiga", 680),
+    item("Ovos", 2, "un"),
+    item("Essência de baunilha", 5, "ml"),
+  ];
+
+  it("a massa, a bolinha e o que fica fora", () => {
+    expect(fraseDaMassa(cookie, 16, "un")).toBe(
+      "massa de ≈ 1.831 g · ≈ 114 g cada antes do forno · fora 2 ovos e 5 ml de essência de baunilha",
+    );
+  });
+
+  it("as fornadas multiplicam a massa e o que fica fora; a bolinha não muda", () => {
+    expect(fraseDaMassa(cookie, 16, "un", 2)).toBe(
+      "massa de ≈ 3.662 g · ≈ 114 g cada antes do forno · fora 4 ovos e 10 ml de essência de baunilha",
+    );
+    expect(fraseDaMassa(cookie, 16, "un", 0.5)).toContain("fora 1 ovos");
+  });
+
+  it("mais de dois fora: só os nomes", () => {
+    expect(
+      fraseDaMassa([...cookie, item("Leite", 50, "ml")], 16, "porcao"),
+    ).toContain("fora ovos e mais 2");
+  });
+
+  it("nada para rendimento em peso, nem sem grama", () => {
+    expect(fraseDaMassa(cookie, 1, "g")).toBeNull();
+    expect(fraseDaMassa([item("Ovos", 4, "un")], 4, "un")).toBeNull();
+  });
+
+  it("nome que não é palavra comum fica como está", () => {
+    expect(
+      fraseDaMassa([item("Farinha", 500), item("ESSENCIA", 5, "ml")], 0, "un"),
+    ).toBe("massa de ≈ 500 g · fora 5 ml de ESSENCIA");
   });
 });

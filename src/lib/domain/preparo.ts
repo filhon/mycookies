@@ -32,7 +32,8 @@ function noPasso(quantidade: number, unidadeBase: UnidadeBase): number {
 
 /**
  * 1120 g → "1.120 g", e não "1,12 kg": ela pesa em gramas na balança, e é na
- * unidade da receita que a quantidade é lida (`#d343`). 1,5 un → "1 ½ un".
+ * unidade da receita que a quantidade é lida (`#d343`). 1,5 un → "1 ½", sem
+ * "un": na cozinha se diz "2 ovos", e o nome já está na linha (`#d347`).
  */
 export function quantidadeNaBancada(
   quantidade: number,
@@ -41,8 +42,8 @@ export function quantidadeNaBancada(
   if (unidadeBase === "un") {
     const inteiro = Math.floor(quantidade);
     const meio = quantidade - inteiro >= 0.5;
-    if (!meio) return `${inteiro} un`;
-    return inteiro === 0 ? "½ un" : `${inteiro} ½ un`;
+    if (!meio) return String(inteiro);
+    return inteiro === 0 ? "½" : `${inteiro} ½`;
   }
   return `${quantidade.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} ${unidadeBase}`;
 }

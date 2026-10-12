@@ -13,6 +13,7 @@ import type {
   UnidadeRendimento,
 } from "@/lib/types";
 import { custoDeMinutos } from "./custosOperacionais";
+import { escalarItens } from "./preparo";
 import {
   calcularPrecoSugerido,
   somaTaxas,
@@ -453,6 +454,64 @@ export function pesoDaMassa(
     porUnidade: rendimento > 0 ? Math.round(gramas / rendimento) : 0,
     semPeso: massa.filter((item) => item.unidadeBase !== "g"),
   };
+}
+
+/** "Chocolate", "Chocolate e Farinha", "Chocolate, Farinha e mais 2". */
+export function listarNomes(nomes: string[], maximo = 2): string {
+  if (nomes.length <= maximo) {
+    return nomes.length <= 1
+      ? (nomes[0] ?? "")
+      : `${nomes.slice(0, -1).join(", ")} e ${nomes[nomes.length - 1]}`;
+  }
+  const resto = nomes.length - maximo;
+  return `${nomes.slice(0, maximo).join(", ")} e mais ${resto}`;
+}
+
+/** "Ovos" no meio da frase vira "ovos"; "ESSENCIA" e "NY" ficam como estão. */
+function noMeioDaFrase(nome: string): string {
+  return /^\p{Lu}\p{Ll}/u.test(nome)
+    ? nome.charAt(0).toLocaleLowerCase("pt-BR") + nome.slice(1)
+    : nome;
+}
+
+const gramas = (valor: number) =>
+  `${valor.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} g`;
+
+/**
+ * A frase do peso da massa, a mesma no editor e na bancada (`#d340`, `#d347`):
+ * "massa de ≈ 1.831 g · ≈ 114 g cada antes do forno · fora 2 ovos e 5 ml de
+ * essência". As `fornadas` multiplicam a massa e o que fica fora; a bolinha
+ * não muda. Só para o que rende em `un` ou `porcao`, e só com algum grama.
+ */
+export function fraseDaMassa(
+  itens: ItemParaPeso[],
+  rendimento: number,
+  unidadeRendimento: UnidadeRendimento,
+  fornadas = 1,
+): string | null {
+  if (unidadeRendimento !== "un" && unidadeRendimento !== "porcao") return null;
+  const peso = pesoDaMassa(itens, rendimento);
+  if (peso.gramas <= 0) return null;
+  const fora =
+    peso.semPeso.length > 2
+      ? listarNomes(
+          peso.semPeso.map((item) => noMeioDaFrase(item.nomeSnapshot)),
+          1,
+        )
+      : listarNomes(
+          escalarItens(peso.semPeso, fornadas).map((item) =>
+            item.unidadeBase === "un"
+              ? `${item.rotulo} ${noMeioDaFrase(item.nomeSnapshot)}`
+              : `${item.rotulo} de ${noMeioDaFrase(item.nomeSnapshot)}`,
+          ),
+        );
+  return [
+    `massa de ≈ ${gramas(peso.gramas * fornadas)}`,
+    peso.porUnidade > 0 && `≈ ${gramas(peso.porUnidade)} cada antes do forno`,
+    fora && `fora ${fora}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 /**

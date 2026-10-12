@@ -2,7 +2,7 @@
 
 import type { Route } from "next";
 import Link from "next/link";
-import { Fragment, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   useFieldArray,
   useForm,
@@ -44,11 +44,7 @@ import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { EntradaContagemPronto } from "@/components/producao/EntradaContagemPronto";
 import { FornadasRecentes } from "@/components/producao/FornadasRecentes";
-import {
-  FraseDoPronto,
-  listarNomes,
-  texto as inteiro,
-} from "@/components/producao/FraseDaCapacidade";
+import { FraseDoPronto } from "@/components/producao/FraseDaCapacidade";
 import { FraseDaQuebra } from "@/components/producao/FraseDaQuebra";
 import { PainelFornada } from "@/components/producao/PainelFornada";
 import {
@@ -70,10 +66,10 @@ import {
   derivarFicha,
   ehEmbalagem,
   ehPreparo,
+  fraseDaMassa,
   opcoesDaEscolha,
   osQueMaisPesam,
   parteDoCusto,
-  pesoDaMassa,
   podeSerComponente,
   ROTULO_PARCELA,
   ROTULO_PREPAROS,
@@ -103,11 +99,7 @@ import {
   temPronto,
 } from "@/lib/domain/producao";
 import { DESCRICAO_MAX, esquemaFicha, PREPARO_MAX } from "@/lib/domain/schemas";
-import {
-  formatarQuantidade,
-  paraBase,
-  unidadesCompativeis,
-} from "@/lib/domain/unidades";
+import { paraBase, unidadesCompativeis } from "@/lib/domain/unidades";
 import {
   CONFIGURACAO_SUGERIDA,
   precificacaoPadraoDaConta,
@@ -323,6 +315,14 @@ export function FormularioFicha({
     valoresIniciais(ficha, configuracao, origem),
   );
   const form = useForm<ValoresFicha>({ defaultValues: iniciais });
+
+  // A bancada sem preparo manda para `#como-se-faz` (`#d347`): o bloco no
+  // alto da tela e o cursor no campo, e não o topo do editor.
+  useEffect(() => {
+    if (location.hash !== "#como-se-faz") return;
+    document.getElementById("como-se-faz")?.scrollIntoView({ block: "start" });
+    form.setFocus("modoPreparo");
+  }, [form]);
 
   const listaItens = useFieldArray({ control: form.control, name: "itens" });
   const listaComponentes = useFieldArray({
@@ -597,52 +597,27 @@ export function FormularioFicha({
   ]);
   const maisPesam = ehKit ? null : osQueMaisPesam(linhasDeMaterial);
 
-  const peso = pesoDaMassa(
-    [
-      ...itensResolvidos,
-      ...componentesResolvidos.flatMap((componente) =>
-        componente.preparo
-          ? [
-              {
-                nomeSnapshot: componente.nomeSnapshot,
-                categoria: "INGREDIENTE",
-                unidadeBase: componente.preparo === "ml" ? "ml" : "g",
-                quantidade: componente.quantidade,
-              } as const,
-            ]
-          : [],
-      ),
-    ],
-    rendimento,
-  );
-  const fraseDaMassa =
-    !ehKit &&
-    peso.gramas > 0 &&
-    (valores.unidadeRendimento === "un" ||
-      valores.unidadeRendimento === "porcao")
-      ? [
-          `A massa pesa ${inteiro(peso.gramas)} g`,
-          peso.semPeso.length > 0 &&
-            `, fora ${
-              peso.semPeso.length > 2
-                ? listarNomes(
-                    peso.semPeso.map((item) => item.nomeSnapshot),
-                    1,
-                  )
-                : listarNomes(
-                    peso.semPeso.map(
-                      (item) =>
-                        `${formatarQuantidade(item.quantidade, item.unidadeBase)} de ${item.nomeSnapshot}`,
-                    ),
-                  )
-            }`,
-          peso.porUnidade > 0 &&
-            `: ≈ ${inteiro(peso.porUnidade)} g por ${valores.unidadeRendimento === "un" ? "unidade" : "porção"} antes do forno`,
-          ".",
-        ]
-          .filter(Boolean)
-          .join("")
-      : null;
+  const massa = ehKit
+    ? null
+    : fraseDaMassa(
+        [
+          ...itensResolvidos,
+          ...componentesResolvidos.flatMap((componente) =>
+            componente.preparo
+              ? [
+                  {
+                    nomeSnapshot: componente.nomeSnapshot,
+                    categoria: "INGREDIENTE",
+                    unidadeBase: componente.preparo === "ml" ? "ml" : "g",
+                    quantidade: componente.quantidade,
+                  } as const,
+                ]
+              : [],
+          ),
+        ],
+        rendimento,
+        valores.unidadeRendimento,
+      );
 
   // O kit gravado dividido pelo que vai dentro (`#d227`): a caixa inteira
   // custa o lote, e a faixa diz o que sobra dela ao preço de hoje.
@@ -1277,9 +1252,9 @@ export function FormularioFicha({
                   </Seletor>
                   {/* O peso da massa (`#d340`), embaixo do par "Rende · Em" e
                       não só do campo: em 360px a coluna do "Rende" tem 190px. */}
-                  {fraseDaMassa && (
-                    <p className="num col-span-2 text-label text-ink-muted">
-                      {fraseDaMassa}
+                  {massa && (
+                    <p className="num col-span-2 text-label text-ink-muted first-letter:uppercase">
+                      {massa}
                     </p>
                   )}
                 </div>
@@ -1682,6 +1657,8 @@ export function FormularioFicha({
               WhatsApp, e a bancada só precisa das linhas. */}
           {!ehKit && (
             <Bloco
+              id="como-se-faz"
+              className="scroll-mt-[calc(var(--fundo-cabecalho,0px)+1rem)]"
               icone={ListOrdered}
               titulo="Como se faz"
               descricao="Um passo por linha. Na bancada, cada linha vira um passo."
