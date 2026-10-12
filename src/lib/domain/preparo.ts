@@ -1,3 +1,4 @@
+import { chaveDeBusca } from "@/lib/domain/custoInsumo";
 import type { UnidadeBase } from "@/lib/types";
 
 /**
@@ -63,6 +64,100 @@ export function escalarItens<
       rotulo: quantidadeNaBancada(quantidade, item.unidadeBase),
     };
   });
+}
+
+/** Um pedaço do passo: o texto e, logo depois dele, a quantidade que ele cita. */
+export interface PedacoDoPasso {
+  texto: string;
+  rotulo?: string;
+}
+
+const LETRA = "[\\p{L}\\p{N}]";
+const escapar = (texto: string) => texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** A palavra inteira, com o plural em "s": "ovo" casa "ovos", não "ovoide". */
+const palavra = (chave: string) =>
+  new RegExp(`(?<!${LETRA})${escapar(chave)}s?(?!${LETRA})`, "gu");
+
+/**
+ * A quantidade de cada ingrediente dentro do passo (`#d350`). Casa, em texto
+ * normalizado: (1) o nome inteiro, o mais longo primeiro, para que
+ * "chocolate branco" não seja lido como "chocolate"; senão (2) a primeira
+ * palavra do nome, de 4 letras ou mais, só se nenhum outro ingrediente
+ * começar por ela. Com dois açúcares, "açúcar" sozinho não é de nenhum. Só a
+ * primeira menção de cada um, e na dúvida não casa: o passo sem quantidade é
+ * o de antes, e o com a quantidade errada é pior.
+ */
+export function mencoesNoPasso(
+  passo: string,
+  ingredientes: readonly { nomeSnapshot: string; rotulo: string }[],
+): PedacoDoPasso[] {
+  // O texto normalizado letra a letra, sabendo de onde veio cada uma.
+  const texto = passo.normalize("NFC");
+  let normal = "";
+  const inicio: number[] = [];
+  const fim: number[] = [];
+  let posicao = 0;
+  for (const letra of texto) {
+    const chave = /\s/.test(letra) ? " " : chaveDeBusca(letra);
+    for (const c of chave) {
+      normal += c;
+      inicio.push(posicao);
+      fim.push(posicao + letra.length);
+    }
+    posicao += letra.length;
+  }
+
+  const nomes = ingredientes.map((item) => chaveDeBusca(item.nomeSnapshot));
+  const primeira = nomes.map((nome) => nome.split(" ")[0] ?? "");
+  const achados: { de: number; ate: number; rotulo: string }[] = [];
+  const casado = new Set<number>();
+
+  function procurar(indice: number, chave: string) {
+    for (const achado of normal.matchAll(palavra(chave))) {
+      const de = achado.index;
+      const ate = de + achado[0].length;
+      if (achados.some((a) => de < a.ate && a.de < ate)) continue;
+      achados.push({ de, ate, rotulo: ingredientes[indice]!.rotulo });
+      casado.add(indice);
+      return;
+    }
+  }
+
+  nomes
+    .map((nome, indice) => ({ nome, indice }))
+    .filter(({ nome }) => nome)
+    .sort((a, b) => b.nome.length - a.nome.length)
+    .forEach(({ nome, indice }) => procurar(indice, nome));
+  primeira.forEach((chave, indice) => {
+    const sozinha =
+      chave.length >= 4 &&
+      primeira.every((outra, i) => i === indice || outra !== chave);
+    if (!casado.has(indice) && sozinha) procurar(indice, chave);
+  });
+
+  const pedacos: PedacoDoPasso[] = [];
+  let desde = 0;
+  for (const { ate, rotulo } of achados.sort((a, b) => a.de - b.de)) {
+    const corte = fim[ate - 1]!;
+    pedacos.push({ texto: texto.slice(desde, corte), rotulo });
+    desde = corte;
+  }
+  if (desde < texto.length) pedacos.push({ texto: texto.slice(desde) });
+  return pedacos;
+}
+
+/**
+ * Número com unidade de medida escrito no passo, "560 g" ou "2 xícaras"
+ * (`#d350`): é a quantidade de uma fornada, que o texto não escala. "180
+ * graus" e "12 minutos" não são.
+ */
+const QUANTIDADE_ESCRITA = new RegExp(
+  `(?<!${LETRA})(\\d+([.,/]\\d+)?|[½¼¾])\\s*(g|gr|gramas?|kg|quilos?|ml|l|litros?|xicaras?|colher(es)?|copos?|latas?|caixas?)(?!${LETRA})`,
+  "u",
+);
+
+export function temQuantidadeEscrita(passo: string): boolean {
+  return QUANTIDADE_ESCRITA.test(chaveDeBusca(passo));
 }
 
 /**

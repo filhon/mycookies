@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-12",
+    titulo: "Na bancada, cada passo diz quanto pôr e onde você parou",
+    frase:
+      "O passo da vez fica marcado com Agora, e o ingrediente citado no passo já vem com a quantidade das fornadas escolhidas.",
+    href: "/fichas",
+  },
+  {
+    dataISO: "2026-10-12",
     titulo:
       "O recheio abre dentro da receita do cookie, já na quantidade certa",
     frase:

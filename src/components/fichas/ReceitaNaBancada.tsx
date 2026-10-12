@@ -3,13 +3,22 @@
 import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
+import {
+  Fragment,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { orderBy, query, where } from "firebase/firestore";
 import {
   Check,
   ChevronDown,
   ChevronRight,
   CookingPot,
+  Info,
   Package,
   PackageOpen,
   RotateCcw,
@@ -35,9 +44,11 @@ import { dataISODe } from "@/lib/domain/datas";
 import {
   escalarItens,
   FORNADAS_DA_BANCADA,
+  mencoesNoPasso,
   passosDoPreparo,
   preparoNaBancada,
   quantidadeNaBancada,
+  temQuantidadeEscrita,
 } from "@/lib/domain/preparo";
 import {
   capacidadeDaFicha,
@@ -242,6 +253,22 @@ function Bancada({
   const feitos = passos.filter((_, indice) =>
     marcas.passos.includes(indice),
   ).length;
+  // O passo da vez é o primeiro não marcado; tudo marcado, nenhum (`#d350`).
+  const agora = passos.findIndex((_, indice) => !marcas.passos.includes(indice));
+
+  // Marcar leva o da vez para a tela, só se ele estiver fora dela.
+  const passoDaVez = useRef<HTMLLIElement>(null);
+  const rolar = useRef(false);
+  useEffect(() => {
+    if (!rolar.current) return;
+    rolar.current = false;
+    passoDaVez.current?.scrollIntoView({
+      block: "nearest",
+      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+  }, [marcas.passos]);
 
   // "Dá para fazer agora?", e não "dá para vender mais?": sem `prometido`,
   // porque a massa de agora é quase sempre a dos próprios pedidos (`#d348`).
@@ -457,15 +484,25 @@ function Bancada({
             ) : (
               <ol className="mt-3 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
                 {passos.map((passo, indice) => (
-                  <li key={indice}>
+                  // Do mesmo tamanho dos outros: crescer faria a lista pular
+                  // a cada marca. A margem deixa o rodapé fixo fora da conta.
+                  <li
+                    key={indice}
+                    ref={indice === agora ? passoDaVez : undefined}
+                    className={cn(
+                      "scroll-mt-20 scroll-mb-28 lg:scroll-mb-32",
+                      indice === agora && "bg-brand-100",
+                    )}
+                  >
                     <LinhaMarcavel
                       feito={marcas.passos.includes(indice)}
-                      aoTocar={() =>
+                      aoTocar={() => {
+                        rolar.current = !marcas.passos.includes(indice);
                         setMarcas({
                           ...marcas,
                           passos: alternar(marcas.passos, indice),
-                        })
-                      }
+                        });
+                      }}
                       marcador={
                         <span className="num text-body font-semibold">
                           {indice + 1}
@@ -473,8 +510,42 @@ function Bancada({
                       }
                       className="items-start"
                     >
-                      <span className="min-w-0 flex-1 text-subheading leading-[1.6]">
-                        {passo}
+                      <span className="min-w-0 flex-1">
+                        {/* A palavra leva o sentido; o fundo só ajuda. */}
+                        {indice === agora && (
+                          <span className="block text-micro font-semibold text-brand-ink">
+                            Agora
+                          </span>
+                        )}
+                        <span className="block text-subheading leading-[1.6]">
+                          {mencoesNoPasso(passo, ingredientes).map(
+                            (pedaco, i) => (
+                              <Fragment key={i}>
+                                {pedaco.texto}
+                                {pedaco.rotulo && (
+                                  <>
+                                    {" "}
+                                    <span className="num font-semibold">
+                                      {pedaco.rotulo}
+                                    </span>
+                                  </>
+                                )}
+                              </Fragment>
+                            ),
+                          )}
+                        </span>
+                        {/* O texto nunca é reescrito: só se diz de quantas
+                            fornadas ele é (`#d350`). */}
+                        {marcas.fator !== 1 && temQuantidadeEscrita(passo) && (
+                          <span className="mt-1 flex items-start gap-1.5 text-label text-ink-muted">
+                            <Info
+                              aria-hidden
+                              className="mt-0.5 size-3.5 shrink-0 text-info"
+                              strokeWidth={2}
+                            />
+                            A quantidade escrita aqui é de 1 fornada.
+                          </span>
+                        )}
                       </span>
                     </LinhaMarcavel>
                   </li>

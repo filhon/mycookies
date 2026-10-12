@@ -11287,3 +11287,40 @@ com a mão suja: a conta que a bancada existe para fazer (`#d343`).
 preparo inteiro mesmo com o pote contado (`#d346`): com pote que não dá, pode avisar a mais, nunca
 a menos. Os passos do preparo não entram na receita de cima: o link resolve, e duas ordens numa
 lista só confundem.
+
+## D350 · O passo da vez
+
+**Status:** vigente · decidida em 2026-10-12, spec `144-o-passo-da-vez.md`. Da crítica dos
+prints da bancada de 2026-10-12, itens 8 e 9.
+
+**Contexto.** O modo de preparo era uma lista para rolar: o próximo passo tinha a cara de todos
+os outros, a quantidade estava na outra lista, e o "junte 560 g" colado do caderno continuava
+dizendo 560 g em 2 fornadas, o único lugar da bancada que mentia com a escala.
+
+**Decisão.**
+
+- **O passo da vez** é o primeiro não marcado: fundo `--brand-100` e "Agora" em `micro` 600,
+  tinta `--brand-as-ink`, acima do texto. A palavra leva o sentido. Mesmo tamanho dos outros, para
+  a lista não pular a cada marca. Marcar leva o próximo para a tela com
+  `scrollIntoView({ block: "nearest" })` (suave, instantâneo com movimento reduzido), que não mexe
+  quando ele já está visível; a margem de rolagem do `<li>` desconta o rodapé fixo. Tudo marcado,
+  nenhum "Agora".
+- **A quantidade no passo**, por `mencoesNoPasso` em `domain/preparo.ts`, em texto normalizado
+  como o `nomeBusca` (`chaveDeBusca`, letra a letra para saber de onde veio cada uma):
+  1. o nome inteiro, com plural em "s", **o mais longo primeiro**: "chocolate branco" não é lido
+     como "Chocolate", porque o trecho já casado não casa de novo;
+  2. senão, a primeira palavra do nome, de 4 letras ou mais, com plural em "s", só se nenhum
+     outro ingrediente começar por ela. Com cristal e mascavo, "açúcar" sozinho não é de nenhum.
+  Só palavra inteira ("ovo" não casa "ovoide"), só a primeira menção de cada ingrediente. Na tela,
+  logo depois da palavra, o `rotulo` escalado em 600 tabular, sem caixa: é texto lido. **Na dúvida,
+  não casa**: um passo sem quantidade é o de antes; um com a quantidade errada é pior.
+- **O número escrito à mão.** Com fornadas ≠ 1, o passo que traz número com unidade (`g`, `kg`,
+  `ml`, `l`, xícara, colher, copo, lata, caixa; `temQuantidadeEscrita`) ganha `Info` + "A
+  quantidade escrita aqui é de 1 fornada." em `label`, tom informativo: não é erro dela. **O texto
+  nunca é reescrito**: adivinhar qual número é ingrediente e qual é "180 graus" seria pior
+  (`#d343`).
+
+**Consequência.** O nome "Ovo" casa "ovos" pela regra 1, mas o "Ovos" do cadastro não casa "ovo"
+(o plural só se acrescenta). "Leite condensado" sozinho casa o "leite" de "leite em pó" se o pó não
+for ingrediente da receita: a regra 2 só enxerga a lista da receita. Os passos casam os
+ingredientes da massa e os preparos pelo nome; os de dentro do preparo, não.

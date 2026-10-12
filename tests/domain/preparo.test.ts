@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   escalarItens,
+  mencoesNoPasso,
   passosDoPreparo,
   preparoNaBancada,
+  temQuantidadeEscrita,
 } from "@/lib/domain/preparo";
 
 describe("passosDoPreparo", () => {
@@ -70,6 +72,86 @@ describe("escalarItens", () => {
       3,
     );
     expect(linha).toMatchObject({ insumoId: "f", quantidade: 1680 });
+  });
+});
+
+describe("mencoesNoPasso (#d350)", () => {
+  const ingredientes = [
+    { nomeSnapshot: "Manteiga", rotulo: "240 g" },
+    { nomeSnapshot: "Açúcar cristal", rotulo: "200 g" },
+    { nomeSnapshot: "Açúcar mascavo", rotulo: "160 g" },
+    { nomeSnapshot: "Ovo", rotulo: "2" },
+    { nomeSnapshot: "Farinha de trigo", rotulo: "1.120 g" },
+    { nomeSnapshot: "Chocolate", rotulo: "100 g" },
+    { nomeSnapshot: "Chocolate branco", rotulo: "50 g" },
+  ];
+  const ler = (passo: string) =>
+    mencoesNoPasso(passo, ingredientes)
+      .map((p) => (p.rotulo ? `${p.texto} [${p.rotulo}]` : p.texto))
+      .join("");
+
+  it("a primeira palavra casa; os dois açúcares, não", () => {
+    expect(ler("Bata a manteiga com os açúcares")).toBe(
+      "Bata a manteiga [240 g] com os açúcares",
+    );
+    expect(ler("Junte o açúcar e mexa")).toBe("Junte o açúcar e mexa");
+    expect(ler("Junte o Açúcar Mascavo.")).toBe(
+      "Junte o Açúcar Mascavo [160 g].",
+    );
+  });
+
+  it("o plural de ovo, e só a palavra inteira", () => {
+    expect(ler("Junte os ovos")).toBe("Junte os ovos [2]");
+    expect(ler("Junte o ovo, um ovo por vez")).toBe(
+      "Junte o ovo [2], um ovo por vez",
+    );
+    expect(ler("Formato ovoide")).toBe("Formato ovoide");
+  });
+
+  it("o nome inteiro antes da palavra, e o mais longo antes do curto", () => {
+    expect(ler("Adicione a farinha de trigo")).toBe(
+      "Adicione a farinha de trigo [1.120 g]",
+    );
+    expect(ler("Adicione a farinha aos poucos")).toBe(
+      "Adicione a farinha [1.120 g] aos poucos",
+    );
+    expect(ler("Derreta o chocolate branco")).toBe(
+      "Derreta o chocolate branco [50 g]",
+    );
+    expect(ler("Derreta o chocolate e o chocolate branco")).toBe(
+      "Derreta o chocolate [100 g] e o chocolate branco [50 g]",
+    );
+  });
+
+  it("sem menção, um pedaço só", () => {
+    expect(mencoesNoPasso("Asse a 180 graus", ingredientes)).toEqual([
+      { texto: "Asse a 180 graus" },
+    ]);
+  });
+});
+
+describe("temQuantidadeEscrita (#d350)", () => {
+  it("número com unidade é quantidade de uma fornada", () => {
+    for (const passo of [
+      "junte 560 g de farinha",
+      "1 kg de açúcar",
+      "200ml de leite",
+      "2 xícaras de farinha",
+      "1 colher de fermento",
+      "½ xícara de óleo",
+      "1,5 L de água",
+    ])
+      expect(temQuantidadeEscrita(passo), passo).toBe(true);
+  });
+
+  it("temperatura, tempo e contagem, não", () => {
+    for (const passo of [
+      "Asse a 180 graus",
+      "Asse a 180 °C por 12 minutos",
+      "Junte os 2 ovos",
+      "Bata a manteiga",
+    ])
+      expect(temQuantidadeEscrita(passo), passo).toBe(false);
   });
 });
 

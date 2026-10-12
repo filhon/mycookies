@@ -85,10 +85,10 @@ escrito à mão de uma fornada só. Nenhum schema, nenhuma regra, nenhum índice
 
 ## Critérios de aceite
 
-- [ ] Passo da vez com "Agora" e a rolagem.
-- [ ] Quantidade escalada no passo pela regra da 1.2, testada.
-- [ ] Aviso da quantidade escrita com fornadas ≠ 1, testado.
-- [ ] Portão de conclusão passa; `#d350`, `ESTADO.md`, `novidades.ts`.
+- [x] Passo da vez com "Agora" e a rolagem.
+- [x] Quantidade escalada no passo pela regra da 1.2, testada.
+- [x] Aviso da quantidade escrita com fornadas ≠ 1, testado.
+- [x] Portão de conclusão passa; `#d350`, `ESTADO.md`, `novidades.ts`.
 
 ---
 
