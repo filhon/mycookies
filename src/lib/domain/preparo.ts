@@ -64,3 +64,36 @@ export function escalarItens<
     };
   });
 }
+
+/**
+ * O preparo aberto na bancada da receita de cima (`#d349`): o que o pote dá e
+ * os ingredientes de dentro, na quantidade que esta massa pede.
+ *
+ * O pote segue `tirarDoPote` (`#d346`): contado em zero, ou nunca contado
+ * (`pote` ausente), é "fiz junto" e `pote` volta `null`. Quando o pote não dá,
+ * a lista é a do `resto`, o que sai dos ingredientes; quando dá, é a do pedido
+ * inteiro, para o "fiz junto?" de quem não usou o pote.
+ */
+export function preparoNaBancada<
+  T extends { quantidade: number; unidadeBase: UnidadeBase },
+>(
+  preparo: { rendimento: number; itens: readonly T[] },
+  pede: number,
+  pote: number | undefined,
+): {
+  pote: number | null;
+  resto: number;
+  ingredientes: (T & { rotulo: string })[];
+} {
+  const tem = pote !== undefined && pote > 0 ? pote : null;
+  const resto = tem === null ? pede : Math.max(0, pede - tem);
+  const gramas = resto > 0 ? resto : pede;
+  return {
+    pote: tem,
+    resto,
+    ingredientes: escalarItens(
+      preparo.itens,
+      preparo.rendimento > 0 ? gramas / preparo.rendimento : 0,
+    ),
+  };
+}

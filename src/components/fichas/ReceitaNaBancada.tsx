@@ -3,12 +3,15 @@
 import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { orderBy, query, where } from "firebase/firestore";
 import {
   Check,
+  ChevronDown,
+  ChevronRight,
   CookingPot,
   Package,
+  PackageOpen,
   RotateCcw,
   TriangleAlert,
 } from "lucide-react";
@@ -22,6 +25,7 @@ import { Botao } from "@/components/ui/Botao";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { Pilulas } from "@/components/ui/Pilulas";
 import { RodapeFixo } from "@/components/ui/RodapeFixo";
+import { Selo } from "@/components/ui/Selo";
 import {
   ehEmbalagem,
   fraseDaMassa,
@@ -32,17 +36,25 @@ import {
   escalarItens,
   FORNADAS_DA_BANCADA,
   passosDoPreparo,
+  preparoNaBancada,
   quantidadeNaBancada,
 } from "@/lib/domain/preparo";
 import {
   capacidadeDaFicha,
   consumoDesdeAContagem,
+  potesDosPreparos,
 } from "@/lib/domain/producao";
 import { colFichas, colInsumos } from "@/lib/firebase/colecoes";
 import { consultaFornadas } from "@/lib/firebase/mutations/fornadas";
 import { useColecao } from "@/lib/hooks/useColecao";
 import { useTelaAcesa } from "@/lib/hooks/useTelaAcesa";
-import type { DataISO, FichaTecnica, Fornada, Insumo } from "@/lib/types";
+import type {
+  DataISO,
+  FichaTecnica,
+  Fornada,
+  Insumo,
+  UnidadeBase,
+} from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 import { novoId } from "@/lib/utils/id";
 import { useContaId } from "@/providers/AuthProvider";
@@ -133,6 +145,7 @@ export function ReceitaNaBancada({ id }: { id: string }) {
 /** O que a aba guarda: as fornadas e o que já foi para a tigela. */
 interface Marcas {
   fator: number;
+  /** `insumoId`, ou `{preparoId}/{insumoId}` para o de dentro do preparo (`#d349`). */
   itens: string[];
   passos: number[];
 }
@@ -239,8 +252,8 @@ function Bancada({
     consumoDesdeAContagem(fornadas, insumos),
     hoje,
   );
-  // Só o contado que não dá; o preparo não casa com linha da capacidade e
-  // fica sem aviso até a 143. As pílulas não travam: ela decide.
+  // Só o contado que não dá. A linha do preparo não casa com linha da
+  // capacidade: o aviso vai nos de dentro (`#d349`). As pílulas não travam.
   const naoDa = new Map(
     (capacidade?.insumos ?? []).flatMap((linha) =>
       linha.tem !== null &&
@@ -248,6 +261,14 @@ function Bancada({
         ? [[linha.insumoId, quantidadeNaBancada(linha.tem, linha.unidadeBase)]]
         : [],
     ),
+  );
+  // O pote de cada preparo, como a folha da fornada lê (`#d346`).
+  const potes = potesDosPreparos(ficha, fichas, fornadas, hoje);
+  const preparoDe = new Map(
+    ficha.componentes.flatMap((componente) => {
+      const preparo = fichas.find((f) => f.id === componente.fichaId);
+      return preparo ? [[preparo.id, preparo] as const] : [];
+    }),
   );
 
   return (
@@ -311,6 +332,7 @@ function Bancada({
             <ul className="mt-3 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
               {ingredientes.map((item) => {
                 const tem = naoDa.get(item.insumoId);
+                const preparo = preparoDe.get(item.insumoId);
                 return (
                   <li key={item.insumoId}>
                     <LinhaMarcavel
@@ -330,6 +352,11 @@ function Bancada({
                         <span className="block text-heading">
                           {item.nomeSnapshot}
                         </span>
+                        {preparo && (
+                          <Selo tom="neutro" className="mt-1">
+                            Preparo
+                          </Selo>
+                        )}
                         {/* O triângulo e a palavra levam o aviso; a cor não
                           decide sozinha (`#d348`). */}
                         {tem && (
@@ -347,6 +374,22 @@ function Bancada({
                         {item.rotulo}
                       </span>
                     </LinhaMarcavel>
+                    {preparo && (
+                      <DentroDoPreparo
+                        preparo={preparo}
+                        pede={item.quantidade}
+                        unidade={item.unidadeBase}
+                        pote={potes.get(preparo.id)}
+                        marcas={marcas.itens}
+                        aoMarcar={(chave) =>
+                          setMarcas({
+                            ...marcas,
+                            itens: alternar(marcas.itens, chave),
+                          })
+                        }
+                        naoDa={naoDa}
+                      />
+                    )}
                   </li>
                 );
               })}
@@ -369,7 +412,8 @@ function Bancada({
             )}
             {/* Sem confirmação: perder marcas não é destrutivo, e um modal
                 na bancada seria pior que remarcar (`#d347`). */}
-            {naTigela + feitos > 0 && (
+            {/* As marcas de dentro do preparo contam aqui, não no "4 de 12". */}
+            {marcas.itens.length + feitos > 0 && (
               <Botao
                 variante="terciaria"
                 tamanho="sm"
@@ -479,6 +523,147 @@ function Bancada({
         fornadas={fornadas}
         hoje={hoje}
       />
+    </>
+  );
+}
+
+/**
+ * O preparo aberto na linha dele (`#d349`): a frase do pote num segundo botão,
+ * embaixo da linha marcável e nunca dentro dela, e os ingredientes de dentro
+ * na quantidade que esta massa pede. Sem pote, ou com pote que não dá, abre
+ * sozinho: os ingredientes saem de fato. Com pote que dá, fica fechado e a
+ * lista é a do "fiz junto?".
+ */
+function DentroDoPreparo({
+  preparo,
+  pede,
+  unidade,
+  pote,
+  marcas,
+  aoMarcar,
+  naoDa,
+}: {
+  preparo: FichaTecnica;
+  pede: number;
+  unidade: UnidadeBase;
+  pote: number | undefined;
+  marcas: string[];
+  aoMarcar: (chave: string) => void;
+  naoDa: Map<string, string>;
+}) {
+  const idLista = useId();
+  const {
+    pote: tem,
+    resto,
+    ingredientes,
+  } = preparoNaBancada(
+    {
+      rendimento: preparo.rendimento,
+      itens: preparo.itens.filter((item) => !ehEmbalagem(item.categoria)),
+    },
+    pede,
+    pote,
+  );
+  const saem = tem === null || resto > 0;
+  // Ela escolhe; até lá, o padrão segue o pote e as pílulas.
+  const [escolha, setEscolha] = useState<boolean | null>(null);
+  const aberto = escolha ?? saem;
+
+  const q = (quantidade: number) => quantidadeNaBancada(quantidade, unidade);
+  const ver =
+    ingredientes.length === 1
+      ? "Ver o ingrediente"
+      : `Ver os ${ingredientes.length} ingredientes`;
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-expanded={aberto}
+        aria-controls={idLista}
+        onClick={() => setEscolha(!aberto)}
+        className="flex min-h-11 w-full items-center gap-2 pr-4 pb-2 pl-14 text-left text-body text-ink-muted transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:pr-5 lg:pl-15"
+      >
+        {tem !== null && (
+          <PackageOpen
+            aria-hidden
+            className="size-4 shrink-0"
+            strokeWidth={1.75}
+          />
+        )}
+        <span className="num min-w-0 flex-1">
+          {tem === null ? (
+            ver
+          ) : resto > 0 ? (
+            `O pote tem ${q(tem)} · os outros ${q(resto)} saem dos ingredientes`
+          ) : (
+            <>
+              Do pote: tem {q(tem)} · ficam {q(tem - pede)}
+              <span className="block text-label">Fiz junto? {ver}</span>
+            </>
+          )}
+        </span>
+        <ChevronDown
+          aria-hidden
+          className={cn(
+            "size-5 shrink-0 transition-transform duration-150 ease-quart",
+            aberto && "rotate-180",
+          )}
+          strokeWidth={1.75}
+        />
+      </button>
+      {/* Lista dentro da lista, recuada até o nome: nunca cartão no cartão. */}
+      <div id={idLista} hidden={!aberto}>
+        <ul className="divide-y divide-line border-t border-line">
+          {ingredientes.map((item) => {
+            const chave = `${preparo.id}/${item.insumoId}`;
+            // O aviso só quando os de dentro saem de fato (`#d348`).
+            const aviso = saem ? naoDa.get(item.insumoId) : undefined;
+            return (
+              <li key={chave}>
+                <LinhaMarcavel
+                  feito={marcas.includes(chave)}
+                  aoTocar={() => aoMarcar(chave)}
+                  marcador={null}
+                  className="min-h-16 items-center pl-14 lg:pl-15"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-heading">
+                      {item.nomeSnapshot}
+                    </span>
+                    {aviso && (
+                      <span className="num mt-0.5 flex items-center gap-1.5 text-label text-attention">
+                        <TriangleAlert
+                          aria-hidden
+                          className="size-3.5 shrink-0"
+                          strokeWidth={2}
+                        />
+                        tem {aviso}
+                      </span>
+                    )}
+                  </span>
+                  <span className="num shrink-0 text-title font-semibold">
+                    {item.rotulo}
+                  </span>
+                </LinhaMarcavel>
+              </li>
+            );
+          })}
+        </ul>
+        {/* O gesto de voltar traz de volta; as marcas de cada bancada ficam
+            separadas, pela chave da aba. */}
+        <Link
+          href={`/fichas/${preparo.id}/bancada` as Route}
+          className="flex min-h-11 items-center gap-1 border-t border-line pr-4 pl-14 text-label font-medium text-brand-ink underline underline-offset-4 lg:pr-5 lg:pl-15"
+        >
+          Como se faz {preparo.nome}
+          <ChevronRight
+            aria-hidden
+            className="size-4 shrink-0"
+            strokeWidth={1.75}
+          />
+        </Link>
+      </div>
     </>
   );
 }

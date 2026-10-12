@@ -11248,3 +11248,42 @@ capacidade, e a capacidade ainda conta os ingredientes do preparo mesmo com o po
 (`#d346`). A 143 leva o aviso para dentro do preparo. Como `precisaPorLote` inclui a perda, a
 linha que pede "240 g" pode avisar "tem 245 g" num material com perda: o aviso é sobre o que sai
 da despensa, não sobre o que vai na tigela.
+
+## D349 · O preparo aberto na bancada
+
+**Status:** vigente · decidida em 2026-10-12, spec `143-o-preparo-aberto-na-bancada.md`. Da
+crítica dos prints da bancada de 2026-10-12, item 7.
+
+**Contexto.** Com a 140-A a bancada mostrava "Recheio de Nutella · 320 g" e parava. Quem faz o
+recheio junto com a massa precisava da receita dele em 320 g, e fazia a regra de três de cabeça,
+com a mão suja: a conta que a bancada existe para fazer (`#d343`).
+
+**Decisão.**
+
+- **Dois alvos empilhados, nunca um dentro do outro.** A linha do preparo continua marcável
+  inteira, com o selo "Preparo" do editor. Embaixo, no mesmo `<li>`, um segundo botão de largura
+  inteira e 44 px com a frase do pote e o `ChevronDown` (`aria-expanded`).
+- **A frase segue o pote da folha da fornada** (`potesDosPreparos`, `#d346`), pelas fornadas
+  escolhidas: "Do pote: tem 1.000 g · ficam 680 g" com "Fiz junto? Ver os 4 ingredientes", fechado;
+  "O pote tem 200 g · os outros 120 g saem dos ingredientes", aberto; sem pote (nunca contado,
+  vencido ou em zero), "Ver os 4 ingredientes", aberto. **Aberto por padrão sem pote** porque sem
+  pote ela faz junto. O padrão acompanha o pote e as pílulas até ela tocar; depois vale o toque.
+- **A lista do resto do pote.** Quando o pote não dá, os de dentro são os do resto (120 g), não
+  os do pedido inteiro: é o que vai para a tigela. Quando dá, a lista é a do pedido inteiro, para o
+  "fiz junto?" de quem não usou o pote. `preparoNaBancada` em `domain/preparo.ts` decide isso e
+  escala por `escalarItens(itens sem embalagem, gramas / rendimento)`; testado em 320 g de 1.000 g
+  e no resto do pote.
+- **Lista dentro de lista.** Os de dentro são linhas recuadas até o nome, na letra da bancada,
+  marcáveis. A marca é `{preparoId}/{insumoId}` nas marcas da aba, e "Começar de novo" limpa
+  junto (o botão aparece também quando só há marca de dentro). As linhas de dentro não entram no
+  "4 de 12": o preparo conta como uma linha (`#d347`).
+- **O aviso da 142 desce para dentro** (`#d348`): "tem 80 g" na linha do material de dentro, só
+  quando os ingredientes saem de fato (sem pote ou no resto). É o mesmo mapa da linha direta.
+- **O link** "Como se faz {nome}" leva a `/fichas/{preparoId}/bancada`, sem artigo: "o Recheio",
+  mas "a Calda", e o Rende não adivinha gênero de nome do cadastro. As marcas de cada bancada ficam
+  separadas pela chave da aba.
+
+**Consequência.** O aviso de dentro compara com `precisaPorLote` da capacidade, que ainda conta o
+preparo inteiro mesmo com o pote contado (`#d346`): com pote que não dá, pode avisar a mais, nunca
+a menos. Os passos do preparo não entram na receita de cima: o link resolve, e duas ordens numa
+lista só confundem.

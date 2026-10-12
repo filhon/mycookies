@@ -92,11 +92,11 @@ entram no "4 de 12": são do preparo.
 
 ## Critérios de aceite
 
-- [ ] Linha do preparo com a frase do pote e a lista de dentro, pelos três casos.
-- [ ] Escala de dentro testada, no resto do pote também.
-- [ ] Marcas de dentro na aba, limpas com o resto.
-- [ ] Link para a bancada do preparo.
-- [ ] Portão de conclusão passa; `#d349`, `ESTADO.md`, `novidades.ts`.
+- [x] Linha do preparo com a frase do pote e a lista de dentro, pelos três casos.
+- [x] Escala de dentro testada, no resto do pote também.
+- [x] Marcas de dentro na aba, limpas com o resto.
+- [x] Link para a bancada do preparo.
+- [x] Portão de conclusão passa; `#d349`, `ESTADO.md`, `novidades.ts`.
 
 ---
 

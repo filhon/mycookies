@@ -24,6 +24,14 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-12",
+    titulo:
+      "O recheio abre dentro da receita do cookie, já na quantidade certa",
+    frase:
+      "Na bancada, toque embaixo do recheio: ela diz o que sai do pote e mostra os ingredientes dele na medida desta massa.",
+    href: "/fichas",
+  },
+  {
+    dataISO: "2026-10-12",
     titulo: "A bancada avisa, antes de começar, o ingrediente que não dá",
     frase:
       "Abra a receita na bancada e escolha as fornadas: ela diz quantas a despensa dá e marca o ingrediente contado que não chega.",

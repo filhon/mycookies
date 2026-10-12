@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { escalarItens, passosDoPreparo } from "@/lib/domain/preparo";
+import {
+  escalarItens,
+  passosDoPreparo,
+  preparoNaBancada,
+} from "@/lib/domain/preparo";
 
 describe("passosDoPreparo", () => {
   it("uma linha é um passo, e a linha em branco some", () => {
@@ -66,5 +70,50 @@ describe("escalarItens", () => {
       3,
     );
     expect(linha).toMatchObject({ insumoId: "f", quantidade: 1680 });
+  });
+});
+
+describe("preparoNaBancada (#d349)", () => {
+  // Recheio de 1.000 g: 320 g de Nutella, 500 g de creme, 180 g de leite em pó.
+  const recheio = {
+    rendimento: 1000,
+    itens: [
+      { insumoId: "nutella", quantidade: 320, unidadeBase: "g" as const },
+      { insumoId: "creme", quantidade: 500, unidadeBase: "g" as const },
+      { insumoId: "leite", quantidade: 180, unidadeBase: "g" as const },
+    ],
+  };
+  const gramas = (r: ReturnType<typeof preparoNaBancada>) =>
+    r.ingredientes.map((item) => item.quantidade);
+
+  it("sem pote, os de dentro saem em 320 g de 1.000 g", () => {
+    const sem = preparoNaBancada(recheio, 320, undefined);
+    expect(sem).toMatchObject({ pote: null, resto: 320 });
+    expect(gramas(sem)).toEqual([102, 160, 58]);
+  });
+
+  it("duas fornadas dobram os de dentro", () => {
+    expect(gramas(preparoNaBancada(recheio, 640, undefined))).toEqual([
+      205, 320, 115,
+    ]);
+  });
+
+  it("pote contado em zero é fiz junto", () => {
+    expect(preparoNaBancada(recheio, 320, 0)).toMatchObject({
+      pote: null,
+      resto: 320,
+    });
+  });
+
+  it("pote que dá: nada sai, e a lista é a dos 320 g para o fiz junto", () => {
+    const da = preparoNaBancada(recheio, 320, 1000);
+    expect(da).toMatchObject({ pote: 1000, resto: 0 });
+    expect(gramas(da)).toEqual([102, 160, 58]);
+  });
+
+  it("pote que não dá: a lista é a do resto", () => {
+    const naoDa = preparoNaBancada(recheio, 320, 200);
+    expect(naoDa).toMatchObject({ pote: 200, resto: 120 });
+    expect(gramas(naoDa)).toEqual([38, 60, 22]);
   });
 });
