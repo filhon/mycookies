@@ -6,12 +6,12 @@ import {
   LIMITE_ARQUIVO_BYTES,
   LIMITE_FOTOS,
   LIMITE_LINHAS,
-  TEMPO_LIMITE_CNPJ_MS,
   TEMPO_LIMITE_LEITURA_MS,
   TIPOS_ACEITOS,
   type FalhaNota,
   type NotaLida,
 } from "@/lib/domain/notaFiscal";
+import { perguntarCnpj } from "@/lib/server/cnpj";
 import {
   abreAConta,
   conferirToken,
@@ -349,7 +349,7 @@ async function consultarCnpj(cnpj: string): Promise<Emitente | null> {
   const guardado = CACHE.get(cnpj);
   if (guardado && guardado.ate > Date.now()) return guardado.valor;
 
-  const emitente = await perguntarCnpj(cnpj);
+  const emitente = await emitenteDoCnpj(cnpj);
   CACHE.set(cnpj, {
     valor: emitente,
     ate: Date.now() + (emitente ? VALIDADE_MS : VALIDADE_FALHA_MS),
@@ -359,35 +359,22 @@ async function consultarCnpj(cnpj: string): Promise<Emitente | null> {
 }
 
 /**
- * Timeout, 429 ou 404 não são erro: a leitura volta com o nome que o modelo
- * leu, e a tela não menciona o assunto.
+ * Sem resposta, a leitura volta com o nome que o modelo leu, e a tela não
+ * menciona o assunto.
  *
- * **Nada além de três campos atravessa a rota.** A resposta traz endereço
- * completo, telefone, e-mail e a lista de sócios — nomes de pessoas reais que
- * não têm o que fazer no navegador dela.
+ * **Nada além de três campos atravessa a rota**, pelo motivo de
+ * `perguntarCnpj`.
  */
-async function perguntarCnpj(cnpj: string): Promise<Emitente | null> {
-  try {
-    const resposta = await fetch(`https://publica.cnpj.ws/cnpj/${cnpj}`, {
-      headers: { accept: "application/json" },
-      signal: AbortSignal.timeout(TEMPO_LIMITE_CNPJ_MS),
-    });
-    if (!resposta.ok) return null;
+async function emitenteDoCnpj(cnpj: string): Promise<Emitente | null> {
+  const json = (await perguntarCnpj(cnpj)) as RespostaCnpj | null;
+  const estabelecimento = json?.estabelecimento;
 
-    const json = (await resposta.json()) as RespostaCnpj;
-    const estabelecimento = json?.estabelecimento;
+  const nome =
+    estabelecimento?.nome_fantasia?.trim() || json?.razao_social?.trim() || "";
+  const cidade = estabelecimento?.cidade?.nome?.trim() ?? "";
+  const uf = estabelecimento?.estado?.sigla?.trim() ?? "";
 
-    const nome =
-      estabelecimento?.nome_fantasia?.trim() ||
-      json?.razao_social?.trim() ||
-      "";
-    const cidade = estabelecimento?.cidade?.nome?.trim() ?? "";
-    const uf = estabelecimento?.estado?.sigla?.trim() ?? "";
-
-    return nome || cidade ? { nome, cidade, uf } : null;
-  } catch {
-    return null;
-  }
+  return nome || cidade ? { nome, cidade, uf } : null;
 }
 
 interface RespostaCnpj {

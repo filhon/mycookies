@@ -3,9 +3,9 @@
 import { useRouter } from "next/navigation";
 import {
   useCallback,
+  useEffect,
   useMemo,
   useState,
-  useSyncExternalStore,
   type CSSProperties,
   type ReactNode,
 } from "react";
@@ -15,71 +15,77 @@ import { Botao } from "@/components/ui/Botao";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
-import { Pilulas } from "@/components/ui/Pilulas";
 import {
   competenciaAtual,
   rotuloCompetencia,
   rotuloMes,
 } from "@/lib/domain/datas";
 import {
-  LIMITE_MEI_ANUAL,
+  ehCompetencia,
+  formatarCnpj,
   LIMITE_MEI_POR_MES,
   limiteDoAno,
   relatorioMei,
-  type AtividadeMei,
   type LimiteDoAno,
   type RelatorioMei as Relatorio,
 } from "@/lib/domain/mei";
 import { formatarMoeda, formatarPercentual } from "@/lib/domain/money";
+import { docMei } from "@/lib/firebase/colecoes";
 import {
   consultaAgregadosDoPeriodo,
   consultaTransacoesDoMes,
 } from "@/lib/firebase/mutations/agregado";
-import { useColecao } from "@/lib/hooks/useColecao";
+import { salvarMei } from "@/lib/firebase/mutations/fiscal";
+import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
 import type {
   Centavos,
   CompetenciaMensal,
+  DadosMei,
   ResumoMensal,
   Transacao,
 } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 import { useContaId } from "@/providers/AuthProvider";
 import { SeletorMes } from "./SeletorMes";
+import { SeuMei } from "./SeuMei";
 
 /** 210 mm a 96 dpi, como em `TelaOrcamento`. */
 const LARGURA_DA_FOLHA_PX = 794;
 
 /**
- * As duas escolhas do papel moram no aparelho (`#d269`): a atividade uma vez
- * só, a nota por mês. Navegador que bloqueia armazenamento lança no acesso, e
- * aí a escolha vale só nesta visita.
+ * As duas escolhas do papel moravam no aparelho até a 150 (`#d269`). Na
+ * primeira abertura com o servidor dizendo que `fiscal/mei` não existe, o que
+ * houver aqui vai para a conta e sai do aparelho (`#d359`). Navegador que
+ * bloqueia armazenamento lança no acesso, e aí não há o que levar.
  */
 const CHAVE_ATIVIDADE = "rende:mei-atividade";
-const chaveDaNota = (competencia: CompetenciaMensal) =>
-  `rende:mei-nota:${competencia}`;
+const PREFIXO_DA_NOTA = "rende:mei-nota:";
 
-function lerDoAparelho(chave: string): string | null {
+function levarDoAparelho(contaId: string) {
   try {
-    return localStorage.getItem(chave);
+    const chaves = Object.keys(localStorage).filter(
+      (chave) => chave === CHAVE_ATIVIDADE || chave.startsWith(PREFIXO_DA_NOTA),
+    );
+    if (chaves.length === 0) return;
+
+    const notas: Record<CompetenciaMensal, Centavos> = {};
+    for (const chave of chaves) {
+      const competencia = chave.slice(PREFIXO_DA_NOTA.length);
+      const valor = Math.round(Number(localStorage.getItem(chave)));
+      if (ehCompetencia(competencia) && valor > 0) notas[competencia] = valor;
+    }
+    salvarMei(contaId, {
+      atividade:
+        localStorage.getItem(CHAVE_ATIVIDADE) === "COMERCIO"
+          ? "COMERCIO"
+          : "INDUSTRIA",
+      ...(Object.keys(notas).length > 0 && { notas }),
+    });
+    for (const chave of chaves) localStorage.removeItem(chave);
   } catch {
-    return null;
+    // Sem armazenamento, não há o que levar.
   }
 }
-
-function guardarNoAparelho(chave: string, valor: string) {
-  try {
-    localStorage.setItem(chave, valor);
-  } catch {
-    // Sem armazenamento, vale só nesta visita.
-  }
-}
-
-const semAssinatura = () => () => {};
-
-const ATIVIDADES = [
-  { valor: "INDUSTRIA", rotulo: "Indústria" },
-  { valor: "COMERCIO", rotulo: "Comércio" },
-] as const;
 
 /**
  * O Relatório Mensal das Receitas Brutas do MEI, montado das vendas do mês
@@ -110,27 +116,21 @@ export function RelatorioMei({
       ),
     [contaId, competencia],
   );
+  const referenciaMei = useMemo(() => docMei(contaId), [contaId]);
   const lancamentos = useColecao<Transacao>(consultaDoMes);
   const agregados = useColecao<ResumoMensal>(consultaDoAno);
+  const mei = useDocumento<DadosMei>(referenciaMei);
 
-  const atividadeGuardada = useSyncExternalStore(
-    semAssinatura,
-    () => lerDoAparelho(CHAVE_ATIVIDADE),
-    () => null,
-  );
-  const notaGuardada = useSyncExternalStore(
-    semAssinatura,
-    () => lerDoAparelho(chaveDaNota(competencia)),
-    () => null,
-  );
-  const [atividadeEscolhida, setAtividade] = useState<AtividadeMei | null>(
-    null,
-  );
+  // Só com a ausência dita pelo servidor: o cache de um aparelho novo também
+  // diz "não existe", e levar o do aparelho por cima da conta seria perder.
+  const semDocumentoNoServidor = !mei.carregando && !mei.doCache && !mei.dado;
+  useEffect(() => {
+    if (semDocumentoNoServidor) levarDoAparelho(contaId);
+  }, [semDocumentoNoServidor, contaId]);
+
   const [notaEscolhida, setNota] = useState<Centavos | null>(null);
-  const atividade: AtividadeMei =
-    atividadeEscolhida ??
-    (atividadeGuardada === "COMERCIO" ? "COMERCIO" : "INDUSTRIA");
-  const comNota = notaEscolhida ?? (Number(notaGuardada) || 0);
+  const atividade = mei.dado?.atividade ?? "INDUSTRIA";
+  const comNota = notaEscolhida ?? mei.dado?.notas?.[competencia] ?? 0;
 
   // Mesmo `zoom` da folha do orçamento: a prévia encolhe para caber, e na
   // impressão volta a 1.
@@ -145,14 +145,9 @@ export function RelatorioMei({
     return () => observador.disconnect();
   }, []);
 
-  function mudarAtividade(nova: AtividadeMei) {
-    setAtividade(nova);
-    guardarNoAparelho(CHAVE_ATIVIDADE, nova);
-  }
-
   function mudarNota(centavos: Centavos) {
     setNota(centavos);
-    guardarNoAparelho(chaveDaNota(competencia), String(centavos));
+    salvarMei(contaId, { atividade, notas: { [competencia]: centavos } });
   }
 
   const cabecalho = (
@@ -186,7 +181,7 @@ export function RelatorioMei({
     );
   }
 
-  if (lancamentos.carregando || agregados.carregando) {
+  if (lancamentos.carregando || agregados.carregando || mei.carregando) {
     return (
       <>
         {cabecalho}
@@ -210,9 +205,14 @@ export function RelatorioMei({
       <div className="mt-4 flex flex-col gap-8 print:mt-0 print:block">
         <div className="print:hidden">
           <LimiteDoAnoMei
-            limite={limiteDoAno(agregados.dados, competencia)}
+            limite={limiteDoAno(
+              agregados.dados,
+              competencia,
+              mei.dado?.abertura,
+            )}
             competencia={competencia}
             soVenda={relatorio.outrasEntradas === 0}
+            aberturaConhecida={!!mei.dado?.abertura}
           />
         </div>
 
@@ -221,27 +221,15 @@ export function RelatorioMei({
             Antes de imprimir
           </h2>
 
-          <div className="mt-4 grid gap-6 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <p id="atividade-mei" className="text-label font-medium text-ink">
-                Minha atividade no MEI é
-              </p>
-              <Pilulas
-                opcoes={ATIVIDADES}
-                valor={atividade}
-                aoMudar={mudarAtividade}
-                rotulo="Minha atividade no MEI é"
-              />
-              <p className="text-label text-ink-muted">
-                Indústria se você faz o doce; comércio se revende o de outra.
-              </p>
-            </div>
+          <div className="mt-4 flex flex-col gap-6">
+            <SeuMei mei={mei.dado} />
 
             <CampoMoeda
               rotulo={`Emiti nota fiscal em ${mes}, no total de`}
               valor={comNota}
               aoMudar={mudarNota}
               dica={`Sai da linha ${linhaSemNota} e vai para a ${linhaComNota}. Sem nota, deixe em zero.`}
+              className="sm:max-w-[calc(50%-0.75rem)]"
             />
           </div>
 
@@ -281,7 +269,12 @@ export function RelatorioMei({
         </section>
 
         <div ref={medirFolha} style={{ "--folha-zoom": zoom } as CSSProperties}>
-          <FolhaMei relatorio={relatorio} competencia={competencia} />
+          <FolhaMei
+            relatorio={relatorio}
+            competencia={competencia}
+            cnpj={mei.dado?.cnpj}
+            nomeEmpresarial={mei.dado?.nomeEmpresarial}
+          />
         </div>
       </div>
     </>
@@ -299,12 +292,15 @@ export function LimiteDoAnoMei({
   limite,
   competencia,
   soVenda,
+  aberturaConhecida = false,
   compacto = false,
 }: {
   limite: LimiteDoAno;
   competencia: CompetenciaMensal;
   /** Sem entrada fora de `VENDA` no mês aberto, o verbo é "faturou". */
   soVenda: boolean;
+  /** Com a abertura em `fiscal/mei`, "Abriu o MEI este ano?" some (`#d359`). */
+  aberturaConhecida?: boolean;
   compacto?: boolean;
 }) {
   const ano = competencia.slice(0, 4);
@@ -338,11 +334,17 @@ export function LimiteDoAnoMei({
         >
           {formatarMoeda(limite.entradas)}
         </span>
-        de {formatarMoeda(LIMITE_MEI_ANUAL)}
+        de {formatarMoeda(limite.teto)}
         <span className="ml-auto font-semibold text-ink">
           {formatarPercentual(limite.percentual, 0)}
         </span>
       </p>
+      {limite.desde && (
+        <p className="mt-1 max-w-[60ch] text-label text-ink">
+          Somado desde {rotuloMes(limite.desde)}, quando você começou a lançar
+          no Rende. O que entrou antes não está aqui.
+        </p>
+      )}
 
       <div
         role="progressbar"
@@ -388,9 +390,23 @@ export function LimiteDoAnoMei({
             </p>
           )}
           <p className="mt-1.5 max-w-[60ch] text-label text-ink-muted">
-            Abriu o MEI este ano? O seu limite é{" "}
-            <span className="num">{formatarMoeda(LIMITE_MEI_POR_MES)}</span> por
-            mês desde a abertura.
+            {limite.proporcional ? (
+              <>
+                O MEI abriu este ano: o seu limite é{" "}
+                <span className="num">{formatarMoeda(LIMITE_MEI_POR_MES)}</span>{" "}
+                por mês desde a abertura.
+              </>
+            ) : (
+              !aberturaConhecida && (
+                <>
+                  Abriu o MEI este ano? O seu limite é{" "}
+                  <span className="num">
+                    {formatarMoeda(LIMITE_MEI_POR_MES)}
+                  </span>{" "}
+                  por mês desde a abertura.
+                </>
+              )
+            )}
             {!soVenda &&
               " A conta soma tudo o que entrou, não só venda: erra pra cima, que é o lado seguro."}
           </p>
@@ -406,14 +422,19 @@ export function LimiteDoAnoMei({
  *
  * A folha é dela, como a do orçamento (`#d127`): nenhum logotipo, uma linha
  * apagada no rodapé. Tinta sobre branco, pela classe `.folha`, e nenhuma
- * classe `dark:` aqui dentro. CNPJ e nome ficam em branco para ela escrever.
+ * classe `dark:` aqui dentro. CNPJ e nome saem de `fiscal/mei`; sem eles, a
+ * linha para ela escrever (`#d359`).
  */
 function FolhaMei({
   relatorio,
   competencia,
+  cnpj,
+  nomeEmpresarial,
 }: {
   relatorio: Relatorio;
   competencia: CompetenciaMensal;
+  cnpj?: string;
+  nomeEmpresarial?: string;
 }) {
   return (
     <article className="folha mx-auto flex flex-col text-[10.5pt] leading-[1.45] shadow-raised">
@@ -422,8 +443,8 @@ function FolhaMei({
       </h2>
 
       <div className="mt-[14pt] space-y-[10pt]">
-        <EmBranco rotulo="CNPJ:" />
-        <EmBranco rotulo="Empreendedor individual:" />
+        <EmBranco rotulo="CNPJ:" valor={cnpj && formatarCnpj(cnpj)} />
+        <EmBranco rotulo="Empreendedor individual:" valor={nomeEmpresarial} />
         <p>
           Período de apuração:{" "}
           <span className="font-semibold">
@@ -502,7 +523,14 @@ function FolhaMei({
   );
 }
 
-function EmBranco({ rotulo }: { rotulo: string }) {
+function EmBranco({ rotulo, valor }: { rotulo: string; valor?: string }) {
+  if (valor) {
+    return (
+      <p>
+        {rotulo} <span className="font-semibold">{valor}</span>
+      </p>
+    );
+  }
   return (
     <p className="flex items-end gap-2">
       <span className="shrink-0">{rotulo}</span>

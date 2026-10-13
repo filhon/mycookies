@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-12",
+    titulo: "O relatório do MEI sai com o seu CNPJ",
+    frase:
+      "Digite o CNPJ uma vez e o nome, a abertura e a atividade vêm junto; a folha sai preenchida, igual em qualquer aparelho.",
+    href: "/financeiro",
+  },
+  {
+    dataISO: "2026-10-12",
     titulo: "A cliente aprova o orçamento pelo link",
     frase:
       'Um toque em "Aprovar orçamento" e o celular avisa; o pedido aparece em Esperando você, e você confirma a data.',

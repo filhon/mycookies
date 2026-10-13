@@ -11643,3 +11643,64 @@ o botão.
 
 **Consequência.** Um orçamento cancelado e reaberto continua com a aprovação antiga e volta a
 Esperando você. Recusar, pedir mudança e cobrar sinal na aprovação continuam fora (spec 149).
+
+---
+
+## D359 · O MEI mora na conta, e o CNPJ preenche o resto
+
+**Status:** vigente · decidida em 2026-10-12, spec `150-o-mei-que-o-rende-conhece.md`.
+Aprovações da spec tomadas como dadas pelo pedido de implementá-la: (1) o schema aditivo
+`contas/{id}/fiscal/mei`; (2) a regra, `fiscal` em `doDinheiro` (só uma restrição a mais); (3)
+o CNPJ dela indo a `publica.cnpj.ws` pelo servidor; (4) o texto. Nenhum índice ou dependência.
+
+**Contexto.** A folha do relatório saía com "CNPJ" e "Empreendedor individual" em branco todo
+mês, as duas escolhas moravam no aparelho (`#d269`), e o limite somava só o que ela lançou no
+Rende, sem dizer: começando em agosto, a tela errava pra baixo, o lado perigoso.
+
+**Decisão.**
+
+- **`DadosMei`** em `fiscal/mei` (`caminhos.fiscalMei`, `docMei`): `cnpj?` (só dígitos),
+  `nomeEmpresarial?` (até 120), `atividade`, `abertura?` (`AAAA-MM`), `notas?` (centavos por
+  competência). Em `fiscal`, e não em `configuracao/geral`, porque a ajudante lê a configuração
+  e não lê dinheiro. `salvarMei` grava um campo por toque com `merge`, `v` e `Timestamp.now()`,
+  e **sempre leva a `atividade` que a tela mostra**: o documento nunca nasce sem ela, e o tipo
+  continua com ela obrigatória. `AtividadeMei` desceu para `types/financeiro.ts`; o domínio a
+  reexporta.
+- **A migração do aparelho** roda quando o servidor (e não o cache: `!doCache`) diz que o
+  documento não existe. Leva `rende:mei-atividade` e as `rende:mei-nota:*` com valor e apaga as
+  chaves. Num aparelho novo e offline o cache também diz "não existe"; levar ali sobrescreveria
+  a atividade da conta, então espera a rede.
+- **`GET /api/mei/cnpj?cnpj=…&contaId=…`**: token, `ehDona`, `cnpjValido`, e `meiDoCnpj` em
+  `domain/mei.ts` reduz a resposta a no máximo `nomeEmpresarial`, `abertura` e `atividade`,
+  testado pelas chaves como o `#d158`. Sem resposta, `{}`. Não escreve. `perguntarCnpj` saiu de
+  `/api/nota` para `lib/server/cnpj.ts` devolvendo a resposta crua; cada rota reduz a sua (a de
+  nota continua com o cache por CNPJ, a do MEI não precisa: é uma consulta por CNPJ digitado).
+- **Conferido no dia** (Petrobras, que não é MEI): `razao_social`,
+  `estabelecimento.data_inicio_atividade` e `estabelecimento.atividade_principal.subclasse`
+  ("0600-0/01") vêm assim; `simples` veio `null`. `simples.data_opcao_mei` é o da documentação
+  da API, não visto num MEI real: o roteiro § 2 confere. A abertura é a opção pelo MEI, senão o
+  início da atividade (a opção é mais tarde, e o teto proporcional menor erra pro lado seguro).
+- **`atividadeDoCnae`**: divisão 10 a 33 é indústria, 45 a 47 comércio, o resto não sugere. Só
+  o CNAE principal.
+- **Na tela**, o primeiro bloco de "Antes de imprimir" é `SeuMei`: sem CNPJ, "O seu CNPJ" com
+  máscara e teclado numérico ("Fica guardado na sua conta para sair na folha todo mês."), o nome
+  empresarial (grava no `blur`), a atividade ("É a que está no seu CCMEI. Doceira e confeiteira
+  costumam ser indústria.") e "Abriu o MEI em" (`type="month"`, `ponytail:` pelo Firefox de
+  computador). Com 14 dígitos válidos, o CNPJ grava; com rede, a consulta preenche e grava o que
+  veio, e o bloco vira a linha "NOME · Indústria · aberto em março de 2021 · Mudar". Sem rede ou
+  sem resposta, os campos ficam, sem erro. 14 dígitos que não fecham dizem "Esse CNPJ não
+  confere." A nota do mês continua `CampoMoeda`, agora gravada em `notas`.
+- **A folha** preenche "CNPJ:" (com máscara) e "Empreendedor individual:" quando há valor; sem
+  ele, a linha de sempre.
+- **`limiteDoAno(agregados, ate, abertura?)`** devolve `teto`, `proporcional` e `desde`. Com a
+  abertura no mesmo ano, teto = `LIMITE_MEI_POR_MES × (13 − mês)`; percentual e estados contam
+  sobre ele. "Abriu o MEI este ano?" some com a abertura conhecida, e no ano dela vira "O MEI
+  abriu este ano: o seu limite é R$ 6.750,00 por mês desde a abertura." **`desde`** é o primeiro
+  mês com `entradas > 0`, quando depois de janeiro e da abertura: "Somado desde agosto, quando
+  você começou a lançar no Rende. O que entrou antes não está aqui.", em tinta, sem ícone, no
+  relatório e no pé do Caixa, que também passou a ler `fiscal/mei` para o teto. **O ritmo** só
+  com três meses de agregado ou mais.
+
+**Consequência.** O ritmo continua a média vezes doze mesmo no ano da abertura: erra pra cima.
+Pedir o CNPJ fora desta tela, o faturamento de antes do Rende (153) e a nota por pedido seguem
+fora (spec 150).

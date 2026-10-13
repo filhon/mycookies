@@ -195,6 +195,31 @@ export interface ResumoMensal {
   atualizadoEm: Timestamp;
 }
 
+/** Indústria é produção própria; comércio é revenda (`DECISOES.md#d269`). */
+export type AtividadeMei = "INDUSTRIA" | "COMERCIO";
+
+/**
+ * O MEI dela: `contas/{contaId}/fiscal/mei` (`DECISOES.md#d359`).
+ *
+ * Em `fiscal`, e não em `configuracao/geral`, porque a ajudante lê a
+ * configuração e não lê dinheiro: o valor com nota por mês é dinheiro, e o
+ * CNPJ vai junto para ser uma leitura só.
+ */
+export interface DadosMei {
+  id: "mei";
+  v: VersaoSchema;
+  /** Só dígitos, conferido por `cnpjValido` antes de gravar. */
+  cnpj?: string;
+  /** Como no CCMEI, até `NOME_EMPRESARIAL_MAX`. */
+  nomeEmpresarial?: string;
+  atividade: AtividadeMei;
+  /** O mês em que o MEI começou: no ano dele, o limite é proporcional. */
+  abertura?: CompetenciaMensal;
+  /** "Emiti nota fiscal em {mês}, no total de", por competência. */
+  notas?: Record<CompetenciaMensal, Centavos>;
+  atualizadoEm: Timestamp;
+}
+
 /**
  * Documento único de contadores globais: `contas/{contaId}/agregados/global`.
  * Serve para badges e telas iniciais sem `count()` nem varredura.

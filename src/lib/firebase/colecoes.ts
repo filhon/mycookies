@@ -14,6 +14,7 @@ import type {
   Cliente,
   ConfiguracaoGeral,
   Conta,
+  DadosMei,
   FichaTecnica,
   Fornada,
   Insumo,
@@ -113,6 +114,12 @@ export const docConfiguracao = (contaId: string) =>
 export const docVitrine = (contaId: string) =>
   doc(obterDb(), caminhos.vitrine(contaId)).withConverter(
     conversor<VitrineDoCardapio>(),
+  );
+
+/** Só da dona: `fiscal` está em `doDinheiro` nas regras (`DECISOES.md#d359`). */
+export const docMei = (contaId: string) =>
+  doc(obterDb(), caminhos.fiscalMei(contaId)).withConverter(
+    conversor<DadosMei>(),
   );
 
 /** Tipada como mês: quem lista lê por faixa de id, e o `global` fica fora dela. */

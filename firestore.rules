@@ -49,9 +49,10 @@ service cloud.firestore {
         return temAcesso() && request.auth.token.contas[contaId] == 'DONA';
       }
 
-      // O dinheiro não é da ajudante: ela não lê nem escreve estas três.
+      // O dinheiro não é da ajudante: ela não lê nem escreve estas. `fiscal` é
+      // o MEI, com o valor com nota de cada mês (DECISOES.md#d359).
       function doDinheiro(colecao) {
-        return colecao in ['transacoes', 'metas', 'agregados'];
+        return colecao in ['transacoes', 'metas', 'agregados', 'fiscal'];
       }
 
       // Espelho dos acessos: a claim é a verdade, e quem escreve é o Admin SDK

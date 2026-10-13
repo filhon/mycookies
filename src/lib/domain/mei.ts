@@ -1,4 +1,12 @@
-import type { Centavos, CompetenciaMensal, Transacao } from "@/lib/types";
+import type {
+  AtividadeMei,
+  Centavos,
+  CompetenciaMensal,
+  Transacao,
+} from "@/lib/types";
+import { digitosDoCnpj } from "./notaFiscal";
+
+export type { AtividadeMei };
 
 /**
  * O limite de faturamento anual do MEI (`DECISOES.md#d270`).
@@ -10,9 +18,6 @@ import type { Centavos, CompetenciaMensal, Transacao } from "@/lib/types";
  */
 export const LIMITE_MEI_ANUAL: Centavos = 8_100_000;
 export const LIMITE_MEI_POR_MES: Centavos = LIMITE_MEI_ANUAL / 12;
-
-/** Indústria é produção própria; comércio é revenda (`#d269`). */
-export type AtividadeMei = "INDUSTRIA" | "COMERCIO";
 
 export interface EscolhasMei {
   atividade: AtividadeMei;
@@ -80,35 +85,144 @@ export type EstadoDoLimite = "dentro" | "perto" | "passou";
 export interface LimiteDoAno {
   /** Entradas de janeiro até o mês, de todas as categorias: erra pra cima. */
   entradas: Centavos;
+  /** O anual, ou o proporcional quando o MEI abriu neste ano (`#d359`). */
+  teto: Centavos;
+  /** O MEI abriu neste ano, e o teto é `LIMITE_MEI_POR_MES` por mês desde então. */
+  proporcional: boolean;
   /** 0 a 100 e além; só para mostrar. */
   percentual: number;
-  /** A média dos meses com agregado vezes doze; `null` sem nenhum. */
+  /** A média dos meses com agregado vezes doze; `null` com menos de três. */
   ritmo: Centavos | null;
   estado: EstadoDoLimite;
+  /**
+   * O primeiro mês com entrada, quando é depois de janeiro e da abertura: o
+   * que entrou antes de ela lançar no Rende não está na soma (`#d359`).
+   */
+  desde: CompetenciaMensal | null;
 }
+
+/** `AAAA-MM` com mês de verdade: a abertura digitada à mão passa por aqui. */
+export function ehCompetencia(
+  valor: string | undefined,
+): valor is CompetenciaMensal {
+  return !!valor && /^\d{4}-(0[1-9]|1[0-2])$/.test(valor);
+}
+
+/** Dois meses vezes doze é chute: o ritmo só aparece a partir de três. */
+const MESES_PARA_O_RITMO = 3;
 
 /**
  * Quanto do limite do ano já foi usado (`#d270`), pelos agregados de janeiro
  * até `ate`. Por id, como `noAno`: o `global` fica fora porque 'g' > '2'.
+ *
+ * Com `abertura` no mesmo ano, o teto é `LIMITE_MEI_POR_MES` vezes os meses
+ * de lá até dezembro, o da abertura inteiro (LC 123/2006, art. 18-A, §2º).
  */
 export function limiteDoAno(
   agregados: { id: string; entradas?: Centavos }[],
   ate: CompetenciaMensal,
+  abertura?: CompetenciaMensal,
 ): LimiteDoAno {
-  const doAno = agregados.filter(
-    (a) => a.id >= `${ate.slice(0, 4)}-01` && a.id <= ate,
-  );
+  const ano = ate.slice(0, 4);
+  const doAno = agregados
+    .filter((a) => a.id >= `${ano}-01` && a.id <= ate)
+    .sort((a, b) => (a.id < b.id ? -1 : 1));
   const entradas = doAno.reduce((soma, a) => soma + (a.entradas ?? 0), 0);
+
+  const proporcional = ehCompetencia(abertura) && abertura.startsWith(ano);
+  const teto = proporcional
+    ? LIMITE_MEI_POR_MES * (13 - Number(abertura.slice(5, 7)))
+    : LIMITE_MEI_ANUAL;
+
+  const inicio = proporcional ? abertura : `${ano}-01`;
+  const primeiro = doAno.find((a) => (a.entradas ?? 0) > 0)?.id;
+
   return {
     entradas,
-    percentual: (entradas / LIMITE_MEI_ANUAL) * 100,
-    ritmo: doAno.length > 0 ? Math.round((entradas / doAno.length) * 12) : null,
+    teto,
+    proporcional,
+    percentual: (entradas / teto) * 100,
+    ritmo:
+      doAno.length >= MESES_PARA_O_RITMO
+        ? Math.round((entradas / doAno.length) * 12)
+        : null,
     // Em centavos, e não pelo percentual: 80% de 81 mil é conta exata.
     estado:
-      entradas > LIMITE_MEI_ANUAL
+      entradas > teto
         ? "passou"
-        : entradas * 10 >= LIMITE_MEI_ANUAL * 8
+        : entradas * 10 >= teto * 8
           ? "perto"
           : "dentro",
+    desde: primeiro && primeiro > inicio ? primeiro : null,
   };
+}
+
+/** Como no CCMEI: a razão social do MEI é o nome dela e o CPF. */
+export const NOME_EMPRESARIAL_MAX = 120;
+
+/**
+ * A atividade que o CNAE principal sugere (`#d359`): seção C (divisões 10 a
+ * 33) é indústria, divisões 45 a 47 são comércio, o resto não sugere. Só o
+ * principal: o secundário fica para ela, pelo CCMEI.
+ */
+export function atividadeDoCnae(codigo: string): AtividadeMei | null {
+  const divisao = Number(codigo.replace(/\D/g, "").slice(0, 2) || NaN);
+  if (divisao >= 10 && divisao <= 33) return "INDUSTRIA";
+  if (divisao >= 45 && divisao <= 47) return "COMERCIO";
+  return null;
+}
+
+/** O que `/api/mei/cnpj` devolve: no máximo estas três chaves. */
+export interface MeiDoCnpj {
+  nomeEmpresarial?: string;
+  abertura?: CompetenciaMensal;
+  atividade?: AtividadeMei;
+}
+
+interface RespostaCnpjMei {
+  razao_social?: unknown;
+  simples?: { data_opcao_mei?: unknown } | null;
+  estabelecimento?: {
+    data_inicio_atividade?: unknown;
+    atividade_principal?: { subclasse?: unknown } | null;
+  } | null;
+}
+
+const texto = (valor: unknown) => (typeof valor === "string" ? valor : "");
+
+/**
+ * A resposta de `publica.cnpj.ws` reduzida ao que a folha usa (`#d359`).
+ *
+ * **Nada além de três chaves atravessa a rota**, como na leitura de nota: a
+ * resposta traz endereço, telefone, e-mail e sócios, que não têm o que fazer
+ * no navegador. A abertura é a opção pelo MEI, senão o início da atividade;
+ * o que não vier, ou vier fora de forma, fica para ela.
+ */
+export function meiDoCnpj(resposta: unknown): MeiDoCnpj {
+  const r = (resposta ?? {}) as RespostaCnpjMei;
+  const nome = texto(r.razao_social).trim().slice(0, NOME_EMPRESARIAL_MAX);
+  const data =
+    texto(r.simples?.data_opcao_mei) ||
+    texto(r.estabelecimento?.data_inicio_atividade);
+  const abertura = /^(\d{4}-\d{2})-\d{2}/.exec(data)?.[1];
+  const atividade = atividadeDoCnae(
+    texto(r.estabelecimento?.atividade_principal?.subclasse),
+  );
+  return {
+    ...(nome && { nomeEmpresarial: nome }),
+    ...(abertura && { abertura }),
+    ...(atividade && { atividade }),
+  };
+}
+
+/** "12345678000190" → "12.345.678/0001-90", e a máscara parcial enquanto digita. */
+export function formatarCnpj(texto: string): string {
+  const d = digitosDoCnpj(texto).slice(0, 14);
+  return [
+    d.slice(0, 2),
+    d.length > 2 ? `.${d.slice(2, 5)}` : "",
+    d.length > 5 ? `.${d.slice(5, 8)}` : "",
+    d.length > 8 ? `/${d.slice(8, 12)}` : "",
+    d.length > 12 ? `-${d.slice(12)}` : "",
+  ].join("");
 }

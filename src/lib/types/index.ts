@@ -39,4 +39,5 @@ export const caminhos = {
   membros: (contaId: string) => `contas/${contaId}/membros`,
   membro: (contaId: string, uid: string) => `contas/${contaId}/membros/${uid}`,
   aparelhos: (contaId: string) => `contas/${contaId}/aparelhos`,
+  fiscalMei: (contaId: string) => `contas/${contaId}/fiscal/mei`,
 } as const;

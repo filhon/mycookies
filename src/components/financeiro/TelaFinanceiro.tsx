@@ -34,6 +34,7 @@ import {
 import {
   docConfiguracao,
   docMeta,
+  docMei,
   docResumoMensal,
 } from "@/lib/firebase/colecoes";
 import type { ContextoMeta } from "@/lib/firebase/mutations/metas";
@@ -51,6 +52,7 @@ import type {
   CategoriaTransacao,
   CompetenciaMensal,
   ConfiguracaoGeral,
+  DadosMei,
   DataISO,
   Meta,
   Pedido,
@@ -152,6 +154,9 @@ export function TelaFinanceiro() {
   const resumo = useDocumento<ResumoMensal>(referenciaResumo);
   const meta = useDocumento<Meta>(referenciaMeta);
   const configuracao = useDocumento<ConfiguracaoGeral>(referenciaConfiguracao);
+  // A abertura do MEI muda o teto do pé, como na tela do relatório (`#d359`).
+  const referenciaMei = useMemo(() => docMei(contaId), [contaId]);
+  const abertura = useDocumento<DadosMei>(referenciaMei).dado?.abertura;
 
   const formas = useMemo(
     () => configuracao.dado?.formasPagamento ?? [],
@@ -237,7 +242,7 @@ export function TelaFinanceiro() {
       <div className="max-w-md">
         <LimiteDoAnoMei
           compacto
-          limite={limiteDoAno(agregados.dados, competencia)}
+          limite={limiteDoAno(agregados.dados, competencia, abertura)}
           competencia={competencia}
           soVenda={lancamentos.dados.every(
             (l) => l.tipo !== "ENTRADA" || l.categoria === "VENDA",
