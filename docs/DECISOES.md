@@ -12396,3 +12396,39 @@ parágrafos longos.
 
 **Consequência.** Nenhum campo, regra ou dependência. Sem linha em `novidades.ts`: a usuária não
 lê os termos dentro do app. A redação do resumo passa por quem conduz o projeto antes do commit.
+
+## D380 · Os termos e a privacidade têm versão, e a mudança relevante avisa na Hoje
+
+**Status:** vigente · decidida em 2026-10-14, spec `166-a-versao-que-ela-aceitou.md`. Não muda uma
+palavra das cláusulas (`#d171`).
+
+**Contexto.** As duas páginas prometem, na última seção, avisar antes de uma mudança relevante
+valer, e a data do topo dizer qual versão vale. A privacidade mudou em 25/09 (`#d198`) e em 10/10
+(`#d322`, um novo fornecedor: o exemplo que o próprio texto dá), e o topo continuava "24 de
+setembro". `termosAceitosEm` era só uma data: não dizia que texto ela aceitou.
+
+**Decisão.**
+
+- **O histórico mora em `domain/textoLegal.ts`**, uma `Versao` (`em`, `mudou`, `relevante`) por
+  mudança, da mais antiga para a mais nova. "Vigente desde" e "O que mudou" saem dele; a página não
+  recebe mais a data escrita à mão. Sem texto integral das versões antigas: o git guarda.
+- **As datas vieram do `git log -p`** dos dois `page.tsx`. A contagem de visitas (`#d180`) entrou
+  em 24/09, no mesmo dia da primeira versão, e é parte dela: não tem linha. A troca de aspas de
+  30/09 não mudou conteúdo e também não. Os termos só têm a primeira versão.
+- **Um aceite é de um par**: `termosVersao` guarda `VERSAO_DO_ACEITE`, a mais nova das duas
+  `versaoAtual`. Ausente = `PRIMEIRA_VERSAO` (`2026-09-24`), sem migração (`#d141`); por isso a
+  conta liberada à mão, que nunca aceitou pelo cadastro, também vê o aviso de 10/10.
+- **`mudou` é "Assunto: o que mudou"**, e a faixa usa o assunto (`assuntoDaMudanca`, o que vem
+  antes dos dois-pontos, em minúscula). Quem acrescentar uma versão relevante escreve nesse formato.
+- **O "Entendi" grava a versão atual**, por `POST /api/conta/termos` (Admin SDK, só a dona); a
+  regra não muda. É otimista: some na hora e volta se a gravação falhar, para não fingir um aceite
+  que não chegou. Sem rede, `aria-disabled` com a razão, como a grade (`#d241`).
+- **Aviso, não portão.** Nada bloqueia; quem não concorda tem o cancelamento, como o texto diz. Sem
+  e-mail: o texto promete "pelo e-mail da conta ou dentro do app", e o app basta. A ajudante não vê.
+- **O cardápio diz a verdade inteira**: "Seus dados vão para {negócio}, só para combinar este
+  pedido." e o link para a seção 7, em vez de "vão só para".
+
+**Consequência.** Um campo aditivo, escrito só pelo servidor; nenhuma regra, índice ou dependência.
+Toda mudança futura no texto acrescenta uma `Versao`, e decide ali se é `relevante` pelo critério
+da última seção (novo tipo de dado, novo fornecedor, nova finalidade, preço, ou o que afete
+direito). A redação das linhas e a marcação de `relevante` passam por quem conduz o projeto.

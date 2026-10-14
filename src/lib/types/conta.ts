@@ -1,5 +1,5 @@
 import type { Timestamp } from "firebase/firestore";
-import type { VersaoSchema } from "./common";
+import type { DataISO, VersaoSchema } from "./common";
 
 /**
  * O dono do dado é o negócio, não o login.
@@ -45,6 +45,13 @@ export interface Conta {
   /** Fim do teste grátis. Ausente = não vence. */
   trialAte?: Timestamp;
   termosAceitosEm?: Timestamp;
+  /**
+   * Que versão do par termos e privacidade ela aceitou (spec 166, `#d380`):
+   * `VERSAO_DO_ACEITE` de `domain/textoLegal.ts`. Gravado por `/api/conta` no
+   * cadastro e por `/api/conta/termos` no "Entendi", e por mais ninguém.
+   * Ausente = `PRIMEIRA_VERSAO` (`#d141`).
+   */
+  termosVersao?: DataISO;
   /**
    * Escritos pelo webhook do Stripe (`/api/stripe/webhook`, spec 028) e por
    * mais ninguém. `assinaturaAte` é o espelho de `acessoAte[contaId]` na

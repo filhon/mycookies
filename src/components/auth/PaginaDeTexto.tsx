@@ -4,14 +4,21 @@ import { RESPONSAVEL } from "@/app/(auth)/responsavel";
 import { IndiceDaPagina } from "@/components/layout/IndiceDaPagina";
 import { Logotipo } from "@/components/marca/Marca";
 import { classesBotao } from "@/components/ui/estilosBotao";
-import { fatiarReferencias, type TrechoComLink } from "@/lib/domain/textoLegal";
+import { rotuloDataCompleta } from "@/lib/domain/datas";
+import {
+  fatiarReferencias,
+  versaoAtual,
+  type TrechoComLink,
+  type Versao,
+} from "@/lib/domain/textoLegal";
 
 /**
  * A página de texto para ler deslogada: os termos e a privacidade (spec 027).
  * Sem a moldura de entrada, porque é leitura e não formulário. Server
  * component; só o índice é client. A 165 deu o resumo no topo, o índice que
  * acompanha a leitura, as referências como link e o pé com saída
- * (`DECISOES.md#d379`).
+ * (`DECISOES.md#d379`). A 166 deu a versão: a data do topo e "O que mudou"
+ * saem de `versoes` (`#d380`).
  */
 export interface SecaoDeTexto {
   titulo: string;
@@ -97,15 +104,15 @@ function TextoComLinks({
 export function PaginaDeTexto({
   documento,
   titulo,
-  vigenteDesde,
+  versoes,
   resumo,
   secoes,
 }: {
   /** Diz qual é o outro documento, no pé e nas referências do texto. */
   documento: keyof typeof OUTRO;
   titulo: string;
-  /** "Vigente desde …", por extenso, escrito por quem publica o texto. */
-  vigenteDesde: string;
+  /** `VERSOES_TERMOS` ou `VERSOES_PRIVACIDADE`: o topo e "O que mudou". */
+  versoes: readonly Versao[];
   resumo: LinhaDoResumo[];
   secoes: SecaoDeTexto[];
 }) {
@@ -156,7 +163,7 @@ export function PaginaDeTexto({
           {titulo}
         </h1>
         <p className="mt-1.5 text-label text-ink-muted">
-          Vigente desde {vigenteDesde}.
+          Vigente desde {rotuloDataCompleta(versaoAtual(versoes))}.
         </p>
 
         <section aria-labelledby="em-resumo" className="mt-8">
@@ -222,6 +229,32 @@ export function PaginaDeTexto({
             </section>
           ))}
         </div>
+
+        {/* Sem número: não é cláusula. A mais recente em cima. */}
+        <section
+          id="o-que-mudou"
+          aria-labelledby="o-que-mudou-titulo"
+          className="mt-12 scroll-mt-24 xl:scroll-mt-6"
+        >
+          <h2
+            id="o-que-mudou-titulo"
+            className="text-subheading font-semibold text-ink"
+          >
+            O que mudou
+          </h2>
+          <ul className="mt-4 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
+            {[...versoes].reverse().map((versao) => (
+              <li key={versao.em} className="px-4 py-3">
+                <p className="num text-label text-ink-muted">
+                  {rotuloDataCompleta(versao.em)}
+                </p>
+                <p className="mt-0.5 text-body text-ink">
+                  <TextoComLinks texto={versao.mudou} trechos={trechos} />
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
 
         <footer className="mt-12 -ml-4 flex flex-wrap print:hidden">
           <a href="#topo" className={classesBotao({ variante: "terciaria" })}>

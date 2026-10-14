@@ -7,6 +7,7 @@ import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { CampoBusca } from "@/components/ui/CampoBusca";
 import { QuantoCobrar } from "@/components/fichas/QuantoCobrar";
 import { FaixaDoTeste } from "@/components/assinatura/FaixaDoTeste";
+import { AvisoDosTermos } from "@/components/conta/AvisoDosTermos";
 import { CartaoPrimeirosPassos } from "@/components/comecar/CartaoPrimeirosPassos";
 import { CartaoComprasHoje } from "@/components/compras/CartaoComprasHoje";
 import { CartaoNoVermelhoHoje } from "@/components/fichas/CartaoNoVermelhoHoje";
@@ -104,11 +105,12 @@ export default function PaginaHoje() {
           tela volta a ser exatamente o que era. */}
       {/* 16 px dentro de um grupo, 24 px entre grupos (spec 045). */}
       <div className={cn("mt-6 flex flex-col gap-6", buscando && "hidden")}>
-        {/* Os três são da dona (spec 030): a cobrança, o caminho do começo e o
-            mês, que lê `agregados`. Para a ajudante não montam, e por isso
+        {/* São da dona (spec 030): o aviso dos termos (spec 166), a cobrança,
+            o caminho do começo e o mês, que lê `agregados`. Para a ajudante não montam, e por isso
             não assinam nada que a regra negaria. */}
         {dona && (
           <div className="space-y-4 empty:hidden">
+            <AvisoDosTermos />
             <FaixaDoTeste />
             <CartaoPrimeirosPassos />
           </div>

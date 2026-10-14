@@ -792,9 +792,26 @@ export function PedidoPeloCardapio({
             </span>
           </Botao>
         )}
-        <p className="text-label text-ink-muted">
-          Seus dados vão só para {negocio.nome}, para combinar este pedido.
-        </p>
+        {/* A verdade inteira (spec 166): o CEP vai à ViaCEP e ao Google, e
+            tudo fica guardado no Rende, nas condições da seção 7. */}
+        <div>
+          <p className="text-label text-ink-muted">
+            Seus dados vão para {negocio.nome}, só para combinar este pedido.
+          </p>
+          <a
+            href="/privacidade#secao-7"
+            target="_blank"
+            rel="noopener"
+            className={classesBotao({
+              variante: "terciaria",
+              tamanho: "sm",
+              className: "-ml-3",
+            })}
+          >
+            Como o Rende os guarda
+            <span className="sr-only"> (abre em outra aba)</span>
+          </a>
+        </div>
       </div>
 
       {/* O pote de mel (`#d161`): fora da tela e da ordem de foco, com

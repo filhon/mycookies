@@ -9,6 +9,7 @@ import {
   type FalhaCadastro,
 } from "@/lib/domain/cadastro";
 import { hojeEmBrasilia } from "@/lib/domain/datas";
+import { VERSAO_DO_ACEITE } from "@/lib/domain/textoLegal";
 import { boasVindas } from "@/lib/email/pecas";
 import { enviarEmail } from "@/lib/server/email";
 import {
@@ -98,6 +99,7 @@ async function garantirConta(uid: string, cadastro: Cadastro): Promise<string> {
       status: "ATIVA",
       trialAte,
       termosAceitosEm: agora,
+      termosVersao: VERSAO_DO_ACEITE,
       ...(cadastro.origem && { origem: cadastro.origem }),
       v: VERSAO_SCHEMA,
     });

@@ -4,6 +4,7 @@ import {
   PaginaDeTexto,
   type SecaoDeTexto,
 } from "@/components/auth/PaginaDeTexto";
+import { VERSOES_TERMOS } from "@/lib/domain/textoLegal";
 import { RESPONSAVEL } from "../responsavel";
 
 export const metadata: Metadata = { title: "Termos de uso · Rende" };
@@ -168,7 +169,7 @@ export default function PaginaTermos() {
     <PaginaDeTexto
       documento="termos"
       titulo="Termos de uso"
-      vigenteDesde="24 de setembro de 2026"
+      versoes={VERSOES_TERMOS}
       resumo={RESUMO}
       secoes={SECOES}
     />

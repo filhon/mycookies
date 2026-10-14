@@ -1,5 +1,56 @@
 import { describe, expect, it } from "vitest";
-import { fatiarReferencias } from "@/lib/domain/textoLegal";
+import {
+  assuntoDaMudanca,
+  fatiarReferencias,
+  mudancaParaAvisar,
+  VERSAO_DO_ACEITE,
+  VERSOES_PRIVACIDADE,
+  VERSOES_TERMOS,
+  versaoAtual,
+  type Versao,
+} from "@/lib/domain/textoLegal";
+
+const VERSOES: Versao[] = [
+  { em: "2026-09-24", mudou: "Primeira versão.", relevante: false },
+  { em: "2026-09-25", mudou: "Pequena: um detalhe.", relevante: false },
+  { em: "2026-10-01", mudou: "Grande: um fornecedor.", relevante: true },
+  { em: "2026-10-05", mudou: "Pequena de novo: outro.", relevante: false },
+  { em: "2026-10-10", mudou: "Maior: outro fornecedor.", relevante: true },
+];
+
+describe("versões", () => {
+  it("a atual é a última, e o aceite cobre o par pela mais nova", () => {
+    expect(versaoAtual(VERSOES)).toBe("2026-10-10");
+    expect(VERSAO_DO_ACEITE >= versaoAtual(VERSOES_TERMOS)).toBe(true);
+    expect(VERSAO_DO_ACEITE >= versaoAtual(VERSOES_PRIVACIDADE)).toBe(true);
+  });
+
+  it("sem mudança depois do aceite, nada a avisar", () => {
+    expect(mudancaParaAvisar(VERSOES, "2026-10-10")).toBeUndefined();
+  });
+
+  it("só mudança irrelevante, nada a avisar", () => {
+    expect(
+      mudancaParaAvisar(VERSOES.slice(0, 2), "2026-09-24"),
+    ).toBeUndefined();
+  });
+
+  it("uma relevante depois do aceite, ela", () => {
+    expect(mudancaParaAvisar(VERSOES.slice(0, 4), "2026-09-24")?.em).toBe(
+      "2026-10-01",
+    );
+  });
+
+  it("duas relevantes, a última", () => {
+    expect(mudancaParaAvisar(VERSOES, "2026-09-24")?.em).toBe("2026-10-10");
+  });
+
+  it("o assunto é o que vem antes dos dois-pontos, em minúscula", () => {
+    expect(assuntoDaMudanca(VERSOES_PRIVACIDADE.at(-1)!)).toBe(
+      "a taxa de entrega pelo CEP",
+    );
+  });
+});
 
 const TRECHOS = [
   { trecho: "dona@exemplo.com", href: "mailto:dona@exemplo.com" },

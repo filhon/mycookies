@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-14",
+    titulo: "Os termos e a privacidade dizem o que mudou",
+    frase:
+      "Cada página termina com a data e uma linha por mudança, e quando a mudança pesa, a Hoje avisa.",
+    href: "/privacidade",
+  },
+  {
+    dataISO: "2026-10-14",
     titulo: "Assinar durante o teste não corta seus dias grátis",
     frase:
       "A primeira cobrança fica para o dia em que o teste acaba, e a tela de assinar mostra o que você já fez no Rende.",

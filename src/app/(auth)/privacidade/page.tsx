@@ -4,6 +4,7 @@ import {
   PaginaDeTexto,
   type SecaoDeTexto,
 } from "@/components/auth/PaginaDeTexto";
+import { VERSOES_PRIVACIDADE } from "@/lib/domain/textoLegal";
 import { RESPONSAVEL } from "../responsavel";
 
 export const metadata: Metadata = { title: "Política de privacidade · Rende" };
@@ -152,7 +153,7 @@ export default function PaginaPrivacidade() {
     <PaginaDeTexto
       documento="privacidade"
       titulo="Política de privacidade"
-      vigenteDesde="24 de setembro de 2026"
+      versoes={VERSOES_PRIVACIDADE}
       resumo={RESUMO}
       secoes={SECOES}
     />
