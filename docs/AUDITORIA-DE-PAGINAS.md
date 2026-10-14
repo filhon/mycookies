@@ -60,9 +60,9 @@ Ao terminar uma página, mude a linha dela aqui (status, data, specs).
 | Página                   | Rota                      | Arquivo                                          | Status       | Crítica    | Specs   |
 | ------------------------ | ------------------------- | ------------------------------------------------ | ------------ | ---------- | ------- |
 | Entrar                   | `/login`                  | `src/app/(auth)/login/page.tsx`                  | ✅ melhorada | 2026-09-25 | 041–043 |
-| Criar conta              | `/cadastro`               | `src/app/(auth)/cadastro/page.tsx`               | ⬜ pendente  |            |         |
-| Senha nova               | `/redefinir-senha`        | `src/app/(auth)/redefinir-senha/page.tsx`        | ⬜ pendente  |            |         |
-| Assinatura               | `/assinatura`             | `src/app/(auth)/assinatura/page.tsx`             | ⬜ pendente  |            |         |
+| Criar conta              | `/cadastro`               | `src/app/(auth)/cadastro/page.tsx`               | ✅ melhorada | 2026-10-14 | 155–156 |
+| Senha nova               | `/redefinir-senha`        | `src/app/(auth)/redefinir-senha/page.tsx`        | ✅ melhorada | 2026-10-14 | 157–158 |
+| Assinatura               | `/assinatura`             | `src/app/(auth)/assinatura/page.tsx`             | ✅ melhorada | 2026-10-14 | 159–162 |
 | Confirmando a assinatura | `/assinatura/confirmando` | `src/app/(auth)/assinatura/confirmando/page.tsx` | ⬜ pendente  |            |         |
 | Termos                   | `/termos`                 | `src/app/(auth)/termos/page.tsx`                 | ⬜ pendente  |            |         |
 | Privacidade              | `/privacidade`            | `src/app/(auth)/privacidade/page.tsx`            | ⬜ pendente  |            |         |
@@ -110,11 +110,23 @@ Ao terminar uma página, mude a linha dela aqui (status, data, specs).
   (imprimir pelo app instalado no iPhone) decide se o PDF gerado no aparelho vira pedido de
   dependência, e falta conferir no portal os rótulos da DASN-SIMEI e se o relatório zerado é
   exigido.
-- **Nasceram de spec, nunca foram auditadas:** `/cadastro` (027), `/redefinir-senha` (042),
-  `/assinatura` (028, 110), a página do pedido da cliente (117) e as cinco páginas de preço
-  (037, 068).
+- **`/cadastro` foi auditada em 2026-10-14** (prints de celular 383 px e desktop 1864 px,
+  comparada com as portas de Canva, Notion, Nuvemshop, Hotmart, Calendly e Shopify): 155 (a porta
+  que mostra o que vem) e 156 (o e-mail que chega). Os roteiros de navegador das duas seguem por
+  rodar (`ESTADO.md`).
+- **`/redefinir-senha` foi auditada em 2026-10-14** (prints do mesmo dia): 157 (a senha trocada,
+  com a tela de pronto) e 158 (o aviso da senha trocada por e-mail). Os roteiros das duas seguem
+  por rodar.
+- **`/assinatura` foi auditada em 2026-10-14** (prints de celular e desktop com a conta
+  MyCookie's, Completo com cortesia, e a comparação com páginas de plano de serviços de
+  assinatura): 159 (quem já assina vai para o painel da Configuração), 160 (o plano escolhido
+  antes de pagar), 161 (o que o teste rendeu na porta, e a primeira cobrança no fim do teste) e
+  162 (antes de ir embora: o passo antes de cancelar, o Essencial como saída e o motivo no
+  portal, já ligado no ao vivo). Os roteiros de navegador de 159 a 162 seguem por rodar. O
+  desconto de permanência da 162 não foi decidido e ficou de fora (`#d376`).
+- **Nasceram de spec, nunca foram auditadas:** a página do pedido da cliente (117) e as cinco
+  páginas de preço (037, 068).
 - **A ordem sugerida para as pendentes**, pelo que pesa no uso e na venda:
-  1. `/cadastro` e `/assinatura`, a porta de entrada e a de pagamento.
-  2. A página do pedido da cliente, que é o Rende visto por quem compra.
-  3. As cinco páginas de preço, com a mesma crítica valendo para as cinco.
-  4. `/redefinir-senha`, `/assinatura/confirmando`, `/termos`, `/privacidade`, `/offline`.
+  1. A página do pedido da cliente, que é o Rende visto por quem compra.
+  2. As cinco páginas de preço, com a mesma crítica valendo para as cinco.
+  3. `/assinatura/confirmando`, `/termos`, `/privacidade`, `/offline`.

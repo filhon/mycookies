@@ -455,6 +455,21 @@ export const esquemaCheckout = z.object({
   periodo: z.enum(["mensal", "anual"]),
 });
 
+/** A volta do Stripe: o id da sessão do checkout vem em `?sessao=` (spec 163). */
+export const esquemaConfirmar = z.object({
+  contaId: z.string().min(1),
+  sessao: z.string().startsWith("cs_"),
+});
+
+/** O que `/api/assinatura/confirmar` leu na sessão do checkout. */
+export type SituacaoDaVolta = "aberta" | "esperando" | "confirmada";
+
+/** O texto pronto da ajuda em `confirmando`, com o código que se procura no Stripe. */
+export function textoDaAjudaDaConfirmacao(sessao: string | null): string {
+  const frase = "Oi, assinei o Rende e a conta não liberou.";
+  return sessao ? `${frase} Código: ${sessao}` : frase;
+}
+
 export type FalhaAssinatura =
   | "sem-acesso" // token ausente ou inválido
   | "fora-de-forma" // corpo que não passa em `esquemaCheckout`, ou conta que o token não abre

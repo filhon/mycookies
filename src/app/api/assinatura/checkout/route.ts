@@ -17,8 +17,9 @@ import { caminhos, type Conta } from "@/lib/types";
  * Abre a Checkout Session do Stripe, na ordem de `/api/conta` e `/api/nota`:
  * credencial → token → corpo → autorização.
  *
- * Não escreve nada: quem grava `acessoAte` e o documento é o webhook, depois
- * que o pagamento acontecer de verdade (`DECISOES.md#d145`).
+ * Não escreve nada: quem grava `acessoAte` e o documento é
+ * `sincronizarAssinatura`, pelo webhook ou pela volta, depois que o pagamento
+ * acontecer de verdade (`DECISOES.md#d145`).
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,7 +80,8 @@ export async function POST(requisicao: Request) {
     allow_promotion_codes: true,
     payment_method_collection: noFimDoTeste ? "always" : "if_required",
     locale: "pt-BR",
-    success_url: `${origem}/assinatura/confirmando`,
+    // O Stripe troca o marcador pelo id; a volta confere a sessão (spec 163).
+    success_url: `${origem}/assinatura/confirmando?sessao={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origem}/assinatura`,
   });
 

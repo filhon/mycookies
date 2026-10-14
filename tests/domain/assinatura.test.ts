@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   acessoAteDaAssinatura,
   deveCobrarNoFimDoTeste,
+  esquemaConfirmar,
+  textoDaAjudaDaConfirmacao,
   fraseDaPrimeiraCobranca,
   fraseDaSobraQuePaga,
   motivoDoCompleto,
@@ -538,6 +540,28 @@ describe("spec 161: o que o teste rendeu, na porta", () => {
     );
     expect(perdaNoEssencial(["a@x.com", "b@x.com"])).toBe(
       "As 2 pessoas que ajudam você perdem o acesso ao Rende.",
+    );
+  });
+});
+
+describe("a volta do Stripe (spec 163)", () => {
+  it("só aceita o id de uma sessão de checkout", () => {
+    expect(
+      esquemaConfirmar.safeParse({ contaId: "c1", sessao: "cs_test_a1" })
+        .success,
+    ).toBe(true);
+    expect(
+      esquemaConfirmar.safeParse({ contaId: "c1", sessao: "sub_1" }).success,
+    ).toBe(false);
+    expect(esquemaConfirmar.safeParse({ sessao: "cs_1" }).success).toBe(false);
+  });
+
+  it("a ajuda leva o código quando há sessão", () => {
+    expect(textoDaAjudaDaConfirmacao("cs_test_a1")).toBe(
+      "Oi, assinei o Rende e a conta não liberou. Código: cs_test_a1",
+    );
+    expect(textoDaAjudaDaConfirmacao(null)).toBe(
+      "Oi, assinei o Rende e a conta não liberou.",
     );
   });
 });

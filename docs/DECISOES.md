@@ -12288,3 +12288,42 @@ motivo é perguntado e que "Continuar assinando" desfaz é o roteiro da spec, no
 No ao vivo, aplicadas no mesmo dia: o motivo já estava ligado lá, com só quatro opções
 (`too_expensive`, `switched_service`, `unused`, `other`), ligado por clique em algum momento; agora
 são as oito do bloco.
+
+## D377 · A volta do Stripe confere a sessão e sincroniza na hora
+
+**Status:** vigente · decidida em 2026-10-14, spec `163-o-pagamento-que-se-confere-sozinho.md`.
+Estende o `#d145`: o webhook deixa de ser o único que escreve a conta depois do checkout.
+
+**Contexto.** `success_url` não carregava nada, e `/assinatura/confirmando` só observava o
+documento: a conta abria quando o webhook chegasse, e a tela dizia "O pagamento chegou ao Stripe"
+sem ter lido nada. A documentação do Stripe recomenda atender pelo webhook **e** pela volta, com a
+mesma função idempotente.
+
+**Decisão.**
+
+- **`success_url` leva `?sessao={CHECKOUT_SESSION_ID}`.**
+- **`sincronizarAssinatura(id)` em `server/stripe.ts`** é o corpo do webhook de antes, sem mudar a
+  lógica (relê o Stripe, claim antes do documento, ajudantes, `#d155`, `#d170`). O webhook ficou
+  com a assinatura do corpo, o filtro do tipo e a chamada. Os dois ao mesmo tempo gravam o mesmo
+  número; tirar uma ajudante duas vezes dá no mesmo.
+- **`POST /api/assinatura/confirmar`** (`esquemaConfirmar`: `contaId` e `sessao` com `cs_`),
+  na ordem credencial → token → corpo → autorização. **`client_reference_id` diferente de
+  `contaId` é `fora-de-forma`**: o id da sessão não é credencial e não abre conta alheia.
+  Devolve `aberta` (sessão não `complete`), `esperando` (`complete` e `unpaid`) ou `confirmada`
+  (`paid` ou `no_payment_required`, depois de sincronizar). Falha do Stripe é `sem-resposta`.
+- **A página** chama a rota uma vez com `?sessao=`: `aberta` volta para `/assinatura`,
+  `esperando` diz "Esperando o pagamento" sem pulso, `confirmada` e qualquer falha seguem
+  observando o documento como antes. Sem `?sessao=`, o comportamento de antes.
+- **A frase dos 45 s** só afirma o que a tela sabe ("Está demorando mais que o normal. Se não
+  liberar em alguns minutos, fale com a gente."), e o "Fale com a gente" do rodapé leva
+  `textoDaAjudaDaConfirmacao(sessao)`: "Oi, assinei o Rende e a conta não liberou. Código: cs_…",
+  o que se procura no painel do Stripe. Nesta tela o texto é esse sempre, não só depois dos 45 s.
+- **`esperando` fica por defesa.** Na sandbox (2026-10-14, `payment_method_configurations`) só há
+  cartão e Apple Pay disponíveis; o ao vivo não foi lido (a CLI está na sandbox), e o roteiro 4
+  só roda se aparecer forma assíncrona lá.
+
+**Pendente.** O passo 1 da spec (para onde a volta abre no app instalado, no iPhone e no Android)
+precisa de aparelho e não rodou nesta sessão. Se a volta cair deslogada em algum deles, confirmar
+sem login é spec própria, porque decide que o id da sessão vale como credencial de leitura.
+
+**Consequência.** Nenhum campo, regra ou dependência. Sem linha em `novidades.ts`.
