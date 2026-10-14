@@ -32,9 +32,11 @@ import {
   LIMITE_MEI_POR_MES,
   limiteDoAno,
   mudouDepoisDeGuardado,
+  notasDoMes,
   prazoDoRelatorio,
   relatorioMei,
   type LimiteDoAno,
+  type NotasDoMes,
   type PrazoDoRelatorio,
   type RelatorioMei as Relatorio,
 } from "@/lib/domain/mei";
@@ -149,6 +151,8 @@ export function RelatorioMei({
   }, [semDocumentoNoServidor, contaId]);
 
   const [notaEscolhida, setNota] = useState<Centavos | null>(null);
+  // Estado da tela, não da conta: desmarcar é exceção (`#d361`).
+  const [comAnexo, setComAnexo] = useState(true);
   const atividade = mei.dado?.atividade ?? "INDUSTRIA";
   const comNota = notaEscolhida ?? mei.dado?.notas?.[competencia] ?? 0;
 
@@ -237,6 +241,8 @@ export function RelatorioMei({
   }
 
   const relatorio = relatorioMei(lancamentos.dados, { atividade, comNota });
+  const notas = notasDoMes(lancamentos.dados);
+  const anexo = comAnexo && notas.linhas.length > 0;
   const linhaSemNota = atividade === "COMERCIO" ? "I" : "IV";
   const linhaComNota = atividade === "COMERCIO" ? "II" : "V";
   const mes = rotuloMes(competencia);
@@ -313,6 +319,7 @@ export function RelatorioMei({
               Ver no Caixa
             </Link>
           </p>
+          <NotasDeCompra notas={notas} competencia={competencia} />
 
           <div className="mt-4 flex flex-col gap-6">
             <SeuMei mei={mei.dado} />
@@ -344,6 +351,17 @@ export function RelatorioMei({
           )}
 
           <div className="mt-6 flex flex-col items-start gap-2">
+            {notas.linhas.length > 0 && (
+              <label className="toque flex cursor-pointer items-center gap-3 text-body text-ink">
+                <input
+                  type="checkbox"
+                  checked={comAnexo}
+                  onChange={(evento) => setComAnexo(evento.target.checked)}
+                  className="size-5 shrink-0"
+                />
+                Imprimir a lista de notas junto
+              </label>
+            )}
             <Botao
               variante="primaria"
               tamanho="lg"
@@ -420,13 +438,24 @@ export function RelatorioMei({
           </div>
         )}
 
-        <div ref={medirFolha} style={{ "--folha-zoom": zoom } as CSSProperties}>
+        <div
+          ref={medirFolha}
+          style={{ "--folha-zoom": zoom } as CSSProperties}
+          className="flex flex-col gap-6 print:block"
+        >
           <FolhaMei
             relatorio={relatorio}
             competencia={competencia}
             cnpj={mei.dado?.cnpj}
             nomeEmpresarial={mei.dado?.nomeEmpresarial}
           />
+          {anexo && (
+            <FolhaNotas
+              notas={notas}
+              competencia={competencia}
+              cnpj={mei.dado?.cnpj}
+            />
+          )}
         </div>
       </div>
     </>
@@ -759,6 +788,154 @@ function FolhaMei({
       <footer className="mt-auto pt-4 text-[7.5pt] font-medium text-ink-subtle">
         Somado das vendas lançadas no Rende em {rotuloCompetencia(competencia)},
         pelo valor bruto.
+      </footer>
+    </article>
+  );
+}
+
+/** "2/set": o dia da compra dentro de uma frase. */
+function diaCurto(iso: DataISO, competencia: CompetenciaMensal): string {
+  return `${Number(iso.slice(8, 10))}/${rotuloMes(competencia).slice(0, 3)}`;
+}
+
+/**
+ * Quantas compras do mês têm nota lida, e quais ela precisa achar (`#d361`).
+ * As sem nota são aviso e não erro: compra de feira não tem nota, e está certo.
+ */
+function NotasDeCompra({
+  notas,
+  competencia,
+}: {
+  notas: NotasDoMes;
+  competencia: CompetenciaMensal;
+}) {
+  const total = notas.linhas.length;
+  if (total === 0) return null;
+  const compras = `${total} ${total === 1 ? "compra" : "compras"}`;
+
+  if (notas.semNota === 0) {
+    return (
+      <p className="mt-1 flex items-start gap-1.5 text-label text-ink">
+        <CheckCheck
+          aria-hidden
+          className="mt-0.5 size-4 shrink-0 text-positive"
+          strokeWidth={1.75}
+        />
+        <span>
+          Notas de compra: <span className="num">{compras}</span>,{" "}
+          {total === 1 ? "com nota lida." : "todas com nota lida."}
+        </span>
+      </p>
+    );
+  }
+
+  const faltam = notas.linhas
+    .filter((l) => !l.comNota)
+    .map((l) => `${l.descricao} (${diaCurto(l.dataISO, competencia)})`)
+    .join(", ");
+  return (
+    <p className="mt-1 max-w-[68ch] text-label text-ink">
+      <span className="num">
+        Notas de compra: {compras},{" "}
+        {notas.comNota === 0
+          ? "nenhuma com nota lida no Rende."
+          : `${notas.comNota} com nota lida no Rende.`}
+      </span>
+      <br />
+      <span className="num">{notas.semNota} sem nota:</span> {faltam}. Guarde o
+      cupom.
+    </p>
+  );
+}
+
+/**
+ * O anexo: as compras do mês numa segunda página A4 (`#d361`). O cabeçalho é o
+ * da folha, reduzido ao CNPJ e ao período; a tipografia, a mesma.
+ */
+function FolhaNotas({
+  notas,
+  competencia,
+  cnpj,
+}: {
+  notas: NotasDoMes;
+  competencia: CompetenciaMensal;
+  cnpj?: string;
+}) {
+  return (
+    // ponytail: lista que passa de uma página continua sem a margem de cima na
+    // seguinte (a margem é o padding da folha); repartir em folhas se acontecer.
+    <article className="folha mx-auto flex break-before-page flex-col text-[10.5pt] leading-[1.45] shadow-raised [page-break-before:always]">
+      <div className="space-y-[4pt] border-b-2 border-line-strong pb-[8pt] text-[9pt]">
+        <EmBranco rotulo="CNPJ:" valor={cnpj && formatarCnpj(cnpj)} />
+        <p>
+          Período de apuração:{" "}
+          <span className="font-semibold">
+            {rotuloCompetencia(competencia)}
+          </span>
+        </p>
+      </div>
+
+      <h2 className="mt-[14pt] text-center text-[13pt] font-bold tracking-[0.06em]">
+        NOTAS DE COMPRA DE {rotuloCompetencia(competencia).toUpperCase()}{" "}
+        (ANEXO)
+      </h2>
+
+      <table className="mt-[14pt] w-full border-collapse">
+        <thead>
+          <tr className="border-b border-line-strong text-left text-[8.5pt] font-bold tracking-[0.04em]">
+            <th scope="col" className="w-[16mm] pb-[4pt]">
+              DATA
+            </th>
+            <th scope="col" className="pb-[4pt]">
+              ONDE
+            </th>
+            <th scope="col" className="w-[44mm] pb-[4pt]">
+              CNPJ
+            </th>
+            <th scope="col" className="w-[30mm] pb-[4pt] text-right">
+              VALOR
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {notas.linhas.map((linha, i) => (
+            <tr key={i} className="break-inside-avoid border-b border-line">
+              <td className="num py-[4pt] align-top">
+                {linha.dataISO.slice(8, 10)}/{linha.dataISO.slice(5, 7)}
+              </td>
+              <td className="py-[4pt] pr-[8pt] align-top">{linha.descricao}</td>
+              <td className="num py-[4pt] align-top whitespace-nowrap">
+                {linha.cnpj ? (
+                  formatarCnpj(linha.cnpj)
+                ) : (
+                  <span className="italic">sem nota lida</span>
+                )}
+              </td>
+              <td className="num py-[4pt] text-right align-top font-medium whitespace-nowrap">
+                {formatarMoeda(linha.valor)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        {/* `tbody`, e não `tfoot`: o total não se repete em cada página. */}
+        <tbody className="border-t-2 border-line-strong">
+          <tr className="break-inside-avoid">
+            <th
+              scope="row"
+              colSpan={3}
+              className="py-[5pt] text-left font-bold"
+            >
+              Total das compras
+            </th>
+            <td className="num py-[5pt] text-right text-[12pt] font-bold whitespace-nowrap">
+              {formatarMoeda(notas.total)}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <footer className="mt-auto pt-4 text-[7.5pt] font-medium text-ink-subtle">
+        Lista das saídas lançadas no Rende. Os documentos seguem anexos.
       </footer>
     </article>
   );

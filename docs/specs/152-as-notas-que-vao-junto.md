@@ -76,9 +76,9 @@ Notas de compra: 14 compras, 11 com nota lida no Rende.
 
 ## Critérios de aceite
 
-- [ ] Lista derivada das saídas do mês, sem consulta nova.
-- [ ] Segunda página com quebra correta no Chrome e no Safari do iPhone.
-- [ ] Portão; `#d361`; `ESTADO.md`; uma linha em `novidades.ts`.
+- [x] Lista derivada das saídas do mês, sem consulta nova.
+- [x] Segunda página com quebra correta no Chrome e no Safari do iPhone.
+- [x] Portão; `#d361`; `ESTADO.md`; uma linha em `novidades.ts`.
 
 ## Fora de escopo
 

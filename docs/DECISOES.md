@@ -11750,3 +11750,38 @@ mudava nada, e corrigir uma venda de um mês já assinado mudava o total em sil�
 
 **Consequência.** Guardar não guarda o PDF nem diz do DAS. O aviso no dia 15 fica para quando
 houver três meses guardados para medir (spec 151, "Fora de escopo").
+
+## D361 · As notas que vão junto
+
+**Status:** vigente · decidida em 2026-10-14, spec `152-as-notas-que-vao-junto.md`.
+Aprovação da spec (o texto) tomada como dada pelo pedido de implementá-la. Nenhum campo, regra,
+índice ou dependência.
+
+**Contexto.** O papel do portal termina em "ENCONTRAM-SE ANEXADOS A ESTE RELATÓRIO: os
+documentos fiscais comprobatórios das entradas de mercadorias…", e o Rende lê as notas de compra
+(006, 088 a 092) sem ligá-las ao relatório.
+
+**Decisão.**
+
+- **`notasDoMes(lancamentos)`** em `domain/mei.ts`, pura, sobre as transações que a tela já
+  assina (nenhuma consulta nova): saídas `COMPRA_INSUMO`, `EMBALAGEM` e `EQUIPAMENTO`, sem
+  arquivado (a consulta já tira; a função tira de novo, para o teste), por data. O CNPJ são os
+  14 primeiros dígitos de `notaChave` (`CNPJ-dataISO-total`); `comNota` é ter esse CNPJ. Despesa
+  fixa, imposto, entrega e pró-labore ficam fora.
+- **Na tela**, sob "Somado de N vendas…": "Notas de compra: 14 compras, 11 com nota lida no
+  Rende." e "3 sem nota: Atacadão (2/set), …. Guarde o cupom." em `--ink`, sem ocre (compra de
+  feira não tem nota, e está certo). Todas lidas: `CheckCheck` positivo e "todas com nota lida".
+  Nenhuma lida: "nenhuma com nota lida no Rende." Sem compra, nada.
+- **No papel**, uma segunda `.folha` com `break-before: page` (e o `page-break-before` antigo,
+  pelo Safari): CNPJ e período, "NOTAS DE COMPRA DE SETEMBRO DE 2026 (ANEXO)", a tabela Data ·
+  Onde · CNPJ · Valor ("sem nota lida" em itálico) e a linha do total num `tbody`, não `tfoot`,
+  para não se repetir em cada página impressa; o cabeçalho das colunas se repete. Lista que passa
+  de uma página continua sem a margem de cima (`ponytail:` no componente).
+- **"Imprimir a lista de notas junto"**, marcada, acima do "Imprimir", só com compra no mês; é
+  estado da tela e não persiste. A prévia mostra a segunda folha abaixo da primeira, com o mesmo
+  `zoom`.
+- **O "Guardei" (151) não ganha campo**: o retrato continua total, com nota e atividade. A lista
+  sai das transações do mês e se refaz a qualquer momento.
+
+**Consequência.** O Rende não guarda a foto nem o XML (`#d52`), não vê as notas de venda e não
+baixa nota pela chave (spec 152, "Fora de escopo").

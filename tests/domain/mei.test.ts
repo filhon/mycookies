@@ -7,6 +7,7 @@ import {
   limiteDoAno,
   meiDoCnpj,
   mudouDepoisDeGuardado,
+  notasDoMes,
   prazoDoRelatorio,
   relatorioMei,
 } from "@/lib/domain/mei";
@@ -304,5 +305,73 @@ describe("mudouDepoisDeGuardado", () => {
       ),
     ).toBe(true);
     expect(mudouDepoisDeGuardado(guardado, relatorio, "COMERCIO")).toBe(true);
+  });
+});
+
+describe("notasDoMes", () => {
+  const saida = (
+    categoria: string,
+    dataISO: string,
+    valor: number,
+    extra: { notaChave?: string; arquivado?: boolean } = {},
+  ) =>
+    ({
+      tipo: "SAIDA",
+      categoria,
+      dataISO,
+      valor,
+      descricao: categoria,
+      arquivado: false,
+      ...extra,
+    }) as Parameters<typeof notasDoMes>[0][number];
+
+  it("só compra de insumo, embalagem e equipamento entra", () => {
+    const n = notasDoMes([
+      saida("COMPRA_INSUMO", "2026-09-02", 100),
+      saida("EMBALAGEM", "2026-09-03", 200),
+      saida("EQUIPAMENTO", "2026-09-04", 300),
+      saida("DESPESA_FIXA", "2026-09-05", 1),
+      saida("IMPOSTO", "2026-09-05", 1),
+      saida("ENTREGA", "2026-09-05", 1),
+      saida("PRO_LABORE", "2026-09-05", 1),
+      { ...saida("COMPRA_INSUMO", "2026-09-05", 1), tipo: "ENTRADA" },
+    ]);
+    expect(n.linhas.map((l) => l.valor)).toEqual([100, 200, 300]);
+    expect(n.total).toBe(600);
+  });
+
+  it("tira o CNPJ da chave e conta com e sem nota", () => {
+    const n = notasDoMes([
+      saida("COMPRA_INSUMO", "2026-09-02", 100, {
+        notaChave: "75315333000109-2026-09-02-17620",
+      }),
+      saida("COMPRA_INSUMO", "2026-09-09", 50),
+    ]);
+    expect(n.linhas[0]).toMatchObject({
+      cnpj: "75315333000109",
+      comNota: true,
+    });
+    expect(n.linhas[1]).toMatchObject({ comNota: false });
+    expect(n.linhas[1]).not.toHaveProperty("cnpj");
+    expect([n.comNota, n.semNota]).toEqual([1, 1]);
+  });
+
+  it("arquivado não chega, e a ordem é por data", () => {
+    const n = notasDoMes([
+      saida("COMPRA_INSUMO", "2026-09-21", 3),
+      saida("COMPRA_INSUMO", "2026-09-02", 1),
+      saida("COMPRA_INSUMO", "2026-09-09", 9, { arquivado: true }),
+      saida("EMBALAGEM", "2026-09-09", 2),
+    ]);
+    expect(n.linhas.map((l) => l.valor)).toEqual([1, 2, 3]);
+  });
+
+  it("sem compra, lista vazia", () => {
+    expect(notasDoMes([])).toEqual({
+      linhas: [],
+      total: 0,
+      comNota: 0,
+      semNota: 0,
+    });
   });
 });

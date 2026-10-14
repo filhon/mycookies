@@ -89,6 +89,74 @@ export function relatorioMei(
   };
 }
 
+/** As "entradas de mercadorias" do modelo, entre as saídas (`#d361`). */
+const CATEGORIAS_DE_COMPRA: ReadonlySet<Transacao["categoria"]> = new Set([
+  "COMPRA_INSUMO",
+  "EMBALAGEM",
+  "EQUIPAMENTO",
+]);
+
+export interface NotaDoMes {
+  dataISO: DataISO;
+  descricao: string;
+  valor: Centavos;
+  /** Os 14 primeiros dígitos de `notaChave`, quando houver. */
+  cnpj?: string;
+  comNota: boolean;
+}
+
+export interface NotasDoMes {
+  linhas: NotaDoMes[];
+  total: Centavos;
+  comNota: number;
+  semNota: number;
+}
+
+/**
+ * A lista que vai anexa ao relatório (`#d361`): as compras do mês, por data.
+ * Despesa fixa, imposto, entrega e pró-labore ficam fora. Arquivado não chega.
+ */
+export function notasDoMes(
+  lancamentos: Pick<
+    Transacao,
+    | "tipo"
+    | "categoria"
+    | "valor"
+    | "dataISO"
+    | "descricao"
+    | "notaChave"
+    | "arquivado"
+  >[],
+): NotasDoMes {
+  const linhas = lancamentos
+    .filter(
+      (l) =>
+        l.tipo === "SAIDA" &&
+        !l.arquivado &&
+        CATEGORIAS_DE_COMPRA.has(l.categoria),
+    )
+    .map((l): NotaDoMes => {
+      const cnpj = l.notaChave?.replace(/\D/g, "").slice(0, 14);
+      return {
+        dataISO: l.dataISO,
+        descricao: l.descricao,
+        valor: l.valor,
+        ...(cnpj?.length === 14 && { cnpj }),
+        comNota: cnpj?.length === 14,
+      };
+    })
+    .sort((a, b) =>
+      a.dataISO < b.dataISO ? -1 : a.dataISO > b.dataISO ? 1 : 0,
+    );
+  const comNota = linhas.filter((l) => l.comNota).length;
+  return {
+    linhas,
+    total: linhas.reduce((soma, l) => soma + l.valor, 0),
+    comNota,
+    semNota: linhas.length - comNota,
+  };
+}
+
 /** O relatório de um mês vence no dia 20 do mês seguinte (`#d269`). */
 export const DIA_DO_PRAZO = 20;
 /** A partir de quantos dias para o 20 a frase ganha o triângulo (`#d360`). */

@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-14",
+    titulo: "A lista das notas de compra vai junto com o relatório do MEI",
+    frase:
+      "A folha ganha uma segunda página com as compras do mês, e a tela diz quais ainda não têm nota lida para você achar o cupom.",
+    href: "/financeiro",
+  },
+  {
+    dataISO: "2026-10-14",
     titulo: "O relatório do MEI diz até quando e o que já foi feito",
     frase:
       'O prazo do mês aparece sob o mês; depois de imprimir, toque em "Já imprimi e guardei", e se uma venda mudar depois, o Rende avisa.',
