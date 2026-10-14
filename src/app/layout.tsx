@@ -57,7 +57,7 @@ export const viewport: Viewport = {
   // O mesmo `brand-700` do manifesto, de propósito: dois donos para o mesmo
   // pixel dariam uma barra que combina com a marca no app instalado e com a
   // superfície na aba do navegador. Ver `DECISOES.md#d76` e `#d124`.
-  themeColor: "#2A2C3A",
+  themeColor: "#1C3891",
 };
 
 export default function RootLayout({

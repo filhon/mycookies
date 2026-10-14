@@ -15,10 +15,9 @@ import { ImageResponse } from "next/og";
  */
 
 export const CORES_DA_PREVIA = {
-  canvas: "#F7F4EE", // --canvas, tema claro
-  tinta: "#22242E", // --ink
-  tintaApagada: "#6A6C78", // --ink-muted
-  ambar: "#D89B3C", // --accent-500, o ponto
+  canvas: "#F8F5F0", // --canvas, tema claro
+  tinta: "#121A2D", // --ink
+  tintaApagada: "#5B6375", // --ink-muted
 } as const;
 
 export const TAMANHO_DA_PREVIA = { width: 1200, height: 630 };
@@ -26,6 +25,11 @@ export const TAMANHO_DA_PREVIA = { width: 1200, height: 630 };
 // Relativo à raiz do projeto: é de lá que o build roda.
 const DISPLAY_700 = readFile(
   join(process.cwd(), "src/app/previa/FamiljenGrotesk-Bold.ttf"),
+);
+// O logotipo cobalto do pacote, já em curvas: entra como imagem.
+const LOGOTIPO = readFile(
+  join(process.cwd(), "public/marca/rende-principal.svg"),
+  "base64",
 );
 
 export async function desenharPrevia({
@@ -48,30 +52,13 @@ export async function desenharPrevia({
         fontFamily: "Familjen Grotesk",
       }}
     >
-      {/* O logotipo de `Marca.tsx`: "rende" em caixa baixa, fechado pelo
-          ponto de 0,29em, 0,31em depois do "e". */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-end",
-          fontSize: 56,
-          lineHeight: 1,
-          letterSpacing: "-0.03em",
-          color: CORES_DA_PREVIA.tinta,
-        }}
-      >
-        rende
-        <div
-          style={{
-            width: 16,
-            height: 16,
-            marginLeft: 17,
-            marginBottom: 9,
-            borderRadius: 9999,
-            backgroundColor: CORES_DA_PREVIA.ambar,
-          }}
-        />
-      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element -- `ImageResponse` não tem `next/image`. */}
+      <img
+        src={`data:image/svg+xml;base64,${await LOGOTIPO}`}
+        width={194}
+        height={52}
+        alt="Rende"
+      />
 
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         <div style={{ fontSize: 34, color: CORES_DA_PREVIA.tintaApagada }}>

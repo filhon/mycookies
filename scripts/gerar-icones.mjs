@@ -7,13 +7,13 @@
  * build**: nenhuma dependência de produção entra por causa disto, e o app não
  * ganha peso para desenhar o que já está desenhado.
  *
- * A origem é `src/app/icon.svg`, o mesmo desenho do favicon, com um ajuste só:
- * o `rx` do fundo sai. Os dois sistemas recortam o ícone da tela de início com
- * a máscara deles — o iOS com o superelipse, o Android com o que o launcher
- * mandar —, e um canto já arredondado dentro de outro canto arredondado
- * aparece como falha de desenho. `public/icons/icone-maskable.svg` continua
- * sendo outro arquivo porque ele resolve outro problema: lá o conteúdo é menor
- * para sobreviver ao recorte circular, e ele fica no `purpose: "maskable"`.
+ * A origem é `public/marca/icone-app-512.svg`, o ícone do pacote da marca, com
+ * um ajuste só: o `rx` do fundo sai. Os dois sistemas recortam o ícone da tela
+ * de início com a máscara deles — o iOS com o superelipse, o Android com o que
+ * o launcher mandar —, e um canto já arredondado dentro de outro canto
+ * arredondado aparece como falha de desenho. Os PNGs do pacote têm o canto;
+ * estes não (`#d44`). O maskable e o favicon de 48 são os do pacote, sem
+ * ajuste: um já é quadrado, e o outro não passa por máscara nenhuma.
  *
  * O `sharp` vem no `node_modules` junto do Next e não está declarado em
  * `package.json`: é ferramenta de uma vez, não dependência do app. Se um dia
@@ -21,7 +21,8 @@
  */
 import { readFile, writeFile } from "node:fs/promises";
 
-const ORIGEM = "src/app/icon.svg";
+const ORIGEM = "public/marca/icone-app-512.svg";
+const CANTO = ' rx="112"';
 
 const DESTINOS = [
   // O App Router publica este arquivo como <link rel="apple-touch-icon">, que
@@ -47,15 +48,15 @@ const origem = await readFile(ORIGEM, "utf8");
 
 // Erra alto se o desenho mudar de forma: um `replace` que não encontra nada
 // devolveria silenciosamente o ícone errado, e ninguém confere PNG no diff.
-if (!origem.includes('rx="112.64"')) {
+if (!origem.includes(CANTO)) {
   console.error(
-    `${ORIGEM} não tem mais o \`rx="112.64"\` do fundo.\n` +
+    `${ORIGEM} não tem mais o \`${CANTO.trim()}\` do fundo.\n` +
       "Confira o desenho e ajuste este script antes de gerar de novo.",
   );
   process.exit(1);
 }
 
-const quadrado = origem.replace(' rx="112.64"', "");
+const quadrado = origem.replace(CANTO, "");
 
 for (const { arquivo, lado } of DESTINOS) {
   // Largura e altura explícitas no tamanho de saída: sem elas o rasterizador

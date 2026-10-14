@@ -109,7 +109,7 @@ function moldura(p: {
 <table ${TABELA} style="max-width:560px;">
 
   <tr><td class="faixa" style="background:${FAIXA};border-radius:14px 14px 0 0;padding:22px 32px;">
-    <img src="${URL_DO_SITE}/email/rende.png" width="112" height="27" alt="Rende" style="display:block;border:0;outline:none;">
+    <img src="${URL_DO_SITE}/email/rende.png" width="112" height="30" alt="Rende" style="display:block;border:0;outline:none;">
   </td></tr>
 
   <tr><td class="corpo" style="background:${FOLHA};border:1px solid ${LINHA};border-top:0;border-radius:0 0 14px 14px;padding:36px 32px 40px;font-family:${CORPO};font-size:16px;line-height:1.55;color:${TINTA};">
