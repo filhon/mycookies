@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-14",
+    titulo: "O relatório do MEI abre na folha",
+    frase:
+      "O número do mês e o botão de imprimir vêm primeiro, a folha logo depois, e no celular só as linhas que têm valor, em letra de ler.",
+    href: "/financeiro",
+  },
+  {
+    dataISO: "2026-10-14",
     titulo: "O ano do MEI numa tela, com os números da declaração",
     frase:
       "Os doze relatórios e o que falta de cada um, a receita do ano pronta para copiar na declaração anual, e o que você vendeu antes do Rende somado ao limite.",

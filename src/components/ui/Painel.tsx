@@ -105,7 +105,9 @@ export function Painel({
     <div
       inert={!aberto}
       className={cn(
-        "fixed inset-0 z-50 flex items-end lg:items-stretch lg:justify-end",
+        // Nunca no papel: a folha do relatório do MEI também mora num painel
+        // (`#d363`), e o que se imprime é a da tela.
+        "fixed inset-0 z-50 flex items-end lg:items-stretch lg:justify-end print:hidden",
         aberto ? "pointer-events-auto" : "pointer-events-none",
       )}
     >

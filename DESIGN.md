@@ -206,8 +206,11 @@ coluna acoplada à direita. O editor de pedido em `2xl` também sai: o formulár
 resumo (itens, total, sobra) numa coluna de 320px à direita, presa sob o cabeçalho, no lugar
 do rodapé fixo, e sem botões (`#d274`). O editor de produto faz o mesmo em `2xl`: o preço
 (custo, sugerido, o campo e a sobra) e o custo do lote com a faixa de composição na coluna, e o
-bloco do custo some da esquerda (`#d339`). O cabeçalho de contexto sangra até a borda da área de
-conteúdo nos dois casos, e o título alinha com a coluna da tela.
+bloco do custo some da esquerda (`#d339`). O relatório do MEI também sai: em `2xl` a folha a
+100% à esquerda e, na coluna de 320px, o número do mês, as escolhas, o "Imprimir", as notas e o
+limite; abaixo de `2xl` a mesma ordem, com a folha logo depois do botão; no celular, as linhas
+com valor no lugar da folha (`#d363`). O cabeçalho de contexto sangra até a borda da área de
+conteúdo nos três casos, e o título alinha com a coluna da tela.
 
 ### Raios
 

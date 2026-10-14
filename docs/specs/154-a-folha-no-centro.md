@@ -93,11 +93,11 @@ delas, com a coluna mostrando as escolhas de hoje.
 
 ## Critérios de aceite
 
-- [ ] Folha antes do limite em toda largura; ao lado da coluna em `2xl`.
-- [ ] Celular sem miniatura por padrão; impressão inalterada.
-- [ ] Limite em uma linha, barra limitada, traço dos 80%.
-- [ ] Um âmbar na tela.
-- [ ] Portão; `#d363`; `ESTADO.md`; `DESIGN.md` (a tela entra na lista das que saem da coluna);
+- [x] Folha antes do limite em toda largura; ao lado da coluna em `2xl`.
+- [x] Celular sem miniatura por padrão; impressão inalterada.
+- [x] Limite em uma linha, barra limitada, traço dos 80%.
+- [x] Um âmbar na tela.
+- [x] Portão; `#d363`; `ESTADO.md`; `DESIGN.md` (a tela entra na lista das que saem da coluna);
       uma linha em `novidades.ts`.
 
 ## Fora de escopo

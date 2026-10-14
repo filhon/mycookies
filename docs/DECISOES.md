@@ -11839,3 +11839,53 @@ limite e a declaração curtos; e para saber quais relatórios faltavam, eram do
 
 **Consequência.** O Rende não preenche a DASN (login gov.br), não pergunta do empregado e não
 separa ano com atividade mista (spec 153, "Fora de escopo").
+
+## D363 · A folha no centro
+
+**Status:** vigente · decidida em 2026-10-14, spec `154-a-folha-no-centro.md`.
+Aprovação da spec (o texto) tomada como dada pelo pedido de implementá-la. Nenhum campo, regra,
+índice ou dependência.
+
+**Contexto.** Nos prints de 2026-10-12 a folha, que é o produto da tela, começava a 780px do
+topo no desktop e depois de uma tela e meia no celular, onde virava uma miniatura de ~5pt. O
+limite do ano abria a tela, com a barra em 3% lendo como "vazio", e título, mês e folha estavam
+em três eixos.
+
+**Decisão.**
+
+- **A rota sai de `(coluna)`**, como os editores (`#d274`, `#d339`): `app/(app)/financeiro/
+relatorio-mei/[competencia]`. O mês põe a própria largura (`max-w-5xl`, `2xl:` 210mm + 22rem);
+  o ano (`AnoDoMei`, mesmo segmento) continua em `max-w-5xl`.
+- **Em `2xl`**, grade `210mm 20rem`: a folha a 100% à esquerda e a coluna presa sob o
+  cabeçalho (`top` e `max-h` por `--fundo-cabecalho`, rolando por dentro se passar da tela),
+  na ordem: o número do mês em display ("R$ 2.201,50 · linha IV", a linha que recebeu o
+  dinheiro quando é uma só, senão X) com a origem, as escolhas (`SeuMei` e a nota), o
+  "Imprimir" (largura da coluna) e o "Já imprimi e guardei", as notas de compra e o limite com
+  "Ver o ano", que sai do cabeçalho.
+- **Abaixo de `2xl`** a coluna é `display: contents` e a `order` põe a folha entre as duas
+  metades: depois do botão, nunca depois do limite. O DOM é o da coluna, e o foco segue ele.
+  A folha alinha à esquerda (sem `mx-auto`), no eixo do título.
+- **O estado do mês (151) continua sob o seletor**, e não repete na coluna: o cabeçalho é
+  grudento, e a linha já está à vista ao lado da coluna. O seletor ganhou `className`; aqui é
+  `max-w-md`, alinhado ao título. O Caixa não muda.
+- **"Imprimir a lista de notas junto"** fica colado ao "Imprimir", e não no item das notas: é
+  escolha do papel.
+- **Celular (< 768px)**: a folha some da tela (`max-md:not-print:hidden`) e fica no papel. No
+  lugar, as linhas com valor e a X, com o rótulo do portal encurtado (`LINHAS_DO_PAPEL`) e
+  "As outras sete linhas saem zeradas na folha." "Ver a folha inteira" abre a mesma prévia, com
+  `zoom`, no `Painel`. Cada prévia mede a própria largura (`PreviaDaFolha`); a escondida mede
+  zero e é ignorada. O `Painel` ganhou `print:hidden`: superfície flutuante nunca vai ao papel.
+  Os dois botões do papel em largura cheia no celular e na coluna.
+- **O limite do ano é um só**, o do pé do Caixa: sem `compacto`, sem o ritmo e sem as frases
+  da abertura proporcional e do "Abriu o MEI este ano?" (o CNPJ já traz a abertura, `#d359`).
+  "R$ 2.201,50 de R$ 81.000,00 · 3%" numa linha, a barra até `max-w-md`, o mínimo de 4px
+  quando há entrada, e um traço de 1px em `--border-strong` a 80%, `aria-hidden`; o
+  `aria-valuetext` diz "3% do limite do MEI; o aviso começa em 80%". `ritmo` e `proporcional`
+  continuam no domínio, testados, sem tela hoje.
+- **Mês sem venda**: o número vira "Sem venda em setembro." e a origem "O relatório sai zerado,
+  e ainda vale imprimir e guardar.", com o "Ver no Caixa". Se o portal disser que o relatório
+  zerado não é exigido, a frase muda e o botão fica (roteiro 5).
+
+**Consequência.** A folha não marca a linha que recebeu o dinheiro (`#d127`), e não há PDF
+gerado no aparelho: se o app instalado no iPhone não abrir a impressão (roteiro 4), isso volta
+como dependência e pede aprovação.

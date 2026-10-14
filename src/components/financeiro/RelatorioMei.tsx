@@ -17,6 +17,7 @@ import { Botao } from "@/components/ui/Botao";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
+import { Painel } from "@/components/ui/Painel";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
   competenciaDeISO,
@@ -30,7 +31,6 @@ import {
   comNotaDoRelatorio,
   ehCompetencia,
   formatarCnpj,
-  LIMITE_MEI_POR_MES,
   limiteDoAno,
   mudouDepoisDeGuardado,
   notasDoMes,
@@ -108,9 +108,37 @@ function levarDoAparelho(contaId: string) {
   }
 }
 
+/** O rótulo do portal encurtado, para a lista do celular (`#d363`). */
+const LINHAS_DO_PAPEL = [
+  ["I", "Revenda sem nota fiscal"],
+  ["II", "Revenda com nota fiscal"],
+  ["III", "Total do comércio"],
+  ["IV", "Venda sem nota fiscal"],
+  ["V", "Venda com nota fiscal"],
+  ["VI", "Total da indústria"],
+  ["VII", "Serviço sem nota fiscal"],
+  ["VIII", "Serviço com nota fiscal"],
+  ["IX", "Total dos serviços"],
+] as const satisfies readonly (readonly [keyof Relatorio, string])[];
+
+const POR_EXTENSO = [
+  "",
+  "uma",
+  "duas",
+  "três",
+  "quatro",
+  "cinco",
+  "seis",
+  "sete",
+  "oito",
+  "nove",
+];
+
 /**
  * O Relatório Mensal das Receitas Brutas do MEI, montado das vendas do mês
- * (`DECISOES.md#d269`), com o limite do ano por cima (`#d270`).
+ * (`DECISOES.md#d269`). A folha é o produto da tela (`#d363`): ao lado da
+ * coluna em `2xl`, logo depois do botão abaixo dele, e no celular as linhas
+ * que têm valor no lugar dela. O limite do ano vem por último, de apoio.
  *
  * O papel é o PDF do navegador, como o orçamento (`#d106`): nada aqui exige
  * rede além das duas leituras, e nada é enviado a ninguém.
@@ -157,18 +185,7 @@ export function RelatorioMei({
   const atividade = mei.dado?.atividade ?? "INDUSTRIA";
   const comNota = notaEscolhida ?? mei.dado?.notas?.[competencia] ?? 0;
 
-  // Mesmo `zoom` da folha do orçamento: a prévia encolhe para caber, e na
-  // impressão volta a 1.
-  const [zoom, setZoom] = useState(1);
-  const medirFolha = useCallback((elemento: HTMLDivElement | null) => {
-    if (!elemento) return;
-    const observador = new ResizeObserver((entradas) => {
-      const largura = entradas[0]?.contentRect.width ?? LARGURA_DA_FOLHA_PX;
-      setZoom(Math.min(1, largura / LARGURA_DA_FOLHA_PX));
-    });
-    observador.observe(elemento);
-    return () => observador.disconnect();
-  }, []);
+  const [verFolha, setVerFolha] = useState(false);
 
   function mudarNota(centavos: Centavos) {
     setNota(centavos);
@@ -202,14 +219,6 @@ export function RelatorioMei({
       voltar={{ href: "/financeiro", rotulo: "Caixa" }}
       pendente={lancamentos.pendente}
       className="print:hidden"
-      acao={
-        <Link
-          href={`/financeiro/relatorio-mei/${competencia.slice(0, 4)}`}
-          className={classesBotao({ variante: "terciaria", tamanho: "sm" })}
-        >
-          Ver o ano
-        </Link>
-      }
     >
       {/* O mês é a URL: `replace`, para o voltar do aparelho ir ao Caixa. */}
       <SeletorMes
@@ -217,6 +226,7 @@ export function RelatorioMei({
         mesCorrente={mesCorrente}
         aoMudar={(nova) => router.replace(`/financeiro/relatorio-mei/${nova}`)}
         rodape={rodape}
+        className="max-w-md"
       />
     </CabecalhoPagina>
   );
@@ -286,6 +296,31 @@ export function RelatorioMei({
       ? Number(hoje.slice(8, 10))
       : diasNoMes(competencia);
 
+  // O número que ela veio conferir: a linha que recebeu o dinheiro, quando é
+  // uma só; com nota e sem nota no mesmo mês, o total.
+  const comDinheiro = (["I", "II", "IV", "V", "VII", "VIII"] as const).filter(
+    (linha) => relatorio[linha] > 0,
+  );
+  const linhaDoNumero = comDinheiro.length === 1 ? comDinheiro[0] : "X";
+
+  const folhas = (
+    <>
+      <FolhaMei
+        relatorio={relatorio}
+        competencia={competencia}
+        cnpj={mei.dado?.cnpj}
+        nomeEmpresarial={mei.dado?.nomeEmpresarial}
+      />
+      {anexo && (
+        <FolhaNotas
+          notas={notas}
+          competencia={competencia}
+          cnpj={mei.dado?.cnpj}
+        />
+      )}
+    </>
+  );
+
   return (
     <>
       {cabecalhoCom(
@@ -296,179 +331,290 @@ export function RelatorioMei({
         />,
       )}
 
-      <div className="mt-4 flex flex-col gap-8 print:mt-0 print:block">
-        <div className="print:hidden">
-          <LimiteDoAnoMei
-            limite={limiteDoAno(
-              agregados.dados,
-              competencia,
-              mei.dado?.abertura,
-              mei.dado?.antes?.[competencia.slice(0, 4)],
-            )}
-            competencia={competencia}
-            soVenda={relatorio.outrasEntradas === 0}
-            aberturaConhecida={!!mei.dado?.abertura}
-          />
-        </div>
-
-        <section aria-labelledby="o-papel" className="print:hidden">
-          <h2 id="o-papel" className="text-subheading font-semibold text-ink">
-            Antes de imprimir
-          </h2>
-          <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-label text-ink-muted">
-            <span className="num">
-              {relatorio.vendasContadas === 0
-                ? `Nenhuma venda lançada de 1 a ${ultimoDia} de ${mes}`
-                : `Somado de ${relatorio.vendasContadas} ${relatorio.vendasContadas === 1 ? "venda" : "vendas"} de 1 a ${ultimoDia} de ${mes}`}
-            </span>
-            <span aria-hidden>·</span>
-            <Link
-              href={`/financeiro?mes=${competencia}`}
-              className="toque inline-flex items-center font-medium text-brand-ink underline underline-offset-2"
-            >
-              Ver no Caixa
-            </Link>
-          </p>
-          <NotasDeCompra notas={notas} competencia={competencia} />
-
-          <div className="mt-4 flex flex-col gap-6">
-            <SeuMei mei={mei.dado} />
-
-            <CampoMoeda
-              rotulo={`Emiti nota fiscal em ${mes}, no total de`}
-              valor={comNota}
-              aoMudar={mudarNota}
-              dica={`Sai da linha ${linhaSemNota} e vai para a ${linhaComNota}. Sem nota, deixe em zero.`}
-              className="sm:max-w-[calc(50%-0.75rem)]"
-            />
-          </div>
-
-          {relatorio.outrasEntradas > 0 && (
-            <p className="mt-4 flex max-w-[60ch] items-start gap-2 text-label text-ink-muted">
-              <Info
-                aria-hidden
-                className="mt-0.5 size-4 shrink-0"
-                strokeWidth={1.75}
-              />
-              <span>
-                <strong className="num font-semibold text-ink">
-                  {formatarMoeda(relatorio.outrasEntradas)}
-                </strong>{" "}
-                de outras entradas ficaram fora: só venda é receita. Se alguma
-                era venda, mude a categoria no Caixa.
-              </span>
-            </p>
-          )}
-
-          <div className="mt-6 flex flex-col items-start gap-2">
-            {notas.linhas.length > 0 && (
-              <label className="toque flex cursor-pointer items-center gap-3 text-body text-ink">
-                <input
-                  type="checkbox"
-                  checked={comAnexo}
-                  onChange={(evento) => setComAnexo(evento.target.checked)}
-                  className="size-5 shrink-0"
-                />
-                Imprimir a lista de notas junto
-              </label>
-            )}
-            <Botao
-              variante="primaria"
-              tamanho="lg"
-              onClick={() => window.print()}
-              iconeInicial={
-                <Printer aria-hidden className="size-5" strokeWidth={1.75} />
-              }
-            >
-              Imprimir ou salvar em PDF
-            </Botao>
-            {/* Mês aberto não se guarda: ainda vai mudar (`#d360`). */}
-            {prazo.estado !== "aberto" && (
-              <Botao
-                id={ID_GUARDAR}
-                variante="secundaria"
-                tamanho="lg"
-                onClick={guardar}
-                iconeInicial={
-                  <CheckCheck
-                    aria-hidden
-                    className="size-5"
-                    strokeWidth={1.75}
-                  />
-                }
-              >
-                Já imprimi e guardei
-              </Botao>
-            )}
-            <p className="max-w-[60ch] text-label text-ink-muted">
-              Confira os números antes de assinar. O relatório não é enviado a
-              ninguém: você guarda, com as notas de compra do mês.
-            </p>
-          </div>
-        </section>
-
-        {mudou && guardado && (
-          <div
-            role="status"
-            className="flex items-start gap-2.5 rounded-lg border border-attention/30 bg-attention-soft p-4 text-label text-ink print:hidden"
-          >
-            <TriangleAlert
-              aria-hidden
-              className="mt-0.5 size-4 shrink-0 text-attention"
-              strokeWidth={1.75}
-            />
-            <p className="max-w-[60ch]">
-              Mudou depois que você guardou:{" "}
-              {guardado.total !== relatorio.X ? (
-                <EraAgora
-                  era={formatarMoeda(guardado.total)}
-                  agora={formatarMoeda(relatorio.X)}
-                />
-              ) : guardado.atividade !== atividade ? (
-                <>
-                  a atividade{" "}
-                  <EraAgora
-                    era={ROTULO_ATIVIDADE[guardado.atividade].toLowerCase()}
-                    agora={ROTULO_ATIVIDADE[atividade].toLowerCase()}
-                  />
-                </>
+      {/* A folha à esquerda e a coluna à direita em `2xl` (`#d363`). Abaixo
+          dele a coluna é `contents`, e a `order` põe a folha entre as duas
+          metades: depois do botão, nunca depois do limite. O DOM segue a
+          coluna, então o foco também. */}
+      <div className="mt-4 flex flex-col gap-8 print:mt-0 print:block 2xl:grid 2xl:grid-cols-[210mm_20rem] 2xl:items-start">
+        <div className="contents print:hidden 2xl:sticky 2xl:top-[calc(var(--fundo-cabecalho,0px)+1rem)] 2xl:col-start-2 2xl:row-start-1 2xl:-m-1 2xl:flex 2xl:max-h-[calc(100dvh-var(--fundo-cabecalho,0px)-2rem)] 2xl:flex-col 2xl:gap-8 2xl:overflow-y-auto 2xl:p-1">
+          <section aria-labelledby="o-papel" className="order-1">
+            <h2 id="o-papel" className="sr-only">
+              Antes de imprimir
+            </h2>
+            <p className="num font-display text-title font-semibold text-ink">
+              {relatorio.vendasContadas === 0 ? (
+                `Sem venda em ${mes}.`
               ) : (
                 <>
-                  com nota{" "}
-                  <EraAgora
-                    era={formatarMoeda(guardado.comNota)}
-                    agora={formatarMoeda(
-                      comNotaDoRelatorio(relatorio, atividade),
-                    )}
-                  />
+                  {formatarMoeda(relatorio.X)}{" "}
+                  <span className="font-sans text-body font-normal text-ink-muted">
+                    · linha {linhaDoNumero}
+                  </span>
                 </>
-              )}{" "}
-              Imprima de novo e troque a folha.
+              )}
             </p>
-          </div>
-        )}
+            <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-label text-ink-muted">
+              <span className="num">
+                {relatorio.vendasContadas === 0
+                  ? "O relatório sai zerado, e ainda vale imprimir e guardar."
+                  : `Somado de ${relatorio.vendasContadas} ${relatorio.vendasContadas === 1 ? "venda" : "vendas"} de 1 a ${ultimoDia} de ${mes}`}
+              </span>
+              <span aria-hidden>·</span>
+              <Link
+                href={`/financeiro?mes=${competencia}`}
+                className="toque inline-flex items-center font-medium text-brand-ink underline underline-offset-2"
+              >
+                Ver no Caixa
+              </Link>
+            </p>
 
-        <div
-          ref={medirFolha}
-          style={{ "--folha-zoom": zoom } as CSSProperties}
-          className="flex flex-col gap-6 print:block"
-        >
-          <FolhaMei
-            relatorio={relatorio}
-            competencia={competencia}
-            cnpj={mei.dado?.cnpj}
-            nomeEmpresarial={mei.dado?.nomeEmpresarial}
-          />
-          {anexo && (
-            <FolhaNotas
-              notas={notas}
-              competencia={competencia}
-              cnpj={mei.dado?.cnpj}
+            {relatorio.outrasEntradas > 0 && (
+              <p className="mt-3 flex max-w-[60ch] items-start gap-2 text-label text-ink-muted">
+                <Info
+                  aria-hidden
+                  className="mt-0.5 size-4 shrink-0"
+                  strokeWidth={1.75}
+                />
+                <span>
+                  <strong className="num font-semibold text-ink">
+                    {formatarMoeda(relatorio.outrasEntradas)}
+                  </strong>{" "}
+                  de outras entradas ficaram fora: só venda é receita. Se alguma
+                  era venda, mude a categoria no Caixa.
+                </span>
+              </p>
+            )}
+
+            <div className="mt-6 flex flex-col gap-6">
+              <SeuMei mei={mei.dado} />
+
+              <CampoMoeda
+                rotulo={`Emiti nota fiscal em ${mes}, no total de`}
+                valor={comNota}
+                aoMudar={mudarNota}
+                dica={`Sai da linha ${linhaSemNota} e vai para a ${linhaComNota}. Sem nota, deixe em zero.`}
+                className="sm:max-w-[calc(50%-0.75rem)] 2xl:max-w-none"
+              />
+            </div>
+
+            {mudou && guardado && (
+              <div
+                role="status"
+                className="mt-6 flex items-start gap-2.5 rounded-lg border border-attention/30 bg-attention-soft p-4 text-label text-ink"
+              >
+                <TriangleAlert
+                  aria-hidden
+                  className="mt-0.5 size-4 shrink-0 text-attention"
+                  strokeWidth={1.75}
+                />
+                <p className="max-w-[60ch]">
+                  Mudou depois que você guardou:{" "}
+                  {guardado.total !== relatorio.X ? (
+                    <EraAgora
+                      era={formatarMoeda(guardado.total)}
+                      agora={formatarMoeda(relatorio.X)}
+                    />
+                  ) : guardado.atividade !== atividade ? (
+                    <>
+                      a atividade{" "}
+                      <EraAgora
+                        era={ROTULO_ATIVIDADE[guardado.atividade].toLowerCase()}
+                        agora={ROTULO_ATIVIDADE[atividade].toLowerCase()}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      com nota{" "}
+                      <EraAgora
+                        era={formatarMoeda(guardado.comNota)}
+                        agora={formatarMoeda(
+                          comNotaDoRelatorio(relatorio, atividade),
+                        )}
+                      />
+                    </>
+                  )}{" "}
+                  Imprima de novo e troque a folha.
+                </p>
+              </div>
+            )}
+
+            <div className="mt-6 flex flex-col items-start gap-2">
+              {notas.linhas.length > 0 && (
+                <label className="toque flex cursor-pointer items-center gap-3 text-body text-ink">
+                  <input
+                    type="checkbox"
+                    checked={comAnexo}
+                    onChange={(evento) => setComAnexo(evento.target.checked)}
+                    className="size-5 shrink-0"
+                  />
+                  Imprimir a lista de notas junto
+                </label>
+              )}
+              <Botao
+                variante="primaria"
+                tamanho="lg"
+                onClick={() => window.print()}
+                className="w-full md:w-auto 2xl:w-full"
+                iconeInicial={
+                  <Printer aria-hidden className="size-5" strokeWidth={1.75} />
+                }
+              >
+                Imprimir ou salvar em PDF
+              </Botao>
+              {/* Mês aberto não se guarda: ainda vai mudar (`#d360`). */}
+              {prazo.estado !== "aberto" && (
+                <Botao
+                  id={ID_GUARDAR}
+                  variante="secundaria"
+                  tamanho="lg"
+                  onClick={guardar}
+                  className="w-full md:w-auto 2xl:w-full"
+                  iconeInicial={
+                    <CheckCheck
+                      aria-hidden
+                      className="size-5"
+                      strokeWidth={1.75}
+                    />
+                  }
+                >
+                  Já imprimi e guardei
+                </Botao>
+              )}
+              <p className="max-w-[60ch] text-label text-ink-muted">
+                Confira os números antes de assinar. O relatório não é enviado a
+                ninguém: você guarda, com as notas de compra do mês.
+              </p>
+            </div>
+
+            <LinhasComValor
+              relatorio={relatorio}
+              aoVerFolha={() => setVerFolha(true)}
             />
-          )}
+          </section>
+
+          <div className="order-3 flex flex-col gap-6">
+            <NotasDeCompra notas={notas} competencia={competencia} />
+            <div>
+              <LimiteDoAnoMei
+                limite={limiteDoAno(
+                  agregados.dados,
+                  competencia,
+                  mei.dado?.abertura,
+                  mei.dado?.antes?.[competencia.slice(0, 4)],
+                )}
+                competencia={competencia}
+                soVenda={relatorio.outrasEntradas === 0}
+              />
+              <Link
+                href={`/financeiro/relatorio-mei/${competencia.slice(0, 4)}`}
+                className={classesBotao({
+                  variante: "terciaria",
+                  tamanho: "sm",
+                  className: "mt-2 -ml-3",
+                })}
+              >
+                Ver o ano
+              </Link>
+            </div>
+          </div>
         </div>
+
+        {/* No celular a tela mostra as linhas, e a folha fica só para o papel. */}
+        <PreviaDaFolha className="order-2 flex flex-col gap-6 max-md:not-print:hidden print:block 2xl:col-start-1 2xl:row-start-1">
+          {folhas}
+        </PreviaDaFolha>
       </div>
+
+      <Painel
+        aberto={verFolha}
+        aoFechar={() => setVerFolha(false)}
+        titulo="A folha inteira"
+        descricao="Como sai na impressão."
+      >
+        <PreviaDaFolha className="flex flex-col gap-6">{folhas}</PreviaDaFolha>
+      </Painel>
     </>
+  );
+}
+
+/**
+ * A prévia da folha com o mesmo `zoom` do orçamento: encolhe para caber, e na
+ * impressão volta a 1. Cada prévia mede a própria largura; escondida, mede
+ * zero e fica como estava.
+ */
+function PreviaDaFolha({
+  className,
+  children,
+}: {
+  className?: string;
+  children: ReactNode;
+}) {
+  const [zoom, setZoom] = useState(1);
+  const medir = useCallback((elemento: HTMLDivElement | null) => {
+    if (!elemento) return;
+    const observador = new ResizeObserver((entradas) => {
+      const largura = entradas[0]?.contentRect.width ?? 0;
+      if (largura > 0) setZoom(Math.min(1, largura / LARGURA_DA_FOLHA_PX));
+    });
+    observador.observe(elemento);
+    return () => observador.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={medir}
+      style={{ "--folha-zoom": zoom } as CSSProperties}
+      className={className}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
+ * No celular, no lugar da folha: as linhas com valor e a X, em tipo de ler
+ * (`#d363`). A folha inteira continua a um toque, e a impressão é sempre ela.
+ */
+function LinhasComValor({
+  relatorio,
+  aoVerFolha,
+}: {
+  relatorio: Relatorio;
+  aoVerFolha: () => void;
+}) {
+  const comValor = LINHAS_DO_PAPEL.filter(([linha]) => relatorio[linha] > 0);
+  const zeradas = LINHAS_DO_PAPEL.length - comValor.length;
+
+  return (
+    <div className="mt-6 md:hidden">
+      <ul className="divide-y divide-line border-y border-line">
+        {[...comValor, ["X", "Total do mês"] as const].map(
+          ([linha, rotulo]) => (
+            <li key={linha} className="flex items-baseline gap-3 py-3">
+              <span className="w-9 shrink-0 text-label text-ink-muted">
+                {linha}
+              </span>
+              <span className="min-w-0 flex-1 text-body text-ink">
+                {rotulo}
+              </span>
+              <span className="num text-body font-semibold whitespace-nowrap text-ink">
+                {formatarMoeda(relatorio[linha])}
+              </span>
+            </li>
+          ),
+        )}
+      </ul>
+      {zeradas > 0 && (
+        <p className="mt-2 text-label text-ink-muted">
+          {zeradas === 1
+            ? "A outra linha sai zerada na folha."
+            : `As outras ${POR_EXTENSO[zeradas]} linhas saem zeradas na folha.`}
+        </p>
+      )}
+      <Botao variante="terciaria" onClick={aoVerFolha} className="mt-2 -ml-3">
+        Ver a folha inteira
+      </Botao>
+    </div>
   );
 }
 
@@ -562,41 +708,35 @@ function EstadoDoMes({
 }
 
 /**
- * Quanto do limite do ano já entrou (`#d270`), na tela do relatório e no pé
- * de `/financeiro`. Aviso, nunca erro: o ocre leva o triângulo e a palavra, e
+ * Quanto do limite do ano já entrou (`#d270`), no pé do relatório e no pé de
+ * `/financeiro`. Aviso, nunca erro: o ocre leva o triângulo e a palavra, e
  * toda frase sobre consequência termina no contador.
  *
- * `compacto` é o pé do Caixa: sem o ritmo e sem a linha da abertura.
+ * Apoio, e não hero (`#d363`): uma linha com o percentual junto do valor, a
+ * barra até `max-w-md` e o traço dos 80%, onde o aviso começa.
  */
 export function LimiteDoAnoMei({
   limite,
   competencia,
   soVenda,
-  aberturaConhecida = false,
-  compacto = false,
 }: {
   limite: LimiteDoAno;
   competencia: CompetenciaMensal;
   /** Sem entrada fora de `VENDA` no mês aberto, o verbo é "faturou". */
   soVenda: boolean;
-  /** Com a abertura em `fiscal/mei`, "Abriu o MEI este ano?" some (`#d359`). */
-  aberturaConhecida?: boolean;
-  compacto?: boolean;
 }) {
   const ano = competencia.slice(0, 4);
   const ate = competencia.endsWith("-12")
     ? ""
     : ` até ${rotuloMes(competencia)}`;
   const alerta = limite.estado !== "dentro";
+  const percentual = formatarPercentual(limite.percentual, 0);
 
   return (
     <section aria-labelledby={`limite-mei-${ano}`}>
       <h2
         id={`limite-mei-${ano}`}
-        className={cn(
-          "font-semibold text-ink",
-          compacto ? "text-label" : "text-subheading",
-        )}
+        className="text-label font-semibold text-ink"
       >
         Limite do MEI em {ano}
       </h2>
@@ -605,19 +745,12 @@ export function LimiteDoAnoMei({
         {soVenda ? "Você faturou" : "Entrou"}
         {ate}
       </p>
-      <p className="num flex flex-wrap items-baseline gap-x-2 text-body text-ink-muted">
-        <span
-          className={cn(
-            "font-semibold text-ink",
-            compacto ? "text-body" : "text-heading",
-          )}
-        >
+      <p className="num text-body text-ink-muted">
+        <span className="font-semibold text-ink">
           {formatarMoeda(limite.entradas)}
-        </span>
-        de {formatarMoeda(limite.teto)}
-        <span className="ml-auto font-semibold text-ink">
-          {formatarPercentual(limite.percentual, 0)}
-        </span>
+        </span>{" "}
+        de {formatarMoeda(limite.teto)} ·{" "}
+        <span className="font-semibold text-ink">{percentual}</span>
       </p>
       {/* O campo do "antes" mora no ano: daqui, um link para ele (`#d362`). */}
       {limite.antes ? (
@@ -655,15 +788,20 @@ export function LimiteDoAnoMei({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(Math.min(100, limite.percentual))}
-        aria-valuetext={`${formatarPercentual(limite.percentual, 0)} do limite do MEI`}
-        className="mt-2 h-2 overflow-hidden rounded-full bg-sunken"
+        aria-valuetext={`${percentual} do limite do MEI; o aviso começa em 80%`}
+        className="relative mt-2 h-2 max-w-md overflow-hidden rounded-full bg-sunken"
       >
         <div
           style={{ width: `${Math.min(100, limite.percentual)}%` }}
           className={cn(
             "h-full rounded-full",
+            limite.entradas > 0 && "min-w-1",
             alerta ? "bg-attention" : "bg-brand-ink",
           )}
+        />
+        <div
+          aria-hidden
+          className="absolute inset-y-0 left-[80%] w-px bg-line-strong"
         />
       </div>
 
@@ -680,41 +818,6 @@ export function LimiteDoAnoMei({
               : "Você passou o limite do MEI neste ano. Até 20% acima, o desenquadramento vale a partir de janeiro; acima disso, ele volta ao começo do ano. Fale com um contador."}
           </span>
         </p>
-      )}
-
-      {!compacto && (
-        <>
-          {limite.ritmo !== null && !competencia.endsWith("-12") && (
-            <p className="mt-3 max-w-[60ch] text-label text-ink">
-              No ritmo deste ano, você fecha dezembro perto de{" "}
-              <strong className="num font-semibold">
-                {formatarMoeda(limite.ritmo)}
-              </strong>
-              .
-            </p>
-          )}
-          <p className="mt-1.5 max-w-[60ch] text-label text-ink-muted">
-            {limite.proporcional ? (
-              <>
-                O MEI abriu este ano: o seu limite é{" "}
-                <span className="num">{formatarMoeda(LIMITE_MEI_POR_MES)}</span>{" "}
-                por mês desde a abertura.
-              </>
-            ) : (
-              !aberturaConhecida && (
-                <>
-                  Abriu o MEI este ano? O seu limite é{" "}
-                  <span className="num">
-                    {formatarMoeda(LIMITE_MEI_POR_MES)}
-                  </span>{" "}
-                  por mês desde a abertura.
-                </>
-              )
-            )}
-            {!soVenda &&
-              " A conta soma tudo o que entrou, não só venda: erra pra cima, que é o lado seguro."}
-          </p>
-        </>
       )}
     </section>
   );
@@ -741,7 +844,7 @@ function FolhaMei({
   nomeEmpresarial?: string;
 }) {
   return (
-    <article className="folha mx-auto flex flex-col text-[10.5pt] leading-[1.45] shadow-raised">
+    <article className="folha flex flex-col text-[10.5pt] leading-[1.45] shadow-raised">
       <h2 className="border-b-2 border-line-strong pb-[8pt] text-center text-[13pt] font-bold tracking-[0.06em]">
         RELATÓRIO MENSAL DAS RECEITAS BRUTAS
       </h2>
@@ -898,7 +1001,7 @@ function FolhaNotas({
   return (
     // ponytail: lista que passa de uma página continua sem a margem de cima na
     // seguinte (a margem é o padding da folha); repartir em folhas se acontecer.
-    <article className="folha mx-auto flex break-before-page flex-col text-[10.5pt] leading-[1.45] shadow-raised [page-break-before:always]">
+    <article className="folha flex break-before-page flex-col text-[10.5pt] leading-[1.45] shadow-raised [page-break-before:always]">
       <div className="space-y-[4pt] border-b-2 border-line-strong pb-[8pt] text-[9pt]">
         <EmBranco rotulo="CNPJ:" valor={cnpj && formatarCnpj(cnpj)} />
         <p>

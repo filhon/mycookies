@@ -7,8 +7,8 @@ import type { ReactNode } from "react";
  * tabelas de `/fichas`, `/insumos` e `/pedidos` ficam fora deste grupo e ocupam
  * a largura que têm (`#d225`, `#d253`); os editores delas continuam aqui,
  * menos o de pedido e o de produto, que põem a própria largura para a coluna à
- * direita em `2xl` (`#d274`, `#d339`), e a Configuração, pelo custo por hora
- * (`#d283`).
+ * direita em `2xl` (`#d274`, `#d339`), a Configuração, pelo custo por hora
+ * (`#d283`), e o relatório do MEI, pela folha ao lado da coluna (`#d363`).
  *
  * Na impressão a folha do orçamento é a página inteira (`#d106`).
  */

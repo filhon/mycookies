@@ -14,23 +14,26 @@ import type { CompetenciaMensal } from "@/lib/types";
  * que ela precise contar quantas vezes tocar.
  *
  * `rodape` toma o lugar do "Voltar para": no relatório do MEI, o que importa
- * sob o mês é o prazo dele, e não o mês corrente (`#d360`).
+ * sob o mês é o prazo dele, e não o mês corrente (`#d360`). `className`
+ * prende o seletor ao eixo do título lá, com `max-w-md` (`#d363`).
  */
 export function SeletorMes({
   competencia,
   mesCorrente,
   aoMudar,
   rodape,
+  className,
 }: {
   competencia: CompetenciaMensal;
   mesCorrente: CompetenciaMensal;
   aoMudar: (competencia: CompetenciaMensal) => void;
   rodape?: ReactNode;
+  className?: string;
 }) {
   const noMesCorrente = competencia === mesCorrente;
 
   return (
-    <div>
+    <div className={className}>
       <div className="flex items-center gap-1">
         <button
           type="button"

@@ -321,7 +321,6 @@ export function TelaFinanceiro() {
       </Link>
       <div className="max-w-md">
         <LimiteDoAnoMei
-          compacto
           limite={limiteDoAno(
             agregados.dados,
             competencia,
