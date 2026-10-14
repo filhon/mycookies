@@ -3,7 +3,7 @@
 import { Check, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Botao } from "./Botao";
-import type { VarianteBotao } from "./estilosBotao";
+import type { TamanhoBotao, VarianteBotao } from "./estilosBotao";
 
 /**
  * Copia um texto para a área de transferência, com o "Copiado" vivo por 2 s
@@ -14,10 +14,12 @@ export function BotaoCopiar({
   texto,
   rotulo,
   variante = "secundaria",
+  tamanho = "sm",
 }: {
   texto: string;
   rotulo: string;
   variante?: VarianteBotao;
+  tamanho?: TamanhoBotao;
 }) {
   const [copiado, setCopiado] = useState(false);
   const [mostrar, setMostrar] = useState(false);
@@ -40,7 +42,7 @@ export function BotaoCopiar({
   return (
     <div className="space-y-2">
       <Botao
-        tamanho="sm"
+        tamanho={tamanho}
         variante={variante}
         onClick={() => void copiar()}
         iconeInicial={

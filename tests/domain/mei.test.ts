@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  anoDoMei,
   atividadeDoCnae,
   formatarCnpj,
   LIMITE_MEI_ANUAL,
@@ -373,5 +374,172 @@ describe("notasDoMes", () => {
       comNota: 0,
       semNota: 0,
     });
+  });
+});
+
+describe("limiteDoAno com o que entrou antes do Rende", () => {
+  const agosto = [
+    { id: "2026-08", entradas: 191_200 },
+    { id: "2026-09", entradas: 220_150 },
+  ];
+  const antes = { ate: "2026-07", valor: 930_000 };
+
+  it("soma o antes e tira o desde", () => {
+    const l = limiteDoAno(agosto, "2026-09", undefined, antes);
+    expect(l.entradas).toBe(191_200 + 220_150 + 930_000);
+    expect(l.desde).toBeNull();
+    expect(l.antes).toEqual({ ...antes, de: "2026-01" });
+  });
+
+  it("conta os meses do antes no ritmo", () => {
+    // Sete meses do antes e dois do Rende: nove.
+    const l = limiteDoAno(agosto, "2026-09", undefined, antes);
+    expect(l.ritmo).toBe(Math.round(((191_200 + 220_150 + 930_000) / 9) * 12));
+  });
+
+  it("antes de outro ano não entra", () => {
+    const l = limiteDoAno(agosto, "2026-09", undefined, {
+      ate: "2025-07",
+      valor: 930_000,
+    });
+    expect(l.entradas).toBe(191_200 + 220_150);
+    expect(l.desde).toBe("2026-08");
+    expect(l.antes).toBeNull();
+  });
+});
+
+describe("anoDoMei", () => {
+  const vendas = { "2026-08": 191_200, "2026-09": 220_150, "2026-10": 241_000 };
+  const guardadoSetembro = {
+    em: "2026-10-14",
+    total: 220_150,
+    comNota: 0,
+    atividade: "INDUSTRIA" as const,
+  };
+
+  it("pede o antes quando o primeiro mês com venda é depois de janeiro", () => {
+    const a = anoDoMei(
+      "2026",
+      vendas,
+      { atividade: "INDUSTRIA" },
+      "2026-11-05",
+    );
+    expect(a.antes).toEqual({ de: "2026-01", ate: "2026-07", valor: null });
+    expect(a.meses.map((m) => m.competencia)).toEqual([
+      "2026-08",
+      "2026-09",
+      "2026-10",
+      "2026-11",
+      "2026-12",
+    ]);
+    expect(a.total).toBe(191_200 + 220_150 + 241_000);
+    expect(a.vazio).toBe(false);
+  });
+
+  it("soma o antes informado, comércio e indústria juntos e serviço zero", () => {
+    for (const atividade of ["INDUSTRIA", "COMERCIO"] as const) {
+      const a = anoDoMei(
+        "2026",
+        vendas,
+        { atividade, antes: { "2026": { ate: "2026-07", valor: 930_000 } } },
+        "2027-02-10",
+      );
+      expect(a.antes).toEqual({
+        de: "2026-01",
+        ate: "2026-07",
+        valor: 930_000,
+      });
+      expect(a.comercioEIndustria).toBe(930_000 + 191_200 + 220_150 + 241_000);
+      expect(a.servicos).toBe(0);
+      expect(a.total).toBe(a.comercioEIndustria);
+    }
+  });
+
+  it("os meses que o antes cobre saem da soma: nada conta duas vezes", () => {
+    const a = anoDoMei(
+      "2026",
+      vendas,
+      {
+        atividade: "INDUSTRIA",
+        antes: { "2026": { ate: "2026-08", valor: 1_000 } },
+      },
+      "2027-02-10",
+    );
+    expect(a.total).toBe(1_000 + 220_150 + 241_000);
+    expect(a.meses[0]?.competencia).toBe("2026-09");
+  });
+
+  it("ano corrente não terminou; o passado sim, com prazo em 31 de maio", () => {
+    expect(
+      anoDoMei("2026", vendas, { atividade: "INDUSTRIA" }, "2026-12-31")
+        .terminado,
+    ).toBe(false);
+    const passado = anoDoMei(
+      "2026",
+      vendas,
+      { atividade: "INDUSTRIA" },
+      "2027-01-01",
+    );
+    expect(passado.terminado).toBe(true);
+    expect(passado.prazo).toBe("2027-05-31");
+  });
+
+  it("o estado de cada mês, com o guardado e o mudado", () => {
+    const a = anoDoMei(
+      "2026",
+      vendas,
+      { atividade: "INDUSTRIA", guardados: { "2026-09": guardadoSetembro } },
+      "2026-11-05",
+    );
+    const estado = (c: string) =>
+      a.meses.find((m) => m.competencia === c)?.prazo.estado;
+    expect(estado("2026-09")).toBe("guardado");
+    expect(estado("2026-10")).toBe("vence");
+    expect(estado("2026-11")).toBe("aberto");
+
+    const mudado = anoDoMei(
+      "2026",
+      { ...vendas, "2026-09": 225_150 },
+      { atividade: "INDUSTRIA", guardados: { "2026-09": guardadoSetembro } },
+      "2026-11-05",
+    ).meses.find((m) => m.competencia === "2026-09");
+    expect(mudado?.mudou).toBe(true);
+    expect(mudado?.prazo.estado).toBe("atrasado");
+  });
+
+  it("venda desde janeiro, ou desde a abertura, não pede o antes", () => {
+    expect(
+      anoDoMei(
+        "2026",
+        { "2026-01": 100 },
+        { atividade: "INDUSTRIA" },
+        "2026-11-05",
+      ).antes,
+    ).toBeNull();
+    const aberto = anoDoMei(
+      "2026",
+      { "2026-03": 100 },
+      { atividade: "INDUSTRIA", abertura: "2026-03" },
+      "2026-11-05",
+    );
+    expect(aberto.antes).toBeNull();
+    expect(aberto.meses).toHaveLength(12);
+  });
+
+  it("abertura no ano: o antes começa nela", () => {
+    const a = anoDoMei(
+      "2026",
+      vendas,
+      { atividade: "INDUSTRIA", abertura: "2026-03" },
+      "2026-11-05",
+    );
+    expect(a.antes).toEqual({ de: "2026-03", ate: "2026-07", valor: null });
+  });
+
+  it("ano sem dado é vazio", () => {
+    const a = anoDoMei("2025", {}, { atividade: "INDUSTRIA" }, "2026-11-05");
+    expect(a.vazio).toBe(true);
+    expect(a.antes).toBeNull();
+    expect(a.total).toBe(0);
   });
 });

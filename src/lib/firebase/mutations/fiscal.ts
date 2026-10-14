@@ -3,6 +3,7 @@ import { docMei } from "../colecoes";
 import { despachar } from "./despachar";
 import { VERSAO_SCHEMA } from "@/lib/types";
 import type {
+  AntesDoRende,
   AtividadeMei,
   Centavos,
   CompetenciaMensal,
@@ -19,6 +20,8 @@ export interface MudancaMei {
   abertura?: CompetenciaMensal | null;
   /** Só os meses que mudaram: o `merge` funde o mapa chave a chave. */
   notas?: Record<CompetenciaMensal, Centavos>;
+  /** Só o ano que mudou, pelo mesmo `merge` (`DECISOES.md#d362`). */
+  antes?: Record<string, AntesDoRende>;
 }
 
 /**

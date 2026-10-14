@@ -65,6 +65,27 @@ export function consultaTransacoesDoMes(
   );
 }
 
+/**
+ * As vendas de um ano, para o ano do MEI (`DECISOES.md#d362`): só `VENDA`, que
+ * é o que a declaração soma. Só igualdades (o `in` também é uma): o Firestore
+ * junta os índices de campo único, sem índice composto.
+ */
+export function consultaVendasDoAno(contaId: string, ano: string) {
+  return query(
+    colTransacoes(contaId),
+    where("arquivado", "==", false),
+    where("categoria", "==", "VENDA"),
+    where(
+      "competencia",
+      "in",
+      Array.from(
+        { length: 12 },
+        (_, i) => `${ano}-${String(i + 1).padStart(2, "0")}`,
+      ),
+    ),
+  );
+}
+
 /** Os agregados de `de` a `ate`, por id. `global` fica fora porque 'g' > '2'. */
 export function consultaAgregadosDoPeriodo(
   contaId: string,

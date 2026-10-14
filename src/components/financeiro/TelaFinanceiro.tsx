@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
+  CalendarCheck,
   CheckCheck,
   CircleAlert,
   FileText,
@@ -272,8 +273,26 @@ export function TelaFinanceiro() {
     : estadoMei === "guardado"
       ? CheckCheck
       : FileText;
+  // De janeiro a maio, a declaração do ano que passou (`#d362`).
+  const anoDaDeclaracao =
+    ehMesCorrente && hoje.getMonth() < 5
+      ? String(hoje.getFullYear() - 1)
+      : null;
   const peDoMei = (
     <div className="flex flex-col gap-4">
+      {anoDaDeclaracao && (
+        <Link
+          href={`/financeiro/relatorio-mei/${anoDaDeclaracao}`}
+          className={classesBotao({
+            variante: "terciaria",
+            tamanho: "sm",
+            className: "self-start",
+          })}
+        >
+          <CalendarCheck aria-hidden className="size-4" strokeWidth={1.75} />
+          Declaração do MEI de {anoDaDeclaracao}, até 31 de maio
+        </Link>
+      )}
       <Link
         href={`/financeiro/relatorio-mei/${mesDoRelatorio}`}
         className={classesBotao({
@@ -303,7 +322,12 @@ export function TelaFinanceiro() {
       <div className="max-w-md">
         <LimiteDoAnoMei
           compacto
-          limite={limiteDoAno(agregados.dados, competencia, abertura)}
+          limite={limiteDoAno(
+            agregados.dados,
+            competencia,
+            abertura,
+            mei?.antes?.[competencia.slice(0, 4)],
+          )}
           competencia={competencia}
           soVenda={lancamentos.dados.every(
             (l) => l.tipo !== "ENTRADA" || l.categoria === "VENDA",

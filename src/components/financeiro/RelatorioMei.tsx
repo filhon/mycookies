@@ -17,6 +17,7 @@ import { Botao } from "@/components/ui/Botao";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
+import { classesBotao } from "@/components/ui/estilosBotao";
 import {
   competenciaDeISO,
   dataISODe,
@@ -201,6 +202,14 @@ export function RelatorioMei({
       voltar={{ href: "/financeiro", rotulo: "Caixa" }}
       pendente={lancamentos.pendente}
       className="print:hidden"
+      acao={
+        <Link
+          href={`/financeiro/relatorio-mei/${competencia.slice(0, 4)}`}
+          className={classesBotao({ variante: "terciaria", tamanho: "sm" })}
+        >
+          Ver o ano
+        </Link>
+      }
     >
       {/* O mês é a URL: `replace`, para o voltar do aparelho ir ao Caixa. */}
       <SeletorMes
@@ -294,6 +303,7 @@ export function RelatorioMei({
               agregados.dados,
               competencia,
               mei.dado?.abertura,
+              mei.dado?.antes?.[competencia.slice(0, 4)],
             )}
             competencia={competencia}
             soVenda={relatorio.outrasEntradas === 0}
@@ -609,11 +619,35 @@ export function LimiteDoAnoMei({
           {formatarPercentual(limite.percentual, 0)}
         </span>
       </p>
-      {limite.desde && (
+      {/* O campo do "antes" mora no ano: daqui, um link para ele (`#d362`). */}
+      {limite.antes ? (
         <p className="mt-1 max-w-[60ch] text-label text-ink">
-          Somado desde {rotuloMes(limite.desde)}, quando você começou a lançar
-          no Rende. O que entrou antes não está aqui.
+          Inclui{" "}
+          <span className="num font-semibold">
+            {formatarMoeda(limite.antes.valor)}
+          </span>{" "}
+          que você informou de {rotuloMes(limite.antes.de)} a{" "}
+          {rotuloMes(limite.antes.ate)}.{" "}
+          <Link
+            href={`/financeiro/relatorio-mei/${ano}#antes`}
+            className="toque inline-flex items-center font-medium text-brand-ink underline underline-offset-2"
+          >
+            Mudar
+          </Link>
         </p>
+      ) : (
+        limite.desde && (
+          <p className="mt-1 max-w-[60ch] text-label text-ink">
+            Somado desde {rotuloMes(limite.desde)}, quando você começou a lançar
+            no Rende.{" "}
+            <Link
+              href={`/financeiro/relatorio-mei/${ano}#antes`}
+              className="toque inline-flex items-center font-medium text-brand-ink underline underline-offset-2"
+            >
+              Informar o que entrou antes
+            </Link>
+          </p>
+        )
       )}
 
       <div
@@ -941,7 +975,13 @@ function FolhaNotas({
   );
 }
 
-function EmBranco({ rotulo, valor }: { rotulo: string; valor?: string }) {
+export function EmBranco({
+  rotulo,
+  valor,
+}: {
+  rotulo: string;
+  valor?: string;
+}) {
   if (valor) {
     return (
       <p>

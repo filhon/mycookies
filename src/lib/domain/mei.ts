@@ -1,4 +1,5 @@
 import type {
+  AntesDoRende,
   AtividadeMei,
   Centavos,
   CompetenciaMensal,
@@ -255,6 +256,8 @@ export interface LimiteDoAno {
    * que entrou antes de ela lançar no Rende não está na soma (`#d359`).
    */
   desde: CompetenciaMensal | null;
+  /** O que ela informou de antes do Rende, quando é deste ano e já está na soma (`#d362`). */
+  antes: (AntesDoRende & { de: CompetenciaMensal }) | null;
 }
 
 /** `AAAA-MM` com mês de verdade: a abertura digitada à mão passa por aqui. */
@@ -273,17 +276,24 @@ const MESES_PARA_O_RITMO = 3;
  *
  * Com `abertura` no mesmo ano, o teto é `LIMITE_MEI_POR_MES` vezes os meses
  * de lá até dezembro, o da abertura inteiro (LC 123/2006, art. 18-A, §2º).
+ *
+ * `antes` (`#d362`) entra inteiro em qualquer mês do ano, mesmo num mês que ele
+ * cobre só em parte: erra pra cima, que é o lado seguro. Com ele, `desde` some.
  */
 export function limiteDoAno(
   agregados: { id: string; entradas?: Centavos }[],
   ate: CompetenciaMensal,
   abertura?: CompetenciaMensal,
+  antesDoAno?: AntesDoRende,
 ): LimiteDoAno {
   const ano = ate.slice(0, 4);
   const doAno = agregados
     .filter((a) => a.id >= `${ano}-01` && a.id <= ate)
     .sort((a, b) => (a.id < b.id ? -1 : 1));
-  const entradas = doAno.reduce((soma, a) => soma + (a.entradas ?? 0), 0);
+  const antes = antesDoAno?.ate.startsWith(ano) ? antesDoAno : null;
+  const entradas =
+    doAno.reduce((soma, a) => soma + (a.entradas ?? 0), 0) +
+    (antes?.valor ?? 0);
 
   const proporcional = ehCompetencia(abertura) && abertura.startsWith(ano);
   const teto = proporcional
@@ -292,6 +302,14 @@ export function limiteDoAno(
 
   const inicio = proporcional ? abertura : `${ano}-01`;
   const primeiro = doAno.find((a) => (a.entradas ?? 0) > 0)?.id;
+  // Os meses que o "antes" cobre contam para o ritmo, e os agregados deles não.
+  const meses = antes
+    ? doAno.filter((a) => a.id > antes.ate).length +
+      Math.max(
+        0,
+        Number(antes.ate.slice(5, 7)) - Number(inicio.slice(5, 7)) + 1,
+      )
+    : doAno.length;
 
   return {
     entradas,
@@ -299,9 +317,7 @@ export function limiteDoAno(
     proporcional,
     percentual: (entradas / teto) * 100,
     ritmo:
-      doAno.length >= MESES_PARA_O_RITMO
-        ? Math.round((entradas / doAno.length) * 12)
-        : null,
+      meses >= MESES_PARA_O_RITMO ? Math.round((entradas / meses) * 12) : null,
     // Em centavos, e não pelo percentual: 80% de 81 mil é conta exata.
     estado:
       entradas > teto
@@ -309,7 +325,128 @@ export function limiteDoAno(
         : entradas * 10 >= teto * 8
           ? "perto"
           : "dentro",
-    desde: primeiro && primeiro > inicio ? primeiro : null,
+    desde: !antes && primeiro && primeiro > inicio ? primeiro : null,
+    antes: antes && { ...antes, de: inicio },
+  };
+}
+
+/** A DASN-SIMEI do ano vence em 31 de maio do ano seguinte. */
+export function prazoDaDeclaracao(ano: string): DataISO {
+  return `${Number(ano) + 1}-05-31`;
+}
+
+export interface MesDoAno {
+  competencia: CompetenciaMensal;
+  /** As vendas do mês, como a linha X do relatório. */
+  vendas: Centavos;
+  prazo: PrazoDoRelatorio;
+  /** Guardado e mudado depois: a linha diz, com o triângulo (`#d360`). */
+  mudou: boolean;
+}
+
+export interface AnoDoMei {
+  /** `false` enquanto o ano corre: a tela diz "Até agora" e não mostra o prazo. */
+  terminado: boolean;
+  /** 31 de maio do ano seguinte. */
+  prazo: DataISO;
+  /** Os campos da DASN-SIMEI: comércio e indústria somam juntos; serviço é zero. */
+  comercioEIndustria: Centavos;
+  servicos: Centavos;
+  total: Centavos;
+  /**
+   * A linha "antes do Rende": de `de` a `ate`, com o valor informado ou `null`
+   * para pedir. Só quando o primeiro mês com venda é depois de janeiro e da
+   * abertura, ou quando ela já informou.
+   */
+  antes: {
+    de: CompetenciaMensal;
+    ate: CompetenciaMensal;
+    valor: Centavos | null;
+  } | null;
+  /** Os meses depois do "antes", até dezembro. */
+  meses: MesDoAno[];
+  /** Nem venda nem "antes" no ano. */
+  vazio: boolean;
+}
+
+/**
+ * O ano do MEI (`#d362`): os doze meses, cada um com o estado do relatório, e
+ * os números que a declaração anual pede. As vendas vêm por mês, somadas como
+ * o relatório (só `VENDA`, bruto). Os meses que o "antes" cobre saem da lista e
+ * da soma: o valor informado toma o lugar deles, sem contar duas vezes.
+ */
+export function anoDoMei(
+  ano: string,
+  vendasPorMes: Record<CompetenciaMensal, Centavos>,
+  mei: {
+    atividade: AtividadeMei;
+    abertura?: CompetenciaMensal;
+    antes?: Record<string, AntesDoRende>;
+    notas?: Record<CompetenciaMensal, Centavos>;
+    guardados?: Record<
+      CompetenciaMensal,
+      Omit<GuardadoMei, "em"> & { em: DataISO }
+    >;
+  },
+  hojeISO: DataISO,
+): AnoDoMei {
+  const doze = Array.from(
+    { length: 12 },
+    (_, i): CompetenciaMensal => `${ano}-${String(i + 1).padStart(2, "0")}`,
+  );
+  const inicio =
+    ehCompetencia(mei.abertura) && mei.abertura.startsWith(ano)
+      ? mei.abertura
+      : `${ano}-01`;
+  const primeiro = doze.find((c) => (vendasPorMes[c] ?? 0) > 0);
+  const informado = mei.antes?.[ano];
+  const antes = informado
+    ? { de: inicio, ate: informado.ate, valor: informado.valor }
+    : primeiro && primeiro > inicio
+      ? { de: inicio, ate: competenciaVizinha(primeiro, -1), valor: null }
+      : null;
+
+  const meses = doze
+    .filter((c) => !antes || c > antes.ate)
+    .map((competencia): MesDoAno => {
+      const vendas = vendasPorMes[competencia] ?? 0;
+      const guardado = mei.guardados?.[competencia];
+      const mudou =
+        !!guardado &&
+        mudouDepoisDeGuardado(
+          guardado,
+          relatorioMei(
+            [{ tipo: "ENTRADA", categoria: "VENDA", valor: vendas }],
+            {
+              atividade: mei.atividade,
+              comNota: mei.notas?.[competencia] ?? 0,
+            },
+          ),
+          mei.atividade,
+        );
+      return {
+        competencia,
+        vendas,
+        prazo: prazoDoRelatorio(
+          competencia,
+          hojeISO,
+          guardado && { em: guardado.em, mudou },
+        ),
+        mudou,
+      };
+    });
+
+  const comercioEIndustria =
+    (antes?.valor ?? 0) + meses.reduce((soma, m) => soma + m.vendas, 0);
+  return {
+    terminado: hojeISO > `${ano}-12-31`,
+    prazo: prazoDaDeclaracao(ano),
+    comercioEIndustria,
+    servicos: 0,
+    total: comercioEIndustria,
+    antes,
+    meses,
+    vazio: !primeiro && !informado,
   };
 }
 

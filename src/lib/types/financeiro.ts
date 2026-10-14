@@ -219,7 +219,16 @@ export interface DadosMei {
   notas?: Record<CompetenciaMensal, Centavos>;
   /** "Já imprimi e guardei": o que estava no papel, por competência (`#d360`). */
   guardados?: Record<CompetenciaMensal, GuardadoMei>;
+  /** O que entrou antes do Rende, por ano (`AAAA`), informado uma vez (`#d362`). */
+  antes?: Record<string, AntesDoRende>;
   atualizadoEm: Timestamp;
+}
+
+/** "Quanto você vendeu de janeiro a julho?" (`DECISOES.md#d362`). */
+export interface AntesDoRende {
+  /** O último mês que o valor cobre. */
+  ate: CompetenciaMensal;
+  valor: Centavos;
 }
 
 /** O retrato do relatório que ela imprimiu e guardou (`DECISOES.md#d360`). */

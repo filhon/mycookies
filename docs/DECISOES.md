@@ -11785,3 +11785,57 @@ documentos fiscais comprobatórios das entradas de mercadorias…", e o Rende l�
 
 **Consequência.** O Rende não guarda a foto nem o XML (`#d52`), não vê as notas de venda e não
 baixa nota pela chave (spec 152, "Fora de escopo").
+
+## D362 · O ano do MEI
+
+**Status:** vigente · decidida em 2026-10-14, spec `153-o-ano-do-mei.md`.
+Aprovações da spec tomadas como dadas pelo pedido de implementá-la: (1) o schema aditivo
+`DadosMei.antes`; (2) o texto. Nenhuma regra, índice ou dependência.
+
+**Contexto.** A DASN-SIMEI vence em 31 de maio e pede a receita bruta do ano. O Rende tinha os
+doze meses e mandava ela somar de memória; o ano que ele não viu (antes de ela lançar) deixava o
+limite e a declaração curtos; e para saber quais relatórios faltavam, eram doze telas.
+
+**Decisão.**
+
+- **A rota.** `[competencia]` aceita `AAAA` (abre `AnoDoMei`) e `AAAA-MM` (o relatório do
+  mês); o resto é 404. A seta do ano não passa do ano corrente (a spec desenhava "2027 ›"; um ano
+  que não começou não tem o que mostrar). Chega-se por "Ver o ano" (terciário, `acao` do
+  cabeçalho do mês) e, no pé do Caixa de janeiro a maio, por "Declaração do MEI de {ano
+  anterior}, até 31 de maio".
+- **`anoDoMei(ano, vendasPorMes, mei, hojeISO)`** em `domain/mei.ts`: o estado de cada mês é
+  `prazoDoRelatorio` com o `mudou` de `mudouDepoisDeGuardado`, sobre um relatório refeito das
+  vendas do mês e da nota guardada. Os campos da declaração: comércio e indústria somam juntos
+  (a atividade não muda o campo), serviços é zero, o total é a soma. Ano não terminado: "Até
+  agora em 2026", sem o prazo.
+- **Os rótulos da DASN-SIMEI** ("Receita bruta total de comércio, indústria e serviço de
+  transporte intermunicipal e interestadual", "Receita bruta total de prestação de serviços",
+  "Receita bruta total") vieram de manuais de terceiros (Jettax, Alterdata, Econet), não do
+  portal, que pede login gov.br. O roteiro confere no portal; se mudarem, são três constantes no
+  topo de `AnoDoMei.tsx`. "Copiar os números" copia as três linhas, rótulo e valor.
+- **O que entrou antes do Rende.** Quando o primeiro mês com venda é depois de janeiro (ou da
+  abertura no ano), a lista começa com "janeiro a julho · antes do Rende" e o campo "Quanto você
+  vendeu de janeiro a julho?". Grava por "Guardar", e não a cada dígito como a nota do mês: a
+  linha fecha quando o valor chega. `antes["2026"] = { ate, valor }`. **Os meses que o "antes"
+  cobre saem da lista e da soma**: se depois aparecer venda lançada em julho, ela não conta duas
+  vezes; o valor informado manda até "Mudar". Zero é um valor válido ("não vendi").
+- **`limiteDoAno(…, antesDoAno)`** soma o "antes" do mesmo ano em qualquer mês, mesmo no que ele
+  cobre só em parte: erra pra cima. O ritmo conta os meses do "antes" e os agregados depois dele.
+  Com "antes", `desde` some e a frase vira "Inclui R$ 9.300,00 que você informou de janeiro a
+  julho. Mudar"; sem ele, "Somado desde agosto, quando você começou a lançar no Rende. Informar o
+  que entrou antes". Os dois são link para `/financeiro/relatorio-mei/AAAA#antes`, e a linha rola
+  até a vista quando chega com o `#antes` (a lista nasce depois da navegação).
+- **A leitura.** `consultaVendasDoAno`: `arquivado == false`, `categoria == "VENDA"`,
+  `competencia in [doze meses]`. Só igualdades: o Firestore junta índices de campo único, e não
+  há índice composto novo. Lê só as vendas (algumas centenas por ano), não as saídas; o agregado
+  continua sem a quebra por categoria de entrada, e a mudança de schema que a spec previa como
+  alternativa não foi preciso pedir.
+- **Ano vazio** (nem venda nem "antes"): no ano passado, "2025 ficou antes do Rende." e "O Rende
+  começou a somar em agosto de 2026." pelo primeiro agregado com entrada nos anos seguintes, com
+  "Ver 2026"; no corrente, "As vendas do ano aparecem aqui."
+- **Imprimir o ano**: uma `.folha` que só existe no papel (`hidden print:flex`), com CNPJ, nome,
+  os meses (o "antes" na primeira linha, o estado do relatório e a receita) e os três campos. A
+  tela não mostra a prévia: a lista já diz o mesmo.
+
+**Consequência.** O Rende não preenche a DASN (login gov.br), não pergunta do empregado e não
+separa ano com atividade mista (spec 153, "Fora de escopo").

@@ -102,10 +102,10 @@ classe `.folha`, para levar ao contador. O primário da tela é "Copiar os núme
 
 ## Critérios de aceite
 
-- [ ] Ano e mês na mesma rota; 404 fora dos dois formatos.
-- [ ] Números da declaração derivados, com o "antes" informado uma vez.
-- [ ] Limite do ano inclui o "antes".
-- [ ] Portão; `#d362`; `ESTADO.md`; uma linha em `novidades.ts`.
+- [x] Ano e mês na mesma rota; 404 fora dos dois formatos.
+- [x] Números da declaração derivados, com o "antes" informado uma vez.
+- [x] Limite do ano inclui o "antes".
+- [x] Portão; `#d362`; `ESTADO.md`; uma linha em `novidades.ts`.
 
 ## Fora de escopo
 
