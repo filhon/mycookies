@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 import { RESPONSAVEL } from "@/app/(auth)/responsavel";
 import { Logotipo } from "@/components/marca/Marca";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -24,12 +24,15 @@ export function MolduraDeEntrada({
   titulo,
   descricao,
   painel,
+  refTitulo,
   children,
 }: {
   titulo: string;
   descricao: ReactNode;
   /** Entre o logotipo e a frase, só no desktop (`DECISOES.md#d194`). */
   painel?: ReactNode;
+  /** Para a tela que anuncia o título ao chegar (`DECISOES.md#d368`). */
+  refTitulo?: Ref<HTMLHeadingElement>;
   children: ReactNode;
 }) {
   return (
@@ -40,7 +43,11 @@ export function MolduraDeEntrada({
             <Logotipo tamanho="md" />
           </div>
 
-          <h1 className="font-display text-title font-semibold text-ink">
+          <h1
+            ref={refTitulo}
+            tabIndex={refTitulo ? -1 : undefined}
+            className="font-display text-title font-semibold text-ink outline-none"
+          >
             {titulo}
           </h1>
           <p className="mt-1.5 text-body text-ink-muted">{descricao}</p>

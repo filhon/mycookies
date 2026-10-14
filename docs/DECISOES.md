@@ -6065,6 +6065,10 @@ salva, e o "Salvar e entrar" seguinte só entra: o código já foi gasto, e mand
 do link, sem passar pelo `sair()` que apaga o cache local (`#d118`). Não foi tratado: hoje as
 contas são uma por pessoa e por aparelho; se o caso aparecer, a tela pede para sair antes.
 
+> **Revisão (spec 157, `#d368`):** "não há tela de sucesso" deixou de valer. Salvar e entrar
+> continua um toque só, mas depois de `entrar()` a tela não navega: mostra "Senha trocada" com
+> "Abrir o Rende", e a frase do app instalado saiu de antes do botão para a tela de pronto.
+
 ---
 
 ## D198 · Google, e só o Google
@@ -11990,3 +11994,83 @@ era o segundo sinal, saiu. Ordem e número de campos iguais; "Nome do negócio" 
 
 **Consequência.** Login e cadastro falam a mesma língua nos obrigatórios. Um campo opcional novo
 no cadastro diz que é opcional pela dica, como o do negócio.
+
+---
+
+## D368 · A senha trocada tem tela de pronto
+
+**Status:** vigente · decidida em 2026-10-14, spec `157-a-senha-trocada.md`. Revisa o `#d197` na
+parte "não há tela de sucesso". Aprovação tomada como dada pelo pedido de implementar a spec.
+
+**Contexto.** "Salvar e entrar" caía em Hoje sem nenhuma frase dizendo que a senha mudou, e,
+sem um fim, a frase do app instalado ia antes do botão: todas liam duas linhas sobre um caso de
+poucas antes de saber se deu certo.
+
+**Decisão.** Depois de `entrar()`, o estado `pronta`: "Senha trocada", "Você já entrou como
+**{email}**.", primário "Abrir o Rende" (`Link` com `replace` para `/`) e, embaixo, "Se o Rende
+pedir a senha em outro aparelho ou no app instalado, é esta nova." (verdade nos dois: no Android
+o app instalado divide a sessão com o Chrome; no iPhone tem a dele e pede). O código gasto sai
+da barra e do histórico por `history.replaceState(null, "", "/redefinir-senha")`; recarregar cai
+em "Você já entrou" (`#d369`). O foco vai ao `h1` ao chegar (`tabIndex={-1}`, `outline-none`),
+pelo `refTitulo` opcional que a `MolduraDeEntrada` ganhou; nada mais mudou na moldura. **Sem
+redirecionamento automático**: o toque a mais é o preço da confirmação.
+
+**Consequência.** A 158 (o aviso por e-mail) acrescenta uma linha a esta tela. O `history`
+mexido à mão passa pelo `replaceState` que o Next sincroniza com `useSearchParams`: sem os
+parâmetros, a conferência não roda de novo, e o estado `pronta` fica.
+
+---
+
+## D369 · O link que não vale mais manda outro ali mesmo
+
+**Status:** vigente · decidida em 2026-10-14, spec `157-a-senha-trocada.md`.
+
+**Contexto.** "Este link já foi usado ou venceu. Peça outro na tela de entrar." era um beco: ela
+voltava ao login, redigitava o e-mail e procurava "Esqueci minha senha". O caso mais comum de "já
+usado" é ela tocando de novo no mesmo e-mail depois de trocar a senha, logada neste navegador.
+
+**Decisão.** Três caras, decididas na hora de montar, depois de `carregando` acabar (senão o
+formulário pisca para quem já entrou):
+
+- com `usuario`: "Você já entrou", "Este link já foi usado. Você está no Rende como **{email}**.",
+  primário "Abrir o Rende";
+- `auth/expired-action-code`: "Este link venceu", "Ele vale por uma hora…";
+- os outros (`invalid-action-code`, `user-not-found`, parâmetros faltando): "Este link não vale
+  mais", "Ele funciona uma vez…".
+
+Nas duas últimas, `Campo` "E-mail", "Mandar outro link" e a região `aria-live` sempre montada com a
+resposta, que é `AVISO_ENVIO` exista ou não a conta (`#d143`); embaixo, "Ir para a tela de
+entrar". `Estado.invalido` ganhou `motivo`. Para não haver dois donos, `senhaPeloRende`, a reserva
+`sendPasswordResetEmail` e `AVISO_ENVIO` saíram do login para
+`components/auth/pedirSenhaNova.ts`, que devolve a frase a mostrar; o login a chama e não mudou.
+
+Sem rede, a tela não espera um toque: com `auth/network-request-failed`, o parágrafo do login sem
+rede (`CloudOff` em `text-attention`) e a conferência refeita no evento `online` da janela, o mesmo
+que o `useConexao()` escuta, ouvido só enquanto a tela está nesse estado (um `setState` no efeito
+do `useConexao` faria o mesmo com mais peças). "Tentar de novo" fica: `navigator.onLine` mente.
+Falha que não é de rede e falha ao salvar ganham `CircleAlert` antes da frase.
+
+**Consequência.** O `erro` do `CampoSenha` continua sem ícone: mexer no `Envelope` é todo campo do
+app, spec própria.
+
+---
+
+## D370 · A senha óbvia é recusada
+
+**Status:** vigente · decidida em 2026-10-14, spec `157-a-senha-trocada.md`. Lista e frase
+aprovadas pelo pedido de implementar a spec.
+
+**Contexto.** Quem esqueceu a senha escolhe a que não vai esquecer, e o mínimo do Firebase (6)
+aceita `123456`. O Rende guarda preço, caixa e clientes de um negócio.
+
+**Decisão.** `senhaComum(senha, email)` em `domain/senha.ts`, pura: em minúsculas e sem as pontas,
+verdadeira para a lista fixa de 23 (sequências, `senha123`, `mudar123`, `brasil`, `rende123`…),
+para um caractere só repetido e para a parte local do e-mail com ou sem `123`. Recusada no envio,
+como o "menos de 6", com "Essa senha é das primeiras que alguém tenta. Escolha outra."
+(`RECUSA_SENHA_COMUM`, a mesma constante nas duas telas). Vale em `/redefinir-senha` e em
+`/cadastro`, no mesmo ramo da validação de senha: recusar num e aceitar no outro seria a regra pela
+metade. Sem medidor e sem lista na tela (`#d366`); a dica continua "Pelo menos 6 caracteres.".
+
+**Consequência.** Senhas já gravadas não são tocadas, e o login não confere nada. Consultar senhas
+vazadas (rede no envio, serviço externo) e subir o mínimo para 8 (política do projeto no Firebase)
+ficaram fora.

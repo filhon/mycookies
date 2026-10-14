@@ -4,26 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { CloudOff } from "lucide-react";
-import { sendPasswordResetEmail } from "firebase/auth";
 import { BotaoGoogle } from "@/components/auth/BotaoGoogle";
 import { MolduraDeEntrada } from "@/components/auth/MolduraDeEntrada";
+import { pedirSenhaNova } from "@/components/auth/pedirSenhaNova";
 import { ContaAberta } from "@/components/site/ContaAberta";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, CampoSenha, focarPrimeiroErro } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
-import { obterAuth } from "@/lib/firebase/client";
 import { useConexao } from "@/lib/hooks/useDispositivo";
 import { traduzirErroAuth, useAuth } from "@/providers/AuthProvider";
-
-/**
- * A mesma frase existindo ou não o cadastro.
- *
- * Um "esse e-mail não está cadastrado" seria o sistema confirmando, para quem
- * digitou, quem tem conta aqui. O que ela precisa saber é o que fazer agora, e
- * isso não depende da resposta.
- */
-const AVISO_ENVIO =
-  "Se houver uma conta com esse e-mail, o link para criar uma senha nova chega em instantes. Vale olhar também na caixa de spam.";
 
 /** As falhas em que a saída é a senha nova, e não tentar de novo. */
 const FALHAS_COM_SAIDA = new Set([
@@ -37,21 +26,6 @@ function codigoDe(falha: unknown): string {
   return typeof falha === "object" && falha !== null && "code" in falha
     ? String((falha as { code: unknown }).code)
     : "";
-}
-
-/** `true` quando o Rende mandou (ou nem precisava mandar); senão, a reserva. */
-async function senhaPeloRende(email: string): Promise<boolean> {
-  try {
-    const resposta = await fetch("/api/senha", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-    return resposta.ok;
-  } catch {
-    // Sem rede: a reserva também cai, e a frase de rede é a dela.
-    return false;
-  }
 }
 
 export default function PaginaLogin() {
@@ -144,25 +118,8 @@ export default function PaginaLogin() {
     }
 
     setRecuperando(true);
-    try {
-      if (!(await senhaPeloRende(email))) {
-        await sendPasswordResetEmail(obterAuth(), email);
-      }
-      setAvisoSenha(AVISO_ENVIO);
-    } catch (erro) {
-      // Cadastro inexistente devolve a mesma frase do envio: quem pergunta pelo
-      // e-mail de outra pessoa não sai daqui sabendo mais do que entrou.
-      setAvisoSenha(
-        codigoDe(erro) === "auth/user-not-found"
-          ? AVISO_ENVIO
-          : traduzirErroAuth(
-              erro,
-              "Não deu para enviar agora. Tente de novo em instantes.",
-            ),
-      );
-    } finally {
-      setRecuperando(false);
-    }
+    setAvisoSenha(await pedirSenhaNova(email));
+    setRecuperando(false);
   }
 
   return (

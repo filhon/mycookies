@@ -23,6 +23,7 @@ import { exemploDoRascunho } from "@/lib/domain/calculadora";
 import { EXEMPLO } from "@/lib/domain/exemplo";
 import { formatarMoeda } from "@/lib/domain/money";
 import { calcularPrecoSugerido } from "@/lib/domain/precificacao";
+import { RECUSA_SENHA_COMUM, senhaComum } from "@/lib/domain/senha";
 import { obterAuth } from "@/lib/firebase/client";
 import { useRascunhoDaPorta } from "@/lib/utils/rascunhoDaPorta";
 import { traduzirErroAuth, useAuth } from "@/providers/AuthProvider";
@@ -89,7 +90,9 @@ export default function PaginaCadastro() {
           ? "Escreva uma senha."
           : senha.length < 6
             ? traduzirErroAuth({ code: "auth/weak-password" })
-            : undefined,
+            : senhaComum(senha, email)
+              ? RECUSA_SENHA_COMUM
+              : undefined,
       nome: nome.trim() ? undefined : "Escreva o seu nome.",
       termos: termos ? undefined : "Marque a caixa para aceitar os termos.",
     };
