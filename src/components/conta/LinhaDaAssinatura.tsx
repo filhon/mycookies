@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronRight, CreditCard, Plus, TriangleAlert } from "lucide-react";
 import { Botao } from "@/components/ui/Botao";
 import { Esqueleto } from "@/components/ui/Esqueleto";
@@ -62,6 +62,7 @@ export function LinhaDaAssinatura({
   }
 
   // No toque, e não num efeito: a cada abertura, o que o Stripe diz agora.
+  // A exceção é quem chega de `/assinatura` (`#d372`): abre uma vez, na montagem.
   async function abrir() {
     setAberto(true);
     if (!usuario) return;
@@ -74,6 +75,16 @@ export function LinhaDaAssinatura({
     if (tabela) setPrecos(tabela);
     setCarregando(false);
   }
+
+  const linha = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (location.hash !== "#assinatura") return;
+    // A tela chega antes da lista: o `#` do navegador não acha a linha sozinho.
+    linha.current?.scrollIntoView({ block: "start" });
+    const quadro = requestAnimationFrame(() => void abrir());
+    return () => cancelAnimationFrame(quadro);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez, na montagem
+  }, []);
 
   async function abrirPortal(qual: "completo" | "portal") {
     if (!usuario) return;
@@ -122,9 +133,11 @@ export function LinhaDaAssinatura({
   return (
     <>
       <button
+        ref={linha}
+        id="assinatura"
         type="button"
         onClick={() => void abrir()}
-        className="flex w-full items-center gap-3 border-t border-line px-4 py-4 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:px-5"
+        className="flex w-full scroll-mt-[calc(var(--fundo-cabecalho,0px)+1rem)] items-center gap-3 border-t border-line px-4 py-4 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken lg:px-5"
       >
         <CreditCard
           aria-hidden

@@ -12101,3 +12101,29 @@ pelo botão seguinte, dentro dos 15 minutos. Qualquer outra coisa que mova `toke
 (um `revokeRefreshTokens` futuro, troca de e-mail) também abriria a janela: hoje o código não faz
 nenhuma das duas. Botão "não fui eu", aparelho ou cidade no aviso e aviso de entrada nova ficaram
 fora.
+
+## D372 · A assinante lê a assinatura num lugar só
+
+**Status:** vigente · decidida em 2026-10-14, spec `159-a-assinatura-de-quem-ja-assina.md`.
+
+**Contexto.** `/assinatura` tinha um quarto estado, "Sua assinatura está ativa", com o nome do plano
+e um "Gerenciar assinatura" âmbar que só saía para o Stripe. O painel "Assinatura" da Configuração
+(`#d285`) já dizia valor, período, cobrança, cartão, cortesia e cancelamento marcado. A tela velha
+dizia menos e mentia para a cortesia ("Trocar o cartão…" para quem não tem cartão). E o rodapé da
+moldura perguntava "Não consegue entrar?" a quem já tinha entrado.
+
+**Decisão.** A assinante (não a ajudante, que continua indo para `/`) que abre `/assinatura` faz
+`router.replace("/configuracao#assinatura")`. `LinhaDaAssinatura` tem `id="assinatura"` e, achando
+esse `#` na montagem, rola até a linha e chama o mesmo `abrir()` do toque, num
+`requestAnimationFrame` com limpeza: chamar direto no efeito fere `react-hooks/set-state-in-effect`,
+e a limpeza evita ler o Stripe duas vezes no StrictMode. O rolar é à mão porque a linha só existe
+depois que a conta carrega, quando o navegador já desistiu da âncora. Reabrir num recarregar com o
+`#` ainda na barra é aceito. `MolduraDeEntrada` ganhou `ajuda?: { pergunta, texto }`; ausente, é o
+de quem está do lado de fora. `AJUDA_DA_ASSINATURA` ("Dúvida sobre o plano?") mora na moldura e não
+na página: arquivo de página do Next não exporta nada além do componente.
+
+**Consequência.** Os três caminhos que levavam a assinante a `/assinatura` (e-mail antigo do fim do
+teste, `cancel_url` de um checkout aberto antes de assinar por outro aparelho, endereço digitado)
+caem no painel inteiro. Os links do app para `/assinatura` (faixa do teste, barra lateral,
+Configuração) já eram só do teste. Repetir o painel dentro de `/assinatura` ficou fora: seriam dois
+componentes para manter iguais.

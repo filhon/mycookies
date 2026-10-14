@@ -593,7 +593,7 @@ function FolhaDoAno({
         </tbody>
       </table>
 
-      <h3 className="mt-[18pt] border-b border-line-strong pb-[4pt] text-[8.5pt] font-bold tracking-[0.04em]">
+      <h3 className="mt-6 border-b border-line-strong pb-[4pt] text-[8.5pt] font-bold tracking-[0.04em]">
         {doAno.terminado
           ? `PARA A DECLARAÇÃO ANUAL (DASN-SIMEI), ATÉ ${rotuloDataCompleta(doAno.prazo).toUpperCase()}`
           : `ATÉ AGORA EM ${ano}`}

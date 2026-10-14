@@ -4,14 +4,24 @@ import { Logotipo } from "@/components/marca/Marca";
 import { classesBotao } from "@/components/ui/estilosBotao";
 
 /** O texto pronto não leva o e-mail dela: quem abre o link decide o que contar. */
-const TEXTO_AJUDA = encodeURIComponent(
-  "Oi, não estou conseguindo entrar no Rende.",
-);
+const AJUDA_DE_QUEM_NAO_ENTROU = {
+  pergunta: "Não consegue entrar?",
+  texto: "Oi, não estou conseguindo entrar no Rende.",
+};
+
+/** O rodapé de quem já entrou: `/assinatura` e `confirmando` (`DECISOES.md#d372`). */
+export const AJUDA_DA_ASSINATURA = {
+  pergunta: "Dúvida sobre o plano?",
+  texto: "Oi, tenho uma dúvida sobre a assinatura do Rende.",
+};
 
 /** WhatsApp quando há número; sem ele, o e-mail (`DECISOES.md#d195`). */
-const LINK_AJUDA = RESPONSAVEL.whatsapp
-  ? `https://wa.me/${RESPONSAVEL.whatsapp}?text=${TEXTO_AJUDA}`
-  : `mailto:${RESPONSAVEL.email}?subject=${TEXTO_AJUDA}`;
+function linkDaAjuda(texto: string) {
+  const codificado = encodeURIComponent(texto);
+  return RESPONSAVEL.whatsapp
+    ? `https://wa.me/${RESPONSAVEL.whatsapp}?text=${codificado}`
+    : `mailto:${RESPONSAVEL.email}?subject=${codificado}`;
+}
 
 const CLASSE_LINK = classesBotao({ variante: "terciaria", tamanho: "sm" });
 
@@ -25,6 +35,7 @@ export function MolduraDeEntrada({
   descricao,
   painel,
   refTitulo,
+  ajuda = AJUDA_DE_QUEM_NAO_ENTROU,
   children,
 }: {
   titulo: string;
@@ -33,6 +44,8 @@ export function MolduraDeEntrada({
   painel?: ReactNode;
   /** Para a tela que anuncia o título ao chegar (`DECISOES.md#d368`). */
   refTitulo?: Ref<HTMLHeadingElement>;
+  /** Ausente, a pergunta de quem está do lado de fora. */
+  ajuda?: { pergunta: string; texto: string };
   children: ReactNode;
 }) {
   return (
@@ -62,9 +75,9 @@ export function MolduraDeEntrada({
             e sem ponto sozinho no fim; acima, uma linha com o ponto. */}
         <footer className="mt-10 flex flex-wrap items-center justify-center gap-x-1 gap-y-2 text-label text-ink-muted max-sm:flex-col">
           <span className="flex items-center gap-x-1">
-            Não consegue entrar?
+            {ajuda.pergunta}
             <a
-              href={LINK_AJUDA}
+              href={linkDaAjuda(ajuda.texto)}
               target="_blank"
               rel="noopener"
               className={CLASSE_LINK}

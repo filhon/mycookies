@@ -2,7 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { MolduraDeEntrada } from "@/components/auth/MolduraDeEntrada";
+import {
+  AJUDA_DA_ASSINATURA,
+  MolduraDeEntrada,
+} from "@/components/auth/MolduraDeEntrada";
 import { Simbolo } from "@/components/marca/Marca";
 import { Botao } from "@/components/ui/Botao";
 import { situacaoDaConta } from "@/lib/domain/assinatura";
@@ -85,6 +88,7 @@ export default function PaginaConfirmandoAssinatura() {
     <MolduraDeEntrada
       titulo="Pagamento recebido"
       descricao="Liberando sua conta…"
+      ajuda={AJUDA_DA_ASSINATURA}
     >
       {/* Viva desde o início: o aviso dos 45 s é lido quando aparece. */}
       <div aria-live="polite" className="mt-8 flex flex-col items-center gap-4">

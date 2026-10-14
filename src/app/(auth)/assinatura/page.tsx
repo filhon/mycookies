@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, type ReactNode } from "react";
-import { MolduraDeEntrada } from "@/components/auth/MolduraDeEntrada";
+import {
+  AJUDA_DA_ASSINATURA,
+  MolduraDeEntrada,
+} from "@/components/auth/MolduraDeEntrada";
 import { MeusDados } from "@/components/conta/MeusDados";
 import { Simbolo } from "@/components/marca/Marca";
 import { Botao } from "@/components/ui/Botao";
@@ -29,8 +32,9 @@ type Precos = Record<Pacote, Record<Periodo, number>>;
 const PACOTES: Pacote[] = ["ESSENCIAL", "COMPLETO"];
 
 /**
- * A tela de quatro estados (spec 028, 3.5): teste, teste vencido, assinatura
- * vencida e assinante. `livre` não tem o que ver — sai sozinha para `/`.
+ * A tela de três estados (spec 028, 3.5): teste, teste vencido e assinatura
+ * vencida. `livre` não tem o que ver — sai sozinha para `/`; a assinante vai
+ * ao painel da Configuração (spec 159).
  *
  * Fora do shell, em `(auth)`, com `MolduraDeEntrada`: a terceira tela que o
  * comentário dela esperava.
@@ -98,9 +102,13 @@ export default function PaginaAssinatura() {
   const semNadaAVer =
     situacao?.tipo === "livre" || (ajudante && situacao?.tipo !== "vencida");
 
+  // A assinante lê a assinatura num lugar só, o painel da Configuração (`#d372`).
+  const paraOPainel = !semNadaAVer && situacao?.tipo === "assinante";
+
   useEffect(() => {
     if (semNadaAVer) router.replace("/");
-  }, [semNadaAVer, router]);
+    else if (paraOPainel) router.replace("/configuracao#assinatura");
+  }, [semNadaAVer, paraOPainel, router]);
 
   async function aoSair() {
     setSairPendente(false);
@@ -148,7 +156,14 @@ export default function PaginaAssinatura() {
   const gerenciar = () =>
     abrirUrl("/api/assinatura/portal", { contaId }, "portal");
 
-  if (carregando || !usuario || !contaId || !situacao || semNadaAVer) {
+  if (
+    carregando ||
+    !usuario ||
+    !contaId ||
+    !situacao ||
+    semNadaAVer ||
+    paraOPainel
+  ) {
     return (
       <div
         role="status"
@@ -276,7 +291,8 @@ export default function PaginaAssinatura() {
         </div>
       </>
     );
-  } else if (situacao.tipo === "vencida" && situacao.foi === "assinatura") {
+  } else {
+    // A assinatura vencida: assinante e `livre` saíram acima, sem tela.
     titulo = "Não conseguimos renovar sua assinatura";
     descricao = "Atualize a forma de pagamento e o acesso volta sozinho.";
     acoes = (
@@ -303,37 +319,14 @@ export default function PaginaAssinatura() {
         </Botao>
       </div>
     );
-  } else {
-    // assinante
-    titulo = "Sua assinatura está ativa";
-    // O `else` não estreita a união: as duas vencidas saíram pelos `&&` acima.
-    const pacote =
-      situacao.tipo === "assinante" ? situacao.pacote : "ESSENCIAL";
-    descricao = `Você está no plano ${NOME_DO_PACOTE[pacote]}. Trocar o cartão, mudar de plano ou cancelar é no portal de pagamento.`;
-    acoes = (
-      <div className="mt-8 space-y-3">
-        <Botao
-          variante="primaria"
-          tamanho="lg"
-          larguraTotal
-          onClick={gerenciar}
-          carregando={enviando === "portal"}
-          disabled={enviando !== null}
-        >
-          Gerenciar assinatura
-        </Botao>
-        <Link
-          href="/configuracao"
-          className={cn(classesBotao({ tamanho: "lg" }), "w-full")}
-        >
-          Voltar para Configuração
-        </Link>
-      </div>
-    );
   }
 
   return (
-    <MolduraDeEntrada titulo={titulo} descricao={descricao}>
+    <MolduraDeEntrada
+      titulo={titulo}
+      descricao={descricao}
+      ajuda={AJUDA_DA_ASSINATURA}
+    >
       {falhaPrecos && !precos && !ajudante && (
         <p className="mt-4 text-label text-ink-muted">
           Não deu para carregar os preços agora, mas dá para continuar.
