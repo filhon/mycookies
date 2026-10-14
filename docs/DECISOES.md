@@ -12362,3 +12362,37 @@ painel da Configuração, e a primeira cobrança do teste chegava sem ninguém t
 
 **Consequência.** Nenhum campo, regra ou dependência. Sem linha em `novidades.ts`: quem lê já
 assinou e não volta aqui.
+
+## D379 · O resumo não é contrato
+
+**Status:** vigente · decidida em 2026-10-14, spec `165-os-termos-que-se-leem.md`. Não muda uma
+palavra do texto jurídico (`#d171`).
+
+**Contexto.** `/termos` e `/privacidade` eram uma coluna de 6.300px no celular, sem índice, com a
+"seção 1" citada seis vezes como texto, e as promessas que pesam na decisão de assinar (teste sem
+cartão, cancelar sozinha, sete dias de arrependimento, os dados saem a qualquer hora) no meio de
+parágrafos longos.
+
+**Decisão.**
+
+- **"Em resumo" no topo** de cada página (seis linhas nos termos, cinco na privacidade), escrito à
+  mão em `RESUMO`. Cada linha é **a mesma promessa da seção com outras palavras, nunca uma nova**, e
+  cita a seção que a sustenta; embaixo, "O resumo ajuda a achar. O que vale é o texto de cada
+  seção." Se o resumo e a seção divergirem, vale a seção, e o resumo é que está errado.
+- **`LinhaDoResumo.secoes`** é lista (`[4, 10]` em "nada é vendido…"), e não o `secao: number` da
+  spec: a linha da privacidade cita duas seções. O link vai à primeira; o rótulo diz
+  "seções 4 e 10".
+- **O índice** é o `IndiceDaPagina` de sempre, renderizado duas vezes: num `<header>` grudento
+  depois do resumo (`< xl`) e numa `aside` à esquerda (`xl+`, `sticky top-6`, pílulas
+  empilhadas). Um elemento só não serve: o índice mede o `<header>` que o contém para a margem do
+  observador, e no desktop a coluna inteira seria lida como cabeçalho. O escondido tem
+  `display: none` e sai da árvore de acessibilidade.
+- **Referências viram link no render** por `fatiarReferencias` (`domain/textoLegal.ts`): "seção N"
+  sempre; os literais (o e-mail do `RESPONSAVEL`, `consumidor.gov.br`, `gov.br/anpd` em aba nova, e
+  o nome do outro documento) a página passa. O texto continua string.
+- **O destaque do CDC** ganhou caixa (`--surface-sunken`, borda inteira, raio 10px), nunca filete.
+- **Pé**: "Voltar ao topo", o outro documento, "Falar com o Rende"; o logotipo é o caminho para `/`.
+  Índice, cabeçalho e pé somem na impressão.
+
+**Consequência.** Nenhum campo, regra ou dependência. Sem linha em `novidades.ts`: a usuária não
+lê os termos dentro do app. A redação do resumo passa por quem conduz o projeto antes do commit.

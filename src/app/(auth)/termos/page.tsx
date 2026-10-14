@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import {
+  type LinhaDoResumo,
   PaginaDeTexto,
   type SecaoDeTexto,
 } from "@/components/auth/PaginaDeTexto";
@@ -15,9 +16,45 @@ export const metadata: Metadata = { title: "Termos de uso · Rende" };
  * que o texto promete (14 dias, 7 de folga, 30 da purga, 5 ajudantes) são as
  * constantes de `domain/`; mudou lá, muda aqui.
  */
+/**
+ * "Em resumo" (spec 165): a mesma promessa da seção com outras palavras, nunca
+ * uma nova. O que vale é a seção (`DECISOES.md#d379`); mudou lá, muda aqui.
+ */
+const RESUMO: LinhaDoResumo[] = [
+  {
+    texto:
+      "Catorze dias de teste com tudo liberado, sem cartão. Se não assinar, nada é cobrado.",
+    secoes: [4],
+  },
+  {
+    texto:
+      "Cancela quando quiser, em Configuração, sem falar com ninguém. O que já foi pago vale até o fim do período.",
+    secoes: [5],
+  },
+  {
+    texto: "Desistiu em até sete dias do primeiro pagamento? Devolvemos tudo.",
+    secoes: [5],
+  },
+  {
+    texto:
+      "O preço só muda com trinta dias de aviso, e só na renovação seguinte.",
+    secoes: [5],
+  },
+  {
+    texto:
+      "O que você cadastra é seu, e sai num arquivo a qualquer hora, mesmo sem assinatura.",
+    secoes: [8],
+  },
+  {
+    texto: "O Rende faz a conta; o preço que você cobra é decisão sua.",
+    secoes: [2],
+  },
+];
+
 const SECOES: SecaoDeTexto[] = [
   {
     titulo: "Quem presta o serviço",
+    curto: "Quem presta",
     paragrafos: [
       `O Rende é oferecido por ${RESPONSAVEL.nome}, pessoa física, inscrita no CPF sob o nº ${RESPONSAVEL.cpf}, com endereço para correspondência em ${RESPONSAVEL.endereco}. Neste texto, “nós” é essa pessoa, e “você” é quem cria uma conta no Rende.`,
       `Para qualquer assunto destes termos, inclusive reclamação, cancelamento ou pedido de reembolso, o contato é ${RESPONSAVEL.email}. Respondemos em até cinco dias úteis.`,
@@ -26,6 +63,7 @@ const SECOES: SecaoDeTexto[] = [
   },
   {
     titulo: "O que o Rende é, e o que não é",
+    curto: "O que é",
     paragrafos: [
       "O Rende é um aplicativo para quem produz doces e comida por encomenda: calcula quanto custa cada receita a partir dos ingredientes que você cadastra, sugere um preço de venda, organiza pedidos, a despensa e o caixa, e, no plano Completo, publica um cardápio com link de pedido e deixa você convidar ajudantes.",
       "O Rende não é contador, nem consultoria financeira, fiscal ou jurídica, e não emite nota fiscal. O preço sugerido é o resultado de uma conta feita com os números que você informou: é uma sugestão, e a decisão de quanto cobrar é sempre sua. Se um custo, uma quantidade ou uma margem estiver errado no cadastro, o resultado também estará.",
@@ -34,6 +72,7 @@ const SECOES: SecaoDeTexto[] = [
   },
   {
     titulo: "A sua conta, a sua senha e a responsabilidade por elas",
+    curto: "Sua conta",
     paragrafos: [
       "Você se compromete a informar dados verdadeiros no cadastro e a manter sua senha em segredo. Tudo o que for feito com o seu login presume-se feito por você. Se suspeitar que alguém usou sua conta, troque a senha e nos avise pelo e-mail da seção 1.",
       "No plano Completo, você pode convidar até cinco ajudantes para a sua conta. A ajudante entra com login próprio e vê e altera o que o Rende deixa uma ajudante ver e alterar; o caixa, a configuração e a assinatura continuam só seus. Você é responsável por quem convida, por ter autorização para informar o e-mail dessa pessoa e por tirar o acesso de quem não deve mais tê-lo, o que se faz em Configuração, a qualquer momento.",
@@ -41,6 +80,7 @@ const SECOES: SecaoDeTexto[] = [
   },
   {
     titulo: "O teste grátis de catorze dias e o que acontece depois",
+    curto: "Teste grátis",
     paragrafos: [
       "Toda conta nova começa com catorze dias de teste grátis, com tudo liberado, inclusive o que é do plano Completo. O teste não pede cartão e não vira cobrança sozinho: se você não assinar, nada é cobrado.",
       "Terminado o teste, para continuar cadastrando e alterando é preciso assinar um dos planos. Sem assinatura, tudo o que você cadastrou continua guardado e pode ser visto e baixado, mas não alterado. O cardápio com link de pedido sai do ar e as ajudantes deixam de conseguir alterar a conta.",
@@ -48,6 +88,7 @@ const SECOES: SecaoDeTexto[] = [
   },
   {
     titulo: "Os planos, o pagamento e o direito de arrependimento",
+    curto: "Planos e pagamento",
     paragrafos: [
       "Há dois planos. O Essencial inclui o preço de cada doce, os pedidos, a despensa e o caixa. O Completo inclui tudo do Essencial, mais o cardápio com link de pedido e até cinco ajudantes. Os dois podem ser pagos por mês ou por ano, e o preço de cada um é o exibido na tela de assinatura no momento em que você assina.",
       "O pagamento é feito com cartão, na página da Stripe, empresa que processa a cobrança. A assinatura se renova sozinha ao fim de cada período, pelo mesmo valor, até que você a cancele. O recibo de cada cobrança é enviado pela Stripe ao seu e-mail.",
@@ -59,6 +100,7 @@ const SECOES: SecaoDeTexto[] = [
   },
   {
     titulo: "O cardápio com link de pedido",
+    curto: "Cardápio",
     paragrafos: [
       "O cardápio é uma página pública, com os produtos, fotos, descrições, preços e contato que você escolher mostrar. Quem abre o link pode montar um pedido e enviá-lo a você, informando nome, WhatsApp, data, e endereço quando for entrega. O pedido chega no Rende como orçamento, e a conversa com quem pediu continua sendo sua.",
       "O Rende não participa da venda. Você é a única responsável pelo que o cardápio mostra (inclusive direitos sobre as fotos e textos), pelos preços e pelas informações que a lei exige na oferta de alimentos, por confirmar ou recusar cada pedido, pela produção, entrega, cobrança e nota fiscal, e pelo atendimento de quem compra de você.",
@@ -67,6 +109,7 @@ const SECOES: SecaoDeTexto[] = [
   },
   {
     titulo: "O que não se pode fazer, e o que é de quem",
+    curto: "Uso e autoria",
     paragrafos: [
       "Não é permitido usar o Rende para atividade ilegal ou para publicar, no cardápio ou em qualquer campo, conteúdo ilegal, ofensivo, enganoso ou que viole direito de outra pessoa; tentar acessar conta ou dado de outra pessoa; testar, sobrecarregar ou contornar as proteções do sistema; nem revender ou copiar o Rende.",
       "O aplicativo, o nome e a marca Rende, o código e os textos e receitas de exemplo que o Rende oferece pertencem ao responsável pelo serviço. A assinatura dá a você o direito de usá-los enquanto a conta estiver ativa, e não transfere nenhum deles.",
@@ -74,6 +117,7 @@ const SECOES: SecaoDeTexto[] = [
   },
   {
     titulo: "Os dados são seus",
+    curto: "Seus dados",
     paragrafos: [
       "Tudo o que você cadastra no Rende (receitas, preços, pedidos, clientes, caixa) é seu. Nós só o usamos para fazer o Rende funcionar para você, como explica a política de privacidade, e não o vendemos a ninguém.",
       "A qualquer momento, inclusive com o teste vencido ou sem assinatura, você pode baixar tudo o que cadastrou em “Baixar meus dados”, em Configuração ou na tela de assinatura. O arquivo sai completo, no formato em que o Rende guarda os dados (JSON).",
@@ -81,6 +125,7 @@ const SECOES: SecaoDeTexto[] = [
   },
   {
     titulo: "Disponibilidade e limites de responsabilidade",
+    curto: "Responsabilidade",
     paragrafos: [
       "Trabalhamos para que o Rende esteja sempre disponível e os dados, seguros, mas não podemos garantir funcionamento sem nenhuma interrupção ou erro. O Rende depende de serviços de terceiros (hospedagem, banco de dados, pagamento), e pode ficar fora do ar por falha deles, por manutenção ou por motivo que não controlamos. Recomendamos baixar seus dados de tempos em tempos.",
       {
@@ -91,6 +136,7 @@ const SECOES: SecaoDeTexto[] = [
   },
   {
     titulo: "Encerramento, por qualquer lado",
+    curto: "Encerramento",
     paragrafos: [
       "Você pode encerrar a conta quando quiser, sozinha, em “Encerrar minha conta”, em Configuração. Encerrar cancela a assinatura na mesma hora, sem nenhuma cobrança nova, tira o acesso seu e das ajudantes, e tira o cardápio do ar. Baixe seus dados antes: depois de encerrar, não é mais possível.",
       {
@@ -103,12 +149,14 @@ const SECOES: SecaoDeTexto[] = [
   },
   {
     titulo: "Mudanças nestes termos",
+    curto: "Mudanças",
     paragrafos: [
       "Estes termos podem mudar, por exemplo quando o Rende ganhar ou perder uma função ou quando a lei mudar. A data no topo desta página diz qual versão está valendo. Mudanças que afetem seus direitos ou o que você paga serão avisadas com pelo menos trinta dias de antecedência, pelo e-mail da conta ou dentro do app. Se não concordar com a mudança, você pode cancelar a assinatura e encerrar a conta antes que ela valha, sem nenhuma multa.",
     ],
   },
   {
     titulo: "Lei aplicável e foro",
+    curto: "Lei e foro",
     paragrafos: [
       "Estes termos seguem as leis do Brasil. Antes de ir à Justiça, pedimos que você fale conosco pelo e-mail da seção 1: a maioria dos problemas se resolve assim. Você também pode registrar reclamação no consumidor.gov.br. Se houver disputa judicial, ela corre no foro da cidade onde você mora.",
     ],
@@ -118,8 +166,10 @@ const SECOES: SecaoDeTexto[] = [
 export default function PaginaTermos() {
   return (
     <PaginaDeTexto
+      documento="termos"
       titulo="Termos de uso"
       vigenteDesde="24 de setembro de 2026"
+      resumo={RESUMO}
       secoes={SECOES}
     />
   );

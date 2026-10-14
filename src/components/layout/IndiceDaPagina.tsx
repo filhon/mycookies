@@ -77,7 +77,7 @@ export function IndiceDaPagina({
       ref={ref}
       aria-label={rotulo}
       className={cn(
-        "flex snap-x gap-2 overflow-x-auto [scrollbar-width:none]",
+        "flex snap-x gap-2 overflow-x-auto scrollbar-none",
         className,
       )}
     >
