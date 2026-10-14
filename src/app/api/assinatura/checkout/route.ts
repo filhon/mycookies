@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { esquemaCheckout, type FalhaAssinatura } from "@/lib/domain/assinatura";
+import {
+  deveCobrarNoFimDoTeste,
+  esquemaCheckout,
+  type FalhaAssinatura,
+} from "@/lib/domain/assinatura";
 import {
   ehDona,
   adminDb,
@@ -47,6 +51,13 @@ export async function POST(requisicao: Request) {
   const conta = (await adminDb().doc(caminhos.conta(contaId)).get()).data() as
     Conta | undefined;
 
+  // Assinar no teste não gasta os dias grátis: a primeira cobrança fica para o
+  // fim dele, e a assinatura nasce `trialing` (spec 161). Sem o mínimo do
+  // Stripe, ou vencido, cobra na hora.
+  const trialAteMs =
+    conta?.plano === "TRIAL" ? conta.trialAte?.toMillis() : undefined;
+  const noFimDoTeste = deveCobrarNoFimDoTeste(trialAteMs, Date.now());
+
   const origem = new URL(requisicao.url).origin;
   const sessao = await stripe().checkout.sessions.create({
     mode: "subscription",
@@ -57,11 +68,16 @@ export async function POST(requisicao: Request) {
       : { customer_email: quem.email }),
     // Sem o pacote na metadata: quem decide é o produto (`#d169`), e duas
     // fontes discordariam no dia em que ela trocasse pelo portal.
-    subscription_data: { metadata: { contaId, uid: quem.uid } },
+    subscription_data: {
+      metadata: { contaId, uid: quem.uid },
+      ...(noFimDoTeste && { trial_end: Math.floor(trialAteMs / 1000) }),
+    },
     // A cortesia (`#d314`): o código `BETA-…` zera o total, e com total zero
-    // o Stripe não pede cartão.
+    // o Stripe não pede cartão. Com `trial_end` hoje é sempre zero, e o
+    // `if_required` deixaria o teste acabar numa assinatura sem cartão: pede
+    // sempre, também na cortesia, que nunca é cobrada (`#d374`).
     allow_promotion_codes: true,
-    payment_method_collection: "if_required",
+    payment_method_collection: noFimDoTeste ? "always" : "if_required",
     locale: "pt-BR",
     success_url: `${origem}/assinatura/confirmando`,
     cancel_url: `${origem}/assinatura`,

@@ -12164,3 +12164,77 @@ uma frase de 25 palavras, e nada perto do botão dizia como cancelar nem o que a
 
 **Consequência.** `CartaoDePreco` saiu; `enviando` virou booleano, porque só há um botão de pagar
 por estado. Selo "mais escolhido", tabela com o que falta e Pix ficaram fora (spec 160, § 5).
+
+## D374 · Assinar no teste deixa a primeira cobrança para o fim dele
+
+**Status:** vigente · decidida em 2026-10-14, spec `161-o-que-o-teste-rendeu-na-porta.md`;
+confirmada por quem conduz o projeto na sessão. Revê o `#d314` só no cartão da cortesia em teste.
+
+**Contexto.** O checkout não passava `trial_end`: quem assinava no dia 3 de 14 era cobrada no dia
+3 e o período pago começava ali. O acesso não encurtava (`acessoAteDaAssinatura` guarda o maior),
+mas os dias grátis viravam dias pagos, e a pessoa esperava o último dia para assinar.
+
+**Decisão.**
+
+- **`subscription_data.trial_end` = `trialAte`** da conta, em segundos, quando a conta é `TRIAL`
+  e `deveCobrarNoFimDoTeste(trialAteMs, agoraMs)` (`domain/assinatura.ts`, com teste): pelo menos
+  49 horas à frente. O Stripe exige 48 (conferido no modo de teste em 2026-10-14: a 47 h ele
+  recusa com "The `trial_end` date has to be at least 2 days in the future"); a hora a mais cobre
+  o relógio do aparelho, que decide a linha da tela, e a ida ao Stripe. Abaixo disso, ou vencido,
+  sem `trial_end`, cobra na hora como antes.
+- **Com `trial_end`, `payment_method_collection: "always"`.** Com `"if_required"` e nada a pagar
+  hoje, o Stripe não pediria cartão e o teste acabaria numa assinatura sem cartão. Sem `trial_end`
+  continua `"if_required"`.
+- **A cortesia em teste digita o cartão.** Com `"always"` o Stripe pede cartão mesmo com o
+  `BETA-…` de 100% (documentação do Checkout); o app não sabe do código antes do Stripe. Quem
+  conduz o projeto escolheu aceitar: o cupom é `forever`, e o cartão nunca é cobrado. A cortesia
+  com 2 dias ou menos de teste, vencida ou pela CLI segue sem cartão. O link de cortesia sem
+  `trial_end` foi pesado e recusado: mais um caminho no checkout só para as beta testers.
+- **O webhook não muda.** `trialing` já é assinatura viva (`["active", "trialing", "past_due"]`)
+  e o período em `trialing` termina no `trial_end`, então `acessoAteDaAssinatura` dá o fim do
+  teste mais a folga, e a Configuração diz "renova em" esse dia.
+- **A tela diz a data**: embaixo do botão, em `label`, `fraseDaPrimeiraCobranca` ("Primeira
+  cobrança em 28 de outubro, quando o teste acaba."), no dia de Brasília. Só no teste com o
+  mínimo; no teste vencido, sem a linha.
+
+**Consequência.** Nenhum campo, regra ou dependência. Conferido no modo de teste: sessão com
+`trial_end` a 5 dias nasce com `amount_total: 0` e `payment_method_collection: "always"`. O
+caminho inteiro (status `trialing`, fatura de R$ 0, a cobrança no dia, a cortesia pedindo cartão)
+é o roteiro 4 da spec, no navegador.
+
+## D375 · A porta de pagar mostra o que rendeu e sugere o plano pelo uso
+
+**Status:** vigente · decidida em 2026-10-14, spec `161-o-que-o-teste-rendeu-na-porta.md`.
+
+**Contexto.** A faixa da Hoje (`#d218`, `#d219`) contava o que a conta construiu e o preço na
+sobra do mais vendido; `/assinatura`, a tela seguinte, esquecia tudo. E o Essencial vinha
+escolhido para quem tinha ajudante, sem dizer que ela perderia o acesso.
+
+**Decisão.**
+
+- **`useOQueRendeu(contaId | null)`** em `components/assinatura/`: as mesmas leituras da faixa
+  (resumo do mês e fichas ativas), devolvendo `partes` (`{ numero, resto }`, para o número ir em
+  `num` 600) e `produtos` para o `sobraQuePagaOPlano`. A `FaixaDoTeste` o usa e mostra o mesmo de
+  antes. Com `null` (ajudante), nada é lido.
+- **Em `/assinatura`, no teste e no teste vencido**, as partes uma por linha abaixo da descrição
+  e, com o preço carregado, `fraseDaSobraQuePaga` com o plano escolhido e o mensal do período
+  escolhido ("O Essencial dá R$ 24,17 por mês: a sobra de 3 unidades de Cookie de Nutella."). A
+  faixa continua com "O completo custa…", como a spec pediu.
+- **No desktop, as linhas vão para o `painel` da `MolduraDeEntrada`**, em `--on-brand` (a sobra
+  em `--on-brand-muted`), e saem da coluna só com `lg` **e** 720 px de altura: abaixo disso o
+  painel some (`#d194`), e a coluna as mostra de volta, para não sumirem dos dois lados.
+- **O plano sugerido pelo uso é só a ajudante ativa** (`colMembros`, a leitura de `QuemTeAjuda`,
+  `papel AJUDANTE` sem `removidaEm`). "Pedido chegado pelo cardápio no teste" ficou fora: a agenda
+  (`consultaAgenda`, `#d235`) só tem pedidos abertos e o resumo do mês não separa origem, então
+  contar exigiria consulta nova; quem conduz o projeto ficou com a ajudante, como a spec manda
+  nesse caso. Com ajudante, o Completo vem escolhido (estado `null` até ela tocar, sem efeito) e
+  diz `motivoDoCompleto`; escolher o Essencial mostra `perdaNoEssencial` em `--attention` com o
+  triângulo, dentro da opção e no `aria-describedby` do rádio. Nada bloqueia.
+- **A ajudante aparece pelo e-mail** ("ana@gmail.com ajuda você aqui."): o convite só guarda o
+  e-mail. Com duas ou mais, "2 pessoas ajudam você aqui." e "As 2 pessoas que ajudam você perdem o
+  acesso ao Rende."
+
+**Consequência.** Nenhuma consulta nova de forma, nenhum campo ou índice. Fora de `/assinatura`
+os ouvintes não se juntam com os da Hoje (a tela está fora do shell), mas são as mesmas consultas
+servidas pelo cache. Quando houver contador de pedidos do cardápio gravado, o gatilho dele entra
+aqui.

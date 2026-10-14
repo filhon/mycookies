@@ -7,14 +7,19 @@ import {
   Circle,
   CircleCheck,
   CreditCard,
+  TriangleAlert,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import {
   AJUDA_DA_ASSINATURA,
   MolduraDeEntrada,
 } from "@/components/auth/MolduraDeEntrada";
+import {
+  useOQueRendeu,
+  type ParteDoQueRendeu,
+} from "@/components/assinatura/useOQueRendeu";
 import { MeusDados } from "@/components/conta/MeusDados";
 import { Simbolo } from "@/components/marca/Marca";
 import { Botao } from "@/components/ui/Botao";
@@ -22,19 +27,27 @@ import { classesBotao } from "@/components/ui/estilosBotao";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Pilulas } from "@/components/ui/Pilulas";
 import {
+  deveCobrarNoFimDoTeste,
   economiaAnual,
+  fraseDaPrimeiraCobranca,
+  fraseDaSobraQuePaga,
   fraseDeAssinar,
   MENSAGEM_FALHA_ASSINATURA,
   mensalDoAnual,
   NOME_DO_PACOTE,
+  motivoDoCompleto,
   O_QUE_O_PACOTE_TEM,
   paraSituar,
+  perdaNoEssencial,
   situacaoDaConta,
+  sobraQuePagaOPlano,
   type FalhaAssinatura,
   type Periodo,
 } from "@/lib/domain/assinatura";
 import { formatarMoeda } from "@/lib/domain/money";
-import type { Pacote } from "@/lib/types";
+import { colMembros } from "@/lib/firebase/colecoes";
+import { useColecao } from "@/lib/hooks/useColecao";
+import type { Membro, Pacote } from "@/lib/types";
 import { AVISO_SAIR_PENDENTE, useAuth } from "@/providers/AuthProvider";
 import { cn } from "@/lib/utils/cn";
 
@@ -80,7 +93,8 @@ export default function PaginaAssinatura() {
   const [enviando, setEnviando] = useState(false);
   // O anual continua sendo a arma contra o churn (roadmap §1).
   const [periodo, setPeriodo] = useState<Periodo>("anual");
-  const [pacote, setPacote] = useState<Pacote>("ESSENCIAL");
+  // `null` até ela tocar: até lá vale o plano sugerido pelo uso (spec 161).
+  const [escolhido, setEscolhido] = useState<Pacote | null>(null);
   const idPacote = useId();
   const [erro, setErro] = useState<string | null>(null);
   const [saindo, setSaindo] = useState(false);
@@ -118,14 +132,27 @@ export default function PaginaAssinatura() {
     };
   }, [usuario, ajudante]);
 
-  const situacao = conta
-    ? situacaoDaConta(
-        paraSituar(conta),
-        // `new Date().getTime()`, e não `Date.now()`: o compilador do React
-        // recusa uma função impura direto no corpo do componente.
-        new Date().getTime(),
-      )
-    : null;
+  // `new Date().getTime()`, e não `Date.now()`: o compilador do React recusa
+  // uma função impura direto no corpo do componente.
+  const agora = new Date().getTime();
+  const situacao = conta ? situacaoDaConta(paraSituar(conta), agora) : null;
+
+  // O que rendeu e quem ajuda, só para a dona: a ajudante não vê preço.
+  // Leituras que a Hoje e a Configuração já fazem (`#d218`, `#d155`).
+  const daDona = contaId && !ajudante ? contaId : null;
+  const { partes, produtos } = useOQueRendeu(daDona);
+  const consultaMembros = useMemo(
+    () => (daDona ? colMembros(daDona) : null),
+    [daDona],
+  );
+  const ajudantes = useColecao<Membro>(consultaMembros)
+    .dados.filter((membro) => membro.papel === "AJUDANTE" && !membro.removidaEm)
+    .map((membro) => membro.email);
+
+  // Quem tem ajudante usa o que só o Completo tem: ele vem escolhido (spec 161).
+  // O pedido do cardápio no teste ficou fora: só sairia com consulta nova (`#d375`).
+  const pacote: Pacote =
+    escolhido ?? (ajudantes.length > 0 ? "COMPLETO" : "ESSENCIAL");
 
   // Para a ajudante, prazo de cobrança não é assunto até vencer (spec 030, 3.B.4).
   const semNadaAVer =
@@ -209,6 +236,28 @@ export default function PaginaAssinatura() {
     ? economiaAnual(precos.ESSENCIAL.mensal, precos.ESSENCIAL.anual)
     : 0;
 
+  // Com `trial_end` no checkout, a mesma conta da rota (`#d374`).
+  const primeiraCobranca =
+    situacao.tipo === "teste" &&
+    deveCobrarNoFimDoTeste(situacao.acabaEmMs, agora)
+      ? fraseDaPrimeiraCobranca(situacao.acabaEmMs)
+      : null;
+
+  // O `#d219` com o plano escolhido, pelo mês do período escolhido.
+  const mensalEscolhido = precos
+    ? periodo === "anual"
+      ? mensalDoAnual(precos[pacote].anual)
+      : precos[pacote].mensal
+    : null;
+  const pagaOPlano =
+    mensalEscolhido != null
+      ? sobraQuePagaOPlano(produtos, mensalEscolhido)
+      : null;
+  const sobra =
+    pagaOPlano && mensalEscolhido != null
+      ? fraseDaSobraQuePaga(pacote, mensalEscolhido, pagaOPlano)
+      : null;
+
   // Escolher é de graça, pagar é um botão só, que repete a escolha (spec 160,
   // revendo o cartão-botão da 032, 3.5). O período vem primeiro por ser filtro;
   // os planos, empilhados em qualquer largura, comparam melhor que lado a lado.
@@ -244,7 +293,13 @@ export default function PaginaAssinatura() {
             precos={precos?.[cada]}
             periodo={periodo}
             escolhido={pacote === cada}
-            aoEscolher={() => setPacote(cada)}
+            aoEscolher={() => setEscolhido(cada)}
+            motivo={cada === "COMPLETO" ? motivoDoCompleto(ajudantes) : null}
+            aviso={
+              cada === "ESSENCIAL" && pacote === cada
+                ? perdaNoEssencial(ajudantes)
+                : null
+            }
           />
         ))}
       </fieldset>
@@ -262,6 +317,11 @@ export default function PaginaAssinatura() {
         >
           {fraseDeAssinar(pacote, periodo, precos?.[pacote][periodo])}
         </Botao>
+        {primeiraCobranca && (
+          <p className="mt-2 text-center text-label text-ink-muted">
+            {primeiraCobranca}
+          </p>
+        )}
       </div>
 
       <ul className="mt-4 space-y-2">
@@ -282,6 +342,8 @@ export default function PaginaAssinatura() {
   let titulo: string;
   let descricao: string;
   let acoes: ReactNode;
+  // No teste e no teste vencido, o que a conta já construiu (spec 161).
+  let comOQueRendeu = false;
 
   if (ajudante) {
     // A conta é da dona; a conversa é entre as duas (`#d156`).
@@ -307,6 +369,7 @@ export default function PaginaAssinatura() {
     if (situacao.diasRestantes === 1) titulo = "Seu teste grátis acaba amanhã";
     descricao =
       "Depois disso, tudo o que você cadastrou continua aqui, mas só assinando dá para mexer.";
+    comOQueRendeu = true;
     acoes = (
       <>
         {escolha}
@@ -322,6 +385,7 @@ export default function PaginaAssinatura() {
     titulo = "Seu teste grátis acabou";
     descricao =
       "Tudo o que você cadastrou continua guardado. Assine para voltar a mexer.";
+    comOQueRendeu = true;
     acoes = (
       <>
         {escolha}
@@ -376,7 +440,12 @@ export default function PaginaAssinatura() {
       titulo={titulo}
       descricao={descricao}
       ajuda={AJUDA_DA_ASSINATURA}
+      painel={
+        comOQueRendeu && <OQueRendeu partes={partes} sobra={sobra} painel />
+      }
     >
+      {comOQueRendeu && <OQueRendeu partes={partes} sobra={sobra} />}
+
       {falhaPrecos && !precos && !ajudante && (
         <p className="mt-4 text-label text-ink-muted">
           Não deu para carregar os preços agora, mas dá para continuar.
@@ -394,6 +463,52 @@ export default function PaginaAssinatura() {
   );
 }
 
+/**
+ * O que a conta já construiu, uma linha por coisa, e o plano na sobra do que
+ * ela mais vende (spec 161). Nada contado, nada aparece. No celular abaixo da
+ * descrição; no desktop no painel de marca (`#d194`), que some em janela
+ * baixa: ali a coluna o mostra de volta.
+ */
+function OQueRendeu({
+  partes,
+  sobra,
+  painel = false,
+}: {
+  partes: ParteDoQueRendeu[];
+  sobra: string | null;
+  painel?: boolean;
+}) {
+  if (partes.length === 0) return null;
+  return (
+    <div
+      className={
+        painel
+          ? "max-w-md text-on-brand"
+          : "mt-6 text-ink lg:[@media(min-height:720px)]:hidden"
+      }
+    >
+      <ul className={cn("space-y-1", painel ? "text-subheading" : "text-body")}>
+        {partes.map((parte) => (
+          <li key={parte.resto}>
+            <span className="num font-semibold">{parte.numero}</span>{" "}
+            {parte.resto}
+          </li>
+        ))}
+      </ul>
+      {sobra && (
+        <p
+          className={cn(
+            "num mt-3 text-body",
+            painel ? "text-on-brand-muted" : "text-ink-muted",
+          )}
+        >
+          {sobra}
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** Uma linha do grupo: escolher troca o botão e nunca sai do app (spec 160). */
 function OpcaoDePlano({
   nome,
@@ -402,6 +517,8 @@ function OpcaoDePlano({
   periodo,
   escolhido,
   aoEscolher,
+  motivo,
+  aviso,
 }: {
   nome: string;
   pacote: Pacote;
@@ -409,6 +526,10 @@ function OpcaoDePlano({
   periodo: Periodo;
   escolhido: boolean;
   aoEscolher: () => void;
+  /** Por que este plano vem escolhido (spec 161). */
+  motivo: string | null;
+  /** O que se perde com este plano, em atenção; nada bloqueia (spec 161). */
+  aviso: string | null;
 }) {
   const anual = periodo === "anual";
   const economia = precos ? economiaAnual(precos.mensal, precos.anual) : 0;
@@ -435,7 +556,13 @@ function OpcaoDePlano({
         checked={escolhido}
         onChange={aoEscolher}
         aria-labelledby={`${id}-nome`}
-        aria-describedby={`${id}-preco`}
+        aria-describedby={[
+          `${id}-preco`,
+          motivo && `${id}-motivo`,
+          aviso && `${id}-aviso`,
+        ]
+          .filter(Boolean)
+          .join(" ")}
         className="absolute inset-0 z-10 size-full cursor-pointer appearance-none rounded-lg opacity-0 disabled:cursor-not-allowed"
       />
       <span className="flex items-center justify-between gap-3">
@@ -483,6 +610,28 @@ function OpcaoDePlano({
           </span>
         )}
       </div>
+
+      {motivo && (
+        <p
+          id={`${id}-motivo`}
+          className="mt-2 text-label text-ink wrap-anywhere"
+        >
+          {motivo}
+        </p>
+      )}
+      {aviso && (
+        <p
+          id={`${id}-aviso`}
+          className="mt-2 flex gap-2 text-label text-attention wrap-anywhere"
+        >
+          <TriangleAlert
+            aria-hidden
+            strokeWidth={1.75}
+            className="mt-0.5 size-4 shrink-0"
+          />
+          <span className="min-w-0">{aviso}</span>
+        </p>
+      )}
 
       <ul className="mt-3 space-y-1.5">
         {O_QUE_O_PACOTE_TEM[pacote].map((linha) => (

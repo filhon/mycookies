@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { orderBy, query, where } from "firebase/firestore";
+import { useEffect, useState } from "react";
 import { ChevronRight, Hourglass, TriangleAlert } from "lucide-react";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
@@ -11,13 +10,10 @@ import {
   situacaoDaConta,
   sobraQuePagaOPlano,
 } from "@/lib/domain/assinatura";
-import { parcelasDoResumo } from "@/lib/domain/caixa";
-import { competenciaAtual, rotuloMes } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
-import { colFichas, docResumoMensal } from "@/lib/firebase/colecoes";
-import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
-import type { Centavos, FichaTecnica, Pacote, ResumoMensal } from "@/lib/types";
+import type { Centavos, Pacote } from "@/lib/types";
 import { useAuth, useContaId } from "@/providers/AuthProvider";
+import { useOQueRendeu } from "./useOQueRendeu";
 
 /**
  * A faixa do teste na tela Hoje (spec 048). Durante o teste inteiro: o prazo
@@ -46,43 +42,15 @@ export function FaixaDoTeste() {
 }
 
 function Faixa({ dias }: { dias: number }) {
-  const contaId = useContaId();
-  const [competencia] = useState(() => competenciaAtual(new Date()));
-
-  // As mesmas duas leituras de `CartaoDoMes` e `CartaoNoVermelhoHoje`: o
-  // Firestore divide o alvo, e nenhuma consulta nova sai daqui (`#d218`).
-  const refResumo = useMemo(
-    () => docResumoMensal(contaId, competencia),
-    [contaId, competencia],
-  );
-  const consultaFichas = useMemo(
-    () =>
-      query(
-        colFichas(contaId),
-        where("arquivado", "==", false),
-        orderBy("nomeBusca"),
-      ),
-    [contaId],
-  );
-  const resumo = useDocumento<ResumoMensal>(refResumo);
-  const fichas = useColecao<FichaTecnica>(consultaFichas);
+  const { partes, produtos } = useOQueRendeu(useContaId());
 
   const emAtencao = dias <= DIAS_DE_ATENCAO;
   const mensal = useMensalDoCompleto(emAtencao);
 
-  const { entradas, produtos } = parcelasDoResumo(resumo.dado);
-  const comPreco = fichas.dados.filter(
-    (ficha) => ficha.precificacao.precoVenda > 0,
-  ).length;
-
-  const contado = [
-    comPreco > 0 &&
-      `${comPreco} ${comPreco === 1 ? "produto" : "produtos"} com preço`,
-    entradas > 0 &&
-      `${formatarMoeda(entradas)} em vendas em ${rotuloMes(competencia)}`,
-  ].filter(Boolean);
-  // Nada a contar, nada inventado: a faixa fica em uma linha.
-  const oQueRendeu = contado.length > 0 ? contado.join(" · ") : null;
+  const oQueRendeu =
+    partes.length > 0
+      ? partes.map((parte) => `${parte.numero} ${parte.resto}`).join(" · ")
+      : null;
 
   const Icone = emAtencao ? TriangleAlert : Hourglass;
   const icone = (

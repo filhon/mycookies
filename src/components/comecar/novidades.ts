@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-14",
+    titulo: "Assinar durante o teste não corta seus dias grátis",
+    frase:
+      "A primeira cobrança fica para o dia em que o teste acaba, e a tela de assinar mostra o que você já fez no Rende.",
+    href: "/assinatura",
+  },
+  {
+    dataISO: "2026-10-14",
     titulo: "A tela de assinar mostra o plano por mês e só sai do app no botão",
     frase:
       "Tocar num plano só o escolhe; o anual aparece pelo mês, com o total do ano embaixo, e o botão diz o que você vai pagar.",

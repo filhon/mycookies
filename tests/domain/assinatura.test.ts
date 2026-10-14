@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   acessoAteDaAssinatura,
+  deveCobrarNoFimDoTeste,
+  fraseDaPrimeiraCobranca,
+  fraseDaSobraQuePaga,
+  motivoDoCompleto,
+  perdaNoEssencial,
   cobrancaPrevistaMs,
   fraseDaCobranca,
   fraseDaEconomia,
@@ -25,6 +30,7 @@ import {
   unidadesQuePagam,
   valorComDesconto,
 } from "@/lib/domain/assinatura";
+import { formatarMoeda } from "@/lib/domain/money";
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 
@@ -436,5 +442,59 @@ describe("valorComDesconto (spec 111)", () => {
     };
     expect(fraseDoPlano("COMPLETO", resumo)).toBe("Plano Completo · cortesia");
     expect(mensalDoPlano(resumo)).toBe(0);
+  });
+});
+
+describe("spec 161: o que o teste rendeu, na porta", () => {
+  const HORA = 60 * 60 * 1000;
+  const agora = Date.UTC(2026, 9, 14, 15);
+
+  it("cobra no fim do teste só com o mínimo do Stripe e a margem", () => {
+    expect(deveCobrarNoFimDoTeste(agora + 5 * 24 * HORA, agora)).toBe(true);
+    expect(deveCobrarNoFimDoTeste(agora + 49 * HORA, agora)).toBe(true);
+    expect(deveCobrarNoFimDoTeste(agora + 48 * HORA, agora)).toBe(false);
+    expect(deveCobrarNoFimDoTeste(agora - HORA, agora)).toBe(false);
+    expect(deveCobrarNoFimDoTeste(undefined, agora)).toBe(false);
+  });
+
+  it("a primeira cobrança no dia de Brasília", () => {
+    // 28/10 às 01h UTC ainda é 27/10 em Brasília.
+    expect(fraseDaPrimeiraCobranca(Date.UTC(2026, 9, 28, 1))).toBe(
+      "Primeira cobrança em 27 de outubro, quando o teste acaba.",
+    );
+    expect(fraseDaPrimeiraCobranca(Date.UTC(2026, 9, 28, 15))).toBe(
+      "Primeira cobrança em 28 de outubro, quando o teste acaba.",
+    );
+  });
+
+  it("a sobra que paga o plano escolhido", () => {
+    expect(
+      fraseDaSobraQuePaga("ESSENCIAL", 2417, {
+        nome: "Cookie de Nutella",
+        unidades: 3,
+      }),
+    ).toBe(
+      `O Essencial dá ${formatarMoeda(2417)} por mês: a sobra de 3 unidades de Cookie de Nutella.`,
+    );
+    expect(
+      fraseDaSobraQuePaga("COMPLETO", 4990, { nome: "Brownie", unidades: 1 }),
+    ).toBe(
+      `O Completo dá ${formatarMoeda(4990)} por mês: a sobra de 1 unidade de Brownie.`,
+    );
+  });
+
+  it("o porquê do Completo e o que o Essencial tira, só com ajudante", () => {
+    expect(motivoDoCompleto([])).toBeNull();
+    expect(perdaNoEssencial([])).toBeNull();
+    expect(motivoDoCompleto(["ana@x.com"])).toBe("ana@x.com ajuda você aqui.");
+    expect(perdaNoEssencial(["ana@x.com"])).toBe(
+      "ana@x.com perde o acesso ao Rende.",
+    );
+    expect(motivoDoCompleto(["a@x.com", "b@x.com"])).toBe(
+      "2 pessoas ajudam você aqui.",
+    );
+    expect(perdaNoEssencial(["a@x.com", "b@x.com"])).toBe(
+      "As 2 pessoas que ajudam você perdem o acesso ao Rende.",
+    );
   });
 });

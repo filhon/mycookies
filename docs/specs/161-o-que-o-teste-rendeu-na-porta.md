@@ -122,11 +122,11 @@ quem conduz o projeto: confirmar antes da sessão (seção 1, "Cobrar no fim do 
 
 ## Critérios de aceite
 
-- [ ] A tela de pagar diz o que a conta construiu, sem consulta nova.
-- [ ] O plano escolhido de saída segue o uso, e escolher menos diz o que se perde.
-- [ ] Assinar no teste não cobra antes do fim do teste, e o cartão fica salvo.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] Decisões escritas; `ESTADO.md`; linha em `novidades.ts` ("Assinar durante o teste não
+- [x] A tela de pagar diz o que a conta construiu, sem consulta nova.
+- [~] O plano escolhido de saída segue o uso, e escolher menos diz o que se perde.
+- [~] Assinar no teste não cobra antes do fim do teste, e o cartão fica salvo.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] Decisões escritas; `ESTADO.md`; linha em `novidades.ts` ("Assinar durante o teste não
       corta seus dias grátis").
 
 ---

@@ -369,6 +369,60 @@ export function fraseDaEconomia(precos: {
     : null;
 }
 
+/**
+ * "O Essencial dá R$ 24,17 por mês: a sobra de 3 unidades de Cookie de
+ * Nutella." O `#d219` com o plano escolhido em `/assinatura` (spec 161).
+ */
+export function fraseDaSobraQuePaga(
+  pacote: Pacote,
+  mensal: Centavos,
+  paga: { nome: string; unidades: number },
+): string {
+  const unidades = paga.unidades === 1 ? "unidade" : "unidades";
+  return `O ${NOME_DO_PACOTE[pacote]} dá ${formatarMoeda(mensal)} por mês: a sobra de ${paga.unidades} ${unidades} de ${paga.nome}.`;
+}
+
+/**
+ * Por que o Completo vem escolhido, para quem tem ajudante (spec 161): pelo
+ * e-mail, que é o que o convite guarda. `null` sem ajudante.
+ */
+export function motivoDoCompleto(ajudantes: readonly string[]): string | null {
+  if (ajudantes.length === 0) return null;
+  if (ajudantes.length === 1) return `${ajudantes[0]} ajuda você aqui.`;
+  return `${ajudantes.length} pessoas ajudam você aqui.`;
+}
+
+/** O que o Essencial tira de quem tem ajudante (spec 161). `null` sem ajudante. */
+export function perdaNoEssencial(ajudantes: readonly string[]): string | null {
+  if (ajudantes.length === 0) return null;
+  if (ajudantes.length === 1) return `${ajudantes[0]} perde o acesso ao Rende.`;
+  return `As ${ajudantes.length} pessoas que ajudam você perdem o acesso ao Rende.`;
+}
+
+/** O que o Stripe exige de `trial_end` no checkout: 48 horas à frente. */
+const MINIMO_DO_TRIAL_END_MS = 48 * 60 * 60 * 1000;
+/** Uma hora de margem: o relógio do aparelho e a ida ao Stripe não são o instante da conta. */
+const MARGEM_DO_TRIAL_END_MS = 60 * 60 * 1000;
+
+/**
+ * Se o checkout deixa a primeira cobrança para o fim do teste (spec 161). Com
+ * menos que o mínimo do Stripe, ou vencido, cobra na hora, como antes.
+ */
+export function deveCobrarNoFimDoTeste(
+  trialAteMs: number | undefined,
+  agoraMs: number,
+): trialAteMs is number {
+  return (
+    trialAteMs != null &&
+    trialAteMs - agoraMs >= MINIMO_DO_TRIAL_END_MS + MARGEM_DO_TRIAL_END_MS
+  );
+}
+
+/** "Primeira cobrança em 28 de outubro, quando o teste acaba." */
+export function fraseDaPrimeiraCobranca(trialAteMs: number): string {
+  return `Primeira cobrança em ${diaEMes(trialAteMs)}, quando o teste acaba.`;
+}
+
 export const esquemaCheckout = z.object({
   contaId: z.string().min(1),
   pacote: z.enum(["ESSENCIAL", "COMPLETO"]),
