@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Figtree } from "next/font/google";
+import { Familjen_Grotesk, Figtree } from "next/font/google";
 import { Desempenho } from "@/components/site/Desempenho";
 import { SCRIPT_TEMA } from "@/lib/tema";
 import { AuthProvider } from "@/providers/AuthProvider";
@@ -7,11 +7,11 @@ import { DESCRICAO } from "./descricao";
 import { URL_DO_SITE } from "./site";
 import "./globals.css";
 
-// Só 600 e 700: a marca não tem Archivo 400, e `font-display` sem peso
-// renderizaria no mais próximo carregado sem avisar.
-const display = Archivo({
+// Só 700, o peso da marca: `font-display` em qualquer peso cai nele
+// (`DECISOES.md#d381`).
+const display = Familjen_Grotesk({
   subsets: ["latin"],
-  weight: ["600", "700"],
+  weight: "700",
   display: "swap",
   variable: "--fonte-display",
 });

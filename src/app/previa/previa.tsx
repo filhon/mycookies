@@ -10,7 +10,7 @@ import { ImageResponse } from "next/og";
  * Duas saídas da regra de sempre, as duas nomeadas no `#d183`:
  * - `ImageResponse` não lê variável CSS, então as cores são literais, com o
  *   token de `globals.css` ao lado. É o único hex fora de `globals.css`.
- * - A fonte mora aqui, em bytes (`Archivo-Bold.ttf`, licença em `OFL.txt`):
+ * - A fonte mora aqui, em bytes (`FamiljenGrotesk-Bold.ttf`, licença em `OFL.txt`):
  *   baixar do Google Fonts no build poria rede no build.
  */
 
@@ -24,8 +24,8 @@ export const CORES_DA_PREVIA = {
 export const TAMANHO_DA_PREVIA = { width: 1200, height: 630 };
 
 // Relativo à raiz do projeto: é de lá que o build roda.
-const ARCHIVO_700 = readFile(
-  join(process.cwd(), "src/app/previa/Archivo-Bold.ttf"),
+const DISPLAY_700 = readFile(
+  join(process.cwd(), "src/app/previa/FamiljenGrotesk-Bold.ttf"),
 );
 
 export async function desenharPrevia({
@@ -45,7 +45,7 @@ export async function desenharPrevia({
         justifyContent: "space-between",
         padding: "72px 80px",
         backgroundColor: CORES_DA_PREVIA.canvas,
-        fontFamily: "Archivo",
+        fontFamily: "Familjen Grotesk",
       }}
     >
       {/* O logotipo de `Marca.tsx`: "rende" em caixa baixa, fechado pelo
@@ -93,8 +93,8 @@ export async function desenharPrevia({
       ...TAMANHO_DA_PREVIA,
       fonts: [
         {
-          name: "Archivo",
-          data: await ARCHIVO_700,
+          name: "Familjen Grotesk",
+          data: await DISPLAY_700,
           weight: 700,
           style: "normal",
         },

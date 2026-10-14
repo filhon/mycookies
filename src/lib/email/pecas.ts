@@ -44,7 +44,7 @@ const POSITIVO = "#17724A";
 
 const CORPO =
   "Figtree,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
-const DISPLAY = "Archivo,'Helvetica Neue',Helvetica,Arial,sans-serif";
+const DISPLAY = "'Familjen Grotesk','Helvetica Neue',Helvetica,Arial,sans-serif";
 
 const DOMINIO = new URL(URL_DO_SITE).host.replace(/^www\./, "");
 
@@ -98,7 +98,7 @@ function moldura(p: {
 <meta name="color-scheme" content="light only">
 <meta name="supported-color-schemes" content="light only">
 <title>${escapar(p.assunto)}</title>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
 <style>${ESTILO}
 </style>
 </head>
