@@ -23,6 +23,13 @@ export interface Novidade {
  */
 export const NOVIDADES: readonly Novidade[] = [
   {
+    dataISO: "2026-10-14",
+    titulo: "O relatório do MEI diz até quando e o que já foi feito",
+    frase:
+      'O prazo do mês aparece sob o mês; depois de imprimir, toque em "Já imprimi e guardei", e se uma venda mudar depois, o Rende avisa.',
+    href: "/financeiro",
+  },
+  {
     dataISO: "2026-10-12",
     titulo: "O relatório do MEI sai com o seu CNPJ",
     frase:

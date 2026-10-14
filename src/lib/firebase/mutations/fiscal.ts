@@ -7,6 +7,7 @@ import type {
   Centavos,
   CompetenciaMensal,
   DadosMei,
+  GuardadoMei,
 } from "@/lib/types";
 
 export interface MudancaMei {
@@ -35,5 +36,30 @@ export function salvarMei(contaId: string, mudanca: MudancaMei): void {
   }
   despachar(
     setDoc(docMei(contaId), corpo as Partial<DadosMei>, { merge: true }),
+  );
+}
+
+/**
+ * "Já imprimi e guardei" (`DECISOES.md#d360`): o retrato do papel em
+ * `guardados[competencia]`. Regravar troca o retrato; `null` tira, que é o
+ * "Desfazer" de um mês que não estava guardado.
+ */
+export function guardarRelatorioMei(
+  contaId: string,
+  atividade: AtividadeMei,
+  competencia: CompetenciaMensal,
+  retrato: GuardadoMei | null,
+): void {
+  despachar(
+    setDoc(
+      docMei(contaId),
+      {
+        v: VERSAO_SCHEMA,
+        atualizadoEm: Timestamp.now(),
+        atividade,
+        guardados: { [competencia]: retrato ?? deleteField() },
+      } as Partial<DadosMei>,
+      { merge: true },
+    ),
   );
 }

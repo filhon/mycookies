@@ -6,6 +6,8 @@ import {
   LIMITE_MEI_POR_MES,
   limiteDoAno,
   meiDoCnpj,
+  mudouDepoisDeGuardado,
+  prazoDoRelatorio,
   relatorioMei,
 } from "@/lib/domain/mei";
 
@@ -184,5 +186,123 @@ describe("formatarCnpj", () => {
     expect(formatarCnpj("12345678000190")).toBe("12.345.678/0001-90");
     expect(formatarCnpj("12345")).toBe("12.345");
     expect(formatarCnpj("123456789")).toBe("12.345.678/9");
+  });
+});
+
+describe("relatorioMei conta as vendas", () => {
+  it("conta só as entradas VENDA", () => {
+    const r = relatorioMei(
+      [
+        venda(100),
+        venda(200),
+        { tipo: "ENTRADA", categoria: "OUTRO", valor: 50 } as const,
+        { tipo: "SAIDA", categoria: "VENDA", valor: 9 } as const,
+      ],
+      { atividade: "INDUSTRIA", comNota: 0 },
+    );
+    expect(r.vendasContadas).toBe(2);
+  });
+});
+
+describe("prazoDoRelatorio", () => {
+  it("o mês corrente está aberto e fica pronto no dia 1º", () => {
+    expect(prazoDoRelatorio("2026-10", "2026-10-12")).toMatchObject({
+      estado: "aberto",
+      data: "2026-11-01",
+    });
+  });
+
+  it("no dia 1º do mês seguinte, vence no 20 e faltam 19 dias", () => {
+    expect(prazoDoRelatorio("2026-09", "2026-10-01")).toEqual({
+      estado: "vence",
+      data: "2026-10-20",
+      faltam: 19,
+      atencao: false,
+    });
+  });
+
+  it("dia 12 faltam 8, sem atenção; dia 15 faltam 5, com atenção", () => {
+    expect(prazoDoRelatorio("2026-09", "2026-10-12")).toMatchObject({
+      faltam: 8,
+      atencao: false,
+    });
+    expect(prazoDoRelatorio("2026-09", "2026-10-15")).toMatchObject({
+      estado: "vence",
+      faltam: 5,
+      atencao: true,
+    });
+    expect(prazoDoRelatorio("2026-09", "2026-10-20")).toMatchObject({
+      estado: "vence",
+      faltam: 0,
+    });
+  });
+
+  it("dia 21 passou do prazo", () => {
+    expect(prazoDoRelatorio("2026-09", "2026-10-21")).toMatchObject({
+      estado: "atrasado",
+      data: "2026-10-20",
+      atencao: false,
+    });
+  });
+
+  it("guardado mostra o dia em que guardou", () => {
+    expect(
+      prazoDoRelatorio("2026-09", "2026-10-21", {
+        em: "2026-10-14",
+        mudou: false,
+      }),
+    ).toMatchObject({ estado: "guardado", data: "2026-10-14" });
+  });
+
+  it("guardado e mudado volta ao prazo", () => {
+    expect(
+      prazoDoRelatorio("2026-09", "2026-10-15", {
+        em: "2026-10-14",
+        mudou: true,
+      }),
+    ).toMatchObject({ estado: "vence", faltam: 5 });
+  });
+
+  it("dezembro vence em 20 de janeiro do ano seguinte", () => {
+    expect(prazoDoRelatorio("2026-12", "2026-12-31").data).toBe("2027-01-01");
+    expect(prazoDoRelatorio("2026-12", "2027-01-10")).toMatchObject({
+      estado: "vence",
+      data: "2027-01-20",
+      faltam: 10,
+    });
+  });
+});
+
+describe("mudouDepoisDeGuardado", () => {
+  const relatorio = relatorioMei([venda(220_150)], {
+    atividade: "INDUSTRIA",
+    comNota: 50_000,
+  });
+  const guardado = {
+    total: 220_150,
+    comNota: 50_000,
+    atividade: "INDUSTRIA",
+  } as const;
+
+  it("igual ao papel, não mudou", () => {
+    expect(mudouDepoisDeGuardado(guardado, relatorio, "INDUSTRIA")).toBe(false);
+  });
+
+  it("o total, a nota ou a atividade diferentes mudaram", () => {
+    expect(
+      mudouDepoisDeGuardado(
+        { ...guardado, total: 225_150 },
+        relatorio,
+        "INDUSTRIA",
+      ),
+    ).toBe(true);
+    expect(
+      mudouDepoisDeGuardado(
+        { ...guardado, comNota: 0 },
+        relatorio,
+        "INDUSTRIA",
+      ),
+    ).toBe(true);
+    expect(mudouDepoisDeGuardado(guardado, relatorio, "COMERCIO")).toBe(true);
   });
 });

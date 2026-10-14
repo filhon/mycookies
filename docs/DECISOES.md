@@ -11704,3 +11704,49 @@ Rende, sem dizer: começando em agosto, a tela errava pra baixo, o lado perigoso
 **Consequência.** O ritmo continua a média vezes doze mesmo no ano da abertura: erra pra cima.
 Pedir o CNPJ fora desta tela, o faturamento de antes do Rende (153) e a nota por pedido seguem
 fora (spec 150).
+
+## D360 · O mês que se entrega
+
+**Status:** vigente · decidida em 2026-10-14, spec `151-o-mes-que-se-entrega.md`.
+Aprovações da spec tomadas como dadas pelo pedido de implementá-la: (1) o schema aditivo
+`DadosMei.guardados`; (2) o texto. Nenhuma regra, índice ou dependência.
+
+**Contexto.** O relatório do MEI era montado e esquecido: nada dizia o prazo, imprimir não
+mudava nada, e corrigir uma venda de um mês já assinado mudava o total em silêncio.
+
+**Decisão.**
+
+- **`prazoDoRelatorio(competencia, hojeISO, guardado?)`** em `domain/mei.ts` devolve
+  `estado` (`aberto`, `vence`, `atrasado`, `guardado`), `data`, `faltam` e `atencao` (cinco
+  dias ou menos). O prazo é o dia 20 do mês seguinte (`DIA_DO_PRAZO`); dezembro vence em
+  janeiro. `guardado` leva `mudou`: guardado e depois mudado volta ao prazo.
+- **Sob o mês**, `SeletorMes` ganhou `rodape`, que toma o lugar do "Voltar para" só no
+  relatório; enquanto carrega, `null` guarda a linha. As frases: "Ainda aberto. Fica pronto em
+  1º de novembro." (`ink-muted`), "Vence em 20 de outubro · faltam 8 dias" (triângulo de
+  atenção a partir de 5), "Era até 20 de outubro. Ainda vale fazer e guardar." (sem ícone) e
+  "Guardado em 14 de outubro" com `CheckCheck` positivo. **Conferido em 2026-10-14**: nenhuma
+  multa própria do relatório mensal aparece (ele não é entregue a ninguém; as multas citadas são
+  da DASN-SIMEI), então a frase do atraso fica como na spec.
+- **"Já imprimi e guardei"**, secundário abaixo do "Imprimir" (o âmbar continua um só), grava
+  por `guardarRelatorioMei` o retrato em `fiscal/mei.guardados[competencia]`: `total` (X),
+  `comNota` (V ou II, já cortado no total), `atividade` e `em: Timestamp.now()`. Tocar de novo
+  regrava. **No mês aberto o botão não aparece**: o mês ainda vai mudar. O `afterprint` leva o
+  foco a ele. **Desfazer** fica 10 segundos na linha do estado ("Guardado · Desfazer") e devolve
+  o retrato de antes, ou tira a chave (`deleteField` dentro do mapa, com `merge`).
+- **Mudou depois**: `mudouDepoisDeGuardado(guardado, relatorio, atividade)` compara total e
+  com nota em centavos, e a atividade. A faixa de atenção acima do papel diz sempre os dois
+  valores: o total ("era R$ 2.201,50, agora R$ 2.251,50."); com o total igual, a atividade ("a
+  atividade era indústria, agora comércio.") ou o com nota ("com nota era …, agora …."). O
+  retrato antigo fica no documento até ela guardar de novo.
+- **De onde veio**: `relatorioMei` devolve `vendasContadas`; sob "Antes de imprimir", "Somado
+  de 31 vendas de 1 a 30 de setembro · Ver no Caixa" (no mês corrente, até hoje). **O Caixa
+  aceita `?mes=AAAA-MM`** só na abertura (`useSearchParams` com `Suspense`, a página continua
+  estática); o filtro por categoria não.
+- **O pé do Caixa** calcula o estado do mês do link com os lançamentos que a tela já assina (o
+  anterior é a consulta do mês anterior, que só existe no corrente): "· vence dia 20" (troca o
+  ", até o dia 20"), "· guardado" com `CheckCheck`, "· mudou depois de guardado" com o
+  triângulo, e **"· não guardado"** passado o 20, frase que a spec não trazia. Mês aberto, sem
+  sufixo.
+
+**Consequência.** Guardar não guarda o PDF nem diz do DAS. O aviso no dia 15 fica para quando
+houver três meses guardados para medir (spec 151, "Fora de escopo").

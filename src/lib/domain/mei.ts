@@ -2,8 +2,11 @@ import type {
   AtividadeMei,
   Centavos,
   CompetenciaMensal,
+  DataISO,
+  GuardadoMei,
   Transacao,
 } from "@/lib/types";
+import { competenciaVizinha, diasEntre } from "./datas";
 import { digitosDoCnpj } from "./notaFiscal";
 
 export type { AtividadeMei };
@@ -39,6 +42,8 @@ export interface RelatorioMei {
   X: Centavos;
   /** Entradas fora de `VENDA`: não são receita, e a tela diz quanto ficou fora. */
   outrasEntradas: Centavos;
+  /** Quantas vendas somaram o X: a origem do número (`#d360`). */
+  vendasContadas: number;
 }
 
 type Lancamento = Pick<Transacao, "tipo" | "categoria" | "valor">;
@@ -55,11 +60,14 @@ export function relatorioMei(
   escolhas: EscolhasMei,
 ): RelatorioMei {
   let vendas = 0;
+  let vendasContadas = 0;
   let outrasEntradas = 0;
   for (const l of lancamentos) {
     if (l.tipo !== "ENTRADA") continue;
-    if (l.categoria === "VENDA") vendas += l.valor;
-    else outrasEntradas += l.valor;
+    if (l.categoria === "VENDA") {
+      vendas += l.valor;
+      vendasContadas += 1;
+    } else outrasEntradas += l.valor;
   }
   const comNota = Math.min(Math.max(0, escolhas.comNota), vendas);
   const semNota = vendas - comNota;
@@ -77,7 +85,87 @@ export function relatorioMei(
     IX: 0,
     X: vendas,
     outrasEntradas,
+    vendasContadas,
   };
+}
+
+/** O relatório de um mês vence no dia 20 do mês seguinte (`#d269`). */
+export const DIA_DO_PRAZO = 20;
+/** A partir de quantos dias para o 20 a frase ganha o triângulo (`#d360`). */
+const DIAS_DE_ATENCAO = 5;
+
+export interface PrazoDoRelatorio {
+  /**
+   * `aberto`: o mês ainda corre; `vence`: fechado, até o dia 20; `atrasado`:
+   * passou do 20 sem guardar; `guardado`: ela guardou e nada mudou depois.
+   */
+  estado: "aberto" | "vence" | "atrasado" | "guardado";
+  /**
+   * `aberto`: o dia 1º em que fica pronto; `vence` e `atrasado`: o dia 20;
+   * `guardado`: o dia em que ela guardou.
+   */
+  data: DataISO;
+  /** Dias até o dia 20; só conta em `vence`. */
+  faltam: number;
+  /** `vence` com cinco dias ou menos. */
+  atencao: boolean;
+}
+
+/**
+ * Em que pé está o relatório do mês (`#d360`). Guardado e depois mudado volta
+ * ao prazo: o papel guardado não é mais o mês.
+ */
+export function prazoDoRelatorio(
+  competencia: CompetenciaMensal,
+  hojeISO: DataISO,
+  guardado?: { em: DataISO; mudou: boolean } | null,
+): PrazoDoRelatorio {
+  if (guardado && !guardado.mudou) {
+    return { estado: "guardado", data: guardado.em, faltam: 0, atencao: false };
+  }
+  const seguinte = competenciaVizinha(competencia, 1);
+  if (hojeISO < `${seguinte}-01`) {
+    return {
+      estado: "aberto",
+      data: `${seguinte}-01`,
+      faltam: 0,
+      atencao: false,
+    };
+  }
+  const prazo = `${seguinte}-${DIA_DO_PRAZO}`;
+  const faltam = diasEntre(hojeISO, prazo);
+  return faltam >= 0
+    ? {
+        estado: "vence",
+        data: prazo,
+        faltam,
+        atencao: faltam <= DIAS_DE_ATENCAO,
+      }
+    : { estado: "atrasado", data: prazo, faltam, atencao: false };
+}
+
+/**
+ * O papel guardado já não é o mês (`#d360`): o total, o valor com nota ou a
+ * atividade mudaram depois. Em centavos, sem tolerância.
+ */
+export function mudouDepoisDeGuardado(
+  guardado: Pick<GuardadoMei, "total" | "comNota" | "atividade">,
+  relatorio: RelatorioMei,
+  atividade: AtividadeMei,
+): boolean {
+  return (
+    guardado.atividade !== atividade ||
+    guardado.total !== relatorio.X ||
+    guardado.comNota !== comNotaDoRelatorio(relatorio, atividade)
+  );
+}
+
+/** O valor com nota que saiu no papel: já cortado no total. */
+export function comNotaDoRelatorio(
+  relatorio: RelatorioMei,
+  atividade: AtividadeMei,
+): Centavos {
+  return atividade === "COMERCIO" ? relatorio.II : relatorio.V;
 }
 
 export type EstadoDoLimite = "dentro" | "perto" | "passou";

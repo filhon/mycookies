@@ -217,7 +217,19 @@ export interface DadosMei {
   abertura?: CompetenciaMensal;
   /** "Emiti nota fiscal em {mês}, no total de", por competência. */
   notas?: Record<CompetenciaMensal, Centavos>;
+  /** "Já imprimi e guardei": o que estava no papel, por competência (`#d360`). */
+  guardados?: Record<CompetenciaMensal, GuardadoMei>;
   atualizadoEm: Timestamp;
+}
+
+/** O retrato do relatório que ela imprimiu e guardou (`DECISOES.md#d360`). */
+export interface GuardadoMei {
+  em: Timestamp;
+  /** A linha X. */
+  total: Centavos;
+  /** A linha V (ou II), já cortada no total. */
+  comNota: Centavos;
+  atividade: AtividadeMei;
 }
 
 /**

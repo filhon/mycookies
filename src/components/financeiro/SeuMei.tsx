@@ -21,7 +21,7 @@ const ATIVIDADES = [
   { valor: "COMERCIO", rotulo: "Comércio" },
 ] as const;
 
-const ROTULO_ATIVIDADE: Record<AtividadeMei, string> = {
+export const ROTULO_ATIVIDADE: Record<AtividadeMei, string> = {
   INDUSTRIA: "Indústria",
   COMERCIO: "Comércio",
 };

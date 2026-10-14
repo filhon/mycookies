@@ -95,11 +95,11 @@ relatório que ela assinou e o que a tela mostra passam a discordar em silêncio
 
 ## Critérios de aceite
 
-- [ ] Prazo no lugar do "Voltar para" só no relatório; o Caixa igual.
-- [ ] "Guardei" grava o retrato, com desfazer; um âmbar na tela.
-- [ ] Divergência mostrada com os dois números, ícone e palavra.
-- [ ] Origem do número com contagem e link.
-- [ ] Portão; `#d360`; `ESTADO.md`; uma linha em `novidades.ts`.
+- [x] Prazo no lugar do "Voltar para" só no relatório; o Caixa igual.
+- [x] "Guardei" grava o retrato, com desfazer; um âmbar na tela.
+- [x] Divergência mostrada com os dois números, ícone e palavra.
+- [x] Origem do número com contagem e link.
+- [x] Portão; `#d360`; `ESTADO.md`; uma linha em `novidades.ts`.
 
 ## Fora de escopo
 

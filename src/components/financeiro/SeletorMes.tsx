@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { competenciaVizinha, rotuloCompetencia } from "@/lib/domain/datas";
 import type { CompetenciaMensal } from "@/lib/types";
@@ -11,15 +12,20 @@ import type { CompetenciaMensal } from "@/lib/types";
  * funciona com uma mão só, em pé, que é onde a Maynara confere o caixa. O mês
  * corrente é o padrão, e voltar para ele é um toque explícito — nunca uma seta
  * que ela precise contar quantas vezes tocar.
+ *
+ * `rodape` toma o lugar do "Voltar para": no relatório do MEI, o que importa
+ * sob o mês é o prazo dele, e não o mês corrente (`#d360`).
  */
 export function SeletorMes({
   competencia,
   mesCorrente,
   aoMudar,
+  rodape,
 }: {
   competencia: CompetenciaMensal;
   mesCorrente: CompetenciaMensal;
   aoMudar: (competencia: CompetenciaMensal) => void;
+  rodape?: ReactNode;
 }) {
   const noMesCorrente = competencia === mesCorrente;
 
@@ -52,16 +58,22 @@ export function SeletorMes({
         </button>
       </div>
 
-      {!noMesCorrente && (
-        <div className="mt-1 flex justify-center">
-          <button
-            type="button"
-            onClick={() => aoMudar(mesCorrente)}
-            className="toque rounded-md px-3 text-label font-medium text-brand-ink underline underline-offset-2 transition-colors duration-150 ease-quart hover:bg-brand-100"
-          >
-            Voltar para {rotuloCompetencia(mesCorrente)}
-          </button>
+      {rodape !== undefined ? (
+        <div className="mt-1 flex min-h-11 items-center justify-center text-center">
+          {rodape}
         </div>
+      ) : (
+        !noMesCorrente && (
+          <div className="mt-1 flex justify-center">
+            <button
+              type="button"
+              onClick={() => aoMudar(mesCorrente)}
+              className="toque rounded-md px-3 text-label font-medium text-brand-ink underline underline-offset-2 transition-colors duration-150 ease-quart hover:bg-brand-100"
+            >
+              Voltar para {rotuloCompetencia(mesCorrente)}
+            </button>
+          </div>
+        )
       )}
     </div>
   );

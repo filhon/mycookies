@@ -1,8 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { CircleAlert, FileText, Plus, RotateCcw } from "lucide-react";
+import {
+  CheckCheck,
+  CircleAlert,
+  FileText,
+  Plus,
+  RotateCcw,
+  TriangleAlert,
+} from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { BlocoMeta } from "@/components/metas/BlocoMeta";
 import { FormularioMeta } from "@/components/metas/FormularioMeta";
@@ -10,7 +18,13 @@ import { Botao } from "@/components/ui/Botao";
 import { EsqueletoLista, Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import { classesBotao } from "@/components/ui/estilosBotao";
-import { limiteDoAno } from "@/lib/domain/mei";
+import {
+  ehCompetencia,
+  limiteDoAno,
+  mudouDepoisDeGuardado,
+  prazoDoRelatorio,
+  relatorioMei,
+} from "@/lib/domain/mei";
 import {
   conferirAgregado,
   contasQueRepetemPendentes,
@@ -60,6 +74,7 @@ import type {
   Transacao,
 } from "@/lib/types";
 import { useAcaoPedida } from "@/lib/acaoPedida";
+import { cn } from "@/lib/utils/cn";
 import { useContaId } from "@/providers/AuthProvider";
 import { AteOFimDoMes } from "./AteOFimDoMes";
 import { ContasQueRepetem } from "./ContasQueRepetem";
@@ -80,8 +95,12 @@ export function TelaFinanceiro() {
   // faria a tela depender do relógio no meio do desenho.
   const [hoje] = useState(() => new Date());
   const mesCorrente = competenciaAtual(hoje);
-  const [competencia, setCompetencia] =
-    useState<CompetenciaMensal>(mesCorrente);
+  // `?mes=AAAA-MM` abre o Caixa naquele mês: é o "Ver no Caixa" do relatório
+  // do MEI (`#d360`). Só a abertura; depois o mês é estado da tela.
+  const mesDaUrl = useSearchParams().get("mes") ?? undefined;
+  const [competencia, setCompetencia] = useState<CompetenciaMensal>(
+    ehCompetencia(mesDaUrl) ? mesDaUrl : mesCorrente,
+  );
 
   const [transacaoEmEdicao, setTransacaoEmEdicao] = useState<Transacao | null>(
     null,
@@ -156,7 +175,8 @@ export function TelaFinanceiro() {
   const configuracao = useDocumento<ConfiguracaoGeral>(referenciaConfiguracao);
   // A abertura do MEI muda o teto do pé, como na tela do relatório (`#d359`).
   const referenciaMei = useMemo(() => docMei(contaId), [contaId]);
-  const abertura = useDocumento<DadosMei>(referenciaMei).dado?.abertura;
+  const mei = useDocumento<DadosMei>(referenciaMei).dado;
+  const abertura = mei?.abertura;
 
   const formas = useMemo(
     () => configuracao.dado?.formasPagamento ?? [],
@@ -225,6 +245,33 @@ export function TelaFinanceiro() {
   const mesDoRelatorio = relatorioDoAnterior
     ? competenciaVizinha(competencia, -1)
     : competencia;
+  // O estado do relatório daquele mês, com os lançamentos que a tela já assina
+  // (`#d360`): o anterior só existe no mês corrente, que é quando ele é lido.
+  const doRelatorio = relatorioDoAnterior ? mesAnterior : lancamentos;
+  const guardado = mei?.guardados?.[mesDoRelatorio];
+  const atividadeMei = mei?.atividade ?? "INDUSTRIA";
+  const mudouMei =
+    !!guardado &&
+    mudouDepoisDeGuardado(
+      guardado,
+      relatorioMei(doRelatorio.dados, {
+        atividade: atividadeMei,
+        comNota: mei?.notas?.[mesDoRelatorio] ?? 0,
+      }),
+      atividadeMei,
+    );
+  const estadoMei = doRelatorio.carregando
+    ? null
+    : prazoDoRelatorio(
+        mesDoRelatorio,
+        dataISODe(hoje),
+        guardado && { em: dataISODe(guardado.em.toDate()), mudou: mudouMei },
+      ).estado;
+  const IconeMei = mudouMei
+    ? TriangleAlert
+    : estadoMei === "guardado"
+      ? CheckCheck
+      : FileText;
   const peDoMei = (
     <div className="flex flex-col gap-4">
       <Link
@@ -235,9 +282,23 @@ export function TelaFinanceiro() {
           className: "self-start",
         })}
       >
-        <FileText aria-hidden className="size-4" strokeWidth={1.75} />
+        <IconeMei
+          aria-hidden
+          className={cn(
+            "size-4",
+            mudouMei && "text-attention",
+            estadoMei === "guardado" && "text-positive",
+          )}
+          strokeWidth={1.75}
+        />
         Relatório do MEI de {rotuloMes(mesDoRelatorio)}
-        {relatorioDoAnterior && ", até o dia 20"}
+        {mudouMei
+          ? " · mudou depois de guardado"
+          : estadoMei === "guardado"
+            ? " · guardado"
+            : estadoMei === "vence"
+              ? " · vence dia 20"
+              : estadoMei === "atrasado" && " · não guardado"}
       </Link>
       <div className="max-w-md">
         <LimiteDoAnoMei

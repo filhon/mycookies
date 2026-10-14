@@ -43,9 +43,9 @@ loja já vai na leitura de nota; (4) o texto.
 interface DadosMei {
   id: "mei";
   v: VersaoSchema;
-  cnpj?: string;            // só dígitos, validado por `cnpjValido` (já existe em domain/notaFiscal)
+  cnpj?: string; // só dígitos, validado por `cnpjValido` (já existe em domain/notaFiscal)
   nomeEmpresarial?: string; // como no CCMEI, até 120
-  atividade: AtividadeMei;  // "INDUSTRIA" | "COMERCIO"
+  atividade: AtividadeMei; // "INDUSTRIA" | "COMERCIO"
   abertura?: CompetenciaMensal; // o mês em que o MEI começou
   notas?: Record<CompetenciaMensal, Centavos>; // "Emiti nota fiscal em {mês}"
 }

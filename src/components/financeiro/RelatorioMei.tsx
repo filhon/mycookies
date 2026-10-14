@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   useCallback,
@@ -9,24 +10,32 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { Info, Printer, TriangleAlert } from "lucide-react";
+import { Timestamp } from "firebase/firestore";
+import { CheckCheck, Info, Printer, TriangleAlert, Undo2 } from "lucide-react";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { Botao } from "@/components/ui/Botao";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { EstadoVazio } from "@/components/ui/EstadoVazio";
 import {
-  competenciaAtual,
+  competenciaDeISO,
+  dataISODe,
+  diasNoMes,
   rotuloCompetencia,
+  rotuloDiaNoAno,
   rotuloMes,
 } from "@/lib/domain/datas";
 import {
+  comNotaDoRelatorio,
   ehCompetencia,
   formatarCnpj,
   LIMITE_MEI_POR_MES,
   limiteDoAno,
+  mudouDepoisDeGuardado,
+  prazoDoRelatorio,
   relatorioMei,
   type LimiteDoAno,
+  type PrazoDoRelatorio,
   type RelatorioMei as Relatorio,
 } from "@/lib/domain/mei";
 import { formatarMoeda, formatarPercentual } from "@/lib/domain/money";
@@ -35,19 +44,28 @@ import {
   consultaAgregadosDoPeriodo,
   consultaTransacoesDoMes,
 } from "@/lib/firebase/mutations/agregado";
-import { salvarMei } from "@/lib/firebase/mutations/fiscal";
+import {
+  guardarRelatorioMei,
+  salvarMei,
+} from "@/lib/firebase/mutations/fiscal";
 import { useColecao, useDocumento } from "@/lib/hooks/useColecao";
 import type {
   Centavos,
   CompetenciaMensal,
   DadosMei,
+  DataISO,
+  GuardadoMei,
   ResumoMensal,
   Transacao,
 } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 import { useContaId } from "@/providers/AuthProvider";
 import { SeletorMes } from "./SeletorMes";
-import { SeuMei } from "./SeuMei";
+import { ROTULO_ATIVIDADE, SeuMei } from "./SeuMei";
+
+/** O "Desfazer" do "Guardei" vive na linha de estado por este tempo (`#d360`). */
+const JANELA_DESFAZER_MS = 10_000;
+const ID_GUARDAR = "guardar-relatorio-mei";
 
 /** 210 mm a 96 dpi, como em `TelaOrcamento`. */
 const LARGURA_DA_FOLHA_PX = 794;
@@ -101,7 +119,9 @@ export function RelatorioMei({
 }) {
   const contaId = useContaId();
   const router = useRouter();
-  const [mesCorrente] = useState(() => competenciaAtual());
+  // Lido uma vez, na montagem, como no Caixa: o prazo não muda no meio do desenho.
+  const [hoje] = useState(() => dataISODe(new Date()));
+  const mesCorrente = competenciaDeISO(hoje);
 
   const consultaDoMes = useMemo(
     () => consultaTransacoesDoMes(contaId, competencia),
@@ -150,7 +170,27 @@ export function RelatorioMei({
     salvarMei(contaId, { atividade, notas: { [competencia]: centavos } });
   }
 
-  const cabecalho = (
+  // Depois do diálogo de impressão, o foco vai ao "Já imprimi e guardei": é o
+  // passo seguinte, e quem cancelou só não toca.
+  useEffect(() => {
+    const focar = () => document.getElementById(ID_GUARDAR)?.focus();
+    window.addEventListener("afterprint", focar);
+    return () => window.removeEventListener("afterprint", focar);
+  }, []);
+
+  // O retrato de antes do toque, para o "Desfazer" devolvê-lo (`#d360`).
+  const [desfazivel, setDesfazivel] = useState<{
+    anterior: GuardadoMei | null;
+  } | null>(null);
+  useEffect(() => {
+    if (!desfazivel) return;
+    const fim = setTimeout(() => setDesfazivel(null), JANELA_DESFAZER_MS);
+    return () => clearTimeout(fim);
+  }, [desfazivel]);
+
+  const guardado = mei.dado?.guardados?.[competencia];
+
+  const cabecalhoCom = (rodape: ReactNode) => (
     <CabecalhoPagina
       titulo="Relatório do MEI"
       descricao="O que você vendeu no mês, no modelo do Portal do Empreendedor."
@@ -163,9 +203,12 @@ export function RelatorioMei({
         competencia={competencia}
         mesCorrente={mesCorrente}
         aoMudar={(nova) => router.replace(`/financeiro/relatorio-mei/${nova}`)}
+        rodape={rodape}
       />
     </CabecalhoPagina>
   );
+  // Enquanto carrega, a linha do estado guarda o lugar: o mês não pula.
+  const cabecalho = cabecalhoCom(null);
 
   if (lancamentos.erro) {
     return (
@@ -198,9 +241,45 @@ export function RelatorioMei({
   const linhaComNota = atividade === "COMERCIO" ? "II" : "V";
   const mes = rotuloMes(competencia);
 
+  const mudou =
+    !!guardado && mudouDepoisDeGuardado(guardado, relatorio, atividade);
+  const prazo = prazoDoRelatorio(
+    competencia,
+    hoje,
+    guardado && { em: dataISODe(guardado.em.toDate()), mudou },
+  );
+
+  function guardar() {
+    setDesfazivel({ anterior: guardado ?? null });
+    guardarRelatorioMei(contaId, atividade, competencia, {
+      em: Timestamp.now(),
+      total: relatorio.X,
+      comNota: comNotaDoRelatorio(relatorio, atividade),
+      atividade,
+    });
+  }
+
+  function desfazer() {
+    if (!desfazivel) return;
+    guardarRelatorioMei(contaId, atividade, competencia, desfazivel.anterior);
+    setDesfazivel(null);
+  }
+
+  // No mês corrente, a contagem vai até hoje.
+  const ultimoDia =
+    competencia === mesCorrente
+      ? Number(hoje.slice(8, 10))
+      : diasNoMes(competencia);
+
   return (
     <>
-      {cabecalho}
+      {cabecalhoCom(
+        <EstadoDoMes
+          prazo={prazo}
+          hoje={hoje}
+          aoDesfazer={desfazivel ? desfazer : undefined}
+        />,
+      )}
 
       <div className="mt-4 flex flex-col gap-8 print:mt-0 print:block">
         <div className="print:hidden">
@@ -220,6 +299,20 @@ export function RelatorioMei({
           <h2 id="o-papel" className="text-subheading font-semibold text-ink">
             Antes de imprimir
           </h2>
+          <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-label text-ink-muted">
+            <span className="num">
+              {relatorio.vendasContadas === 0
+                ? `Nenhuma venda lançada de 1 a ${ultimoDia} de ${mes}`
+                : `Somado de ${relatorio.vendasContadas} ${relatorio.vendasContadas === 1 ? "venda" : "vendas"} de 1 a ${ultimoDia} de ${mes}`}
+            </span>
+            <span aria-hidden>·</span>
+            <Link
+              href={`/financeiro?mes=${competencia}`}
+              className="toque inline-flex items-center font-medium text-brand-ink underline underline-offset-2"
+            >
+              Ver no Caixa
+            </Link>
+          </p>
 
           <div className="mt-4 flex flex-col gap-6">
             <SeuMei mei={mei.dado} />
@@ -261,12 +354,71 @@ export function RelatorioMei({
             >
               Imprimir ou salvar em PDF
             </Botao>
+            {/* Mês aberto não se guarda: ainda vai mudar (`#d360`). */}
+            {prazo.estado !== "aberto" && (
+              <Botao
+                id={ID_GUARDAR}
+                variante="secundaria"
+                tamanho="lg"
+                onClick={guardar}
+                iconeInicial={
+                  <CheckCheck
+                    aria-hidden
+                    className="size-5"
+                    strokeWidth={1.75}
+                  />
+                }
+              >
+                Já imprimi e guardei
+              </Botao>
+            )}
             <p className="max-w-[60ch] text-label text-ink-muted">
               Confira os números antes de assinar. O relatório não é enviado a
               ninguém: você guarda, com as notas de compra do mês.
             </p>
           </div>
         </section>
+
+        {mudou && guardado && (
+          <div
+            role="status"
+            className="flex items-start gap-2.5 rounded-lg border border-attention/30 bg-attention-soft p-4 text-label text-ink print:hidden"
+          >
+            <TriangleAlert
+              aria-hidden
+              className="mt-0.5 size-4 shrink-0 text-attention"
+              strokeWidth={1.75}
+            />
+            <p className="max-w-[60ch]">
+              Mudou depois que você guardou:{" "}
+              {guardado.total !== relatorio.X ? (
+                <EraAgora
+                  era={formatarMoeda(guardado.total)}
+                  agora={formatarMoeda(relatorio.X)}
+                />
+              ) : guardado.atividade !== atividade ? (
+                <>
+                  a atividade{" "}
+                  <EraAgora
+                    era={ROTULO_ATIVIDADE[guardado.atividade].toLowerCase()}
+                    agora={ROTULO_ATIVIDADE[atividade].toLowerCase()}
+                  />
+                </>
+              ) : (
+                <>
+                  com nota{" "}
+                  <EraAgora
+                    era={formatarMoeda(guardado.comNota)}
+                    agora={formatarMoeda(
+                      comNotaDoRelatorio(relatorio, atividade),
+                    )}
+                  />
+                </>
+              )}{" "}
+              Imprima de novo e troque a folha.
+            </p>
+          </div>
+        )}
 
         <div ref={medirFolha} style={{ "--folha-zoom": zoom } as CSSProperties}>
           <FolhaMei
@@ -278,6 +430,95 @@ export function RelatorioMei({
         </div>
       </div>
     </>
+  );
+}
+
+/** "era R$ 2.201,50, agora R$ 2.251,50." na faixa de mudou depois (`#d360`). */
+function EraAgora({ era, agora }: { era: string; agora: string }) {
+  return (
+    <>
+      era <strong className="num font-semibold">{era}</strong>, agora{" "}
+      <strong className="num font-semibold">{agora}</strong>.
+    </>
+  );
+}
+
+/** "1º de novembro", "20 de outubro", "14 de outubro de 2025". */
+function rotuloDoDia(iso: DataISO, hoje: DataISO): string {
+  return rotuloDiaNoAno(iso, hoje).replace(/^1 /, "1º ");
+}
+
+/**
+ * O estado do mês sob o seletor, no lugar do "Voltar para" (`#d360`). Atraso
+ * não leva ícone: o relatório entregue depois do 20 não tem multa, e a marca
+ * não é alarmista.
+ */
+function EstadoDoMes({
+  prazo,
+  hoje,
+  aoDesfazer,
+}: {
+  prazo: PrazoDoRelatorio;
+  hoje: DataISO;
+  aoDesfazer?: () => void;
+}) {
+  const dia = rotuloDoDia(prazo.data, hoje);
+  if (prazo.estado === "guardado") {
+    return (
+      <p className="flex flex-wrap items-center justify-center gap-x-1.5 text-label text-ink">
+        <CheckCheck
+          aria-hidden
+          className="size-4 shrink-0 text-positive"
+          strokeWidth={1.75}
+        />
+        {aoDesfazer ? (
+          <>
+            Guardado
+            <span aria-hidden>·</span>
+            <button
+              type="button"
+              onClick={aoDesfazer}
+              className="toque inline-flex items-center gap-1 rounded-md px-2 font-medium text-brand-ink underline underline-offset-2 transition-colors duration-150 ease-quart hover:bg-brand-100"
+            >
+              <Undo2 aria-hidden className="size-4" strokeWidth={1.75} />
+              Desfazer
+            </button>
+          </>
+        ) : (
+          `Guardado em ${dia}`
+        )}
+      </p>
+    );
+  }
+  if (prazo.estado === "aberto") {
+    return (
+      <p className="text-label text-ink-muted">
+        Ainda aberto. Fica pronto em {dia}.
+      </p>
+    );
+  }
+  if (prazo.estado === "atrasado") {
+    return (
+      <p className="text-label text-ink">
+        Era até {dia}. Ainda vale fazer e guardar.
+      </p>
+    );
+  }
+  return (
+    <p className="flex items-center justify-center gap-1.5 text-label text-ink">
+      {prazo.atencao && (
+        <TriangleAlert
+          aria-hidden
+          className="size-4 shrink-0 text-attention"
+          strokeWidth={1.75}
+        />
+      )}
+      <span className="num">
+        {prazo.faltam === 0
+          ? `Vence hoje, ${dia}`
+          : `Vence em ${dia} · ${prazo.faltam === 1 ? "falta 1 dia" : `faltam ${prazo.faltam} dias`}`}
+      </span>
+    </p>
   );
 }
 
