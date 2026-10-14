@@ -10,7 +10,7 @@ import { formatarMoeda, formatarValor } from "@/lib/domain/money";
 import type { Centavos, CompetenciaMensal, DataISO, Pacote } from "@/lib/types";
 
 /**
- * As cinco peças de e-mail do Rende (spec 044, `DECISOES.md#d203`).
+ * As peças de e-mail do Rende (spec 044, `DECISOES.md#d203`; a senha trocada é a 158).
  *
  * HTML de e-mail escrito à mão: tabelas, estilo inline, 560 px, o molde
  * aprovado em `docs/specs/044-emails/`. Mudança de desenho volta para
@@ -328,6 +328,66 @@ export function senhaNova(d: DadosSenhaNova): Peca {
         `Criar a senha nova: ${d.link}`,
         "O link vale por uma hora e funciona uma vez.",
         ignorar,
+      ],
+      pe,
+    ),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Senha trocada
+
+export interface DadosSenhaTrocada {
+  email: string;
+  /** O `tokensValidAfterTime` do registro: o instante da troca (`#d371`). */
+  quando: Date;
+}
+
+// O servidor roda em UTC; o aviso diz a hora de Brasília (`#d160`).
+const DIA_EM_BRASILIA = new Intl.DateTimeFormat("pt-BR", {
+  day: "numeric",
+  month: "long",
+  timeZone: "America/Sao_Paulo",
+});
+const HORA_EM_BRASILIA = new Intl.DateTimeFormat("pt-BR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: "America/Sao_Paulo",
+});
+
+export function senhaTrocada(d: DadosSenhaTrocada): Peca {
+  const assunto = "A senha do Rende foi trocada";
+  const preheader = "Se foi você, está tudo certo.";
+  const quando = `${DIA_EM_BRASILIA.format(d.quando)}, às ${HORA_EM_BRASILIA.format(d.quando)} (horário de Brasília)`;
+  const tudoCerto = "Se foi você, está tudo certo: não precisa fazer nada.";
+  const outros = "Nos outros aparelhos, o Rende vai pedir a senha nova.";
+  const naoFoi =
+    "Responda este e-mail agora e peça uma senha nova na tela de entrar do Rende. A resposta chega a uma pessoa.";
+  const pe = "Este e-mail sai sempre que a senha da conta muda.";
+
+  return {
+    assunto,
+    preheader,
+    html: moldura({
+      assunto,
+      preheader,
+      corpo: `
+    ${titulo("Senha trocada", 20, true)}
+
+    <p style="margin:0 0 16px;">A senha da conta <strong style="font-weight:600;">${escapar(d.email)}</strong> no Rende foi trocada em ${quando}. ${tudoCerto}</p>
+
+    <p style="margin:0;">${outros}</p>
+
+    ${nota(`<strong style="font-weight:600;color:${TINTA};">Não foi você?</strong> ${naoFoi}`, 32)}
+`,
+      pe,
+    }),
+    texto: texto(
+      [
+        `A senha da conta ${d.email} no Rende foi trocada em ${quando}. ${tudoCerto}`,
+        outros,
+        `Não foi você? ${naoFoi}`,
       ],
       pe,
     ),

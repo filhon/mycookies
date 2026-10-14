@@ -104,9 +104,9 @@ entrar pelo "Salvar e entrar" seguinte, manda, desde que dentro dos 15 minutos.
 
 ## 5 · Critérios de aceite
 
-- [ ] O aviso sai só depois de uma troca de verdade, uma vez por troca, para o e-mail do registro.
-- [ ] O pronto da 157 não espera o e-mail.
-- [ ] Portão; `#d371`; `ESTADO.md`. Nenhuma linha em `novidades.ts`.
+- [x] O aviso sai só depois de uma troca de verdade, uma vez por troca, para o e-mail do registro.
+- [x] O pronto da 157 não espera o e-mail.
+- [x] Portão; `#d371`; `ESTADO.md`. Nenhuma linha em `novidades.ts`.
 
 ## 6 · Fora de escopo
 

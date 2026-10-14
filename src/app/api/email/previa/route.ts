@@ -6,13 +6,14 @@ import {
   mesFechado,
   metaBatida,
   senhaNova,
+  senhaTrocada,
   testeAcabando,
   type Peca,
 } from "@/lib/email/pecas";
 import { enviarEmail } from "@/lib/server/email";
 
 /**
- * As cinco peças com os dados dos moldes de `docs/specs/044-emails/`, para
+ * As peças com os dados dos moldes de `docs/specs/044-emails/`, para
  * conferir no navegador (`?peca=…`) e no Gmail do celular (`&enviar=1`, para
  * `RESPONSAVEL.email`). Só existe no `npm run dev`.
  */
@@ -29,6 +30,11 @@ const PECAS: Record<string, () => Peca> = {
     senhaNova({
       email: "carla@exemplo.com",
       link: `${URL_DO_SITE}/redefinir-senha?mode=resetPassword&oobCode=EXEMPLO&lang=pt-BR`,
+    }),
+  "senha-trocada": () =>
+    senhaTrocada({
+      email: "carla@exemplo.com",
+      quando: new Date("2026-10-14T15:32:00-03:00"),
     }),
   "teste-acabando": () =>
     testeAcabando({

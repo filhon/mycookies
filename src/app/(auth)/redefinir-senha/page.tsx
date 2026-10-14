@@ -238,9 +238,12 @@ function Pronta({ email }: { email: string }) {
           Abrir o Rende
         </Link>
         {/* No Android o app instalado divide a sessão com o Chrome; no iPhone
-            ele tem a dele e vai pedir. A frase vale nos dois. */}
+            ele tem a dele e vai pedir. A frase vale nos dois. O aviso é dito
+            sempre, sem esperar a rota (`#d371`). */}
         <p className="text-center text-label text-ink-muted">
-          Se o Rende pedir a senha em outro aparelho ou no app instalado, é esta
+          Mandamos um aviso para{" "}
+          <strong className="font-semibold text-ink">{email}</strong>. Se o
+          Rende pedir a senha em outro aparelho ou no app instalado, é esta
           nova.
         </p>
       </div>
@@ -369,6 +372,22 @@ function PedirOutroLink() {
   );
 }
 
+/**
+ * O aviso por e-mail da troca (`#d371`). Sem `await`: o pronto não espera a
+ * ida ao Resend, e a falha não aparece na tela.
+ */
+function avisarTroca() {
+  obterAuth()
+    .currentUser?.getIdToken()
+    .then((token) =>
+      fetch("/api/senha/trocada", {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}` },
+      }),
+    )
+    .catch(() => {});
+}
+
 function Formulario({
   codigo,
   email,
@@ -418,6 +437,7 @@ function Formulario({
       }
       // Ela já entra com a senha que acabou de digitar (`#d197`).
       await entrar(email, senha);
+      avisarTroca();
       aoTerminar();
     } catch (erro) {
       setEnviando(false);

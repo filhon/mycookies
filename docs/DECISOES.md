@@ -12074,3 +12074,30 @@ metade. Sem medidor e sem lista na tela (`#d366`); a dica continua "Pelo menos 6
 **Consequência.** Senhas já gravadas não são tocadas, e o login não confere nada. Consultar senhas
 vazadas (rede no envio, serviço externo) e subir o mínimo para 8 (política do projeto no Firebase)
 ficaram fora.
+
+## D371 · O aviso da senha trocada
+
+**Status:** vigente · decidida em 2026-10-14, spec `158-o-aviso-da-senha-trocada.md`. Texto da
+peça aprovado pelo pedido de implementar a spec.
+
+**Contexto.** A senha mudava e ninguém ficava sabendo. Se quem trocou não foi ela, a descoberta era
+dias depois, quando a senha dela deixasse de funcionar.
+
+**Decisão.** `senhaTrocada({ email, quando })` em `pecas.ts`, "A senha do Rende foi trocada", com
+dia e hora de Brasília, "Nos outros aparelhos, o Rende vai pedir a senha nova." e a nota "Não foi
+você?" mandando responder (o `reply_to` é `RESPONSAVEL.email`, `#d208`). Sem botão e sem desligar
+(`#d207`). Sai por `POST /api/senha/trocada`, sem corpo, com o ID token, chamada pela
+`/redefinir-senha` logo depois de `entrar()`, sem `await`. A rota só manda se
+`tokensValidAfterTime` do registro for de até 15 minutos atrás **e** posterior ao `creationTime`:
+a prova da 158 (conta descartável, `accounts:resetPassword`) mostrou que o campo muda na troca, e
+ele também nasce com o login, então um cadastro recente parecia troca. Destinatário é o e-mail do
+registro; a chave `senha-trocada/{uid}/{instante}` faz duas chamadas pela mesma troca virarem um
+e-mail. Responde `{ ok: true }` em todo caso com login (401 sem); falha do Resend é `console.warn`.
+A tela de pronto diz sempre "Mandamos um aviso para {email}.": esperar a rota atrasaria o pronto
+por uma ida ao Resend, e a frase só é falsa quando o e-mail não sai.
+
+**Consequência.** O caminho "senha salva, entrada caída" (`#d197`) só avisa quando ela entrar
+pelo botão seguinte, dentro dos 15 minutos. Qualquer outra coisa que mova `tokensValidAfterTime`
+(um `revokeRefreshTokens` futuro, troca de e-mail) também abriria a janela: hoje o código não faz
+nenhuma das duas. Botão "não fui eu", aparelho ou cidade no aviso e aviso de entrada nova ficaram
+fora.
