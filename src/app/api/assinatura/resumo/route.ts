@@ -109,6 +109,7 @@ export async function POST(requisicao: Request) {
     ateMs: (assinatura.cancel_at ?? item.current_period_end) * 1000,
     final,
     cancela,
+    emTeste: assinatura.status === "trialing",
   };
   return NextResponse.json(resumo);
 }

@@ -2,6 +2,7 @@ import type { ReactNode, Ref } from "react";
 import { RESPONSAVEL } from "@/app/(auth)/responsavel";
 import { Logotipo } from "@/components/marca/Marca";
 import { classesBotao } from "@/components/ui/estilosBotao";
+import { cn } from "@/lib/utils/cn";
 
 /** O texto pronto não leva o e-mail dela: quem abre o link decide o que contar. */
 const AJUDA_DE_QUEM_NAO_ENTROU = {
@@ -36,6 +37,7 @@ export function MolduraDeEntrada({
   painel,
   refTitulo,
   ajuda = AJUDA_DE_QUEM_NAO_ENTROU,
+  classeDaColuna,
   children,
 }: {
   titulo: string;
@@ -46,12 +48,14 @@ export function MolduraDeEntrada({
   refTitulo?: Ref<HTMLHeadingElement>;
   /** Ausente, a pergunta de quem está do lado de fora. */
   ajuda?: { pergunta: string; texto: string };
+  /** Na coluna do título e do conteúdo: a entrada do recibo (spec 164). */
+  classeDaColuna?: string;
   children: ReactNode;
 }) {
   return (
     <div className="flex min-h-dvh bg-canvas">
       <main className="flex flex-1 flex-col items-center px-6 py-12">
-        <div className="my-auto w-full max-w-sm">
+        <div className={cn("my-auto w-full max-w-sm", classeDaColuna)}>
           <div className="mb-10 lg:hidden">
             <Logotipo tamanho="md" />
           </div>

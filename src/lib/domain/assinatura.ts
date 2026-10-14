@@ -221,6 +221,7 @@ export function sobraQuePagaOPlano(
  * O que `/api/assinatura/resumo` lê do Stripe e devolve, sem gravar nada
  * (`DECISOES.md#d285`). `ateMs` é a próxima cobrança, ou o fim quando
  * `cancela`. `final` é o fim do cartão; `null` quando não há cartão.
+ * `emTeste` é o `trialing` do Stripe: nada cobrado ainda (spec 164).
  */
 export interface ResumoAssinatura {
   valor: Centavos;
@@ -228,6 +229,7 @@ export interface ResumoAssinatura {
   ateMs: number;
   final: string | null;
   cancela: boolean;
+  emTeste: boolean;
 }
 
 /**
@@ -254,7 +256,7 @@ const DIA_E_MES = new Intl.DateTimeFormat("pt-BR", {
 });
 
 /** "12 de novembro". */
-function diaEMes(ms: number): string {
+export function diaEMes(ms: number): string {
   return DIA_E_MES.format(ms);
 }
 
@@ -348,6 +350,24 @@ export function fraseDaCobranca(
   return resumo.final
     ? `Renova em ${dia}, no cartão final ${resumo.final}.`
     : `Renova em ${dia}.`;
+}
+
+/**
+ * O que aconteceu com o dinheiro, na volta do Stripe (spec 164): nunca afirma
+ * uma cobrança que não houve. A cortesia vem antes do teste: em teste, ela
+ * também é `trialing`, e o que vale dizer é que nada será cobrado.
+ */
+export function fraseDaConfirmacao(
+  resumo: Pick<ResumoAssinatura, "valor" | "ateMs" | "final" | "emTeste">,
+): string {
+  if (resumo.valor === 0) return "É cortesia: nada é cobrado.";
+  if (resumo.emTeste) {
+    return `Nada foi cobrado hoje. A primeira cobrança é em ${diaEMes(resumo.ateMs)}, quando o teste acaba.`;
+  }
+  const valor = formatarMoeda(resumo.valor);
+  return resumo.final
+    ? `${valor} cobrados no cartão final ${resumo.final}.`
+    : `${valor} cobrados.`;
 }
 
 /**

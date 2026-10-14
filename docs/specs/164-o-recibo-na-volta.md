@@ -128,13 +128,13 @@ Modo de teste, celular a 360px e desktop, claro e escuro.
 
 ## Critérios de aceite
 
-- [ ] O título nunca afirma um pagamento que não houve.
-- [ ] Ela vê plano, valor, próxima cobrança e cartão antes de sair da tela.
-- [ ] A tela diz onde se muda e se cancela.
-- [ ] A chegada tem entrada curta e respeita o movimento reduzido.
-- [ ] Sem resumo, nada trava.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] Decisão escrita (não sair sozinha da tela); `ESTADO.md`. Sem linha em `novidades.ts`:
+- [x] O título nunca afirma um pagamento que não houve.
+- [x] Ela vê plano, valor, próxima cobrança e cartão antes de sair da tela.
+- [x] A tela diz onde se muda e se cancela.
+- [x] A chegada tem entrada curta e respeita o movimento reduzido.
+- [x] Sem resumo, nada trava.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] Decisão escrita (não sair sozinha da tela); `ESTADO.md`. Sem linha em `novidades.ts`:
       quem lê já assinou e não volta aqui.
 
 ---

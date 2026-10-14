@@ -607,6 +607,53 @@
   }
 }
 
+/**
+ * A chegada do recibo em `/assinatura/confirmando` (spec 164): o selo troca o
+ * símbolo pulsando, e o resto da coluna da moldura sobe 8px, um filho a cada
+ * 60ms, pela ordem do DOM (o 1º é o logotipo, que já estava lá). Tudo está no
+ * DOM desde o início; com movimento reduzido, o quadro final parado.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .recibo-entra > :nth-child(n + 2) {
+    animation: recibo-entra 320ms var(--ease-quart) backwards;
+  }
+  .recibo-entra > :nth-child(3) {
+    animation-delay: 60ms;
+  }
+  .recibo-entra > :nth-child(4) {
+    animation-delay: 120ms;
+  }
+  .recibo-entra > :nth-child(5) {
+    animation-delay: 180ms;
+  }
+  .recibo-entra > :nth-child(6) {
+    animation-delay: 240ms;
+  }
+  .recibo-entra > :nth-child(7) {
+    animation-delay: 300ms;
+  }
+  .recibo-entra > :nth-child(n + 8) {
+    animation-delay: 360ms;
+  }
+  .recibo-entra > .recibo-selo {
+    animation: recibo-selo 220ms var(--ease-quart) backwards;
+  }
+}
+
+@keyframes recibo-entra {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes recibo-selo {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
 @layer base {
   @media (prefers-reduced-motion: reduce) {
     *,

@@ -4,6 +4,7 @@ import {
   deveCobrarNoFimDoTeste,
   esquemaConfirmar,
   textoDaAjudaDaConfirmacao,
+  fraseDaConfirmacao,
   fraseDaPrimeiraCobranca,
   fraseDaSobraQuePaga,
   motivoDoCompleto,
@@ -562,6 +563,36 @@ describe("a volta do Stripe (spec 163)", () => {
     );
     expect(textoDaAjudaDaConfirmacao(null)).toBe(
       "Oi, assinei o Rende e a conta não liberou.",
+    );
+  });
+});
+
+describe("o recibo na volta (spec 164)", () => {
+  const dia28 = Date.parse("2026-10-28T15:00:00Z");
+  const base = { valor: 3990, ateMs: dia28, final: "4242", emTeste: false };
+  const semNbsp = (texto: string) => texto.replace(/ /g, " ");
+
+  it("cobrado, com o cartão e sem ele", () => {
+    expect(semNbsp(fraseDaConfirmacao(base))).toBe(
+      "R$ 39,90 cobrados no cartão final 4242.",
+    );
+    expect(semNbsp(fraseDaConfirmacao({ ...base, final: null }))).toBe(
+      "R$ 39,90 cobrados.",
+    );
+  });
+
+  it("no teste, nada foi cobrado e diz o dia da primeira cobrança", () => {
+    expect(fraseDaConfirmacao({ ...base, emTeste: true })).toBe(
+      "Nada foi cobrado hoje. A primeira cobrança é em 28 de outubro, quando o teste acaba.",
+    );
+  });
+
+  it("a cortesia não fala de cobrança, nem em teste", () => {
+    expect(fraseDaConfirmacao({ ...base, valor: 0 })).toBe(
+      "É cortesia: nada é cobrado.",
+    );
+    expect(fraseDaConfirmacao({ ...base, valor: 0, emTeste: true })).toBe(
+      "É cortesia: nada é cobrado.",
     );
   });
 });

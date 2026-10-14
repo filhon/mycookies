@@ -133,6 +133,11 @@ de **teste** primeiro:
 5. **Ao ir ao ar de verdade** (modo ao vivo, e não mais teste): os quatro valores trocam pelos
    equivalentes de produção, inclusive um segundo endpoint de webhook — o do painel de teste
    não recebe eventos do modo ao vivo.
+6. **O recibo de cada cobrança (spec 164).** Configurações › E-mails para clientes ›
+   "Pagamentos bem-sucedidos" **ligado** no ao vivo (conferido em 2026-10-14 por quem conduz o
+   projeto). É o recibo que a confeiteira MEI guarda para as despesas, e
+   `/assinatura/confirmando` promete que ele chega no e-mail do login: desligar pede tirar a
+   linha de lá. No modo de teste o Stripe não manda recibo nenhum, ligado ou não.
 
 **Ordem de publicação, sempre**: regra → app → endpoint do webhook no painel. A regra nova de
 `firestore.rules` é compatível com qualquer claim sem `acessoAte` (nenhuma conta liberada à

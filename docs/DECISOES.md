@@ -12327,3 +12327,38 @@ precisa de aparelho e não rodou nesta sessão. Se a volta cair deslogada em alg
 sem login é spec própria, porque decide que o id da sessão vale como credencial de leitura.
 
 **Consequência.** Nenhum campo, regra ou dependência. Sem linha em `novidades.ts`.
+
+## D378 · A volta do Stripe não sai sozinha da tela
+
+**Status:** vigente · decidida em 2026-10-14, spec `164-o-recibo-na-volta.md`. Muda o fim do
+`#d377`: confirmada, a tela não pula mais para a Hoje.
+
+**Contexto.** Confirmado o pagamento, `/assinatura/confirmando` fazia `router.replace("/")`
+debaixo de "Pagamento recebido", título que mentia para quem assinou no teste (nada cobrado,
+`#d374`) e para a cortesia (`#d314`). Plano, valor, próxima cobrança e cartão só apareciam no
+painel da Configuração, e a primeira cobrança do teste chegava sem ninguém ter mostrado a data.
+
+**Decisão.**
+
+- **Esperando**, "Confirmando a assinatura" · "Leva alguns segundos.", com o símbolo pulsando.
+- **Assinante com `?sessao=`**: `reconferirAcesso()` e `/api/assinatura/resumo` em paralelo, e
+  o quadro "Assinatura feita" fica até ela tocar "Ir para a Hoje". **Sem `?sessao=`** (favorito,
+  histórico) o quadro não aparece e a tela vai para a Hoje, como antes: sem a sessão nada diz que
+  ela acabou de pagar, e "R$ … cobrados" seria falso numa visita repetida. **Sem resumo** (falha,
+  sem rede), a Hoje: o quadro é bônus, nunca porta.
+- **`ResumoAssinatura.emTeste`** (`status === "trialing"`) e **`fraseDaConfirmacao`**: cortesia
+  antes de teste (a cortesia em teste também é `trialing`, e o que vale é "nada é cobrado"),
+  depois teste ("Nada foi cobrado hoje…", com o dia de `ateMs`, que no teste é o `trial_end`),
+  depois o valor cobrado, com ou sem cartão. "Cobrado" é o preço com cupons, que é a primeira
+  fatura de quem não estava no teste.
+- **A lista** é `dl` (lida rótulo e valor), na "Seção no papel"; a linha do recibo existe porque
+  "Pagamentos bem-sucedidos" está ligado no ao vivo (`DEPLOY.md`, Stripe item 6). "Configuração"
+  leva a `/configuracao#assinatura` (`#d372`, o painel abre sozinho). Os dois links usam
+  `replace`: voltar da Hoje não reabre o recibo.
+- **A chegada**: `MolduraDeEntrada` ganhou `classeDaColuna`, e `.recibo-entra` em `globals.css`
+  sobe cada filho da coluna 8px, 60ms um do outro, pela ordem do DOM (até 360ms + 320ms); o
+  `CircleCheck` em `--positive` entra por escala 0.9 → 1 em 220ms. Só com `no-preference`. O
+  `key` remonta a moldura para a entrada começar do zero, e o título recebe o foco (`#d368`).
+
+**Consequência.** Nenhum campo, regra ou dependência. Sem linha em `novidades.ts`: quem lê já
+assinou e não volta aqui.
