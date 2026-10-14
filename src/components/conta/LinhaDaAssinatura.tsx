@@ -9,7 +9,9 @@ import {
   cobrancaPrevistaMs,
   fraseDaCobranca,
   fraseDaEconomia,
+  fraseDoEssencial,
   fraseDoPlano,
+  fraseDoQueFica,
   legendaDaAssinatura,
   MENSAGEM_FALHA_ASSINATURA,
   NOME_DO_PACOTE,
@@ -22,11 +24,20 @@ import { useAuth, useContaId } from "@/providers/AuthProvider";
 
 type Precos = Record<Pacote, { mensal: Centavos; anual: Centavos }>;
 
+/** Cada botão que sai para o Stripe; os dois últimos abrem o portal comum. */
+type Envio = "completo" | "essencial" | "cancelar" | "portal" | "continuar";
+const PARA: Partial<Record<Envio, string>> = {
+  completo: "COMPLETO",
+  essencial: "ESSENCIAL",
+  cancelar: "CANCELAR",
+};
+
 /**
  * "Assinatura" em "A sua conta", para a assinante (spec 084, `#d285`): a
  * linha diz o plano e a renovação pelo que o aparelho sabe; o painel lê no
  * Stripe o valor, a próxima cobrança e o cartão, e mostra o que o completo
  * traz. Sem rede ou sem resposta, fica o que o aparelho sabe, nunca um erro.
+ * Cancelar passa antes pelo passo "Antes de cancelar" (spec 162, `#d376`).
  */
 export function LinhaDaAssinatura({
   pacote,
@@ -41,8 +52,26 @@ export function LinhaDaAssinatura({
   const [carregando, setCarregando] = useState(false);
   const [resumo, setResumo] = useState<ResumoAssinatura | null>(null);
   const [precos, setPrecos] = useState<Precos | null>(null);
-  const [enviando, setEnviando] = useState<"completo" | "portal" | null>(null);
+  const [enviando, setEnviando] = useState<Envio | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  // "Antes de cancelar" troca o conteúdo do painel, sem modal (spec 162).
+  const [antesDeCancelar, setAntesDeCancelar] = useState(false);
+  const tituloDoPasso = useRef<HTMLHeadingElement>(null);
+  const botaoCancelar = useRef<HTMLButtonElement>(null);
+  const trocouDePasso = useRef(false);
+
+  // O botão tocado some com a troca: o foco vai para o começo do que entrou.
+  useEffect(() => {
+    if (!trocouDePasso.current) return;
+    trocouDePasso.current = false;
+    (antesDeCancelar ? tituloDoPasso : botaoCancelar).current?.focus();
+  }, [antesDeCancelar]);
+
+  function trocarPasso(antes: boolean) {
+    trocouDePasso.current = true;
+    setErro(null);
+    setAntesDeCancelar(antes);
+  }
 
   /** `null` em qualquer falha: quem chama fica com o que o aparelho sabe. */
   async function ler<T>(url: string, corpo?: object): Promise<T | null> {
@@ -86,7 +115,7 @@ export function LinhaDaAssinatura({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez, na montagem
   }, []);
 
-  async function abrirPortal(qual: "completo" | "portal") {
+  async function abrirPortal(qual: Envio) {
     if (!usuario) return;
     setErro(null);
     setEnviando(qual);
@@ -97,10 +126,8 @@ export function LinhaDaAssinatura({
           authorization: `Bearer ${await usuario.getIdToken()}`,
           "content-type": "application/json",
         },
-        // O completo abre direto na confirmação da troca (`#d313`).
-        body: JSON.stringify(
-          qual === "completo" ? { contaId, para: "COMPLETO" } : { contaId },
-        ),
+        // A troca e o cancelamento abrem direto na confirmação (`#d313`, `#d376`).
+        body: JSON.stringify({ contaId, para: PARA[qual] }),
       });
       if (!resposta.ok) {
         const corpo = (await resposta.json().catch(() => ({}))) as {
@@ -129,6 +156,15 @@ export function LinhaDaAssinatura({
     resumo?.periodo === "mensal" && resumo.valor > 0 && precos
       ? fraseDaEconomia(precos[pacote])
       : null;
+  const essencial =
+    resumo && precos
+      ? fraseDoEssencial(pacote, resumo, precos.ESSENCIAL)
+      : null;
+  const erroNaTela = erro && (
+    <p role="alert" className="text-label text-negative">
+      {erro}
+    </p>
+  );
 
   return (
     <>
@@ -164,101 +200,173 @@ export function LinhaDaAssinatura({
         aoFechar={() => {
           setAberto(false);
           setErro(null);
+          setAntesDeCancelar(false);
         }}
         titulo="Assinatura"
       >
-        <div className="space-y-8">
-          <div className="space-y-2" aria-busy={carregando}>
-            <p className="text-subheading font-semibold tabular-nums text-ink">
-              {resumo
-                ? fraseDoPlano(pacote, resumo)
-                : `Plano ${NOME_DO_PACOTE[pacote]}`}
-            </p>
-
-            {resumo?.cancela ? (
-              <div className="flex items-start gap-2.5 rounded-md border border-attention/30 bg-attention-soft px-3 py-3 text-body text-ink">
-                <TriangleAlert
-                  aria-hidden
-                  className="mt-1 size-4 shrink-0 text-attention"
-                  strokeWidth={1.75}
-                />
-                <p>{fraseDaCobranca(resumo)}</p>
-              </div>
-            ) : (
-              <p className="text-body text-ink">
-                {fraseDaCobranca(
-                  resumo ?? {
-                    ateMs: cobrancaPrevistaMs(renovaEmMs),
-                    final: null,
-                    cancela: false,
-                  },
+        {antesDeCancelar ? (
+          <div className="space-y-8">
+            <div className="space-y-2">
+              <h3
+                ref={tituloDoPasso}
+                tabIndex={-1}
+                className="text-subheading font-semibold text-ink outline-none"
+              >
+                Antes de cancelar
+              </h3>
+              <p className="max-w-[52ch] text-body text-ink">
+                {fraseDoQueFica(
+                  resumo?.ateMs ?? cobrancaPrevistaMs(renovaEmMs),
                 )}
               </p>
+            </div>
+
+            {essencial && (
+              <div className="space-y-3">
+                <p className="max-w-[52ch] text-body text-ink">{essencial}</p>
+                <Botao
+                  larguraTotal
+                  onClick={() => void abrirPortal("essencial")}
+                  carregando={enviando === "essencial"}
+                  disabled={enviando !== null}
+                >
+                  Passar para o Essencial
+                </Botao>
+              </div>
             )}
 
-            {carregando && !resumo ? (
-              <Esqueleto className="h-4 w-3/5" />
-            ) : (
-              !resumo && (
-                <p className="text-label text-ink-muted">
-                  O valor e o cartão aparecem com internet.
-                </p>
-              )
-            )}
-
-            {economia && (
-              <p className="text-label text-ink-muted">{economia}.</p>
-            )}
-          </div>
-
-          {traz.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-label font-semibold text-ink">
-                O Completo traz:
-              </h3>
-              <ul className="space-y-2">
-                {traz.map((frase) => (
-                  <li
-                    key={frase}
-                    className="flex items-start gap-2.5 text-body text-ink"
-                  >
-                    <Plus
-                      aria-hidden
-                      className="mt-1 size-4 shrink-0 text-ink-subtle"
-                      strokeWidth={1.75}
-                    />
-                    <span className="max-w-[52ch]">{frase}</span>
-                  </li>
-                ))}
-              </ul>
+            <div className="space-y-2 border-t border-line pt-4">
               <Botao
                 larguraTotal
-                onClick={() => void abrirPortal("completo")}
-                carregando={enviando === "completo"}
+                onClick={() => void abrirPortal("cancelar")}
+                carregando={enviando === "cancelar"}
                 disabled={enviando !== null}
               >
-                Passar para o Completo
+                Cancelar mesmo assim
               </Botao>
+              <Botao
+                variante="terciaria"
+                larguraTotal
+                onClick={() => trocarPasso(false)}
+                disabled={enviando !== null}
+              >
+                Voltar
+              </Botao>
+              {erroNaTela}
             </div>
-          )}
-
-          <div className="space-y-2 border-t border-line pt-4">
-            <Botao
-              variante="terciaria"
-              larguraTotal
-              onClick={() => void abrirPortal("portal")}
-              carregando={enviando === "portal"}
-              disabled={enviando !== null}
-            >
-              Trocar o cartão, ver as cobranças ou cancelar
-            </Botao>
-            {erro && (
-              <p role="alert" className="text-label text-negative">
-                {erro}
-              </p>
-            )}
           </div>
-        </div>
+        ) : (
+          <div className="space-y-8">
+            <div className="space-y-2" aria-busy={carregando}>
+              <p className="text-subheading font-semibold tabular-nums text-ink">
+                {resumo
+                  ? fraseDoPlano(pacote, resumo)
+                  : `Plano ${NOME_DO_PACOTE[pacote]}`}
+              </p>
+
+              {resumo?.cancela ? (
+                <>
+                  <div className="flex items-start gap-2.5 rounded-md border border-attention/30 bg-attention-soft px-3 py-3 text-body text-ink">
+                    <TriangleAlert
+                      aria-hidden
+                      className="mt-1 size-4 shrink-0 text-attention"
+                      strokeWidth={1.75}
+                    />
+                    <p>{fraseDaCobranca(resumo)}</p>
+                  </div>
+                  {/* Não há `flow_data` de renovar: o portal comum oferece (`#d376`). */}
+                  <Botao
+                    larguraTotal
+                    onClick={() => void abrirPortal("continuar")}
+                    carregando={enviando === "continuar"}
+                    disabled={enviando !== null}
+                  >
+                    Continuar assinando
+                  </Botao>
+                </>
+              ) : (
+                <p className="text-body text-ink">
+                  {fraseDaCobranca(
+                    resumo ?? {
+                      ateMs: cobrancaPrevistaMs(renovaEmMs),
+                      final: null,
+                      cancela: false,
+                    },
+                  )}
+                </p>
+              )}
+
+              {carregando && !resumo ? (
+                <Esqueleto className="h-4 w-3/5" />
+              ) : (
+                !resumo && (
+                  <p className="text-label text-ink-muted">
+                    O valor e o cartão aparecem com internet.
+                  </p>
+                )
+              )}
+
+              {economia && (
+                <p className="text-label text-ink-muted">{economia}.</p>
+              )}
+            </div>
+
+            {traz.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-label font-semibold text-ink">
+                  O Completo traz:
+                </h3>
+                <ul className="space-y-2">
+                  {traz.map((frase) => (
+                    <li
+                      key={frase}
+                      className="flex items-start gap-2.5 text-body text-ink"
+                    >
+                      <Plus
+                        aria-hidden
+                        className="mt-1 size-4 shrink-0 text-ink-subtle"
+                        strokeWidth={1.75}
+                      />
+                      <span className="max-w-[52ch]">{frase}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Botao
+                  larguraTotal
+                  onClick={() => void abrirPortal("completo")}
+                  carregando={enviando === "completo"}
+                  disabled={enviando !== null}
+                >
+                  Passar para o Completo
+                </Botao>
+              </div>
+            )}
+
+            <div className="space-y-2 border-t border-line pt-4">
+              <Botao
+                variante="terciaria"
+                larguraTotal
+                onClick={() => void abrirPortal("portal")}
+                carregando={enviando === "portal"}
+                disabled={enviando !== null}
+              >
+                Trocar o cartão ou ver as cobranças
+              </Botao>
+              {!resumo?.cancela && (
+                <Botao
+                  ref={botaoCancelar}
+                  variante="terciaria"
+                  larguraTotal
+                  onClick={() => trocarPasso(true)}
+                  disabled={enviando !== null}
+                >
+                  Cancelar a assinatura
+                </Botao>
+              )}
+              {erroNaTela}
+            </div>
+          </div>
+        )}
       </Painel>
     </>
   );

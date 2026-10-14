@@ -6,6 +6,7 @@
  *   npm run metricas
  */
 import { Timestamp } from "firebase-admin/firestore";
+import Stripe from "stripe";
 import { auth, db, semCredencial } from "./admin.mjs";
 
 /** Repetido de `src/lib/domain/biblioteca.ts:14`: o script roda fora do app e
@@ -107,6 +108,31 @@ async function linhaDaConta(contaSnap, ultimoLogin, hoje) {
   };
 }
 
+/**
+ * Por que saíram, nos últimos 90 dias (spec 162, `DECISOES.md#d376`): lido do
+ * Stripe, nada gravado. `feedback` é a opção que ela escolheu no portal;
+ * `reason` diz se foi pedido dela ou cobrança recusada. Conta quem marcou o
+ * fim e ainda não desmarcou, e quem já terminou.
+ */
+async function motivosDoCancelamento(chave) {
+  const desde = Math.floor(Date.now() / 1000) - 90 * 24 * 60 * 60;
+  const contagem = {};
+  for await (const assinatura of new Stripe(chave).subscriptions.list({
+    status: "all",
+    limit: 100,
+  })) {
+    const saindo =
+      assinatura.status === "canceled" ||
+      assinatura.cancel_at_period_end ||
+      assinatura.cancel_at != null;
+    if (!saindo || (assinatura.canceled_at ?? 0) < desde) continue;
+    const { reason, feedback } = assinatura.cancellation_details ?? {};
+    const motivo = `${feedback ?? "sem resposta"} · ${reason ?? "—"}`;
+    contagem[motivo] = (contagem[motivo] ?? 0) + 1;
+  }
+  return contagem;
+}
+
 try {
   const [contas, logins] = await Promise.all([
     db.collection("contas").orderBy("criadaEm").get(),
@@ -121,6 +147,16 @@ try {
   );
 
   console.table(linhas);
+
+  const chave = process.env.STRIPE_SECRET_KEY?.trim();
+  if (chave) {
+    const motivos = await motivosDoCancelamento(chave);
+    console.log("\nCancelamentos nos últimos 90 dias (motivo · origem):");
+    if (Object.keys(motivos).length === 0) console.log("nenhum");
+    else console.table(motivos);
+  } else {
+    console.log("\nSem STRIPE_SECRET_KEY no .env.local: motivos de fora.");
+  }
 } catch (erro) {
   console.error("Não foi possível ler as métricas:", erro.message);
 

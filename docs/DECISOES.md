@@ -12238,3 +12238,53 @@ escolhido para quem tinha ajudante, sem dizer que ela perderia o acesso.
 os ouvintes não se juntam com os da Hoje (a tela está fora do shell), mas são as mesmas consultas
 servidas pelo cache. Quando houver contador de pedidos do cardápio gravado, o gatilho dele entra
 aqui.
+
+## D376 · Cancelar passa por uma tela do app, e o motivo é perguntado
+
+**Status:** vigente · decidida em 2026-10-14, spec `162-antes-de-ir-embora.md`.
+
+**Contexto.** Cancelar era o fim de uma frase ("Trocar o cartão, ver as cobranças ou cancelar")
+que levava ao portal, onde é um clique. Ninguém dizia o que fica, ninguém oferecia o Essencial a
+quem paga o Completo, nada era perguntado, e quem marcou o fim não tinha como desfazer daqui.
+
+**Decisão.**
+
+- **"Cancelar a assinatura" é terciário, embaixo de "Trocar o cartão ou ver as cobranças"**, e
+  some com `resumo.cancela`. Tocar troca o conteúdo do painel pelo passo "Antes de cancelar", sem
+  modal: cancelar no fim do período não é destrutivo. O foco vai para o título do passo
+  (`tabIndex={-1}`) e, no "Voltar", de volta ao botão, porque o botão tocado some com a troca.
+  Para isso `Botao` passou a declarar `ref` (React 19, segue no `...props`).
+- **`fraseDoQueFica(ateMs)`** diz até quando tudo fica aberto e que os dados ficam para ler e
+  baixar (`#d144`, spec 029). Sem resumo (sem rede), o dia é o do aparelho.
+- **`fraseDoEssencial`** oferece o Essencial **do mesmo período**, pelo mês (o anual por
+  `mensalDoAnual`, como em `/assinatura`), a quem paga o Completo, mensal ou anual. A spec diz
+  "no anual, nada a oferecer"; li como o Essencial anual, que não tem nada abaixo: passar para o
+  mensal seria pagar mais por mês, e o período já está pago. No Essencial e na cortesia (valor
+  zero, nada a economizar), nenhuma oferta. "Passar para o Essencial" é o `subscription_update_confirm`
+  da 110 com `para: "ESSENCIAL"`; a configuração do portal (`decreasing_item_amount`) agenda a
+  descida para o fim do período.
+- **`POST /api/assinatura/portal` aceita `para: "COMPLETO" | "ESSENCIAL" | "CANCELAR"`**, um
+  `switch`. `"CANCELAR"` abre em `subscription_cancel` com `after_completion` de volta para
+  `/configuracao`. Com a assinatura já marcada (`cancel_at_period_end` ou `cancel_at`), o Stripe
+  recusa a sessão ("already set to be canceled at period end", conferido na sandbox): o pedido
+  cai no portal comum.
+- **"Continuar assinando" abre o portal comum.** O Stripe não tem `flow_data` de renovar (na
+  sandbox: só `subscription_cancel`, `payment_method_update`, `subscription_update`,
+  `subscription_update_confirm` e `customer_update`); o portal comum oferece renovar a quem tem o
+  fim marcado. Secundário, embaixo do "Termina em…".
+- **O motivo é o do Stripe**: `cancellation_reason` ligado com as oito opções, no bloco da CLI de
+  `DEPLOY.md`. `npm run metricas` já carregava o `.env.local` (pelo `admin.mjs`), onde está a
+  chave do Stripe, então conta os motivos dos últimos 90 dias (`canceled_at`, que no fim do
+  período marca o pedido e não o fim) de quem marcou e não desmarcou ou já terminou, como
+  `feedback · reason`. Nada no Firestore. Sem chave, a seção diz que ficou de fora.
+- **Sem desconto de permanência.** É decisão de preço de quem conduz o projeto, e não veio
+  resposta; a spec manda ir sem. Se vier, é um cupom pela CLI em
+  `flow_data.subscription_cancel.retention`.
+
+**Consequência.** Nenhum campo, regra ou dependência. Conferido na sandbox: as sessões de
+`subscription_cancel` e de `subscription_update_confirm` do Completo para o Essencial são aceitas
+(a configuração padrão de lá nasceu nesta sessão). Que a descida fica para o fim do período, que o
+motivo é perguntado e que "Continuar assinando" desfaz é o roteiro da spec, no navegador.
+No ao vivo, aplicadas no mesmo dia: o motivo já estava ligado lá, com só quatro opções
+(`too_expensive`, `switched_service`, `unused`, `other`), ligado por clique em algum momento; agora
+são as oito do bloco.

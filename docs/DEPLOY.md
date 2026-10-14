@@ -198,6 +198,15 @@ stripe billing_portal configurations update "$BPC" \
   -d "features[invoice_history][enabled]=true" \
   -d "features[subscription_cancel][enabled]=true" \
   -d "features[subscription_cancel][mode]=at_period_end" \
+  -d "features[subscription_cancel][cancellation_reason][enabled]=true" \
+  -d "features[subscription_cancel][cancellation_reason][options][0]=too_expensive" \
+  -d "features[subscription_cancel][cancellation_reason][options][1]=missing_features" \
+  -d "features[subscription_cancel][cancellation_reason][options][2]=switched_service" \
+  -d "features[subscription_cancel][cancellation_reason][options][3]=unused" \
+  -d "features[subscription_cancel][cancellation_reason][options][4]=too_complex" \
+  -d "features[subscription_cancel][cancellation_reason][options][5]=low_quality" \
+  -d "features[subscription_cancel][cancellation_reason][options][6]=customer_service" \
+  -d "features[subscription_cancel][cancellation_reason][options][7]=other" \
   -d "features[subscription_update][enabled]=true" \
   -d "features[subscription_update][default_allowed_updates][0]=price" \
   -d "features[subscription_update][proration_behavior]=always_invoice" \
@@ -217,7 +226,15 @@ stripe billing_portal configurations update "$BPC" \
   quando a lista de produtos é gravada, e o portal deixaria "assinar 3".
 - **Subir de pacote** cobra a diferença proporcional na hora (`always_invoice`).
 - **Descer de pacote, ou do anual para o mensal**, fica agendado para o fim do período já pago.
-  As ajudantes ficam até lá, e o `#d170` as tira quando o webhook vir o essencial vivo.
+  As ajudantes ficam até lá, e o `#d170` as tira quando o webhook vir o essencial vivo. É o que
+  "Passar para o Essencial" do passo "Antes de cancelar" abre (spec 162).
+- **O motivo do cancelamento** (spec 162, `#d376`): as oito opções do Stripe, perguntadas na
+  confirmação. `npm run metricas` conta o que vier, dos últimos 90 dias. Sem desconto de
+  permanência: não foi aprovado, e entraria como `flow_data.subscription_cancel.retention`.
+  **Aplicadas no ao vivo em 2026-10-14**, só as nove linhas, num `update` com o `$BPC` e a
+  `--api-key` de antes (o motivo já estava ligado lá, com quatro opções). No modo de teste, a configuração padrão da
+  sandbox nasceu na sessão da 162 já com elas (`bpc_1UQaC6PrzcZdpSOZlkP3pypE`, com os dois
+  produtos e os dois preços mensais de lá).
 - **Conferir no teste**: o portal de uma assinatura essencial, em "Atualizar assinatura", lista
   os dois produtos; e "Passar para o Completo" no app abre direto a confirmação. Se o Stripe
   recusar a sessão com `subscription_update_confirm`, o preço do completo não está na lista

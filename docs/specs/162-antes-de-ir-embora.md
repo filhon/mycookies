@@ -106,12 +106,12 @@ Modo de teste, `stripe listen --forward-to localhost:3000/api/stripe/webhook`.
 
 ## Critérios de aceite
 
-- [ ] Cancelar tem botão próprio e passa por uma tela do app antes do Stripe.
-- [ ] Quem está no Completo vê o Essencial como alternativa.
-- [ ] O motivo é perguntado e contado.
-- [ ] O cancelamento marcado pode ser desfeito a partir do painel.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] Decisão escrita; `ESTADO.md`. Sem linha em `novidades.ts`: ninguém precisa ser avisado
+- [x] Cancelar tem botão próprio e passa por uma tela do app antes do Stripe.
+- [x] Quem está no Completo vê o Essencial como alternativa.
+- [x] O motivo é perguntado e contado.
+- [~] O cancelamento marcado pode ser desfeito a partir do painel.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] Decisão escrita; `ESTADO.md`. Sem linha em `novidades.ts`: ninguém precisa ser avisado
       de que dá para cancelar.
 
 ---

@@ -10,6 +10,8 @@ import {
   fraseDaCobranca,
   fraseDaEconomia,
   fraseDeAssinar,
+  fraseDoEssencial,
+  fraseDoQueFica,
   fraseDoPlano,
   legendaDaAssinatura,
   mensalDoAnual,
@@ -356,6 +358,47 @@ describe("o resumo da assinatura (spec 084)", () => {
     expect(fraseDaCobranca({ ateMs: tarde, final: null, cancela: false })).toBe(
       "Renova em 12 de novembro.",
     );
+  });
+
+  it("antes de cancelar, diz até quando fica aberto e o que fica guardado (spec 162)", () => {
+    expect(fraseDoQueFica(dozeNov)).toBe(
+      "Até 12 de novembro tudo continua aberto. Depois, seus preços, pedidos e caixa ficam guardados para ler e baixar.",
+    );
+  });
+
+  it("o Essencial é oferecido só a quem paga o Completo, pelo mês do mesmo período", () => {
+    const essencial = { mensal: 2900, anual: 29000 };
+    expect(
+      semNbsp(
+        fraseDoEssencial(
+          "COMPLETO",
+          { valor: 4990, periodo: "mensal" },
+          essencial,
+        ) ?? "",
+      ),
+    ).toBe(
+      "Quer pagar menos? O Essencial custa R$ 29,00 por mês e mantém preço, pedidos e caixa.",
+    );
+    expect(
+      semNbsp(
+        fraseDoEssencial(
+          "COMPLETO",
+          { valor: 49900, periodo: "anual" },
+          essencial,
+        ) ?? "",
+      ),
+    ).toContain("R$ 24,17 por mês");
+    expect(
+      fraseDoEssencial(
+        "ESSENCIAL",
+        { valor: 2900, periodo: "mensal" },
+        essencial,
+      ),
+    ).toBeNull();
+    // Cortesia: nada a economizar.
+    expect(
+      fraseDoEssencial("COMPLETO", { valor: 0, periodo: "mensal" }, essencial),
+    ).toBeNull();
   });
 
   it("a legenda tira a folga de `assinaturaAte` e abrevia o mês", () => {

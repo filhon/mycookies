@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
 import {
   classesBotao,
   type TamanhoBotao,
@@ -14,6 +14,8 @@ export interface BotaoProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   carregando?: boolean;
   iconeInicial?: ReactNode;
   larguraTotal?: boolean;
+  /** React 19: chega como prop e segue no `...props` até o `<button>`. */
+  ref?: Ref<HTMLButtonElement>;
 }
 
 export function Botao({

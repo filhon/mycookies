@@ -350,6 +350,32 @@ export function fraseDaCobranca(
     : `Renova em ${dia}.`;
 }
 
+/**
+ * O que fica depois de cancelar, no passo "Antes de cancelar" (spec 162):
+ * verdade pelo `#d144`, o acesso vai até o fim do período, e pela 029.
+ */
+export function fraseDoQueFica(ateMs: number): string {
+  return `Até ${diaEMes(ateMs)} tudo continua aberto. Depois, seus preços, pedidos e caixa ficam guardados para ler e baixar.`;
+}
+
+/**
+ * A saída mais barata para quem paga o Completo (spec 162): o Essencial do
+ * mesmo período, pelo mês. `null` no Essencial (nada abaixo dele) e na
+ * cortesia (nada a economizar).
+ */
+export function fraseDoEssencial(
+  pacote: Pacote,
+  resumo: Pick<ResumoAssinatura, "valor" | "periodo">,
+  essencial: { mensal: Centavos; anual: Centavos },
+): string | null {
+  if (pacote !== "COMPLETO" || resumo.valor === 0) return null;
+  const mensal =
+    resumo.periodo === "anual"
+      ? mensalDoAnual(essencial.anual)
+      : essencial.mensal;
+  return `Quer pagar menos? O Essencial custa ${formatarMoeda(mensal)} por mês e mantém preço, pedidos e caixa.`;
+}
+
 /** "Essencial · renova em 12 nov": a legenda da linha fechada, pelo aparelho. */
 export function legendaDaAssinatura(
   pacote: Pacote,
