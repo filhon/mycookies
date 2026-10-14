@@ -11942,3 +11942,51 @@ A `/conheca` não ganhou `scroll-mt`: não tem cabeçalho fixo no topo (a barra 
 
 **Consequência.** Se a regra do fim do teste mudar (cobrança automática, bloqueio de leitura),
 esta frase muda junto, na mesma spec.
+
+---
+
+## D366 · O e-mail que chega
+
+**Status:** vigente · decidida em 2026-10-14, spec `156-o-email-que-chega.md`. Aprovação do texto
+da sugestão tomada como dada pelo pedido de implementá-la. Nenhum campo, regra, índice ou
+dependência.
+
+**Contexto.** Sem e-mail de verificação (`#d142`), um domínio digitado errado no cadastro abre a
+conta num endereço que não existe: "Esqueci minha senha", as boas-vindas do Resend (`#d202`) e o
+suporte (`#d195`) perdem a pessoa.
+
+**Decisão.**
+
+- `sugerirEmail` em `domain/cadastro.ts`: separa no último `@`, compara o domínio em minúsculas
+  com uma lista fixa de doze (gmail, hotmail, outlook, outlook.com.br, live, yahoo, yahoo.com.br,
+  icloud, bol, uol, terra, globo; na ordem de frequência, que desempata) por Damerau no
+  alinhamento ótimo (a troca de vizinhas, `gmial`, é um erro). Sugere o mais perto se a distância
+  for no máximo 2 e o domínio digitado tiver pelo menos 4 caracteres; a parte local volta como ela
+  digitou. O teste prende os dois "quase": `hotmail.com.br` e `uol.com` (a 3) ficam sem sugestão.
+- Só `/cadastro`, no `onBlur` do e-mail e no envio: "Você quis dizer **x**? [Corrigir]" no lugar
+  da dica, em `text-ink`, com `aria-live="polite"` e sem `role="alert"` nem cor de erro. "Corrigir"
+  troca o valor; digitar ou corrigir apaga a sugestão. **Não bloqueia o envio.** Vai como `dica`
+  de `Campo`, que não mudou: o `aria-describedby` já liga a sugestão ao campo.
+
+**Consequência.** Domínio fora da lista e longe dela passa calado; consulta MX ficou fora (rede no
+envio e rota nova). Se o roteiro mostrar que o leitor de tela não anuncia a sugestão (a região
+nasce junto com o texto, e nem todo leitor anuncia isso), o caminho é deixar a região sempre
+montada, o que pede mexer em `Campo`.
+
+---
+
+## D367 · Sem asterisco no cadastro, termos sem moldura
+
+**Status:** vigente · decidida em 2026-10-14, spec `156-o-email-que-chega.md`.
+
+**Contexto.** O cadastro pintava asterisco em três de quatro campos, e o login já o tinha tirado
+(`#d192`). A caixa dos termos, com borda e raio, lia no celular como o quinto campo.
+
+**Decisão.** E-mail, senha, nome e a caixa dos termos passam `aria-required` em vez de
+`required` (o formulário já era `noValidate`; o `required` só pintava o asterisco). O `label` dos
+termos perde `border`, `rounded-md` e o `px-3`; ficam `min-h-11`, `py-3` e `gap-3`, alvo inteiro.
+O erro dos termos ganha `CircleAlert` (16px, 1.75) antes da frase, porque a borda vermelha, que
+era o segundo sinal, saiu. Ordem e número de campos iguais; "Nome do negócio" fica (`#d142`).
+
+**Consequência.** Login e cadastro falam a mesma língua nos obrigatórios. Um campo opcional novo
+no cadastro diz que é opcional pela dica, como o do negócio.

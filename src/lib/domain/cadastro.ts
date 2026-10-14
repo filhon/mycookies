@@ -43,6 +43,77 @@ export function nomeDoNegocio(cadastro: Cadastro): string {
   return cadastro.negocio || cadastro.nome;
 }
 
+/**
+ * Os domínios do público, na ordem de frequência: no empate, ganha o primeiro
+ * (spec 156, `#d366`).
+ */
+const DOMINIOS_COMUNS = [
+  "gmail.com",
+  "hotmail.com",
+  "outlook.com",
+  "outlook.com.br",
+  "live.com",
+  "yahoo.com",
+  "yahoo.com.br",
+  "icloud.com",
+  "bol.com.br",
+  "uol.com.br",
+  "terra.com.br",
+  "globo.com",
+];
+
+/**
+ * "maynara@gmial.com" → "maynara@gmail.com". `null` quando o domínio está na
+ * lista, fica longe de todos (mais de 2 erros) ou é curto demais para adivinhar.
+ * A parte local volta como ela digitou.
+ */
+export function sugerirEmail(email: string): string | null {
+  const limpo = email.trim();
+  const arroba = limpo.lastIndexOf("@");
+  if (arroba <= 0) return null;
+  const local = limpo.slice(0, arroba);
+  const dominio = limpo.slice(arroba + 1).toLowerCase();
+  if (dominio.length < 4 || DOMINIOS_COMUNS.includes(dominio)) return null;
+
+  let melhor: string | null = null;
+  let menor = 3;
+  for (const candidato of DOMINIOS_COMUNS) {
+    const d = distancia(dominio, candidato);
+    if (d < menor) {
+      menor = d;
+      melhor = candidato;
+    }
+  }
+  return melhor && `${local}@${melhor}`;
+}
+
+/** Damerau (alinhamento ótimo): trocar duas letras vizinhas conta um erro. */
+function distancia(a: string, b: string): number {
+  // A tabela numa linha só: `em(i, j)` é a distância entre os prefixos.
+  const largura = b.length + 1;
+  const d: number[] = [];
+  const em = (i: number, j: number) => d[i * largura + j]!;
+  for (let i = 0; i <= a.length; i++) {
+    for (let j = 0; j <= b.length; j++) {
+      if (i === 0 || j === 0) {
+        d[i * largura + j] = i + j;
+        continue;
+      }
+      const custo = a[i - 1] === b[j - 1] ? 0 : 1;
+      let menor = Math.min(
+        em(i - 1, j) + 1,
+        em(i, j - 1) + 1,
+        em(i - 1, j - 1) + custo,
+      );
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        menor = Math.min(menor, em(i - 2, j - 2) + 1);
+      }
+      d[i * largura + j] = menor;
+    }
+  }
+  return em(a.length, b.length);
+}
+
 export type FalhaCadastro =
   | "sem-acesso" // token ausente ou inválido
   | "fora-de-forma" // corpo que não passa em `esquemaCadastro`

@@ -110,11 +110,11 @@ tela ouvir sem ser interrompido.
 
 ## 5 · Critérios de aceite
 
-- [ ] `sugerirEmail` testado nos casos da seção 1.
-- [ ] Sugestão nunca bloqueia o envio.
-- [ ] Nenhum asterisco na tela; leitor de tela anuncia os obrigatórios.
-- [ ] Erro dos termos com ícone e texto.
-- [ ] Portão; `#d366`, `#d367`; `ESTADO.md`. Nenhuma linha em `novidades.ts`.
+- [x] `sugerirEmail` testado nos casos da seção 1.
+- [x] Sugestão nunca bloqueia o envio.
+- [x] Nenhum asterisco na tela; leitor de tela anuncia os obrigatórios.
+- [x] Erro dos termos com ícone e texto.
+- [x] Portão; `#d366`, `#d367`; `ESTADO.md`. Nenhuma linha em `novidades.ts`.
 
 ## 6 · Fora de escopo
 

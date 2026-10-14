@@ -4,18 +4,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import { CircleAlert } from "lucide-react";
 import { BotaoGoogle } from "@/components/auth/BotaoGoogle";
 import { MolduraDeEntrada } from "@/components/auth/MolduraDeEntrada";
 import { ContaAberta } from "@/components/site/ContaAberta";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, CampoSenha, focarPrimeiroErro } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
-import { cn } from "@/lib/utils/cn";
 import {
   CHAVE_DA_ORIGEM,
   DIAS_DE_TESTE,
   MENSAGEM_FALHA_CADASTRO,
   TAMANHO_MAXIMO_NOME,
+  sugerirEmail,
   type FalhaCadastro,
 } from "@/lib/domain/cadastro";
 import { exemploDoRascunho } from "@/lib/domain/calculadora";
@@ -43,6 +44,9 @@ export default function PaginaCadastro() {
   const idTermos = useId();
 
   const [email, setEmail] = useState("");
+  // "gmial.com" no teclado do celular é uma conta perdida (`#d366`). Informa,
+  // não bloqueia: quem tem domínio parecido de verdade não pode ficar presa.
+  const [sugestao, setSugestao] = useState<string | null>(null);
   const [senha, setSenha] = useState("");
   const [nome, setNome] = useState("");
   const [negocio, setNegocio] = useState("");
@@ -73,6 +77,7 @@ export default function PaginaCadastro() {
   async function aoEnviar(evento: FormEvent) {
     evento.preventDefault();
     setErro(null);
+    if (!terminando) setSugestao(sugerirEmail(email));
 
     // O botão fica ativo, e o que falta aparece no campo: um botão apagado
     // não diz por quê.
@@ -223,11 +228,36 @@ export default function PaginaCadastro() {
               autoComplete="username"
               autoCapitalize="none"
               spellCheck={false}
-              required
+              aria-required
               erro={erros.email}
+              dica={
+                sugestao && (
+                  <span
+                    aria-live="polite"
+                    className="flex flex-wrap items-center gap-x-1 text-ink"
+                  >
+                    <span>
+                      Você quis dizer{" "}
+                      <strong className="font-semibold">{sugestao}</strong>?
+                    </span>
+                    <Botao
+                      variante="terciaria"
+                      tamanho="sm"
+                      onClick={() => {
+                        setEmail(sugestao);
+                        setSugestao(null);
+                      }}
+                    >
+                      Corrigir
+                    </Botao>
+                  </span>
+                )
+              }
               value={email}
+              onBlur={() => setSugestao(sugerirEmail(email))}
               onChange={(evento) => {
                 setEmail(evento.target.value);
+                setSugestao(null);
                 setErros((e) => ({ ...e, email: undefined }));
               }}
             />
@@ -238,7 +268,7 @@ export default function PaginaCadastro() {
               autoComplete="new-password"
               minLength={6}
               dica="Pelo menos 6 caracteres."
-              required
+              aria-required
               erro={erros.senha}
               value={senha}
               onChange={(evento) => {
@@ -255,7 +285,7 @@ export default function PaginaCadastro() {
           type="text"
           autoComplete="name"
           maxLength={TAMANHO_MAXIMO_NOME}
-          required
+          aria-required
           erro={erros.nome}
           value={nome}
           onChange={(evento) => {
@@ -277,18 +307,14 @@ export default function PaginaCadastro() {
 
         {/* A caixa é o ato dela: é o que faz `termosAceitosEm` ser consentimento
             que se prova, e não uma linha de texto. Os links abrem em aba nova
-            para não perder o formulário. A caixa inteira é o alvo do toque. */}
+            para não perder o formulário. A caixa inteira é o alvo do toque; sem
+            moldura, para não ler como o quinto campo (`#d367`). */}
         <div className="flex flex-col gap-1.5">
-          <label
-            className={cn(
-              "flex min-h-11 cursor-pointer items-start gap-3 rounded-md border px-3 py-3",
-              erros.termos ? "border-negative" : "border-line-strong",
-            )}
-          >
+          <label className="flex min-h-11 cursor-pointer items-start gap-3 py-3">
             <input
               type="checkbox"
               name="termos"
-              required
+              aria-required
               checked={termos}
               aria-invalid={erros.termos ? true : undefined}
               aria-describedby={erros.termos ? idTermos : undefined}
@@ -321,7 +347,17 @@ export default function PaginaCadastro() {
             </span>
           </label>
           {erros.termos && (
-            <p id={idTermos} role="alert" className="text-label text-negative">
+            // Sem a borda vermelha, o ícone é o segundo sinal além da cor.
+            <p
+              id={idTermos}
+              role="alert"
+              className="flex items-start gap-1.5 text-label text-negative"
+            >
+              <CircleAlert
+                aria-hidden
+                strokeWidth={1.75}
+                className="mt-0.5 size-4 shrink-0"
+              />
               {erros.termos}
             </p>
           )}

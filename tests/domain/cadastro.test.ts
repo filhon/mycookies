@@ -4,7 +4,41 @@ import {
   esquemaCadastro,
   fimDoTeste,
   nomeDoNegocio,
+  sugerirEmail,
 } from "@/lib/domain/cadastro";
+
+describe("sugerirEmail", () => {
+  it.each([
+    ["maynara@gmial.com", "maynara@gmail.com"],
+    ["maynara@gmail.con", "maynara@gmail.com"],
+    ["maynara@gmail.co", "maynara@gmail.com"],
+    ["maynara@gamil.com", "maynara@gmail.com"],
+    ["maynara@hotmial.com", "maynara@hotmail.com"],
+    ["maynara@outlok.com", "maynara@outlook.com"],
+    ["maynara@yahoo.com.b", "maynara@yahoo.com.br"],
+  ])("%s → %s", (digitado, sugerido) => {
+    expect(sugerirEmail(digitado)).toBe(sugerido);
+  });
+
+  it.each([
+    "maynara@hotmail.com.br", // a 3 de hotmail.com, e fora da lista
+    "maynara@uol.com", // a 3 de uol.com.br
+    "ana@docesdaana.com.br",
+    "MAYNARA@GMAIL.COM",
+    "a@b",
+    "maynara",
+    "@gmial.com",
+    "maynara@",
+  ])("%s não tem sugestão", (digitado) => {
+    expect(sugerirEmail(digitado)).toBeNull();
+  });
+
+  it("devolve a parte local como ela digitou, sem os espaços", () => {
+    expect(sugerirEmail("  Maynara.Doces@GMIAL.com ")).toBe(
+      "Maynara.Doces@gmail.com",
+    );
+  });
+});
 
 describe("fimDoTeste", () => {
   it("cai catorze dias depois do início", () => {
