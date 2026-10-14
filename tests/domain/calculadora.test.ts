@@ -8,12 +8,19 @@ import {
 import {
   contaDaPorta,
   entradaPadrao,
+  exemploDoRascunho,
   lerRascunho,
   RECEITAS_DA_PORTA,
   trocarReceita,
   VALIDADE_DO_RASCUNHO_MS,
   type EntradaDaPorta,
+  type RascunhoDaPorta,
 } from "@/lib/domain/calculadora";
+import {
+  calcularPrecoSugerido,
+  somaTaxas,
+  verificarPreco,
+} from "@/lib/domain/precificacao";
 import {
   precificacaoSugerida,
   rateioSugerido,
@@ -154,6 +161,56 @@ describe("trocarReceita", () => {
       precoHoje: 600,
       vendasMes: 250,
     });
+  });
+});
+
+// A porta e a calculadora nunca mostram dois preços para o mesmo cookie
+// (spec 155): o que a `ContaAberta` calcula sobre o exemplo é o que a
+// `contaDaPorta` calculou.
+describe("exemploDoRascunho", () => {
+  const rascunho: RascunhoDaPorta = {
+    ...entradaPadrao("cookie-recheado"),
+    rendimento: 18,
+    valorHoraTrabalho: 3000,
+    precos: { "manteiga-sem-sal": 1400 },
+    precoHoje: 650,
+    v: 1,
+    salvoEm: 0,
+  };
+
+  it("o sugerido e a sobra da ContaAberta batem com os da calculadora", () => {
+    const exemplo = exemploDoRascunho(rascunho);
+    if (!exemplo) throw new Error("sem exemplo");
+    const conta = contaDaPorta(rascunho);
+    const sugerido = calcularPrecoSugerido(
+      exemplo.custo.custoUnitario,
+      exemplo.parametros,
+    );
+    if (!sugerido.ok) throw new Error("sem sugerido");
+    expect(sugerido.precoArredondado).toBe(conta.derivados.precoArredondado);
+    expect(sugerido.precoArredondado).toBeGreaterThan(0);
+    expect(exemplo).toMatchObject({
+      nome: "Cookie recheado",
+      rende: 18,
+      precoPraticado: 650,
+    });
+    expect(
+      verificarPreco(
+        exemplo.precoPraticado,
+        exemplo.custo.custoUnitario,
+        somaTaxas(exemplo.parametros),
+      ).lucroUnitario,
+    ).toBe(conta.hoje?.lucroUnitario);
+  });
+
+  it("sem preço de hoje, o praticado é o sugerido", () => {
+    expect(
+      exemploDoRascunho({ ...rascunho, precoHoje: null })?.precoPraticado,
+    ).toBe(contaDaPorta(rascunho).derivados.precoArredondado);
+  });
+
+  it("rendimento zero devolve null", () => {
+    expect(exemploDoRascunho({ ...rascunho, rendimento: 0 })).toBeNull();
   });
 });
 

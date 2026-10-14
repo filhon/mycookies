@@ -13,6 +13,7 @@ import {
   type Segmento,
 } from "./custoFicha";
 import { calcularCustoInsumo } from "./custoInsumo";
+import type { ExemploDePagina } from "./exemplo";
 import { verificarPreco, type VerificacaoPreco } from "./precificacao";
 import { formatarQuantidade, paraBase, unidadeBaseDe } from "./unidades";
 
@@ -243,5 +244,25 @@ export function contaDaPorta(entrada: EntradaDaPorta): ContaDaPorta {
     hoje,
     sugerido,
     aMaisNoMes,
+  };
+}
+
+/**
+ * O cookie dela no painel do cadastro (spec 155, `#d364`), na forma que a
+ * `ContaAberta` lê. Sem preço de hoje, o praticado é o sugerido. `null` sem
+ * rendimento ou sem sugerido: a porta volta ao `EXEMPLO`.
+ */
+export function exemploDoRascunho(
+  rascunho: RascunhoDaPorta,
+): ExemploDePagina | null {
+  const { derivados, sugerido } = contaDaPorta(rascunho);
+  if (!sugerido || derivados.precoArredondado === null) return null;
+  const precoHoje = naoNegativo(rascunho.precoHoje ?? 0);
+  return {
+    nome: fichaDa(rascunho.receita).nome,
+    rende: rascunho.rendimento,
+    custo: derivados.custo,
+    parametros: precificacaoSugerida(),
+    precoPraticado: precoHoje > 0 ? precoHoje : derivados.precoArredondado,
   };
 }

@@ -5,7 +5,7 @@ assinatura", rodado página a página com `/impeccable` e `/frontend-design` sob
 celular e desktop. Cada crítica vira uma série de specs; a página conta como **melhorada**
 quando a série inteira está codificada.
 
-Levantado em 2026-10-12 a partir do campo **Origem** das specs e de `docs/ESTADO.md`.
+Levantado em 2026-10-12 (atualizado em 2026-10-14) a partir do campo **Origem** das specs e de `docs/ESTADO.md`.
 "Codificada" não quer dizer publicada nem com roteiro de navegador rodado: isso continua em
 `ESTADO.md`.
 
@@ -29,25 +29,25 @@ Ao terminar uma página, mude a linha dela aqui (status, data, specs).
 
 ## App (logada)
 
-| Página                 | Rota                                      | Arquivo                                                                  | Status       | Crítica    | Specs   |
-| ---------------------- | ----------------------------------------- | ------------------------------------------------------------------------ | ------------ | ---------- | ------- |
-| Hoje                   | `/`                                       | `src/app/(app)/(coluna)/page.tsx`                                        | ✅ melhorada | 2026-09-25 | 045–048 |
-| Materiais              | `/insumos`                                | `src/app/(app)/insumos/page.tsx`                                         | ✅ melhorada | 2026-09-26 | 049–052 |
-| Produtos               | `/fichas`                                 | `src/app/(app)/fichas/page.tsx`                                          | ✅ melhorada | 2026-09-26 | 053–056 |
-| Pedidos                | `/pedidos`                                | `src/app/(app)/pedidos/page.tsx`                                         | ✅ melhorada | 2026-10-01 | 062–066 |
-| Caixa                  | `/financeiro`                             | `src/app/(app)/(coluna)/financeiro/page.tsx`                             | ✅ melhorada | 2026-10-02 | 069–074 |
-| Pedido (abrir / novo)  | `/pedidos/[id]`                           | `src/app/(app)/pedidos/[id]/page.tsx`                                    | ✅ melhorada | 2026-10-02 | 075–081 |
-| Configuração           | `/configuracao`                           | `src/app/(app)/configuracao/page.tsx`                                    | ✅ melhorada | 2026-10-03 | 082–087 |
-| Ler uma nota           | `/insumos/nota`                           | `src/app/(app)/(coluna)/insumos/nota/page.tsx`                           | ✅ melhorada | 2026-10-05 | 088–092 |
-| Como funciona          | `/comecar`                                | `src/app/(app)/(coluna)/comecar/page.tsx`                                | ✅ melhorada | 2026-10-08 | 093–097 |
-| Compras                | `/compras`                                | `src/app/(app)/(coluna)/compras/page.tsx`                                | ✅ melhorada | 2026-10-08 | 098–104 |
-| Clientes               | `/clientes`                               | `src/app/(app)/clientes/page.tsx`                                        | ✅ melhorada | 2026-10-09 | 105–109 |
-| Contagem da despensa   | `/insumos/contagem`                       | `src/app/(app)/(coluna)/insumos/contagem/page.tsx`                       | ✅ melhorada | 2026-10-11 | 125–129 |
-| Contagem do pronto     | `/fichas/contagem`                        | `src/app/(app)/(coluna)/fichas/contagem/page.tsx`                        | ✅ melhorada | 2026-10-12 | 130–133 |
-| Produto (abrir / novo) | `/fichas/[id]`                            | `src/app/(app)/(coluna)/fichas/[id]/page.tsx`                            | ✅ melhorada | 2026-10-12 | 134–140 |
-| Na bancada             | `/fichas/[id]/bancada`                    | `src/app/(app)/fichas/[id]/bancada/page.tsx`                             | ✅ melhorada | 2026-10-12 | 141–146 |
-| Orçamento em papel     | `/pedidos/[id]/orcamento`                 | `src/app/(app)/(coluna)/pedidos/[id]/orcamento/page.tsx`                 | ⬜ pendente  |            |         |
-| Relatório do MEI       | `/financeiro/relatorio-mei/[competencia]` | `src/app/(app)/(coluna)/financeiro/relatorio-mei/[competencia]/page.tsx` | ⬜ pendente  |            |         |
+| Página                 | Rota                                      | Arquivo                                                         | Status       | Crítica    | Specs   |
+| ---------------------- | ----------------------------------------- | --------------------------------------------------------------- | ------------ | ---------- | ------- |
+| Hoje                   | `/`                                       | `src/app/(app)/(coluna)/page.tsx`                               | ✅ melhorada | 2026-09-25 | 045–048 |
+| Materiais              | `/insumos`                                | `src/app/(app)/insumos/page.tsx`                                | ✅ melhorada | 2026-09-26 | 049–052 |
+| Produtos               | `/fichas`                                 | `src/app/(app)/fichas/page.tsx`                                 | ✅ melhorada | 2026-09-26 | 053–056 |
+| Pedidos                | `/pedidos`                                | `src/app/(app)/pedidos/page.tsx`                                | ✅ melhorada | 2026-10-01 | 062–066 |
+| Caixa                  | `/financeiro`                             | `src/app/(app)/(coluna)/financeiro/page.tsx`                    | ✅ melhorada | 2026-10-02 | 069–074 |
+| Pedido (abrir / novo)  | `/pedidos/[id]`                           | `src/app/(app)/pedidos/[id]/page.tsx`                           | ✅ melhorada | 2026-10-02 | 075–081 |
+| Configuração           | `/configuracao`                           | `src/app/(app)/configuracao/page.tsx`                           | ✅ melhorada | 2026-10-03 | 082–087 |
+| Ler uma nota           | `/insumos/nota`                           | `src/app/(app)/(coluna)/insumos/nota/page.tsx`                  | ✅ melhorada | 2026-10-05 | 088–092 |
+| Como funciona          | `/comecar`                                | `src/app/(app)/(coluna)/comecar/page.tsx`                       | ✅ melhorada | 2026-10-08 | 093–097 |
+| Compras                | `/compras`                                | `src/app/(app)/(coluna)/compras/page.tsx`                       | ✅ melhorada | 2026-10-08 | 098–104 |
+| Clientes               | `/clientes`                               | `src/app/(app)/clientes/page.tsx`                               | ✅ melhorada | 2026-10-09 | 105–109 |
+| Contagem da despensa   | `/insumos/contagem`                       | `src/app/(app)/(coluna)/insumos/contagem/page.tsx`              | ✅ melhorada | 2026-10-11 | 125–129 |
+| Contagem do pronto     | `/fichas/contagem`                        | `src/app/(app)/(coluna)/fichas/contagem/page.tsx`               | ✅ melhorada | 2026-10-12 | 130–133 |
+| Produto (abrir / novo) | `/fichas/[id]`                            | `src/app/(app)/(coluna)/fichas/[id]/page.tsx`                   | ✅ melhorada | 2026-10-12 | 134–140 |
+| Na bancada             | `/fichas/[id]/bancada`                    | `src/app/(app)/fichas/[id]/bancada/page.tsx`                    | ✅ melhorada | 2026-10-12 | 141–146 |
+| Orçamento em papel     | `/pedidos/[id]/orcamento`                 | `src/app/(app)/(coluna)/pedidos/[id]/orcamento/page.tsx`        | ✅ melhorada | 2026-10-12 | 147–149 |
+| Relatório do MEI       | `/financeiro/relatorio-mei/[competencia]` | `src/app/(app)/financeiro/relatorio-mei/[competencia]/page.tsx` | ✅ melhorada | 2026-10-12 | 150–154 |
 
 ## Estrutura comum (não é página, mas aparece em todas)
 
@@ -98,13 +98,23 @@ Ao terminar uma página, mude a linha dela aqui (status, data, specs).
   entrada pelo pedido). Os roteiros de navegador de 141 a 146 seguem por rodar. A pergunta da 146
   à Maynara ("parte dos pedidos ou faz sempre a mesma e congela?") segue em aberto, e o menu da
   linha da lista de produtos no celular ficou de fora da 146-B (`#d353`).
-- **Nasceram de spec, nunca foram auditadas:** `/pedidos/[id]/orcamento` (017),
-  `/financeiro/relatorio-mei/...` (074), `/cadastro` (027), `/redefinir-senha` (042),
+- **`/pedidos/[id]/orcamento` foi auditada em 2026-10-12** (a crítica dos prints da folha do
+  orçamento): 147 (a folha que se lê sozinha), 148 (a marca e o combinado de sempre) e 149 (o
+  orçamento que a cliente aprova pelo link), com a 149 em duas sessões (149-A e 149-B). Os
+  roteiros de navegador da 148 e da 149 seguem por rodar (`ESTADO.md`).
+- **`/financeiro/relatorio-mei/[competencia]` foi auditada em 2026-10-12** (a crítica da tela e
+  a crítica visual dos prints de celular e desktop): 150 (o MEI que o Rende conhece), 151 (o mês
+  que se entrega), 152 (as notas que vão junto), 153 (o ano do MEI, que abre
+  `/financeiro/relatorio-mei/AAAA` no mesmo segmento) e 154 (a folha no centro, que tirou a rota
+  de `(coluna)`, `#d363`). Os roteiros de navegador de 150 a 154 seguem por rodar; o 4 da 154
+  (imprimir pelo app instalado no iPhone) decide se o PDF gerado no aparelho vira pedido de
+  dependência, e falta conferir no portal os rótulos da DASN-SIMEI e se o relatório zerado é
+  exigido.
+- **Nasceram de spec, nunca foram auditadas:** `/cadastro` (027), `/redefinir-senha` (042),
   `/assinatura` (028, 110), a página do pedido da cliente (117) e as cinco páginas de preço
   (037, 068).
 - **A ordem sugerida para as pendentes**, pelo que pesa no uso e na venda:
   1. `/cadastro` e `/assinatura`, a porta de entrada e a de pagamento.
   2. A página do pedido da cliente, que é o Rende visto por quem compra.
-  3. `/pedidos/[id]/orcamento` e o relatório do MEI, que saem em papel.
-  4. As cinco páginas de preço, com a mesma crítica valendo para as cinco.
-  5. `/redefinir-senha`, `/assinatura/confirmando`, `/termos`, `/privacidade`, `/offline`.
+  3. As cinco páginas de preço, com a mesma crítica valendo para as cinco.
+  4. `/redefinir-senha`, `/assinatura/confirmando`, `/termos`, `/privacidade`, `/offline`.

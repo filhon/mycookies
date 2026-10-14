@@ -24,10 +24,13 @@ export function ContaAberta({
   className,
   parada = false,
   exemplo = EXEMPLO,
+  dela = false,
   unidade = { singular: "unidade", plural: "unidades" },
 }: {
   className?: string;
   exemplo?: ExemploDePagina;
+  /** O cookie que ela calculou, e não o exemplo (spec 155, `#d364`). */
+  dela?: boolean;
   /** A unidade em que o doce se vende: o cento, o quilo, o pote. */
   unidade?: { singular: string; plural: string };
   /** Sem o movimento da `.conta-que-abre`: onde a conta é ilustração, e não abertura de página. */
@@ -56,7 +59,9 @@ export function ContaAberta({
           id="conta-titulo"
           className="text-subheading font-semibold text-ink"
         >
-          Exemplo · {exemplo.nome}
+          {dela
+            ? `O seu ${exemplo.nome.toLocaleLowerCase("pt-BR")}`
+            : `Exemplo · ${exemplo.nome}`}
         </h2>
         <p className="shrink-0 text-label text-ink-muted">
           rende {rende}
@@ -107,10 +112,17 @@ export function ContaAberta({
             />
           </div>
           <p className="mt-3 max-w-[48ch] text-label text-ink-muted">
-            No preço praticado de{" "}
-            <span className="num font-semibold text-ink">
-              {formatarMoeda(precoPraticado)}
-            </span>{" "}
+            {/* Sem preço de hoje no rascunho, o praticado é o sugerido. */}
+            {dela && precoPraticado === sugerido.precoArredondado ? (
+              "No preço sugerido"
+            ) : (
+              <>
+                No preço praticado de{" "}
+                <span className="num font-semibold text-ink">
+                  {formatarMoeda(precoPraticado)}
+                </span>
+              </>
+            )}{" "}
             sobram{" "}
             <span className="num font-semibold text-ink">
               {formatarMoeda(lucroUnitario)}

@@ -11889,3 +11889,56 @@ relatorio-mei/[competencia]`. O mês põe a própria largura (`max-w-5xl`, `2xl:
 **Consequência.** A folha não marca a linha que recebeu o dinheiro (`#d127`), e não há PDF
 gerado no aparelho: se o app instalado no iPhone não abrir a impressão (roteiro 4), isso volta
 como dependência e pede aprovação.
+
+---
+
+## D364 · O cookie dela na porta
+
+**Status:** vigente · decidida em 2026-10-14, spec `155-a-porta-que-mostra-o-que-vem.md`.
+Aprovação da spec (o texto) tomada como dada pelo pedido de implementá-la. Nenhum campo, regra,
+índice ou dependência.
+
+**Contexto.** Com rascunho da calculadora no aparelho, `/cadastro` dizia "O cookie que você
+calculou vai estar lá" e o painel mostrava o `EXEMPLO` fixo da página de venda. No celular o
+painel não existe, e a porta não mostrava número nenhum.
+
+**Decisão.**
+
+- `exemploDoRascunho` em `domain/calculadora.ts` monta o `ExemploDePagina` do rascunho só com o
+  que existe: o nome da ficha, o rendimento dela, `contaDaPorta(...).derivados.custo`,
+  `precificacaoSugerida()` e, como praticado, o preço de hoje dela ou, sem ele, o sugerido.
+  `null` sem rendimento ou sem sugerido, e a porta volta ao `EXEMPLO`. O teste prende que o
+  `calcularPrecoSugerido` que a `ContaAberta` faz sobre o exemplo é o `precoArredondado` da
+  calculadora, e que a sobra no praticado é a de hoje dela.
+- `ContaAberta` ganhou só `dela`: título "O seu cookie recheado" (o nome em minúsculas) e,
+  quando o praticado é o sugerido, o pé diz "No preço sugerido sobram…". **Sem
+  `semPrecoDeHoje`**: a igualdade praticado = sugerido decide, e quando ela digitou exatamente o
+  sugerido a frase continua verdadeira. Fora da porta (`dela` falso) nada muda.
+- **Celular**: a descrição troca "Primeiro preço em 10 minutos. O cookie que você calculou vai
+  estar lá." por "O seu cookie recheado custa R$ X e o sugerido é R$ Y: vai estar lá quando a
+  conta abrir." (`lg:hidden` / `max-lg:hidden`, então o leitor de tela lê uma só). No desktop a
+  descrição é a de antes, inclusive abaixo de 720px de altura, quando o painel some (`#d194`).
+
+**Consequência.** A porta e a calculadora não podem mostrar dois preços para o mesmo cookie
+sem o teste quebrar. Um rascunho sem rendimento cai no texto e no painel de antes.
+
+---
+
+## D365 · O que acontece no fim do teste, dito na porta
+
+**Status:** vigente · decidida em 2026-10-14, spec `155-a-porta-que-mostra-o-que-vem.md`.
+
+**Contexto.** "14 dias grátis, sem cartão" não respondia "e depois cobra quanto?", e o botão
+"Criar conta" repetia o título "Criar minha conta".
+
+**Decisão.** Sob o botão, 12px abaixo, centrado, em `text-label text-ink-muted`: "No fim do teste
+nada é cobrado. Você escolhe se assina; se não assinar, o que fez continua lá." e "Ver os
+planos" (terciário `sm`, 44px) para `/conheca#preco` em aba nova, como os termos (`#d195`).
+**Sem valor em reais**: o preço é do Stripe (`#d201`) e a porta é página cliente; escrever o
+número aqui seria o segundo dono dele. A frase foi conferida contra o `#d144`: conta vencida lê
+tudo e não escreve. O botão passa a "Começar o teste grátis"; "Tentar de novo" e o título ficam.
+A `/conheca` não ganhou `scroll-mt`: não tem cabeçalho fixo no topo (a barra grudenta do celular
+é no pé).
+
+**Consequência.** Se a regra do fim do teste mudar (cobrança automática, bloqueio de leitura),
+esta frase muda junto, na mesma spec.

@@ -18,6 +18,10 @@ import {
   TAMANHO_MAXIMO_NOME,
   type FalhaCadastro,
 } from "@/lib/domain/cadastro";
+import { exemploDoRascunho } from "@/lib/domain/calculadora";
+import { EXEMPLO } from "@/lib/domain/exemplo";
+import { formatarMoeda } from "@/lib/domain/money";
+import { calcularPrecoSugerido } from "@/lib/domain/precificacao";
 import { obterAuth } from "@/lib/firebase/client";
 import { useRascunhoDaPorta } from "@/lib/utils/rascunhoDaPorta";
 import { traduzirErroAuth, useAuth } from "@/providers/AuthProvider";
@@ -52,8 +56,12 @@ export default function PaginaCadastro() {
   }>({});
   const [enviando, setEnviando] = useState(false);
   // O rascunho da calculadora pública (spec 040-B): a conta nasce sabendo de
-  // onde veio, e a moldura diz que o cookie dela vai estar lá.
-  const daCalculadora = useRascunhoDaPorta() !== null;
+  // onde veio, e a porta mostra o cookie dela no lugar do exemplo (`#d364`).
+  const rascunho = useRascunhoDaPorta();
+  const daCalculadora = rascunho !== null;
+  const dela = rascunho && exemploDoRascunho(rascunho);
+  const sugeridoDela =
+    dela && calcularPrecoSugerido(dela.custo.custoUnitario, dela.parametros);
 
   useEffect(() => {
     if (!carregando && contaId) router.replace("/");
@@ -146,10 +154,39 @@ export default function PaginaCadastro() {
   return (
     <MolduraDeEntrada
       titulo="Criar minha conta"
-      descricao={`${DIAS_DE_TESTE} dias grátis, sem cartão. Primeiro preço em 10 minutos.${
-        daCalculadora ? " O cookie que você calculou vai estar lá." : ""
-      }`}
-      painel={<ContaAberta parada className="max-w-md" />}
+      descricao={
+        <>
+          {`${DIAS_DE_TESTE} dias grátis, sem cartão. `}
+          {/* No desktop o painel mostra os números dela; no celular, sem
+              painel, a frase os diz. */}
+          <span className={sugeridoDela?.ok ? "max-lg:hidden" : undefined}>
+            {`Primeiro preço em 10 minutos.${
+              daCalculadora ? " O cookie que você calculou vai estar lá." : ""
+            }`}
+          </span>
+          {dela && sugeridoDela?.ok && (
+            <span className="lg:hidden">
+              {`O seu ${dela.nome.toLocaleLowerCase("pt-BR")} custa `}
+              <span className="num font-semibold text-ink">
+                {formatarMoeda(dela.custo.custoUnitario)}
+              </span>{" "}
+              e o sugerido é{" "}
+              <span className="num font-semibold text-ink">
+                {formatarMoeda(sugeridoDela.precoArredondado)}
+              </span>
+              : vai estar lá quando a conta abrir.
+            </span>
+          )}
+        </>
+      }
+      painel={
+        <ContaAberta
+          parada
+          exemplo={dela ?? EXEMPLO}
+          dela={!!dela}
+          className="max-w-md"
+        />
+      }
     >
       {/* Depois do Google, `usuario` existe e a tela cai no segundo estado: o
           nome vem do `displayName`, e a caixa dos termos continua dela. */}
@@ -304,9 +341,24 @@ export default function PaginaCadastro() {
           carregando={enviando}
         >
           {/* Depois do Google é a primeira vez, e não uma nova tentativa. */}
-          {terminando && erro ? "Tentar de novo" : "Criar conta"}
+          {terminando && erro ? "Tentar de novo" : "Começar o teste grátis"}
         </Botao>
       </form>
+
+      {/* O que vem no dia 15, colado no botão (`#d365`), sem o valor em
+          reais: o preço é do Stripe (`#d201`). Aba nova, como os termos. */}
+      <p className="mt-3 flex flex-wrap items-center justify-center gap-x-1 text-center text-label text-ink-muted">
+        No fim do teste nada é cobrado. Você escolhe se assina; se não assinar,
+        o que fez continua lá.
+        <a
+          href="/conheca#preco"
+          target="_blank"
+          rel="noopener"
+          className={classesBotao({ variante: "terciaria", tamanho: "sm" })}
+        >
+          Ver os planos
+        </a>
+      </p>
 
       <p className="mt-8 flex flex-wrap items-center justify-center gap-x-1 text-label text-ink-muted">
         Já tem conta?
