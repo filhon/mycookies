@@ -37,14 +37,21 @@ export const NOME_DO_PACOTE: Record<Pacote, string> = {
 };
 
 /**
- * Uma linha por pacote, para o cartão de `/assinatura` e o de `/conheca`: o que
- * ele dá, em texto, e nunca o que falta (spec 039). A ajudante não escolhe o
- * que vê: a régua é fixa (`#d157`), e a frase diz a régua.
+ * O que cada pacote dá, uma linha por coisa, para `/assinatura` e `/conheca`:
+ * nunca o que falta (spec 039), em lista para comparar em 360px (spec 160). A
+ * ajudante não escolhe o que vê: a régua é fixa (`#d157`), e a linha diz a régua.
  */
-export const O_QUE_O_PACOTE_TEM: Record<Pacote, string> = {
-  ESSENCIAL:
-    "O preço de cada doce e o aviso quando um custo sobe, as encomendas com a lista do mercado, e o caixa do mês com a sua meta.",
-  COMPLETO: `Tudo do Essencial, mais o cardápio com link pra cliente pedir sozinha e até ${LIMITE_DE_AJUDANTES} ajudantes, que produzem e entregam com você sem ver o seu caixa.`,
+export const O_QUE_O_PACOTE_TEM: Record<Pacote, readonly string[]> = {
+  ESSENCIAL: [
+    "O preço de cada doce, e o aviso quando um custo sobe",
+    "Os pedidos, com a lista do mercado",
+    "O caixa do mês e a sua meta",
+  ],
+  COMPLETO: [
+    "Tudo do Essencial",
+    "O cardápio com link: a cliente escolhe e o pedido chega anotado",
+    `Até ${LIMITE_DE_AJUDANTES} ajudantes, que produzem e entregam sem ver o seu caixa`,
+  ],
 };
 
 export type Situacao =
@@ -267,13 +274,33 @@ export function cobrancaPrevistaMs(renovaEmMs: number): number {
   return renovaEmMs - FOLGA_RENOVACAO_DIAS * DIA_MS;
 }
 
+/** O anual dividido pelos meses: como a tela de assinar o mostra (spec 160). */
+export function mensalDoAnual(anual: Centavos): Centavos {
+  return Math.round(anual / 12);
+}
+
 /** O plano por mês, que é como ele entra nas despesas fixas (`#d287`). */
 export function mensalDoPlano(
   resumo: Pick<ResumoAssinatura, "valor" | "periodo">,
 ): Centavos {
   return resumo.periodo === "anual"
-    ? Math.round(resumo.valor / 12)
+    ? mensalDoAnual(resumo.valor)
     : resumo.valor;
+}
+
+/**
+ * "Assinar o Essencial · R$ 290,00 por ano": o botão repete a escolha inteira,
+ * com o número que sai do cartão (spec 160). Sem preço, só "Assinar o Essencial".
+ */
+export function fraseDeAssinar(
+  pacote: Pacote,
+  periodo: Periodo,
+  valor: Centavos | undefined,
+): string {
+  const nome = `Assinar o ${NOME_DO_PACOTE[pacote]}`;
+  if (valor == null) return nome;
+  const por = periodo === "anual" ? "por ano" : "por mês";
+  return `${nome} · ${formatarMoeda(valor)} ${por}`;
 }
 
 /** O que o resumo lê de cada cupom do Stripe: um dos dois vem preenchido. */

@@ -12127,3 +12127,40 @@ teste, `cancel_url` de um checkout aberto antes de assinar por outro aparelho, e
 caem no painel inteiro. Os links do app para `/assinatura` (faixa do teste, barra lateral,
 Configuração) já eram só do teste. Repetir o painel dentro de `/assinatura` ficou fora: seriam dois
 componentes para manter iguais.
+
+## D373 · Escolher o plano é de graça, pagar é um botão
+
+**Status:** vigente · decidida em 2026-10-14, spec `160-o-plano-escolhido-antes-de-pagar.md`. Revê
+o desenho da spec 032, 3.5 (o cartão que é botão), não o que ela decidiu: o Essencial anual continua
+o primeiro e o pré-escolhido.
+
+**Contexto.** Em `/assinatura` o cartão inteiro era o botão do checkout: tocar no Completo para ler
+melhor já levava ao Stripe. O anual aparecia como o maior número da tela, o que cada plano tinha era
+uma frase de 25 palavras, e nada perto do botão dizia como cancelar nem o que acontece com os dados.
+
+**Decisão.**
+
+- **O período é `Pilulas`** ("Por ano" · "Por mês"), acima dos planos. A economia do Essencial vai
+  no `detalhe` do "Por ano", embaixo do rótulo, e não na mesma linha ("Por ano · R$ 58,00 a
+  menos"): com os centavos de `formatarMoeda`, as duas pílulas lado a lado passam dos 312px da coluna em 360px.
+- **Os planos são rádio nativo**, um `fieldset` com `legend` escondida: as setas trocam a opção e o
+  leitor de tela diz a escolhida sem reimplementar `radiogroup`. Cada opção é um `div` com o
+  `input` esticado por cima, invisível (`absolute inset-0 opacity-0`): a lista do que o plano tem
+  não cabe dentro de um `label`. Escolhida em `--brand-100` com borda `--brand-as-ink` e
+  `CircleCheck`; a outra em `--surface`, `--line-strong` e `Circle`. Empilhadas em qualquer
+  largura, na coluna `max-w-sm`.
+- **O anual pelo mês**: `mensalDoAnual` em `domain/assinatura.ts`, que `mensalDoPlano` passou a
+  usar. A linha embaixo diz o total cobrado uma vez por ano e a economia; o botão diz o total.
+- **`fraseDeAssinar(pacote, periodo, valor)`**: "Assinar o Essencial · R$ 290,00 por ano", e só
+  "Assinar o Essencial" sem preço. É o único âmbar da tela; no celular, `sticky` no pé com
+  `rodape-seguro` (o padrão da barra de `/conheca`), no `lg` estático logo abaixo. O erro do checkout
+  aparece dentro do pé, acima do botão, para não cair fora da vista.
+- **`O_QUE_O_PACOTE_TEM` é `string[]`**, três linhas por pacote, com `Check`, igual em `/assinatura`
+  e `/conheca`.
+- **As três garantias** embaixo do botão. "O que já foi pago vale até o fim" é verdade pelo portal
+  (`subscription_cancel.mode=at_period_end`, `DEPLOY.md`); "ficam seus, assinando ou não", pelo
+  `#d144`. "Pagamento no cartão" segue o checkout, que não declara `payment_method_types`: se o
+  painel do Stripe ligar outra forma, o texto muda.
+
+**Consequência.** `CartaoDePreco` saiu; `enviando` virou booleano, porque só há um botão de pagar
+por estado. Selo "mais escolhido", tabela com o que falta e Pix ficaram fora (spec 160, § 5).

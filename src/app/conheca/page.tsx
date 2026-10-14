@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Check } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { CalculadoraDaPorta } from "@/components/site/CalculadoraDaPorta";
@@ -616,9 +617,21 @@ function Preco({
                   )}
                 </>
               )}
-              <p className="mt-4 text-body text-ink-muted">
-                {O_QUE_O_PACOTE_TEM[pacote]}
-              </p>
+              <ul className="mt-4 space-y-2">
+                {O_QUE_O_PACOTE_TEM[pacote].map((linha) => (
+                  <li
+                    key={linha}
+                    className="flex gap-2 text-body text-ink-muted"
+                  >
+                    <Check
+                      aria-hidden
+                      strokeWidth={1.75}
+                      className="mt-1 size-4 shrink-0 text-ink-subtle"
+                    />
+                    {linha}
+                  </li>
+                ))}
+              </ul>
             </article>
           );
         })}

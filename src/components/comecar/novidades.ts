@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-14",
+    titulo: "A tela de assinar mostra o plano por mês e só sai do app no botão",
+    frase:
+      "Tocar num plano só o escolhe; o anual aparece pelo mês, com o total do ano embaixo, e o botão diz o que você vai pagar.",
+    href: "/assinatura",
+  },
+  {
+    dataISO: "2026-10-14",
     titulo: "O relatório do MEI abre na folha",
     frase:
       "O número do mês e o botão de imprimir vêm primeiro, a folha logo depois, e no celular só as linhas que têm valor, em letra de ler.",

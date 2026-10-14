@@ -124,12 +124,12 @@ continua "Seu teste grátis acabou".
 
 ## Critérios de aceite
 
-- [ ] Nenhum toque fora do botão âmbar sai do app.
-- [ ] O anual aparece por mês, com o total do ano escrito.
-- [ ] O que cada plano tem é lista, igual em `/assinatura` e `/conheca`.
-- [ ] As três garantias, verdadeiras, embaixo do botão.
-- [ ] Portão: `lint`, `typecheck`, `test`, `build`.
-- [ ] Decisão escrita; `ESTADO.md`; linha em `novidades.ts` ("A tela de assinar mostra o
+- [x] Nenhum toque fora do botão âmbar sai do app.
+- [x] O anual aparece por mês, com o total do ano escrito.
+- [x] O que cada plano tem é lista, igual em `/assinatura` e `/conheca`.
+- [x] As três garantias, verdadeiras, embaixo do botão.
+- [x] Portão: `lint`, `typecheck`, `test`, `build`.
+- [x] Decisão escrita; `ESTADO.md`; linha em `novidades.ts` ("A tela de assinar mostra o
       plano por mês e só sai do app no botão").
 
 ---

@@ -1,5 +1,13 @@
 "use client";
 
+import {
+  Archive,
+  CalendarX,
+  Check,
+  Circle,
+  CircleCheck,
+  CreditCard,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, type ReactNode } from "react";
@@ -11,9 +19,13 @@ import { MeusDados } from "@/components/conta/MeusDados";
 import { Simbolo } from "@/components/marca/Marca";
 import { Botao } from "@/components/ui/Botao";
 import { classesBotao } from "@/components/ui/estilosBotao";
+import { Dinheiro } from "@/components/ui/Dinheiro";
+import { Pilulas } from "@/components/ui/Pilulas";
 import {
   economiaAnual,
+  fraseDeAssinar,
   MENSAGEM_FALHA_ASSINATURA,
+  mensalDoAnual,
   NOME_DO_PACOTE,
   O_QUE_O_PACOTE_TEM,
   paraSituar,
@@ -28,8 +40,24 @@ import { cn } from "@/lib/utils/cn";
 
 type Precos = Record<Pacote, Record<Periodo, number>>;
 
-/** O essencial primeiro, e primário: o produto que se vende é a frase do preço (spec 032, 3.5). */
+/** O essencial primeiro, e escolhido: o produto que se vende é a frase do preço (spec 032, 3.5). */
 const PACOTES: Pacote[] = ["ESSENCIAL", "COMPLETO"];
+
+/** Embaixo do botão, o medo de assinar respondido em uma linha cada (spec 160). */
+const GARANTIAS = [
+  {
+    Icone: CalendarX,
+    // O portal cancela no fim do período (`subscription_cancel.mode=at_period_end`, DEPLOY.md).
+    texto:
+      "Cancela quando quiser, aqui no app. O que já foi pago vale até o fim.",
+  },
+  {
+    Icone: Archive,
+    // Sem assinatura a conta só deixa de escrever (`#d144`).
+    texto: "Seus preços, pedidos e caixa ficam seus, assinando ou não.",
+  },
+  { Icone: CreditCard, texto: "Pagamento no cartão, pelo Stripe." },
+];
 
 /**
  * A tela de três estados (spec 028, 3.5): teste, teste vencido e assinatura
@@ -49,10 +77,11 @@ export default function PaginaAssinatura() {
 
   const [precos, setPrecos] = useState<Precos | null>(null);
   const [falhaPrecos, setFalhaPrecos] = useState(false);
-  const [enviando, setEnviando] = useState<Pacote | "portal" | null>(null);
+  const [enviando, setEnviando] = useState(false);
   // O anual continua sendo a arma contra o churn (roadmap §1).
   const [periodo, setPeriodo] = useState<Periodo>("anual");
-  const idPeriodo = useId();
+  const [pacote, setPacote] = useState<Pacote>("ESSENCIAL");
+  const idPacote = useId();
   const [erro, setErro] = useState<string | null>(null);
   const [saindo, setSaindo] = useState(false);
   const [sairPendente, setSairPendente] = useState(false);
@@ -119,14 +148,10 @@ export default function PaginaAssinatura() {
     }
   }
 
-  async function abrirUrl(
-    rota: string,
-    corpo: Record<string, unknown>,
-    chave: Pacote | "portal",
-  ) {
+  async function abrirUrl(rota: string, corpo: Record<string, unknown>) {
     if (!usuario) return;
     setErro(null);
-    setEnviando(chave);
+    setEnviando(true);
     try {
       const token = await usuario.getIdToken();
       const resposta = await fetch(rota, {
@@ -139,7 +164,7 @@ export default function PaginaAssinatura() {
       });
       if (!resposta.ok) {
         setErro(MENSAGEM_FALHA_ASSINATURA[await codigoDaFalha(resposta)]);
-        setEnviando(null);
+        setEnviando(false);
         return;
       }
       const { url } = (await resposta.json()) as { url: string };
@@ -147,14 +172,13 @@ export default function PaginaAssinatura() {
     } catch {
       // `TypeError` do `fetch`: sem rede, ou a rota bloqueada.
       setErro(MENSAGEM_FALHA_ASSINATURA["sem-rede"]);
-      setEnviando(null);
+      setEnviando(false);
     }
   }
 
-  const assinar = (pacote: Pacote) =>
-    abrirUrl("/api/assinatura/checkout", { contaId, pacote, periodo }, pacote);
-  const gerenciar = () =>
-    abrirUrl("/api/assinatura/portal", { contaId }, "portal");
+  const assinar = () =>
+    abrirUrl("/api/assinatura/checkout", { contaId, pacote, periodo });
+  const gerenciar = () => abrirUrl("/api/assinatura/portal", { contaId });
 
   if (
     carregando ||
@@ -175,58 +199,84 @@ export default function PaginaAssinatura() {
     );
   }
 
-  // Duas perguntas separadas (spec 032, 3.5): por quanto tempo, no rádio;
-  // o quê, nos cartões. Quatro cartões empilhados em 360px seriam uma tela e meia.
-  const cartoesDePreco = (
-    <div className="mt-8 space-y-4">
-      <fieldset>
-        <legend className="text-label font-medium text-ink">Pagar</legend>
-        <div className="mt-1 flex gap-6">
-          {(["anual", "mensal"] as const).map((cada) => (
-            <label
-              key={cada}
-              className="flex min-h-11 cursor-pointer items-center gap-2.5 text-body text-ink"
-            >
-              <input
-                type="radio"
-                name={idPeriodo}
-                checked={periodo === cada}
-                onChange={() => setPeriodo(cada)}
-                disabled={enviando !== null}
-                className="size-5 shrink-0"
-              />
-              {cada === "anual" ? "Por ano" : "Por mês"}
-            </label>
-          ))}
-        </div>
+  const avisoDeErro = erro && (
+    <p role="alert" className="mb-3 text-label text-negative">
+      {erro}
+    </p>
+  );
+
+  const economiaDoEssencial = precos
+    ? economiaAnual(precos.ESSENCIAL.mensal, precos.ESSENCIAL.anual)
+    : 0;
+
+  // Escolher é de graça, pagar é um botão só, que repete a escolha (spec 160,
+  // revendo o cartão-botão da 032, 3.5). O período vem primeiro por ser filtro;
+  // os planos, empilhados em qualquer largura, comparam melhor que lado a lado.
+  const escolha = (
+    <>
+      <Pilulas
+        rotulo="Pagar"
+        className="mt-8"
+        valor={periodo}
+        aoMudar={setPeriodo}
+        opcoes={[
+          {
+            valor: "anual",
+            rotulo: "Por ano",
+            detalhe:
+              economiaDoEssencial > 0
+                ? `${formatarMoeda(economiaDoEssencial)} a menos`
+                : undefined,
+          },
+          { valor: "mensal", rotulo: "Por mês" },
+        ]}
+      />
+
+      {/* Rádio nativo: setas trocam a opção e o leitor de tela diz a
+          escolhida, sem reimplementar o grupo. */}
+      <fieldset disabled={enviando} className="mt-4 space-y-3">
+        <legend className="sr-only">Plano</legend>
+        {PACOTES.map((cada) => (
+          <OpcaoDePlano
+            key={cada}
+            nome={idPacote}
+            pacote={cada}
+            precos={precos?.[cada]}
+            periodo={periodo}
+            escolhido={pacote === cada}
+            aoEscolher={() => setPacote(cada)}
+          />
+        ))}
       </fieldset>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        {PACOTES.map((pacote) => {
-          const economia = precos
-            ? economiaAnual(precos[pacote].mensal, precos[pacote].anual)
-            : 0;
-          return (
-            <CartaoDePreco
-              key={pacote}
-              titulo={NOME_DO_PACOTE[pacote]}
-              centavos={precos?.[pacote][periodo]}
-              rotulo={periodo === "anual" ? "por ano" : "por mês"}
-              oQueTem={O_QUE_O_PACOTE_TEM[pacote]}
-              subtitulo={
-                periodo === "anual" && economia > 0
-                  ? `${formatarMoeda(economia)} a menos que mês a mês`
-                  : undefined
-              }
-              variante={pacote === "ESSENCIAL" ? "primaria" : "secundaria"}
-              carregando={enviando === pacote}
-              disabled={enviando !== null}
-              onClick={() => void assinar(pacote)}
-            />
-          );
-        })}
+      {/* No celular, preso ao pé com a lista rolando por cima; no desktop, logo
+          abaixo das opções. O foco que desce para acima do pé, não atrás. */}
+      <div className="rodape-seguro sticky bottom-0 -mx-6 mt-6 border-t border-line bg-canvas px-6 pt-3 lg:static lg:mx-0 lg:border-0 lg:px-0 lg:pt-0 lg:pb-0 [html:has(&)]:scroll-pb-28">
+        {avisoDeErro}
+        <Botao
+          variante="primaria"
+          tamanho="lg"
+          larguraTotal
+          onClick={() => void assinar()}
+          carregando={enviando}
+        >
+          {fraseDeAssinar(pacote, periodo, precos?.[pacote][periodo])}
+        </Botao>
       </div>
-    </div>
+
+      <ul className="mt-4 space-y-2">
+        {GARANTIAS.map(({ Icone, texto }) => (
+          <li key={texto} className="flex gap-2 text-label text-ink-muted">
+            <Icone
+              aria-hidden
+              strokeWidth={1.75}
+              className="mt-0.5 size-4 shrink-0 text-ink-subtle"
+            />
+            {texto}
+          </li>
+        ))}
+      </ul>
+    </>
   );
 
   let titulo: string;
@@ -259,7 +309,7 @@ export default function PaginaAssinatura() {
       "Depois disso, tudo o que você cadastrou continua aqui, mas só assinando dá para mexer.";
     acoes = (
       <>
-        {cartoesDePreco}
+        {escolha}
         <Link
           href="/"
           className={cn(classesBotao({ variante: "terciaria" }), "mt-4 w-full")}
@@ -274,8 +324,8 @@ export default function PaginaAssinatura() {
       "Tudo o que você cadastrou continua guardado. Assine para voltar a mexer.";
     acoes = (
       <>
-        {cartoesDePreco}
-        <div className="mt-4 space-y-3">
+        {escolha}
+        <div className="mt-6 space-y-3">
           {/* A vencida que não vai assinar tem os dois direitos da LGPD sem
               assinar (spec 029): levar o dado e encerrar. */}
           <MeusDados />
@@ -297,13 +347,13 @@ export default function PaginaAssinatura() {
     descricao = "Atualize a forma de pagamento e o acesso volta sozinho.";
     acoes = (
       <div className="mt-8 space-y-3">
+        {avisoDeErro}
         <Botao
           variante="primaria"
           tamanho="lg"
           larguraTotal
-          onClick={gerenciar}
-          carregando={enviando === "portal"}
-          disabled={enviando !== null}
+          onClick={() => void gerenciar()}
+          carregando={enviando}
         >
           Atualizar pagamento
         </Botao>
@@ -335,12 +385,6 @@ export default function PaginaAssinatura() {
 
       {acoes}
 
-      {erro && (
-        <p role="alert" className="mt-4 text-label text-negative">
-          {erro}
-        </p>
-      )}
-
       {sairPendente && (
         <p aria-live="polite" className="mt-4 text-label text-ink-muted">
           {AVISO_SAIR_PENDENTE}
@@ -350,50 +394,109 @@ export default function PaginaAssinatura() {
   );
 }
 
-function CartaoDePreco({
-  titulo,
-  centavos,
-  rotulo,
-  oQueTem,
-  subtitulo,
-  variante,
-  carregando,
-  disabled,
-  onClick,
+/** Uma linha do grupo: escolher troca o botão e nunca sai do app (spec 160). */
+function OpcaoDePlano({
+  nome,
+  pacote,
+  precos,
+  periodo,
+  escolhido,
+  aoEscolher,
 }: {
-  titulo: string;
-  centavos: number | undefined;
-  rotulo: string;
-  oQueTem: string;
-  subtitulo?: string;
-  variante: "primaria" | "secundaria";
-  carregando: boolean;
-  disabled: boolean;
-  onClick: () => void;
+  nome: string;
+  pacote: Pacote;
+  precos: Record<Periodo, number> | undefined;
+  periodo: Periodo;
+  escolhido: boolean;
+  aoEscolher: () => void;
 }) {
+  const anual = periodo === "anual";
+  const economia = precos ? economiaAnual(precos.mensal, precos.anual) : 0;
+  const Marca = escolhido ? CircleCheck : Circle;
+  const id = useId();
+
+  // Um `div`, e não um `label`: a lista não cabe dentro de um. O rádio
+  // nativo cobre a opção inteira, invisível, e o toque em qualquer ponto é dele.
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-busy={carregando || undefined}
+    <div
       className={cn(
-        "flex min-h-13 flex-col items-start gap-1 rounded-md border px-4 py-3 text-left transition-colors duration-150 ease-quart disabled:cursor-not-allowed disabled:opacity-60",
-        variante === "primaria"
-          ? "border-transparent bg-accent-500 text-on-accent hover:bg-accent-600"
-          : "border-line-strong bg-surface text-ink hover:bg-sunken",
+        "relative rounded-lg border px-4 py-4 transition-colors duration-150 ease-quart",
+        "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-(--focus)",
+        "has-disabled:opacity-60",
+        escolhido
+          ? "border-brand-ink bg-brand-100"
+          : "border-line-strong bg-surface hover:bg-sunken",
       )}
     >
-      <span className="text-label font-medium uppercase tracking-wide opacity-80">
-        {titulo}
+      <input
+        type="radio"
+        name={nome}
+        value={pacote}
+        checked={escolhido}
+        onChange={aoEscolher}
+        aria-labelledby={`${id}-nome`}
+        aria-describedby={`${id}-preco`}
+        className="absolute inset-0 z-10 size-full cursor-pointer appearance-none rounded-lg opacity-0 disabled:cursor-not-allowed"
+      />
+      <span className="flex items-center justify-between gap-3">
+        <span
+          id={`${id}-nome`}
+          className="text-subheading font-semibold text-ink"
+        >
+          {NOME_DO_PACOTE[pacote]}
+        </span>
+        <Marca
+          aria-hidden
+          strokeWidth={1.75}
+          className={cn(
+            "size-5 shrink-0",
+            escolhido ? "text-brand-ink" : "text-ink-subtle",
+          )}
+        />
       </span>
-      <span className="num text-subheading font-semibold">
-        {centavos != null ? formatarMoeda(centavos) : "—"}{" "}
-        <span className="text-label font-normal opacity-80">{rotulo}</span>
-      </span>
-      {subtitulo && <span className="text-label opacity-90">{subtitulo}</span>}
-      <span className="mt-1 text-label">{oQueTem}</span>
-    </button>
+
+      {/* O anual pelo mês: o número que assusta é o do ano (spec 160). */}
+      <div id={`${id}-preco`}>
+        <span className="mt-1 flex items-baseline gap-1.5">
+          {precos ? (
+            <Dinheiro
+              tamanho="lg"
+              centavos={anual ? mensalDoAnual(precos.anual) : precos.mensal}
+              className="text-ink"
+            />
+          ) : (
+            <span className="num text-heading font-semibold text-ink">—</span>
+          )}
+          <span className="text-label text-ink-muted">por mês</span>
+        </span>
+        {precos && anual && (
+          <span className="mt-0.5 block text-label text-ink-muted">
+            <span className="num">{formatarMoeda(precos.anual)}</span> cobrados
+            uma vez por ano
+            {economia > 0 && (
+              <>
+                {" · "}
+                <span className="num">{formatarMoeda(economia)}</span> a menos
+                que mês a mês
+              </>
+            )}
+          </span>
+        )}
+      </div>
+
+      <ul className="mt-3 space-y-1.5">
+        {O_QUE_O_PACOTE_TEM[pacote].map((linha) => (
+          <li key={linha} className="flex gap-2 text-label text-ink">
+            <Check
+              aria-hidden
+              strokeWidth={1.75}
+              className="mt-0.5 size-4 shrink-0 text-ink-subtle"
+            />
+            {linha}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

@@ -4,9 +4,12 @@ import {
   cobrancaPrevistaMs,
   fraseDaCobranca,
   fraseDaEconomia,
+  fraseDeAssinar,
   fraseDoPlano,
   legendaDaAssinatura,
+  mensalDoAnual,
   mensalDoPlano,
+  O_QUE_O_PACOTE_TEM,
   O_QUE_O_RECURSO_FAZ,
   oQueOCompletoTraz,
   diasRestantes,
@@ -377,6 +380,30 @@ describe("mensalDoPlano (spec 086)", () => {
   it("o anual entra nas despesas dividido por 12", () => {
     expect(mensalDoPlano({ valor: 2900, periodo: "mensal" })).toBe(2900);
     expect(mensalDoPlano({ valor: 29000, periodo: "anual" })).toBe(2417);
+  });
+});
+
+describe("a tela de assinar (spec 160)", () => {
+  it("o anual por mês arredonda ao centavo", () => {
+    expect(mensalDoAnual(29000)).toBe(2417);
+    expect(mensalDoAnual(47880)).toBe(3990);
+  });
+
+  it("o botão repete a escolha, com o número que sai do cartão", () => {
+    expect(fraseDeAssinar("ESSENCIAL", "anual", 29000)).toBe(
+      "Assinar o Essencial · R$ 290,00 por ano",
+    );
+    expect(fraseDeAssinar("COMPLETO", "mensal", 4990)).toBe(
+      "Assinar o Completo · R$ 49,90 por mês",
+    );
+    expect(fraseDeAssinar("ESSENCIAL", "anual", undefined)).toBe(
+      "Assinar o Essencial",
+    );
+  });
+
+  it("o que cada pacote tem é lista, e o completo começa pelo essencial", () => {
+    expect(O_QUE_O_PACOTE_TEM.ESSENCIAL).toHaveLength(3);
+    expect(O_QUE_O_PACOTE_TEM.COMPLETO[0]).toBe("Tudo do Essencial");
   });
 });
 
