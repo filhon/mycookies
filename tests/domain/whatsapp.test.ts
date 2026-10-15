@@ -5,6 +5,7 @@ import {
   linkDoWhatsApp,
   mensagemDeCobranca,
   mensagemDeVolta,
+  mensagemDoPasso,
   mensagemDoPedido,
   telefoneParaWhatsApp,
   type ResumoParaCliente,
@@ -439,5 +440,81 @@ describe("mensagemDeVolta", () => {
     expect(mensagemDeVolta({ primeiroNome: "", negocio: "" })).toMatch(
       /^Oi! Faz um tempinho/,
     );
+  });
+});
+
+describe("mensagemDoPasso", () => {
+  const HOJE = "2026-10-15"; // quinta-feira
+  const LINK = "https://rende.app/c/mycookies/pedido/p1/chave";
+  const RETIRADA = {
+    clienteNome: "Juliana Prado",
+    dataEntregaISO: "2026-10-17",
+    horaEntrega: "15:00",
+    entrega: { tipo: "RETIRADA" as const },
+  };
+  const ENTREGA = { ...RETIRADA, entrega: { tipo: "ENTREGA" as const } };
+
+  it("confirmado diz quando e leva o link", () => {
+    expect(mensagemDoPasso("CONFIRMADO", RETIRADA, HOJE, { link: LINK })).toBe(
+      `Oi, Juliana! Seu pedido está confirmado: retirada sábado, às 15h. Acompanhe por aqui: ${LINK}`,
+    );
+  });
+
+  it("confirmado com Pix diz o valor antes do link", () => {
+    expect(
+      mensagemDoPasso("CONFIRMADO", RETIRADA, HOJE, { link: LINK, pix: 12000 }),
+    ).toBe(
+      `Oi, Juliana! Seu pedido está confirmado: retirada sábado, às 15h. O Pix de ${dinheiro(12000)} está no link. Acompanhe por aqui: ${LINK}`,
+    );
+  });
+
+  it("sem link, nem o link nem a linha do Pix", () => {
+    expect(mensagemDoPasso("CONFIRMADO", RETIRADA, HOJE, { pix: 12000 })).toBe(
+      "Oi, Juliana! Seu pedido está confirmado: retirada sábado, às 15h.",
+    );
+  });
+
+  it("pronto na retirada diz onde, quando há endereço", () => {
+    expect(
+      mensagemDoPasso("PRONTO", RETIRADA, HOJE, {
+        link: LINK,
+        retirada: " Rua das Flores, 120 ",
+      }),
+    ).toBe(
+      `Oi, Juliana! Seu pedido ficou pronto e já pode ser retirado na Rua das Flores, 120. Acompanhe por aqui: ${LINK}`,
+    );
+    expect(mensagemDoPasso("PRONTO", RETIRADA, HOJE, { link: LINK })).toBe(
+      `Oi, Juliana! Seu pedido ficou pronto e já pode ser retirado. Acompanhe por aqui: ${LINK}`,
+    );
+  });
+
+  it("pronto na entrega não fala de endereço de retirada", () => {
+    expect(
+      mensagemDoPasso("PRONTO", ENTREGA, HOJE, {
+        link: LINK,
+        retirada: "Rua das Flores, 120",
+      }),
+    ).toBe(
+      `Oi, Juliana! Seu pedido ficou pronto e já vai sair pra entrega. Acompanhe por aqui: ${LINK}`,
+    );
+  });
+
+  it("sem nome, só 'Oi!'", () => {
+    expect(
+      mensagemDoPasso("PRONTO", { ...ENTREGA, clienteNome: " " }, HOJE),
+    ).toBe("Oi! Seu pedido ficou pronto e já vai sair pra entrega.");
+  });
+
+  it("os outros passos não têm mensagem", () => {
+    for (const status of [
+      "ORCAMENTO",
+      "EM_PRODUCAO",
+      "ENTREGUE",
+      "CANCELADO",
+    ] as const) {
+      expect(mensagemDoPasso(status, RETIRADA, HOJE, { link: LINK })).toBe(
+        undefined,
+      );
+    }
   });
 });

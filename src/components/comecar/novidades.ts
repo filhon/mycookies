@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-15",
+    titulo: "Ao confirmar ou deixar pronto, um toque avisa a cliente",
+    frase:
+      "Depois de mudar o pedido, o WhatsApp dela abre com a frase do passo e o link do pedido. Você lê e manda do seu número.",
+    href: "/pedidos",
+  },
+  {
+    dataISO: "2026-10-15",
     titulo: "O link do pedido diz onde retirar e vai para a agenda da cliente",
     frase:
       "Escreva uma vez onde e quando se retira: o link do pedido de retirada mostra o endereço com o mapa, e a cliente põe o dia na agenda do celular, com aviso na véspera.",

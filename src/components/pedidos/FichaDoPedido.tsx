@@ -31,6 +31,7 @@ import { Painel } from "@/components/ui/Painel";
 import { Pilulas } from "@/components/ui/Pilulas";
 import { Marcador } from "@/components/ui/Selo";
 import { classesBotao } from "@/components/ui/estilosBotao";
+import { AvisarCliente } from "./AvisarCliente";
 import { SeloStatus } from "./SeloStatus";
 import { useLinkDoAcompanhamento } from "./useLinkDoAcompanhamento";
 import {
@@ -161,11 +162,17 @@ export function FichaDoPedido({
   const [formaEscolhida, setFormaEscolhida] = useState<string | null>(null);
   /** O pedido que foi pago por esta ficha: o "Desfazer" vive enquanto ela fica aberta. */
   const [pagoAqui, setPagoAqui] = useState<string | null>(null);
+  /** O passo que esta ficha acabou de dar, para o aviso à cliente (spec 173). */
+  const [aviso, setAviso] = useState<{
+    id: string;
+    status: StatusPedido;
+  } | null>(null);
 
   function fechar() {
     setFalha(null);
     setFormaEscolhida(null);
     setPagoAqui(null);
+    setAviso(null);
     aoFechar();
   }
 
@@ -190,6 +197,9 @@ export function FichaDoPedido({
     setOcupado(true);
     try {
       await mudarStatusPedido(contaId, pedido, para);
+      if (para === "CONFIRMADO" || para === "PRONTO") {
+        setAviso({ id: pedido.id, status: para });
+      }
     } catch {
       setFalha("Não foi possível mudar o pedido de estado agora.");
     } finally {
@@ -311,20 +321,29 @@ export function FichaDoPedido({
     </Botao>
   ) : null;
 
-  const rodape = (
-    <div className="flex gap-2">
-      {primario}
-      <Link
-        href={`/pedidos/${pedido.id}`}
-        className={classesBotao({
-          tamanho: "lg",
-          className: primario ? "shrink-0" : "flex-1",
-        })}
-      >
-        Editar pedido
-      </Link>
-    </div>
-  );
+  // O aviso no lugar do passo que acabou de ser tocado; o id confere porque,
+  // na mesa do desktop, a mesma ficha passa a mostrar outro pedido.
+  const rodape =
+    aviso && aviso.id === pedido.id ? (
+      <AvisarCliente
+        pedido={pedido}
+        status={aviso.status}
+        aoFechar={() => setAviso(null)}
+      />
+    ) : (
+      <div className="flex gap-2">
+        {primario}
+        <Link
+          href={`/pedidos/${pedido.id}`}
+          className={classesBotao({
+            tamanho: "lg",
+            className: primario ? "shrink-0" : "flex-1",
+          })}
+        >
+          Editar pedido
+        </Link>
+      </div>
+    );
 
   const conteudo = (
     <div className="space-y-5">

@@ -1,4 +1,5 @@
-import type { Centavos, DataISO } from "@/lib/types";
+import type { Centavos, DataISO, StatusPedido } from "@/lib/types";
+import { quandoDoPedido } from "./acompanhamento";
 import { rotuloDiaPorExtenso } from "./datas";
 import { formatarMoeda } from "./money";
 import { brCodePix, type DadosPix } from "./pix";
@@ -146,6 +147,56 @@ export function mensagemDeCobranca(pedido: {
     ? `: o sinal de ${formatarMoeda(pedido.sinal.valor)} já entrou, faltam ${formatarMoeda(faltaPagar({ ...pedido, pago: false }))}`
     : `, ${formatarMoeda(pedido.total)}`;
   return `${oi} Passando pra lembrar do pedido de ${dia}/${mes}${quanto}. Obrigada!`;
+}
+
+/**
+ * O aviso do passo (spec 173, `#d390`): só o confirmado e o pronto têm o que
+ * dizer. "Sendo feito" é barulho, e o entregue ela já sabe, porque recebeu.
+ * A voz da cobrança: curta, sem emoji, sem negrito.
+ *
+ * `pix` é o que falta, quando o link mostra o Pix (`pixDoPedido`); sem link,
+ * a linha não entra, porque "está no link" apontaria para o nada.
+ */
+export function mensagemDoPasso(
+  status: StatusPedido,
+  pedido: {
+    clienteNome: string;
+    dataEntregaISO: DataISO;
+    horaEntrega?: string;
+    entrega: { tipo: "RETIRADA" | "ENTREGA" };
+  },
+  hojeISO: DataISO,
+  {
+    link,
+    retirada,
+    pix,
+  }: { link?: string; retirada?: string; pix?: Centavos } = {},
+): string | undefined {
+  const nome = primeiroNome(pedido.clienteNome);
+  const oi = nome ? `Oi, ${nome}!` : "Oi!";
+  const onde = retirada?.trim();
+  const acompanhe = link ? ` Acompanhe por aqui: ${link}` : "";
+
+  if (status === "CONFIRMADO") {
+    const quando = quandoDoPedido(
+      pedido.entrega.tipo,
+      pedido.dataEntregaISO,
+      pedido.horaEntrega,
+      hojeISO,
+    );
+    const quandoMinusculo = quando.charAt(0).toLowerCase() + quando.slice(1);
+    const comPix =
+      link && pix ? ` O Pix de ${formatarMoeda(pix)} está no link.` : "";
+    return `${oi} Seu pedido está confirmado: ${quandoMinusculo}.${comPix}${acompanhe}`;
+  }
+  if (status === "PRONTO") {
+    const passo =
+      pedido.entrega.tipo === "ENTREGA"
+        ? "já vai sair pra entrega"
+        : `já pode ser retirado${onde ? ` na ${onde}` : ""}`;
+    return `${oi} Seu pedido ficou pronto e ${passo}.${acompanhe}`;
+  }
+  return undefined;
 }
 
 /**

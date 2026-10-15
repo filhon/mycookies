@@ -12800,3 +12800,35 @@ dela.
 
 **Consequência.** Nenhuma regra, índice ou dependência. Uma rota pública nova de leitura, com as
 guardas da página. Endereço por pedido, mapa desenhado e lembrete enviado pelo Rende ficam fora.
+
+## D390 · O aviso que sai com o passo é oferecido, não mandado
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 173 · amplia a `#d320` e a
+`#d388`.
+
+**Contexto.** A Maynara marca "Pronto" no app e a cliente só sabe se ela lembrar de escrever, ou
+se abrir o link por acaso. Os cardápios por assinatura vendem o robô de WhatsApp que manda cada
+passo; aqui ele custaria por conversa e falaria por um número que não é o dela.
+
+**Decisão.**
+
+- **`mensagemDoPasso(status, pedido, hojeISO, { link, retirada, pix })`** em
+  `domain/whatsapp.ts`, puro, só para `CONFIRMADO` ("Seu pedido está confirmado: retirada
+  sábado, às 15h.", com `quandoDoPedido` em minúscula) e `PRONTO` ("ficou pronto e já pode ser
+  retirado na {endereço}" ou "já vai sair pra entrega"); o resto devolve `undefined`. Texto
+  aprovado na sessão. **A linha do Pix só entra com link**: "O Pix de R$ X está no link" sem link
+  apontaria para o nada. O valor é o que falta, e só quando `pixDoPedido` daria Pix na página.
+- **`AvisarCliente`**, faixa informativa (`bg-info-soft`, `Info`, "Pedido confirmado." ou
+  "Pedido pronto."), com "Avisar a {primeiro nome}" secundário `lg` e "Agora não" terciário, e
+  `ParaQuemVai` embaixo. O `<a>` reusa `useLinkDoAcompanhamento` (o link só com o pacote do
+  cardápio; a chave gravada no toque, sem rede) e fecha a faixa depois de abrir, como a
+  `FaixaAnotado`. Ela lê a configuração sozinha (retirada e formas), para os três chamadores não
+  precisarem.
+- **Onde:** na ficha, no lugar do rodapé, conferindo o id (na mesa do desktop a mesma ficha passa
+  a outro pedido); no editor, no lugar da linha do avanço, e só no passo adiante (voltar de
+  entregue para pronto não é notícia); em "Esperando você", no topo da lista, porque a linha do
+  aprovado some ao confirmar. Estado de tela: some no toque, ao fechar ou sair, e não volta.
+- **Sem memória de "já avisei"**: gravar pediria schema, e a conversa já é o registro.
+
+**Consequência.** Nenhuma regra, schema ou dependência. O WhatsApp automático e o push para a
+cliente ficam fora (spec 173, "Fora de escopo").

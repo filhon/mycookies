@@ -23,6 +23,7 @@ import {
 import { useColecao } from "@/lib/hooks/useColecao";
 import type { DataISO, Pedido } from "@/lib/types";
 import { useContaId, usePapel } from "@/providers/AuthProvider";
+import { AvisarCliente } from "./AvisarCliente";
 
 /** Até três de cada; o resto é "e mais N", que leva a `/pedidos`. */
 const POR_TIPO = 3;
@@ -42,6 +43,11 @@ export function EsperandoVoce() {
   const contaId = useContaId();
   const dona = usePapel() === "DONA";
   const [hoje] = useState(() => dataISODe(new Date()));
+  /**
+   * O pedido que acabou de ser confirmado aqui (spec 173). Mora na seção, e
+   * não na linha: confirmado, ele sai da lista, e o aviso fica no lugar.
+   */
+  const [avisar, setAvisar] = useState<Pedido | null>(null);
 
   const consultaDaAgenda = useMemo(() => consultaAgenda(contaId), [contaId]);
   const consultaDosEntregues = useMemo(
@@ -68,7 +74,12 @@ export function EsperandoVoce() {
   // Carregando não vira esqueleto, e erro não vira aviso: a lista pode não
   // existir, e a agenda logo abaixo já diz quando a rede falhou.
   if (agenda.carregando || entregues.carregando) return null;
-  if (espera.length === 0 && passaram.length === 0 && receber.total === 0)
+  if (
+    !avisar &&
+    espera.length === 0 &&
+    passaram.length === 0 &&
+    receber.total === 0
+  )
     return null;
 
   return (
@@ -81,9 +92,23 @@ export function EsperandoVoce() {
       </h2>
 
       <ul className="mt-3 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
+        {avisar && (
+          <li className="p-2">
+            <AvisarCliente
+              pedido={avisar}
+              status="CONFIRMADO"
+              aoFechar={() => setAvisar(null)}
+            />
+          </li>
+        )}
         {aprovados.slice(0, POR_TIPO).map((pedido) => (
           <li key={pedido.id}>
-            <LinhaAprovado pedido={pedido} hoje={hoje} contaId={contaId} />
+            <LinhaAprovado
+              pedido={pedido}
+              hoje={hoje}
+              contaId={contaId}
+              aoConfirmar={() => setAvisar(pedido)}
+            />
           </li>
         ))}
         <MaisN resto={aprovados.length - POR_TIPO} />
@@ -186,10 +211,12 @@ function LinhaAprovado({
   pedido,
   hoje,
   contaId,
+  aoConfirmar,
 }: {
   pedido: Pedido;
   hoje: DataISO;
   contaId: string;
+  aoConfirmar: () => void;
 }) {
   const quem = pedido.aprovacao?.nome.trim();
   return (
@@ -217,7 +244,11 @@ function LinhaAprovado({
       <Botao
         tamanho="sm"
         className="mr-3 shrink-0"
-        onClick={() => void mudarStatusPedido(contaId, pedido, "CONFIRMADO")}
+        onClick={() =>
+          void mudarStatusPedido(contaId, pedido, "CONFIRMADO").then(
+            aoConfirmar,
+          )
+        }
       >
         Confirmar
       </Botao>

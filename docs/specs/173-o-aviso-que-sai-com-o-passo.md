@@ -106,10 +106,10 @@ aceito, é segundos ou minutos.
 
 ## Critérios de aceite
 
-- [ ] Mensagem só para `CONFIRMADO` e `PRONTO`, com o quando, o Pix e o endereço quando há.
-- [ ] A faixa nos três lugares em que o status anda, uma vez por mudança.
-- [ ] Funciona sem rede; o link só na conta com o pacote.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; decisão registrada; `ESTADO.md` e
+- [x] Mensagem só para `CONFIRMADO` e `PRONTO`, com o quando, o Pix e o endereço quando há.
+- [x] A faixa nos três lugares em que o status anda, uma vez por mudança.
+- [x] Funciona sem rede; o link só na conta com o pacote.
+- [x] `lint`, `typecheck`, `test` e `build` passam; decisão registrada; `ESTADO.md` e
       `novidades.ts` atualizados.
 
 ---

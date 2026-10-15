@@ -48,6 +48,7 @@ import { Pilulas } from "@/components/ui/Pilulas";
 import { Selo } from "@/components/ui/Selo";
 import { useGuardaDeSaida } from "@/components/ui/useGuardaDeSaida";
 import { EscolhaDoCombo } from "./EscolhaDoCombo";
+import { AvisarCliente } from "./AvisarCliente";
 import { FaixaAnotado } from "./FaixaAnotado";
 import { LinhaItemPedido } from "./LinhaItemPedido";
 import { PainelPedido } from "./PainelPedido";
@@ -384,6 +385,8 @@ export function FormularioPedido({
   const [status, setStatus] = useState<StatusPedido>(
     pedido?.status ?? "ORCAMENTO",
   );
+  /** O passo adiante que acabou de ser dado, para o aviso à cliente (spec 173). */
+  const [aviso, setAviso] = useState<StatusPedido | null>(null);
 
   // O dia do pagamento nasce hoje, e não na data da entrega: o normal é ela
   // tocar no botão no dia em que o dinheiro entrou. Mudar a data é um toque, e
@@ -1126,6 +1129,13 @@ export function FormularioPedido({
         proximo,
       );
       setStatus(proximo);
+      // Só o passo adiante avisa: voltar para pronto não é notícia.
+      setAviso(
+        proximo === adiante &&
+          (proximo === "CONFIRMADO" || proximo === "PRONTO")
+          ? proximo
+          : null,
+      );
       setSalvando(false);
     } catch {
       setFalha("Não foi possível mudar o pedido de estado agora.");
@@ -1264,40 +1274,51 @@ export function FormularioPedido({
                 </div>
               )}
 
-              {/* O avanço sozinho, e o destrutivo lá no pé (`#d272`). */}
-              <div className="flex flex-wrap items-center gap-2">
-                {status === "CANCELADO" ? (
-                  <Botao
-                    disabled={salvando}
-                    onClick={() => void mover("ORCAMENTO")}
-                  >
-                    Reabrir como orçamento
-                  </Botao>
-                ) : (
-                  <>
-                    {adiante && (
-                      <Botao
-                        tamanho="lg"
-                        variante={passoEhPrimario ? "primaria" : "secundaria"}
-                        disabled={salvando}
-                        onClick={() => void mover(adiante)}
-                      >
-                        {ACAO_STATUS_PEDIDO[adiante]}
-                      </Botao>
-                    )}
-                    {atras && (
-                      <Botao
-                        variante="terciaria"
-                        disabled={salvando}
-                        onClick={() => void mover(atras)}
-                      >
-                        Voltar para{" "}
-                        {ROTULO_STATUS_PEDIDO[atras].toLocaleLowerCase("pt-BR")}
-                      </Botao>
-                    )}
-                  </>
-                )}
-              </div>
+              {/* O avanço sozinho, e o destrutivo lá no pé (`#d272`). O
+                  aviso à cliente fica no lugar dele até ela tocar. */}
+              {aviso ? (
+                <AvisarCliente
+                  pedido={pedido}
+                  status={aviso}
+                  aoFechar={() => setAviso(null)}
+                />
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  {status === "CANCELADO" ? (
+                    <Botao
+                      disabled={salvando}
+                      onClick={() => void mover("ORCAMENTO")}
+                    >
+                      Reabrir como orçamento
+                    </Botao>
+                  ) : (
+                    <>
+                      {adiante && (
+                        <Botao
+                          tamanho="lg"
+                          variante={passoEhPrimario ? "primaria" : "secundaria"}
+                          disabled={salvando}
+                          onClick={() => void mover(adiante)}
+                        >
+                          {ACAO_STATUS_PEDIDO[adiante]}
+                        </Botao>
+                      )}
+                      {atras && (
+                        <Botao
+                          variante="terciaria"
+                          disabled={salvando}
+                          onClick={() => void mover(atras)}
+                        >
+                          Voltar para{" "}
+                          {ROTULO_STATUS_PEDIDO[atras].toLocaleLowerCase(
+                            "pt-BR",
+                          )}
+                        </Botao>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* A fornada não é o status (`DECISOES.md#d92`): registrar não
                 move o pedido, e mover não registra. O atalho abre a folha já
