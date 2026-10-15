@@ -6,6 +6,7 @@ import {
   rotuloDiaPorExtenso,
   rotuloMes,
 } from "@/lib/domain/datas";
+import { posicaoNaFila } from "@/lib/domain/listaDeEspera";
 import { formatarMoeda, formatarValor } from "@/lib/domain/money";
 import type { Centavos, CompetenciaMensal, DataISO, Pacote } from "@/lib/types";
 
@@ -397,6 +398,54 @@ export function senhaTrocada(d: DadosSenhaTrocada): Peca {
         `Não foi você? ${naoFoi}`,
       ],
       pe,
+    ),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Lista de espera
+
+export interface DadosListaDeEspera {
+  nome: string;
+  posicao: number;
+}
+
+/** A confirmação de quem entrou na lista (spec 182). Sem botão: não há o que abrir. */
+export function listaDeEspera(d: DadosListaDeEspera): Peca {
+  const assunto = "Você está na lista do Rende";
+  const preheader = "Quando abrirem vagas, o aviso chega por aqui.";
+  const fila = `Você é a ${posicaoNaFila(d.posicao)} da fila.`;
+  const oQueE =
+    "O Rende calcula o preço de cada doce com tudo o que entra nele (material, embalagem, a sua hora, a maquininha) e mostra quanto sobra pra você. Também anota os pedidos e fecha o caixa do mês.";
+  const beta =
+    "O Rende está em beta fechado, com 100 vagas por convite. Quando abrirem mais vagas, você é das primeiras a saber, por este e-mail.";
+  const convite =
+    "Conhece alguém que já usa? Um convite dela vale mais que a fila.";
+  const pe =
+    "Você recebeu este e-mail porque entrou na lista de espera do Rende. Para sair da lista, responda este e-mail.";
+
+  return {
+    assunto,
+    preheader,
+    html: moldura({
+      assunto,
+      preheader,
+      corpo: `
+    ${titulo(`Oi, ${escapar(d.nome)}`, 20)}
+
+    <p style="margin:0 0 16px;">${fila}</p>
+
+    <p style="margin:0 0 16px;">${oQueE}</p>
+
+    <p style="margin:0;">${beta}</p>
+
+    ${nota(convite, 36)}
+`,
+      pe: `${pe} <a href="${URL_DO_SITE}/privacidade#secao-11" style="color:${MUDO};">Privacidade</a>.`,
+    }),
+    texto: texto(
+      [`Oi, ${d.nome}.`, fila, oQueE, beta, convite],
+      `${pe}\nPrivacidade: ${URL_DO_SITE}/privacidade#secao-11`,
     ),
   };
 }

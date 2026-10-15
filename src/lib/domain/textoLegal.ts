@@ -85,6 +85,13 @@ export const VERSOES_PRIVACIDADE: readonly Versao[] = [
       "A taxa de entrega pelo CEP: o CEP vai à ViaCEP e ao Google Maps (seção 5).",
     relevante: true,
   },
+  {
+    em: "2026-10-15",
+    mudou:
+      "A lista de espera: o que se guarda de quem entra nela, para quê e por quanto tempo (seção 11).",
+    // Nada muda para quem tem conta (spec 182).
+    relevante: false,
+  },
 ];
 
 export const VERSOES_TERMOS: readonly Versao[] = [

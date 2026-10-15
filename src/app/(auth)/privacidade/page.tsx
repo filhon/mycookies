@@ -54,7 +54,7 @@ const SECOES: SecaoDeTexto[] = [
     titulo: "A quem esta política se aplica",
     curto: "A quem se aplica",
     paragrafos: [
-      "A três grupos de pessoas: quem cria uma conta no Rende (a dona da conta); as ajudantes que ela convida; e as clientes dela, que fazem pedidos pelo cardápio com link.",
+      "A quatro grupos de pessoas: quem cria uma conta no Rende (a dona da conta); as ajudantes que ela convida; as clientes dela, que fazem pedidos pelo cardápio com link; e quem entra na lista de espera.",
       "Para os dados da dona da conta e das ajudantes, o Rende é o controlador. Para os dados das clientes, que a dona cadastra ou que chegam pelo cardápio, a controladora é a própria dona da conta, que decide o que fazer com eles; o Rende é o operador, que os guarda e processa por conta dela (LGPD, art. 5º, VI e VII, e art. 39). A seção 7 trata disso.",
     ],
   },
@@ -137,6 +137,17 @@ const SECOES: SecaoDeTexto[] = [
     paragrafos: [
       "O Rende não usa cookies de rastreamento, de publicidade ou de análise de terceiros. Para funcionar, e para funcionar sem internet, ele guarda no armazenamento do seu navegador a sessão de login e uma cópia dos dados da sua conta. Isso é necessário ao serviço e não segue você por outros sites; sair da conta apaga essa cópia.",
       "A página de pagamento é da Stripe, e usa os cookies dela, sob a política de privacidade dela, para processar o pagamento e prevenir fraude.",
+    ],
+  },
+  // Spec 182 (`DECISOES.md#d402`, `#d403`).
+  {
+    titulo: "A lista de espera",
+    curto: "Lista de espera",
+    paragrafos: [
+      "Enquanto o Rende abre só por convite, quem ainda não tem conta pode entrar na lista de espera. Dessa pessoa guardamos o nome, o e-mail, o Instagram do negócio, se ela informar, a página por onde entrou, a posição na fila e a data.",
+      "Esses dados servem para avisar quando abrirem vagas e quando o Rende abrir para todo mundo, e para nada além disso. A base legal é o consentimento de quem entra na lista (LGPD, art. 7º, I).",
+      "A lista é apagada inteira até 90 dias depois do lançamento.",
+      "Para sair antes, responda qualquer e-mail da lista ou escreva para o e-mail da seção 1. Os seus dados são apagados, e a posição das outras pessoas na fila não muda.",
     ],
   },
   {

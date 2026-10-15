@@ -622,8 +622,18 @@ chega dá numa porta fechada sem explicação.
 
 3. **Depois, o deploy do app.**
 
-**Conferir:** numa aba anônima, `/cadastro` sem convite termina em "O Rende está abrindo por
-convite", e nenhuma conta nasce (`npm run beta` continua com 2 ocupadas).
+**Conferir:** numa aba anônima, `/cadastro` sem convite mostra "O Rende está em beta fechado",
+com a lista de espera (182), e nenhuma conta nasce (`npm run beta` continua com 2 ocupadas).
+Entrar na lista mostra a posição, e `npm run beta` passa a dizer `1 na lista · 1 entraram hoje`.
+
+**A cota do Resend (spec 182).** O plano grátis manda **100 e-mails por dia**, somando
+boas-vindas, senha, os avisos do cron e a confirmação da lista de espera. Passada a cota, a
+confirmação não sai e ela entra na lista do mesmo jeito; quem perde é a senha, que cai na reserva
+do Firebase (`#d204`). `npm run beta` diz quantas entraram hoje. **Antes de qualquer divulgação
+que possa trazer mais de 50 pessoas num dia, o plano Pro do Resend.**
+
+**Sair da lista** é por resposta ao e-mail: `npm run beta -- tirar-da-espera <email>` apaga a
+entrada (`DECISOES.md#d403`).
 
 ## Limites conhecidos
 

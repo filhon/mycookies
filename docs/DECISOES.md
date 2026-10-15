@@ -13199,3 +13199,59 @@ centésima, e o lançamento (186) precisa trocar de fase sem deploy.
 
 **Consequência.** Uma coleção na raiz a mais, anotada no `CLAUDE.md`, no `firestore.rules` e no
 mapa `caminhos`. Nenhuma dependência.
+
+## D402 · A lista de espera mora na raiz, com o e-mail em hash no id
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 182 · a terceira exceção ao
+invariante "todo dado mora em `contas/…`", depois da `#d319` e da `#d401`.
+
+**Contexto.** Com a 181, quem chega sem convite bate numa porta fechada, e o Rende perde o
+contato. Quem espera vaga ainda não tem conta, então o dado dela não tem `contas/{id}` onde morar.
+
+**Decisão.**
+
+- **`listaDeEspera/{id}`, trancada nas regras como `apelidos`.** Grava só
+  `POST /api/lista-de-espera`; lê e apaga só o `npm run beta`. `caminhos.listaDeEspera(id)` e o
+  tipo `NaListaDeEspera` (`types/conta.ts`).
+- **O id é o SHA-256 do e-mail normalizado** (sem espaço, minúsculas), em hex, os 32 primeiros
+  caracteres (`idDaEspera`, `domain/listaDeEspera.ts`, por `crypto.subtle`, que o Node e o
+  navegador têm; o script repete com `node:crypto`). Um e-mail, uma entrada, sem consulta; e o
+  e-mail não aparece em id, caminho, chave do Resend (`espera/{id}`) nem log.
+- **A posição sai de `plataforma/beta.espera` numa `runTransaction` do Admin SDK**, como a vaga
+  da `#d400`: documento existente não muda nada; novo soma `espera` e grava a posição.
+- **A resposta é sempre `{ ok: true, posicao }`**, nova ou antiga (`#d143`): quem digita o e-mail
+  de outra pessoa sai sabendo só que ela está na fila. A isca `site` preenchida responde
+  `{ ok: true }` e não grava. Sem captcha.
+- **O e-mail sai por `after()`, só quando a entrada nasce.** Passada a cota do Resend, ela entra
+  sem e-mail; a rota não cai (`DEPLOY.md` § 16).
+- **`GET /api/beta` devolve `{ fase, vagas, restam }`**, com `s-maxage=300`. `vagas` vai além do
+  que a spec pedia: a frase "São N vagas" diz o teto, e o teto muda por `npm run beta -- vagas`.
+- **`/cadastro` sem convite fica fechado até a fase dizer `PUBLICO`**: enquanto a resposta não
+  chega, ou se não chegar, a tela é a do beta, como o `lerBeta` do servidor. As quatro recusas da
+  181 tiram o código do aparelho e do endereço e caem na mesma tela, com a frase no topo.
+
+**Consequência.** Uma coleção na raiz a mais, anotada no `CLAUDE.md`, no `firestore.rules`, no
+mapa `caminhos` e no `types/index.ts`. Privacidade com a seção 11 e a versão `2026-10-15`, com
+`relevante: false` confirmado por quem conduz o projeto. Nenhuma dependência, nenhum índice.
+
+## D403 · A lista de espera é a única coisa que se apaga a pedido
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 182 · a segunda exceção ao
+"nunca apagar documento", depois da purga de conta (`#d148`).
+
+**Contexto.** O "nunca apagar" existe porque fichas e pedidos referenciam ids e o histórico de
+custo precisa ser auditável. A lista não é dado de negócio, nada a referencia, e a LGPD dá a quem
+consentiu o direito de sair.
+
+**Decisão.**
+
+- **`npm run beta -- tirar-da-espera <email>` apaga o documento.** Sair é por resposta ao e-mail,
+  e não por link: o link pede token assinado e rota (`#d207`), e com centenas de pessoas a
+  resposta chega a uma pessoa que roda o script.
+- **A posição das outras não muda, e `espera` não desce.** O número dito a cada uma continua
+  verdadeiro; o `npm run beta` mostra a contagem real ("N na lista · M entraram hoje"), e não
+  `espera`.
+- **A lista inteira é apagada até 90 dias depois do lançamento**, pelo script da 186. Está na
+  seção 11 da privacidade.
+
+**Consequência.** O invariante do `CLAUDE.md` passa a nomear duas exceções.

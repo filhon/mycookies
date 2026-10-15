@@ -146,6 +146,32 @@ export interface EstadoDoBeta {
   v: VersaoSchema;
 }
 
+/** A página de onde ela entrou na lista de espera (spec 182). */
+export type OrigemDaEspera =
+  "conheca" | "artigo" | "cardapio" | "cadastro" | "convite";
+
+/**
+ * `listaDeEspera/{id}`, a terceira exceção à regra de ouro (spec 182). Só o
+ * Admin SDK lê e escreve. O id é o SHA-256 do e-mail normalizado
+ * (`idDaEspera`): um e-mail, uma entrada. A única coleção que se apaga a pedido
+ * (`npm run beta -- tirar-da-espera`), fora a purga de conta.
+ */
+export interface NaListaDeEspera {
+  /** Minúsculas, sem espaço. */
+  email: string;
+  nome: string;
+  /** Sem `@`, até 40. */
+  instagram?: string;
+  origem: OrigemDaEspera;
+  /** De `plataforma/beta.espera`, na transação. Não muda quando alguém sai. */
+  posicao: number;
+  criadaEm: Timestamp;
+  privacidadeVersao: string;
+  /** O aviso do lançamento (spec 186). */
+  avisadaEm?: Timestamp;
+  v: VersaoSchema;
+}
+
 /**
  * `contas/{dona}/convites/{codigo}`, um por convite de fundadora (spec 181).
  * Escrito só pelo servidor; a dona lê. Uso único: um convite, uma conta.

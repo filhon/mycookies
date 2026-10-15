@@ -4,14 +4,18 @@
  *   npm run beta                            a fase, as vagas e a árvore das fundadoras
  *   npm run beta -- semear <contaId> [cota] dá a cota (5) e, sem número, a próxima vaga
  *   npm run beta -- vagas <n>               muda o teto, nunca abaixo das ocupadas
+ *   npm run beta -- tirar-da-espera <email> apaga a entrada dela da lista (spec 182)
  *
  * Os caminhos e o padrão de `plataforma/beta` estão repetidos aqui de
  * propósito, como em `conceder-acesso.mjs`: o script roda fora do app e não
  * importa `src/lib/types` nem `src/lib/server/beta.ts`. Se mudar lá, muda aqui.
+ * O id da lista é o de `idDaEspera` (`src/lib/domain/listaDeEspera.ts`).
  */
+import { createHash } from "node:crypto";
 import { db, semCredencial } from "./admin.mjs";
 
 const PLATAFORMA_BETA = "plataforma/beta";
+const LISTA_DE_ESPERA = "listaDeEspera";
 /** `BETA_PADRAO` de `src/lib/server/beta.ts`. */
 const PADRAO = {
   fase: "BETA",
@@ -27,9 +31,24 @@ const COTA = 5;
 const USO =
   "Uso: npm run beta\n" +
   "     npm run beta -- semear <contaId> [cota]\n" +
-  "     npm run beta -- vagas <n>";
+  "     npm run beta -- vagas <n>\n" +
+  "     npm run beta -- tirar-da-espera <email>";
 
 const MS_POR_DIA = 24 * 60 * 60 * 1000;
+/** Brasília não tem horário de verão desde 2019. */
+const FUSO_MS = 3 * 60 * 60 * 1000;
+
+/** A meia-noite de hoje em Brasília, para contar quem entrou hoje (a cota do Resend). */
+function inicioDeHoje() {
+  const dia = Math.floor((Date.now() - FUSO_MS) / MS_POR_DIA);
+  return new Date(dia * MS_POR_DIA + FUSO_MS);
+}
+
+/** `normalizarEmail` e `idDaEspera` do app, repetidos. */
+function idDaEspera(email) {
+  const normalizado = email.replace(/\s/g, "").toLowerCase();
+  return createHash("sha256").update(normalizado).digest("hex").slice(0, 32);
+}
 
 function inteiro(texto) {
   const n = Number(texto);
@@ -52,16 +71,24 @@ function situacao(conta, agora) {
 }
 
 async function mostrar() {
-  const [plataforma, convites, fundadoras] = await Promise.all([
+  const lista = db.collection(LISTA_DE_ESPERA);
+  const [plataforma, convites, fundadoras, naLista, hoje] = await Promise.all([
     db.doc(PLATAFORMA_BETA).get(),
     db.collectionGroup("convites").get(),
     db.collection("contas").orderBy("beta.fundadora").get(),
+    lista.count().get(),
+    lista.where("criadaEm", ">=", inicioDeHoje()).count().get(),
   ]);
   const estado = { ...PADRAO, ...plataforma.data() };
   console.log(
     `Fase ${estado.fase}${plataforma.exists ? "" : " (sem documento)"} · ` +
       `${estado.ocupadas} de ${estado.vagas} vagas · ` +
-      `espera ${estado.espera} · pesquisas ${estado.pesquisas}`,
+      `pesquisas ${estado.pesquisas}`,
+  );
+  // A posição não desce quando alguém sai: o total é a contagem, e não `espera`.
+  console.log(
+    `Lista de espera: ${naLista.data().count} na lista · ` +
+      `${hoje.data().count} entraram hoje · última posição ${estado.espera}`,
   );
 
   const porStatus = { ABERTO: 0, USADO: 0, CANCELADO: 0 };
@@ -155,6 +182,22 @@ async function mudarVagas(vagas) {
   console.log(`Teto do beta: ${vagas} vagas.`);
 }
 
+/**
+ * A segunda exceção ao "nunca apagar documento" (`DECISOES.md#d403`): a lista
+ * não é dado de negócio, nada a referencia, e a LGPD dá a ela o direito de
+ * sair. `espera` e a posição das outras não mudam.
+ */
+async function tirarDaEspera(email) {
+  const referencia = db.doc(`${LISTA_DE_ESPERA}/${idDaEspera(email)}`);
+  const snap = await referencia.get();
+  if (!snap.exists) {
+    console.log("Esse e-mail não está na lista. Nada apagado.");
+    return;
+  }
+  await referencia.delete();
+  console.log(`Saiu da lista (era a posição ${snap.get("posicao")}).`);
+}
+
 const [comando, ...args] = process.argv.slice(2);
 
 try {
@@ -162,6 +205,8 @@ try {
   else if (comando === "semear" && args[0]) {
     await semear(args[0], args[1] === undefined ? COTA : inteiro(args[1]));
   } else if (comando === "vagas" && args[0]) await mudarVagas(inteiro(args[0]));
+  else if (comando === "tirar-da-espera" && args[0])
+    await tirarDaEspera(args[0]);
   else {
     console.error(USO);
     process.exit(1);

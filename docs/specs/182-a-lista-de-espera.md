@@ -163,12 +163,12 @@ escrito no `DEPLOY.md`.
 
 ## Critérios de aceite
 
-- [ ] Um e-mail, uma entrada, um e-mail de confirmação.
-- [ ] A resposta não diz se o e-mail já estava lá antes.
-- [ ] Nenhum cliente lê ou escreve `listaDeEspera`.
-- [ ] Privacidade com a seção e a versão nova.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] Decisões registradas; `ESTADO.md` atualizado.
+- [x] Um e-mail, uma entrada, um e-mail de confirmação.
+- [x] A resposta não diz se o e-mail já estava lá antes.
+- [x] Nenhum cliente lê ou escreve `listaDeEspera`.
+- [x] Privacidade com a seção e a versão nova.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] Decisões registradas; `ESTADO.md` atualizado.
 
 ---
 

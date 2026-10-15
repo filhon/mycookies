@@ -22,8 +22,9 @@ npm run metricas     # uma linha por conta, lida por quem conduz o projeto;
                       # exige GOOGLE_APPLICATION_CREDENTIALS
 npm run encerrar-conta -- <contaId>   # purga conta encerrada, à mão, com --confirmo;
                                        # exige GOOGLE_APPLICATION_CREDENTIALS
-npm run beta         # fase, vagas e a árvore das fundadoras; `-- semear <contaId> [cota]`
-                     # e `-- vagas <n>`; exige GOOGLE_APPLICATION_CREDENTIALS
+npm run beta         # fase, vagas, a lista de espera e a árvore das fundadoras;
+                     # `-- semear <contaId> [cota]`, `-- vagas <n>` e
+                     # `-- tirar-da-espera <email>`; exige GOOGLE_APPLICATION_CREDENTIALS
 ```
 
 **Portão de conclusão:** nenhuma tarefa está pronta antes de `lint`, `typecheck`, `test` e
@@ -69,14 +70,16 @@ Quebrar qualquer um destes é regressão, não escolha de estilo.
 - **Offline é o estado normal.** Nada de `serverTimestamp()` (grava `null` no cache local);
   use `Timestamp.now()`. Nada de `runTransaction()` em caminho crítico: transação exige rede.
 - **Nunca apagar documento.** `arquivado: true`, porque fichas e pedidos antigos referenciam
-  o id e o histórico de custo precisa continuar auditável. A única exceção é a purga de conta
-  encerrada por `scripts/encerrar-conta.mjs`, `DECISOES.md#d148`.
+  o id e o histórico de custo precisa continuar auditável. São duas exceções: a purga de conta
+  encerrada por `scripts/encerrar-conta.mjs`, `DECISOES.md#d148`, e a saída da lista de espera
+  por `npm run beta -- tirar-da-espera`, `DECISOES.md#d403`.
 - **Todo dado mora em `contas/{contaId}/…`, nunca sob o login.** `uid` diz quem entrou,
   `contaId` diz de quem é o dado. O mapa `caminhos` é o único lugar que conhece o formato.
-  São duas exceções, trancadas para todo cliente: `apelidos/{apelido}`, o índice dos endereços
-  do cardápio, escrito só por `/api/cardapio/apelido`, `DECISOES.md#d319`; e `plataforma/beta`,
-  a fase e as vagas do beta, escrito só pela troca do convite em `/api/conta` e por
-  `npm run beta`, `DECISOES.md#d401`.
+  São três exceções, trancadas para todo cliente: `apelidos/{apelido}`, o índice dos endereços
+  do cardápio, escrito só por `/api/cardapio/apelido`, `DECISOES.md#d319`; `plataforma/beta`,
+  a fase e as vagas do beta, escrito só pela troca do convite em `/api/conta`, pela lista de
+  espera e por `npm run beta`, `DECISOES.md#d401`; e `listaDeEspera/{id}`, quem espera vaga,
+  escrito só por `/api/lista-de-espera` e por `npm run beta`, `DECISOES.md#d402`.
 - **Toda escrita grava `v: VERSAO_SCHEMA`.** Sem isso a forma de um documento se adivinha
   pela presença de campos.
 - **Alvo de toque mínimo de 44×44px**, ação primária no celular com 52px.

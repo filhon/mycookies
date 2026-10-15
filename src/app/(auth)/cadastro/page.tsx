@@ -2,12 +2,19 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useState,
+  useSyncExternalStore,
+  type FormEvent,
+} from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { CircleAlert } from "lucide-react";
 import { BotaoGoogle } from "@/components/auth/BotaoGoogle";
 import { MolduraDeEntrada } from "@/components/auth/MolduraDeEntrada";
 import { ContaAberta } from "@/components/site/ContaAberta";
+import { ListaDeEspera } from "@/components/site/ListaDeEspera";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, CampoSenha, focarPrimeiroErro } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -21,6 +28,7 @@ import {
   type FalhaCadastro,
 } from "@/lib/domain/cadastro";
 import { exemploDoRascunho } from "@/lib/domain/calculadora";
+import { lerCodigo } from "@/lib/domain/convite";
 import { EXEMPLO } from "@/lib/domain/exemplo";
 import { formatarMoeda } from "@/lib/domain/money";
 import { calcularPrecoSugerido } from "@/lib/domain/precificacao";
@@ -87,6 +95,55 @@ export default function PaginaCadastro() {
 
   // O login já existe quando o `POST` caiu no meio: o segundo estado.
   const terminando = !carregando && usuario !== null;
+
+  // A porta do beta (spec 182): sem convite, a fase decide se o formulário
+  // aparece. Até a resposta chegar, e se ela não chegar, a porta fica fechada,
+  // como no servidor (`lerBeta`).
+  const convite = useSyncExternalStore(
+    semAssinatura,
+    () => conviteGuardado() ?? null,
+    () => null,
+  );
+  const [beta, setBeta] = useState<EstadoDaPorta | null>(null);
+  const [falhaDoBeta, setFalhaDoBeta] = useState<FalhaDoBeta | null>(null);
+  const [codigo, setCodigo] = useState("");
+  const [erroDoCodigo, setErroDoCodigo] = useState<string | undefined>();
+
+  useEffect(() => {
+    let vivo = true;
+    fetch("/api/beta")
+      .then((resposta) => (resposta.ok ? resposta.json() : null))
+      .catch(() => null)
+      .then((lido: EstadoDaPorta | null) => {
+        if (vivo && lido) setBeta(lido);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, []);
+
+  const fechada =
+    falhaDoBeta !== null || (convite === null && beta?.fase !== "PUBLICO");
+
+  /** Válido na forma, volta com `?convite=`; quem confere é o POST. */
+  function usarConvite(evento: FormEvent) {
+    evento.preventDefault();
+    const lido = lerCodigo(codigo);
+    if (!lido) {
+      setErroDoCodigo(
+        "O código tem 8 letras e números. Confira e tente de novo.",
+      );
+      return;
+    }
+    try {
+      localStorage.setItem(CHAVE_DO_CONVITE, lido);
+    } catch {
+      // Sem armazenamento, o endereço leva o código até o POST.
+    }
+    router.replace(`/cadastro?convite=${lido}`);
+    setFalhaDoBeta(null);
+    setCodigo("");
+  }
 
   async function aoEnviar(evento: FormEvent) {
     evento.preventDefault();
@@ -157,8 +214,21 @@ export default function PaginaCadastro() {
         }),
       });
       if (!resposta.ok) {
-        setErro(MENSAGEM_FALHA_CADASTRO[await codigoDaFalha(resposta)]);
+        const codigoDaRecusa = await codigoDaFalha(resposta);
         setEnviando(false);
+        if (ehFalhaDoBeta(codigoDaRecusa)) {
+          // O convite não serviu: sai do aparelho e do endereço, e a tela do
+          // beta mostra a frase no topo (spec 182).
+          try {
+            localStorage.removeItem(CHAVE_DO_CONVITE);
+          } catch {
+            // Nada guardado, nada a tirar.
+          }
+          history.replaceState(null, "", "/cadastro");
+          setFalhaDoBeta(codigoDaRecusa);
+          return;
+        }
+        setErro(MENSAGEM_FALHA_CADASTRO[codigoDaRecusa]);
         return;
       }
       try {
@@ -176,6 +246,87 @@ export default function PaginaCadastro() {
       setErro(MENSAGEM_FALHA_CADASTRO["sem-rede"]);
       setEnviando(false);
     }
+  }
+
+  const painel = (
+    <ContaAberta
+      parada
+      exemplo={dela ?? EXEMPLO}
+      dela={!!dela}
+      className="max-w-md"
+    />
+  );
+
+  if (fechada) {
+    return (
+      <MolduraDeEntrada
+        titulo="O Rende está em beta fechado"
+        descricao={fraseDasVagas(beta)}
+        painel={painel}
+      >
+        {falhaDoBeta && (
+          <p
+            role="alert"
+            className="mt-6 flex items-start gap-1.5 text-label text-negative"
+          >
+            <CircleAlert
+              aria-hidden
+              strokeWidth={1.75}
+              className="mt-0.5 size-4 shrink-0"
+            />
+            {MENSAGEM_FALHA_CADASTRO[falhaDoBeta]}
+          </p>
+        )}
+
+        <form onSubmit={usarConvite} noValidate className="mt-8 space-y-3">
+          <Campo
+            rotulo="Tenho um convite"
+            name="convite"
+            type="text"
+            placeholder="K7Q3-M9XA"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            maxLength={12}
+            erro={erroDoCodigo}
+            value={codigo}
+            onChange={(evento) => {
+              setCodigo(evento.target.value);
+              setErroDoCodigo(undefined);
+            }}
+          />
+          <Botao type="submit" variante="secundaria" larguraTotal>
+            Usar o convite
+          </Botao>
+        </form>
+
+        <section
+          aria-labelledby="titulo-da-espera"
+          className="mt-10 border-t border-line pt-8"
+        >
+          <h2
+            id="titulo-da-espera"
+            className="text-subheading font-semibold text-ink"
+          >
+            Sem convite? Entre na lista
+          </h2>
+          <p className="mt-1 mb-5 text-label text-ink-muted">
+            Quando abrirem mais vagas, quem está na lista fica sabendo primeiro.
+          </p>
+          <ListaDeEspera origem="cadastro" />
+        </section>
+
+        <p className="mt-8 flex flex-wrap items-center justify-center gap-x-1 text-label text-ink-muted">
+          Já tem conta?
+          <Link
+            href="/login"
+            className={classesBotao({ variante: "terciaria", tamanho: "sm" })}
+          >
+            Entrar
+          </Link>
+        </p>
+      </MolduraDeEntrada>
+    );
   }
 
   return (
@@ -206,14 +357,7 @@ export default function PaginaCadastro() {
           )}
         </>
       }
-      painel={
-        <ContaAberta
-          parada
-          exemplo={dela ?? EXEMPLO}
-          dela={!!dela}
-          className="max-w-md"
-        />
-      }
+      painel={painel}
     >
       {/* Depois do Google, `usuario` existe e a tela cai no segundo estado: o
           nome vem do `displayName`, e a caixa dos termos continua dela. */}
@@ -430,6 +574,37 @@ export default function PaginaCadastro() {
     </MolduraDeEntrada>
   );
 }
+
+/** `GET /api/beta` (spec 182). */
+interface EstadoDaPorta {
+  fase: "BETA" | "PUBLICO";
+  vagas: number;
+  restam: number;
+}
+
+/** As recusas do portão da 181 que levam à tela do beta. */
+const FALHAS_DO_BETA = [
+  "sem-convite",
+  "convite-invalido",
+  "convite-usado",
+  "sem-vaga",
+] as const satisfies readonly FalhaCadastro[];
+type FalhaDoBeta = (typeof FALHAS_DO_BETA)[number];
+
+function ehFalhaDoBeta(codigo: FalhaCadastro): codigo is FalhaDoBeta {
+  return (FALHAS_DO_BETA as readonly FalhaCadastro[]).includes(codigo);
+}
+
+/** Sem a resposta, o teto sem o que resta: nunca um número inventado. */
+function fraseDasVagas(beta: EstadoDaPorta | null): string {
+  const vagas = `São ${beta?.vagas ?? 100} vagas, por convite de quem já usa.`;
+  if (!beta) return vagas;
+  return beta.restam > 0
+    ? `${vagas} Restam ${beta.restam}.`
+    : `${vagas} As desta fase acabaram.`;
+}
+
+const semAssinatura = () => () => {};
 
 /** Veio pelo rodapé de um cardápio (spec 114, `#d317`), marcado em `/conheca`. */
 function doCardapio(): boolean {

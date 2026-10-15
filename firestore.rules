@@ -27,6 +27,13 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // A terceira exceção (spec 182): a lista de espera do beta, com nome e
+    // e-mail de quem ainda não tem conta. Trancada como `apelidos`: quem grava
+    // é `POST /api/lista-de-espera`, e quem lê e apaga é o `npm run beta`.
+    match /listaDeEspera/{id} {
+      allow read, write: if false;
+    }
+
     match /contas/{contaId} {
       // A claim `contas` é um mapa { contaId: papel }, emitida via Admin SDK
       // por /api/conta, /api/conta/membros, pelo webhook do Stripe e pelo script

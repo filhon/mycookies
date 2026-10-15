@@ -46,8 +46,11 @@ describe("versões", () => {
   });
 
   it("o assunto é o que vem antes dos dois-pontos, em minúscula", () => {
+    expect(
+      assuntoDaMudanca(VERSOES_PRIVACIDADE.find((v) => v.em === "2026-10-10")!),
+    ).toBe("a taxa de entrega pelo CEP");
     expect(assuntoDaMudanca(VERSOES_PRIVACIDADE.at(-1)!)).toBe(
-      "a taxa de entrega pelo CEP",
+      "a lista de espera",
     );
   });
 });

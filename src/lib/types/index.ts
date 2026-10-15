@@ -13,14 +13,16 @@ export * from "./producao";
  * Todo dado vive sob `contas/{contaId}/…`, e nunca sob o login: `uid` diz quem
  * entrou, `contaId` diz de quem é o dado. Nenhuma coleção na raiz além de
  * `contas`, de `apelidos`, o índice dos endereços do cardápio
- * (`DECISOES.md#d319`), e de `plataforma`, a fase e as vagas do beta (spec
- * 181), que só o servidor toca; nenhum documento acessível sem conta. A
+ * (`DECISOES.md#d319`), de `plataforma`, a fase e as vagas do beta (spec
+ * 181), e de `listaDeEspera` (spec 182), que só o servidor toca; nenhum
+ * documento acessível sem conta. A
  * regra de segurança lê o vínculo direto da custom claim, sem custo de leitura.
  */
 export const caminhos = {
   apelidos: "apelidos",
   apelido: (apelido: string) => `apelidos/${apelido}`,
   plataformaBeta: "plataforma/beta",
+  listaDeEspera: (id: string) => `listaDeEspera/${id}`,
   /** O nome da coleção, para `collectionGroup`. */
   grupoConvites: "convites",
   convites: (contaId: string) => `contas/${contaId}/convites`,
