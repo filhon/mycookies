@@ -12720,3 +12720,45 @@ página do desktop acabava nas dúvidas, sem botão à vista.
 
 **Consequência.** Nenhuma regra, schema ou dependência. Nenhuma linha em `novidades.ts`: nada
 muda dentro do app.
+
+---
+
+## D388 · O link do pedido diz quando, e cada estado tem um primário
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 171 · amplia a `#d320` e a
+`#d358`.
+
+**Contexto.** A página do link (117, 149) era o mesmo documento em todos os estados: o título
+era o nome do passo, o dia morava numa lista abaixo da trilha, o Pix era o quinto bloco e o
+WhatsApp competia com "Aprovar" e "Copiar o Pix". A página não sabia que tinha envelhecido.
+
+**Decisão.**
+
+- **`quandoDoPedido(tipo, dataISO, hora, hojeISO)`**, puro: "Retirada hoje, às 15h",
+  "Entrega amanhã, às 10h", "Retirada sábado, às 15h" na semana (até 6 dias, a mesma regra de
+  `rotuloAte`, agora com `rotuloSoODiaDaSemana` exportado), "Entrega em 3 de novembro" depois,
+  e o dia passado por extenso ("Retirada em quinta-feira, 8 de outubro"), sem "atrasado": quem
+  decide se atrasou é ela. A hora "15:00" vira "15h", "09:30" vira "9h30". Sai como `quando` no
+  `Acompanhamento`, fora no entregue e no cancelado; `dia` e `hora` continuam.
+- **`acaoDaVez`**: `aprovar` enquanto `podeAprovar`, `pagar` com `pix`, `falar` no resto. O
+  primário da página é `loja` (`#d166`): o "Aprovar orçamento" de sempre, o "Copiar o Pix"
+  (agora `lg` e largura toda) ou o "Falar com a {quem}". Fora do `falar`, o WhatsApp fica no pé
+  como secundário, nunca some: a confeitaria é conversa.
+- **O Pagamento sobe** para antes da trilha só quando a ação é `pagar`; "Pago" e o sinal sem
+  Pix ficam embaixo, como informação.
+- **"Mandar o comprovante pra {quem}"**, terciário, só com WhatsApp e Pix: "Oi! Paguei o Pix de
+  R$ X do pedido P-…. Segue o comprovante."
+- **O QR do Pix só a partir de `lg`**, 160px, com "Ou aponte a câmera do celular no app do
+  banco.". O `Qr` saiu da folha para `components/ui/Qr.tsx`, sem mudar o desenho. **Desvio da
+  spec:** ela pedia `--surface` com tinta `--ink`, mas no tema escuro isso inverte o QR (módulos
+  claros sobre fundo escuro), e leitor de banco não garante ler invertido. A caixa é
+  `--on-brand` com módulos `--brand-700`, os dois fixos nos dois temas, com borda `--border`.
+- **O orçamento sem trilha**: a página do orçamento é a folha na tela (`#d357`); o caminho
+  começa na confirmação.
+- **Atualizada ao voltar**: `AtualizaAoVoltar` chama `router.refresh()` no `visibilitychange`
+  para visível, com 30 s de folga desde a montagem ou a última leitura. Nada de escuta: a regra
+  continua sem nada público (`#d320`). Embaixo da trilha, "Atualizado às HH:MM" no fuso de
+  Brasília (`#d160`), a hora fixa do render, e não um relativo que precisaria de relógio.
+
+**Consequência.** Nenhuma regra, schema ou dependência. A hora de cada passo e o aviso quando o
+passo muda ficam para depois (173).

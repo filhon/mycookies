@@ -23,6 +23,13 @@ export interface Novidade {
  */
 export const NOVIDADES: readonly Novidade[] = [
   {
+    dataISO: "2026-10-15",
+    titulo: "O link do pedido diz quando, e o Pix vem primeiro",
+    frase:
+      "A cliente abre e já vê o dia e a hora, paga antes de rolar a lista e manda o comprovante com o código do pedido.",
+    href: "/pedidos",
+  },
+  {
     dataISO: "2026-10-14",
     titulo: "O Rende de roupa nova",
     frase:

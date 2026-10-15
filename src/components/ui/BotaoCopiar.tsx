@@ -15,11 +15,13 @@ export function BotaoCopiar({
   rotulo,
   variante = "secundaria",
   tamanho = "sm",
+  larguraTotal = false,
 }: {
   texto: string;
   rotulo: string;
   variante?: VarianteBotao;
   tamanho?: TamanhoBotao;
+  larguraTotal?: boolean;
 }) {
   const [copiado, setCopiado] = useState(false);
   const [mostrar, setMostrar] = useState(false);
@@ -44,6 +46,7 @@ export function BotaoCopiar({
       <Botao
         tamanho={tamanho}
         variante={variante}
+        larguraTotal={larguraTotal}
         onClick={() => void copiar()}
         iconeInicial={
           copiado ? (

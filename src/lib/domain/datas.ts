@@ -206,6 +206,11 @@ const SO_O_DIA_DA_SEMANA = new Intl.DateTimeFormat("pt-BR", {
   weekday: "long",
 });
 
+/** 'sábado', 'segunda-feira': o dia de um recorte que cabe na semana. */
+export function rotuloSoODiaDaSemana(iso: DataISO): string {
+  return SO_O_DIA_DA_SEMANA.format(dataDeISO(iso));
+}
+
 /**
  * 'de hoje', 'até amanhã', 'até sábado' na semana, 'até 24 de outubro' depois
  * dela: o fim de um recorte, como ela fala dele ("os pedidos até sábado").
@@ -213,9 +218,7 @@ const SO_O_DIA_DA_SEMANA = new Intl.DateTimeFormat("pt-BR", {
 export function rotuloAte(iso: DataISO, hoje: DataISO): string {
   if (iso <= hoje) return "de hoje";
   if (iso === diaVizinho(hoje, 1)) return "até amanhã";
-  if (diasEntre(hoje, iso) < 7) {
-    return `até ${SO_O_DIA_DA_SEMANA.format(dataDeISO(iso))}`;
-  }
+  if (diasEntre(hoje, iso) < 7) return `até ${rotuloSoODiaDaSemana(iso)}`;
   return `até ${rotuloDiaNoAno(iso, hoje)}`;
 }
 

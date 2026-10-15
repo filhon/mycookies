@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  acaoDaVez,
   acompanhamentoDoPedido,
   caminhoDoAcompanhamento,
   chavePublicaDe,
   podeAprovar,
+  quandoDoPedido,
   type FichaAcompanhada,
 } from "@/lib/domain/acompanhamento";
 import { brCodePix } from "@/lib/domain/pix";
@@ -158,6 +160,7 @@ describe("acompanhamentoDoPedido", () => {
         "passos",
         "pix",
         "podeAprovar",
+        "quando",
         "sinal",
         "situacao",
         "subtotal",
@@ -243,14 +246,15 @@ describe("acompanhamentoDoPedido", () => {
     }
   });
 
-  it("o orçamento: a frase, sem passo feito, taxa a combinar, validade", () => {
+  it("o orçamento: a frase, sem trilha, taxa a combinar, validade", () => {
     const visto = acompanhar({
       status: "ORCAMENTO",
       entrega: { tipo: "ENTREGA", taxa: 0, endereco: "Rua A" },
       validoAteISO: "2026-10-12",
     });
     expect(visto.situacao).toBe("A Maynara vai confirmar");
-    expect(visto.passos.some((p) => p.feito || p.atual)).toBe(false);
+    expect(visto.passos).toEqual([]);
+    expect(visto.quando).toBe("Entrega quinta-feira, às 15h");
     expect(visto.taxaEntrega).toBeNull();
     expect(visto.validoAte).toBe("segunda-feira, 12 de outubro");
     expect(visto.pix).toBeUndefined();
@@ -332,6 +336,18 @@ describe("acompanhamentoDoPedido", () => {
     );
     expect(visto.passos).toEqual([]);
     expect(visto.pix).toBeUndefined();
+    expect(visto.quando).toBeUndefined();
+  });
+
+  it("entregue não diz quando; pronto de anteontem diz, por extenso", () => {
+    expect(acompanhar({ status: "ENTREGUE" }).quando).toBeUndefined();
+    expect(
+      acompanhar({
+        status: "PRONTO",
+        dataEntregaISO: "2026-10-08",
+        entrega: { tipo: "RETIRADA", taxa: 0 },
+      }).quando,
+    ).toBe("Retirada em quinta-feira, 8 de outubro, às 15h");
   });
 
   it("o Pix do que falta, com o código do pedido", () => {
@@ -378,6 +394,34 @@ describe("acompanhamentoDoPedido", () => {
     );
     expect(visto.situacao).toBe("A MyCookie's vai confirmar");
     expect(Object.keys(visto.negocio).sort()).toEqual(["nome", "quem"]);
+  });
+});
+
+describe("quandoDoPedido (spec 171)", () => {
+  it.each<[string, string | undefined, string]>([
+    ["2026-10-10", "15:00", "Retirada hoje, às 15h"],
+    ["2026-10-11", "09:30", "Retirada amanhã, às 9h30"],
+    ["2026-10-16", "15:00", "Retirada sexta-feira, às 15h"],
+    ["2026-10-17", undefined, "Retirada em 17 de outubro"],
+    ["2026-11-03", "15:00", "Retirada em 3 de novembro, às 15h"],
+    ["2027-01-05", undefined, "Retirada em 5 de janeiro de 2027"],
+    ["2026-10-09", undefined, "Retirada em sexta-feira, 9 de outubro"],
+  ])("%s %s", (dia, hora, esperado) => {
+    expect(quandoDoPedido("RETIRADA", dia, hora, HOJE)).toBe(esperado);
+  });
+
+  it("a palavra da entrega", () => {
+    expect(quandoDoPedido("ENTREGA", "2026-10-11", "10:00", HOJE)).toBe(
+      "Entrega amanhã, às 10h",
+    );
+  });
+});
+
+describe("acaoDaVez (spec 171)", () => {
+  it("aprovar, pagar ou falar", () => {
+    expect(acaoDaVez({ podeAprovar: true })).toBe("aprovar");
+    expect(acaoDaVez({ podeAprovar: false, pix: "000201" })).toBe("pagar");
+    expect(acaoDaVez({ podeAprovar: false })).toBe("falar");
   });
 });
 

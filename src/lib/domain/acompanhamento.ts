@@ -7,10 +7,12 @@ import type {
   StatusPedido,
 } from "@/lib/types";
 import {
+  diasEntre,
   hojeEmBrasilia,
   rotuloDataCompleta,
   rotuloDiaNoAno,
   rotuloDiaPorExtenso,
+  rotuloSoODiaDaSemana,
 } from "./datas";
 import { faltaPagar, nomeComEscolhas, quantidadeEmTexto } from "./pedido";
 import { brCodePix } from "./pix";
@@ -53,7 +55,10 @@ export interface Acompanhamento {
   para?: string;
   /** A frase do pé em que está, na voz da confeiteira. */
   situacao: string;
-  /** Os quatro passos depois do orçamento; vazia no cancelado. */
+  /** "Retirada amanhã, às 15h", logo abaixo da `situacao` (spec 171). Fora no
+   * entregue e no cancelado. */
+  quando?: string;
+  /** Os quatro passos depois do orçamento; vazia no orçamento e no cancelado. */
   passos: { rotulo: string; feito: boolean; atual: boolean }[];
   /** "Este orçamento vale até …", só enquanto `podeAprovar`. */
   validoAte?: string;
@@ -167,6 +172,51 @@ function rotuloDoPasso(
   }
 }
 
+/** "15:00" vira "15h", "09:30" vira "9h30". */
+function horaFalada(hora: string): string {
+  const [h, m] = hora.split(":");
+  return `${Number(h)}h${m && m !== "00" ? m : ""}`;
+}
+
+/**
+ * A linha do quando, no topo (spec 171): a palavra da entrega na frente, o dia
+ * como se fala dele ("hoje", "amanhã", "sábado" na semana, "em 3 de novembro"
+ * depois dela) e a hora. Dia passado vai por extenso, sem "atrasado": quem
+ * decide se atrasou é ela.
+ */
+export function quandoDoPedido(
+  tipo: "RETIRADA" | "ENTREGA",
+  dataISO: DataISO,
+  hora: string | undefined,
+  hojeISO: DataISO,
+): string {
+  const dias = diasEntre(hojeISO, dataISO);
+  const dia =
+    dias < 0
+      ? `em ${rotuloDiaPorExtenso(dataISO)}`
+      : dias === 0
+        ? "hoje"
+        : dias === 1
+          ? "amanhã"
+          : dias < 7
+            ? rotuloSoODiaDaSemana(dataISO)
+            : `em ${rotuloDiaNoAno(dataISO, hojeISO)}`;
+  const palavra = tipo === "ENTREGA" ? "Entrega" : "Retirada";
+  return `${palavra} ${dia}${hora ? `, às ${horaFalada(hora)}` : ""}`;
+}
+
+/**
+ * O primário da página (spec 171): aprovar enquanto o orçamento pode, pagar
+ * quando há Pix, e falar com ela no resto.
+ */
+export function acaoDaVez(
+  visto: Pick<Acompanhamento, "podeAprovar" | "pix">,
+): "aprovar" | "pagar" | "falar" {
+  if (visto.podeAprovar) return "aprovar";
+  if (visto.pix) return "pagar";
+  return "falar";
+}
+
 /**
  * O Pix só de um valor que a dona confirmou: fora do orçamento, não
  * cancelado, com o que falta, e a forma do pedido é Pix com os três dados.
@@ -232,13 +282,25 @@ export function acompanhamentoDoPedido(
           : orcamento
             ? `A ${quem} vai confirmar`
             : rotuloDoPasso(pedido.status, tipo),
-    passos: cancelado
-      ? []
-      : PASSOS.map((passo, i) => ({
-          rotulo: rotuloDoPasso(passo, tipo),
-          feito: i < atual,
-          atual: i === atual,
-        })),
+    ...(cancelado || pedido.status === "ENTREGUE"
+      ? {}
+      : {
+          quando: quandoDoPedido(
+            tipo,
+            pedido.dataEntregaISO,
+            pedido.horaEntrega,
+            hojeISO,
+          ),
+        }),
+    // O orçamento é a folha na tela (`#d357`): o caminho começa na confirmação.
+    passos:
+      cancelado || orcamento
+        ? []
+        : PASSOS.map((passo, i) => ({
+            rotulo: rotuloDoPasso(passo, tipo),
+            feito: i < atual,
+            atual: i === atual,
+          })),
     ...(aberto && pedido.validoAteISO
       ? { validoAte: rotuloDiaPorExtenso(pedido.validoAteISO) }
       : {}),

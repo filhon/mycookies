@@ -73,7 +73,7 @@ Ao terminar uma página, mude a linha dela aqui (status, data, specs).
 | ------------------------------ | ------------------------------------------ | ---------------------------------------------------------- | ------------ | ---------- | --------------------- |
 | Página do Rende (venda)        | `/conheca`                                 | `src/app/conheca/page.tsx`                                 | 🟡 parcial   | 2026-10-14 | 038–040, 067, 167–170 |
 | Cardápio público               | `/c/[contaId]`                             | `src/app/c/[contaId]/page.tsx`                             | ✅ melhorada | 2026-10-10 | 112–116, 120–124      |
-| Pedido que a cliente acompanha | `/c/[contaId]/pedido/[pedidoId]/[chave]`   | `src/app/c/[contaId]/pedido/[pedidoId]/[chave]/page.tsx`   | ⬜ pendente  |            |                       |
+| Pedido que a cliente acompanha | `/c/[contaId]/pedido/[pedidoId]/[chave]`   | `src/app/c/[contaId]/pedido/[pedidoId]/[chave]/page.tsx`   | ⬜ pendente  | 2026-10-15 | 171–174               |
 | Preço de doces                 | `/como-calcular-o-preco-de-doces`          | `src/app/como-calcular-o-preco-de-doces/page.tsx`          | ⬜ pendente  |            |                       |
 | Preço do bolo de pote          | `/como-calcular-o-preco-do-bolo-de-pote`   | `src/app/como-calcular-o-preco-do-bolo-de-pote/page.tsx`   | ⬜ pendente  |            |                       |
 | Preço do bolo por quilo        | `/como-calcular-o-preco-do-bolo-por-quilo` | `src/app/como-calcular-o-preco-do-bolo-por-quilo/page.tsx` | ⬜ pendente  |            |                       |

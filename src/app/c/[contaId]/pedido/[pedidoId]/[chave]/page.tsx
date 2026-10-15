@@ -2,25 +2,24 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache, type ReactNode } from "react";
 import {
-  CalendarDays,
   Check,
   Circle,
   CircleDot,
   MapPin,
   MessageCircle,
-  Store,
-  Truck,
   type LucideIcon,
 } from "lucide-react";
 import { AprovarOrcamento } from "@/components/cardapio/AprovarOrcamento";
 import { BotaoCopiar } from "@/components/ui/BotaoCopiar";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { classesBotao } from "@/components/ui/estilosBotao";
-import type { Acompanhamento } from "@/lib/domain/acompanhamento";
+import { Qr } from "@/components/ui/Qr";
+import { acaoDaVez, type Acompanhamento } from "@/lib/domain/acompanhamento";
 import { formatarMoeda } from "@/lib/domain/money";
 import { linkDoWhatsApp } from "@/lib/domain/whatsapp";
 import { lerAcompanhamento } from "@/lib/server/cardapio";
 import { cn } from "@/lib/utils/cn";
+import { AtualizaAoVoltar } from "./AtualizaAoVoltar";
 
 /**
  * O pedido que a cliente acompanha (spec 117, `DECISOES.md#d320`): o link só
@@ -29,12 +28,23 @@ import { cn } from "@/lib/utils/cn";
  * `acompanhamentoDoPedido` deixa passar. No orçamento, é a folha na tela
  * (spec 149, `#d357`), com "Aprovar orçamento" enquanto pode (`#d358`).
  *
+ * O topo diz o pé e o quando, e cada estado tem um primário só (spec 171,
+ * `#d388`): aprovar, pagar ou falar com ela.
+ *
  * Sem `revalidate`: o status muda, e cada pedido é aberto poucas vezes. Sem
- * atualização ao vivo: a cliente recarrega.
+ * atualização ao vivo: a página se lê de novo quando a cliente volta à aba.
  */
 export const dynamic = "force-dynamic";
 
 const acompanhamentoDe = cache(lerAcompanhamento);
+
+// O servidor roda em UTC; a hora é a de Brasília (`#d160`).
+const HORA_EM_BRASILIA = new Intl.DateTimeFormat("pt-BR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: "America/Sao_Paulo",
+});
 
 interface Props {
   /** `contaId` é o endereço do cardápio: o apelido ou o id (`#d319`). */
@@ -63,7 +73,7 @@ export default async function PaginaDoPedido({ params }: Props) {
   if (!visto) notFound();
 
   const { negocio } = visto;
-  const retirada = visto.entrega.tipo === "RETIRADA";
+  const acao = acaoDaVez(visto);
 
   return (
     <main className="mx-auto w-full max-w-xl px-4 pb-12 pt-10">
@@ -99,32 +109,32 @@ export default async function PaginaDoPedido({ params }: Props) {
       <h1 className="mt-1 text-balance font-display text-title font-semibold text-ink">
         {visto.situacao}
       </h1>
+      {/* Quem lê só o topo sabe o pé e o dia. */}
+      {visto.quando && (
+        <p className="mt-1 text-heading text-ink">{visto.quando}</p>
+      )}
       {visto.validoAte && (
         <p className="mt-2 text-body text-ink-muted">
           Este orçamento vale até {visto.validoAte}.
         </p>
       )}
 
-      {visto.passos.length > 0 && <Trilha passos={visto.passos} />}
+      {/* Com o que pagar, o Pix vem antes da trilha: é a ação da vez. */}
+      {acao === "pagar" && <Pagamento visto={visto} />}
 
-      <ul className="mt-8 space-y-2 text-body text-ink">
-        <Linha icone={CalendarDays}>
-          {visto.dia}
-          {visto.hora && (
-            <>
-              , às <span className="num">{visto.hora}</span>
-            </>
-          )}
-        </Linha>
-        <Linha icone={retirada ? Store : Truck}>
-          {retirada ? "Retirada" : "Entrega"}
-        </Linha>
-        {visto.entrega.endereco && (
+      {visto.passos.length > 0 && <Trilha passos={visto.passos} />}
+      <p className="mt-4 text-micro text-ink-subtle">
+        Atualizado às{" "}
+        <span className="num">{HORA_EM_BRASILIA.format(new Date())}</span>
+      </p>
+
+      {visto.entrega.endereco && (
+        <ul className="mt-8 text-body text-ink">
           <Linha icone={MapPin}>
             <span className="wrap-break-word">{visto.entrega.endereco}</span>
           </Linha>
-        )}
-      </ul>
+        </ul>
+      )}
 
       <section aria-labelledby="o-que-vai" className="mt-8">
         <h2 id="o-que-vai" className="text-subheading text-ink">
@@ -197,7 +207,7 @@ export default async function PaginaDoPedido({ params }: Props) {
         </dl>
       </section>
 
-      <Pagamento visto={visto} />
+      {acao !== "pagar" && <Pagamento visto={visto} />}
 
       {/* O combinado de sempre, com as linhas dela, como no pé da folha. */}
       {negocio.condicoes && (
@@ -222,6 +232,7 @@ export default async function PaginaDoPedido({ params }: Props) {
         />
       )}
 
+      {/* Sempre na página, mas primário só quando não há outra coisa a fazer. */}
       {negocio.whatsapp && (
         <a
           href={linkDoWhatsApp(
@@ -231,6 +242,7 @@ export default async function PaginaDoPedido({ params }: Props) {
           target="_blank"
           rel="noopener noreferrer"
           className={classesBotao({
+            variante: acao === "falar" ? "loja" : "secundaria",
             tamanho: "lg",
             larguraTotal: true,
             className: "mt-10",
@@ -240,6 +252,8 @@ export default async function PaginaDoPedido({ params }: Props) {
           Falar com a {negocio.quem}
         </a>
       )}
+
+      <AtualizaAoVoltar />
     </main>
   );
 }
@@ -288,6 +302,7 @@ function Trilha({ passos }: { passos: Acompanhamento["passos"] }) {
 
 function Pagamento({ visto }: { visto: Acompanhamento }) {
   if (!visto.pago && visto.sinal === undefined && !visto.pix) return null;
+  const { negocio } = visto;
 
   return (
     <section aria-labelledby="pagamento" className="mt-8">
@@ -316,16 +331,54 @@ function Pagamento({ visto }: { visto: Acompanhamento }) {
         </dl>
       )}
       {visto.pix && (
-        <div className="mt-4 space-y-2">
-          <BotaoCopiar
-            variante="loja"
-            rotulo={`Copiar o Pix de ${formatarMoeda(visto.falta)}`}
-            texto={visto.pix}
-          />
-          <p className="text-label text-ink-muted">
-            Cole no app do banco, em Pix copia e cola: o valor já vem
-            preenchido.
-          </p>
+        <div className="mt-4 lg:flex lg:items-start lg:gap-6">
+          <div className="min-w-0 flex-1 space-y-2">
+            <BotaoCopiar
+              variante="loja"
+              tamanho="lg"
+              larguraTotal
+              rotulo={`Copiar o Pix de ${formatarMoeda(visto.falta)}`}
+              texto={visto.pix}
+            />
+            <p className="text-label text-ink-muted">
+              Cole no app do banco, em Pix copia e cola: o valor já vem
+              preenchido.
+            </p>
+            {/* A mensagem que ela escreveria de qualquer jeito, já com o
+                código: a dona acha o pedido. */}
+            {negocio.whatsapp && (
+              <a
+                href={linkDoWhatsApp(
+                  negocio.whatsapp,
+                  `Oi! Paguei o Pix de ${formatarMoeda(visto.falta)} do pedido ${visto.codigo}. Segue o comprovante.`,
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={classesBotao({
+                  variante: "terciaria",
+                  className: "-ml-4",
+                })}
+              >
+                <MessageCircle
+                  aria-hidden
+                  className="size-5"
+                  strokeWidth={1.75}
+                />
+                Mandar o comprovante pra {negocio.quem}
+              </a>
+            )}
+          </div>
+          {/* No computador o copia e cola não serve: ela paga pelo celular.
+              Papel e cobalto nos dois temas: invertido, o app do banco não
+              lê (`#d388`). No celular, ninguém escaneia a própria tela. */}
+          <figure className="hidden w-46 shrink-0 lg:block">
+            <div className="rounded-md border border-line bg-on-brand p-3">
+              <Qr texto={visto.pix} className="size-40 fill-brand-700" />
+            </div>
+            <figcaption className="mt-2 text-label text-ink-muted">
+              Ou aponte a câmera do celular no app do banco.
+            </figcaption>
+          </figure>
         </div>
       )}
     </section>

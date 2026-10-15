@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Check } from "lucide-react";
-import { encode } from "uqr";
 import { rotuloDataCompleta, rotuloDiaPorExtenso } from "@/lib/domain/datas";
 import { formatarMoeda, formatarValor } from "@/lib/domain/money";
 import {
@@ -10,6 +9,7 @@ import {
   type Orcamento,
 } from "@/lib/domain/orcamento";
 import { quantidadeEmTexto } from "@/lib/domain/pedido";
+import { Qr } from "@/components/ui/Qr";
 import type { Centavos } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -277,31 +277,6 @@ export function FolhaOrcamento({
         }
       />
     </article>
-  );
-}
-
-/**
- * O QR em SVG, desenhado aqui (`#d355`), do Pix e do link (`#d357`): sem PNG,
- * sem rede, nítido no papel em qualquer tamanho. Um caminho só, uma casa por
- * módulo escuro, na tinta da folha. Sem a zona de silêncio no desenho: o papel
- * em volta é ela, e o `gap` ao lado a garante.
- */
-function Qr({ texto, className }: { texto: string; className: string }) {
-  const { data, size } = encode(texto, { ecc: "M", border: 0 });
-  const caminho = data
-    .flatMap((linha, y) =>
-      linha.map((escuro, x) => (escuro ? `M${x} ${y}h1v1h-1z` : "")),
-    )
-    .join("");
-  return (
-    <svg
-      viewBox={`0 0 ${size} ${size}`}
-      shapeRendering="crispEdges"
-      aria-hidden
-      className={cn("shrink-0 fill-ink", className)}
-    >
-      <path d={caminho} />
-    </svg>
   );
 }
 
