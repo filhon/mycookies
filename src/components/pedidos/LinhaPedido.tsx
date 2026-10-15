@@ -99,7 +99,7 @@ export function LinhaPedido({
       ? `Sinal ${formatarMoeda(pedido.sinal.valor)} · faltam ${formatarMoeda(faltaPagar(pedido))}`
       : null;
 
-  // Ícone e palavra, e não só o ocre: ele divide matiz com o âmbar.
+  // Ícone e palavra, e não só o ocre: cor nunca é o único sinal.
   const faltaReceber = (
     <Marcador
       className="text-attention"

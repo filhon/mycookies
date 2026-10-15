@@ -17,7 +17,7 @@ function materiais(quantos: number): string {
  * números são o retrato do toque em "Salvar", e não são guardados.
  *
  * Seções no papel: as listas em `--surface` com divisórias, o valor no papel.
- * O âmbar é o ponto do título e o botão, e só.
+ * O primário é o botão, e só.
  */
 export function ResumoDaContagem({
   achados,

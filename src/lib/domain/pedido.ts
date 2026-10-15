@@ -522,7 +522,7 @@ export function transicoesPermitidas(status: StatusPedido): StatusPedido[] {
 /**
  * O que falta fazer neste pedido: o passo adiante da fila ou, entregue e não
  * pago, receber. Cancelado não está na fila; entregue e pago acabou. A ficha
- * (`#d249`) e o editor (`#d271`) põem o âmbar aqui. Receber é da dona: quem
+ * (`#d249`) e o editor (`#d271`) põem o primário aqui. Receber é da dona: quem
  * chama confere o papel.
  */
 export function proximoPasso(pedido: {

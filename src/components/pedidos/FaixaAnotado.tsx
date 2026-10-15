@@ -14,7 +14,7 @@ import { ParaQuemVai } from "./BlocoWhatsApp";
 /**
  * O pedido novo acabou de ser salvo, e o próximo passo de quase todo pedido
  * novo é mandar o resumo para a cliente conferir (`#d273`). A ação é o mesmo
- * `<a>` do `BlocoWhatsApp`, e é o âmbar da tela enquanto a faixa existe.
+ * `<a>` do `BlocoWhatsApp`, e é o primário da tela enquanto a faixa existe.
  */
 export function FaixaAnotado({
   pedido,

@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-14",
+    titulo: "O Rende de roupa nova",
+    frase:
+      "Cobalto no lugar da tinta escura, e o rosa marca só o que sobra pra você. Reinstale o app para ver o ícone novo.",
+    href: "/",
+  },
+  {
+    dataISO: "2026-10-14",
     titulo: "Os termos e a privacidade dizem o que mudou",
     frase:
       "Cada página termina com a data e uma linha por mudança, e quando a mudança pesa, a Hoje avisa.",

@@ -1309,7 +1309,7 @@ function ConfiguracaoDaDona() {
           <Parte id="a-sua-conta" titulo="A sua conta">
             <div className={LISTA}>
               {/* Só em teste e assinante: `livre` não tem o que ver aqui (spec
-                  028). No teste, o prazo e "Assinar", secundário: o âmbar da
+                  028). No teste, o prazo e "Assinar", secundário: o primário da
                   tela é o "Salvar" (`#d284`). A assinante abre o painel (`#d285`). */}
               {situacao?.tipo === "teste" && (
                 <div className="flex flex-wrap items-center gap-3 border-t border-line px-4 py-4 lg:px-5">

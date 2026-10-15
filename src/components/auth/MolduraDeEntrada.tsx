@@ -115,7 +115,7 @@ export function MolduraDeEntrada({
       </main>
 
       {/* Painel de marca: tinta lisa, o logotipo em negativa e a tagline. Só
-          no desktop, e sem enfeite: o ponto do logotipo é a única peça âmbar.
+          no desktop, e sem enfeite: a marca é o logotipo, e só.
           Depois do `main` no DOM e à esquerda pelo `order`: o `h2` da conta
           do painel não passa à frente do `h1` da tela. */}
       <aside className="order-first hidden w-[42%] shrink-0 bg-brand-800 lg:flex lg:flex-col lg:justify-between">

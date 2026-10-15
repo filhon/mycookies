@@ -9,104 +9,90 @@ consumir sem tradução. Os valores vivem em `tokens.css`; aqui está a regra de
 
 ### Tema
 
-Território **Ponto**. Quase monocromático: tinta azul-preta (`--brand-700`, matiz OKLCH 272)
-como cor de marca, um único âmbar quente (`--accent-500`, matiz 78) como acento, papel cru
-como superfície. A cor não decora — marca o número que decide.
+Território **Porções**. Cobalto (`--brand-700` #1C3891, matiz 266) como cor de marca, um
+rosa (`--accent-500` #F190A7, matiz 5) que marca só o que sobra pra confeiteira, papel
+quente como superfície. A assinatura é o corte de 8°: a marca divide as coisas em porções.
 
-A primária está a 245° do vermelho de erro, o que resolve o problema herdado: positivo,
-atenção e negativo são inequívocos ao lado dela. Mesmo assim, **cor nunca é o único portador de
-significado**.
-
-Tema claro por padrão (cozinha iluminada); escuro seguindo o sistema (planejamento noturno).
-No escuro a marca inverte: a cor de estrutura vira fundo, a cor de superfície vira tinta.
-
-Celular primeiro; desktop é a versão confortável do mesmo desenho. Offline é o estado normal.
+Tema claro por padrão; escuro seguindo o sistema. No escuro o cobalto vira noite e o papel vira
+tinta. Celular primeiro. Offline é o estado normal.
 
 ### Color Strategy
 
-**Contida no conteúdo, comprometida no cromo.** A tinta da marca aparece cheia e sólida no
-cromo — barra lateral do desktop, cabeçalho de contexto, painel de preço, faixa de navegação.
-As superfícies onde moram os números ficam em neutros quentes, para a densidade respirar.
-
-Nenhum neutro é puro. No tema claro os neutros carregam a matiz 85 (o calor do papel, matiz do
-acento) em croma 0.004–0.012; no escuro carregam a matiz 272 (a tinta da marca) em croma
-0.022–0.028. **Assumido e declarado:** o brief pede neutro tingido com a matiz da marca; a
-marca do Rende é um par tinta+âmbar, e o claro usa a matiz do âmbar para não virar cinza-azul
-de dashboard.
-
-Proporção: ~70% neutro · ~25% tinta · ~5% âmbar. O âmbar nunca preenche área grande.
+**Comprometida no cromo, contida no conteúdo.** Cobalto cheio no cromo (barra lateral,
+cabeçalho, painel de preço, botão primário); neutros quentes onde moram os números. Neutros do
+claro carregam matiz 85; do escuro, matiz 266. Proporção ~70% papel · ~25% cobalto · ~5% rosa.
 
 ---
 
 ## Color Palette
 
+Valores OKLCH em `tokens.css`; hex abaixo.
+
 ### Marca
 
-| Token          | OKLCH          | hex     | uso                                    |
-| -------------- | -------------- | ------- | -------------------------------------- |
-| `--brand-900`  | 0.19 0.030 272 | #15171F | fundo do tema escuro                   |
-| `--brand-800`  | 0.22 0.030 272 | #1C1E28 | barra lateral, tarja sobre foto        |
-| `--brand-700`  | 0.26 0.035 272 | #2A2C3A | **primária**: cabeçalho, botão, painel |
-| `--brand-600`  | 0.34 0.035 272 | #3C3E4D | hover de superfície de marca           |
-| `--brand-500`  | 0.44 0.033 272 | #545768 | divisória sobre marca                  |
-| `--brand-400`  | 0.56 0.028 272 | #6E7183 | segmento neutro da faixa               |
-| `--brand-300`  | 0.70 0.022 272 | #9B9DAC | ícone desativado                       |
-| `--brand-200`  | 0.85 0.015 272 | #CFD0D8 | borda em superfície de marca           |
-| `--brand-100`  | 0.94 0.010 272 | #EBECF1 | realce frio discreto                   |
-| `--accent-600` | 0.62 0.130 75  | #A9752A | hover do botão âmbar                   |
-| `--accent-500` | 0.74 0.140 78  | #D89B3C | **o ponto**: ação primária, marcação   |
-| `--accent-300` | 0.85 0.090 80  | #EFC384 | segmento "sua hora" no claro           |
-| `--accent-100` | 0.93 0.050 82  | #F7E7C8 | fundo de atenção                       |
-| `--accent-ink` | 0.45 0.100 70  | #6E4A12 | âmbar como texto (AA sobre canvas)     |
+| Token          | hex     | uso                                                      |
+| -------------- | ------- | -------------------------------------------------------- |
+| `--brand-900`  | #071335 | fundo profundo, tarja sobre foto                         |
+| `--brand-800`  | #0D1F5B | barra lateral                                            |
+| `--brand-700`  | #1C3891 | **primária**: cabeçalho, botão primário, painel de preço |
+| `--brand-600`  | #2D4FB0 | hover de superfície de marca                             |
+| `--brand-500`  | #4D6FC6 | segmento da faixa, divisória sobre marca                 |
+| `--brand-400`  | #7590D0 | segmento da faixa                                        |
+| `--brand-300`  | #9CB1DF | ícone desativado, "R$" sobre cobalto                     |
+| `--brand-200`  | #C8D4EF | borda sobre marca                                        |
+| `--brand-100`  | #E9EFFB | realce frio discreto                                     |
+| `--accent-600` | #D76A87 | rosa pressionado                                         |
+| `--accent-500` | #F190A7 | **a porção**: o que sobra pra você                       |
+| `--accent-300` | #FABECB | rosa claro                                               |
+| `--accent-100` | #FEE3E8 | fundo do valor de sobra                                  |
+| `--accent-ink` | #A53458 | rosa como texto, AA sobre canvas                         |
 
 ### Superfícies
 
-| Token              | Claro                     | Escuro                    |
-| ------------------ | ------------------------- | ------------------------- |
-| `--canvas`         | 0.972 0.008 85 · #F7F4EE  | 0.190 0.025 272 · #15171F |
-| `--surface`        | 0.995 0.004 85 · #FEFCF8  | 0.235 0.028 272 · #1E2029 |
-| `--surface-sunken` | 0.945 0.010 85 · #EFEBE3  | 0.165 0.022 272 · #101219 |
-| `--border`         | 0.885 0.010 85 · #E1DCD3  | 0.310 0.025 272 · #343641 |
-| `--border-strong`  | 0.780 0.012 85 · #C3BDB2  | 0.420 0.028 272 · #4C4F5C |
-| `--ink`            | 0.240 0.020 272 · #22242E | 0.955 0.006 85 · #F4F1EB  |
-| `--ink-muted`      | 0.500 0.015 272 · #6A6C78 | 0.740 0.012 272 · #A8AAB5 |
-| `--ink-subtle`     | 0.630 0.012 272 · #8E909B | 0.600 0.015 272 · #7F8290 |
-| `--on-brand`       | #F6F3ED                   | #F6F3ED                   |
-| `--brand-as-ink`   | #2A2C3A                   | #DADCE4                   |
+| Token              | Claro   | Escuro  |
+| ------------------ | ------- | ------- |
+| `--canvas`         | #F8F5F0 | #081025 |
+| `--surface`        | #FFFDFA | #111A33 |
+| `--surface-sunken` | #F0ECE5 | #050B1D |
+| `--border`         | #DCD9D2 | #263047 |
+| `--border-strong`  | #BBB7AF | #414D66 |
+| `--ink`            | #121A2D | #F2F0EC |
+| `--ink-muted`      | #5B6375 | #AAB1C2 |
+| `--ink-subtle`     | #838997 | #7E8699 |
+| `--on-brand`       | #F6F3ED | #F6F3ED |
+| `--on-accent`      | #071335 | #071335 |
+| `--brand-as-ink`   | #1C3891 | #ACC4F9 |
 
 ### Semânticos
 
-| Papel       | Claro (tinta / fundo) | Escuro (tinta / fundo) | Onde                                                  |
-| ----------- | --------------------- | ---------------------- | ----------------------------------------------------- |
-| positivo    | #17724A / #DDF0E4     | #5FD49A / #163021      | lucro, entrada de caixa, meta batida                  |
-| atenção     | #7A5410 / #F7E7C8     | #E3B267 / #34280F      | despensa baixa, custo desatualizado, escrita pendente |
-| negativo    | #B02A1C / #FADFDA     | #F08070 / #3A1A16      | prejuízo, saída, erro                                 |
-| informativo | #2A5C9E / #DCE7F5     | #8FB6E8 / #14243A      | dica de cálculo                                       |
+| Papel       | Claro (tinta / fundo) | Escuro (tinta / fundo) |
+| ----------- | --------------------- | ---------------------- |
+| positivo    | #1A763F / #D8F3DE     | #63CA84 / #112D1A      |
+| atenção     | #865812 / #F9E5C3     | #E6B55D / #382503      |
+| negativo    | #AF2D18 / #FFE2DB     | #F47D67 / #421C15      |
+| informativo | #086A73 / #D2EEF1     | #76C7D0 / #012D31      |
 
-Cada semântico tem **ícone obrigatório** (Lucide: `trending-up`, `alert-triangle`,
-`trending-down`, `info`) e palavra. Nenhum estado depende de cor.
+Cada semântico tem ícone obrigatório (Lucide: `trending-up`, `alert-triangle`,
+`trending-down`, `info`) e palavra.
 
-### Contraste (AA como piso)
+### Contraste (calculado a partir dos hex)
 
-Medições aproximadas; recomputar no build a partir dos tokens.
-
-| Par                                                     | Ratio                | Piso                              |
-| ------------------------------------------------------- | -------------------- | --------------------------------- |
-| `--ink` sobre `--canvas` (claro)                        | ~14.8:1              | 4.5 ✔                             |
-| `--ink-muted` sobre `--canvas`                          | ~5.1:1               | 4.5 ✔                             |
-| `--ink-subtle` sobre `--surface`                        | ~3.4:1               | só micro decorativo / borda ✔ 3:1 |
-| `--on-brand` sobre `--brand-700`                        | ~12.9:1              | 4.5 ✔                             |
-| `--accent-500` sobre `--brand-700`                      | ~5.6:1               | 4.5 ✔                             |
-| `--accent-ink` sobre `--canvas`                         | ~6.4:1               | 4.5 ✔                             |
-| tinta #231A08 sobre `--accent-500` (botão)              | ~9.1:1               | 4.5 ✔                             |
-| positivo sobre `--canvas` / sobre `--positive-bg`       | ~5.6:1 / ~5.0:1      | 4.5 ✔                             |
-| atenção sobre `--attention-bg`                          | ~5.2:1               | 4.5 ✔                             |
-| negativo sobre `--canvas` / `--negative-bg`             | ~5.4:1 / ~4.9:1      | 4.5 ✔                             |
-| informativo sobre `--info-bg`                           | ~5.1:1               | 4.5 ✔                             |
-| escuro: `--ink` sobre `--canvas`                        | ~15.4:1              | 4.5 ✔                             |
-| escuro: `--ink-muted` sobre `--surface`                 | ~6.6:1               | 4.5 ✔                             |
-| escuro: positivo / atenção / negativo sobre `--surface` | ~8.4 / ~7.9 / ~6.5:1 | 4.5 ✔                             |
-| escuro: `--accent-500` sobre `--surface`                | ~7.4:1               | 4.5 ✔                             |
+| Par                             | Ratio                       |
+| ------------------------------- | --------------------------- |
+| ink / canvas                    | 15.9:1                      |
+| ink-muted / canvas              | 5.5:1                       |
+| ink-subtle / surface            | 3.5:1 (só micro decorativo) |
+| on-brand / brand-700            | 9.4:1                       |
+| on-accent / accent-500          | 8.1:1                       |
+| accent-ink / canvas             | 6.0:1                       |
+| accent-500 / brand-700          | 4.6:1                       |
+| negativo / canvas               | 6.0:1                       |
+| positivo / canvas               | 5.2:1                       |
+| atenção / fundo de atenção      | 5.0:1                       |
+| informativo / fundo informativo | 5.2:1                       |
+| escuro: ink / canvas            | 16.6:1                      |
+| escuro: ink-muted / surface     | 8.0:1                       |
+| escuro: rosa / surface          | 8.8:1                       |
 
 ---
 
@@ -114,25 +100,22 @@ Medições aproximadas; recomputar no build a partir dos tokens.
 
 ### Famílias
 
-- **Archivo** (Google Fonts) — display. Pesos 600 e 700.
-- **Figtree** (Google Fonts) — interface. Pesos 400, 500, 600, 700. Numerais tabulares
-  (`font-variant-numeric: tabular-nums`). Fica porque já está no código.
-
-Duas famílias, no máximo. Nenhuma serifa: a serifa quente era da MyCookie's.
+- **Familjen Grotesk** (Google Fonts) — display e logotipo. Peso 700.
+- **Figtree** (Google Fonts) — interface. 400–700, numerais tabulares.
 
 ### Escala
 
 Fixa em rem, razão ~1.2. Nada de tipografia fluida.
 
-| Papel      | Tamanho          | Linha | Peso | Família | Uso                                                         |
-| ---------- | ---------------- | ----- | ---- | ------- | ----------------------------------------------------------- |
-| display    | 1.875rem / 30px  | 1.15  | 700  | Archivo | título de página, valor em destaque, número de estado vazio |
-| title      | 1.5rem / 24px    | 1.25  | 700  | Archivo | cabeçalho de contexto, manchete de cartão                   |
-| heading    | 1.25rem / 20px   | 1.30  | 600  | Figtree | seção dentro da tela                                        |
-| subheading | 1.0625rem / 17px | 1.40  | 600  | Figtree | nome de item em lista destacada                             |
-| body       | 0.9375rem / 15px | 1.55  | 400  | Figtree | corpo, linha de lista                                       |
-| label      | 0.8125rem / 13px | 1.35  | 500  | Figtree | rótulo de campo, rótulo de valor                            |
-| micro      | 0.75rem / 12px   | 1.35  | 500  | Figtree | selo, nota de cálculo, unidade                              |
+| Papel      | Tamanho          | Linha | Peso | Família          | Uso                                                         |
+| ---------- | ---------------- | ----- | ---- | ---------------- | ----------------------------------------------------------- |
+| display    | 1.875rem / 30px  | 1.10  | 700  | Familjen Grotesk | título de página, valor em destaque, número de estado vazio |
+| title      | 1.5rem / 24px    | 1.20  | 700  | Familjen Grotesk | cabeçalho de contexto, manchete de cartão                   |
+| heading    | 1.25rem / 20px   | 1.30  | 600  | Figtree          | seção dentro da tela                                        |
+| subheading | 1.0625rem / 17px | 1.40  | 600  | Figtree          | nome de item em lista destacada                             |
+| body       | 0.9375rem / 15px | 1.55  | 400  | Figtree          | corpo, linha de lista                                       |
+| label      | 0.8125rem / 13px | 1.35  | 500  | Figtree          | rótulo de campo, rótulo de valor                            |
+| micro      | 0.75rem / 12px   | 1.35  | 500  | Figtree          | selo, nota de cálculo, unidade                              |
 
 ### Números
 
@@ -155,7 +138,7 @@ Fixa em rem, razão ~1.2. Nada de tipografia fluida.
 - **Desktop (≥1024):** barra lateral de 240px em `--brand-800`, conteúdo em coluna única de
   até 760px para leitura densa, painel lateral de 420px para edição. A folha inferior do
   celular e o painel lateral do desktop são o mesmo componente.
-- Ritmo: 4 · 8 · 12 · 16 · 24 · 32 · 48. Raio 10px em botão e campo, 12px em cartão.
+- Ritmo: 4 · 8 · 12 · 16 · 24 · 32 · 48. Raio 8px em botão e campo, 10px em cartão.
 - Sombras baixas ou nenhuma. Superfícies opacas: sem vidro, sem brilho, sem plástico.
 
 ### Toque
@@ -174,11 +157,11 @@ resumo do mês). **Cartão dentro de cartão é erro.**
 
 Todos os componentes existem em `default`, `hover`, `focus-visible`, `active`,
 `disabled`, `loading` e `error`, nos dois temas. Foco visível sempre: anel de 2px em
-`--accent-500` com 2px de deslocamento.
+`--brand-500` com 2px de deslocamento.
 
 | Componente                          | Regra                                                                                                                                   |
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **Botão primário**                  | âmbar (`--accent-500`) com tinta #231A08, 52px no celular. Um por tela.                                                                 |
+| **Botão primário**                  | cobalto (`--brand-700`) com `--on-brand`, 52px no celular. Um por tela.                                                                 |
 | **Botão secundário**                | borda `--border-strong`, tinta `--ink`, fundo `--surface`.                                                                              |
 | **Botão terciário**                 | só texto em `--brand-as-ink`, sublinhado no hover.                                                                                      |
 | **Botão destrutivo**                | tinta `--negative` sobre `--negative-bg`, ícone `trash-2`.                                                                              |
@@ -195,9 +178,9 @@ Todos os componentes existem em `default`, `hover`, `focus-visible`, `active`,
 | **Selo de sincronização**           | "salvo no aparelho" em micro, ícone `hard-drive-download`, tinta `--attention` sobre `--attention-bg`. Nunca vermelho, nunca alerta.    |
 | **Estado vazio**                    | display + uma linha que ensina a tela + ação. Nunca "nenhum registro encontrado".                                                       |
 | **Esqueleto**                       | blocos com a forma do conteúdo, `--surface-sunken`, pulso de 1.2s. Sem spinner.                                                         |
-| **Cabeçalho de página**             | `--brand-700` cheio, título em Archivo, metadados em micro, voltar à esquerda.                                                          |
-| **Navegação inferior**              | cinco destinos, ícone 24px + micro, ativo em `--accent-500`.                                                                            |
-| **Barra lateral**                   | 240px, `--brand-800`, item ativo com faixa âmbar de 3px à esquerda.                                                                     |
+| **Cabeçalho de página**             | `--brand-700` cheio, título em Familjen Grotesk, metadados em micro, voltar à esquerda.                                                 |
+| **Navegação inferior**              | cinco destinos, ícone 24px + micro, ativo em `--brand-700` com sublinhado cortado a 8°.                                                 |
+| **Barra lateral**                   | 240px, `--brand-800`, item ativo com faixa `--on-brand` de 3px à esquerda.                                                              |
 | **Pílula de filtro**                | altura 36px, ativa em `--brand-700` com `--on-brand`.                                                                                   |
 | **Faixa de aviso**                  | atenção ou informativo, ícone + frase + ação em texto.                                                                                  |
 | **Barra de progresso de meta**      | trilha `--surface-sunken`, preenchimento `--positive`, rótulo com a tradução em unidades.                                               |
@@ -236,11 +219,11 @@ Todos os componentes existem em `default`, `hover`, `focus-visible`, `active`,
 - Painel lateral e folha inferior: 260ms.
 - Curva única: `cubic-bezier(0.165, 0.84, 0.44, 1)` (ease-out-quart). Sem elástico.
 - Movimento comunica estado; nada decorativo.
-- **Abertura do app:** fundo `--brand-800`, o símbolo aparece com a régua creme já desenhada e
-  o ponto âmbar entrando em 180ms com escala de 0.9 → 1. Sem rotação, sem quique.
+- **Abertura do app:** fundo `--brand-700`, a assadeira inteira em papel; os três cortes abrem
+  da esquerda para a direita (60ms cada) e a última porção vira rosa. Sem rotação, sem quique.
 - **Ícone de "salvo":** o selo aparece em 150ms, permanece enquanto houver escrita pendente, e
   sai em 150ms quando sincroniza. Nenhum pulso contínuo.
-- `prefers-reduced-motion: reduce` → tudo em 1ms, o ponto aparece sem escala.
+- `prefers-reduced-motion: reduce` → tudo em 1ms, o símbolo aparece já cortado.
 
 ---
 
@@ -256,13 +239,11 @@ preenchido. Ícone nunca substitui rótulo em navegação. Conjunto de uso frequ
 
 ## Signature
 
-Dois elementos, e só dois — nunca como ícone de interface.
-
-1. **O ponto âmbar.** Círculo cheio, único na peça, marcando o número que decide. Diâmetro
-   entre 8 e 16px em tela; no logotipo, a altura da linha de base.
-2. **A faixa de composição.** Barra horizontal segmentada na proporção real do custo do lote
-   (materiais · embalagem · sua hora · gás e energia · fixos), altura 10px, raio 3px, segmento
-   "sua hora" em âmbar. Sempre com dados verdadeiros.
-
-Onde aparecem: estado vazio, tela de acesso, abertura, ícone, peças de divulgação e — como
-dado — no editor de produto. Uma assinatura por peça.
+1. **O corte.** Linha vazada, 8° para a direita (`--cut-angle`), espessura 11% da altura do que
+   é cortado (`--cut-width`). Em CSS: segmentos com `gap` dentro de um contêiner com
+   `transform: skewX(-8deg)` e `overflow: hidden` no pai.
+2. **A porção rosa.** `--accent-500` com `--on-accent`, marcando só o que sobra pra
+   confeiteira. Uma por tela.
+3. **A faixa de composição.** O preço praticado em porções proporcionais (materiais ·
+   embalagem · sua hora · gás e energia · fixos · maquininha · sobra), altura 10–14px, raio
+   3px no contêiner, cortes de 3px, sobra em rosa. Sempre com dados verdadeiros.

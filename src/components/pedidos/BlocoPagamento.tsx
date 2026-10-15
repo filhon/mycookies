@@ -53,7 +53,7 @@ export function BlocoPagamento({
   semAgregado: boolean;
   /** O mesmo, do mês do sinal: desfazer o sinal espera por ele. */
   semAgregadoDoSinal: boolean;
-  /** O âmbar é dele quando receber é o próximo passo e não há o que salvar (`#d271`). */
+  /** O primário é dele quando receber é o próximo passo e não há o que salvar (`#d271`). */
   primario: boolean;
 }) {
   const [confirmandoDesfazer, setConfirmandoDesfazer] = useState(false);

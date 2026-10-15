@@ -160,14 +160,14 @@ function contraste(a: number, b: number): number {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
-/** `--on-brand` (#F6F3ED) e `--ink` (#22242E), as duas tintas que a página tem. */
+/** `--on-brand` (#F6F3ED) e `--ink` (#121A2D), as duas tintas que a página tem. */
 const CLARA = luminancia("#F6F3ED");
-const ESCURA = luminancia("#22242E");
+const ESCURA = luminancia("#121A2D");
 
 /**
  * A cor que ela escolheu, com a tinta que mais contrasta sobre ela, ou `null`
  * para cor ausente ou fora de `#rrggbb`. A cor da loja é sempre fundo (botão,
- * passo, pílula ativa) e nunca texto sobre o papel: é a mesma regra do âmbar
+ * passo, pílula ativa) e nunca texto sobre o papel: é a mesma regra do rosa
  * do Rende, e é o que deixa qualquer cor passar sem reprovar contraste.
  */
 export function corDaLoja(cor: string | undefined): CorDaLoja | null {

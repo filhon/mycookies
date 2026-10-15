@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 96" width="420" height="96" role="img" aria-label="Rende">
+  <rect width="96" height="96" rx="21" fill="#2A2C3A"></rect>
+  <rect x="13.2" y="42.48" width="38.4" height="11.04" rx="5.52" fill="#F6F3ED"></rect>
+  <circle cx="70.8" cy="48" r="12" fill="#D89B3C"></circle>
+  <text x="120" y="66" font-family="Archivo, system-ui, sans-serif" font-size="66" font-weight="700" letter-spacing="-2" fill="#2A2C3A">rende</text>
+  <circle cx="321" cy="59" r="9.5" fill="#D89B3C"></circle>
+</svg>

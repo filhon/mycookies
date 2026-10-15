@@ -4026,7 +4026,8 @@ antes do tema escuro, `#1C1E28` é uma linha e uma reinstalação, e esta decis�
 
 ## D125 · O que do pacote da marca não entra no código, e por quê
 
-**Status:** vigente · decidida em 2026-09-18, na spec 033 (aplicada na A, registrada na B)
+**Status:** vigente, menos a faixa lateral da barra (**substituída por D381**) · decidida em
+2026-09-18, na spec 033 (aplicada na A, registrada na B)
 
 **Contexto.** O pacote em `docs/marca/rende/` tem três camadas: `MARCA.md`, `DESIGN.md` e
 `tokens.css` são o manual; as pranchas `.dc.html` são maquetes geradas para provar os tokens.
@@ -4070,7 +4071,8 @@ código" apontando para cá.
 
 ## D126 · A faixa é dado, nunca enfeite
 
-**Status:** vigente · decidida em 2026-09-18, na spec 033-C
+**Status:** vigente; as cores (âmbar no trabalho, sem vão) **substituídas por D381** · decidida em
+2026-09-18, na spec 033-C
 
 **Contexto.** A marca tem duas assinaturas (`MARCA.md` § 2.4): o ponto âmbar e a faixa de
 composição, a barra segmentada na proporção do custo real do lote. A prancha `Telas` do pacote
@@ -12432,3 +12434,50 @@ setembro". `termosAceitosEm` era só uma data: não dizia que texto ela aceitou.
 Toda mudança futura no texto acrescenta uma `Versao`, e decide ali se é `relevante` pelo critério
 da última seção (novo tipo de dado, novo fornecedor, nova finalidade, preço, ou o que afete
 direito). A redação das linhas e a marcação de `relevante` passam por quem conduz o projeto.
+
+## D381 · O território Porções: cobalto, a porção rosa e o corte de 8°
+
+**Status:** vigente · decidida em 2026-10-14, fora de spec, pelo pedido em
+`docs/marca/rende/PROMPT-CLAUDE-CODE.md`. Só identidade: nenhum nome de token, rota, texto de
+interface ou regra de negócio muda.
+
+**Contexto.** O território Ponto (tinta azul-preta, ponto âmbar, Archivo) deu lugar ao Porções
+(cobalto `#1C3891`, rosa `#F190A7`, Familjen Grotesk, o corte de 8°). O pacote novo está em
+`docs/marca/rende/`; o antigo, em `docs/marca/rende/_arquivo-ponto/`.
+
+**Decisão.**
+
+- **Tokens com os valores do pacote**, os mesmos nomes (`#d123`). O informativo vira petróleo. O
+  `--brand-100` escuro é do código (`oklch(0.30 0.06 266)`), pelo mesmo motivo do `#d123`.
+- **O primário é cobalto** com `--on-brand`; o "+" da barra também. **O rosa nunca é botão.**
+- **A porção rosa** (`Porcao` em `Marca.tsx`) marca só o valor "sobram R$ X pra você": o painel
+  de preço do editor, a primeira linha de "Quanto cobrar", a cadeia do dinheiro, o que o mês
+  rendeu (Hoje e Caixa) e o painel de preço das páginas públicas. O e-mail do mês a usa reta. Onde
+  o ponto marcava outro número (o preço sugerido, o total de "Quanto cobrar", o título do estado
+  vazio, os títulos do e-mail), ele sai sem substituto.
+- **Foco em `--brand-500`; `--on-brand` sobre o cobalto.** O `brand-500` sobre o `brand-700`
+  mede ~1,9:1.
+- **Navegação inferior ativa em `--brand-as-ink`**, e não no `--brand-700` puro: no escuro ele
+  mede ~1,6:1 sobre a superfície. Fica a pílula `--brand-100`; o "sublinhado cortado" do pacote
+  não entrou.
+- **Barra lateral com a faixa `--on-brand` de 3px** no item ativo, que revoga o "sem faixa" do
+  `#d125`. Foi pedido explícito do território.
+- **Raios 8px em botão e campo, 10px em cartão.** O pacote diz 10 e 12 numa tabela e 8 e 10 em
+  outra; vale o pedido, 8 e 10.
+- **A faixa de composição ganha os cortes** (3px a 8°, uma fileira inclinada dentro do recorte
+  do pai) e o trabalho dela passa a `--brand-as-ink`: o rosa é só a sobra, e a faixa ainda mede
+  o custo do lote. **A faixa sobre o preço praticado** (com maquininha e sobra em rosa) muda o
+  que ela mede, a legenda e o caso do prejuízo: **é spec própria.**
+- **A abertura existe**: o carregamento da sessão em `brand-700`, a assadeira em papel, os três
+  cortes abrindo a 60ms e a porção virando rosa. Com movimento reduzido, o símbolo pronto.
+- **Ícones:** os PNGs do pacote têm o `rx` do fundo; o 512, o 192 e o 180 são regerados sem ele
+  (`#d44`). O maskable 512 e o favicon de 48 são os do pacote. `theme_color` `#1C3891` e
+  `background_color` `#F8F5F0`: **o app precisa ser reinstalado** (`#d124`).
+- **A cor padrão do cardápio** (`COR_PADRAO`) vira o cobalto: a loja que nunca escolheu cor segue
+  a marca.
+- **A luz da janela** de `/conheca` sai do `accent-100` (agora rosa) para o `brand-100`.
+
+**Consequência.** A escala de texto do pacote (15/13) continua de fora (`#d123`). A forma do
+botão primário sobre a noite mede 1,8:1, abaixo dos 3:1 de interface; o rótulo mede 9,4:1 e é ele
+que identifica o botão, a mesma exceção do contorno do campo. Os contrastes de texto foram
+recomputados dos tokens e estão no `DESIGN.md`.

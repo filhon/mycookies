@@ -1066,7 +1066,7 @@ function ParaACliente({
 }
 
 /** A cor que pinta os botões da página; sem ela, a tinta do Rende. */
-const COR_PADRAO = "#2a2c3a";
+const COR_PADRAO = "#1c3891";
 
 /**
  * O seletor nativo de cor. Grava no `change` (quando ela fecha o seletor), e
@@ -1151,7 +1151,7 @@ async function baixarQrCode(endereco: string, arquivo: string) {
   if (!ctx) return;
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, LADO_DO_QR, LADO_DO_QR);
-  ctx.fillStyle = "#22242e"; // `--ink` do tema claro, como `CORES_DA_PREVIA`
+  ctx.fillStyle = "#121a2d"; // `--ink` do tema claro, como `CORES_DA_PREVIA`
   data.forEach((linha, y) =>
     linha.forEach((preto, x) => {
       if (preto) ctx.fillRect(inicio + x * casa, inicio + y * casa, casa, casa);

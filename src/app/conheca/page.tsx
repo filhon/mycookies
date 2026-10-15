@@ -343,7 +343,7 @@ export default async function PaginaConheca() {
             O bloco começa nas dúvidas: a barra entra quando elas chegam ao pé
             da tela, com os cartões de preço ainda à vista. Começando no preço,
             ela aparecia junto com o botão do fim da calculadora (spec 040,
-            medido a 390 × 844; ver `ESTADO.md`), e dois âmbar juntos é erro. */}
+            medido a 390 × 844; ver `ESTADO.md`), e dois primários juntos é erro. */}
         <div>
           <Duvidas />
           <BarraDoCelular />
@@ -638,7 +638,7 @@ function Preco({
       </div>
 
       {/* No celular quem faz este papel é a barra do pé, que já está na tela
-          aqui: dois âmbar juntos é erro. */}
+          aqui: dois primários juntos é erro. */}
       <div className="mt-10 hidden flex-col items-start gap-3 lg:flex">
         <Link
           href="/cadastro"

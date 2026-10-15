@@ -1,6 +1,6 @@
 # Rende · marca
 
-Território **Porções** (substituiu o Ponto em out/2026; histórico em `_arquivo-ponto/`). Nome escolhido: **Rende**. Documento de marca do sistema de
+Território **Ponto**. Nome escolhido: **Rende**. Documento de marca do sistema de
 precificação e produção vendido como SaaS para confeiteiras e produtoras artesanais de comida.
 A MyCookie's é a primeira cliente e o primeiro caso — não é dona da marca.
 
@@ -29,7 +29,7 @@ maquininha. E a MyCookie's, em uso diário, com esses números.
 **A frase que o produto existe para dizer.** "Este doce te custa R$ 3,41 e você deveria cobrar
 R$ 8,50."
 
-**O que vendemos.** Não um app de R$ 39. O número que mostra os R$ 600 por mês que estavam
+**O que vendemos.** Não um app de R$ 29. O número que mostra os R$ 600 por mês que estavam
 indo embora no preço errado.
 
 ### 1.2 Personalidade e arquétipo
@@ -92,76 +92,88 @@ desligável: "feito com Rende".
 
 ### 2.1 Logotipo
 
-Território **Porções**. Arquivos em `logo/` (todos em curvas, sem dependência de fonte):
+Arquivos em `logo/`:
 
-| Arquivo                                                    | Uso                                                                     |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `rende-principal.svg`                                      | logotipo cobalto sobre fundo claro                                      |
-| `rende-principal-negativa.svg`                             | logotipo papel sobre cobalto                                            |
-| `rende-mono-positiva.svg` / `-negativa.svg`                | uma cor só: carimbo, gravação, bordado; mono positiva também sobre rosa |
-| `rende-simbolo.svg` / `-negativa.svg` / `-mono-*.svg`      | símbolo isolado: a assadeira em quatro porções                          |
-| `rende-horizontal.svg` / `-negativa.svg`                   | símbolo + logotipo lado a lado                                          |
-| `rende-empilhada.svg` / `-negativa.svg`                    | símbolo sobre logotipo, centralizado                                    |
-| `icone-app-512.svg/png`, `-192.png`, `-180.png`, `-48.png` | ícone de app                                                            |
-| `icone-app-maskable-512.svg/png`                           | _maskable_ (conteúdo nos 80% centrais, fundo cheio)                     |
-| `_geometria.json`                                          | medidas, ângulo e o contorno do logotipo, para regenerar                |
+| Arquivo                                         | Uso                                                 |
+| ----------------------------------------------- | --------------------------------------------------- |
+| `rende-principal.svg`                           | logotipo em tinta sobre fundo claro                 |
+| `rende-principal-negativa.svg`                  | logotipo em creme sobre tinta                       |
+| `rende-mono-positiva.svg` / `-negativa.svg`     | uma cor só: fax, gravação, bordado, carimbo         |
+| `rende-simbolo.svg`                             | símbolo isolado (régua + ponto)                     |
+| `rende-horizontal.svg`                          | símbolo + logotipo lado a lado                      |
+| `rende-empilhada.svg`                           | símbolo sobre logotipo, centralizado                |
+| `icone-app-512.svg/png`, `-192.png`, `-180.png` | ícone de app                                        |
+| `icone-app-maskable-512.svg/png`                | _maskable_ (conteúdo nos 80% centrais, fundo cheio) |
 
-**Construção.** "rende" em Familjen Grotesk 700, caixa baixa, tracking +1%, convertido em
-curvas. A largura é dividida em **cinco porções iguais** por quatro cortes vazados, inclinados
-**8° para a direita**, com espessura de 11% da altura do logotipo. Os cortes caem pela medida,
-não pelas letras. O tracking foi escolhido para que nenhum corte deixe lasca. **Símbolo:** a
-assadeira, um retângulo de 1,18 × a altura do logotipo, cortado em quatro com o mesmo ângulo e
-a mesma espessura; a última porção é rosa. É a única peça rosa da marca.
+**Construção.** Logotipo: "rende" em Archivo 700, caixa baixa, tracking -0.03em, fechado por
+um **ponto âmbar** na altura da linha de base. O ponto é a assinatura; é ele que sobrevive
+quando o resto some. Símbolo: uma régua creme fechada pelo mesmo ponto âmbar, sobre tinta.
 
-**Área de proteção.** Uma porção do logotipo (1/5 da largura) em todos os lados.
+**Área de proteção.** Igual à altura do "r" em todos os lados. No ícone, nada entra.
 
-**Tamanho mínimo.** Logotipo: 96px de largura em tela, 26mm impresso. Símbolo: 24px.
+**Tamanho mínimo.** Logotipo: 88px de largura em tela, 24mm impresso. Símbolo e ícone: 48px.
+Abaixo disso, só o símbolo.
 
-**Fundos permitidos.** Papel (`--canvas`, `--surface`), branco, cobalto `--brand-700` a
-`--brand-900`, e foto com área lisa e escura (versão negativa). Sobre rosa, só a mono positiva
-e só em peça de divulgação. Nunca sobre semântico.
+**Fundos permitidos.** `--brand-700` a `--brand-900`, `--canvas`, `--surface`, branco, e
+foto com área de contraste controlado. Nunca sobre `--accent-500` (o ponto desaparece), nunca
+sobre semântico.
 
-**O que não fazer.** Mudar número, posição, espessura ou inclinação dos cortes. Preencher os
-cortes com cor. Pintar o logotipo de rosa ou pôr a porção rosa no logotipo. Caixa alta,
-outra fonte, contorno, sombra, gradiente. Transformar a assadeira em utensílio, doce ou
-gráfico de barras com cores inventadas.
+**Sobre foto.** Só a versão negativa, sobre região escura e lisa da imagem; se a foto for
+clara ou movimentada, use uma tarja de tinta e o logotipo dentro dela.
+
+**O que não fazer.** Não trocar a cor do ponto. Não usar o ponto sozinho como ícone de
+interface. Não inclinar, não deformar, não contornar, não aplicar sombra, gradiente ou
+brilho. Não escrever "Rende" em outra fonte que não Archivo. Não usar caixa alta ("RENDE").
+Não recriar o símbolo com utensílio de cozinha (colher, batedeira, cupcake) — a marca é de
+precificação, não de confeitaria.
 
 ### 2.2 Cor
 
-**Proporção de referência:** ~70% papel (canvas e surface), ~25% cobalto (cromo: barra
-lateral, cabeçalho de contexto, painel de preço, botão primário), ~5% rosa.
+**Proporção de referência:** ~70% neutros (canvas e surface), ~25% tinta de marca (cromo:
+barra lateral, cabeçalho de contexto, painel de preço), ~5% âmbar.
 
-**O rosa marca uma coisa só: o que sobra pra ela.** A porção do símbolo, o valor "sobram R$ X
-pra você", a última porção da faixa. Não é cor de botão nem de destaque genérico. Uma por
-peça.
+**O âmbar nunca preenche área grande.** Ele é o ponto: aparece no logotipo, no botão de ação
+primária, no valor que decide e nas marcas de atenção. Duas peças âmbar disputando na mesma
+tela é erro.
 
-**Nunca:** neutro puro, rosa como fundo de tela de produto, rosa em texto de prejuízo,
-semântico como cor de marca, gradiente.
+**Nunca:** neutro puro (todo cinza carrega matiz), âmbar como fundo de página, semântico como
+cor de marca, gradiente entre marca e acento.
 
-**Vizinho de matiz.** O rosa (matiz 5) e o vermelho de erro (matiz 32) são vizinhos. Separam-se
-por luminosidade (rosa claro, vermelho escuro) e por regra: todo estado negativo leva ícone
-`trending-down` e palavra. O informativo é petróleo (matiz 205), longe do cobalto.
+**Inversão no escuro.** A cor de estrutura vira fundo e a superfície vira tinta: `--canvas`
+passa a ser a tinta da marca escurecida, `--ink` passa a ser o creme. O âmbar sobe de
+luminosidade (`oklch(0.78 0.13 78)`) para manter 4.5:1 sobre `--surface`. Não é um "modo
+escuro" colado: é a mesma marca com os papéis trocados.
 
-**Escuro.** O cobalto escurece e vira noite (`--canvas` #081025), o papel vira tinta, o rosa
-sobe para #FA9FB4.
+**O teste do vizinho de matiz.** A primária está em matiz 272 — a 245° do vermelho de erro.
+Prejuízo em vermelho ao lado da cor da marca é inequívoco. Mesmo assim, **cor nunca é o único
+portador de significado**: todo estado negativo leva ícone e palavra.
 
 ### 2.3 Tipografia
 
-**Familjen Grotesk** (display, a mesma do logotipo) e **Figtree** (interface), ambas no Google
-Fonts. A display entra em título de página, valor em destaque, número de estado vazio e
-manchete de peça. Não entra em rótulo, tabela, formulário, navegação ou microcopy.
+**Archivo** (display) e **Figtree** (interface), ambas gratuitas no Google Fonts. Figtree fica
+porque já está no código e tem numerais tabulares.
 
-Todo valor monetário em numerais tabulares, peso 600, "R$" menor e apagado.
+A display entra em: título de página, valor financeiro em destaque, número de estado vazio,
+manchete de peça. **Não** entra em: rótulo, tabela, formulário, navegação, corpo longo,
+microcopy.
+
+Todo valor monetário em numerais tabulares, peso 600, com o "R$" menor e apagado e o número em
+destaque. Números que se comparam em coluna ficam alinhados à direita.
 
 ### 2.4 Assinatura visual
 
-1. **O corte.** A linha vazada de 8°, sempre com a mesma inclinação. Divide o que é dividido:
-   a faixa de composição, seções de peça, o lote em unidades. Nunca decorativo em série solta.
-2. **A porção rosa.** A parte que fica com a confeiteira. Única na peça.
+Dois elementos, e só dois:
 
-**A faixa de composição** junta as duas: o preço praticado dividido em porções proporcionais
-ao custo real (materiais · embalagem · sua hora · gás e energia · fixos · maquininha · sobra),
-separadas pelo corte, com a sobra em rosa. Sempre com dados verdadeiros.
+1. **O ponto âmbar.** Um círculo cheio, sempre único na peça, marcando o número que decide.
+   Aparece no logotipo, no ícone, no painel de preço, no estado vazio e nas peças de
+   divulgação. Nunca como ícone de interface, nunca em série (três pontos = decoração).
+2. **A faixa de composição.** A barra horizontal segmentada em proporção ao custo real do
+   lote: materiais · embalagem · sua hora · gás e energia · fixos. É gráfico e grafismo ao
+   mesmo tempo, sempre com dados verdadeiros — nunca uma faixa "decorativa" com proporções
+   inventadas. O segmento "sua hora" é o âmbar.
+
+Uso: uma assinatura por peça. Nunca as duas na mesma composição, exceto no editor de produto,
+onde a faixa é dado e o ponto é o painel de preço.
 
 ### 2.5 Co-branding e documentos da confeiteira
 
@@ -193,7 +205,7 @@ Número sempre com sua consequência.
 | Sem internet          | normal, não alarme            | "Salvo no aparelho. Sobe quando você tiver sinal." |
 | Meta batida           | reconhece e para              | "Meta do mês batida: R$ 4.512,00."                 |
 | Prejuízo detectado    | direto, com o caminho         | "Neste preço você perde R$ 0,38 por unidade."      |
-| Cobrança e teste      | claro, sem pressão            | "Seu teste acaba em 3 dias. Depois é R$ 39/mês."   |
+| Cobrança e teste      | claro, sem pressão            | "Seu teste acaba em 3 dias. Depois é R$ 29/mês."   |
 | Convite ao beta       | pessoal, curto                | "Quero te mostrar antes de abrir pra todo mundo."  |
 | Ensinar contabilidade | uma frase, no lugar do número | "Margem é quanto do preço sobra: 45% de R$ 8,50."  |
 
@@ -203,8 +215,8 @@ material · despensa · produto · receita · kit / combo · rende / rendimento 
 o que está pronto · pedido / encomenda · caixa (lançamento) · meta · quanto sobra pra você ·
 maquininha · custo desatualizado · salvo no aparelho · a lista / o que comprar.
 
-Extensões da marca: **a porção** (o que sobra pra ela) · **o corte** · **a faixa** (a composição
-do preço) · **teste grátis** (nunca "trial") · **assinatura** (nunca "plano pro").
+Extensões da marca: **o ponto** (o número que decide numa tela) · **a faixa** (a composição do
+custo) · **teste grátis** (nunca "trial") · **assinatura** (nunca "plano pro").
 
 Proibidos: insumo, ficha técnica, output, margem líquida, taxa de adquirência, SKU, dashboard,
 onboarding, engajamento, erro de sincronização.
@@ -257,7 +269,7 @@ onboarding, engajamento, erro de sincronização.
    "Feito no Rende. Teste 14 dias."
 
 **Stories (3 quadros):** "Quanto sobra pra você neste doce?" → "Se a resposta for 'acho que
-uns 3 reais', a gente tem uma conta pra te mostrar." → "rende.com.br · 14 dias grátis"
+uns 3 reais', a gente tem uma conta pra te mostrar." → "rendeapp.com.br · 14 dias grátis"
 
 **E-mail de boas-vindas**
 Assunto: "Bem-vinda ao Rende. Comece por um produto só."
@@ -268,7 +280,7 @@ aparecer te surpreender, era exatamente pra isso. — Precisa de ajuda? Responde
 **E-mail de teste acabando**
 Assunto: "Faltam 3 dias — e o que o Rende já achou"
 Corpo: "Oi, [nome]. Seu teste acaba em [data]. Até aqui você precificou [n] produtos, e em
-[n] deles o preço estava abaixo do custo + margem. A assinatura é R$ 39/mês, ou R$ 390 no ano.
+[n] deles o preço estava abaixo do custo + margem. A assinatura é R$ 29/mês, ou R$ 290 no ano.
 Seus dados ficam do jeito que estão."
 
 **Convite ao beta (WhatsApp)**

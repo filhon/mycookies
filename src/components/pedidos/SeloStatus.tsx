@@ -14,8 +14,7 @@ import type { StatusPedido } from "@/lib/types";
 /**
  * O status sempre carrega ícone e palavra, nunca só cor.
  *
- * Aqui a regra pesa duas vezes: "em produção" é ocre e o âmbar da marca divide
- * matiz com ele, e "cancelado" precisa se distinguir de "confirmado" a meio
+ * Aqui a regra pesa duas vezes: "em produção" é ocre, vizinho do vermelho, e "cancelado" precisa se distinguir de "confirmado" a meio
  * metro de distância, com a tela apoiada na bancada.
  */
 export const APARENCIA_STATUS: Record<

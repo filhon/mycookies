@@ -898,7 +898,7 @@ export function FormularioFicha({
     <>
       {/* A faixa de composição (`#d126`): as linhas abaixo são a legenda,
         e a de "Seu trabalho" é a única colorida, para casar com o
-        segmento âmbar. Custo zero, faixa nenhuma. */}
+        segmento cobalto. Custo zero, faixa nenhuma. */}
       <FaixaDeComposicao
         segmentos={composicaoDoLote(derivado.custo, valores.tipo)}
         className="mb-4 max-w-xl"

@@ -18,8 +18,8 @@ import { cn } from "@/lib/utils/cn";
  * O bloco "O custo do lote" do editor, com o cookie da página de venda
  * (`DECISOES.md#d173`) ou o doce de uma página do preço (spec 068). Todo
  * número sai das funções do app sobre o exemplo; nenhum é escrito aqui. A
- * faixa e o ponto convivem porque é a reprodução do editor, o único lugar em
- * que o `MARCA.md` § 2.4 deixa (`#d126`).
+ * faixa e a porção rosa convivem porque é a reprodução do editor, o único
+ * lugar em que o `MARCA.md` § 2.4 deixa (`#d126`).
  */
 export function ContaAberta({
   className,

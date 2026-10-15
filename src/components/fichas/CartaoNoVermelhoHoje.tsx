@@ -95,7 +95,7 @@ export function CartaoNoVermelhoHoje() {
       />
       <span className="min-w-0 flex-1">
         <span className="block text-body font-medium text-ink">{titulo}</span>
-        {/* Cor nunca sozinha: o ícone acompanha o vermelho e o âmbar. */}
+        {/* Cor nunca sozinha: o ícone acompanha o vermelho e o ocre. */}
         <span
           className={`num mt-0.5 flex items-start gap-1.5 text-label ${
             noPrejuizo ? "text-negative" : "text-attention"

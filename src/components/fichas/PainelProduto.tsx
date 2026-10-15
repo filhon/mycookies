@@ -52,7 +52,7 @@ function Metrica({ rotulo, valor }: { rotulo: string; valor: Centavos }) {
  *
  * Só leitura, do que a ficha já tem gravado (`custoGravado`): o mesmo número
  * que o editor gravou, e o selo de custo desatualizado é quem diz que ele
- * envelheceu. Sem o ponto âmbar: ele marca dado num lugar só, o painel de
+ * envelheceu. Sem a porção rosa: ela marca a sobra num lugar só, o painel de
  * preço do editor, e a faixa já é a assinatura desta peça.
  */
 export function PainelProduto({

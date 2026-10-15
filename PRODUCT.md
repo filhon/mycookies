@@ -82,11 +82,12 @@ Nunca infantiliza a usuária: ela é dona de um negócio, não uma criança brin
 - **Rede social / feed.** Cards infinitos, gamificação, badges, notificações disputando
   atenção. As metas motivam com números reais, não com confete.
 - **Dashboard SaaS escuro genérico.** A saída fácil para "não parecer planilha" é copiar
-  Linear e Vercel. A tinta do Rende é azul-preta, e o risco de virar isso é real: o que
-  separa é o papel cru como superfície, o claro por padrão e o âmbar que marca um número, não
+  Linear e Vercel. A marca do Rende é cobalto, e o risco de virar isso é real: o que separa é
+  o papel quente como superfície, o claro por padrão e a porção rosa que marca um número, não
   um gráfico.
-- **Aplicativo fofo de confeitaria.** Cupcake no logotipo, rosa, "vamos adoçar suas contas",
-  emoji na interface. A marca é de precificação, não de confeitaria.
+- **Aplicativo fofo de confeitaria.** Cupcake no logotipo, rosa como tema, "vamos adoçar suas
+  contas", emoji na interface. A marca é de precificação, não de confeitaria. O rosa do Rende é
+  um dado, e não um clima: marca só o que sobra pra ela, uma vez por tela (`DECISOES.md#d381`).
 - **A própria MyCookie's.** Vinho, creme texturizado, filete dourado, serifa quente, o
   biscoito. É a identidade da primeira cliente, e a segunda confeiteira não pode abrir o app
   sentindo que está na ferramenta interna de uma concorrente. O Rende não empresta nem toma
@@ -118,7 +119,7 @@ Nunca infantiliza a usuária: ela é dona de um negócio, não uma criança brin
   é eliminado.
 - Cor nunca é o único portador de significado. Status de pedido, sinal de lucro e alertas de
   despensa sempre combinam cor com ícone, texto ou posição. A restrição vale duplamente aqui
-  porque o âmbar da marca e o ocre de atenção dividem matiz: todo estado de atenção leva o
-  triângulo e a palavra, e o âmbar nunca é texto.
+  porque o rosa da marca e o vermelho do negativo são vizinhos de matiz: todo prejuízo leva
+  `trending-down` e a palavra, e o rosa nunca marca prejuízo.
 - Tema claro por padrão (uso predominante em cozinha iluminada), tema escuro seguindo a
   preferência do sistema para o uso noturno, ou a escolha dela na Configuração.

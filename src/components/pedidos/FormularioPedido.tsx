@@ -1149,7 +1149,7 @@ export function FormularioPedido({
   const erroDaLista =
     Object.keys(errosItens).length === 0 ? erros.itens : undefined;
 
-  // Um âmbar por vez (`#d271`): o "Salvar" enquanto há o que salvar; senão, o
+  // Um primário por vez (`#d271`): o "Salvar" enquanto há o que salvar; senão, o
   // "Mandar o resumo" da faixa do pedido anotado (`#d273`), o próximo passo da
   // trilha, ou o "Marcar como pago" do entregue não pago.
   const salvarEhPrimario = !pedido || (sujo && !soLeitura);

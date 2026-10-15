@@ -76,8 +76,9 @@ Quebrar qualquer um destes é regressão, não escolha de estilo.
 - **Toda escrita grava `v: VERSAO_SCHEMA`.** Sem isso a forma de um documento se adivinha
   pela presença de campos.
 - **Alvo de toque mínimo de 44×44px**, ação primária no celular com 52px.
-- **Cor nunca é o único portador de significado.** O âmbar da marca e o ocre de atenção dividem
-  matiz: todo estado negativo ou de atenção carrega ícone ou texto, e o âmbar nunca é texto.
+- **Cor nunca é o único portador de significado.** O rosa da marca e o vermelho do negativo são
+  vizinhos de matiz: todo estado negativo ou de atenção carrega ícone ou texto, e o rosa marca
+  só a sobra, nunca botão nem prejuízo.
 - **Painel lateral no desktop, folha inferior no celular.** Modal só para confirmação
   destrutiva.
 

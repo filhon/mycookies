@@ -17,7 +17,8 @@ const TONS: Record<Tom, string> = {
 
 /**
  * O ícone não é enfeite: é o que sustenta o significado quando a cor não pode
- * ser o único portador. O âmbar da marca e o ocre de atenção dividem matiz.
+ * ser o único portador. O rosa da marca e o vermelho do negativo são vizinhos de
+ * matiz.
  */
 export function Selo({
   tom = "neutro",

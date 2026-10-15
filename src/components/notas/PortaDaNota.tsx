@@ -193,7 +193,7 @@ export function PortaDaNota({
             </div>
           )}
 
-          {/* Celular, juntando: ler é o âmbar; a continuação, a câmera de novo. */}
+          {/* Celular, juntando: ler é o primário; a continuação, a câmera de novo. */}
           {juntando && (
             <div className="mt-6 grid gap-3 lg:hidden">
               <Botao
