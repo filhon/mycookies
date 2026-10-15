@@ -592,6 +592,39 @@ mesma `FIREBASE_SERVICE_ACCOUNT`; o aparelho precisa da chave Web Push do projet
 de outro aparelho. No DevTools (Application → Service workers) deve haver **um** service
 worker, o `/sw.js`.
 
+## 16 · Ao publicar o beta por convite (specs 181 a 184, juntas)
+
+A partir deste deploy, `POST /api/conta` só abre conta com convite (`DECISOES.md#d399` a
+`#d401`). **Nada da 181 vai sozinho**: sem a lista de espera (182) e as páginas novas (184), quem
+chega dá numa porta fechada sem explicação.
+
+1. **Regras e índice antes do app**, e esperar o índice sair de "Criando" no console (Firestore →
+   Índices → Isenções de campo único, `convites.codigo` com escopo de grupo de coleção):
+
+   ```bash
+   firebase deploy --only firestore:rules,firestore:indexes
+   ```
+
+   Sem o índice, todo cadastro com convite falha com 500; sem a regra, a dona poderia escrever
+   convites pelo cliente.
+
+2. **Semear as duas contas que existem**, cada uma com 5 convites. A da Maynara vira a fundadora
+   nº 1; a de quem conduz o projeto, a nº 2. Se forem dois logins da mesma conta, é uma vaga só.
+
+   ```bash
+   npm run beta -- semear mycookies
+   npm run beta -- semear <contaId da outra>
+   npm run beta
+   ```
+
+   O último imprime `Fase BETA · 2 de 100 vagas`. Sem `plataforma/beta` o servidor já se
+   comporta como `BETA` com 100 vagas; o `semear` cria o documento.
+
+3. **Depois, o deploy do app.**
+
+**Conferir:** numa aba anônima, `/cadastro` sem convite termina em "O Rende está abrindo por
+convite", e nenhuma conta nasce (`npm run beta` continua com 2 ocupadas).
+
 ## Limites conhecidos
 
 **O arquivo da nota tem dois tetos, e o menor não é o nosso.** `LIMITE_ARQUIVO_BYTES` é 8 MB

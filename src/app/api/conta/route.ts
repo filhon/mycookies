@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { after, NextResponse } from "next/server";
-import { Timestamp } from "firebase-admin/firestore";
+import { Timestamp, type DocumentReference } from "firebase-admin/firestore";
 import {
   esquemaCadastro,
   fimDoTeste,
@@ -8,9 +8,11 @@ import {
   type Cadastro,
   type FalhaCadastro,
 } from "@/lib/domain/cadastro";
+import { CONVITES_POR_FUNDADORA, lerCodigo } from "@/lib/domain/convite";
 import { hojeEmBrasilia } from "@/lib/domain/datas";
 import { VERSAO_DO_ACEITE } from "@/lib/domain/textoLegal";
 import { boasVindas } from "@/lib/email/pecas";
+import { comoEstadoDoBeta, lerBeta } from "@/lib/server/beta";
 import { enviarEmail } from "@/lib/server/email";
 import {
   adminAuth,
@@ -18,7 +20,13 @@ import {
   conferirToken,
   credencialDisponivel,
 } from "@/lib/server/firebaseAdmin";
-import { caminhos, VERSAO_SCHEMA, type PapelNaConta } from "@/lib/types";
+import {
+  caminhos,
+  VERSAO_SCHEMA,
+  type Convite,
+  type EstadoDoBeta,
+  type PapelNaConta,
+} from "@/lib/types";
 
 /**
  * O handler que `DECISOES.md#d16` prometeu: `scripts/conceder-acesso.mjs` na
@@ -37,6 +45,10 @@ import { caminhos, VERSAO_SCHEMA, type PapelNaConta } from "@/lib/types";
  * Desde a spec 028, a mesma `setCustomUserClaims` também escreve
  * `acessoAte[contaId] = trialAte` (`DECISOES.md#d144`): é o relógio que
  * `firestore.rules` lê para recusar escrita de conta vencida.
+ *
+ * Desde a spec 181, na fase `BETA`, a conta só nasce trocando um convite de
+ * fundadora pela vaga (`trocarConvite`). O script não passa por aqui: é a mão
+ * de quem conduz o projeto, e não conta vaga sozinho.
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -66,8 +78,20 @@ export async function POST(requisicao: Request) {
   const corpo = esquemaCadastro.safeParse(await comoJson(requisicao));
   if (!corpo.success) return falha("fora-de-forma", 400);
 
-  const contaId = await garantirConta(quem.uid, corpo.data);
-  return NextResponse.json({ contaId });
+  try {
+    const contaId = await garantirConta(quem.uid, corpo.data);
+    return NextResponse.json({ contaId });
+  } catch (erro) {
+    if (erro instanceof Recusa) return falha(erro.codigo, 403);
+    throw erro;
+  }
+}
+
+/** O portão do beta disse não; nenhuma conta nasceu (spec 181). */
+class Recusa extends Error {
+  constructor(readonly codigo: FalhaCadastro) {
+    super(codigo);
+  }
 }
 
 async function garantirConta(uid: string, cadastro: Cadastro): Promise<string> {
@@ -91,7 +115,7 @@ async function garantirConta(uid: string, cadastro: Cadastro): Promise<string> {
   if (!existente.exists) {
     const agora = Timestamp.now();
     trialAte = Timestamp.fromDate(fimDoTeste(agora.toDate()));
-    await referencia.set({
+    const documento = {
       nome: nomeDoNegocio(cadastro),
       proprietaria: cadastro.nome,
       criadaEm: agora,
@@ -102,7 +126,14 @@ async function garantirConta(uid: string, cadastro: Cadastro): Promise<string> {
       termosVersao: VERSAO_DO_ACEITE,
       ...(cadastro.origem && { origem: cadastro.origem }),
       v: VERSAO_SCHEMA,
-    });
+    };
+    // O portão do beta (spec 181): só aqui, onde a conta ainda não existe, e
+    // por isso repetir o POST nunca gasta outro convite nem outra vaga.
+    if ((await lerBeta()).fase === "PUBLICO") {
+      await referencia.set(documento);
+    } else {
+      await trocarConvite(referencia, documento, cadastro, agora);
+    }
     // Só quando a conta nasce, e depois da resposta: o cadastro não espera o
     // e-mail (spec 044, `#d202`). A chave segura a volta que repete o POST.
     const para = usuario.email;
@@ -136,4 +167,75 @@ async function garantirConta(uid: string, cadastro: Cadastro): Promise<string> {
   }
 
   return contaId;
+}
+
+/**
+ * O convite vira a vaga, numa transação do Admin SDK (spec 181). A proibição
+ * de `runTransaction` do `CLAUDE.md` é do cliente offline; o cadastro já exige
+ * rede, e sem a transação dois cadastros com o mesmo convite, ou na última
+ * vaga, abririam duas contas. A consulta por grupo de coleção dentro dela
+ * trava os documentos lidos como um `get` comum.
+ *
+ * Recusa antes de escrever qualquer coisa: o convite que não existe, o
+ * cancelado e o de conta encerrada dão a mesma resposta, `convite-invalido`.
+ */
+async function trocarConvite(
+  conta: DocumentReference,
+  documento: Record<string, unknown>,
+  cadastro: Cadastro,
+  agora: Timestamp,
+): Promise<void> {
+  if (!cadastro.convite) throw new Recusa("sem-convite");
+  const codigo = lerCodigo(cadastro.convite);
+  if (!codigo) throw new Recusa("convite-invalido");
+
+  const db = adminDb();
+  const plataforma = db.doc(caminhos.plataformaBeta);
+  await db.runTransaction(async (tx) => {
+    const estado = comoEstadoDoBeta(
+      (await tx.get(plataforma)).data() as Partial<EstadoDoBeta> | undefined,
+    );
+    const achados = await tx.get(
+      db
+        .collectionGroup(caminhos.grupoConvites)
+        .where("codigo", "==", codigo)
+        .limit(1),
+    );
+    const convite = achados.docs[0];
+    const status = convite?.get("status") as Convite["status"] | undefined;
+    // `contas/{dona}/convites/{codigo}`: o avô do convite é a conta dela.
+    const dona = convite?.ref.parent.parent;
+    if (!convite || !dona || (status !== "ABERTO" && status !== "USADO")) {
+      throw new Recusa("convite-invalido");
+    }
+    if ((await tx.get(dona)).get("status") === "ENCERRADA") {
+      throw new Recusa("convite-invalido");
+    }
+    if (status === "USADO") throw new Recusa("convite-usado");
+    if (estado.ocupadas >= estado.vagas) throw new Recusa("sem-vaga");
+
+    tx.create(conta, {
+      ...documento,
+      // O rascunho da calculadora ganha (`#d317`): a biblioteca e a
+      // boas-vindas dependem dele.
+      origem: cadastro.origem === "calculadora" ? "calculadora" : "convite",
+      beta: {
+        fundadora: estado.ocupadas + 1,
+        convites: CONVITES_POR_FUNDADORA,
+        convidadaPor: dona.id,
+      },
+    });
+    tx.update(convite.ref, {
+      status: "USADO",
+      usadoEm: agora,
+      usadoPor: conta.id,
+      nomeDaConvidada: cadastro.nome,
+      v: VERSAO_SCHEMA,
+    });
+    tx.set(
+      plataforma,
+      { ...estado, ocupadas: estado.ocupadas + 1, v: VERSAO_SCHEMA },
+      { merge: true },
+    );
+  });
 }

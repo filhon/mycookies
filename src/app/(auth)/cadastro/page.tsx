@@ -13,6 +13,7 @@ import { Campo, CampoSenha, focarPrimeiroErro } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
   CHAVE_DA_ORIGEM,
+  CHAVE_DO_CONVITE,
   DIAS_DE_TESTE,
   MENSAGEM_FALHA_CADASTRO,
   TAMANHO_MAXIMO_NOME,
@@ -71,6 +72,18 @@ export default function PaginaCadastro() {
   useEffect(() => {
     if (!carregando && contaId) router.replace("/");
   }, [carregando, contaId, router]);
+
+  // O código do link vai para o aparelho já na chegada (spec 181): se ela for
+  // ao login, ou entrar com o Google por lá, volta para cá sem `?convite=`.
+  useEffect(() => {
+    const codigo = conviteDoEndereco();
+    if (!codigo) return;
+    try {
+      localStorage.setItem(CHAVE_DO_CONVITE, codigo);
+    } catch {
+      // Sem armazenamento, o endereço ainda tem o código até o POST.
+    }
+  }, []);
 
   // O login já existe quando o `POST` caiu no meio: o segundo estado.
   const terminando = !carregando && usuario !== null;
@@ -140,12 +153,18 @@ export default function PaginaCadastro() {
             : doCardapio()
               ? "cardapio"
               : undefined,
+          convite: conviteGuardado(),
         }),
       });
       if (!resposta.ok) {
         setErro(MENSAGEM_FALHA_CADASTRO[await codigoDaFalha(resposta)]);
         setEnviando(false);
         return;
+      }
+      try {
+        localStorage.removeItem(CHAVE_DO_CONVITE);
+      } catch {
+        // Nada guardado, nada a tirar.
       }
 
       await reconferirAcesso();
@@ -418,6 +437,25 @@ function doCardapio(): boolean {
     return localStorage.getItem(CHAVE_DA_ORIGEM) === "cardapio";
   } catch {
     return false;
+  }
+}
+
+/** O teto é o do esquema: o que passar disso não é código, e a rota recusa. */
+function conviteDoEndereco(): string | undefined {
+  return (
+    new URLSearchParams(location.search).get("convite")?.slice(0, 40) ||
+    undefined
+  );
+}
+
+/** O do endereço, e sem ele o que ficou no aparelho (spec 181). */
+function conviteGuardado(): string | undefined {
+  const doEndereco = conviteDoEndereco();
+  if (doEndereco) return doEndereco;
+  try {
+    return localStorage.getItem(CHAVE_DO_CONVITE)?.slice(0, 40) || undefined;
+  } catch {
+    return undefined;
   }
 }
 

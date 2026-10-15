@@ -80,9 +80,25 @@ export interface Conta {
    * Por onde ela chegou, gravado pelo cadastro (`/api/conta`, spec 040-B,
    * `DECISOES.md#d191`) e por mais ninguém. `"calculadora"`: havia o rascunho
    * da calculadora pública no aparelho. `"cardapio"`: chegou pelo rodapé
-   * "Cardápio feito no Rende" (spec 114, `#d317`). Ausente = outro caminho.
+   * "Cardápio feito no Rende" (spec 114, `#d317`). `"convite"`: abriu a conta
+   * com um convite de fundadora (spec 181); o rascunho da calculadora ganha
+   * dele. Ausente = outro caminho.
    */
-  origem?: "calculadora" | "cardapio";
+  origem?: "calculadora" | "cardapio" | "convite";
+  /**
+   * A fundadora do beta (spec 181). Gravado pela troca do convite em
+   * `/api/conta` e por `npm run beta -- semear`, e por mais ninguém. Ausente =
+   * conta que não ocupa vaga: aberta depois do lançamento, ou liberada à mão
+   * e ainda não semeada.
+   */
+  beta?: {
+    /** O número da vaga, de 1 ao teto: "fundadora nº 37". */
+    fundadora: number;
+    /** A cota de convites dela, `CONVITES_POR_FUNDADORA` ao nascer. */
+    convites: number;
+    /** O `contaId` de quem convidou. Ausente na semeada. */
+    convidadaPor?: string;
+  };
   /**
    * Meta batida e mês fechado por e-mail (spec 044-B, `DECISOES.md#d207`).
    * Ausente = recebe; escrito pela chave em `/configuracao#avisos`. Não desliga
@@ -108,6 +124,44 @@ export interface ApelidoDoCardapio {
   contaId: string;
   criadoEm: Timestamp;
   arquivado: boolean;
+  v: VersaoSchema;
+}
+
+/**
+ * `plataforma/beta`, a segunda exceção à regra de ouro (spec 181): a fase e as
+ * vagas do beta. Só o Admin SDK lê e escreve. Ausente = `BETA` com 100 vagas e
+ * nenhuma ocupada (`lerBeta`).
+ */
+export interface EstadoDoBeta {
+  fase: "BETA" | "PUBLICO";
+  /** O teto. Muda por `npm run beta -- vagas <n>`, nunca abaixo de `ocupadas`. */
+  vagas: number;
+  /** Contas de fundadora abertas, por convite ou semeadas. Nunca desce. */
+  ocupadas: number;
+  /** A última posição dada na lista de espera (spec 182). */
+  espera: number;
+  /** Pesquisas do fim do teste respondidas (spec 185). */
+  pesquisas: number;
+  lancadoEm?: Timestamp;
+  v: VersaoSchema;
+}
+
+/**
+ * `contas/{dona}/convites/{codigo}`, um por convite de fundadora (spec 181).
+ * Escrito só pelo servidor; a dona lê. Uso único: um convite, uma conta.
+ */
+export interface Convite {
+  /** O id do documento repetido no campo, para a consulta por grupo de coleção. */
+  codigo: string;
+  /** O nome que ela escreveu, até 40 caracteres (spec 183). */
+  paraQuem?: string;
+  status: "ABERTO" | "USADO" | "CANCELADO";
+  criadoEm: Timestamp;
+  usadoEm?: Timestamp;
+  /** O `contaId` da convidada. */
+  usadoPor?: string;
+  /** A `proprietaria` da conta que nasceu. */
+  nomeDaConvidada?: string;
   v: VersaoSchema;
 }
 

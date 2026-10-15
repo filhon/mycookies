@@ -99,6 +99,16 @@
       "collectionGroup": "insumos",
       "fieldPath": "historicoPrecos",
       "indexes": []
+    },
+    {
+      "collectionGroup": "convites",
+      "fieldPath": "codigo",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION" },
+        { "order": "DESCENDING", "queryScope": "COLLECTION" },
+        { "arrayConfig": "CONTAINS", "queryScope": "COLLECTION" },
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
     }
   ]
 }

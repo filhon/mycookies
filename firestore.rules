@@ -11,11 +11,19 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // A única exceção à regra de ouro (DECISOES.md#d319): o índice global dos
+    // A primeira exceção à regra de ouro (DECISOES.md#d319): o índice global dos
     // endereços do cardápio, apelido → contaId. Trancado para todo cliente,
     // com ou sem login; só o Admin SDK lê e escreve. A negação padrão acima já
     // cobriria: está escrito para que ninguém ache que esqueceram.
     match /apelidos/{apelido} {
+      allow read, write: if false;
+    }
+
+    // A segunda exceção (spec 181): `plataforma/beta`, a fase e as vagas do
+    // beta. Trancado como `apelidos`: quem lê e soma é o Admin SDK, na
+    // transação do cadastro e no `npm run beta`. Uma vaga que o cliente
+    // escrevesse seria uma vaga que qualquer login abriria.
+    match /plataforma/{documento} {
       allow read, write: if false;
     }
 
@@ -56,9 +64,11 @@ service cloud.firestore {
       }
 
       // Espelho dos acessos: a claim é a verdade, e quem escreve é o Admin SDK
-      // (DECISOES.md#d155). Nem a dona escreve daqui.
+      // (DECISOES.md#d155). Nem a dona escreve daqui. `convites` (spec 181):
+      // o convite de fundadora vira conta na transação do servidor; um
+      // convite escrito pelo cliente seria uma vaga que ela mesma se daria.
       function soDoServidor(colecao) {
-        return colecao == 'membros';
+        return colecao in ['membros', 'convites'];
       }
 
       allow read: if temAcesso();

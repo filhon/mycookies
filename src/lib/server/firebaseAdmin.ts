@@ -18,7 +18,9 @@ import { getMessaging, type Messaging } from "firebase-admin/messaging";
  *
  * **Só `/api/conta`, o webhook do Stripe, `/api/conta/encerrar` e
  * `/api/conta/membros` escrevem no Firestore daqui, só no documento da conta,
- * na claim e no espelho de membros, nunca em dado de negócio.**
+ * na claim e no espelho de membros, nunca em dado de negócio.** No beta (spec
+ * 181), `/api/conta` também marca o convite usado e soma a vaga em
+ * `plataforma/beta`, na mesma transação que cria a conta (`server/beta.ts`).
  * `/api/conta/exportar` **lê** dado de negócio — para devolvê-lo a
  * ela, e por mais nada. O motivo é o mesmo de `/api/nota` não gravar insumo:
  * escrever do servidor é escrever por fora das regras.

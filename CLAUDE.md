@@ -22,6 +22,8 @@ npm run metricas     # uma linha por conta, lida por quem conduz o projeto;
                       # exige GOOGLE_APPLICATION_CREDENTIALS
 npm run encerrar-conta -- <contaId>   # purga conta encerrada, à mão, com --confirmo;
                                        # exige GOOGLE_APPLICATION_CREDENTIALS
+npm run beta         # fase, vagas e a árvore das fundadoras; `-- semear <contaId> [cota]`
+                     # e `-- vagas <n>`; exige GOOGLE_APPLICATION_CREDENTIALS
 ```
 
 **Portão de conclusão:** nenhuma tarefa está pronta antes de `lint`, `typecheck`, `test` e
@@ -71,8 +73,10 @@ Quebrar qualquer um destes é regressão, não escolha de estilo.
   encerrada por `scripts/encerrar-conta.mjs`, `DECISOES.md#d148`.
 - **Todo dado mora em `contas/{contaId}/…`, nunca sob o login.** `uid` diz quem entrou,
   `contaId` diz de quem é o dado. O mapa `caminhos` é o único lugar que conhece o formato.
-  A única exceção é `apelidos/{apelido}`, o índice dos endereços do cardápio, trancado para
-  todo cliente e escrito só por `/api/cardapio/apelido`, `DECISOES.md#d319`.
+  São duas exceções, trancadas para todo cliente: `apelidos/{apelido}`, o índice dos endereços
+  do cardápio, escrito só por `/api/cardapio/apelido`, `DECISOES.md#d319`; e `plataforma/beta`,
+  a fase e as vagas do beta, escrito só pela troca do convite em `/api/conta` e por
+  `npm run beta`, `DECISOES.md#d401`.
 - **Toda escrita grava `v: VERSAO_SCHEMA`.** Sem isso a forma de um documento se adivinha
   pela presença de campos.
 - **Alvo de toque mínimo de 44×44px**, ação primária no celular com 52px.

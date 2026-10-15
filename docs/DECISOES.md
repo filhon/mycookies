@@ -13098,3 +13098,104 @@ calculadora que manda por e-mail) guarda a conta.
 
 **Consequência.** O `canonical` de cada página já aponta para ela sem `?conta`. O link de um
 build local sai com `localhost` (`#d395`). Nenhum campo, regra ou dependência.
+
+## D399 · O convite de fundadora mora na conta de quem convida
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 181 · estende a `#d155` (o
+espelho que só o servidor escreve).
+
+**Contexto.** O beta fechado precisa de um convite que vire conta nova, e o único convite que
+existia era o da ajudante (`/api/conta/membros`), que dá acesso à conta de quem convida.
+
+**Decisão.**
+
+- **`contas/{dona}/convites/{codigo}`**, e não `convites/` na raiz. O invariante "todo dado mora em
+  `contas/…`" continua quase inteiro, a exportação (`#d149`) leva os convites dela sem ninguém
+  lembrar, e a tela da 183 lista pelo ouvinte de sempre, offline. O preço é um `fieldOverride` de
+  `convites.codigo` com escopo de grupo de coleção: a troca acha o convite por
+  `collectionGroup("convites").where("codigo", "==", c)`. O override repete os três índices de
+  coleção padrão para não desligá-los.
+- **`convites` entra em `soDoServidor`** nas regras: a dona lê, ninguém escreve do cliente. Um
+  convite escrito pelo cliente seria uma vaga que ela mesma se daria. A leitura segue a regra das
+  coleções que não são do dinheiro, então a ajudante também lê; a 183 decide se a tela mostra.
+- **O código**: 8 símbolos de `23456789ABCDEFGHJKMNPQRSTUVWXYZ` (sem 0/O, 1/I/L), ~39 bits, em
+  `domain/convite.ts`. `gerarCodigo` descarta os bytes de 248 a 255 para que nenhum símbolo saia
+  mais que os outros (256 não é múltiplo de 31). `lerCodigo` aceita minúscula, espaço e hífen e
+  devolve `null` para o resto. O link `/convite/{codigo}` e o código ditado são o mesmo documento.
+- **Uso único, sem e-mail amarrado e sem validade por data.** Amarrar ao e-mail obrigaria ela a
+  pedir o e-mail da amiga antes de mandar; se o link vazar, vale uma vez, e ela cancela o que não
+  foi usado (183).
+- **`"convite"` em `Conta.origem` é gravado pela rota, e não aceito do cliente.** O
+  `esquemaCadastro` ganhou `convite`, mas a enumeração de `origem` continua `calculadora | cardapio`:
+  quem diz que a conta nasceu por convite é a troca que aconteceu. O rascunho da calculadora ganha
+  (`#d317`).
+
+**Consequência.** Schema aditivo: `Conta.beta?`, `Conta.origem` com `"convite"`, a coleção nova.
+Nenhuma dependência.
+
+## D400 · A vaga se troca pelo convite numa transação do servidor
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 181 · estende a `#d141` (o
+`POST /api/conta` que garante em vez de criar).
+
+**Contexto.** Esconder o botão de cadastro nas páginas não fecha nada: a porta é
+`POST /api/conta`. E sem atomicidade, dois cadastros com o mesmo convite, ou na vaga 100, abririam
+duas contas.
+
+**Decisão.**
+
+- **O portão mora só no ramo em que o documento da conta ainda não existe.** Repetir o POST de
+  quem já tem conta nunca gasta convite nem vaga, e login nunca pede convite.
+- **Fase `BETA`: `runTransaction` do Admin SDK** que lê `plataforma/beta`, acha o convite pelo
+  grupo de coleção, lê a conta de quem convidou, e só então cria a conta (`tx.create`, com
+  `beta: { fundadora: ocupadas + 1, convites: 5, convidadaPor }` e `origem: "convite"`), marca o
+  convite `USADO` (`usadoEm`, `usadoPor`, `nomeDaConvidada`) e soma `ocupadas`. A proibição de
+  `runTransaction` do `CLAUDE.md` é do cliente offline; cadastro já exige rede e a transação roda
+  no servidor, onde as leituras, a consulta inclusive, travam os documentos lidos. Não conferido
+  no emulador nesta sessão (a máquina não tem Java); é o comportamento documentado das bibliotecas
+  de servidor, e o passo 2 e 3 do roteiro na sandbox o exercitam.
+- **Quatro recusas, todas 403 e antes de qualquer escrita:** `sem-convite`, `convite-invalido`
+  (não existe, cancelado, status desconhecido ou de conta `ENCERRADA`, a mesma resposta para não
+  dizer qual), `convite-usado`, `sem-vaga`. As frases moram em `MENSAGEM_FALHA_CADASTRO`, ao lado
+  das outras falhas do cadastro, e não no `MENSAGENS` do `AuthProvider` que a spec citava: aquele
+  mapa traduz códigos do Firebase Auth, e o `Record<FalhaCadastro, …>` obriga a frase a existir.
+  A tela que as mostra direito é a 182.
+- **`/cadastro` guarda `?convite=` em `rende:convite`** já na chegada, e manda o do endereço ou,
+  sem ele, o do aparelho. O Google abre em popup e não perde o endereço; a ida ao login e a volta
+  pela tela "sem conta" perdem, e o aparelho cobre. A chave sai depois da conta aberta.
+- **Quem não passa pelo portão:** a ajudante (`/api/conta/membros`) e o `conceder-acesso`, que é
+  a mão de quem conduz o projeto e não conta vaga sozinho.
+
+**Consequência.** Um limite conhecido, herdado da `#d141`: se a transação gravar e a claim cair
+logo depois, a volta sorteia outro `contaId` (o login segue sem claim) e o mesmo convite responde
+`convite-usado`. Hoje o mesmo buraco deixa uma conta órfã; com o portão, deixa ela parada. Quem
+conduz o projeto resolve com `npm run conceder-acesso -- <email> <usadoPor do convite>`. Se
+acontecer de verdade, o conserto é gravar o `uid` no convite e reconhecer a volta.
+
+## D401 · A fase e as vagas do beta moram em `plataforma/beta`
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 181 · a segunda exceção ao
+invariante "todo dado mora em `contas/…`", depois da `#d319`.
+
+**Contexto.** Nada no sistema sabia quantas contas o beta tinha, nem parava de abrir na
+centésima, e o lançamento (186) precisa trocar de fase sem deploy.
+
+**Decisão.**
+
+- **Um documento, `plataforma/beta`**: `fase` (`BETA` | `PUBLICO`), `vagas` (o teto, 100),
+  `ocupadas`, `espera` (182), `pesquisas` (185), `lancadoEm` (186). Trancado nas regras como
+  `apelidos`; só o Admin SDK lê e escreve. `caminhos.plataformaBeta` é o único que conhece o
+  formato no app, e `scripts/beta.mjs` repete, como os outros scripts.
+- **Documento ausente, servidor sem credencial ou leitura que falha: `BETA` com 100 vagas e 0
+  ocupadas** (`lerBeta`, `server/beta.ts`). Errar para a porta fechada. Os campos ausentes de um
+  documento parcial também caem no padrão.
+- **A vaga conta a conta, e não o login, e `ocupadas` nunca desce.** Conta encerrada perde a vaga e
+  os convites; a vaga só volta a existir no lançamento, quando o teto deixa de valer.
+- **`npm run beta`**, um script com subcomandos: sem argumento, a fase, as vagas, os convites por
+  status e a árvore (número, negócio, quem convidou, convites usados da cota, dias, situação);
+  `semear <contaId> [cota]` dá a cota e, se ela ainda não é fundadora, a próxima vaga, na mesma
+  transação, recusando quando o teto está cheio; `vagas <n>` muda o teto, nunca abaixo de
+  `ocupadas`. As duas contas que existem são semeadas à mão no deploy (`DEPLOY.md` § 16).
+
+**Consequência.** Uma coleção na raiz a mais, anotada no `CLAUDE.md`, no `firestore.rules` e no
+mapa `caminhos`. Nenhuma dependência.

@@ -28,6 +28,12 @@ export const esquemaCadastro = z.object({
    * 040-B, `#d191`) ou o rodapé de um cardápio (spec 114, `#d317`).
    */
   origem: z.enum(["calculadora", "cardapio"]).optional(),
+  /**
+   * O código do convite de fundadora, como veio do link ou do aparelho (spec
+   * 181). A rota lê com `lerCodigo`; `"convite"` em `Conta.origem` é a rota que
+   * grava, quando a troca acontece, e nunca o que o cliente diz.
+   */
+  convite: z.string().max(40).optional(),
 });
 
 /**
@@ -36,6 +42,11 @@ export const esquemaCadastro = z.object({
  * e-mail de boas-vindas e a biblioteca.
  */
 export const CHAVE_DA_ORIGEM = "rende:origem";
+/**
+ * Onde `/cadastro?convite=` guarda o código (spec 181): sobrevive à ida ao
+ * login e à volta do Google, que caem em `/cadastro` sem o parâmetro.
+ */
+export const CHAVE_DO_CONVITE = "rende:convite";
 export type Cadastro = z.infer<typeof esquemaCadastro>;
 
 /** `negocio` vazio vira o nome dela: quem ainda não tem marca é o negócio. */
@@ -119,7 +130,12 @@ export type FalhaCadastro =
   | "fora-de-forma" // corpo que não passa em `esquemaCadastro`
   | "sem-configuracao" // servidor sem credencial
   | "sem-resposta" // 5xx, timeout
-  | "sem-rede";
+  | "sem-rede"
+  // Fase BETA (spec 181), todas 403 e sem conta criada:
+  | "sem-convite"
+  | "convite-invalido" // não existe, cancelado ou de conta encerrada
+  | "convite-usado"
+  | "sem-vaga";
 
 export const MENSAGEM_FALHA_CADASTRO: Record<FalhaCadastro, string> = {
   "sem-acesso":
@@ -131,4 +147,13 @@ export const MENSAGEM_FALHA_CADASTRO: Record<FalhaCadastro, string> = {
     "O servidor demorou demais para abrir a sua conta. Tente de novo em instantes.",
   "sem-rede":
     "Abrir a conta precisa de internet. Conecte e toque em tentar de novo.",
+  // A tela que mostra estas direito, com a lista de espera, é a 182.
+  "sem-convite":
+    "O Rende está abrindo por convite. Peça o link a uma confeiteira que já usa.",
+  "convite-invalido":
+    "Esse convite não vale. Confira o código ou peça outro a quem te convidou.",
+  "convite-usado":
+    "Esse convite já abriu uma conta. Peça outro a quem te convidou.",
+  "sem-vaga":
+    "As vagas desta fase acabaram. Logo o Rende abre para todo mundo.",
 };
