@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Check, ChevronRight, TrendingDown } from "lucide-react";
+import { Porcao } from "@/components/marca/Marca";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { diaEmQueBateu } from "@/lib/domain/avisos";
@@ -99,17 +100,15 @@ export function CartaoDoMes() {
             />
           </>
         ) : (
-          <>
+          // A porção rosa é o que rendeu pra ela; prejuízo não se enfeita, e
+          // o caixa do mês sem pedido não é sobra.
+          rendeu !== null ? (
+            <Porcao>
+              <Dinheiro centavos={valor} tamanho="xl" className="text-ink" />
+            </Porcao>
+          ) : (
             <Dinheiro centavos={valor} tamanho="xl" className="text-ink" />
-            {/* O ponto marca o número que decide; prejuízo não se enfeita, e
-                o caixa do mês sem pedido não é o número que decide. */}
-            {rendeu !== null && (
-              <span
-                aria-hidden
-                className="inline-block size-2.5 shrink-0 rounded-full bg-accent-500"
-              />
-            )}
-          </>
+          )
         )}
       </p>
       <p className="text-label font-medium text-ink">

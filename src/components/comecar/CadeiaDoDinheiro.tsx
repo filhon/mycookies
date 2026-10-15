@@ -8,6 +8,7 @@ import {
   TrendingDown,
   TriangleAlert,
 } from "lucide-react";
+import { Porcao } from "@/components/marca/Marca";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Esqueleto } from "@/components/ui/Esqueleto";
 import { rotuloDaQuantidade } from "@/lib/domain/custoFicha";
@@ -193,15 +194,11 @@ function linhasDaCadeia({
         ) : (
           <>
             , e sobram{" "}
-            {/* O número que decide, e o único âmbar da seção (`DESIGN.md`,
+            {/* A porção rosa: o que sobra, e a única da seção (`DESIGN.md`,
                 Signature). */}
-            <span className="inline-flex items-center gap-1.5">
-              <span
-                aria-hidden
-                className="inline-block size-2.5 shrink-0 rounded-full bg-accent-500"
-              />
+            <Porcao>
               <Dinheiro centavos={preco.lucroUnitario} />
-            </span>{" "}
+            </Porcao>{" "}
             pra você.
           </>
         )}

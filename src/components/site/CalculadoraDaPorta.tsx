@@ -8,6 +8,7 @@ import {
 } from "@/components/fichas/FaixaDeComposicao";
 import { Campo } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
+import { Porcao } from "@/components/marca/Marca";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Pilulas } from "@/components/ui/Pilulas";
 import {
@@ -330,19 +331,19 @@ function Resultado({
               Preço sugerido · margem {margemDesejada}% + maquininha{" "}
               {taxaCartaoConsiderada.toLocaleString("pt-BR")}%
             </p>
-            <div className="mt-1 flex items-center gap-3">
+            <div className="mt-1">
               <Dinheiro
                 centavos={derivados.precoArredondado ?? 0}
                 tamanho="xl"
               />
-              {/* O ponto marca o número que decide, como no painel do editor. */}
-              <span
-                aria-hidden
-                className="size-3 shrink-0 rounded-full bg-accent-500"
-              />
             </div>
             <p className="mt-3 max-w-[48ch] text-label text-ink-muted">
-              Sobram <Valor centavos={sugerido.lucroUnitario} /> pra você, por
+              {/* A porção rosa, como no painel do editor. */}
+              Sobram{" "}
+              <Porcao>
+                <Valor centavos={sugerido.lucroUnitario} />
+              </Porcao>{" "}
+              pra você, por
               cookie, depois da maquininha.
             </p>
           </div>

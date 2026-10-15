@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TrendingDown } from "lucide-react";
+import { Porcao } from "@/components/marca/Marca";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import {
   rendimentoDoMes,
@@ -99,12 +100,10 @@ export function ResultadoDoMes({
           </p>
         ) : (
           <p className="mt-1 flex items-baseline gap-2">
-            <Dinheiro centavos={r.rendeu} tamanho="xl" className="text-ink" />
-            {/* O ponto marca o número que decide; prejuízo não se enfeita. */}
-            <span
-              aria-hidden
-              className="inline-block size-2.5 shrink-0 rounded-full bg-accent-500"
-            />
+            {/* A porção rosa é o que rendeu; prejuízo não se enfeita. */}
+            <Porcao>
+              <Dinheiro centavos={r.rendeu} tamanho="xl" className="text-ink" />
+            </Porcao>
           </p>
         )}
 

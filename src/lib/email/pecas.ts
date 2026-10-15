@@ -29,18 +29,20 @@ export interface Peca {
 
 // E-mail não lê variável de CSS: os tokens de `globals.css` escritos em hex,
 // o tema claro, e só aqui (`color-scheme: light only`, `#d203`).
-const PAPEL = "#F7F4EE";
-const FOLHA = "#FEFCF8";
-const LINHA = "#E1DCD3";
-const TINTA = "#22242E";
-const MUDO = "#6A6C78";
-const LINK = "#2A2C3A";
-const FAIXA = "#1C1E28"; // --brand-800
-const AMBAR = "#D89B3C"; // --accent-500
-const SOBRE_AMBAR = "#231A08";
-const NEGATIVO = "#B02A1C";
-const FUNDO_NEGATIVO = "#FADFDA";
-const POSITIVO = "#17724A";
+const PAPEL = "#F8F5F0";
+const FOLHA = "#FFFDFA";
+const LINHA = "#DCD9D2";
+const TINTA = "#121A2D";
+const MUDO = "#5B6375";
+const LINK = "#1C3891";
+const FAIXA = "#0D1F5B"; // --brand-800
+const COBALTO = "#1C3891"; // --brand-700, o botão
+const SOBRE_COBALTO = "#F6F3ED"; // --on-brand
+const ROSA = "#F190A7"; // --accent-500, a porção: só a sobra
+const SOBRE_ROSA = "#071335"; // --on-accent
+const NEGATIVO = "#AF2D18";
+const FUNDO_NEGATIVO = "#FFE2DB";
+const POSITIVO = "#1A763F";
 
 const CORPO =
   "Figtree,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
@@ -134,18 +136,14 @@ function texto(blocos: (string | false)[], pe: string): string {
   return `${blocos.filter(Boolean).join("\n\n")}\n\n-- \n${pe}\n${DOMINIO}\n`;
 }
 
-function ponto(tamanho: 9 | 12, margem: number): string {
-  return `<span aria-hidden="true" style="display:inline-block;width:${tamanho}px;height:${tamanho}px;border-radius:${Math.ceil(tamanho / 2)}px;background:${AMBAR};margin-left:${margem}px;"></span>`;
-}
-
-function titulo(html: string, margem: 20 | 28, comPonto = false): string {
-  return `<h1 class="titulo" style="margin:0 0 ${margem}px;font-family:${DISPLAY};font-size:30px;line-height:1.15;font-weight:700;letter-spacing:-0.02em;color:${TINTA};">${html}${comPonto ? ponto(9, 3) : ""}</h1>`;
+function titulo(html: string, margem: 20 | 28): string {
+  return `<h1 class="titulo" style="margin:0 0 ${margem}px;font-family:${DISPLAY};font-size:30px;line-height:1.15;font-weight:700;letter-spacing:-0.02em;color:${TINTA};">${html}</h1>`;
 }
 
 function botao(href: string, rotulo: string, margem: 24 | 28 = 28): string {
   return `<table role="presentation" class="botao" cellpadding="0" cellspacing="0" border="0" style="margin:${margem}px 0 0;">
-      <tr><td class="botao-td" bgcolor="${AMBAR}" style="border-radius:10px;">
-        <a href="${escapar(href)}" style="display:inline-block;padding:15px 24px;font-family:${CORPO};font-size:16px;line-height:22px;font-weight:600;color:${SOBRE_AMBAR};text-decoration:none;border-radius:10px;">${rotulo}</a>
+      <tr><td class="botao-td" bgcolor="${COBALTO}" style="border-radius:8px;">
+        <a href="${escapar(href)}" style="display:inline-block;padding:15px 24px;font-family:${CORPO};font-size:16px;line-height:22px;font-weight:600;color:${SOBRE_COBALTO};text-decoration:none;border-radius:8px;">${rotulo}</a>
       </td></tr>
     </table>`;
 }
@@ -185,15 +183,23 @@ function reais(centavos: Centavos): string {
   return `<span style="font-size:13px;font-weight:500;color:${MUDO};">R$</span> ${formatarValor(centavos)}`;
 }
 
-/** O número que decide, grande, com o ponto quando a notícia é boa. */
+/**
+ * O número que decide, grande. Quando é a sobra dela, vai na porção rosa
+ * (`#d381`); e-mail não inclina caixa, então a porção é reta.
+ */
 function numeroGrande(
   rotulo: string,
   centavos: Centavos,
-  comPonto: boolean,
+  sobra: boolean,
 ): string {
   const sinal = centavos < 0 ? "-" : "";
+  const tinta = sobra ? SOBRE_ROSA : TINTA;
+  const mudo = sobra ? SOBRE_ROSA : MUDO;
+  const porcao = sobra
+    ? `background:${ROSA};padding:2px 10px;border-radius:3px;display:inline-block;`
+    : "";
   return `<div style="font-size:14px;font-weight:500;color:${MUDO};margin:0 0 4px;">${rotulo}</div>
-    <div class="grande" style="font-family:${DISPLAY};font-size:44px;line-height:1.05;font-weight:700;letter-spacing:-0.02em;color:${TINTA};font-variant-numeric:tabular-nums;white-space:nowrap;">${sinal}<span style="font-family:${CORPO};font-size:20px;font-weight:600;letter-spacing:0;color:${MUDO};">R$</span> ${formatarValor(Math.abs(centavos))}${comPonto ? ponto(12, 10) : ""}</div>`;
+    <div class="grande" style="font-family:${DISPLAY};font-size:44px;line-height:1.05;font-weight:700;letter-spacing:-0.02em;color:${tinta};font-variant-numeric:tabular-nums;white-space:nowrap;${porcao}">${sinal}<span style="font-family:${CORPO};font-size:20px;font-weight:600;letter-spacing:0;color:${mudo};">R$</span> ${formatarValor(Math.abs(centavos))}</div>`;
 }
 
 function plural(n: number, um: string, varios: string): string {
@@ -256,7 +262,7 @@ export function boasVindas(d: DadosBoasVindas): Peca {
       assunto,
       preheader,
       corpo: `
-    ${titulo(`Oi, ${escapar(d.nome)}`, 20, true)}
+    ${titulo(`Oi, ${escapar(d.nome)}`, 20)}
 
     <p style="margin:0 0 16px;">Você tem ${DIAS_DE_TESTE} dias de teste grátis, até <strong style="font-weight:600;">${ate}</strong>.</p>
 
@@ -309,7 +315,7 @@ export function senhaNova(d: DadosSenhaNova): Peca {
       assunto,
       preheader,
       corpo: `
-    ${titulo("Senha nova", 20, true)}
+    ${titulo("Senha nova", 20)}
 
     <p style="margin:0;">Alguém pediu uma senha nova para a conta <strong style="font-weight:600;">${escapar(d.email)}</strong> no Rende. Se foi você, toque no botão e escolha a senha nova. Depois disso você já entra.</p>
 
@@ -373,7 +379,7 @@ export function senhaTrocada(d: DadosSenhaTrocada): Peca {
       assunto,
       preheader,
       corpo: `
-    ${titulo("Senha trocada", 20, true)}
+    ${titulo("Senha trocada", 20)}
 
     <p style="margin:0 0 16px;">A senha da conta <strong style="font-weight:600;">${escapar(d.email)}</strong> no Rende foi trocada em ${quando}. ${tudoCerto}</p>
 
@@ -599,7 +605,7 @@ export function metaBatida(d: DadosMetaBatida): Peca {
       corpo: `
     ${titulo(`Meta de ${mes} batida.`, 28)}
 
-    ${numeroGrande(rotulo, d.entrou, true)}
+    ${numeroGrande(rotulo, d.entrou, false)}
     <div style="font-size:15px;color:${TINTA};margin:8px 0 0;">${
       acima > 0
         ? `<strong style="font-weight:600;">${formatarMoeda(acima)} acima</strong> da meta de ${formatarMoeda(d.alvo)}.`

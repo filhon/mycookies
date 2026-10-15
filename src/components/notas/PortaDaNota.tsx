@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import { Simbolo } from "@/components/marca/Marca";
 import { Botao } from "@/components/ui/Botao";
-import { TituloAssinado } from "@/components/ui/EstadoVazio";
 import { Selo } from "@/components/ui/Selo";
 import { rotuloDiaNoAno } from "@/lib/domain/datas";
 import { formatarMoeda } from "@/lib/domain/money";
@@ -162,7 +161,7 @@ export function PortaDaNota({
       >
         <div>
           <h2 className="font-display text-display font-semibold text-ink">
-            <TituloAssinado titulo="A compra inteira numa foto." />
+            A compra inteira numa foto.
           </h2>
           <p className="mt-2 max-w-[46ch] text-body text-ink-muted">
             Cada linha vira material, com o preço e a data da compra. Você

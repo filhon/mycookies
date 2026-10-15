@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { Dinheiro } from "@/components/ui/Dinheiro";
-import { TituloAssinado } from "@/components/ui/EstadoVazio";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import type { AchadosDaContagem } from "@/lib/domain/estoque";
 import { formatarMoeda } from "@/lib/domain/money";
@@ -36,7 +35,7 @@ export function ResumoDaContagem({
     <div className="mt-6 space-y-8 pb-12">
       <div>
         <h2 className="font-display text-title font-semibold text-ink">
-          <TituloAssinado titulo="Contagem salva." />
+          Contagem salva.
         </h2>
         <p className="mt-2 max-w-[62ch] text-body text-ink-muted">
           {materiais(contadas)} com a data de hoje.

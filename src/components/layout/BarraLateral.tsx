@@ -36,9 +36,11 @@ import { cn } from "@/lib/utils/cn";
 
 /**
  * O cromo assume a tinta da marca por inteiro. É aqui que a marca fala alto,
- * para que a área de dados possa ficar calma. Item ativo com fundo cheio, e
- * nunca uma faixa lateral (`DECISOES.md#d125`). O nome do negócio no topo, os
- * sete destinos no meio e o prazo do teste no pé (`#d236`).
+ * para que a área de dados possa ficar calma. Item ativo com fundo cheio e a
+ * faixa de papel de 3px à esquerda (`DECISOES.md#d381`, que revoga o "sem
+ * faixa" do `#d125`). O anel de foco é papel: o `brand-500` sobre o cobalto
+ * reprova. O nome do negócio no topo, os sete destinos no meio e o prazo do
+ * teste no pé (`#d236`).
  */
 export function BarraLateral() {
   const caminho = usePathname();
@@ -95,7 +97,7 @@ export function BarraLateral() {
   }
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-brand-800 text-on-brand lg:flex print:hidden">
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-brand-800 text-on-brand [--focus:var(--on-brand)] lg:flex print:hidden">
       {/* O logotipo sozinho na linha dele: 32px é abaixo do mínimo do símbolo,
           e a marca não tem descritor. O nome embaixo diz de quem é a conta,
           que é a primeira coisa que a ajudante confere (`#d236`). */}
@@ -209,13 +211,13 @@ export function BarraLateral() {
 /** Destinos em `body`, com o ativo em 600; o pé em `label`, sempre 500. */
 function classesDoItem(ativo: boolean, pe: boolean): string {
   return cn(
-    "toque flex w-full items-center gap-3 rounded-md px-3 py-2.5",
+    "toque relative flex w-full items-center gap-3 rounded-md px-3 py-2.5",
     "transition-colors duration-150 ease-quart",
     pe
       ? "text-label font-medium"
       : cn("text-body", ativo ? "font-semibold" : "font-medium"),
     ativo
-      ? "bg-brand-700 text-on-brand"
+      ? "bg-brand-700 text-on-brand before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-r-full before:bg-on-brand"
       : "text-on-brand-muted hover:bg-brand-600 hover:text-on-brand",
   );
 }

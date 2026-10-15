@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -82,11 +82,30 @@ export function Simbolo({
           className="simbolo-rosa"
         />
         {abrindo &&
-          CORTES.map((pontos) => (
-            <polygon key={pontos} points={pontos} className="simbolo-corte" />
+          CORTES.map((pontos, i) => (
+            <polygon
+              key={pontos}
+              points={pontos}
+              className="simbolo-corte"
+              style={{ animationDelay: `${120 + i * 60}ms` }}
+            />
           ))}
       </g>
     </svg>
+  );
+}
+
+/**
+ * A porção rosa: o valor que sobra pra ela, e só ele (`MARCA.md` § 2.2). Uma
+ * por tela, nunca em prejuízo, nunca em botão. A caixa leva o corte de 8°; o
+ * texto fica reto. `sobre-rosa` passa a tinta de dentro (o "R$" do `Dinheiro`
+ * também) para `on-accent`.
+ */
+export function Porcao({ children }: { children: ReactNode }) {
+  return (
+    <span className="sobre-rosa inline-block -skew-x-8 rounded-[3px] bg-accent-500 px-[0.3em] text-ink">
+      <span className="inline-block skew-x-8">{children}</span>
+    </span>
   );
 }
 
@@ -124,7 +143,7 @@ export function Logotipo({
       aria-label="Rende"
       className={cn(
         "shrink-0",
-        tamanho === "lg" ? "h-9 w-[135px]" : "h-[26px] w-[97px]",
+        tamanho === "lg" ? "h-9 w-33.75" : "h-6.5[97px]",
         COR[tom],
         className,
       )}

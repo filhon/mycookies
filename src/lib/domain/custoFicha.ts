@@ -534,7 +534,7 @@ export interface Segmento {
   centavos: Centavos;
   /** A fatia do lote, de 0 a 1. Somam 1 dentro do arredondamento. */
   fracao: number;
-  /** O segmento âmbar. Só o trabalho dela. */
+  /** O segmento em destaque (cobalto). Só o trabalho dela. */
   destaque: boolean;
 }
 

@@ -5,9 +5,9 @@ export type VarianteBotao =
 export type TamanhoBotao = "sm" | "md" | "lg";
 
 const VARIANTES: Record<VarianteBotao, string> = {
-  // O ponto: âmbar com tinta escura. É o único botão âmbar da tela.
+  // Cobalto com papel. Um por tela; o rosa nunca é botão (`#d381`).
   primaria:
-    "bg-accent-500 text-on-accent hover:bg-accent-600 active:bg-accent-600 disabled:bg-accent-500",
+    "bg-brand-700 text-on-brand hover:bg-brand-600 active:bg-brand-800 disabled:bg-brand-700",
   secundaria:
     "border border-line-strong bg-transparent text-ink hover:bg-sunken active:bg-line",
   terciaria:
@@ -15,7 +15,7 @@ const VARIANTES: Record<VarianteBotao, string> = {
   // Nunca a marca: ela não pode significar destruição.
   perigo:
     "border border-negative/40 bg-transparent text-negative hover:bg-negative-soft active:bg-negative-soft",
-  // O primário do cardápio público: a cor dela, e não o âmbar do Rende (`#d166`).
+  // O primário do cardápio público: a cor dela, e não o cobalto do Rende (`#d166`).
   loja: "bg-loja text-on-loja hover:brightness-95 active:brightness-90",
 };
 

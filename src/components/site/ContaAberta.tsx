@@ -2,6 +2,7 @@ import {
   FaixaDeComposicao,
   Parcela,
 } from "@/components/fichas/FaixaDeComposicao";
+import { Porcao } from "@/components/marca/Marca";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { composicaoDoLote } from "@/lib/domain/custoFicha";
 import { EXEMPLO, type ExemploDePagina } from "@/lib/domain/exemplo";
@@ -100,16 +101,8 @@ export function ContaAberta({
             Preço sugerido · margem {parametros.margemDesejada}% + maquininha{" "}
             {parametros.taxaCartaoConsiderada}%
           </p>
-          <div className="mt-1 flex items-center gap-3">
+          <div className="mt-1">
             <Dinheiro centavos={sugerido.precoArredondado} tamanho="xl" />
-            {/* O ponto marca o número que decide, como no painel do editor. */}
-            <span
-              aria-hidden
-              className={cn(
-                "size-3 shrink-0 rounded-full bg-accent-500",
-                !parada && "conta-que-abre-ponto",
-              )}
-            />
           </div>
           <p className="mt-3 max-w-[48ch] text-label text-ink-muted">
             {/* Sem preço de hoje no rascunho, o praticado é o sugerido. */}
@@ -124,9 +117,18 @@ export function ContaAberta({
               </>
             )}{" "}
             sobram{" "}
-            <span className="num font-semibold text-ink">
-              {formatarMoeda(lucroUnitario)}
-            </span>{" "}
+            {/* A porção rosa, como no painel do editor; prejuízo não leva. */}
+            {lucroUnitario > 0 ? (
+              <Porcao>
+                <span className="num font-semibold text-ink">
+                  {formatarMoeda(lucroUnitario)}
+                </span>
+              </Porcao>
+            ) : (
+              <span className="num font-semibold text-ink">
+                {formatarMoeda(lucroUnitario)}
+              </span>
+            )}{" "}
             {`pra você, por ${unidade.singular}, depois da maquininha.`}
           </p>
         </div>

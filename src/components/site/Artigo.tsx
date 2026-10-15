@@ -110,7 +110,7 @@ export function Passos({
                 className={cn(
                   "font-semibold",
                   passo.parcela === "custoMaoDeObra"
-                    ? "text-accent-ink"
+                    ? "text-brand-ink"
                     : "text-ink",
                 )}
               >

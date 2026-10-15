@@ -416,6 +416,18 @@
 }
 
 /**
+ * Dentro da porção rosa (`Porcao` em `Marca.tsx`): toda tinta vira
+ * `on-accent`, o "R$" apagado também, porque sobre o rosa o `ink-muted`
+ * reprova. Funciona dentro de `sobre-marca`, que é onde o painel de preço das
+ * páginas públicas a usa.
+ */
+@utility sobre-rosa {
+  --ink: var(--on-accent);
+  --ink-muted: var(--on-accent);
+  --ink-subtle: var(--on-accent);
+}
+
+/**
  * A folha do orçamento: um A4 que é a mesma coisa na tela e no papel.
  *
  * Papel não tem modo noturno. Os tokens de superfície e tinta são redeclarados
@@ -474,32 +486,28 @@
  * `no-preference`: com movimento reduzido nada se mexe, e o que fica é o
  * quadro final, sem nada escondido esperando um atraso.
  *
- * A conta abrindo: os segmentos da faixa crescem da esquerda, um depois do
- * outro, e o ponto do preço chega por último.
+ * A conta abrindo: as porções da faixa crescem da esquerda, uma depois da
+ * outra (a fileira inclinada mora dentro do recorte da faixa).
  */
 @media (prefers-reduced-motion: no-preference) {
-  .conta-que-abre > span {
+  .conta-que-abre span {
     transform-origin: left;
     animation: conta-que-abre 420ms var(--ease-quart) backwards;
   }
-  .conta-que-abre > span:nth-child(2) {
+  .conta-que-abre span:nth-child(2) {
     animation-delay: 140ms;
   }
-  .conta-que-abre > span:nth-child(3) {
+  .conta-que-abre span:nth-child(3) {
     animation-delay: 280ms;
   }
-  .conta-que-abre > span:nth-child(4) {
+  .conta-que-abre span:nth-child(4) {
     animation-delay: 420ms;
   }
-  .conta-que-abre > span:nth-child(5) {
+  .conta-que-abre span:nth-child(5) {
     animation-delay: 560ms;
   }
-  .conta-que-abre > span:nth-child(n + 6) {
+  .conta-que-abre span:nth-child(n + 6) {
     animation-delay: 700ms;
-  }
-
-  .conta-que-abre-ponto {
-    animation: conta-que-abre-ponto 220ms var(--ease-quart) 1000ms backwards;
   }
 }
 
@@ -509,10 +517,37 @@
   }
 }
 
-@keyframes conta-que-abre-ponto {
+/**
+ * A abertura do app (`Simbolo abrindo`, `DESIGN.md` § Motion): a assadeira
+ * inteira em papel sobre o cobalto, os três cortes abrindo da esquerda para a
+ * direita, 60ms cada, e a última porção virando rosa. O estado parado é o
+ * símbolo cortado: com movimento reduzido é ele que aparece, pronto.
+ */
+.simbolo-corte {
+  transform: scaleX(0);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* O atraso de cada corte vem no `style` dele: 120, 180 e 240ms. */
+  .simbolo-abrindo .simbolo-corte {
+    animation: simbolo-corte 60ms var(--ease-quart) backwards;
+  }
+  .simbolo-abrindo .simbolo-rosa {
+    animation: simbolo-rosa 180ms var(--ease-quart) 300ms backwards;
+  }
+}
+
+@keyframes simbolo-corte {
   from {
-    opacity: 0;
-    transform: scale(0.6);
+    transform: scaleX(1);
+  }
+}
+
+@keyframes simbolo-rosa {
+  from {
+    fill: currentColor;
   }
 }
 
@@ -574,8 +609,8 @@
 
 /**
  * O chute riscado: o traço da caneta sobre o preço que ela cobra hoje,
- * desenhado da esquerda uma vez. Em `--ink` e nunca em âmbar: o ponto é o
- * único âmbar do topo.
+ * desenhado da esquerda uma vez. Em `--ink` e nunca em rosa: o rosa é só a
+ * sobra.
  */
 .chute-riscado {
   stroke-width: max(2.5px, 0.07em);

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { TrendingDown, TriangleAlert } from "lucide-react";
 import { Dinheiro } from "@/components/ui/Dinheiro";
-import { TituloAssinado } from "@/components/ui/EstadoVazio";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import type { AchadosDoPote } from "@/lib/domain/cardapio";
 import { SUFIXO_UNIDADE_RENDIMENTO } from "@/lib/domain/custoFicha";
@@ -62,7 +61,7 @@ export function ResumoDoPote({
     <div className="mt-6 space-y-8 pb-12">
       <div>
         <h2 className="font-display text-title font-semibold text-ink">
-          <TituloAssinado titulo="Contagem salva." />
+          Contagem salva.
         </h2>
         <p className="mt-2 max-w-[62ch] text-body text-ink-muted">
           {produtos(contadas)} com a data de hoje.

@@ -85,9 +85,11 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
 
   if (carregando) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-canvas">
-        {/* Indicador de estado, e não decoração: o pulso é o que diz "carregando". */}
-        <Simbolo className="size-12 animate-pulse" />
+      // A abertura do app (`DESIGN.md` § Motion): cobalto cheio, a assadeira
+      // em papel abrindo em porções. Com movimento reduzido, ela já chega
+      // cortada.
+      <div className="flex min-h-dvh items-center justify-center bg-brand-700">
+        <Simbolo tom="negativa" abrindo className="size-16" />
         <span className="sr-only">Carregando</span>
       </div>
     );

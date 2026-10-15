@@ -73,9 +73,10 @@ function ItemDestino({
       }}
       className={cn(
         CLASSES_ITEM,
-        // `accent-ink`, e não `accent-500`: o âmbar sobre a superfície
-        // reprova AA (~2,3:1). Inativo em `ink-muted`.
-        ativo ? "text-accent-ink" : "text-ink-muted",
+        // `brand-ink`: o `brand-700` no claro e o cobalto claro no escuro,
+        // onde o `brand-700` sobre a superfície reprova (~1,6:1, `#d381`).
+        // Inativo em `ink-muted`.
+        ativo ? "text-brand-ink" : "text-ink-muted",
       )}
     >
       <Pilula ativo={ativo}>
@@ -122,7 +123,7 @@ function MaisPaginas({
         onClick={() => setAberta(true)}
         className={cn(
           CLASSES_ITEM,
-          ativo ? "text-accent-ink" : "text-ink-muted",
+          ativo ? "text-brand-ink" : "text-ink-muted",
         )}
       >
         <Pilula ativo={ativo}>
@@ -148,7 +149,7 @@ function MaisPaginas({
                   className={cn(
                     "toque flex min-h-13 w-full items-center gap-3 rounded-md px-3 py-2 text-body font-medium transition-colors duration-150 ease-quart",
                     aqui
-                      ? "bg-brand-100 text-accent-ink"
+                      ? "bg-brand-100 text-brand-ink"
                       : "text-ink hover:bg-sunken",
                   )}
                 >

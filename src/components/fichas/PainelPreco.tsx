@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Realce } from "@/components/ui/Realce";
+import { Porcao } from "@/components/marca/Marca";
 import { RodapeFixo } from "@/components/ui/RodapeFixo";
 import type { DerivadosFicha } from "@/lib/domain/custoFicha";
 import {
@@ -209,21 +210,19 @@ function MioloPreco({
       };
     }
 
-    // O ponto âmbar marca o número que decide: é a assinatura da marca, e
-    // este é o único lugar do app em que ele marca dado. Nos casos de atenção
-    // ele sai, porque o triângulo é quem fala (`MARCA.md` § 2.2).
+    // A porção rosa marca o que sobra pra ela (`MARCA.md` § 2.2). Nos casos
+    // de atenção e de prejuízo ela sai: quem fala é o ícone.
     return {
       tom: "positivo",
       correcao: false,
-      icone: (
-        <span
-          aria-hidden
-          className="mt-1 size-2.5 shrink-0 rounded-full bg-accent-500"
-        />
-      ),
+      icone: null,
       mensagem: (
         <>
-          Sobram <Realce>{formatarMoeda(lucro)}</Realce> por unidade depois da
+          Sobram{" "}
+          <Porcao>
+            <Realce>{formatarMoeda(lucro)}</Realce>
+          </Porcao>{" "}
+          por unidade depois da
           maquininha. É{" "}
           <Realce>{formatarPercentual(verificacao.margemReal)}</Realce> do
           preço, ou{" "}

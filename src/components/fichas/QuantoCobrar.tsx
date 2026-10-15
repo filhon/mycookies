@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { orderBy, query, where } from "firebase/firestore";
 import { TrendingDown } from "lucide-react";
+import { Porcao } from "@/components/marca/Marca";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { EsqueletoLista } from "@/components/ui/Esqueleto";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -14,7 +15,6 @@ import { lerPedidoDeBusca } from "@/lib/domain/precificacao";
 import { colFichas, colInsumos } from "@/lib/firebase/colecoes";
 import { useColecao } from "@/lib/hooks/useColecao";
 import type { Centavos, FichaTecnica, Insumo } from "@/lib/types";
-import { cn } from "@/lib/utils/cn";
 import { useContaId } from "@/providers/AuthProvider";
 import { ID_FICHA_NOVA } from "./EditorFicha";
 
@@ -109,9 +109,9 @@ export function QuantoCobrar({ busca }: { busca: string }) {
                 sobraUnitaria={
                   hojes.get(ficha.id)?.sobra ?? ficha.precificacao.lucroUnitario
                 }
-                // Só na primeira: é o número que ela vai mandar, e o ponto é
-                // único na tela (o mês não está nela enquanto a busca está).
-                comPonto={indice === 0}
+                // Só na primeira: é a resposta, e a porção é única na tela
+                // (o mês não está nela enquanto a busca está).
+                comPorcao={indice === 0}
               />
             ))}
           </ul>
@@ -134,12 +134,12 @@ function LinhaQuantoCobrar({
   ficha,
   quantidade,
   sobraUnitaria,
-  comPonto,
+  comPorcao,
 }: {
   ficha: FichaTecnica;
   quantidade: number;
   sobraUnitaria: Centavos;
-  comPonto: boolean;
+  comPorcao: boolean;
 }) {
   const preco = ficha.precificacao.precoVenda;
   const total = Math.round(quantidade * preco);
@@ -162,17 +162,8 @@ function LinhaQuantoCobrar({
           </span>
         </span>
 
-        <span className="mt-0.5 flex items-center justify-end gap-2">
+        <span className="mt-0.5 flex justify-end">
           <Dinheiro centavos={total} tamanho="lg" className="text-ink" />
-          {/* Nas outras linhas o lugar do ponto fica vazio: os totais
-              alinham em coluna. */}
-          <span
-            aria-hidden
-            className={cn(
-              "inline-block size-2.5 shrink-0 rounded-full",
-              comPonto && "bg-accent-500",
-            )}
-          />
         </span>
 
         {sobra < 0 ? (
@@ -193,9 +184,17 @@ function LinhaQuantoCobrar({
         ) : (
           <span className="mt-0.5 block text-label text-ink-muted">
             sobram{" "}
-            <span className="num font-semibold text-ink">
-              {formatarMoeda(sobra)}
-            </span>{" "}
+            {comPorcao ? (
+              <Porcao>
+                <span className="num font-semibold text-ink">
+                  {formatarMoeda(sobra)}
+                </span>
+              </Porcao>
+            ) : (
+              <span className="num font-semibold text-ink">
+                {formatarMoeda(sobra)}
+              </span>
+            )}{" "}
             pra você{maquininha && ", depois da maquininha"}
           </span>
         )}

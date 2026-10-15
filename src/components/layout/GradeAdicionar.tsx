@@ -253,7 +253,7 @@ export function GradeAdicionar() {
         onPointerCancel={aoCancelar}
         onClick={aoClicar}
         onContextMenu={(evento) => evento.preventDefault()}
-        className="flex size-12 touch-none select-none items-center justify-center rounded-full bg-accent-500 text-on-accent transition-colors duration-150 ease-quart [-webkit-touch-callout:none] hover:bg-accent-600 active:bg-accent-600"
+        className="flex size-12 touch-none select-none items-center justify-center rounded-full bg-brand-700 text-on-brand transition-colors duration-150 ease-quart [-webkit-touch-callout:none] hover:bg-brand-600 active:bg-brand-800"
       >
         <Plus
           aria-hidden
