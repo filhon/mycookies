@@ -1,7 +1,7 @@
 "use client";
 
 import { Send } from "lucide-react";
-import { classesBotao } from "@/components/ui/estilosBotao";
+import { classesBotao, type VarianteBotao } from "@/components/ui/estilosBotao";
 import { linkDoWhatsApp } from "@/lib/domain/whatsapp";
 
 /**
@@ -15,6 +15,7 @@ export function MandarAPagina({
   texto,
   url,
   rotulo = "Mandar pelo WhatsApp",
+  variante,
 }: {
   titulo: string;
   /** A frase antes do endereço. O endereço vai separado ao `share`, que o junta sozinho. */
@@ -22,6 +23,8 @@ export function MandarAPagina({
   /** Absoluto, sem `#`. */
   url: string;
   rotulo?: string;
+  /** Secundário por padrão; o convite da 183 o faz primário na primeira linha. */
+  variante?: VarianteBotao;
 }) {
   function mandar(e: React.MouseEvent<HTMLAnchorElement>) {
     if (typeof navigator.share !== "function") return;
@@ -35,7 +38,7 @@ export function MandarAPagina({
       target="_blank"
       rel="noopener noreferrer"
       onClick={mandar}
-      className={classesBotao({ className: "w-full sm:w-auto" })}
+      className={classesBotao({ variante, className: "w-full sm:w-auto" })}
     >
       <Send aria-hidden className="size-5" strokeWidth={1.75} />
       {rotulo}

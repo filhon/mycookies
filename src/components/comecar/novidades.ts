@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-15",
+    titulo: "Os seus convites do beta, prontos pra mandar",
+    frase:
+      "Em Configuração, cada convite vira um link com o seu nome. Escreva pra quem é, se quiser, e mande pelo WhatsApp. Quando ela entra, a sua lista mostra.",
+    href: "/configuracao#convites",
+  },
+  {
+    dataISO: "2026-10-15",
     titulo: "A cliente pede de novo pelo link do pedido entregue",
     frase:
       "Depois da entrega, o link leva ao seu cardápio, ou ao seu WhatsApp com o pedido anterior escrito, e ao seu Instagram. Colado na conversa, o link mostra o seu logo.",

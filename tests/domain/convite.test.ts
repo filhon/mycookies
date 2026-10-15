@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   ALFABETO_DO_CONVITE,
+  convitesLivres,
+  estadoDoConvite,
   formatarCodigo,
+  fraseDaVaga,
+  mensagemDoConvite,
   gerarCodigo,
   lerCodigo,
   TAMANHO_DO_CODIGO,
@@ -69,5 +73,95 @@ describe("formatarCodigo e lerCodigo", () => {
     "K7Q3M9XÁ",
   ])("lerCodigo(%j) é null", (texto) => {
     expect(lerCodigo(texto)).toBeNull();
+  });
+});
+
+describe("convitesLivres", () => {
+  const de = (...status: string[]) => status.map((s) => ({ status: s }));
+
+  it("conta abertos e usados contra a cota, e o cancelado devolve a vaga", () => {
+    expect(convitesLivres(5, [])).toBe(5);
+    expect(convitesLivres(5, de("ABERTO", "USADO", "CANCELADO"))).toBe(3);
+    expect(
+      convitesLivres(5, de("USADO", "USADO", "USADO", "USADO", "USADO")),
+    ).toBe(0);
+  });
+
+  it("nunca fica negativo quando a cota baixou depois de usada", () => {
+    expect(convitesLivres(2, de("USADO", "USADO", "ABERTO"))).toBe(0);
+  });
+});
+
+describe("mensagemDoConvite", () => {
+  it("chama pelo nome quando ela escreveu", () => {
+    expect(mensagemDoConvite("Ana")).toBe(
+      "Oi, Ana! Tô usando o Rende pra calcular o preço dos meus doces e organizar os pedidos. Ele está em beta fechado, só entra quem é convidada, e eu guardei uma das minhas vagas pra você:",
+    );
+  });
+
+  it("sem nome, ou só com espaço, diz só Oi", () => {
+    expect(mensagemDoConvite()).toMatch(/^Oi! Tô usando/);
+    expect(mensagemDoConvite("  ")).toMatch(/^Oi! Tô usando/);
+  });
+});
+
+describe("estadoDoConvite", () => {
+  const beta = { fase: "BETA" as const, vagas: 100, ocupadas: 40 };
+  const ativa = { status: "ATIVA" };
+
+  it("aberto, com conta viva e vaga: aberto", () => {
+    expect(estadoDoConvite({ status: "ABERTO" }, ativa, beta)).toBe("aberto");
+  });
+
+  it("aberto, sem vaga: sem-vaga", () => {
+    expect(
+      estadoDoConvite({ status: "ABERTO" }, ativa, { ...beta, ocupadas: 100 }),
+    ).toBe("sem-vaga");
+  });
+
+  it("usado, cancelado, inexistente e de conta encerrada são o mesmo estado", () => {
+    expect(estadoDoConvite({ status: "USADO" }, ativa, beta)).toBe("nao-vale");
+    expect(estadoDoConvite({ status: "CANCELADO" }, ativa, beta)).toBe(
+      "nao-vale",
+    );
+    expect(estadoDoConvite(null, null, beta)).toBe("nao-vale");
+    expect(
+      estadoDoConvite({ status: "ABERTO" }, { status: "ENCERRADA" }, beta),
+    ).toBe("nao-vale");
+    expect(estadoDoConvite({ status: "ABERTO" }, null, beta)).toBe("nao-vale");
+  });
+
+  it("na fase PUBLICO, qualquer convite vira publico", () => {
+    const publico = { ...beta, fase: "PUBLICO" as const };
+    expect(estadoDoConvite(null, null, publico)).toBe("publico");
+    expect(estadoDoConvite({ status: "ABERTO" }, ativa, publico)).toBe(
+      "publico",
+    );
+  });
+});
+
+describe("fraseDaVaga", () => {
+  it("nomeia a convidada, a fundadora pelo primeiro nome e o negócio", () => {
+    expect(
+      fraseDaVaga({
+        paraQuem: "Ana",
+        proprietaria: "Maynara Silva",
+        negocio: "MyCookie's",
+      }),
+    ).toBe(
+      "Ana, a Maynara, da MyCookie's, guardou uma vaga do Rende pra você.",
+    );
+  });
+
+  it("sem para quem, começa pela fundadora", () => {
+    expect(
+      fraseDaVaga({ proprietaria: "Maynara", negocio: "MyCookie's" }),
+    ).toBe("A Maynara, da MyCookie's, guardou uma vaga do Rende pra você.");
+  });
+
+  it("sem negócio próprio, não repete o nome dela", () => {
+    expect(
+      fraseDaVaga({ proprietaria: "Maynara Silva", negocio: "Maynara Silva" }),
+    ).toBe("A Maynara guardou uma vaga do Rende pra você.");
   });
 });

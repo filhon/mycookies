@@ -1,4 +1,11 @@
-import { caminhos, VERSAO_SCHEMA, type EstadoDoBeta } from "@/lib/types";
+import { lerCodigo } from "@/lib/domain/convite";
+import {
+  caminhos,
+  VERSAO_SCHEMA,
+  type Conta,
+  type Convite,
+  type EstadoDoBeta,
+} from "@/lib/types";
 import { adminDb, credencialDisponivel } from "./firebaseAdmin";
 
 /** O que vale sem o documento: a porta fechada (spec 181). */
@@ -33,5 +40,48 @@ export async function lerBeta(): Promise<EstadoDoBeta> {
     return comoEstadoDoBeta(snap.data() as Partial<EstadoDoBeta> | undefined);
   } catch {
     return BETA_PADRAO;
+  }
+}
+
+/** O convite e quem o mandou, como a página `/convite/{codigo}` precisa. */
+export interface ConviteLido {
+  convite: Pick<Convite, "status" | "paraQuem"> | null;
+  /** A conta de quem convida. `null` quando o convite não existe. */
+  conta: Pick<Conta, "status" | "proprietaria" | "nome"> | null;
+}
+
+const NADA: ConviteLido = { convite: null, conta: null };
+
+/**
+ * O convite pelo grupo de coleção (spec 183), e a conta de quem convida, o avô
+ * do documento. Código fora da forma, servidor sem credencial ou leitura que
+ * falha: nada, e a página diz que o convite não vale.
+ */
+export async function lerConvite(texto: string): Promise<ConviteLido> {
+  const codigo = lerCodigo(texto);
+  if (!codigo || !credencialDisponivel()) return NADA;
+  try {
+    const achados = await adminDb()
+      .collectionGroup(caminhos.grupoConvites)
+      .where("codigo", "==", codigo)
+      .limit(1)
+      .get();
+    const doc = achados.docs[0];
+    const dona = doc?.ref.parent.parent;
+    if (!doc || !dona) return NADA;
+    const conta = (await dona.get()).data() as Conta | undefined;
+    const convite = doc.data() as Convite;
+    return {
+      convite: { status: convite.status, paraQuem: convite.paraQuem },
+      conta: conta
+        ? {
+            status: conta.status,
+            proprietaria: conta.proprietaria,
+            nome: conta.nome,
+          }
+        : null,
+    };
+  } catch {
+    return NADA;
   }
 }

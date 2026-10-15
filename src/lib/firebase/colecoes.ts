@@ -14,6 +14,7 @@ import type {
   Cliente,
   ConfiguracaoGeral,
   Conta,
+  Convite,
   DadosMei,
   FichaTecnica,
   Fornada,
@@ -77,6 +78,9 @@ export const colFornadas = (contaId: string) =>
 /** Só leitura do cliente: quem escreve é `/api/conta/membros` (`DECISOES.md#d155`). */
 export const colMembros = (contaId: string) =>
   col<Membro>(caminhos.membros(contaId));
+/** Só leitura do cliente: quem escreve é `/api/convites` (spec 183, `#d399`). */
+export const colConvites = (contaId: string) =>
+  col<Convite & { id: string }>(caminhos.convites(contaId));
 /** Quem escreve é `lib/firebase/avisos.ts`, e o servidor só desliga (`#d323`). */
 export const colAparelhos = (contaId: string) =>
   col<AparelhoDeAviso>(caminhos.aparelhos(contaId));

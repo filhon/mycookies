@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Ellipsis } from "lucide-react";
+import { Ellipsis, Gift } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Painel } from "@/components/ui/Painel";
-import { usePapel } from "@/providers/AuthProvider";
+import { useBeta } from "@/lib/hooks/useBeta";
+import { useAuth, usePapel } from "@/providers/AuthProvider";
 import { GradeAdicionar } from "./GradeAdicionar";
 import {
   DESTINOS_DO_CELULAR,
@@ -169,10 +170,29 @@ function MaisPaginas({
   );
 }
 
+/** "Convidar" (spec 183): leva a "Seus convites", na configuração. */
+const CONVIDAR: Destino = {
+  href: "/configuracao#convites",
+  rotulo: "Convidar",
+  icone: Gift,
+};
+
+/** As mesmas condições da seção: dona, com cota, na fase `BETA`. */
+function useConvidar(papel: string): boolean {
+  const { conta } = useAuth();
+  const beta = useBeta();
+  return (
+    papel === "DONA" &&
+    (conta?.beta?.convites ?? 0) > 0 &&
+    beta?.fase === "BETA"
+  );
+}
+
 export function NavegacaoInferior() {
   const caminho = usePathname();
   const papel = usePapel();
   const esperaDoCardapio = useEsperaDoCardapio();
+  const convidar = useConvidar(papel);
 
   if (semNavegacaoInferior(caminho)) return null;
 
@@ -204,7 +224,10 @@ export function NavegacaoInferior() {
         {destino(terceiro)}
         <li className="flex-1">
           <MaisPaginas
-            destinos={destinosDo(papel, DESTINOS_DO_MAIS)}
+            destinos={[
+              ...destinosDo(papel, DESTINOS_DO_MAIS),
+              ...(convidar ? [CONVIDAR] : []),
+            ]}
             caminho={caminho}
           />
         </li>

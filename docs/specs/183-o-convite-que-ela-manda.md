@@ -128,12 +128,12 @@ passa a "Aceitar o convite". A falha do POST volta à tela do beta da 182 com a 
 
 ## Critérios de aceite
 
-- [ ] Cinco convites por fundadora, nunca mais, contando os usados.
-- [ ] Um link por pessoa, com prévia própria.
-- [ ] Os quatro estados de convite que não vale dizem a mesma frase.
-- [ ] `/convite/*` fora do `sitemap` e com `noindex`.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] Decisões registradas; `ESTADO.md` e `novidades.ts` atualizados.
+- [x] Cinco convites por fundadora, nunca mais, contando os usados.
+- [x] Um link por pessoa, com prévia própria.
+- [x] Os quatro estados de convite que não vale dizem a mesma frase.
+- [x] `/convite/*` fora do `sitemap` e com `noindex`.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] Decisões registradas; `ESTADO.md` e `novidades.ts` atualizados.
 
 ---
 

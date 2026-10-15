@@ -31,6 +31,14 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   typedRoutes: true,
   images: { formats: ["image/avif", "image/webp"] },
+  // A prévia do convite é a única desenhada em execução (`DECISOES.md#d405`):
+  // o `readFile` de `previa.tsx` não entra no rastreio sozinho.
+  outputFileTracingIncludes: {
+    "/convite/[codigo]/opengraph-image": [
+      "./src/app/previa/FamiljenGrotesk-Bold.ttf",
+      "./public/marca/rende-principal.svg",
+    ],
+  },
   async rewrites() {
     if (!projetoFirebase) return [];
     const origem = `https://${projetoFirebase}.firebaseapp.com`;

@@ -13255,3 +13255,74 @@ consentiu o direito de sair.
   seção 11 da privacidade.
 
 **Consequência.** O invariante do `CLAUDE.md` passa a nomear duas exceções.
+
+## D404 · O convite nasce quando ela toca, e não semeado
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 183 · estende a `#d399`.
+
+**Contexto.** A 181 deu a cada fundadora uma cota de cinco convites, mas nenhum código existia
+até alguém rodar o console. Cinco códigos prontos no cadastro seriam cinco documentos que ninguém
+mandou, e o "pra quem" só existe na hora de mandar.
+
+**Decisão.**
+
+- **`POST /api/convites` cria um convite por toque**, numa `runTransaction` do Admin SDK, como a
+  troca da `#d400`: lê a conta (`beta.convites`), os convites dela e só cria se
+  `convitesLivres(cota, convites) > 0`. Dois toques ao mesmo tempo na última vaga da cota não
+  fazem o sexto. O código é sorteado até três vezes contra o grupo de coleção; o quarto seria um
+  bug, e a rota cai.
+- **A cota conta abertos e usados; o cancelado devolve a vaga.** `convitesLivres` mora no domínio
+  e a tela e a rota leem a mesma conta.
+- **Cancelar é `CANCELADO`, e não apagar** (`#d148`), e só do `ABERTO`. A escrita leva a
+  precondição de `updateTime` da leitura: se a troca usou o convite entre a leitura e a escrita,
+  o cancelamento falha em vez de transformar um usado em cancelado e devolver uma vaga que já
+  virou conta.
+- **"Pra quem" é opcional, até 40 caracteres**, e vai como ela escreveu, sem cortar no primeiro
+  nome: "Tia Cida" não vira "Tia".
+- **`mensagemDoConvite` devolve o texto sem o link**, ao contrário da assinatura que a spec
+  sugeria: o `MandarAPagina` junta o link no `wa.me` e o entrega à parte ao `share`, e o link
+  dentro do texto sairia duas vezes. O nome dela também não entra: a mensagem sai do número
+  dela.
+- **A seção e a entrada do ⋯ só existem para a dona, com cota e na fase `BETA`.** A fase vem de
+  `useBeta`, que abre com a última resposta de `/api/beta` guardada no aparelho (`rende:beta`) e
+  troca pela da rede. Sem nenhuma resposta ainda, nada aparece. A ajudante lê `convites` pela
+  regra (`#d399`), mas a tela dela não monta a seção.
+- **"Mandar" é primário só na primeira linha aberta**, como a spec pede, mesmo com o "Salvar"
+  da configuração (`#d284`): a seção fica fora do formulário, e na lista só uma linha leva o
+  primário.
+
+**Consequência.** Uma rota nova que escreve fora do cliente, nenhuma regra nova, nenhum índice
+novo (a consulta por `codigo` usa o `fieldOverride` da 181). `MandarAPagina` ganhou `variante`.
+
+## D405 · A prévia do convite diz o nome de quem convida
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 183 · estende a `#d183` (a
+prévia desenhada) e a `#d177` (o que o robô vê).
+
+**Contexto.** Um código solto no WhatsApp, sem imagem, parece golpe. O que faz o link não
+parecer propaganda é o nome de quem manda.
+
+**Decisão.**
+
+- **`/convite/[codigo]/opengraph-image.tsx` é dinâmica**, a primeira prévia lida a cada
+  requisição e não no build. Convite que vale: "Beta fechado · por convite" em cima e "{Maynara}
+  guardou uma vaga do Rende pra você". Qualquer outro estado: a genérica, "Só entra quem é
+  convidada" e "O Rende está em beta fechado", sem nome. O `title` e a `description` da página
+  dizem o mesmo (`textoDaPrevia`, em `dados.ts` ao lado da página, com `cache` do React para a
+  página e os metadados lerem uma vez).
+- **O nome é o primeiro de `proprietaria`**, que ela mesma escreveu no cadastro. O código não
+  aparece na imagem.
+- **A mesma frase para usado, cancelado, inexistente e conta encerrada**, na página, na prévia e
+  em `GET /api/convite/{codigo}` (`valido: false`). Quem testa códigos não aprende qual existe.
+- **`/convite/` fica fora do `sitemap`, com `noindex` e barrado no `robots.txt`.** A `#d177`
+  deixa as telas do app fora do `disallow` para o robô ler o `noindex`; aqui cada endereço é um
+  código, e o robô não tem por que pedir nenhum. A prévia do WhatsApp é montada pelo aparelho de
+  quem cola o link, e não passa pelo `robots.txt`.
+- **A fase `PUBLICO` redireciona para `/cadastro?convite=…`**: o código continua no endereço.
+- **Sem credencial (o `npm start` local), `lerConvite` devolve nada** e a página diz que o
+  convite não vale, como o `lerBeta` erra para a porta fechada.
+
+**Consequência.** A prévia dinâmica lê a fonte e o logotipo do disco em execução, e não só no
+build (`previa.tsx`), e o rastreio do Next não pega o `readFile`: `outputFileTracingIncludes` no
+`next.config.ts` leva os dois arquivos para a função (conferido no `.nft.json` do build). A
+prévia do Vercel no passo 2 do roteiro é a prova em execução.

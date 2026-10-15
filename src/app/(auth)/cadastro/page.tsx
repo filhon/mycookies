@@ -10,7 +10,7 @@ import {
   type FormEvent,
 } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { CircleAlert } from "lucide-react";
+import { CircleAlert, Gift } from "lucide-react";
 import { BotaoGoogle } from "@/components/auth/BotaoGoogle";
 import { MolduraDeEntrada } from "@/components/auth/MolduraDeEntrada";
 import { ContaAberta } from "@/components/site/ContaAberta";
@@ -121,6 +121,24 @@ export default function PaginaCadastro() {
       vivo = false;
     };
   }, []);
+
+  // Quem convida, no topo do formulário (spec 183). Só o convite que vale tem
+  // nome; o que não vale cai na tela do beta pela recusa do POST.
+  const [deQuem, setDeQuem] = useState<string | null>(null);
+  useEffect(() => {
+    const lido = convite && lerCodigo(convite);
+    if (!lido) return;
+    let vivo = true;
+    fetch(`/api/convite/${lido}`)
+      .then((resposta) => (resposta.ok ? resposta.json() : null))
+      .catch(() => null)
+      .then((dado: { valido?: boolean; deQuem?: string } | null) => {
+        if (vivo && dado?.valido && dado.deQuem) setDeQuem(dado.deQuem);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [convite]);
 
   const fechada =
     falhaDoBeta !== null || (convite === null && beta?.fase !== "PUBLICO");
@@ -331,7 +349,7 @@ export default function PaginaCadastro() {
 
   return (
     <MolduraDeEntrada
-      titulo="Criar minha conta"
+      titulo={deQuem ? "Aceitar o convite" : "Criar minha conta"}
       descricao={
         <>
           {`${DIAS_DE_TESTE} dias grátis, sem cartão. `}
@@ -359,6 +377,15 @@ export default function PaginaCadastro() {
       }
       painel={painel}
     >
+      {deQuem && (
+        <p className="mt-6 flex items-center gap-2 rounded-md bg-brand-100 px-4 py-3 text-label text-brand-ink">
+          <Gift aria-hidden strokeWidth={1.75} className="size-5 shrink-0" />
+          <span>
+            Convite da <strong className="font-semibold">{deQuem}</strong>
+          </span>
+        </p>
+      )}
+
       {/* Depois do Google, `usuario` existe e a tela cai no segundo estado: o
           nome vem do `displayName`, e a caixa dos termos continua dela. */}
       {!terminando && (
