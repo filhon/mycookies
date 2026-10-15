@@ -1,4 +1,4 @@
-import { TrendingDown } from "lucide-react";
+import { ArrowRight, TrendingDown } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PAGINAS_DO_PRECO } from "@/app/site";
@@ -9,7 +9,10 @@ import {
   TITULO_H2,
   Valor,
 } from "@/components/site/Artigo";
+import { FaixaDeComposicao } from "@/components/fichas/FaixaDeComposicao";
 import { Rodape, Topo } from "@/components/site/Moldura";
+import { Dinheiro } from "@/components/ui/Dinheiro";
+import { composicaoDoLote, type Segmento } from "@/lib/domain/custoFicha";
 import {
   boloDe,
   ERRO_COMUM,
@@ -36,7 +39,7 @@ import type { Centavos } from "@/lib/types";
  * os quatro exemplos, e `tests/domain/exemplo.test.ts` prende os números.
  */
 
-const ATUALIZADO_EM = "2026-10-02";
+const ATUALIZADO_EM = "2026-10-15";
 
 const ENDERECO = "/como-calcular-o-preco-de-doces" as const;
 
@@ -61,15 +64,33 @@ const BRIGADEIRO_SEM_A_HORA =
   EXEMPLO_BRIGADEIRO.custo.custoMaoDeObra;
 
 type Linha = {
+  /** O artigo e a unidade: "o cento". */
   vendePor: string;
+  /** De que preço se fala, quando o doce tem mais de um. */
+  precoDe?: string;
+  /** A faixa do custo do exemplo. Só a proporção conta, e ela não muda por unidade. */
+  segmentos: Segmento[];
   /** A parcela que pesa, ou que engana, com o tanto que pesa. */
   pesa: string;
   erro: string;
   /** O que sobra do preço quando o erro acontece, em %. */
   sobraNoErro: number;
+  sobraNoErroEmReais: Centavos;
   preco: Centavos;
-  /** De que preço se fala, quando o doce tem mais de um. */
-  precoDe?: string;
+  /** O que o preço do exemplo deixa pra ela, depois da maquininha. */
+  sobra: Centavos;
+};
+
+/** O preço do exemplo e o que ele deixa, com os parâmetros do cookie. */
+const naEtiqueta = (custo: Centavos) => {
+  const preco = etiqueta(custo);
+  return { preco, sobra: verificarPreco(preco, custo, TAXAS).lucroUnitario };
+};
+
+/** O que sobra quando o doce que custa `custo` sai a `preco`. */
+const noErro = (preco: Centavos, custo: Centavos, taxas = TAXAS) => {
+  const { margemReal, lucroUnitario } = verificarPreco(preco, custo, taxas);
+  return { sobraNoErro: margemReal, sobraNoErroEmReais: lucroUnitario };
 };
 
 type Endereco = (typeof PAGINAS_DO_PRECO)[number]["endereco"];
@@ -77,51 +98,52 @@ type Endereco = (typeof PAGINAS_DO_PRECO)[number]["endereco"];
 /** Uma linha por página da lista: página nova sem linha aqui não compila. */
 const O_QUE_MUDA: Record<Exclude<Endereco, typeof ENDERECO>, Linha> = {
   "/como-calcular-o-preco-do-cookie": {
-    vendePor: "unidade",
+    vendePor: "a unidade",
+    segmentos: composicaoDoLote(EXEMPLO.custo),
     pesa: `Ingredientes, ${parte(EXEMPLO.custo.custoInsumos, EXEMPLO.custo.custoTotalLote)} do custo`,
     erro: "Somar 45% em cima do custo",
-    sobraNoErro: verificarPreco(
+    ...noErro(
       etiqueta(EXEMPLO.custo.custoUnitario, ERRO_COMUM),
       EXEMPLO.custo.custoUnitario,
-      TAXAS,
-    ).margemReal,
-    preco: etiqueta(EXEMPLO.custo.custoUnitario),
+    ),
+    ...naEtiqueta(EXEMPLO.custo.custoUnitario),
   },
   "/como-calcular-o-preco-do-brigadeiro": {
-    vendePor: "cento",
+    vendePor: "o cento",
+    segmentos: composicaoDoLote(EXEMPLO_BRIGADEIRO.custo),
     pesa: `Seu trabalho, ${parte(EXEMPLO_BRIGADEIRO.custo.custoMaoDeObra, EXEMPLO_BRIGADEIRO.custo.custoTotalLote)} do cento, quase o mesmo que a receita`,
     erro: "Esquecer a hora de enrolar",
-    sobraNoErro: verificarPreco(
+    ...noErro(
       etiqueta(BRIGADEIRO_SEM_A_HORA),
       EXEMPLO_BRIGADEIRO.custo.custoUnitario,
-      TAXAS,
-    ).margemReal,
-    preco: etiqueta(EXEMPLO_BRIGADEIRO.custo.custoUnitario),
+    ),
+    ...naEtiqueta(EXEMPLO_BRIGADEIRO.custo.custoUnitario),
   },
   "/como-calcular-o-preco-do-bolo-por-quilo": {
-    vendePor: "quilo",
+    vendePor: "o quilo",
+    precoDe: "no bolo de 2 kg",
+    segmentos: composicaoDoLote(BOLO.custo),
     pesa: `Caixa, base e decoração, que vão uma vez por bolo: ${parte(POR_BOLO.custoEmbalagem + POR_BOLO.custoMaoDeObra + POR_BOLO.custoIndireto, BOLO.custo.custoTotalLote)} do bolo de 2 kg`,
     erro: "Um preço de quilo pra qualquer tamanho",
     // O quilo do bolo de 2 kg cobrado no bolo de 1 kg.
-    sobraNoErro: verificarPreco(
+    ...noErro(
       etiqueta(BOLO.custo.custoUnitario),
       boloDe(1).custo.custoUnitario,
-      TAXAS,
-    ).margemReal,
-    preco: etiqueta(BOLO.custo.custoUnitario),
-    precoDe: "no bolo de 2 kg",
+    ),
+    ...naEtiqueta(BOLO.custo.custoUnitario),
   },
   "/como-calcular-o-preco-do-bolo-de-pote": {
-    vendePor: "pote",
+    vendePor: "o pote",
+    precoDe: "no balcão",
+    segmentos: composicaoDoLote(EXEMPLO_BOLO_DE_POTE.custo),
     pesa: `Embalagem, ${parte(EXEMPLO_BOLO_DE_POTE.custo.custoEmbalagem, EXEMPLO_BOLO_DE_POTE.custo.custoTotalLote)} do custo`,
     erro: "Pôr no aplicativo o preço do balcão",
-    sobraNoErro: verificarPreco(
+    ...noErro(
       etiqueta(EXEMPLO_BOLO_DE_POTE.custo.custoUnitario),
       EXEMPLO_BOLO_DE_POTE.custo.custoUnitario,
       somaTaxas(NO_APLICATIVO),
-    ).margemReal,
-    preco: etiqueta(EXEMPLO_BOLO_DE_POTE.custo.custoUnitario),
-    precoDe: "no balcão",
+    ),
+    ...naEtiqueta(EXEMPLO_BOLO_DE_POTE.custo.custoUnitario),
   },
 };
 
@@ -208,41 +230,63 @@ const PERGUNTAS: { pergunta: string; resposta: React.ReactNode }[] = [
   },
 ];
 
-/** O nome do doce, que leva à página dele. */
-function LinkDoDoce({ endereco, doce }: { endereco: Endereco; doce: string }) {
+/** A unidade embaixo do nome: "o quilo, no bolo de 2 kg". */
+function Unidade({ linha }: { linha: Linha }) {
   return (
-    <Link
-      href={endereco}
-      className="inline-flex min-h-11 items-center font-semibold text-ink underline decoration-line underline-offset-4 transition-colors duration-150 ease-quart hover:decoration-ink"
-    >
-      {doce}
-    </Link>
+    <span className="block text-label text-ink-muted">
+      <span className="sr-only">Vende por </span>
+      {linha.precoDe ? `${linha.vendePor}, ${linha.precoDe}` : linha.vendePor}
+    </span>
+  );
+}
+
+/** A faixa do custo e a parcela que pesa, como legenda. */
+function Composicao({ linha }: { linha: Linha }) {
+  return (
+    <>
+      <FaixaDeComposicao segmentos={linha.segmentos} />
+      <span className="mt-2 block text-label text-ink-muted">
+        <span className="sr-only">O que pesa: </span>
+        {linha.pesa}
+      </span>
+    </>
+  );
+}
+
+/** O preço e o que ele deixa. Sem a porção: são quatro sobras (`#d381`). */
+function Preco({ linha }: { linha: Linha }) {
+  return (
+    <>
+      <span className="sr-only">Preço do exemplo: </span>
+      <Dinheiro centavos={linha.preco} tamanho="lg" />
+      <span className="mt-0.5 block text-label whitespace-nowrap text-ink-muted">
+        sobram <Valor centavos={linha.sobra} /> pra você
+      </span>
+    </>
   );
 }
 
 function Erro({ linha }: { linha: Linha }) {
   return (
     <>
-      {linha.erro}
+      <span className="block text-body text-ink">
+        <span className="sr-only">O erro: </span>
+        {linha.erro}
+      </span>
       <span className="mt-1 flex items-start gap-1.5 text-label text-ink-muted">
         <TrendingDown
           aria-hidden
-          className="mt-px size-4 shrink-0 text-negative"
+          className="mt-0.5 size-4 shrink-0 text-negative"
           strokeWidth={1.75}
         />
-        <span>Sobram {formatarPercentual(linha.sobraNoErro, 0)} do preço</span>
+        <span>
+          sobram <Valor centavos={linha.sobraNoErroEmReais} />,{" "}
+          {formatarPercentual(linha.sobraNoErro, 0)} do preço,{" "}
+          <span className="whitespace-nowrap">
+            e não {formatarPercentual(parametros.margemDesejada, 0)}
+          </span>
+        </span>
       </span>
-    </>
-  );
-}
-
-function Preco({ linha }: { linha: Linha }) {
-  return (
-    <>
-      <Valor centavos={linha.preco} />
-      {linha.precoDe && (
-        <span className="block text-label text-ink-muted">{linha.precoDe}</span>
-      )}
     </>
   );
 }
@@ -273,39 +317,36 @@ export default function PaginaPrecoDeDoces() {
               que mais pesa ou mais engana, e o erro que cada um costuma ter. Os
               preços são os dos exemplos de cada página, pedindo{" "}
               {parametros.margemDesejada}% de margem; o seu sai dos custos da
-              sua cozinha. Toque no doce para ver a conta dele, passo a passo.
+              sua cozinha.
             </p>
 
-            {/* Cinco colunas não cabem em 390px sem rolar de lado: no celular,
-                uma lista de definições por doce. */}
+            {/* Quatro colunas não cabem em 390px sem rolar de lado: no celular,
+                cada doce é uma linha que se toca inteira. */}
             <ul className="mt-6 divide-y divide-line border-y border-line md:hidden">
               {LINHAS.map((l) => (
-                <li key={l.endereco} className="py-4">
-                  <p className="text-subheading">
-                    <LinkDoDoce endereco={l.endereco} doce={l.doce} />
-                  </p>
-                  <dl className="mt-2 grid grid-cols-[7rem_minmax(0,1fr)] gap-x-4 gap-y-3 text-body text-ink">
-                    <dt className="text-label font-medium text-ink-muted">
-                      Vende por
-                    </dt>
-                    <dd>{l.vendePor}</dd>
-                    <dt className="text-label font-medium text-ink-muted">
-                      O que pesa
-                    </dt>
-                    <dd>{l.pesa}</dd>
-                    <dt className="text-label font-medium text-ink-muted">
-                      O erro
-                    </dt>
-                    <dd>
+                <li key={l.endereco}>
+                  <Link href={l.endereco} className="group block py-5">
+                    <span className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4">
+                      <span className="inline-flex items-center gap-2 text-subheading font-semibold text-ink underline decoration-line underline-offset-4 transition-colors duration-150 ease-quart group-hover:decoration-ink">
+                        {l.doce}
+                        <ArrowRight
+                          aria-hidden
+                          className="size-4 shrink-0"
+                          strokeWidth={1.75}
+                        />
+                      </span>
+                      <span className="row-span-2 text-right">
+                        <Preco linha={l} />
+                      </span>
+                      <Unidade linha={l} />
+                    </span>
+                    <div className="mt-4">
+                      <Composicao linha={l} />
+                    </div>
+                    <div className="mt-3">
                       <Erro linha={l} />
-                    </dd>
-                    <dt className="text-label font-medium text-ink-muted">
-                      Preço do exemplo
-                    </dt>
-                    <dd>
-                      <Preco linha={l} />
-                    </dd>
-                  </dl>
+                    </div>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -315,36 +356,46 @@ export default function PaginaPrecoDeDoces() {
                 {`Os quatro doces de exemplo, com ${parametros.margemDesejada}% de margem e ${parametros.taxaCartaoConsiderada}% de maquininha`}
               </caption>
               <thead>
-                <tr className="border-b border-line text-label text-ink-muted">
-                  <th scope="col" className="py-3 pr-3 font-medium">
+                <tr className="border-b border-line text-label whitespace-nowrap text-ink-muted">
+                  <th scope="col" className="py-3 pr-4 font-medium">
                     Doce
                   </th>
-                  <th scope="col" className="px-3 py-3 font-medium">
-                    Vende por
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Do que o custo é feito
                   </th>
-                  <th scope="col" className="px-3 py-3 font-medium">
-                    O que pesa
-                  </th>
-                  <th scope="col" className="px-3 py-3 font-medium">
+                  <th scope="col" className="px-4 py-3 font-medium">
                     O erro
                   </th>
-                  <th scope="col" className="py-3 pl-3 text-right font-medium">
-                    Preço do exemplo
+                  <th scope="col" className="py-3 pl-4 text-right font-medium">
+                    Preço
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
                 {LINHAS.map((l) => (
-                  <tr key={l.endereco} className="align-top text-body text-ink">
-                    <th scope="row" className="py-3 pr-3 font-normal">
-                      <LinkDoDoce endereco={l.endereco} doce={l.doce} />
+                  // O link do nome cobre a linha; o foco fica nele.
+                  <tr
+                    key={l.endereco}
+                    className="relative align-top transition-colors duration-150 ease-quart hover:bg-sunken"
+                  >
+                    <th scope="row" className="py-5 pr-4 font-normal">
+                      <Link
+                        href={l.endereco}
+                        className="text-subheading font-semibold text-ink underline decoration-line underline-offset-4 after:absolute after:inset-0 hover:decoration-ink"
+                      >
+                        {l.doce}
+                      </Link>
+                      <Unidade linha={l} />
                     </th>
-                    <td className="px-3 py-5">{l.vendePor}</td>
-                    <td className="px-3 py-5">{l.pesa}</td>
-                    <td className="px-3 py-5">
+                    <td className="w-[36%] px-4 py-5">
+                      <div className="pt-2">
+                        <Composicao linha={l} />
+                      </div>
+                    </td>
+                    <td className="w-[30%] px-4 py-5">
                       <Erro linha={l} />
                     </td>
-                    <td className="py-5 pl-3 text-right">
+                    <td className="py-5 pl-4 text-right">
                       <Preco linha={l} />
                     </td>
                   </tr>

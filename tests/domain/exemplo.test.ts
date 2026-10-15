@@ -420,4 +420,41 @@ describe("a tabela da página de doces", () => {
       verificarPreco(1700, 910, somaTaxas(NO_APLICATIVO)).margemReal,
     ]).toEqual([25.98, 1.73, 25.21, 26.47]);
   });
+
+  // A sobra em reais ao lado de cada preço e de cada erro (spec 175). A spec
+  // dizia R$ 4,66 e R$ 1,28 no cookie; vale o da função.
+
+  // No preço: 5% de 850 = 42,5 → 43; 850 − 441 − 43 = 366. No erro:
+  // 5% de 639 = 31,95 → 32; 639 − 441 − 32 = 166.
+  it("o cookie: sobram R$ 3,66 no preço e R$ 1,66 no erro", () => {
+    expect(verificarPreco(850, 441, taxas).lucroUnitario).toBe(366);
+    expect(verificarPreco(639, 441, taxas).lucroUnitario).toBe(166);
+  });
+
+  // No preço: 5% de 17650 = 882,5 → 883; 17650 − 9700 − 883 = 7067. No erro:
+  // 5% de 10400 = 520; 10400 − 9700 − 520 = 180.
+  it("o brigadeiro: sobram R$ 70,67 no preço e R$ 1,80 no erro", () => {
+    expect(verificarPreco(17650, 9700, taxas).lucroUnitario).toBe(7067);
+    expect(verificarPreco(10400, 9700, taxas).lucroUnitario).toBe(180);
+  });
+
+  // No preço: 5% de 11750 = 587,5 → 588; 11750 − 6450 − 588 = 4712. No erro,
+  // o mesmo preço no bolo de 1 kg: 11750 − 8200 − 588 = 2962.
+  it("o bolo: sobram R$ 47,12 no quilo e R$ 29,62 no erro", () => {
+    expect(
+      verificarPreco(11750, boloDe(2).custo.custoUnitario, taxas).lucroUnitario,
+    ).toBe(4712);
+    expect(
+      verificarPreco(11750, boloDe(1).custo.custoUnitario, taxas).lucroUnitario,
+    ).toBe(2962);
+  });
+
+  // No balcão: 5% de 1700 = 85; 1700 − 910 − 85 = 705. No aplicativo:
+  // 20% de 1700 = 340; 1700 − 910 − 340 = 450.
+  it("o bolo de pote: sobram R$ 7,05 no balcão e R$ 4,50 no erro", () => {
+    expect(verificarPreco(1700, 910, taxas).lucroUnitario).toBe(705);
+    expect(
+      verificarPreco(1700, 910, somaTaxas(NO_APLICATIVO)).lucroUnitario,
+    ).toBe(450);
+  });
 });

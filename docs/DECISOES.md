@@ -12874,3 +12874,31 @@ a linha que a folha da mesma encomenda já leva (`#d127`).
 **Consequência.** Nenhuma regra, schema ou dependência. O `contaId` aparece na prévia, como já
 aparece nas rotas de imagem do cardápio. Avaliação, cupom de volta e indicação com recompensa
 ficam fora (spec 174, "Fora de escopo").
+
+## D392 · A tabela da página de doces mostra a faixa de cada doce e a sobra em reais
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 175 · amplia a `#d259` e a
+`#d126`; respeita a `#d381`.
+
+**Contexto.** A tabela "O que muda de doce pra doce" mostrava o preço sozinho, o percentual do
+erro sem reais e a composição em palavras, na página que existe para ensinar a conta. No celular,
+dezesseis rótulos repetidos e o preço por último.
+
+**Decisão.**
+
+- **A faixa de composição por doce, numa página do site.** Cada linha leva a `FaixaDeComposicao`
+  do exemplo, sem mudar o componente, com o "o que pesa" de antes como legenda. Proporção de
+  `composicaoDoLote`, nunca escrita à mão. Os segmentos são os do lote, e não divididos pela
+  unidade de venda como a `/conheca` faz: a faixa lê só a `fracao`, que não muda com a divisão.
+- **Preço com a sobra, sem a porção rosa.** "sobram R$ X pra você" em `label` embaixo do preço:
+  são quatro sobras na mesma tela, e a porção é uma por tela. Ela fica para a calculadora (176).
+- **O erro em reais**: `lucroUnitario` do `verificarPreco` que a página já fazia, com o percentual
+  e "e não {margem}%".
+- **A linha inteira é o alvo.** No celular, o `<li>` é um `Link` de bloco com `ArrowRight`; no
+  desktop, o link do nome se estende à `<tr>` por `after:absolute after:inset-0`, e o foco fica
+  nele. Selecionar texto da linha fica mais difícil; quem quer abrir o doce é a maioria.
+- **"Vende por" sai como coluna** e entra embaixo do nome, junto do "de que preço se fala" ("o
+  quilo, no bolo de 2 kg"), que antes ia embaixo do preço.
+
+**Consequência.** Nenhum campo, regra ou dependência. A tabela de números da spec errava o cookie
+(R$ 4,66 e R$ 1,28); vale a função, R$ 3,66 e R$ 1,66, e o teste prende as oito quantias.
