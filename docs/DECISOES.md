@@ -12523,7 +12523,7 @@ em rosa.
   largura. Abaixo do `lg` fica guardada a altura do título em duas linhas mais a linha de baixo,
   e o número do contador tem largura mínima.
 - **`role="img"`** com o resumo em `aria-label`; os textos que trocam ficam fora da leitura.
-- **Fica de fora o `mode="intro"`** (a abertura em tela cheia): só se for pedido.
+- **O `mode="intro"`** (a abertura em tela cheia) ficou para depois e entrou na `#d383`.
 
 **Medido** em 2026-10-14, build de produção local, Chrome headless: sem estouro horizontal a
 390 e a 1280px; altura da faixa constante durante o laço; o laço para fora da tela; com
@@ -12537,3 +12537,46 @@ mais leve. A nota baixa é da máquina local e já era assim antes; continua por
 `#d238` sai, mas a regra dela sobre o precache fica: o `exclude` do Serwist para imagem
 importada continua em `next.config`. A faixa sobre o preço **praticado**, no editor do app,
 continua spec própria.
+
+## D383 · A abertura da `/conheca`: a faixa do custo em tela cheia, uma vez por sessão
+
+**Status:** vigente · decidida e codificada em 2026-10-14, fora de spec, o opcional de
+`docs/marca/rende/faixa-custo/PROMPT-FAIXA-CUSTO.md`. Completa a `#d382`.
+
+**Contexto.** A referência tem `mode="intro"`: a mesma faixa cobrindo a tela no carregamento,
+em ritmo acelerado, com "Pular" e Esc, uma vez por sessão, sumindo sozinha com esmaecimento, e
+nunca com movimento reduzido. A página carrega normalmente por baixo.
+
+**Decisão.**
+
+- **A mesma `FaixaDoCusto`, com `abertura`**, e não um segundo componente: a página monta as
+  props uma vez e as passa às duas. A abertura corre os passos a 60% e segura a sobra 1,8 s, os
+  números da referência: ~6,7 s depois de hidratar, ~7,2 s medidos do primeiro quadro. O prompt
+  dizia "~5 s"; valeram os tempos do código de referência.
+- **Quem decide é um script antes da primeira pintura** (`SCRIPT_DA_ABERTURA` em
+  `site/abertura.ts`, irmão do `SCRIPT_TEMA`), que põe `data-abertura` no `<html>` se o
+  movimento não é reduzido e a sessão ainda não a viu. O servidor entrega a abertura no
+  primeiro passo, escondida pelo CSS quando o atributo falta: ela cobre a página desde o
+  primeiro quadro, ou nem aparece. Sem piscar nos dois sentidos.
+- **A `FaixaDoCusto` confere a mesma condição ao montar** e põe o atributo se faltar: é a chegada
+  por navegação do app, em que o script não roda (ali a página aparece antes e é coberta
+  depois), e a volta do Strict Mode, cuja limpeza o tira. A limpeza tira o atributo: sair da
+  página no meio da abertura não deixa a próxima travada.
+- **`sessionStorage` marca na saída** (por "Pular", Esc ou fim), como a referência. Recarregar
+  no meio mostra de novo.
+- **A rolagem trava pelo CSS do atributo**, com `scrollbar-gutter: stable`: a calha da barra
+  fica guardada e nada pula de lado quando ela sai (medido: o `h1` no mesmo x antes e depois).
+- **Ela é o primeiro filho da página**, e não do `<body>` do layout: só a `/conheca` a tem. Por
+  isso o primeiro Tab cai no "Pular", que é botão secundário `sm` (44px) e fica fora do
+  `role="img"`. Sem prender o foco: são poucos segundos e o Esc fecha.
+- `z-50`, fixa, com rolagem própria se a tela for mais baixa que a faixa.
+
+**Medido** em 2026-10-14, build de produção local, Chrome headless: visível desde o primeiro
+quadro e até ~7,2 s; o primeiro Tab no "Pular"; Esc e "Pular" fecham; recarregar não a mostra;
+com movimento reduzido nunca aparece; CLS 0 no celular e no desktop; o LCP continua o texto do
+topo. Lighthouse mobile, quatro rodadas antes e depois: desempenho 0,61–0,67 antes e 0,54–0,68
+depois, LCP 4,7–6,3 s no texto do topo nos dois, CLS 0,001; uma rodada de TBT 1,7 s no depois
+não se repetiu nas outras três (230–310 ms, contra 270–640 antes).
+
+**Consequência.** Toda primeira visita da sessão espera a abertura ou toca em "Pular" antes de
+ler a página. Se a conversão cair, ela sai com uma linha na página.

@@ -430,6 +430,20 @@
 }
 
 /**
+ * A abertura da `/conheca` (`FaixaDoCusto abertura`, `DECISOES.md#d383`): só
+ * existe com `data-abertura` no `<html>`, que o script dela põe antes da
+ * primeira pintura. Enquanto ela está, a página não rola por baixo, e a calha
+ * da barra de rolagem fica: nada pula de lado quando ela sai.
+ */
+html[data-abertura] {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+html:not([data-abertura]) .abertura {
+  display: none;
+}
+
+/**
  * A folha do orçamento: um A4 que é a mesma coisa na tela e no papel.
  *
  * Papel não tem modo noturno. Os tokens de superfície e tinta são redeclarados

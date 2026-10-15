@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { CalculadoraDaPorta } from "@/components/site/CalculadoraDaPorta";
 import { ContaAberta } from "@/components/site/ContaAberta";
+import { SCRIPT_DA_ABERTURA } from "@/components/site/abertura";
 import { FaixaDoCusto } from "@/components/site/FaixaDoCusto";
 import { LuzDaJanela } from "@/components/site/LuzDaJanela";
 import { Rodape, Topo } from "@/components/site/Moldura";
@@ -248,12 +249,35 @@ export default async function PaginaConheca() {
     EXEMPLO.custo.custoUnitario,
     somaTaxas(EXEMPLO.parametros),
   );
+  const faixa = sugerido.ok && {
+    nome: EXEMPLO.nome,
+    rende: EXEMPLO.rende,
+    parcelas: composicaoDoLote(EXEMPLO.custo).map((s) => ({
+      rotulo: s.rotulo,
+      centavos: Math.round(s.centavos / EXEMPLO.rende),
+      destaque: s.destaque,
+    })),
+    custo: EXEMPLO.custo.custoUnitario,
+    maquininha: noSugerido.custoTaxas,
+    sobra: noSugerido.lucroUnitario,
+    preco: sugerido.precoArredondado,
+    margem: EXEMPLO.parametros.margemDesejada,
+    taxa: EXEMPLO.parametros.taxaCartaoConsiderada,
+  };
   const temDepoimento = !!DEPOIMENTO.texto;
   const temChute =
     sugerido.ok && EXEMPLO.precoPraticado !== sugerido.precoArredondado;
 
   return (
     <>
+      {/* A abertura (`DECISOES.md#d383`): o script decide antes da primeira
+          pintura, e ela vem antes de tudo para ser o primeiro Tab. */}
+      {faixa && (
+        <>
+          <script dangerouslySetInnerHTML={{ __html: SCRIPT_DA_ABERTURA }} />
+          <FaixaDoCusto abertura {...faixa} />
+        </>
+      )}
       <Topo ancoras={ANCORAS} convite />
       <OrigemDoLink />
 
@@ -327,23 +351,7 @@ export default async function PaginaConheca() {
 
         {/* A conta do topo se montando, no lugar da foto da bancada
             (`DECISOES.md#d382`). Os números são os do `h1` e da `ContaAberta`. */}
-        {sugerido.ok && (
-          <FaixaDoCusto
-            nome={EXEMPLO.nome}
-            rende={EXEMPLO.rende}
-            parcelas={composicaoDoLote(EXEMPLO.custo).map((s) => ({
-              rotulo: s.rotulo,
-              centavos: Math.round(s.centavos / EXEMPLO.rende),
-              destaque: s.destaque,
-            }))}
-            custo={EXEMPLO.custo.custoUnitario}
-            maquininha={noSugerido.custoTaxas}
-            sobra={noSugerido.lucroUnitario}
-            preco={sugerido.precoArredondado}
-            margem={EXEMPLO.parametros.margemDesejada}
-            taxa={EXEMPLO.parametros.taxaCartaoConsiderada}
-          />
-        )}
+        {faixa && <FaixaDoCusto {...faixa} />}
 
         <SuaConta />
 
