@@ -177,4 +177,5 @@ parada: o mesmo comportamento da `CalculadoraDaPorta` na 040.
   medição mostrar gente usando a calculadora e indo para `/cadastro`.
 - Imprimir ou mandar a conta: o "planilha de precificação" que a busca pede. Ver a 177.
 - A calculadora nas páginas de cada doce: elas têm a `ContaAberta` e o passo a passo.
+  **Feito na 178** (`DECISOES.md#d396`).
 - Evento de uso na medição: o Vercel Web Analytics só conta evento em plano pago (`#d180`).

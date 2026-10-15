@@ -327,8 +327,8 @@ function porUnidade({ custo, rende }: ExemploDePagina): ParcelasDoCusto {
   };
 }
 
-const doExemplo = (
-  rotulo: string,
+const doExemplo = <R extends string>(
+  rotulo: R,
   unidade: UnidadeDeVenda,
   exemplo: ExemploDePagina,
 ) => ({
@@ -347,13 +347,22 @@ export const EXEMPLOS_DAS_PARCELAS = [
   doExemplo("Bolo de pote", "pote", EXEMPLO_BOLO_DE_POTE),
 ] as const;
 
-/** O cookie do `EXEMPLO`, com 40% e 5%: onde a calculadora começa. */
-export function entradaDasParcelas(): EntradaDasParcelas {
-  const [cookie] = EXEMPLOS_DAS_PARCELAS;
+export type DoceDasParcelas = (typeof EXEMPLOS_DAS_PARCELAS)[number]["valor"];
+
+/**
+ * Um dos exemplos, com 40% e as taxas dele: onde a calculadora começa. Sem
+ * doce, o cookie; nas páginas de cada doce, o daquela página (spec 178).
+ */
+export function entradaDasParcelas(
+  doce: DoceDasParcelas = "Cookie",
+): EntradaDasParcelas {
+  const exemplo =
+    EXEMPLOS_DAS_PARCELAS.find((e) => e.valor === doce) ??
+    EXEMPLOS_DAS_PARCELAS[0];
   return {
-    ...cookie.parcelas,
+    ...exemplo.parcelas,
     margemDesejada: EXEMPLO.parametros.margemDesejada,
-    taxas: cookie.taxas,
+    taxas: exemplo.taxas,
     precoHoje: null,
   };
 }

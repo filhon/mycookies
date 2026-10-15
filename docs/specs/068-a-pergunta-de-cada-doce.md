@@ -427,6 +427,8 @@ do Search Console passa a ser por página: impressões, posição e cliques de c
   pergunta "Preciso de planilha?" aponta para a do cookie.
   **Em parte, na 176** (`DECISOES.md#d393`): a página de doces ganhou a sua, sem receita, pelas
   cinco parcelas; as páginas de cada doce continuam com a `ContaAberta`.
+  **Fechado na 178** (`DECISOES.md#d396`): as três páginas de doce têm a mesma calculadora, no
+  exemplo de cada uma; a do cookie continua com a `CalculadoraDaPorta`.
 - **O arredondamento por grama no app** (`#d258`). Spec própria, de domínio: a ficha com
   rendimento em `g` ou `ml` guardar o custo de 1000 unidades, ou mostrar por quilo. Mexe em
   campo gravado, então pede aprovação de schema.

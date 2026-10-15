@@ -5,6 +5,7 @@ import {
   Convite,
   Formula,
   fracao,
+  NaConta,
   OutrosDoces,
   type Passo,
   Passos,
@@ -12,7 +13,7 @@ import {
   TITULO_H2,
   Valor,
 } from "@/components/site/Artigo";
-import { ContaAberta } from "@/components/site/ContaAberta";
+import { CalculadoraDasParcelas } from "@/components/site/CalculadoraDasParcelas";
 import { Rodape, Topo } from "@/components/site/Moldura";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { EXEMPLO_BRIGADEIRO, HORA_DO_BRIGADEIRO } from "@/lib/domain/exemplo";
@@ -144,11 +145,11 @@ const PERGUNTAS: { pergunta: string; resposta: React.ReactNode }[] = [
     pergunta: "Quanto cobrar o cento de brigadeiro?",
     resposta: (
       <>
-        Depende do que o seu custa: faça os cinco passos com os números da sua
-        cozinha. No exemplo, um cento que custa{" "}
-        <Valor centavos={custo.custoUnitario} /> sai a{" "}
-        <Valor centavos={PRECO_ETIQUETA} />. Esse é o número do exemplo. O seu
-        sai do que você paga pela lata e do tempo que você leva pra enrolar.
+        Depende do que o seu custa:{" "}
+        <NaConta>faça os cinco passos com os números da sua cozinha</NaConta>.
+        No exemplo, um cento que custa <Valor centavos={custo.custoUnitario} />{" "}
+        sai a <Valor centavos={PRECO_ETIQUETA} />. Esse é o número do exemplo. O
+        seu sai do que você paga pela lata e do tempo que você leva pra enrolar.
       </>
     ),
   },
@@ -203,20 +204,25 @@ export default function PaginaPrecoDoBrigadeiro() {
             cento que custa <Valor centavos={custo.custoUnitario} />, com{" "}
             {parametros.margemDesejada}% de margem e{" "}
             {parametros.taxaCartaoConsiderada}% de maquininha, sai a{" "}
-            <Valor centavos={PRECO_ETIQUETA} />.
+            <Valor centavos={PRECO_ETIQUETA} />. Ou ponha os seus números{" "}
+            <NaConta>na conta logo abaixo</NaConta>.
           </CabecalhoDoArtigo>
 
-          {/* Como no cookie: a conta logo depois da resposta no celular, e
-              grudada ao lado dos passos no desktop. */}
+          {/* A calculadora no exemplo da página (spec 178): logo depois da
+              resposta no celular, e grudada ao lado dos passos no desktop. */}
           <div className="mt-10 grid gap-12 lg:mt-14 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-16">
-            <div className="lg:col-start-2 lg:row-start-1">
-              <ContaAberta
-                parada
-                exemplo={EXEMPLO_BRIGADEIRO}
-                unidade={{ singular: "cento", plural: "centos" }}
-                className="lg:sticky lg:top-8"
-              />
-            </div>
+            <section
+              id="sua-conta"
+              aria-labelledby="sua-conta-titulo"
+              className="scroll-mt-4 lg:col-start-2 lg:row-start-1"
+            >
+              <div className="lg:sticky lg:top-8">
+                <h2 id="sua-conta-titulo" className={TITULO_H2}>
+                  Faça a conta do seu brigadeiro
+                </h2>
+                <CalculadoraDasParcelas doce="Brigadeiro" className="mt-6" />
+              </div>
+            </section>
 
             <div className="max-w-[68ch] lg:col-start-1 lg:row-start-1">
               <Passos
@@ -305,6 +311,13 @@ export default function PaginaPrecoDoBrigadeiro() {
                   <Valor centavos={custo.custoMaoDeObra} /> deles são o seu
                   trabalho. O que aquele cento deixa de verdade é{" "}
                   <Valor centavos={NO_ERRO.lucroUnitario} />.
+                </p>
+                <p className="mt-4 text-body text-ink">
+                  <NaConta>
+                    Ponha zero em Sua hora na conta e veja o que sobra de
+                    verdade
+                  </NaConta>
+                  .
                 </p>
               </section>
 

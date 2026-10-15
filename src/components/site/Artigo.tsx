@@ -31,6 +31,18 @@ export function Valor({ centavos }: { centavos: Centavos }) {
   );
 }
 
+/** O link para a calculadora da página, `#sua-conta` (spec 178). */
+export function NaConta({ children }: { children: React.ReactNode }) {
+  return (
+    <Link
+      href="#sua-conta"
+      className="font-medium underline decoration-line underline-offset-4 hover:decoration-ink"
+    >
+      {children}
+    </Link>
+  );
+}
+
 /** O `h1`, a data e a resposta inteira, antes de qualquer conta ou botão. */
 export function CabecalhoDoArtigo({
   titulo,

@@ -4,6 +4,7 @@ import {
   CabecalhoDoArtigo,
   Convite,
   Formula,
+  NaConta,
   OutrosDoces,
   type Passo,
   Passos,
@@ -11,7 +12,7 @@ import {
   TITULO_H2,
   Valor,
 } from "@/components/site/Artigo";
-import { ContaAberta } from "@/components/site/ContaAberta";
+import { CalculadoraDasParcelas } from "@/components/site/CalculadoraDasParcelas";
 import { Rodape, Topo } from "@/components/site/Moldura";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import {
@@ -155,10 +156,10 @@ const PERGUNTAS: { pergunta: string; resposta: React.ReactNode }[] = [
     pergunta: "Quanto cobrar por um bolo de pote?",
     resposta: (
       <>
-        Depende do que o seu custa: faça os cinco passos com os números da sua
-        cozinha. No exemplo, um pote que custa{" "}
-        <Valor centavos={custo.custoUnitario} /> sai a{" "}
-        <Valor centavos={PRECO_BALCAO} /> no balcão e a{" "}
+        Depende do que o seu custa:{" "}
+        <NaConta>faça os cinco passos com os números da sua cozinha</NaConta>.
+        No exemplo, um pote que custa <Valor centavos={custo.custoUnitario} />{" "}
+        sai a <Valor centavos={PRECO_BALCAO} /> no balcão e a{" "}
         <Valor centavos={PRECO_APP} /> no aplicativo. Esses são os números do
         exemplo. Os seus saem do creme que vai em cada pote e do que você paga
         pelo pote vazio.
@@ -209,20 +210,25 @@ export default function PaginaPrecoDoBoloDePote() {
             {parametros.taxaCartaoConsiderada}% de maquininha, sai a{" "}
             <Valor centavos={PRECO_BALCAO} /> no balcão. No aplicativo de
             entrega, a comissão entra na mesma divisão, e o mesmo pote sai a{" "}
-            <Valor centavos={PRECO_APP} />.
+            <Valor centavos={PRECO_APP} />. Ou ponha os seus números{" "}
+            <NaConta>na conta logo abaixo</NaConta>.
           </CabecalhoDoArtigo>
 
-          {/* Como no cookie: a conta logo depois da resposta no celular, e
-              grudada ao lado dos passos no desktop. */}
+          {/* A calculadora no exemplo da página (spec 178): logo depois da
+              resposta no celular, e grudada ao lado dos passos no desktop. */}
           <div className="mt-10 grid gap-12 lg:mt-14 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-16">
-            <div className="lg:col-start-2 lg:row-start-1">
-              <ContaAberta
-                parada
-                exemplo={EXEMPLO_BOLO_DE_POTE}
-                unidade={{ singular: "pote", plural: "potes" }}
-                className="lg:sticky lg:top-8"
-              />
-            </div>
+            <section
+              id="sua-conta"
+              aria-labelledby="sua-conta-titulo"
+              className="scroll-mt-4 lg:col-start-2 lg:row-start-1"
+            >
+              <div className="lg:sticky lg:top-8">
+                <h2 id="sua-conta-titulo" className={TITULO_H2}>
+                  Faça a conta do seu bolo de pote
+                </h2>
+                <CalculadoraDasParcelas doce="Bolo de pote" className="mt-6" />
+              </div>
+            </section>
 
             <div className="max-w-[68ch] lg:col-start-1 lg:row-start-1">
               <Passos
@@ -337,6 +343,13 @@ export default function PaginaPrecoDoBoloDePote() {
                   <Valor centavos={BALCAO_NO_APP.custoTaxas} />, e o pote que
                   deixava <Valor centavos={NO_BALCAO.lucroUnitario} /> passa a
                   deixar <Valor centavos={BALCAO_NO_APP.lucroUnitario} />.
+                </p>
+                <p className="mt-4 text-body text-ink">
+                  <NaConta>
+                    Na conta, ponha nas taxas o percentual do seu contrato com o
+                    aplicativo
+                  </NaConta>
+                  .
                 </p>
               </section>
 

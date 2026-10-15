@@ -12981,3 +12981,36 @@ compartilhar do cardápio) e da `#d394`.
 
 **Consequência.** O endereço é o `URL_DO_SITE` da hora do build (a página é estática): no build
 local sai `localhost`. `fracao` passou de `components/site/Artigo.tsx` para `domain/money.ts`, ao lado dos outros formatadores, para o teste prender o divisor; o `Artigo` a reexporta e as páginas não mudaram. Nenhum campo, regra ou dependência.
+
+## D396 · As páginas de cada doce trocam o exemplo parado pela calculadora das parcelas
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 178 · fecha o "Fora de escopo" da
+068 ("A calculadora nas páginas novas") e o da 176 ("A calculadora nas páginas de cada doce");
+ao lado da `#d393` e da `#d394`.
+
+**Decisão.**
+
+- **Brigadeiro, bolo por quilo e bolo de pote têm a `CalculadoraDasParcelas` no lugar da
+  `ContaAberta`**, no mesmo slot: logo depois da resposta no celular, e na coluna da direita,
+  presa (`lg:sticky lg:top-8`), ao lado dos passos e da margem no desktop. `id="sua-conta"`, com o
+  `h2` "Faça a conta do seu {doce}". A do cookie (`CalculadoraDaPorta`), a de doces e a `/conheca`
+  não mudaram.
+- **A calculadora começa no exemplo da página e na unidade dele** (`doce`, o `valor` de
+  `EXEMPLOS_DAS_PARCELAS`; `entradaDasParcelas(doce)`, que sem argumento continua no cookie). Com
+  `doce`, as pílulas de doce e de unidade não aparecem: a página já é daquele doce. O preço de
+  partida é o preço de etiqueta do topo, e `calculadora.test.ts` prende isso para os três.
+- **No celular, a calculadora vem antes dos passos**, ao contrário da página de doces (`#d394`):
+  quem chega aqui já tem o doce na cabeça e quer o número dela; a dica de cada campo e os passos
+  logo depois explicam o que ela não souber pôr.
+- **A `ContaAberta` sai, e não fica ao lado**: o exemplo é o estado inicial da calculadora, e os
+  dois mostrariam o mesmo número de novo. Continua uma porção rosa por página.
+- **O texto aponta para a conta** (`NaConta`, link para `#sua-conta` no `Artigo`): no fim da
+  resposta do topo, na pergunta "Quanto cobrar…" e no fim da seção que só a página tem (zerar
+  "Sua hora" no brigadeiro, a comissão nas taxas no bolo de pote, uma conta por tamanho no bolo).
+
+**Consequência.** São as primeiras páginas de doce com JavaScript de cliente; sem ele, a
+calculadora aparece parada no exemplo, com o resultado. O bolo por quilo faz a conta do quilo de
+um tamanho: o valor fixo por bolo mais o quilo (`POR_BOLO`, `POR_QUILO`) pede campos que a
+`contaDasParcelas` não tem e volta se o Search Console mostrar a página com saída baixa. O
+`valor` de `EXEMPLOS_DAS_PARCELAS` passou a ter tipo literal (`DoceDasParcelas`). Nenhum campo,
+regra ou dependência.

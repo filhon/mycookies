@@ -14,6 +14,7 @@ import {
   entradaDasParcelas,
   EXEMPLOS_DAS_PARCELAS,
   type ContaDasParcelas,
+  type DoceDasParcelas,
   type EntradaDasParcelas,
   type ParcelasDoCusto,
   type UnidadeDeVenda,
@@ -74,10 +75,25 @@ const limpar = (texto: string) =>
     .replace(/,(?=.*,)/g, "");
 const numeroDe = (texto: string) => Number(texto.replace(",", ".")) || 0;
 
-export function CalculadoraDasParcelas({ className }: { className?: string }) {
-  const [entrada, setEntrada] = useState(entradaDasParcelas);
-  const [exemplo, setExemplo] = useState(EXEMPLOS_DAS_PARCELAS[0].valor);
-  const [unidade, setUnidade] = useState<UnidadeDeVenda>("unidade");
+/**
+ * Com `doce` (spec 178), a página já é daquele doce: a conta começa no exemplo
+ * dele, na unidade dele, e as pílulas de doce e de unidade não aparecem.
+ */
+export function CalculadoraDasParcelas({
+  doce,
+  className,
+}: {
+  doce?: DoceDasParcelas;
+  className?: string;
+}) {
+  const [entrada, setEntrada] = useState(() => entradaDasParcelas(doce));
+  const [exemplo, setExemplo] = useState<string>(
+    doce ?? EXEMPLOS_DAS_PARCELAS[0].valor,
+  );
+  const [unidade, setUnidade] = useState<UnidadeDeVenda>(
+    () =>
+      EXEMPLOS_DAS_PARCELAS.find((e) => e.valor === doce)?.unidade ?? "unidade",
+  );
   const [margem, setMargem] = useState(() => textoDe(entrada.margemDesejada));
   const [taxas, setTaxas] = useState(() => textoDe(entrada.taxas));
   const conta = contaDasParcelas(entrada);
@@ -96,33 +112,35 @@ export function CalculadoraDasParcelas({ className }: { className?: string }) {
 
   return (
     <div className={cn("flex flex-col gap-8", className)}>
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-col gap-2">
-          <p aria-hidden className="text-label font-medium text-ink">
-            Começar pelo exemplo do
-          </p>
-          <Pilulas
-            rotulo="Começar pelo exemplo do"
-            opcoes={EXEMPLOS_DAS_PARCELAS}
-            valor={exemplo}
-            aoMudar={comecarPelo}
-          />
+      {!doce && (
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-2">
+            <p aria-hidden className="text-label font-medium text-ink">
+              Começar pelo exemplo do
+            </p>
+            <Pilulas
+              rotulo="Começar pelo exemplo do"
+              opcoes={EXEMPLOS_DAS_PARCELAS}
+              valor={exemplo}
+              aoMudar={comecarPelo}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <p aria-hidden className="text-label font-medium text-ink">
+              Você vende por
+            </p>
+            <Pilulas
+              rotulo="Você vende por"
+              opcoes={UNIDADES}
+              valor={unidade}
+              aoMudar={setUnidade}
+            />
+            <p className="text-label text-ink-muted">
+              Só muda as palavras: os valores são do que você vende.
+            </p>
+          </div>
         </div>
-        <div className="flex flex-col gap-2">
-          <p aria-hidden className="text-label font-medium text-ink">
-            Você vende por
-          </p>
-          <Pilulas
-            rotulo="Você vende por"
-            opcoes={UNIDADES}
-            valor={unidade}
-            aoMudar={setUnidade}
-          />
-          <p className="text-label text-ink-muted">
-            Só muda as palavras: os valores são do que você vende.
-          </p>
-        </div>
-      </div>
+      )}
 
       <div className="grid gap-5 sm:grid-cols-2 sm:gap-x-4">
         {CAMPOS.map((c) => (

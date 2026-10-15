@@ -398,6 +398,24 @@ describe("contaDasParcelas", () => {
     });
   }
 
+  // Nas páginas de cada doce (spec 178), a calculadora começa no exemplo da
+  // página e dá o preço de etiqueta do topo dela.
+  for (const [doce, exemplo] of [
+    ["Brigadeiro", EXEMPLO_BRIGADEIRO],
+    ["Bolo", boloDe(2)],
+    ["Bolo de pote", EXEMPLO_BOLO_DE_POTE],
+  ] as const) {
+    it(`começa no ${doce} da página dele, no preço do topo`, () => {
+      const daTabela = calcularPrecoSugerido(
+        exemplo.custo.custoUnitario,
+        exemplo.parametros,
+      );
+      expect(contaDasParcelas(entradaDasParcelas(doce)).preco).toEqual(
+        daTabela,
+      );
+    });
+  }
+
   it("o cento de brigadeiro sai a R$ 176,50", () => {
     const { preco } = comExemplo(brigadeiro);
     expect(preco.ok && preco.precoArredondado).toBe(17650);
