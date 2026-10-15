@@ -166,6 +166,7 @@ export function TelaOrcamento({ id }: { id: string }) {
         hora: salvo.horaEntrega,
         endereco: salvo.entrega.endereco ?? undefined,
       },
+      retirada: configuracao.dado?.retirada?.endereco,
       formaNome: forma?.nome,
       formaInstrucoes: forma?.instrucoes,
       formaPix: forma?.pix,

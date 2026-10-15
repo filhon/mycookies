@@ -12762,3 +12762,41 @@ WhatsApp competia com "Aprovar" e "Copiar o Pix". A página não sabia que tinha
 
 **Consequência.** Nenhuma regra, schema ou dependência. A hora de cada passo e o aviso quando o
 passo muda ficam para depois (173).
+
+## D389 · O link do pedido de retirada diz onde, e todo pedido por vir vai para a agenda
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 172 · amplia a `#d320`.
+
+**Contexto.** O pedido de retirada dizia "Retirada" e mais nada: o endereço morava na cabeça da
+cliente ou no recado do cardápio. E o dia combinado vivia no link e na conversa, e não na agenda
+dela.
+
+**Decisão.**
+
+- **`ConfiguracaoGeral.retirada?: { endereco; horario? }`**, schema aditivo aprovado na spec.
+  Um endereço por conta, não por pedido: quem retira em dois lugares escreve os dois no
+  `horario`. Escrito na Configuração, "A sua marca", no "Salvar" de sempre (`#d283`), com `v`.
+  Endereço vazio apaga os dois: horário sem lugar não diz onde.
+- **A lista fechada da `#d320` ganha `retirada`**, só quando `entrega.tipo === "RETIRADA"`.
+  Nunca no cardápio aberto nem na prévia do link: muita confeiteira retira em casa, e só quem tem
+  a chave de um pedido de retirada vê. Na página, `MapPin` com o endereço, "Abrir no mapa" para
+  `google.com/maps/search/?api=1&query=…` (a URL universal) e, com horário, `Clock` em
+  `--ink-muted`.
+- **O resumo do WhatsApp** leva ", na {endereço}" na linha da retirada. O domínio recebe o
+  endereço pronto (`ResumoParaCliente.retirada`), como recebe o link.
+- **`.ics`, e não o link do Google Agenda**: abre a agenda do aparelho, seja qual for.
+  `eventoDoPedido` em `domain/agenda.ts`: com hora, `DTSTART` em UTC (Brasília +3, `#d160`) e
+  uma hora; sem hora, dia inteiro. `UID` = `{pedidoId}@rende`, para baixar de novo atualizar e
+  não duplicar. `DESCRIPTION` só com o código e o link: o arquivo vai parar em agenda
+  compartilhada. Alarme às 9h da véspera, fixo, como `TRIGGER` relativo ao início (`-PT{n}M`),
+  que todo leitor entende, em vez de data absoluta; no dia inteiro, o início é a meia-noite de
+  quem abre, e a mesma conta dá 9h. Linhas dobradas em 75 octetos (RFC 5545 §3.1), escapes de
+  `\`, `,`, `;` e quebra de linha.
+- **A rota** `GET /c/[contaId]/pedido/[pedidoId]/[chave]/agenda` passa por `pedidoPelaChave`, a
+  mesma porta da página, e por `vaiParaAgenda` (fora do orçamento, não cancelado, não entregue,
+  dia de hoje em diante em Brasília); fora disso, 404. O link dentro do evento usa a origem da
+  requisição, a mesma que a cliente abriu. `Acompanhamento.naAgenda` diz à página quando mostrar
+  "Pôr na agenda do celular", secundário, logo abaixo da linha do quando.
+
+**Consequência.** Nenhuma regra, índice ou dependência. Uma rota pública nova de leitura, com as
+guardas da página. Endereço por pedido, mapa desenhado e lembrete enviado pelo Rende ficam fora.

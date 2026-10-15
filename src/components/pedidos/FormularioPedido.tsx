@@ -861,6 +861,7 @@ export function FormularioPedido({
         hora: valores.horaEntrega || undefined,
         endereco: valores.endereco || undefined,
       },
+      retirada: configuracao?.retirada?.endereco,
       formaNome: forma?.nome,
       formaInstrucoes: forma?.instrucoes,
       formaPix: forma?.pix,

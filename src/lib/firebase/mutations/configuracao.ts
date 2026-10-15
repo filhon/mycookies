@@ -99,6 +99,17 @@ export function corpoDaConfiguracao(dados: DadosConfiguracao) {
         instagram: dados.contato.instagram?.trim() || deleteField(),
       },
     }),
+    // Sem endereço, o horário sozinho não diz onde: os dois saem (spec 172).
+    ...(dados.retirada && {
+      retirada: dados.retirada.endereco.trim()
+        ? {
+            endereco: dados.retirada.endereco.trim(),
+            ...(dados.retirada.horario?.trim() && {
+              horario: dados.retirada.horario.trim(),
+            }),
+          }
+        : deleteField(),
+    }),
     assinaturaDataUrl: dados.assinaturaDataUrl || deleteField(),
     frase: dados.frase?.trim() || deleteField(),
     condicoes: dados.condicoes?.trim() || deleteField(),

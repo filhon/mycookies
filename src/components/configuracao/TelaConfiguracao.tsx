@@ -269,6 +269,9 @@ interface EstadoConfiguracao {
   // A folha do orçamento (spec 017). Texto vazio e `null` são "sem".
   telefone: string;
   instagram: string;
+  /** Onde e quando se retira (spec 172). */
+  retiradaEndereco: string;
+  retiradaHorario: string;
   assinaturaDataUrl: string | null;
   frase: string;
   condicoes: string;
@@ -307,6 +310,8 @@ function estadoInicial(
     categoriasProduto: dado?.categoriasProduto ?? [],
     telefone: dado?.contato?.telefone ?? "",
     instagram: dado?.contato?.instagram ?? "",
+    retiradaEndereco: dado?.retirada?.endereco ?? "",
+    retiradaHorario: dado?.retirada?.horario ?? "",
     assinaturaDataUrl: dado?.assinaturaDataUrl ?? null,
     frase: dado?.frase ?? "",
     condicoes: dado?.condicoes ?? "",
@@ -333,6 +338,10 @@ function paraDados(estado: EstadoConfiguracao): DadosConfiguracao {
   return {
     ...(estado.nomeNegocio ? { nomeNegocio: estado.nomeNegocio } : {}),
     contato: { telefone: estado.telefone, instagram: estado.instagram },
+    retirada: {
+      endereco: estado.retiradaEndereco,
+      horario: estado.retiradaHorario,
+    },
     frase: estado.frase,
     condicoes: estado.condicoes,
     ...(estado.assinaturaDataUrl && {
@@ -685,6 +694,7 @@ function ConfiguracaoDaDona() {
       ...dados.operacional,
       ...dados.precificacao,
       contato: dados.contato,
+      retirada: dados.retirada,
       assinaturaDataUrl: dados.assinaturaDataUrl,
       frase: dados.frase,
       condicoes: dados.condicoes,
@@ -1189,6 +1199,32 @@ function ConfiguracaoDaDona() {
                   value={estado.instagram}
                   onChange={(evento) =>
                     definir("instagram", evento.target.value)
+                  }
+                />
+              </div>
+
+              {/* Onde se retira (spec 172): só para quem tem a chave de um
+                  pedido de retirada, porque muita confeiteira retira em casa. */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Campo
+                  rotulo="Onde se retira"
+                  dica="Aparece só no link de um pedido de retirada. O cardápio aberto não mostra."
+                  autoComplete="street-address"
+                  placeholder="Rua das Flores, 120, Boa Viagem"
+                  maxLength={160}
+                  value={estado.retiradaEndereco}
+                  onChange={(evento) =>
+                    definir("retiradaEndereco", evento.target.value)
+                  }
+                  erro={erros.retirada}
+                />
+                <Campo
+                  rotulo="Quando se retira"
+                  placeholder="De terça a sábado, das 14h às 18h"
+                  maxLength={80}
+                  value={estado.retiradaHorario}
+                  onChange={(evento) =>
+                    definir("retiradaHorario", evento.target.value)
                   }
                 />
               </div>

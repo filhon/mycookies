@@ -1,5 +1,6 @@
 import type {
   Centavos,
+  ConfiguracaoGeral,
   DataISO,
   FichaTecnica,
   FormaPagamento,
@@ -14,6 +15,7 @@ import {
   rotuloDiaPorExtenso,
   rotuloSoODiaDaSemana,
 } from "./datas";
+import { vaiParaAgenda } from "./agenda";
 import { faltaPagar, nomeComEscolhas, quantidadeEmTexto } from "./pedido";
 import { brCodePix } from "./pix";
 
@@ -67,6 +69,11 @@ export interface Acompanhamento {
   dia: string;
   hora?: string;
   entrega: { tipo: "RETIRADA" | "ENTREGA"; endereco?: string };
+  /** Onde e quando se retira (spec 172): só no pedido de retirada, nunca no
+   * cardápio, porque muita confeiteira retira em casa. */
+  retirada?: { endereco: string; horario?: string };
+  /** "Pôr na agenda do celular" (spec 172): `vaiParaAgenda`. */
+  naAgenda: boolean;
   itens: {
     quantidade: string;
     nome: string;
@@ -237,7 +244,9 @@ export function pixDoPedido(
 
 export function acompanhamentoDoPedido(
   pedido: PedidoAcompanhado,
-  negocio: Acompanhamento["negocio"],
+  negocio: Acompanhamento["negocio"] & {
+    retirada?: ConfiguracaoGeral["retirada"];
+  },
   formas: FormaPagamento[],
   hojeISO: DataISO,
   fichas: FichaAcompanhada[] = [],
@@ -262,6 +271,8 @@ export function acompanhamentoDoPedido(
   const falta = faltaPagar(pedido);
   const pix = pixDoPedido(pedido, formas, falta);
   const endereco = pedido.entrega.endereco?.trim();
+  const retirada =
+    tipo === "RETIRADA" ? negocio.retirada?.endereco.trim() : undefined;
 
   return {
     negocio: {
@@ -311,6 +322,15 @@ export function acompanhamentoDoPedido(
       tipo,
       ...(tipo === "ENTREGA" && endereco ? { endereco } : {}),
     },
+    ...(retirada
+      ? {
+          retirada: {
+            endereco: retirada,
+            ...opcional("horario", negocio.retirada?.horario),
+          },
+        }
+      : {}),
+    naAgenda: vaiParaAgenda(pedido, hojeISO),
     itens: pedido.itens.map((item) => ({
       quantidade: quantidadeEmTexto(item.quantidade),
       nome: nomeComEscolhas(item),

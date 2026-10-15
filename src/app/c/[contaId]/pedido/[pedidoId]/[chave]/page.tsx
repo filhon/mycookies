@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache, type ReactNode } from "react";
 import {
+  CalendarPlus,
   Check,
   Circle,
   CircleDot,
+  Clock,
+  ExternalLink,
   MapPin,
   MessageCircle,
   type LucideIcon,
@@ -14,7 +17,11 @@ import { BotaoCopiar } from "@/components/ui/BotaoCopiar";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { Qr } from "@/components/ui/Qr";
-import { acaoDaVez, type Acompanhamento } from "@/lib/domain/acompanhamento";
+import {
+  acaoDaVez,
+  caminhoDoAcompanhamento,
+  type Acompanhamento,
+} from "@/lib/domain/acompanhamento";
 import { formatarMoeda } from "@/lib/domain/money";
 import { linkDoWhatsApp } from "@/lib/domain/whatsapp";
 import { lerAcompanhamento } from "@/lib/server/cardapio";
@@ -113,6 +120,20 @@ export default async function PaginaDoPedido({ params }: Props) {
       {visto.quando && (
         <p className="mt-1 text-heading text-ink">{visto.quando}</p>
       )}
+      {/* O dia combinado vai para a agenda dela, com o aviso na véspera
+          (spec 172). A rota tem as guardas da página. */}
+      {visto.naAgenda && (
+        <a
+          href={`${caminhoDoAcompanhamento(contaId, pedidoId, chave)}/agenda`}
+          className={classesBotao({
+            variante: "secundaria",
+            className: "mt-4",
+          })}
+        >
+          <CalendarPlus aria-hidden className="size-5" strokeWidth={1.75} />
+          Pôr na agenda do celular
+        </a>
+      )}
       {visto.validoAte && (
         <p className="mt-2 text-body text-ink-muted">
           Este orçamento vale até {visto.validoAte}.
@@ -133,6 +154,37 @@ export default async function PaginaDoPedido({ params }: Props) {
           <Linha icone={MapPin}>
             <span className="wrap-break-word">{visto.entrega.endereco}</span>
           </Linha>
+        </ul>
+      )}
+
+      {/* Onde e quando se retira (spec 172). O link universal do Maps: no
+          Android abre o app, no iPhone o app do Google ou o site. */}
+      {visto.retirada && (
+        <ul className="mt-8 space-y-2 text-body text-ink">
+          <Linha icone={MapPin}>
+            <span className="block wrap-break-word">
+              {visto.retirada.endereco}
+            </span>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(visto.retirada.endereco)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={classesBotao({
+                variante: "terciaria",
+                className: "-ml-4",
+              })}
+            >
+              <ExternalLink aria-hidden className="size-5" strokeWidth={1.75} />
+              Abrir no mapa
+            </a>
+          </Linha>
+          {visto.retirada.horario && (
+            <Linha icone={Clock}>
+              <span className="wrap-break-word text-ink-muted">
+                {visto.retirada.horario}
+              </span>
+            </Linha>
+          )}
         </ul>
       )}
 

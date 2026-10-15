@@ -1,8 +1,10 @@
 import { timingSafeEqual } from "node:crypto";
 import {
   acompanhamentoDoPedido,
+  caminhoDoAcompanhamento,
   type Acompanhamento,
 } from "@/lib/domain/acompanhamento";
+import { eventoDoPedido, vaiParaAgenda } from "@/lib/domain/agenda";
 import { paraSituar, permite, situacaoDaConta } from "@/lib/domain/assinatura";
 import {
   entraNoCardapio,
@@ -329,11 +331,47 @@ export async function lerAcompanhamento(
       ...(whatsapp ? { whatsapp } : {}),
       logo: vitrine?.logo,
       condicoes: configuracao?.condicoes,
+      retirada: configuracao?.retirada,
     },
     configuracao?.formasPagamento ?? [],
     hojeEmBrasilia(new Date()),
     fichas,
   );
+}
+
+/**
+ * O `.ics` do pedido (spec 172): a mesma porta da página, `pedidoPelaChave`, e
+ * só enquanto `vaiParaAgenda`. `origem` é a do link que a cliente abriu.
+ */
+export async function lerEventoDoPedido(
+  endereco: string,
+  pedidoId: string,
+  chave: string,
+  origem: string,
+): Promise<{ codigo: string; ics: string } | null> {
+  const achado = await pedidoPelaChave(endereco, pedidoId, chave);
+  if (!achado) return null;
+  const { conta, configuracao, pedido } = achado;
+  if (!vaiParaAgenda(pedido, hojeEmBrasilia(new Date()))) return null;
+
+  const tipo = pedido.entrega.tipo;
+  return {
+    codigo: pedido.codigo,
+    ics: eventoDoPedido({
+      pedidoId,
+      codigo: pedido.codigo,
+      loja: conta.nome,
+      tipo,
+      dataISO: pedido.dataEntregaISO,
+      hora: pedido.horaEntrega,
+      local:
+        tipo === "RETIRADA"
+          ? configuracao?.retirada?.endereco
+          : (pedido.entrega.endereco ?? undefined),
+      link: `${origem}${caminhoDoAcompanhamento(endereco, pedidoId, chave)}`,
+      agora: new Date(),
+    }),
+  };
 }
 
 /** Os bytes da foto de um produto do cardápio aberto, ou `null` (404). */

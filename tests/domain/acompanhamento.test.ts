@@ -155,6 +155,7 @@ describe("acompanhamentoDoPedido", () => {
         "falta",
         "hora",
         "itens",
+        "naAgenda",
         "negocio",
         "pago",
         "passos",
@@ -203,6 +204,40 @@ describe("acompanhamentoDoPedido", () => {
       "7500",
     ]) {
       expect(tudo).not.toContain(proibido);
+    }
+  });
+
+  it("onde se retira: só no pedido de retirada (spec 172)", () => {
+    const negocio = {
+      ...NEGOCIO,
+      retirada: { endereco: " Rua das Flores, 120 ", horario: "  " },
+    };
+    const naRetirada = acompanhamentoDoPedido(
+      pedido({ entrega: { tipo: "RETIRADA", taxa: 0 } }),
+      negocio,
+      [],
+      HOJE,
+    );
+    expect(naRetirada.retirada).toEqual({ endereco: "Rua das Flores, 120" });
+    expect(
+      acompanhamentoDoPedido(
+        pedido({ entrega: { tipo: "RETIRADA", taxa: 0 } }),
+        { ...NEGOCIO, retirada: { endereco: "Rua X", horario: "Sáb, 14h" } },
+        [],
+        HOJE,
+      ).retirada,
+    ).toEqual({ endereco: "Rua X", horario: "Sáb, 14h" });
+    const naEntrega = acompanhamentoDoPedido(pedido(), negocio, [], HOJE);
+    expect(Object.keys(naEntrega)).not.toContain("retirada");
+    expect(JSON.stringify(naEntrega)).not.toContain("Flores");
+  });
+
+  it("vai para a agenda só com o dia por vir (spec 172)", () => {
+    expect(acompanhar().naAgenda).toBe(true);
+    expect(acompanhar({ dataEntregaISO: HOJE }).naAgenda).toBe(true);
+    expect(acompanhar({ dataEntregaISO: "2026-10-09" }).naAgenda).toBe(false);
+    for (const status of ["ORCAMENTO", "CANCELADO", "ENTREGUE"] as const) {
+      expect(acompanhar({ status }).naAgenda).toBe(false);
     }
   });
 

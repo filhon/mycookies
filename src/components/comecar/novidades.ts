@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-15",
+    titulo: "O link do pedido diz onde retirar e vai para a agenda da cliente",
+    frase:
+      "Escreva uma vez onde e quando se retira: o link do pedido de retirada mostra o endereço com o mapa, e a cliente põe o dia na agenda do celular, com aviso na véspera.",
+    href: "/configuracao#a-sua-marca",
+  },
+  {
+    dataISO: "2026-10-15",
     titulo: "O link do pedido diz quando, e o Pix vem primeiro",
     frase:
       "A cliente abre e já vê o dia e a hora, paga antes de rolar a lista e manda o comprovante com o código do pedido.",

@@ -104,6 +104,21 @@ describe("mensagemDoPedido", () => {
     expect(texto).not.toContain("Entrega em");
   });
 
+  it("diz onde se retira, quando ela disse (spec 172)", () => {
+    const texto = mensagemDoPedido({
+      ...PEDIDO,
+      entrega: { tipo: "RETIRADA", dataISO: "2026-10-17", hora: "15:00" },
+      retirada: " Rua das Flores, 120 ",
+    });
+    expect(texto).toContain(
+      "Retirada em sábado, 17 de outubro, às 15:00, na Rua das Flores, 120",
+    );
+    // Na entrega, o endereço da loja não entra.
+    expect(
+      mensagemDoPedido({ ...PEDIDO, retirada: "Rua das Flores, 120" }),
+    ).not.toContain("Flores");
+  });
+
   it("diz a hora depois do dia, quando foi combinada", () => {
     const texto = mensagemDoPedido({
       ...PEDIDO,

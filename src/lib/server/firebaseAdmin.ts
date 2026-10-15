@@ -36,6 +36,8 @@ import { getMessaging, type Messaging } from "firebase-admin/messaging";
  * do pedido (`#d357`), e só devolve o que
  * `acompanhamentoDoPedido` deixa passar, com a chave conferida por
  * `timingSafeEqual`.
+ * `/c/[contaId]/pedido/[pedidoId]/[chave]/agenda` (spec 172) lê o mesmo, pela
+ * mesma porta (`pedidoPelaChave`), e devolve só o `.ics` de `eventoDoPedido`.
  *
  * **`/api/cardapio/apelido`** (spec 116, `DECISOES.md#d319`) escreve, com o
  * token da dona, só em `apelidos/{apelido}` (a coleção na raiz que nenhum

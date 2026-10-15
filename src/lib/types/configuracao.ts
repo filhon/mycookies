@@ -98,6 +98,12 @@ export interface ConfiguracaoGeral {
   categoriasProduto: string[];
   /** O que a empresa vê no rodapé da folha (spec 017). Nada disso é obrigatório. */
   contato?: { telefone?: string; instagram?: string };
+  /**
+   * Onde e quando se retira (spec 172), como ela escreve. Sai só no link de um
+   * pedido de retirada, nunca no cardápio aberto: muita confeiteira retira em
+   * casa. Ausente = "não disse". `endereco` até 160, `horario` até 80.
+   */
+  retirada?: { endereco: string; horario?: string };
   /** Uma frase sua, para o rodapé do orçamento (spec 033, `DECISOES.md#d127`). */
   frase?: string;
   /**
@@ -172,6 +178,8 @@ export interface DadosConfiguracao {
   categoriasProduto: string[];
   /** O rodapé e a assinatura da folha do orçamento (spec 017). */
   contato?: ConfiguracaoGeral["contato"];
+  /** Onde se retira (spec 172). Endereço vazio apaga os dois. */
+  retirada?: { endereco: string; horario?: string };
   assinaturaDataUrl?: string;
   /** A frase dela no rodapé (`#d127`). */
   frase?: string;

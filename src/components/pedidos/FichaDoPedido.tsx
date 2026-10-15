@@ -265,6 +265,7 @@ export function FichaDoPedido({
             hora: pedido.horaEntrega,
             endereco: pedido.entrega.endereco ?? undefined,
           },
+          retirada: configuracao?.retirada?.endereco,
           formaNome: forma?.nome,
           formaInstrucoes: forma?.instrucoes,
           formaPix: forma?.pix,

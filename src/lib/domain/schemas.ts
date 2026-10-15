@@ -149,6 +149,20 @@ export const esquemaConfiguracao = z.object({
       instagram: z.string().trim().optional(),
     })
     .optional(),
+  // Onde se retira (spec 172), como ela escreve.
+  retirada: z
+    .object({
+      endereco: z
+        .string()
+        .trim()
+        .max(160, "O endereço precisa ser curto: até 160 letras."),
+      horario: z
+        .string()
+        .trim()
+        .max(80, "O horário precisa caber numa linha: até 80 letras.")
+        .optional(),
+    })
+    .optional(),
   assinaturaDataUrl: z.string().optional(),
   // A frase dela no rodapé da folha (`#d127`). Uma linha: 80 caracteres.
   frase: z

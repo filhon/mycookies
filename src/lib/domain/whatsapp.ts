@@ -81,6 +81,11 @@ export interface ResumoParaCliente {
     hora?: string;
     endereco?: string;
   };
+  /**
+   * Onde se retira (`ConfiguracaoGeral.retirada`, spec 172), pronto, como o
+   * link: só entra no pedido de retirada.
+   */
+  retirada?: string;
   /** O nome da forma escolhida, quando houver. Nunca a taxa dela. */
   formaNome?: string;
   /** Os dados para pagar por essa forma (`FormaPagamento.instrucoes`). */
@@ -193,7 +198,7 @@ export function mensagemDoPedido(
   const combinado = [
     resumo.entrega.tipo === "ENTREGA"
       ? `Entrega em ${dia}${endereco}`
-      : `Retirada em ${dia}`,
+      : `Retirada em ${dia}${resumo.retirada?.trim() ? `, na ${resumo.retirada.trim()}` : ""}`,
     ...(resumo.formaNome ? [`Pagamento: ${resumo.formaNome}`] : []),
     // Linha própria, e não um caso dentro da linha da forma: duas afirmações
     // independentes valem mais que uma frase com dois estados dentro.

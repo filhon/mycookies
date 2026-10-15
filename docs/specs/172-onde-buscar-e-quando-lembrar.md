@@ -123,10 +123,10 @@ outubro, às 15h, na Rua das Flores, 120". O domínio recebe o endereço pronto,
 
 ## Critérios de aceite
 
-- [ ] `retirada` gravada com `v`, só no link de pedido de retirada, nunca no cardápio.
-- [ ] O `.ics` com UTC certo, dia inteiro sem hora, `UID` estável, escapes, alarme na véspera.
-- [ ] A rota da agenda com as guardas da página; 404 fora das condições.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; decisão registrada; `ESTADO.md` e
+- [~] `retirada` gravada com `v`, só no link de pedido de retirada, nunca no cardápio.
+- [x] O `.ics` com UTC certo, dia inteiro sem hora, `UID` estável, escapes, alarme na véspera.
+- [~] A rota da agenda com as guardas da página; 404 fora das condições.
+- [x] `lint`, `typecheck`, `test` e `build` passam; decisão registrada; `ESTADO.md` e
       `novidades.ts` atualizados.
 
 ---
