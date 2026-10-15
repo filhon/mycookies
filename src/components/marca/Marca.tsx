@@ -143,7 +143,7 @@ export function Logotipo({
       aria-label="Rende"
       className={cn(
         "shrink-0",
-        tamanho === "lg" ? "h-9 w-33.75" : "h-6.5[97px]",
+        tamanho === "lg" ? "h-9 w-33.75" : "h-6.5 w-24.25",
         COR[tom],
         className,
       )}
