@@ -85,6 +85,9 @@ const FAIXA = faixaDoExemplo(EXEMPLO_BRIGADEIRO);
 
 const DESCRICAO_DA_PAGINA = `Some receita, forminhas, a hora de enrolar, gás e fixas; divida por 1 menos margem e maquininha. Um cento de ${formatarMoeda(custo.custoUnitario)} sai a ${formatarMoeda(PRECO_ETIQUETA)}.`;
 
+// A fase e as vagas do beta na `PortaDoBeta` do convite (spec 184, `#d407`).
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: { absolute: TITULO },
   description: DESCRICAO_DA_PAGINA,

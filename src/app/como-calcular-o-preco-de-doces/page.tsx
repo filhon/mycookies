@@ -184,6 +184,9 @@ const LINHAS = PAGINAS_DO_PRECO.flatMap((p) =>
 
 const DESCRICAO_DA_PAGINA = `Some ingredientes, embalagem, sua hora, gás e fixas na unidade em que vende e divida por 1 menos margem e taxas. O cento de brigadeiro sai a ${formatarMoeda(O_QUE_MUDA["/como-calcular-o-preco-do-brigadeiro"].preco)}.`;
 
+// A fase e as vagas do beta na `PortaDoBeta` do convite (spec 184, `#d407`).
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: { absolute: TITULO },
   description: DESCRICAO_DA_PAGINA,

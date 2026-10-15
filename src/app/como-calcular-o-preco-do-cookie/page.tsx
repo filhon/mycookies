@@ -54,6 +54,9 @@ const FAIXA = faixaDoExemplo(EXEMPLO);
 
 const DESCRICAO_DA_PAGINA = `Some ingredientes, embalagem, sua hora, gás e despesas fixas; divida por 1 menos margem e maquininha. Um cookie de ${formatarMoeda(custo.custoUnitario)} sai a ${formatarMoeda(PRECO_ETIQUETA)}.`;
 
+// A fase e as vagas do beta na `PortaDoBeta` do convite (spec 184, `#d407`).
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: {
     absolute: "Como calcular o preço do cookie: a conta, passo a passo",

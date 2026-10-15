@@ -86,6 +86,9 @@ const FAIXA = faixaDoExemplo(EXEMPLO_BOLO);
 
 const DESCRICAO_DA_PAGINA = `Some ingredientes, caixa, sua hora, forno e fixas e divida pelos quilos. No bolo de 2 kg, o quilo que custa ${formatarMoeda(custo.custoUnitario)} sai a ${formatarMoeda(PRECO_ETIQUETA)}.`;
 
+// A fase e as vagas do beta na `PortaDoBeta` do convite (spec 184, `#d407`).
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: { absolute: TITULO },
   description: DESCRICAO_DA_PAGINA,

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Check, Mail, MessageCircle } from "lucide-react";
+import { Check, Lock, Mail, MessageCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { RESPONSAVEL } from "@/app/(auth)/responsavel";
@@ -10,6 +10,7 @@ import { FaixaDoCusto } from "@/components/site/FaixaDoCusto";
 import { LuzDaJanela } from "@/components/site/LuzDaJanela";
 import { DUVIDA_DO_SITE, Rodape, Topo } from "@/components/site/Moldura";
 import { OrigemDoLink } from "@/components/site/OrigemDoLink";
+import { PortaDoBeta } from "@/components/site/PortaDoBeta";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
@@ -26,6 +27,7 @@ import { DIAS_DE_TESTE } from "@/lib/domain/cadastro";
 import { EXEMPLO, faixaDoExemplo } from "@/lib/domain/exemplo";
 import { formatarMoeda } from "@/lib/domain/money";
 import { calcularPrecoSugerido } from "@/lib/domain/precificacao";
+import { lerBeta } from "@/lib/server/beta";
 import { lerPrecos, stripeDisponivel } from "@/lib/server/stripe";
 import type { Centavos, Pacote } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
@@ -40,8 +42,9 @@ import { URL_DO_SITE } from "../site";
  * `EXEMPLO` (`#d173`) ou do Stripe (`#d174`).
  */
 
-// O preço muda no Stripe, e a página alcança em até uma hora.
-export const revalidate = 3600;
+// O preço muda no Stripe e as vagas do beta em `plataforma/beta`; a página
+// alcança os dois em até cinco minutos (spec 184, `#d407`).
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: { absolute: "Rende · o preço certo de cada doce" },
@@ -282,7 +285,8 @@ async function precosOuNada(): Promise<Precos | null> {
 }
 
 export default async function PaginaConheca() {
-  const precos = await precosOuNada();
+  const [precos, beta] = await Promise.all([precosOuNada(), lerBeta()]);
+  const noBeta = beta.fase === "BETA";
   const sugerido = calcularPrecoSugerido(
     EXEMPLO.custo.custoUnitario,
     EXEMPLO.parametros,
@@ -301,6 +305,16 @@ export default async function PaginaConheca() {
       <main id="conteudo" className="overflow-x-clip">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 pt-8 pb-16 lg:grid-cols-[1fr_28rem] lg:items-center lg:gap-16 lg:px-10 lg:pt-16 lg:pb-24">
           <section aria-labelledby="frase">
+            {noBeta && (
+              <p className="mb-2 flex items-center gap-1.5 text-label text-ink-muted">
+                <Lock
+                  aria-hidden
+                  strokeWidth={1.75}
+                  className="size-4 shrink-0"
+                />
+                Em beta fechado, para {beta.vagas} confeiteiras.
+              </p>
+            )}
             <p className="text-label font-semibold text-ink-muted">
               Você sabe fazer doce. Isso nunca foi o problema.
             </p>
@@ -385,6 +399,7 @@ export default async function PaginaConheca() {
         <QuemJaUsa />
 
         <Preco
+          noBeta={noBeta}
           precos={precos}
           precoDoCookie={sugerido.ok ? sugerido.precoArredondado : 0}
         />
@@ -449,34 +464,37 @@ function SuaConta({ mensalDoPlano }: { mensalDoPlano?: Centavos }) {
           className="mt-10 lg:mt-14"
           mensalDoPlano={mensalDoPlano}
         >
-          <div className="flex flex-col gap-3">
-            <Link
-              href="/cadastro"
-              className={classesBotao({
-                variante: "primaria",
-                tamanho: "lg",
-                larguraTotal: true,
-                className: "lg:h-14",
-              })}
-            >
-              Começar o teste de {DIAS_DE_TESTE} dias
-            </Link>
-            <p className="text-center text-label text-ink-muted">
-              {temTelasDoMes ? (
-                <>
-                  Sem cartão.{" "}
-                  <a
-                    href="#depois"
-                    className="font-medium text-brand-ink underline underline-offset-4"
-                  >
-                    Veja o que acontece depois do preço
-                  </a>
-                </>
-              ) : (
-                "Sem cartão · funciona offline, na bancada"
-              )}
-            </p>
-          </div>
+          {/* No beta, a porta inteira, a `#lista` dos botões compactos. */}
+          <PortaDoBeta origem="conheca">
+            <div className="flex flex-col gap-3">
+              <Link
+                href="/cadastro"
+                className={classesBotao({
+                  variante: "primaria",
+                  tamanho: "lg",
+                  larguraTotal: true,
+                  className: "lg:h-14",
+                })}
+              >
+                Começar o teste de {DIAS_DE_TESTE} dias
+              </Link>
+              <p className="text-center text-label text-ink-muted">
+                {temTelasDoMes ? (
+                  <>
+                    Sem cartão.{" "}
+                    <a
+                      href="#depois"
+                      className="font-medium text-brand-ink underline underline-offset-4"
+                    >
+                      Veja o que acontece depois do preço
+                    </a>
+                  </>
+                ) : (
+                  "Sem cartão · funciona offline, na bancada"
+                )}
+              </p>
+            </div>
+          </PortaDoBeta>
         </CalculadoraDaPorta>
       </div>
     </section>
@@ -698,9 +716,12 @@ function QuemJaUsa() {
 }
 
 function Preco({
+  noBeta,
   precos,
   precoDoCookie,
 }: {
+  /** A fase `BETA`: o teste é de quem entra por convite (spec 184). */
+  noBeta: boolean;
   precos: Precos | null;
   /** O `precoArredondado` do `EXEMPLO`: o mês em cookies (`#d182`). */
   precoDoCookie: Centavos;
@@ -720,12 +741,19 @@ function Preco({
         Dois planos. O teste tem tudo.
       </h2>
       <p className="mt-4 max-w-[60ch] text-body text-ink-muted">
-        {DIAS_DE_TESTE} dias grátis, sem cartão, com tudo aberto. No fim do
-        teste você escolhe. Se não escolher, seus dados ficam guardados e você
-        continua vendo tudo; só não edita.
+        {noBeta
+          ? `No beta, quem entra por convite testa ${DIAS_DE_TESTE} dias grátis, sem cartão. Depois, assina se quiser.`
+          : `${DIAS_DE_TESTE} dias grátis, sem cartão, com tudo aberto. No fim do teste você escolhe. Se não escolher, seus dados ficam guardados e você continua vendo tudo; só não edita.`}
       </p>
 
-      <div className="mt-10 grid gap-4 md:grid-cols-2">
+      {noBeta && (
+        <h3 className="mt-10 text-heading font-semibold text-ink">
+          Depois do beta
+        </h3>
+      )}
+      <div
+        className={cn("grid gap-4 md:grid-cols-2", noBeta ? "mt-4" : "mt-10")}
+      >
         {pacotes.map((pacote) => {
           const preco = precos?.[pacote];
           const economia = preco ? economiaAnual(preco.mensal, preco.anual) : 0;
@@ -832,18 +860,29 @@ function Preco({
   );
 }
 
+/** No beta, a porta compacta: o formulário mora na `#lista` (spec 184). */
 function BotaoDoTeste() {
   return (
-    <Link
-      href="/cadastro"
-      className={classesBotao({
+    <PortaDoBeta
+      compacta
+      botao={classesBotao({
         variante: "primaria",
         tamanho: "lg",
         className: "h-14 px-6",
       })}
+      className="flex-col items-start"
     >
-      Começar o teste de {DIAS_DE_TESTE} dias
-    </Link>
+      <Link
+        href="/cadastro"
+        className={classesBotao({
+          variante: "primaria",
+          tamanho: "lg",
+          className: "h-14 px-6",
+        })}
+      >
+        Começar o teste de {DIAS_DE_TESTE} dias
+      </Link>
+    </PortaDoBeta>
   );
 }
 
@@ -932,19 +971,30 @@ function BarraDoCelular() {
   return (
     // O foco que desce pela página para acima da barra, e não atrás dela.
     <div className="rodape-seguro sticky bottom-0 border-t border-line bg-surface px-4 pt-3 lg:hidden [html:has(&)]:scroll-pb-28">
-      <Link
-        href="/cadastro"
-        className={classesBotao({
+      {/* No beta, a porta compacta no lugar das duas linhas (spec 184). */}
+      <PortaDoBeta
+        compacta
+        botao={classesBotao({
           variante: "primaria",
           tamanho: "lg",
           larguraTotal: true,
         })}
+        className="flex-col items-center gap-2"
       >
-        Testar {DIAS_DE_TESTE} dias grátis
-      </Link>
-      <p className="mt-2 text-center text-label text-ink-muted">
-        Sem cartão · cancela quando quiser
-      </p>
+        <Link
+          href="/cadastro"
+          className={classesBotao({
+            variante: "primaria",
+            tamanho: "lg",
+            larguraTotal: true,
+          })}
+        >
+          Testar {DIAS_DE_TESTE} dias grátis
+        </Link>
+        <p className="mt-2 text-center text-label text-ink-muted">
+          Sem cartão · cancela quando quiser
+        </p>
+      </PortaDoBeta>
     </div>
   );
 }

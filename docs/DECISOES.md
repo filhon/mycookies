@@ -13326,3 +13326,63 @@ parecer propaganda é o nome de quem manda.
 build (`previa.tsx`), e o rastreio do Next não pega o `readFile`: `outputFileTracingIncludes` no
 `next.config.ts` leva os dois arquivos para a função (conferido no `.nft.json` do build). A
 prévia do Vercel no passo 2 do roteiro é a prova em execução.
+
+## D406 · A porta do site é um componente que lê a fase
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 184 · estende a `#d401` e a
+`#d402`.
+
+**Contexto.** Seis páginas públicas, o login e o `llms.txt` convidavam ao teste de 14 dias, que
+na fase `BETA` dá numa porta fechada. Reescrever cada uma agora e de novo no lançamento é duas
+vezes o mesmo trabalho, e a volta à fase `BETA`, se precisar, seria a terceira.
+
+**Decisão.**
+
+- **`PortaDoBeta` (`components/site/`), componente de servidor.** Fase `PUBLICO`: o `children`,
+  o botão de hoje, intocado. Fase `BETA`: o selo "Beta fechado · por convite" (`label`, `Lock`,
+  em `ink-muted`, nunca rosa), a `fraseDasVagas`, a `ListaDeEspera` com a `origem` da página e
+  "Tenho um convite" terciário para `/cadastro`. Esgotadas: "Vagas do beta esgotadas" e "Você é
+  avisada quando abrirem mais.". A porta inteira leva `id="lista"`.
+- **`compacta`** (o topo da `Moldura`, o preço e o fim do desktop, a barra do celular): o selo e
+  "Entrar na lista" para `#lista`, com a classe do botão que ela substitui (`botao`), para a
+  hierarquia de cada tela continuar a mesma.
+- **Na `/conheca`, a porta inteira fica no fim da calculadora, e não no topo.** A spec pede no
+  topo, mas o "Começar o teste" saiu de lá na `#d187`: o primário do topo é "Fazer a conta do meu
+  cookie", e um formulário ali seria um segundo primário. O topo ganha só a linha "Em beta
+  fechado, para {vagas} confeiteiras." acima do título.
+- **`fraseDasVagas` (`domain/convite.ts`) sem `ocupadas` diz só o teto.** `lerBeta` devolve o
+  próprio `BETA_PADRAO` quando ninguém leu (sem credencial, leitura que falha), e a porta compara
+  por referência. Documento ausente com credencial é contagem lida: 0 ocupadas (`#d401`).
+- **`lerBeta` passou a `cache` do React**: a página e as portas dela fazem uma leitura só.
+- **O `/login` mostra "Tenho um convite" e "Entrar na lista"** (os dois para `/cadastro`) a menos
+  que `useBeta` diga `PUBLICO`; sem resposta, a porta fechada, como o `/cadastro` (`#d402`).
+- **O "Entrar na lista" da `ListaDeEspera` só destrava depois da hidratação.** Sem JavaScript o
+  envio nativo seria um `GET` com o e-mail no endereço; travado, nada sai (roteiro, item 5).
+- **Os artigos perdem o "Ver como o Rende funciona" na fase `BETA`**: estava na mesma linha do
+  botão do teste, e o logotipo do topo já leva à `/conheca`.
+
+**Consequência.** O lançamento (186) não toca em página: troca `plataforma/beta.fase` e, em até
+cinco minutos (`#d407`), o site volta ao teste. Nenhuma dependência, nenhuma regra.
+
+## D407 · As páginas revalidam a cada 5 minutos, e as prévias não falam de beta
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 184 · muda o `revalidate` da
+`#d174`.
+
+**Contexto.** As páginas públicas são estáticas; um número de vagas escrito no build fica velho
+no primeiro cadastro, e a troca de fase precisa chegar sem deploy.
+
+**Decisão.**
+
+- **`revalidate = 300`** na `/conheca` (era 3600 pelo preço do Stripe; o preço só fica mais
+  fresco), nas cinco páginas do preço e no `llms.txt` (era `force-static`). Cada revalidação é
+  uma leitura de `plataforma/beta` e, na `/conheca`, uma do Stripe.
+- **As `opengraph-image` e as `description` não mencionam o beta.** São geradas no build e o
+  WhatsApp guarda a prévia por endereço (`#d183`): "100 vagas" nelas sobreviveria semanas ao
+  lançamento. Continuam estáticas (o build mostra o `5m` só nas páginas).
+- **Os dados estruturados (`#d179`) ficam como estão.**
+- **O `llms.txt` diz a porta da fase**: "Em beta fechado, por convite, com lista de espera em
+  {URL}/conheca#lista." no beta; "Teste de 14 dias." no público.
+
+**Consequência.** O número das vagas tem no máximo cinco minutos de atraso, o mesmo do
+`s-maxage` do `GET /api/beta` (`#d402`).

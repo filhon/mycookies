@@ -57,6 +57,13 @@ export function ListaDeEspera({
     useSyncExternalStore(semAssinatura, esperaGuardada, () => null),
   );
   const [agora, setAgora] = useState<number | null>(null);
+  // Sem JavaScript o envio nativo poria o e-mail no endereço: o botão só
+  // destrava depois da hidratação (spec 184, roteiro item 5).
+  const hidratado = useSyncExternalStore(
+    semAssinatura,
+    () => true,
+    () => false,
+  );
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -242,6 +249,7 @@ export function ListaDeEspera({
               variante="primaria"
               tamanho="lg"
               larguraTotal
+              disabled={!hidratado}
               carregando={enviando}
             >
               Entrar na lista

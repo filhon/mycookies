@@ -113,12 +113,12 @@ O rodapé "feito com Rende" do cardápio continua apontando para `/conheca?de=ca
 
 ## Critérios de aceite
 
-- [ ] Nenhum caminho público leva a uma porta fechada sem explicação.
-- [ ] O número das vagas é o do `plataforma/beta`, com no máximo 5 minutos de atraso.
-- [ ] A fase `PUBLICO` devolve as páginas de hoje sem mudança de código.
-- [ ] Prévias e `description` iguais às de hoje.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] Decisões registradas; `ESTADO.md` atualizado. Nenhuma linha em `novidades.ts` (site).
+- [x] Nenhum caminho público leva a uma porta fechada sem explicação.
+- [~] O número das vagas é o do `plataforma/beta`, com no máximo 5 minutos de atraso.
+- [x] A fase `PUBLICO` devolve as páginas de hoje sem mudança de código.
+- [x] Prévias e `description` iguais às de hoje.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] Decisões registradas; `ESTADO.md` atualizado. Nenhuma linha em `novidades.ts` (site).
 
 ---
 

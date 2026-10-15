@@ -11,6 +11,7 @@ import { ContaAberta } from "@/components/site/ContaAberta";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, CampoSenha, focarPrimeiroErro } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
+import { useBeta } from "@/lib/hooks/useBeta";
 import { useConexao } from "@/lib/hooks/useDispositivo";
 import { traduzirErroAuth, useAuth } from "@/providers/AuthProvider";
 
@@ -32,6 +33,7 @@ export default function PaginaLogin() {
   const { usuario, carregando, entrar, reconferirAcesso } = useAuth();
   const router = useRouter();
   const online = useConexao();
+  const beta = useBeta();
   const formulario = useRef<HTMLFormElement>(null);
   const chegadaConferida = useRef(false);
 
@@ -230,15 +232,34 @@ export default function PaginaLogin() {
       </form>
 
       {/* A porta nova (spec 027). Quem entra pelo script continua sendo
-          instruída pelo script; a tela deixa de repetir a instrução. */}
+          instruída pelo script; a tela deixa de repetir a instrução. No beta
+          (spec 184), as duas saídas do `/cadastro`, que mostra as duas; sem a
+          resposta de `/api/beta`, a porta fechada, como o cadastro. */}
       <p className="mt-8 flex flex-wrap items-center justify-center gap-x-1 text-label text-ink-muted">
         Ainda não tem conta?
-        <Link
-          href="/cadastro"
-          className={classesBotao({ variante: "terciaria", tamanho: "sm" })}
-        >
-          Criar minha conta
-        </Link>
+        {beta?.fase === "PUBLICO" ? (
+          <Link
+            href="/cadastro"
+            className={classesBotao({ variante: "terciaria", tamanho: "sm" })}
+          >
+            Criar minha conta
+          </Link>
+        ) : (
+          <>
+            <Link
+              href="/cadastro"
+              className={classesBotao({ variante: "terciaria", tamanho: "sm" })}
+            >
+              Tenho um convite
+            </Link>
+            <Link
+              href="/cadastro"
+              className={classesBotao({ variante: "terciaria", tamanho: "sm" })}
+            >
+              Entrar na lista
+            </Link>
+          </>
+        )}
       </p>
     </MolduraDeEntrada>
   );

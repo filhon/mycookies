@@ -2,6 +2,7 @@ import Link from "next/link";
 import { linkDaAjuda } from "@/components/auth/MolduraDeEntrada";
 import { Logotipo } from "@/components/marca/Marca";
 import { Medicao } from "@/components/site/Medicao";
+import { PortaDoBeta } from "@/components/site/PortaDoBeta";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { DIAS_DE_TESTE } from "@/lib/domain/cadastro";
 import { cn } from "@/lib/utils/cn";
@@ -68,15 +69,21 @@ export function Topo({
         </Link>
         {/* Secundário: o primário da tela é o da frase (036, seção 4, item 8). */}
         {convite && (
-          <Link
-            href="/cadastro"
-            className={classesBotao({
-              tamanho: "sm",
-              className: "hidden lg:inline-flex",
-            })}
+          <PortaDoBeta
+            compacta
+            botao={classesBotao({ tamanho: "sm" })}
+            className="hidden items-center lg:flex"
           >
-            Testar {DIAS_DE_TESTE} dias
-          </Link>
+            <Link
+              href="/cadastro"
+              className={classesBotao({
+                tamanho: "sm",
+                className: "hidden lg:inline-flex",
+              })}
+            >
+              Testar {DIAS_DE_TESTE} dias
+            </Link>
+          </PortaDoBeta>
         )}
       </nav>
       {/* O topo é o que as duas páginas públicas têm em comum (spec 038). */}

@@ -161,3 +161,23 @@ export function fraseDaVaga({
   const sujeito = nome ? `${nome}, a ${quem}` : `A ${quem}`;
   return `${sujeito}${da} guardou uma vaga do Rende pra você.`;
 }
+
+/**
+ * O número das vagas nas páginas públicas (spec 184), da contagem de
+ * `plataforma/beta`. Sem `ocupadas` (o build sem credencial, a leitura que
+ * falhou), o teto sem o que resta: nunca um número inventado.
+ */
+export function fraseDasVagas({
+  vagas,
+  ocupadas,
+}: {
+  vagas: number;
+  ocupadas?: number;
+}): string {
+  if (ocupadas === undefined) return `São ${vagas} vagas, por convite.`;
+  const restam = vagas - ocupadas;
+  if (restam <= 0) return `As ${vagas} vagas estão ocupadas.`;
+  if (restam === 1) return "Resta só 1 vaga.";
+  if (restam <= 10) return `Restam só ${restam} vagas.`;
+  return `Restam ${restam} das ${vagas} vagas.`;
+}

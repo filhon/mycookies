@@ -4,6 +4,7 @@ import {
   convitesLivres,
   estadoDoConvite,
   formatarCodigo,
+  fraseDasVagas,
   fraseDaVaga,
   mensagemDoConvite,
   gerarCodigo,
@@ -163,5 +164,41 @@ describe("fraseDaVaga", () => {
     expect(
       fraseDaVaga({ proprietaria: "Maynara Silva", negocio: "Maynara Silva" }),
     ).toBe("A Maynara guardou uma vaga do Rende pra você.");
+  });
+});
+
+describe("fraseDasVagas", () => {
+  it("com mais de 10, o que resta e o teto", () => {
+    expect(fraseDasVagas({ vagas: 100, ocupadas: 63 })).toBe(
+      "Restam 37 das 100 vagas.",
+    );
+  });
+
+  it("de 10 para baixo, só o que resta", () => {
+    expect(fraseDasVagas({ vagas: 100, ocupadas: 90 })).toBe(
+      "Restam só 10 vagas.",
+    );
+    expect(fraseDasVagas({ vagas: 100, ocupadas: 98 })).toBe(
+      "Restam só 2 vagas.",
+    );
+  });
+
+  it("a última no singular", () => {
+    expect(fraseDasVagas({ vagas: 100, ocupadas: 99 })).toBe(
+      "Resta só 1 vaga.",
+    );
+  });
+
+  it("cheias, ou além do teto que baixou, estão ocupadas", () => {
+    expect(fraseDasVagas({ vagas: 100, ocupadas: 100 })).toBe(
+      "As 100 vagas estão ocupadas.",
+    );
+    expect(fraseDasVagas({ vagas: 80, ocupadas: 100 })).toBe(
+      "As 80 vagas estão ocupadas.",
+    );
+  });
+
+  it("sem a contagem, só o teto", () => {
+    expect(fraseDasVagas({ vagas: 100 })).toBe("São 100 vagas, por convite.");
   });
 });

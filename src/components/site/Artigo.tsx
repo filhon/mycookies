@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { PAGINAS_DO_PRECO } from "@/app/site";
+import { PortaDoBeta } from "@/components/site/PortaDoBeta";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { DIAS_DE_TESTE } from "@/lib/domain/cadastro";
 import { ROTULO_PARCELA } from "@/lib/domain/custoFicha";
@@ -248,28 +249,31 @@ export function Convite({
         <h2 id="convite" className={TITULO_H2}>
           {children}
         </h2>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Link
-            href="/cadastro"
-            className={classesBotao({
-              variante: "primaria",
-              tamanho: "lg",
-              className: "w-full sm:w-auto lg:h-14 lg:px-6",
-            })}
-          >
-            Começar o teste de {DIAS_DE_TESTE} dias
-          </Link>
-          <Link
-            href="/conheca"
-            className={classesBotao({
-              variante: "terciaria",
-              tamanho: "lg",
-              className: "w-full sm:w-auto",
-            })}
-          >
-            Ver como o Rende funciona
-          </Link>
-        </div>
+        {/* No beta, a lista no lugar do teste (spec 184). */}
+        <PortaDoBeta origem="artigo" className="mt-8">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Link
+              href="/cadastro"
+              className={classesBotao({
+                variante: "primaria",
+                tamanho: "lg",
+                className: "w-full sm:w-auto lg:h-14 lg:px-6",
+              })}
+            >
+              Começar o teste de {DIAS_DE_TESTE} dias
+            </Link>
+            <Link
+              href="/conheca"
+              className={classesBotao({
+                variante: "terciaria",
+                tamanho: "lg",
+                className: "w-full sm:w-auto",
+              })}
+            >
+              Ver como o Rende funciona
+            </Link>
+          </div>
+        </PortaDoBeta>
       </div>
     </section>
   );

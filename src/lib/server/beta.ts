@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { lerCodigo } from "@/lib/domain/convite";
 import {
   caminhos,
@@ -32,8 +33,12 @@ export function comoEstadoDoBeta(
  * A fase e as vagas. Documento ausente, servidor sem credencial (o build
  * local) ou leitura que falha: `BETA` com 100 vagas e nenhuma ocupada. Errar
  * para a porta fechada; quem abre é a transação, que lê de novo.
+ *
+ * Nesses três casos devolve o próprio `BETA_PADRAO`, e a `PortaDoBeta` (spec
+ * 184) compara por referência para não dizer um número que ninguém leu. Uma
+ * leitura por requisição (`cache`): a página e as portas dela leem juntas.
  */
-export async function lerBeta(): Promise<EstadoDoBeta> {
+export const lerBeta = cache(async (): Promise<EstadoDoBeta> => {
   if (!credencialDisponivel()) return BETA_PADRAO;
   try {
     const snap = await adminDb().doc(caminhos.plataformaBeta).get();
@@ -41,7 +46,7 @@ export async function lerBeta(): Promise<EstadoDoBeta> {
   } catch {
     return BETA_PADRAO;
   }
-}
+});
 
 /** O convite e quem o mandou, como a página `/convite/{codigo}` precisa. */
 export interface ConviteLido {
