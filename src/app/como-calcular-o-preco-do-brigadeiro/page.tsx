@@ -14,9 +14,14 @@ import {
   Valor,
 } from "@/components/site/Artigo";
 import { CalculadoraDasParcelas } from "@/components/site/CalculadoraDasParcelas";
+import { FaixaDoCusto } from "@/components/site/FaixaDoCusto";
 import { Rodape, Topo } from "@/components/site/Moldura";
 import { Dinheiro } from "@/components/ui/Dinheiro";
-import { EXEMPLO_BRIGADEIRO, HORA_DO_BRIGADEIRO } from "@/lib/domain/exemplo";
+import {
+  EXEMPLO_BRIGADEIRO,
+  faixaDoExemplo,
+  HORA_DO_BRIGADEIRO,
+} from "@/lib/domain/exemplo";
 import {
   formatarMoeda,
   formatarPercentual,
@@ -74,6 +79,8 @@ const AVULSO_A_MAIS = Math.round(
 /** O desconto de 10% no cento. */
 const COM_DESCONTO = PRECO_ETIQUETA - percentualDe(PRECO_ETIQUETA, 10);
 const NO_DESCONTO = verificarPreco(COM_DESCONTO, custo.custoUnitario, TAXAS);
+
+const FAIXA = faixaDoExemplo(EXEMPLO_BRIGADEIRO);
 
 const DESCRICAO_DA_PAGINA = `Some receita, forminhas, a hora de enrolar, gás e fixas; divida por 1 menos margem e maquininha. Um cento de ${formatarMoeda(custo.custoUnitario)} sai a ${formatarMoeda(PRECO_ETIQUETA)}.`;
 
@@ -193,161 +200,179 @@ export default function PaginaPrecoDoBrigadeiro() {
       <Topo />
 
       <main id="conteudo">
-        <article className="mx-auto max-w-6xl px-4 pt-8 pb-16 lg:px-10 lg:pt-16 lg:pb-24">
-          <CabecalhoDoArtigo
-            titulo="Como calcular o preço do brigadeiro, do cento ao avulso"
-            atualizadoEm={ATUALIZADO_EM}
-          >
-            Some o que o cento custa: ingredientes das quatro receitas, as
-            forminhas, as horas de panela e de enrolar, o gás e uma fatia das
-            despesas fixas. Divida por 1 menos a margem e menos a maquininha. Um
-            cento que custa <Valor centavos={custo.custoUnitario} />, com{" "}
-            {parametros.margemDesejada}% de margem e{" "}
-            {parametros.taxaCartaoConsiderada}% de maquininha, sai a{" "}
-            <Valor centavos={PRECO_ETIQUETA} />. Ou ponha os seus números{" "}
-            <NaConta>na conta logo abaixo</NaConta>.
-          </CabecalhoDoArtigo>
-
-          {/* A calculadora no exemplo da página (spec 178): logo depois da
-              resposta no celular, e grudada ao lado dos passos no desktop. */}
-          <div className="mt-10 grid gap-12 lg:mt-14 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-16">
-            <section
-              id="sua-conta"
-              aria-labelledby="sua-conta-titulo"
-              className="scroll-mt-4 lg:col-start-2 lg:row-start-1"
+        <article className="pt-8 pb-16 lg:pt-16 lg:pb-24">
+          <div className="mx-auto mb-10 max-w-6xl px-4 lg:mb-14 lg:px-10">
+            <CabecalhoDoArtigo
+              titulo="Como calcular o preço do brigadeiro, do cento ao avulso"
+              atualizadoEm={ATUALIZADO_EM}
             >
-              <div className="lg:sticky lg:top-8">
-                <h2 id="sua-conta-titulo" className={TITULO_H2}>
-                  Faça a conta do seu brigadeiro
-                </h2>
-                <CalculadoraDasParcelas doce="Brigadeiro" className="mt-6" />
-              </div>
-            </section>
-
-            <div className="max-w-[68ch] lg:col-start-1 lg:row-start-1">
-              <Passos
-                passos={PASSOS}
-                exemplo={EXEMPLO_BRIGADEIRO}
-                sufixo=" no cento."
-              />
-
-              <section aria-labelledby="margem" className="mt-16">
-                <h2 id="margem" className={TITULO_H2}>
-                  Margem e maquininha: a conta do cento
-                </h2>
-                <p className="mt-4 text-body text-ink">
-                  Com o custo do cento na mão, falta decidir quanto você quer
-                  que sobre. A maquininha tira a parte dela do preço, e não do
-                  custo. As duas saem do preço de venda, então as duas entram na
-                  divisão:
-                </p>
-                <Formula exemplo={EXEMPLO_BRIGADEIRO} preco={PRECO_CERTO} />
-                <p className="mt-6 text-body text-ink">
-                  Confira de volta: dos <Valor centavos={PRECO_CERTO} />, a
-                  maquininha leva <Valor centavos={NA_CONTA_CERTA.custoTaxas} />{" "}
-                  e o custo leva <Valor centavos={custo.custoUnitario} />.
-                  Sobram <Valor centavos={NA_CONTA_CERTA.lucroUnitario} /> pra
-                  você, {formatarPercentual(NA_CONTA_CERTA.margemReal, 0)} do
-                  preço. Na etiqueta, o meio real leva o cento a{" "}
-                  <Valor centavos={PRECO_ETIQUETA} />.
-                </p>
-              </section>
-            </div>
+              Some o que o cento custa: ingredientes das quatro receitas, as
+              forminhas, as horas de panela e de enrolar, o gás e uma fatia das
+              despesas fixas. Divida por 1 menos a margem e menos a maquininha.
+              Um cento que custa <Valor centavos={custo.custoUnitario} />, com{" "}
+              {parametros.margemDesejada}% de margem e{" "}
+              {parametros.taxaCartaoConsiderada}% de maquininha, sai a{" "}
+              <Valor centavos={PRECO_ETIQUETA} />. Ou ponha os seus números{" "}
+              <NaConta>na conta logo abaixo</NaConta>.
+            </CabecalhoDoArtigo>
           </div>
 
-          <div className="mt-16 border-t border-line pt-16">
-            <div className="max-w-[68ch]">
-              <section aria-labelledby="erro">
-                <h2 id="erro" className={TITULO_H2}>
-                  O erro do brigadeiro: esquecer a hora de enrolar
-                </h2>
-                <p className="mt-4 text-body text-ink">
-                  Quem faz a conta só com o que comprou deixa a própria hora de
-                  fora. Sem as {HORA_DO_BRIGADEIRO.horas} horas, o cento do
-                  exemplo custaria <Valor centavos={SEM_A_HORA} /> e sairia a{" "}
-                  <Valor centavos={PRECO_ERRADO} />. Nesse preço, pagos a
-                  receita, as forminhas, o gás, as fixas e a maquininha, sobram{" "}
-                  <Valor centavos={PARECE.lucroUnitario} />, e a conta parece
-                  dar os {parametros.margemDesejada}%.
-                </p>
-                <dl className="mt-6 grid divide-y divide-line border-y border-line sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-                  <div className="py-5 sm:pr-6">
-                    <dt className="text-label font-medium text-ink-muted">
-                      Sem a hora de enrolar
-                    </dt>
-                    <dd className="mt-1">
-                      <Dinheiro centavos={PRECO_ERRADO} tamanho="xl" />
-                      <p className="mt-2 flex items-start gap-1.5 text-label text-ink-muted">
-                        <TrendingDown
-                          aria-hidden
-                          className="mt-px size-4 shrink-0 text-negative"
-                          strokeWidth={1.75}
-                        />
-                        <span>
-                          Sobram <Valor centavos={NO_ERRO.lucroUnitario} />{" "}
+          {/* O cento do exemplo se montando até o preço da resposta, de borda
+              a borda (spec 179, `DECISOES.md#d397`). */}
+          {FAIXA && (
+            <FaixaDoCusto
+              {...FAIXA}
+              pergunta="Quanto custa um cento?"
+              unidade="cento"
+              porDoce="Por cento, depois da maquininha"
+            />
+          )}
+
+          <div className="mx-auto max-w-6xl px-4 lg:px-10">
+            {/* A calculadora no exemplo da página (spec 178): logo depois da
+              resposta no celular, e grudada ao lado dos passos no desktop. */}
+            <div className="mt-10 grid gap-12 lg:mt-14 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-16">
+              <section
+                id="sua-conta"
+                aria-labelledby="sua-conta-titulo"
+                className="scroll-mt-4 lg:col-start-2 lg:row-start-1"
+              >
+                <div className="lg:sticky lg:top-8">
+                  <h2 id="sua-conta-titulo" className={TITULO_H2}>
+                    Faça a conta do seu brigadeiro
+                  </h2>
+                  <CalculadoraDasParcelas doce="Brigadeiro" className="mt-6" />
+                </div>
+              </section>
+
+              <div className="max-w-[68ch] lg:col-start-1 lg:row-start-1">
+                <Passos
+                  passos={PASSOS}
+                  exemplo={EXEMPLO_BRIGADEIRO}
+                  sufixo=" no cento."
+                />
+
+                <section aria-labelledby="margem" className="mt-16">
+                  <h2 id="margem" className={TITULO_H2}>
+                    Margem e maquininha: a conta do cento
+                  </h2>
+                  <p className="mt-4 text-body text-ink">
+                    Com o custo do cento na mão, falta decidir quanto você quer
+                    que sobre. A maquininha tira a parte dela do preço, e não do
+                    custo. As duas saem do preço de venda, então as duas entram
+                    na divisão:
+                  </p>
+                  <Formula exemplo={EXEMPLO_BRIGADEIRO} preco={PRECO_CERTO} />
+                  <p className="mt-6 text-body text-ink">
+                    Confira de volta: dos <Valor centavos={PRECO_CERTO} />, a
+                    maquininha leva{" "}
+                    <Valor centavos={NA_CONTA_CERTA.custoTaxas} /> e o custo
+                    leva <Valor centavos={custo.custoUnitario} />. Sobram{" "}
+                    <Valor centavos={NA_CONTA_CERTA.lucroUnitario} /> pra você,{" "}
+                    {formatarPercentual(NA_CONTA_CERTA.margemReal, 0)} do preço.
+                    Na etiqueta, o meio real leva o cento a{" "}
+                    <Valor centavos={PRECO_ETIQUETA} />.
+                  </p>
+                </section>
+              </div>
+            </div>
+
+            <div className="mt-16 border-t border-line pt-16">
+              <div className="max-w-[68ch]">
+                <section aria-labelledby="erro">
+                  <h2 id="erro" className={TITULO_H2}>
+                    O erro do brigadeiro: esquecer a hora de enrolar
+                  </h2>
+                  <p className="mt-4 text-body text-ink">
+                    Quem faz a conta só com o que comprou deixa a própria hora
+                    de fora. Sem as {HORA_DO_BRIGADEIRO.horas} horas, o cento do
+                    exemplo custaria <Valor centavos={SEM_A_HORA} /> e sairia a{" "}
+                    <Valor centavos={PRECO_ERRADO} />. Nesse preço, pagos a
+                    receita, as forminhas, o gás, as fixas e a maquininha,
+                    sobram <Valor centavos={PARECE.lucroUnitario} />, e a conta
+                    parece dar os {parametros.margemDesejada}%.
+                  </p>
+                  <dl className="mt-6 grid divide-y divide-line border-y border-line sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+                    <div className="py-5 sm:pr-6">
+                      <dt className="text-label font-medium text-ink-muted">
+                        Sem a hora de enrolar
+                      </dt>
+                      <dd className="mt-1">
+                        <Dinheiro centavos={PRECO_ERRADO} tamanho="xl" />
+                        <p className="mt-2 flex items-start gap-1.5 text-label text-ink-muted">
+                          <TrendingDown
+                            aria-hidden
+                            className="mt-px size-4 shrink-0 text-negative"
+                            strokeWidth={1.75}
+                          />
+                          <span>
+                            Sobram <Valor centavos={NO_ERRO.lucroUnitario} />{" "}
+                            depois de pagar as {HORA_DO_BRIGADEIRO.horas} horas,{" "}
+                            {formatarPercentual(NO_ERRO.margemReal, 0)} do
+                            preço.
+                          </span>
+                        </p>
+                      </dd>
+                    </div>
+                    <div className="py-5 sm:pl-6">
+                      <dt className="text-label font-medium text-ink-muted">
+                        Com a hora na conta
+                      </dt>
+                      <dd className="mt-1">
+                        <Dinheiro centavos={PRECO_ETIQUETA} tamanho="xl" />
+                        <p className="mt-2 text-label text-ink-muted">
+                          Sobram <Valor centavos={NA_ETIQUETA.lucroUnitario} />{" "}
                           depois de pagar as {HORA_DO_BRIGADEIRO.horas} horas,{" "}
-                          {formatarPercentual(NO_ERRO.margemReal, 0)} do preço.
-                        </span>
-                      </p>
-                    </dd>
-                  </div>
-                  <div className="py-5 sm:pl-6">
-                    <dt className="text-label font-medium text-ink-muted">
-                      Com a hora na conta
-                    </dt>
-                    <dd className="mt-1">
-                      <Dinheiro centavos={PRECO_ETIQUETA} tamanho="xl" />
-                      <p className="mt-2 text-label text-ink-muted">
-                        Sobram <Valor centavos={NA_ETIQUETA.lucroUnitario} />{" "}
-                        depois de pagar as {HORA_DO_BRIGADEIRO.horas} horas,{" "}
-                        {formatarPercentual(NA_ETIQUETA.margemReal, 0)} do
-                        preço.
-                      </p>
-                    </dd>
-                  </div>
-                </dl>
-                <p className="mt-6 text-body text-ink">
-                  Os <Valor centavos={PARECE.lucroUnitario} /> não eram lucro:{" "}
-                  <Valor centavos={custo.custoMaoDeObra} /> deles são o seu
-                  trabalho. O que aquele cento deixa de verdade é{" "}
-                  <Valor centavos={NO_ERRO.lucroUnitario} />.
-                </p>
-                <p className="mt-4 text-body text-ink">
-                  <NaConta>
-                    Ponha zero em Sua hora na conta e veja o que sobra de
-                    verdade
-                  </NaConta>
-                  .
-                </p>
-              </section>
+                          {formatarPercentual(NA_ETIQUETA.margemReal, 0)} do
+                          preço.
+                        </p>
+                      </dd>
+                    </div>
+                  </dl>
+                  <p className="mt-6 text-body text-ink">
+                    Os <Valor centavos={PARECE.lucroUnitario} /> não eram lucro:{" "}
+                    <Valor centavos={custo.custoMaoDeObra} /> deles são o seu
+                    trabalho. O que aquele cento deixa de verdade é{" "}
+                    <Valor centavos={NO_ERRO.lucroUnitario} />.
+                  </p>
+                  <p className="mt-4 text-body text-ink">
+                    <NaConta>
+                      Ponha zero em Sua hora na conta e veja o que sobra de
+                      verdade
+                    </NaConta>
+                    .
+                  </p>
+                </section>
 
-              <section aria-labelledby="avulso" className="mt-16">
-                <h2 id="avulso" className={TITULO_H2}>
-                  O brigadeiro avulso
-                </h2>
-                <p className="mt-4 text-body text-ink">
-                  Quem vende o cento também vende brigadeiro solto, no balcão ou
-                  na caixinha de quatro. A conta é a mesma, com o custo de um:{" "}
-                  <Valor centavos={UM_BRIGADEIRO} /> ÷{" "}
-                  {fracao(100 - parametros.margemDesejada - TAXAS)} ={" "}
-                  <Valor centavos={AVULSO_CONTA} />, e o meio real leva a
-                  etiqueta a <Valor centavos={AVULSO_ETIQUETA} />.
-                </p>
-                <p className="mt-4 text-body text-ink">
-                  O cento de <Valor centavos={PRECO_ETIQUETA} /> sai a{" "}
-                  <Valor centavos={CENTO_POR_CEM} /> cada, e o avulso fica{" "}
-                  {AVULSO_A_MAIS}% acima. Antes de arredondar, os dois davam{" "}
-                  <Valor centavos={AVULSO_CONTA} />: o meio real sobe{" "}
-                  <Valor centavos={PRECO_ETIQUETA - PRECO_CERTO} /> num cento
-                  inteiro e <Valor centavos={AVULSO_ETIQUETA - AVULSO_CONTA} />{" "}
-                  num brigadeiro só. Está certo que suba: atender e cobrar um
-                  brigadeiro leva o mesmo tempo que atender e cobrar um cento.
-                </p>
-              </section>
+                <section aria-labelledby="avulso" className="mt-16">
+                  <h2 id="avulso" className={TITULO_H2}>
+                    O brigadeiro avulso
+                  </h2>
+                  <p className="mt-4 text-body text-ink">
+                    Quem vende o cento também vende brigadeiro solto, no balcão
+                    ou na caixinha de quatro. A conta é a mesma, com o custo de
+                    um: <Valor centavos={UM_BRIGADEIRO} /> ÷{" "}
+                    {fracao(100 - parametros.margemDesejada - TAXAS)} ={" "}
+                    <Valor centavos={AVULSO_CONTA} />, e o meio real leva a
+                    etiqueta a <Valor centavos={AVULSO_ETIQUETA} />.
+                  </p>
+                  <p className="mt-4 text-body text-ink">
+                    O cento de <Valor centavos={PRECO_ETIQUETA} /> sai a{" "}
+                    <Valor centavos={CENTO_POR_CEM} /> cada, e o avulso fica{" "}
+                    {AVULSO_A_MAIS}% acima. Antes de arredondar, os dois davam{" "}
+                    <Valor centavos={AVULSO_CONTA} />: o meio real sobe{" "}
+                    <Valor centavos={PRECO_ETIQUETA - PRECO_CERTO} /> num cento
+                    inteiro e{" "}
+                    <Valor centavos={AVULSO_ETIQUETA - AVULSO_CONTA} /> num
+                    brigadeiro só. Está certo que suba: atender e cobrar um
+                    brigadeiro leva o mesmo tempo que atender e cobrar um cento.
+                  </p>
+                </section>
 
-              <Perguntas perguntas={PERGUNTAS} />
+                <Perguntas perguntas={PERGUNTAS} />
 
-              <OutrosDoces endereco={ENDERECO} />
+                <OutrosDoces endereco={ENDERECO} />
+              </div>
             </div>
           </div>
         </article>

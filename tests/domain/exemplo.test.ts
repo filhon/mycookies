@@ -6,6 +6,7 @@ import {
   EXEMPLO,
   EXEMPLO_BOLO_DE_POTE,
   EXEMPLO_BRIGADEIRO,
+  faixaDoExemplo,
   NO_APLICATIVO,
   POR_BOLO,
 } from "@/lib/domain/exemplo";
@@ -461,6 +462,28 @@ describe("a tabela da página de doces", () => {
       verificarPreco(1700, 910, somaTaxas(NO_APLICATIVO)).lucroUnitario,
     ).toBe(450);
   });
+});
+
+// A faixa do custo no topo de cada página (spec 179). `TEMPOS` presume cinco
+// parcelas; elas somam, na unidade de venda, o custo da resposta, e o preço e
+// a sobra são os de cima: 850 e 366 · 17650 e 7067 · 11750 e 4712 · 1700 e
+// 705. O cookie é também a faixa da `/conheca`.
+describe("a faixa de cada página", () => {
+  it.each([
+    ["cookie", EXEMPLO, 441, 850, 43, 366],
+    ["cento de brigadeiro", EXEMPLO_BRIGADEIRO, 9700, 17650, 883, 7067],
+    ["quilo do bolo de 2 kg", boloDe(2), 6450, 11750, 588, 4712],
+    ["pote, no balcão", EXEMPLO_BOLO_DE_POTE, 910, 1700, 85, 705],
+  ])(
+    "%s: cinco parcelas até o preço da resposta",
+    (_, exemplo, custo, preco, maquininha, sobra) => {
+      const faixa = faixaDoExemplo(exemplo);
+      expect(faixa).toMatchObject({ custo, preco, maquininha, sobra });
+      expect(faixa?.parcelas).toHaveLength(5);
+      expect(faixa?.parcelas.reduce((s, p) => s + p.centavos, 0)).toBe(custo);
+      expect(custo + maquininha + sobra).toBe(preco);
+    },
+  );
 });
 
 // As tabelas de multiplicador da página de doces (spec 177), num custo de

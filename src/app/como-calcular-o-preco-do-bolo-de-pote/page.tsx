@@ -13,10 +13,12 @@ import {
   Valor,
 } from "@/components/site/Artigo";
 import { CalculadoraDasParcelas } from "@/components/site/CalculadoraDasParcelas";
+import { FaixaDoCusto } from "@/components/site/FaixaDoCusto";
 import { Rodape, Topo } from "@/components/site/Moldura";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import {
   EXEMPLO_BOLO_DE_POTE,
+  faixaDoExemplo,
   HORA_DO_BOLO_DE_POTE,
   NO_APLICATIVO,
 } from "@/lib/domain/exemplo";
@@ -74,6 +76,9 @@ const BALCAO_NO_APP = verificarPreco(
 
 /** O quanto a embalagem pesa no custo do pote, em %. */
 const PARTE_DA_EMBALAGEM = (custo.custoEmbalagem / custo.custoTotalLote) * 100;
+
+/** A faixa é a do balcão, a da resposta; o aplicativo fica no texto. */
+const FAIXA = faixaDoExemplo(EXEMPLO_BOLO_DE_POTE);
 
 const DESCRICAO_DA_PAGINA = `Some massa, creme, pote, sua hora, forno e fixas, e divida por 1 menos margem e taxas. O pote de ${formatarMoeda(custo.custoUnitario)} sai a ${formatarMoeda(PRECO_BALCAO)} no balcão e ${formatarMoeda(PRECO_APP)} no app.`;
 
@@ -196,166 +201,185 @@ export default function PaginaPrecoDoBoloDePote() {
       <Topo />
 
       <main id="conteudo">
-        <article className="mx-auto max-w-6xl px-4 pt-8 pb-16 lg:px-10 lg:pt-16 lg:pb-24">
-          <CabecalhoDoArtigo
-            titulo="Como calcular o preço do bolo de pote"
-            atualizadoEm={ATUALIZADO_EM}
-          >
-            Some o que o lote custa (a massa, o creme e a fruta, os potes com
-            tampa, colher e etiqueta, o tempo de montar, o forno e uma fatia das
-            despesas fixas) e divida pelos potes que ele rende. Depois divida
-            por 1 menos a margem e menos a maquininha. Um bolo de pote que custa{" "}
-            <Valor centavos={custo.custoUnitario} />, com{" "}
-            {parametros.margemDesejada}% de margem e{" "}
-            {parametros.taxaCartaoConsiderada}% de maquininha, sai a{" "}
-            <Valor centavos={PRECO_BALCAO} /> no balcão. No aplicativo de
-            entrega, a comissão entra na mesma divisão, e o mesmo pote sai a{" "}
-            <Valor centavos={PRECO_APP} />. Ou ponha os seus números{" "}
-            <NaConta>na conta logo abaixo</NaConta>.
-          </CabecalhoDoArtigo>
-
-          {/* A calculadora no exemplo da página (spec 178): logo depois da
-              resposta no celular, e grudada ao lado dos passos no desktop. */}
-          <div className="mt-10 grid gap-12 lg:mt-14 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-16">
-            <section
-              id="sua-conta"
-              aria-labelledby="sua-conta-titulo"
-              className="scroll-mt-4 lg:col-start-2 lg:row-start-1"
+        <article className="pt-8 pb-16 lg:pt-16 lg:pb-24">
+          <div className="mx-auto mb-10 max-w-6xl px-4 lg:mb-14 lg:px-10">
+            <CabecalhoDoArtigo
+              titulo="Como calcular o preço do bolo de pote"
+              atualizadoEm={ATUALIZADO_EM}
             >
-              <div className="lg:sticky lg:top-8">
-                <h2 id="sua-conta-titulo" className={TITULO_H2}>
-                  Faça a conta do seu bolo de pote
-                </h2>
-                <CalculadoraDasParcelas doce="Bolo de pote" className="mt-6" />
-              </div>
-            </section>
-
-            <div className="max-w-[68ch] lg:col-start-1 lg:row-start-1">
-              <Passos
-                passos={PASSOS}
-                exemplo={EXEMPLO_BOLO_DE_POTE}
-                sufixo=" por pote."
-              />
-
-              <section aria-labelledby="margem" className="mt-16">
-                <h2 id="margem" className={TITULO_H2}>
-                  Margem e maquininha: a conta do pote
-                </h2>
-                <p className="mt-4 text-body text-ink">
-                  Com o custo do pote na mão, falta decidir quanto você quer que
-                  sobre. A maquininha tira a parte dela do preço, e não do
-                  custo. As duas saem do preço de venda, então as duas entram na
-                  divisão:
-                </p>
-                <Formula exemplo={EXEMPLO_BOLO_DE_POTE} preco={PRECO_CERTO} />
-                <p className="mt-6 text-body text-ink">
-                  Confira de volta: dos <Valor centavos={PRECO_CERTO} />, a
-                  maquininha leva <Valor centavos={NA_CONTA_CERTA.custoTaxas} />{" "}
-                  e o custo leva <Valor centavos={custo.custoUnitario} />.
-                  Sobram <Valor centavos={NA_CONTA_CERTA.lucroUnitario} /> pra
-                  você, {formatarPercentual(NA_CONTA_CERTA.margemReal, 0)} do
-                  preço. Na etiqueta, o meio real leva o pote a{" "}
-                  <Valor centavos={PRECO_BALCAO} />.
-                </p>
-              </section>
-            </div>
+              Some o que o lote custa (a massa, o creme e a fruta, os potes com
+              tampa, colher e etiqueta, o tempo de montar, o forno e uma fatia
+              das despesas fixas) e divida pelos potes que ele rende. Depois
+              divida por 1 menos a margem e menos a maquininha. Um bolo de pote
+              que custa <Valor centavos={custo.custoUnitario} />, com{" "}
+              {parametros.margemDesejada}% de margem e{" "}
+              {parametros.taxaCartaoConsiderada}% de maquininha, sai a{" "}
+              <Valor centavos={PRECO_BALCAO} /> no balcão. No aplicativo de
+              entrega, a comissão entra na mesma divisão, e o mesmo pote sai a{" "}
+              <Valor centavos={PRECO_APP} />. Ou ponha os seus números{" "}
+              <NaConta>na conta logo abaixo</NaConta>.
+            </CabecalhoDoArtigo>
           </div>
 
-          <div className="mt-16 border-t border-line pt-16">
-            <div className="max-w-[68ch]">
-              <section aria-labelledby="aplicativo">
-                <h2 id="aplicativo" className={TITULO_H2}>
-                  Vendendo por aplicativo: a comissão entra na conta
-                </h2>
-                <p className="mt-4 text-body text-ink">
-                  O aplicativo de entrega cobra uma comissão sobre cada pedido
-                  e, quando a cliente paga por ele, mais uma taxa pelo pagamento
-                  online. As duas saem do preço, como a maquininha, e por isso
-                  entram na mesma divisão. A maquininha sai da conta, porque
-                  quem cobra a cliente é o aplicativo.
-                </p>
-                <p className="mt-4 text-body text-ink">
-                  O exemplo usa {NO_APLICATIVO.outrasTaxas}% pras duas somadas.
-                  É um número de exemplo: o seu está no contrato com o
-                  aplicativo, e muda com o plano e com quem faz a entrega.
-                </p>
-                <Formula
-                  exemplo={{
-                    ...EXEMPLO_BOLO_DE_POTE,
-                    parametros: NO_APLICATIVO,
-                  }}
-                  preco={PRECO_APP_CONTA}
-                  taxas="comissão e taxas"
-                />
-                <dl className="mt-6 grid divide-y divide-line border-y border-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                  <div className="py-5 sm:pr-5">
-                    <dt className="text-label font-medium text-ink-muted">
-                      No balcão
-                    </dt>
-                    <dd className="mt-1">
-                      <Dinheiro centavos={PRECO_BALCAO} tamanho="xl" />
-                      <p className="mt-2 text-label text-ink-muted">
-                        Sobram <Valor centavos={NO_BALCAO.lucroUnitario} />,{" "}
-                        {formatarPercentual(NO_BALCAO.margemReal, 0)} do preço,
-                        depois da maquininha.
-                      </p>
-                    </dd>
-                  </div>
-                  <div className="py-5 sm:px-5">
-                    <dt className="text-label font-medium text-ink-muted">
-                      No aplicativo
-                    </dt>
-                    <dd className="mt-1">
-                      <Dinheiro centavos={PRECO_APP} tamanho="xl" />
-                      <p className="mt-2 text-label text-ink-muted">
-                        Sobram <Valor centavos={NO_APP.lucroUnitario} />,{" "}
-                        {formatarPercentual(NO_APP.margemReal, 0)} do preço,
-                        depois da comissão e das taxas.
-                      </p>
-                    </dd>
-                  </div>
-                  <div className="py-5 sm:pl-5">
-                    <dt className="text-label font-medium text-ink-muted">
-                      O preço do balcão no aplicativo
-                    </dt>
-                    <dd className="mt-1">
-                      <Dinheiro centavos={PRECO_BALCAO} tamanho="xl" />
-                      <p className="mt-2 flex items-start gap-1.5 text-label text-ink-muted">
-                        <TrendingDown
-                          aria-hidden
-                          className="mt-px size-4 shrink-0 text-negative"
-                          strokeWidth={1.75}
-                        />
-                        <span>
-                          Sobram{" "}
-                          <Valor centavos={BALCAO_NO_APP.lucroUnitario} />,{" "}
-                          {formatarPercentual(BALCAO_NO_APP.margemReal, 0)} do
-                          preço, depois da comissão e das taxas.
-                        </span>
-                      </p>
-                    </dd>
-                  </div>
-                </dl>
-                <p className="mt-6 text-body text-ink">
-                  Pôr no aplicativo o preço do balcão parece justo com a
-                  cliente, mas quem paga a comissão é você. Dos{" "}
-                  <Valor centavos={PRECO_BALCAO} />, o aplicativo leva{" "}
-                  <Valor centavos={BALCAO_NO_APP.custoTaxas} />, e o pote que
-                  deixava <Valor centavos={NO_BALCAO.lucroUnitario} /> passa a
-                  deixar <Valor centavos={BALCAO_NO_APP.lucroUnitario} />.
-                </p>
-                <p className="mt-4 text-body text-ink">
-                  <NaConta>
-                    Na conta, ponha nas taxas o percentual do seu contrato com o
-                    aplicativo
-                  </NaConta>
-                  .
-                </p>
+          {/* O pote do exemplo se montando até o preço do balcão, de borda a
+              borda (spec 179, `DECISOES.md#d397`). */}
+          {FAIXA && (
+            <FaixaDoCusto
+              {...FAIXA}
+              pergunta="Quanto custa um pote?"
+              unidade="pote"
+              porDoce="Por pote, no balcão"
+            />
+          )}
+
+          <div className="mx-auto max-w-6xl px-4 lg:px-10">
+            {/* A calculadora no exemplo da página (spec 178): logo depois da
+              resposta no celular, e grudada ao lado dos passos no desktop. */}
+            <div className="mt-10 grid gap-12 lg:mt-14 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-16">
+              <section
+                id="sua-conta"
+                aria-labelledby="sua-conta-titulo"
+                className="scroll-mt-4 lg:col-start-2 lg:row-start-1"
+              >
+                <div className="lg:sticky lg:top-8">
+                  <h2 id="sua-conta-titulo" className={TITULO_H2}>
+                    Faça a conta do seu bolo de pote
+                  </h2>
+                  <CalculadoraDasParcelas
+                    doce="Bolo de pote"
+                    className="mt-6"
+                  />
+                </div>
               </section>
 
-              <Perguntas perguntas={PERGUNTAS} />
+              <div className="max-w-[68ch] lg:col-start-1 lg:row-start-1">
+                <Passos
+                  passos={PASSOS}
+                  exemplo={EXEMPLO_BOLO_DE_POTE}
+                  sufixo=" por pote."
+                />
 
-              <OutrosDoces endereco={ENDERECO} />
+                <section aria-labelledby="margem" className="mt-16">
+                  <h2 id="margem" className={TITULO_H2}>
+                    Margem e maquininha: a conta do pote
+                  </h2>
+                  <p className="mt-4 text-body text-ink">
+                    Com o custo do pote na mão, falta decidir quanto você quer
+                    que sobre. A maquininha tira a parte dela do preço, e não do
+                    custo. As duas saem do preço de venda, então as duas entram
+                    na divisão:
+                  </p>
+                  <Formula exemplo={EXEMPLO_BOLO_DE_POTE} preco={PRECO_CERTO} />
+                  <p className="mt-6 text-body text-ink">
+                    Confira de volta: dos <Valor centavos={PRECO_CERTO} />, a
+                    maquininha leva{" "}
+                    <Valor centavos={NA_CONTA_CERTA.custoTaxas} /> e o custo
+                    leva <Valor centavos={custo.custoUnitario} />. Sobram{" "}
+                    <Valor centavos={NA_CONTA_CERTA.lucroUnitario} /> pra você,{" "}
+                    {formatarPercentual(NA_CONTA_CERTA.margemReal, 0)} do preço.
+                    Na etiqueta, o meio real leva o pote a{" "}
+                    <Valor centavos={PRECO_BALCAO} />.
+                  </p>
+                </section>
+              </div>
+            </div>
+
+            <div className="mt-16 border-t border-line pt-16">
+              <div className="max-w-[68ch]">
+                <section aria-labelledby="aplicativo">
+                  <h2 id="aplicativo" className={TITULO_H2}>
+                    Vendendo por aplicativo: a comissão entra na conta
+                  </h2>
+                  <p className="mt-4 text-body text-ink">
+                    O aplicativo de entrega cobra uma comissão sobre cada pedido
+                    e, quando a cliente paga por ele, mais uma taxa pelo
+                    pagamento online. As duas saem do preço, como a maquininha,
+                    e por isso entram na mesma divisão. A maquininha sai da
+                    conta, porque quem cobra a cliente é o aplicativo.
+                  </p>
+                  <p className="mt-4 text-body text-ink">
+                    O exemplo usa {NO_APLICATIVO.outrasTaxas}% pras duas
+                    somadas. É um número de exemplo: o seu está no contrato com
+                    o aplicativo, e muda com o plano e com quem faz a entrega.
+                  </p>
+                  <Formula
+                    exemplo={{
+                      ...EXEMPLO_BOLO_DE_POTE,
+                      parametros: NO_APLICATIVO,
+                    }}
+                    preco={PRECO_APP_CONTA}
+                    taxas="comissão e taxas"
+                  />
+                  <dl className="mt-6 grid divide-y divide-line border-y border-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                    <div className="py-5 sm:pr-5">
+                      <dt className="text-label font-medium text-ink-muted">
+                        No balcão
+                      </dt>
+                      <dd className="mt-1">
+                        <Dinheiro centavos={PRECO_BALCAO} tamanho="xl" />
+                        <p className="mt-2 text-label text-ink-muted">
+                          Sobram <Valor centavos={NO_BALCAO.lucroUnitario} />,{" "}
+                          {formatarPercentual(NO_BALCAO.margemReal, 0)} do
+                          preço, depois da maquininha.
+                        </p>
+                      </dd>
+                    </div>
+                    <div className="py-5 sm:px-5">
+                      <dt className="text-label font-medium text-ink-muted">
+                        No aplicativo
+                      </dt>
+                      <dd className="mt-1">
+                        <Dinheiro centavos={PRECO_APP} tamanho="xl" />
+                        <p className="mt-2 text-label text-ink-muted">
+                          Sobram <Valor centavos={NO_APP.lucroUnitario} />,{" "}
+                          {formatarPercentual(NO_APP.margemReal, 0)} do preço,
+                          depois da comissão e das taxas.
+                        </p>
+                      </dd>
+                    </div>
+                    <div className="py-5 sm:pl-5">
+                      <dt className="text-label font-medium text-ink-muted">
+                        O preço do balcão no aplicativo
+                      </dt>
+                      <dd className="mt-1">
+                        <Dinheiro centavos={PRECO_BALCAO} tamanho="xl" />
+                        <p className="mt-2 flex items-start gap-1.5 text-label text-ink-muted">
+                          <TrendingDown
+                            aria-hidden
+                            className="mt-px size-4 shrink-0 text-negative"
+                            strokeWidth={1.75}
+                          />
+                          <span>
+                            Sobram{" "}
+                            <Valor centavos={BALCAO_NO_APP.lucroUnitario} />,{" "}
+                            {formatarPercentual(BALCAO_NO_APP.margemReal, 0)} do
+                            preço, depois da comissão e das taxas.
+                          </span>
+                        </p>
+                      </dd>
+                    </div>
+                  </dl>
+                  <p className="mt-6 text-body text-ink">
+                    Pôr no aplicativo o preço do balcão parece justo com a
+                    cliente, mas quem paga a comissão é você. Dos{" "}
+                    <Valor centavos={PRECO_BALCAO} />, o aplicativo leva{" "}
+                    <Valor centavos={BALCAO_NO_APP.custoTaxas} />, e o pote que
+                    deixava <Valor centavos={NO_BALCAO.lucroUnitario} /> passa a
+                    deixar <Valor centavos={BALCAO_NO_APP.lucroUnitario} />.
+                  </p>
+                  <p className="mt-4 text-body text-ink">
+                    <NaConta>
+                      Na conta, ponha nas taxas o percentual do seu contrato com
+                      o aplicativo
+                    </NaConta>
+                    .
+                  </p>
+                </section>
+
+                <Perguntas perguntas={PERGUNTAS} />
+
+                <OutrosDoces endereco={ENDERECO} />
+              </div>
             </div>
           </div>
         </article>

@@ -23,14 +23,9 @@ import {
   unidadesQuePagam,
 } from "@/lib/domain/assinatura";
 import { DIAS_DE_TESTE } from "@/lib/domain/cadastro";
-import { composicaoDoLote } from "@/lib/domain/custoFicha";
-import { EXEMPLO } from "@/lib/domain/exemplo";
+import { EXEMPLO, faixaDoExemplo } from "@/lib/domain/exemplo";
 import { formatarMoeda } from "@/lib/domain/money";
-import {
-  calcularPrecoSugerido,
-  somaTaxas,
-  verificarPreco,
-} from "@/lib/domain/precificacao";
+import { calcularPrecoSugerido } from "@/lib/domain/precificacao";
 import { lerPrecos, stripeDisponivel } from "@/lib/server/stripe";
 import type { Centavos, Pacote } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
@@ -292,26 +287,7 @@ export default async function PaginaConheca() {
     EXEMPLO.custo.custoUnitario,
     EXEMPLO.parametros,
   );
-  const noSugerido = verificarPreco(
-    sugerido.ok ? sugerido.precoArredondado : 0,
-    EXEMPLO.custo.custoUnitario,
-    somaTaxas(EXEMPLO.parametros),
-  );
-  const faixa = sugerido.ok && {
-    nome: EXEMPLO.nome,
-    rende: EXEMPLO.rende,
-    parcelas: composicaoDoLote(EXEMPLO.custo).map((s) => ({
-      rotulo: s.rotulo,
-      centavos: Math.round(s.centavos / EXEMPLO.rende),
-      destaque: s.destaque,
-    })),
-    custo: EXEMPLO.custo.custoUnitario,
-    maquininha: noSugerido.custoTaxas,
-    sobra: noSugerido.lucroUnitario,
-    preco: sugerido.precoArredondado,
-    margem: EXEMPLO.parametros.margemDesejada,
-    taxa: EXEMPLO.parametros.taxaCartaoConsiderada,
-  };
+  const faixa = faixaDoExemplo(EXEMPLO);
   const temChute =
     sugerido.ok && EXEMPLO.precoPraticado !== sugerido.precoArredondado;
 

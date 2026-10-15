@@ -106,10 +106,10 @@ depois dele.
 
 ## Critérios de aceite
 
-- [ ] Quatro páginas com a faixa do seu doce, números das funções, presos no teste.
-- [ ] `/conheca` com o HTML de antes.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `package.json` e `firestore.*` intocados.
-- [ ] Decisão registrada; `ESTADO.md` atualizado; `DESIGN.md` § Signature: a exceção da faixa larga
+- [x] Quatro páginas com a faixa do seu doce, números das funções, presos no teste.
+- [x] `/conheca` com o HTML de antes.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `package.json` e `firestore.*` intocados.
+- [x] Decisão registrada; `ESTADO.md` atualizado; `DESIGN.md` § Signature: a exceção da faixa larga
       deixa de ser só da `/conheca`.
 
 ---

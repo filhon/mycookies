@@ -13014,3 +13014,49 @@ um tamanho: o valor fixo por bolo mais o quilo (`POR_BOLO`, `POR_QUILO`) pede ca
 `contaDasParcelas` não tem e volta se o Search Console mostrar a página com saída baixa. O
 `valor` de `EXEMPLOS_DAS_PARCELAS` passou a ter tipo literal (`DoceDasParcelas`). Nenhum campo,
 regra ou dependência.
+
+## D397 · A faixa do custo depois da resposta, nas quatro páginas de doce
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 179 · estende a `#d382`; sai
+junto com a `#d396`.
+
+**Contexto.** A resposta das páginas de doce é um parágrafo, com o número no meio da quarta
+linha, e as quatro páginas eram a mesma página com outro título. O que cada doce tem de seu é
+a proporção do custo (a hora de enrolar no brigadeiro, a embalagem no bolo de pote), e a
+`FaixaDoCusto` da `/conheca` já desenha isso.
+
+**Decisão.**
+
+- **A faixa logo depois do `CabecalhoDoArtigo`, de borda a borda**, antes da grade. O
+  `<article>` perdeu o contêiner: o cabeçalho e o resto levam o deles, e a faixa fica entre os
+  dois. Celular: resposta, faixa, calculadora (178), passos. Desktop: resposta, faixa, grade.
+- **`faixaDoExemplo(exemplo)` em `domain/exemplo.ts`** monta os números: as parcelas de
+  `composicaoDoLote` divididas por `rende`, o preço de `calcularPrecoSugerido` e a maquininha e
+  a sobra de `verificarPreco` nele. A `/conheca` passou a usá-la; o HTML dela saiu igual (só
+  mudaram os hashes de CSS e de chunk, porque a faixa virou chunk compartilhado). Um `it.each`
+  em `exemplo.test.ts` prende, nos quatro, cinco parcelas que somam o custo da resposta e o
+  preço e a sobra de cima: 850 e 366, 17650 e 7067, 11750 e 4712, 1700 e 705.
+- **A faixa fala a unidade do doce** por `pergunta`, `unidade` e `porDoce`, com o cookie como
+  padrão. O cento, o quilo do bolo de 2 kg e o pote do balcão; o aplicativo do bolo de pote
+  fica no texto.
+- **Duas coisas que a spec não previa.** O sobretítulo dizia "rende {n} unidades": agora diz
+  "rende {n} {unidade}s" ("rende 2 quilos", "rende 10 potes"), e some quando `rende` é 1, que é
+  o cento (o lote é a própria unidade; "rende 1 cento" sob "Cento de brigadeiro" é ruído). O
+  `aria-label` "O custo de um {nome} soma {custo}" seria mentira no bolo (o bolo custa R$ 129,
+  o quilo R$ 64,50): fora do cookie, ganha "por {unidade}" depois do custo. As duas regras
+  deixam o texto do cookie como era. O plural com "s" serve às quatro unidades de hoje.
+- **A `ContaAberta` da página do cookie sai do celular** (`hidden lg:block`), onde ficaria logo
+  embaixo da faixa com os mesmos números; no desktop continua presa ao lado dos passos.
+
+**Medido** em 2026-10-15, build de produção local, Chrome headless, a 390, 1280 e 1864px, nos
+dois temas e com movimento reduzido: nenhuma rolagem lateral; no brigadeiro, "Seu trabalho" a
+82px contra 86px de "Materiais" (390px); no bolo de pote, "Embalagem" a 34px contra 19px de gás
+e fixas somados; os rótulos "Custo" e "Sobra" sem sobreposição nas quatro; com movimento
+reduzido, o quadro final; a `ContaAberta` invisível a 390px e presa a 1280px. A 390px, o LCP
+é o parágrafo da resposta nas quatro e o CLS é 0. O Lighthouse não rodou.
+
+**Consequência.** Cada página de doce tem duas sobras em rosa, a da faixa e a da calculadora, que
+não se veem juntas (a faixa ocupa a largura e a calculadora começa depois), como a `/conheca`
+(`#d382`). A faixa é do exemplo e não reage à calculadora; isso é spec própria se vier. O
+`DESIGN.md` § Signature diz que a faixa larga é do site, e não só da `/conheca`. Nenhum campo,
+regra ou dependência.

@@ -10,8 +10,8 @@ const NEUTROS = ["bg-ink/90", "bg-ink/65", "bg-ink/45", "bg-ink/30"];
 
 /**
  * Quanto cada passo fica na tela, em ms, os de `faixa-custo.js`: a pergunta,
- * as cinco parcelas, o custo, o preço e a sobra. Cinco parcelas porque o
- * `EXEMPLO` tem cinco; `tests/domain/exemplo.test.ts` prende.
+ * as cinco parcelas, o custo, o preço e a sobra. Cinco parcelas porque os
+ * quatro exemplos têm cinco; `tests/domain/exemplo.test.ts` prende.
  */
 const TEMPOS = [1100, 1000, 800, 900, 700, 700, 1400, 1500, 4200];
 const FIM = TEMPOS.length - 1;
@@ -23,12 +23,13 @@ const aMostra = (i: number, p: number, parcelas: number) =>
   i < parcelas ? p > i : p >= PRECO;
 
 /**
- * A faixa larga da página de venda (`DECISOES.md#d382`): o custo do cookie do
- * `EXEMPLO` se montando parcela a parcela até o preço, e a sobra em rosa. Todo
- * número chega pronto da página; aqui só se conta e se desenha. O servidor
- * entrega o quadro final, que é também o do movimento reduzido: a faixa nunca
- * aparece vazia. O laço só anda com ela na tela e com a aba à vista. A
- * abertura em tela cheia saiu (`#d384`): a faixa mora só no corpo da página.
+ * A faixa larga da página de venda (`DECISOES.md#d382`) e das páginas de
+ * cada doce (spec 179): o custo do exemplo se montando parcela a parcela até
+ * o preço, e a sobra em rosa. Todo número chega pronto de `faixaDoExemplo`;
+ * aqui só se conta e se desenha. Os textos falam a unidade do doce, e o padrão
+ * é o cookie da `/conheca`. O servidor entrega o quadro final, que é também o
+ * do movimento reduzido: a faixa nunca aparece vazia. O laço só anda com ela
+ * na tela e com a aba à vista. A abertura em tela cheia saiu (`#d384`).
  */
 export function FaixaDoCusto({
   nome,
@@ -40,8 +41,12 @@ export function FaixaDoCusto({
   preco,
   margem,
   taxa,
+  pergunta = "Quanto custa um cookie?",
+  unidade = "unidade",
+  porDoce = "Por cookie, depois da maquininha",
 }: {
   nome: string;
+  /** Em `unidade`; o lote que é a própria unidade, como o cento, não diz quanto rende. */
   rende: number;
   /** As parcelas de `composicaoDoLote`, por unidade. */
   parcelas: { rotulo: string; centavos: Centavos; destaque: boolean }[];
@@ -51,6 +56,12 @@ export function FaixaDoCusto({
   preco: Centavos;
   margem: number;
   taxa: number;
+  /** O título do primeiro passo. */
+  pergunta?: string;
+  /** A unidade de venda, no singular: "cento", "quilo", "pote". */
+  unidade?: string;
+  /** A linha embaixo da sobra. */
+  porDoce?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [passo, setPasso] = useState(FIM);
@@ -144,32 +155,32 @@ export function FaixaDoCusto({
   const parcela = parcelas[passo - 1];
   const [titulo, linha] =
     passo === 0
-      ? ["Quanto custa um cookie?", "O que entra em cada unidade"]
+      ? [pergunta, `O que entra em cada ${unidade}`]
       : parcela
         ? [parcela.rotulo, `+ ${formatarMoeda(parcela.centavos)}`]
         : passo === CUSTO
           ? [
               "Custo de verdade",
-              `${formatarMoeda(custo)} por unidade, com tudo dentro`,
+              `${formatarMoeda(custo)} por ${unidade}, com tudo dentro`,
             ]
           : passo === PRECO
             ? ["Preço sugerido", `Margem ${margem}% + maquininha ${taxa}%`]
-            : [
-                `Sobram ${formatarMoeda(sobra)} pra você`,
-                "Por cookie, depois da maquininha",
-              ];
+            : [`Sobram ${formatarMoeda(sobra)} pra você`, porDoce];
+  // O cookie custa "por unidade" sem dizer; o quilo de um bolo não é um bolo.
+  const porUnidade = unidade === "unidade" ? "" : ` por ${unidade}`;
 
   return (
     <div ref={ref} className="sobre-marca bg-brand-800 text-ink">
       <div
         role="img"
-        aria-label={`O custo de um ${nome.toLocaleLowerCase("pt-BR")} soma ${formatarMoeda(custo)}. Vendido a ${formatarMoeda(preco)}, sobram ${formatarMoeda(sobra)} por unidade.`}
+        aria-label={`O custo de um ${nome.toLocaleLowerCase("pt-BR")} soma ${formatarMoeda(custo)}${porUnidade}. Vendido a ${formatarMoeda(preco)}, sobram ${formatarMoeda(sobra)} por ${unidade}.`}
         className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-16 lg:gap-10 lg:px-10 lg:py-24"
       >
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
           <div className="min-w-0">
             <p className="text-label font-semibold text-ink-muted">
-              {nome} · rende {rende} unidades
+              {nome}
+              {rende > 1 && ` · rende ${rende} ${unidade}s`}
             </p>
             {/* Abaixo do `lg` fica guardada a altura do título em duas linhas
                 mais a linha de baixo: o título que troca de tamanho não empurra
@@ -190,7 +201,7 @@ export function FaixaDoCusto({
           </div>
           <div className="flex shrink-0 flex-col gap-1 sm:items-end">
             <p className="text-label font-medium text-ink-muted">
-              {passo >= PRECO ? "Preço por unidade" : "Custo por unidade"}
+              {passo >= PRECO ? `Preço por ${unidade}` : `Custo por ${unidade}`}
             </p>
             <p className="flex items-baseline gap-1.5 whitespace-nowrap">
               <span className="text-heading font-semibold text-ink-muted">

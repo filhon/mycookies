@@ -1,6 +1,11 @@
 import type { Centavos } from "@/lib/types";
-import type { CustoFichaCalculado } from "./custoFicha";
-import type { ParametrosPreco } from "./precificacao";
+import { type CustoFichaCalculado, composicaoDoLote } from "./custoFicha";
+import {
+  calcularPrecoSugerido,
+  type ParametrosPreco,
+  somaTaxas,
+  verificarPreco,
+} from "./precificacao";
 
 /** O que uma página pública mostra de um doce: a `ContaAberta` lê isto. */
 export interface ExemploDePagina {
@@ -163,6 +168,37 @@ export const NO_APLICATIVO = {
   taxaCartaoConsiderada: 0,
   outrasTaxas: 20,
 } as const satisfies ParametrosPreco;
+
+/**
+ * Os números da `FaixaDoCusto` para um exemplo (`DECISOES.md#d382`, spec
+ * 179): as parcelas de `composicaoDoLote` na unidade de venda, o preço de
+ * etiqueta e o que `verificarPreco` tira dele. `null` se o preço não fecha.
+ */
+export function faixaDoExemplo(exemplo: ExemploDePagina) {
+  const { custo, parametros, rende } = exemplo;
+  const sugerido = calcularPrecoSugerido(custo.custoUnitario, parametros);
+  if (!sugerido.ok) return null;
+  const noPreco = verificarPreco(
+    sugerido.precoArredondado,
+    custo.custoUnitario,
+    somaTaxas(parametros),
+  );
+  return {
+    nome: exemplo.nome,
+    rende,
+    parcelas: composicaoDoLote(custo).map((s) => ({
+      rotulo: s.rotulo,
+      centavos: Math.round(s.centavos / rende),
+      destaque: s.destaque,
+    })),
+    custo: custo.custoUnitario,
+    maquininha: noPreco.custoTaxas,
+    sobra: noPreco.lucroUnitario,
+    preco: sugerido.precoArredondado,
+    margem: parametros.margemDesejada,
+    taxa: parametros.taxaCartaoConsiderada,
+  };
+}
 
 /**
  * "Custo + 45%": a margem e a maquininha do `EXEMPLO` somadas em cima do
