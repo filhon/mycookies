@@ -14,8 +14,11 @@ import { Dinheiro } from "@/components/ui/Dinheiro";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
   economiaAnual,
+  fraseDosMesesDeGraca,
+  mesesDeGraca,
   NOME_DO_PACOTE,
   O_QUE_O_PACOTE_TEM,
+  PRA_QUEM_E,
   RECURSOS_DO_PACOTE,
   unidadesQuePagam,
 } from "@/lib/domain/assinatura";
@@ -207,6 +210,14 @@ const DUVIDAS = [
       "Porque o preço não fica parado. A manteiga sobe, o saquinho muda de preço. Quando um material sobe, o Rende refaz a conta de todos os doces que usam ele e avisa qual ficou no vermelho. E cuida das encomendas e do caixa, que são de toda semana.",
   },
   {
+    // Terceira (spec 170): o arrependimento é o da seção 5 dos termos, e o que
+    // fica depois de cancelar é o `fraseDoQueFica` (spec 162). Cancelar passa
+    // pelo passo "Antes de cancelar" e pelo portal: não são dois toques.
+    pergunta: "E se eu desistir?",
+    resposta:
+      "No teste, é só não assinar: nada é cobrado, e seus dados ficam pra ver. Assinou e desistiu em até 7 dias, devolvemos tudo. Depois disso, cancela pelo app quando quiser, usa até o fim do que já pagou, e seus preços, pedidos e caixa ficam guardados pra ler e baixar.",
+  },
+  {
     pergunta: "Já uso uma planilha. O que muda?",
     resposta:
       "A planilha faz a conta que você montou. O Rende já vem com a conta montada, soma o que a planilha costuma esquecer (embalagem, sua hora, gás, maquininha) e funciona no celular, na bancada, sem internet.",
@@ -236,6 +247,22 @@ const DUVIDAS = [
     resposta:
       "Não no resumo de WhatsApp nem na etiqueta. No orçamento em A4 e no cardápio fica uma linha discreta, “feito com Rende”, que quem assina pode desligar.",
   },
+];
+
+/**
+ * O que os dois planos têm (spec 170), conferido contra o app. O orçamento sai
+ * sem "que a cliente aprova pelo link": o link do pedido é do cardápio, só do
+ * Completo (`useLinkDoAcompanhamento`).
+ */
+const OS_DOIS_TEM = [
+  "Funciona sem internet, na bancada e no mercado",
+  "Lê a nota do mercado e atualiza o preço dos materiais",
+  "A receita aberta na bancada, passo a passo",
+  "O orçamento em folha, com o seu Pix",
+  "A lista do mercado com o que falta na despensa",
+  "Suas clientes, e quem está te devendo",
+  "O relatório do MEI, pronto pra declarar",
+  "Seus dados num arquivo, quando você quiser",
 ];
 
 const ANCORAS = [
@@ -396,6 +423,8 @@ export default async function PaginaConheca() {
           <Duvidas />
           <BarraDoCelular />
         </div>
+
+        <ConviteDoFim />
 
         <script
           type="application/ld+json"
@@ -724,6 +753,7 @@ function Preco({
         {pacotes.map((pacote) => {
           const preco = precos?.[pacote];
           const economia = preco ? economiaAnual(preco.mensal, preco.anual) : 0;
+          const meses = preco ? mesesDeGraca(preco.mensal, preco.anual) : 0;
           const cookies = preco
             ? unidadesQuePagam(preco.mensal, precoDoCookie)
             : 0;
@@ -739,6 +769,9 @@ function Preco({
               >
                 {NOME_DO_PACOTE[pacote]}
               </h3>
+              <p className="mt-1 text-body text-ink-muted">
+                {PRA_QUEM_E[pacote]}
+              </p>
               {preco && (
                 <>
                   <p className="mt-4 flex items-baseline gap-2">
@@ -761,10 +794,19 @@ function Preco({
                         {formatarMoeda(preco.anual)}
                       </span>{" "}
                       no ano:{" "}
-                      <span className="num font-semibold text-ink">
-                        {formatarMoeda(economia)}
-                      </span>{" "}
-                      a menos.
+                      {meses > 0 ? (
+                        <span className="font-semibold text-ink">
+                          {fraseDosMesesDeGraca(meses)}
+                        </span>
+                      ) : (
+                        <>
+                          <span className="num font-semibold text-ink">
+                            {formatarMoeda(economia)}
+                          </span>{" "}
+                          a menos
+                        </>
+                      )}
+                      .
                     </p>
                   )}
                 </>
@@ -789,22 +831,84 @@ function Preco({
         })}
       </div>
 
+      {/* A amplitude do app, que os cartões não dizem (spec 170). */}
+      <h3 className="mt-12 text-heading font-semibold text-ink">Os dois têm</h3>
+      <ul className="mt-4 grid gap-x-10 gap-y-2 md:grid-cols-2">
+        {OS_DOIS_TEM.map((linha) => (
+          <li key={linha} className="flex gap-2 text-body text-ink-muted">
+            <Check
+              aria-hidden
+              strokeWidth={1.75}
+              className="mt-1 size-4 shrink-0 text-ink-subtle"
+            />
+            {linha}
+          </li>
+        ))}
+      </ul>
+
       {/* No celular quem faz este papel é a barra do pé, que já está na tela
           aqui: dois primários juntos é erro. */}
       <div className="mt-10 hidden flex-col items-start gap-3 lg:flex">
+        <BotaoDoTeste />
+        <Risco />
+      </div>
+    </section>
+  );
+}
+
+function BotaoDoTeste() {
+  return (
+    <Link
+      href="/cadastro"
+      className={classesBotao({
+        variante: "primaria",
+        tamanho: "lg",
+        className: "h-14 px-6",
+      })}
+    >
+      Começar o teste de {DIAS_DE_TESTE} dias
+    </Link>
+  );
+}
+
+/** O risco tirado ao lado do botão (spec 170): o arrependimento da seção 5 dos termos. */
+function Risco() {
+  return (
+    <div className="text-label text-ink-muted">
+      <p>Sem cartão no teste. Depois, cancela quando quiser.</p>
+      <p className="mt-1">
+        Assinou e desistiu em até 7 dias?{" "}
         <Link
-          href="/cadastro"
-          className={classesBotao({
-            variante: "primaria",
-            tamanho: "lg",
-            className: "h-14 px-6",
-          })}
+          href="/termos#secao-5"
+          className="font-medium text-brand-ink underline underline-offset-4"
         >
-          Começar o teste de {DIAS_DE_TESTE} dias
+          Devolvemos tudo
         </Link>
-        <p className="text-label text-ink-muted">
-          Você só informa pagamento se decidir continuar.
-        </p>
+        .
+      </p>
+    </div>
+  );
+}
+
+/**
+ * O fim do desktop (spec 170): quem leu até as dúvidas tem um botão à vista, e
+ * é o único primário nessa altura. No celular a barra do pé já é o convite.
+ */
+function ConviteDoFim() {
+  return (
+    <section
+      aria-labelledby="fim-titulo"
+      className="mx-auto hidden max-w-6xl px-10 pb-24 lg:block"
+    >
+      <div className="flex flex-col items-start gap-3 border-t border-line pt-24">
+        <h2
+          id="fim-titulo"
+          className="mb-5 max-w-[24ch] text-balance font-display text-[2.375rem] leading-[1.15] font-bold tracking-[-0.02em] text-ink"
+        >
+          O preço do seu próximo doce, com a conta feita.
+        </h2>
+        <BotaoDoTeste />
+        <Risco />
       </div>
     </section>
   );

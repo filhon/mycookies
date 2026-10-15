@@ -54,6 +54,17 @@ export const O_QUE_O_PACOTE_TEM: Record<Pacote, readonly string[]> = {
   ],
 };
 
+/**
+ * Para quem é cada pacote, numa linha embaixo do nome (spec 170). Nenhum "mais
+ * escolhido": não há dado que o sustente.
+ */
+export const PRA_QUEM_E: Record<Pacote, string> = {
+  ESSENCIAL:
+    "Pra quem vende na porta, na feira ou por encomenda e quer o preço, os pedidos e o caixa no lugar.",
+  COMPLETO:
+    "Pra quem recebe pedido por mensagem todo dia, ou tem quem ajude na cozinha.",
+};
+
 export type Situacao =
   | { tipo: "livre" } // sem `plano`: liberada à mão, sem prazo (`#d141`)
   | { tipo: "teste"; diasRestantes: number; acabaEmMs: number }
@@ -182,6 +193,31 @@ export function acessoAteDaAssinatura(entrada: {
 /** `mensal × 12 − anual`, em centavos. Zero ou negativo quando o anual não compensa. */
 export function economiaAnual(mensal: Centavos, anual: Centavos): Centavos {
   return mensal * 12 - anual;
+}
+
+/** Quantos meses inteiros o anual dá de graça (spec 170). Zero sem mensal ou sem economia. */
+export function mesesDeGraca(mensal: Centavos, anual: Centavos): number {
+  if (mensal <= 0) return 0;
+  return Math.max(0, Math.floor(economiaAnual(mensal, anual) / mensal));
+}
+
+const POR_EXTENSO = [
+  "um",
+  "dois",
+  "três",
+  "quatro",
+  "cinco",
+  "seis",
+  "sete",
+  "oito",
+  "nove",
+  "dez",
+];
+
+/** "um mês de graça" · "dois meses de graça": por extenso até dez. */
+export function fraseDosMesesDeGraca(meses: number): string {
+  const numero = POR_EXTENSO[meses - 1] ?? String(meses);
+  return `${numero} ${meses === 1 ? "mês" : "meses"} de graça`;
 }
 
 /**

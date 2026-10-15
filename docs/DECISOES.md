@@ -12681,3 +12681,42 @@ confeiteira resolve tudo pelo WhatsApp.
 **Consequência.** O número de WhatsApp em `RESPONSAVEL.whatsapp` acende o canal de uma vez na
 página, nas telas de acesso e no "Fale com a gente" do app. O rodapé das páginas do preço leva o
 mesmo texto pronto. Nenhuma linha em `novidades.ts`: nada muda dentro do app.
+
+---
+
+## D387 · O preço da `/conheca` diz para quem é, o que vem e que o risco é nosso
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 170.
+
+**Contexto.** Os cartões de preço tinham três linhas genéricas cada, o anual dizia "R$ 58,00 a
+menos" (conta que ela precisa fazer), o direito de arrependimento morava só nos termos e a
+página do desktop acabava nas dúvidas, sem botão à vista.
+
+**Decisão.**
+
+- **`PRA_QUEM_E`** em `domain/assinatura.ts`, ao lado de `O_QUE_O_PACOTE_TEM`, uma linha embaixo
+  do nome do pacote, também sem Stripe. Nenhum "mais escolhido".
+- **"Os dois têm"**, `h3` e lista com `Check` depois dos cartões, duas colunas a partir de `md`
+  (o mesmo ponto dos cartões), sem cartão em volta. A lista mora na página (`OS_DOIS_TEM`), não
+  no domínio: `/assinatura` não a usa (fora de escopo).
+- **A linha do orçamento foi corrigida na conferência**: a spec dizia "O orçamento em folha, com
+  Pix, que a cliente aprova pelo link", mas o link do pedido (117, 149) passa por
+  `permite(situacao, "cardapio")` em `useLinkDoAcompanhamento`: só o Completo o tem. A folha com
+  o Pix é dos dois, então a linha ficou "O orçamento em folha, com o seu Pix". As outras sete
+  conferem (offline, 088–092, 138–144, 098 e a despensa, 105, 150–153, `MeusDados`).
+- **`mesesDeGraca(mensal, anual)`**: `floor(economia / mensal)`, nunca negativo, zero sem
+  mensal. `fraseDosMesesDeGraca` escreve por extenso até dez. Com zero meses e economia, a linha
+  volta ao "R$ X a menos"; sem economia, some.
+- **O risco em duas linhas** (`Risco`), abaixo do botão do preço e do convite do fim: "Sem
+  cartão no teste. Depois, cancela quando quiser." e "Assinou e desistiu em até 7 dias?
+  Devolvemos tudo.", com "Devolvemos tudo" em `/termos#secao-5`.
+- **A dúvida "E se eu desistir?" não diz "cancela em dois toques"**, como a spec propunha:
+  cancelar passa pelo passo "Antes de cancelar" (`#d376`) e pelo portal do Stripe. Ficou
+  "cancela pelo app quando quiser". E "até o fim do mês pago" virou "até o fim do que já pagou":
+  no anual, o período é o ano.
+- **`ConviteDoFim`**, só em `lg`, depois do bloco das dúvidas e da barra do celular (a barra
+  continua último filho do seu bloco, `sticky`): filete, `h2` "O preço do seu próximo doce, com
+  a conta feita.", o botão e o risco. O cabeçalho não é fixo, então é o único primário à vista.
+
+**Consequência.** Nenhuma regra, schema ou dependência. Nenhuma linha em `novidades.ts`: nada
+muda dentro do app.

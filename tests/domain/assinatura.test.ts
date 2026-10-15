@@ -26,7 +26,9 @@ import {
   economiaAnual,
   FOLGA_COBRANCA_DIAS,
   FOLGA_RENOVACAO_DIAS,
+  fraseDosMesesDeGraca,
   fraseDoTeste,
+  mesesDeGraca,
   pacoteDaMetadata,
   permite,
   situacaoDaConta,
@@ -265,6 +267,29 @@ describe("economiaAnual", () => {
   it("anual igual a doze mensais não economiza nada", () => {
     const mensal = 3900;
     expect(economiaAnual(mensal, mensal * 12)).toBe(0);
+  });
+});
+
+describe("mesesDeGraca (spec 170)", () => {
+  it("dez mensais no ano dão dois meses", () => {
+    expect(mesesDeGraca(2900, 29000)).toBe(2);
+    expect(mesesDeGraca(4900, 49000)).toBe(2);
+  });
+
+  it("anual sem economia, ou mais caro, dá zero", () => {
+    expect(mesesDeGraca(2900, 2900 * 12)).toBe(0);
+    expect(mesesDeGraca(2900, 2900 * 13)).toBe(0);
+  });
+
+  it("mensal zero dá zero", () => {
+    expect(mesesDeGraca(0, 29000)).toBe(0);
+  });
+
+  it("por extenso até dez, em número depois", () => {
+    expect(fraseDosMesesDeGraca(1)).toBe("um mês de graça");
+    expect(fraseDosMesesDeGraca(2)).toBe("dois meses de graça");
+    expect(fraseDosMesesDeGraca(10)).toBe("dez meses de graça");
+    expect(fraseDosMesesDeGraca(11)).toBe("11 meses de graça");
   });
 });
 
