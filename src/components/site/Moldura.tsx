@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { RESPONSAVEL } from "@/app/(auth)/responsavel";
+import { linkDaAjuda } from "@/components/auth/MolduraDeEntrada";
 import { Logotipo } from "@/components/marca/Marca";
 import { Medicao } from "@/components/site/Medicao";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -16,6 +16,9 @@ const ALVO_LINK =
 
 const COR_LINK =
   "text-ink-muted transition-colors duration-150 ease-quart hover:text-ink";
+
+/** O texto pronto da conversa que começa no site (`DECISOES.md#d386`). */
+export const DUVIDA_DO_SITE = "Oi, vim da página do Rende e tenho uma dúvida.";
 
 export function Topo({
   ancoras = [],
@@ -92,7 +95,8 @@ export function Rodape() {
       rotulo: "Como calcular o preço",
     },
     { href: "/conheca#duvidas", rotulo: "Dúvidas" },
-    { href: `mailto:${RESPONSAVEL.email}`, rotulo: "Contato" },
+    // O mesmo link da `/conheca`: WhatsApp quando há número (`#d386`).
+    { href: linkDaAjuda(DUVIDA_DO_SITE), rotulo: "Contato", externo: true },
     { href: "/termos", rotulo: "Termos" },
     { href: "/privacidade", rotulo: "Privacidade" },
   ];
@@ -109,7 +113,11 @@ export function Rodape() {
         <ul className="-mx-3 flex flex-wrap gap-x-2">
           {links.map((l) => (
             <li key={l.href}>
-              <a href={l.href} className={cn(ALVO_LINK, COR_LINK)}>
+              <a
+                href={l.href}
+                {...(l.externo && { target: "_blank", rel: "noopener" })}
+                className={cn(ALVO_LINK, COR_LINK)}
+              >
                 {l.rotulo}
               </a>
             </li>

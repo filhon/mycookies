@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
-import { Check } from "lucide-react";
+import { Check, Mail, MessageCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { RESPONSAVEL } from "@/app/(auth)/responsavel";
+import { linkDaAjuda } from "@/components/auth/MolduraDeEntrada";
 import { CalculadoraDaPorta } from "@/components/site/CalculadoraDaPorta";
 import { ContaAberta } from "@/components/site/ContaAberta";
 import { FaixaDoCusto } from "@/components/site/FaixaDoCusto";
 import { LuzDaJanela } from "@/components/site/LuzDaJanela";
-import { Rodape, Topo } from "@/components/site/Moldura";
+import { DUVIDA_DO_SITE, Rodape, Topo } from "@/components/site/Moldura";
 import { OrigemDoLink } from "@/components/site/OrigemDoLink";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -97,23 +99,42 @@ function dadosEstruturados(precos: Precos | null) {
 }
 
 /**
- * As palavras dela, com autorização por escrito, ou a seção não vai ao ar
- * (`DECISOES.md#d175`). `cidade` e `foto` só entram se ela autorizar; a foto
- * mora em `public/site/`.
+ * As palavras de quem usa, até três, cada uma com autorização por escrito de
+ * quem falou, ou a seção não vai ao ar (`DECISOES.md#d175`, `#d386`). Cada
+ * opcional só entra se ela autorizar; a foto mora em `public/site/`, e o
+ * `numero` tem que ser o dela.
  */
-const DEPOIMENTO: {
+type Depoimento = {
   texto: string;
   nome: string;
-  /** De onde o Rende veio, sob a mesma autorização (`#d184`): sai junto com o resto. */
-  origem?: string;
+  negocio: string;
   cidade?: string;
   foto?: string;
-} = {
+  /** Sem `@`: vira o link para o perfil. */
+  instagram?: string;
+  /** Uma linha curta, "De R$ 6,00 para R$ 8,50 no cookie". Nunca em rosa. */
+  numero?: string;
+};
+
+const DEPOIMENTOS: Depoimento[] = [
+  {
+    texto:
+      "Eu tinha um produto muito gostoso, mas não sabia como precificar. O Rende me ajudou nisso e em muito mais. Agora tenho tudo organizado e a certeza de que estou cobrando o valor certo.",
+    nome: "Maynara",
+    negocio: "MyCookie’s",
+    cidade: "Olinda",
+    instagram: "mycookiesartesanais",
+    numero: "De R$ 10,00 para R$ 15,00 no cookie",
+  },
+];
+
+/**
+ * Quem está por trás do Rende (`#d386`, que absorve a `origem` da `#d184`),
+ * sob a mesma autorização por escrito. Sem `foto`, o texto ocupa a faixa.
+ */
+const QUEM_FAZ: { texto: string; foto?: string } = {
   texto:
-    "Eu tinha um produto muito gostoso, mas não sabia como precificar. O Rende me ajudou nisso e em muito mais. Agora tenho tudo organizado e a certeza de que estou cobrando o valor certo.",
-  nome: "Maynara",
-  origem:
-    "O Rende nasceu na cozinha da MyCookie's. Tudo o que ele sabe sobre a bancada veio de ver a Maynara trabalhar.",
+    "O Rende nasceu para resolver um problema real de quem faz doce: o preço certo. Eu sou o Filipe, minha esposa, a Maynara, produz cookies e os vende pelo preço certo.",
 };
 
 /**
@@ -264,7 +285,6 @@ export default async function PaginaConheca() {
     margem: EXEMPLO.parametros.margemDesejada,
     taxa: EXEMPLO.parametros.taxaCartaoConsiderada,
   };
-  const temDepoimento = !!DEPOIMENTO.texto;
   const temChute =
     sugerido.ok && EXEMPLO.precoPraticado !== sugerido.precoArredondado;
 
@@ -359,7 +379,7 @@ export default async function PaginaConheca() {
 
         {temTelasDoMes && <DepoisDoPreco />}
 
-        {temDepoimento && <QuemJaUsa />}
+        <QuemJaUsa />
 
         <Preco
           precos={precos}
@@ -519,53 +539,153 @@ function DepoisDoPreco() {
   );
 }
 
+/**
+ * A conversa que a página oferece (`#d386`): WhatsApp quando há número, e o
+ * e-mail sem ele. Aba nova, como o "Fale com a gente" das telas de acesso.
+ */
+function LinkDaConversa({ className }: { className: string }) {
+  const temWhatsApp = !!RESPONSAVEL.whatsapp;
+  const Icone = temWhatsApp ? MessageCircle : Mail;
+  return (
+    <a
+      href={linkDaAjuda(DUVIDA_DO_SITE)}
+      target="_blank"
+      rel="noopener"
+      className={cn(
+        "toque inline-flex items-center gap-2 font-semibold underline underline-offset-4",
+        className,
+      )}
+    >
+      <Icone aria-hidden strokeWidth={1.75} className="size-5 shrink-0" />
+      {temWhatsApp ? "Falar com a gente no WhatsApp" : "Escrever pra gente"}
+    </a>
+  );
+}
+
+/** Quem falou, o negócio, a cidade e o @, na ordem em que ela autorizou. */
+function Legenda({ d }: { d: Depoimento }) {
+  return (
+    <figcaption className="mt-4 text-body text-on-brand-muted">
+      <span className="font-semibold text-on-brand">{d.nome}</span>, {d.negocio}
+      {d.cidade && ` · ${d.cidade}`}
+      {d.instagram && (
+        <>
+          {" · "}
+          <a
+            href={`https://instagram.com/${encodeURIComponent(d.instagram)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="toque inline-flex items-center text-on-brand underline underline-offset-4"
+          >
+            <span translate="no">@{d.instagram}</span>
+            <span className="sr-only"> no Instagram</span>
+          </a>
+        </>
+      )}
+    </figcaption>
+  );
+}
+
+/** O dado antes do adjetivo: Familjen, `title`, e nunca rosa (`#d386`). */
+function Numero({ d }: { d: Depoimento }) {
+  return d.numero ? (
+    <p className="num mb-3 font-display text-title font-bold text-on-brand">
+      {d.numero}
+    </p>
+  ) : null;
+}
+
+/**
+ * A faixa cobalto da prova (`#d175`, `#d386`): o primeiro depoimento grande, os
+ * outros abaixo, e quem faz o Rende com o canal de conversa. Sem cartão, sem
+ * aspas gigantes, sem estrela.
+ */
 function QuemJaUsa() {
+  const [primeiro, ...outros] = DEPOIMENTOS;
+  // Sem depoimento autorizado a seção sai (`#d175`).
+  if (!primeiro) return null;
   return (
     <section
       id="quem"
       aria-labelledby="quem-titulo"
-      className="bg-brand-800 text-on-brand"
+      className="sobre-marca bg-brand-800 text-on-brand"
     >
-      <div
-        className={cn(
-          "mx-auto max-w-6xl px-4 py-16 lg:px-10 lg:py-24",
-          DEPOIMENTO.foto &&
-            "lg:grid lg:grid-cols-[25rem_1fr] lg:items-center lg:gap-16",
-        )}
-      >
-        {DEPOIMENTO.foto && (
-          <Image
-            src={DEPOIMENTO.foto}
-            alt="Maynara na bancada da MyCookie's"
-            width={400}
-            height={440}
-            className="mb-8 h-60 w-full rounded-lg object-cover lg:mb-0 lg:h-110"
-          />
-        )}
-        <div>
-          <h2
-            id="quem-titulo"
-            className="text-label font-semibold text-on-brand-muted"
-          >
-            Quem já usa
-          </h2>
-          <figure className="mt-4">
-            <blockquote className="max-w-[34ch] text-pretty font-display text-[1.375rem] leading-[1.3] font-semibold lg:text-[2rem] lg:leading-[1.2]">
-              <p>{DEPOIMENTO.texto}</p>
-            </blockquote>
-            <figcaption className="mt-6 text-body text-on-brand-muted">
-              <span className="font-semibold text-on-brand">
-                {DEPOIMENTO.nome}
-              </span>
-              , MyCookie’s
-              {DEPOIMENTO.cidade && ` · ${DEPOIMENTO.cidade}`}
-            </figcaption>
-          </figure>
-          {DEPOIMENTO.origem && (
-            <p className="mt-6 max-w-[52ch] text-body text-on-brand-muted">
-              {DEPOIMENTO.origem}
-            </p>
+      <div className="mx-auto max-w-6xl px-4 py-16 lg:px-10 lg:py-24">
+        <div
+          className={cn(
+            primeiro.foto &&
+              "lg:grid lg:grid-cols-[25rem_1fr] lg:items-center lg:gap-16",
           )}
+        >
+          {primeiro.foto && (
+            <Image
+              src={primeiro.foto}
+              alt={`${primeiro.nome}, ${primeiro.negocio}`}
+              width={400}
+              height={440}
+              className="mb-8 h-60 w-full rounded-lg object-cover lg:mb-0 lg:h-110"
+            />
+          )}
+          <div>
+            <h2
+              id="quem-titulo"
+              className="text-label font-semibold text-on-brand-muted"
+            >
+              Quem já usa
+            </h2>
+            <figure className="mt-4">
+              <Numero d={primeiro} />
+              <blockquote className="max-w-[34ch] text-pretty font-display text-[1.375rem] leading-[1.3] font-semibold lg:text-[2rem] lg:leading-[1.2]">
+                <p>{primeiro.texto}</p>
+              </blockquote>
+              <Legenda d={primeiro} />
+            </figure>
+          </div>
+        </div>
+
+        {outros.length > 0 && (
+          <div className="mt-12 divide-y divide-on-brand-muted/20 border-t border-on-brand-muted/20 lg:mt-16 lg:grid lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+            {outros.map((d) => (
+              <figure
+                key={d.nome}
+                className="py-8 lg:py-10 lg:pr-10 lg:even:pl-10"
+              >
+                <Numero d={d} />
+                <blockquote className="max-w-[48ch] text-pretty text-subheading font-semibold text-on-brand">
+                  <p>{d.texto}</p>
+                </blockquote>
+                <Legenda d={d} />
+              </figure>
+            ))}
+          </div>
+        )}
+
+        <div
+          className={cn(
+            "mt-12 border-t border-on-brand-muted/20 pt-12 lg:mt-16 lg:pt-16",
+            QUEM_FAZ.foto &&
+              "lg:grid lg:grid-cols-[1fr_25rem] lg:items-center lg:gap-16",
+          )}
+        >
+          {/* No celular acima do texto; no desktop, o lado que ficava vazio. */}
+          {QUEM_FAZ.foto && (
+            <Image
+              src={QUEM_FAZ.foto}
+              alt="Filipe e Maynara, que fazem o Rende"
+              width={400}
+              height={300}
+              className="mb-8 h-60 w-full rounded-lg object-cover lg:order-last lg:mb-0 lg:h-80"
+            />
+          )}
+          <div>
+            <h3 className="text-heading font-semibold text-on-brand">
+              Quem faz o Rende
+            </h3>
+            <p className="mt-3 max-w-[52ch] text-body text-on-brand-muted">
+              {QUEM_FAZ.texto}
+            </p>
+            <LinkDaConversa className="mt-4 text-on-brand" />
+          </div>
         </div>
       </div>
     </section>
@@ -718,6 +838,11 @@ function Duvidas() {
           </li>
         ))}
       </ul>
+      {/* A dúvida que a lista não respondeu tem saída (`#d386`). */}
+      <p className="mt-6 flex flex-wrap items-center gap-x-2 text-body text-ink-muted">
+        Ficou alguma dúvida?
+        <LinkDaConversa className="text-brand-ink" />
+      </p>
     </section>
   );
 }

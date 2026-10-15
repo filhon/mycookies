@@ -21,4 +21,5 @@ export const RESPONSAVEL: {
   endereco:
     "Rua Jardim Águas Claras, 184, Casa B, Águas Compridas, Olinda - PE, 53160-610",
   email: "fcbfilipesantos@gmail.com",
+  whatsapp: "+55 81 9 9679-6370",
 };

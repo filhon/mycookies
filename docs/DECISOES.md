@@ -5763,7 +5763,7 @@ O WhatsApp guarda a prévia por endereço: um link colado antes do deploy contin
 
 ## D184 · A origem do Rende dita no bloco do depoimento, sob a mesma autorização
 
-**Status:** vigente · decidida em 2026-09-24, na spec 039 · **portão do deploy**
+**Status:** substituída pela `#d386` em 2026-10-15 (a frase virou o bloco "Quem faz o Rende") · decidida em 2026-09-24, na spec 039 · **portão do deploy**
 
 **Contexto.** O depoimento é de quem está perto do projeto, e a visitante desconfiada descobre
 isso sozinha.
@@ -12643,3 +12643,41 @@ que isso paga.
 
 **Consequência.** A `#d382` dizia "duas sobras em rosa, em telas diferentes": no celular agora
 há uma só. Nenhuma linha em `novidades.ts`: nada muda dentro do app.
+
+---
+
+## D386 · Quem faz e quem usa: a prova da `/conheca` com rosto, número e conversa
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 169 · amplia a `#d175` e
+substitui a `#d184` · **portão do deploy**
+
+**Contexto.** A faixa "Quem já usa" tinha uma citação sem rosto, sem cidade e sem número, de
+quem está perto do projeto, e a linha da `origem` deixava a visitante descobrir isso sozinha. A
+página não oferecia conversa: o contato do rodapé era um `mailto:` num `@gmail.com`, e a
+confeiteira resolve tudo pelo WhatsApp.
+
+**Decisão.**
+
+- **`DEPOIMENTO` vira `DEPOIMENTOS: Depoimento[]`**, até três: `texto`, `nome`, `negocio` e os
+  opcionais `cidade`, `foto`, `instagram` (sem `@`, link para o perfil, aba nova, "no Instagram"
+  em `sr-only`) e `numero`. Cada um com autorização por escrito de quem falou, e o número tem
+  que ser o dela (`#d175` vale para todos). Lista vazia, a seção sai: `QuemJaUsa` devolve `null`.
+- **O primeiro como era**, com a foto à esquerda se houver; os outros abaixo, em `subheading`,
+  lado a lado no desktop e empilhados no celular, separados por filete `--on-brand-muted`/20.
+  Cada um é `figure` com `figcaption`. Sem cartão, aspas gigantes ou estrela.
+- **O `numero` antes do texto**, em Familjen 700, `title`, `num`, em `--on-brand`. Nunca rosa: o
+  rosa é a sobra dela no app, não argumento de venda (`#d381`).
+- **"Quem faz o Rende"**, `h3` em `heading`, depois dos depoimentos e dentro da mesma `#quem`:
+  o texto de quem conduz o projeto (`QUEM_FAZ.texto`, `[texto…]` até lá, que o portão do
+  `#d175` pega), a foto dos dois se autorizada (`QUEM_FAZ.foto`, à direita no desktop, acima com
+  15rem no celular) e o link da conversa. A frase da `origem` saiu: este bloco a diz às claras.
+- **Um link de conversa só**, `linkDaAjuda` de `MolduraDeEntrada` (agora exportado) com
+  `DUVIDA_DO_SITE` ("Oi, vim da página do Rende e tenho uma dúvida.", em `site/Moldura.tsx`):
+  "Falar com a gente no WhatsApp" com `MessageCircle` quando `RESPONSAVEL.whatsapp` existe,
+  "Escrever pra gente" com `Mail` sem ele. Aba nova. Mora no bloco "Quem faz", numa linha depois
+  das dúvidas ("Ficou alguma dúvida?") e no "Contato" do rodapé, que deixou o `mailto:` cru.
+- **A `#quem` ganhou `sobre-marca`**: o foco dos links novos sobre o cobalto é `--on-brand`.
+
+**Consequência.** O número de WhatsApp em `RESPONSAVEL.whatsapp` acende o canal de uma vez na
+página, nas telas de acesso e no "Fale com a gente" do app. O rodapé das páginas do preço leva o
+mesmo texto pronto. Nenhuma linha em `novidades.ts`: nada muda dentro do app.

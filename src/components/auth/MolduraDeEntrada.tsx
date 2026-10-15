@@ -16,8 +16,11 @@ export const AJUDA_DA_ASSINATURA = {
   texto: "Oi, tenho uma dúvida sobre a assinatura do Rende.",
 };
 
-/** WhatsApp quando há número; sem ele, o e-mail (`DECISOES.md#d195`). */
-function linkDaAjuda(texto: string) {
+/**
+ * WhatsApp quando há número; sem ele, o e-mail (`DECISOES.md#d195`). Também o
+ * contato da `/conheca` e do rodapé do site (`#d386`).
+ */
+export function linkDaAjuda(texto: string) {
   const codificado = encodeURIComponent(texto);
   return RESPONSAVEL.whatsapp
     ? `https://wa.me/${RESPONSAVEL.whatsapp}?text=${codificado}`
