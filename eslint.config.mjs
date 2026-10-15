@@ -15,6 +15,9 @@ const config = [
       // dependências que o `npm install` da raiz não instala. Ver
       // `DECISOES.md#d73`.
       "functions/**",
+      // A referência da faixa do custo, guardada como veio; o código é
+      // `site/FaixaDoCusto.tsx` (`DECISOES.md#d382`).
+      "docs/marca/rende/faixa-custo/**",
     ],
   },
 ];

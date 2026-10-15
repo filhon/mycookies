@@ -175,6 +175,8 @@
   --color-brand-600: var(--brand-600);
   /* Divisória sobre a marca: a única borda da barra lateral. */
   --color-brand-500: var(--brand-500);
+  /* O trabalho dela na faixa do custo, sobre o `brand-800` (`#d382`). */
+  --color-brand-400: var(--brand-400);
   --color-brand-100: var(--brand-100);
   /* A marca como tinta sobre a superfície: link, ícone de seleção, barra
      de progresso, borda da opção escolhida. Inverte no escuro. */

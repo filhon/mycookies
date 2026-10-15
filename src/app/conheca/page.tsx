@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { CalculadoraDaPorta } from "@/components/site/CalculadoraDaPorta";
 import { ContaAberta } from "@/components/site/ContaAberta";
+import { FaixaDoCusto } from "@/components/site/FaixaDoCusto";
 import { LuzDaJanela } from "@/components/site/LuzDaJanela";
 import { Rodape, Topo } from "@/components/site/Moldura";
 import { OrigemDoLink } from "@/components/site/OrigemDoLink";
@@ -17,15 +18,19 @@ import {
   unidadesQuePagam,
 } from "@/lib/domain/assinatura";
 import { DIAS_DE_TESTE } from "@/lib/domain/cadastro";
+import { composicaoDoLote } from "@/lib/domain/custoFicha";
 import { EXEMPLO } from "@/lib/domain/exemplo";
 import { formatarMoeda } from "@/lib/domain/money";
-import { calcularPrecoSugerido } from "@/lib/domain/precificacao";
+import {
+  calcularPrecoSugerido,
+  somaTaxas,
+  verificarPreco,
+} from "@/lib/domain/precificacao";
 import { lerPrecos, stripeDisponivel } from "@/lib/server/stripe";
 import type { Centavos, Pacote } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 import { DESCRICAO } from "../descricao";
 import { URL_DO_SITE } from "../site";
-import bancada from "./bancada.jpg";
 
 /**
  * A página de venda (spec 036). Pública e indexável, fora de `(app)` e de
@@ -238,6 +243,11 @@ export default async function PaginaConheca() {
     EXEMPLO.custo.custoUnitario,
     EXEMPLO.parametros,
   );
+  const noSugerido = verificarPreco(
+    sugerido.ok ? sugerido.precoArredondado : 0,
+    EXEMPLO.custo.custoUnitario,
+    somaTaxas(EXEMPLO.parametros),
+  );
   const temDepoimento = !!DEPOIMENTO.texto;
   const temChute =
     sugerido.ok && EXEMPLO.precoPraticado !== sugerido.precoArredondado;
@@ -315,17 +325,25 @@ export default async function PaginaConheca() {
           </LuzDaJanela>
         </div>
 
-        {/* O saquinho, o adesivo e o gás da frase do topo, na bancada
-            (`DECISOES.md#d238`). Imagem gerada: decorativa, sem legenda e sem
-            nome, nunca a Maynara nem a MyCookie's (`#d175`). Abaixo da dobra,
-            carrega sob demanda; no celular o corte fica nas mãos e no cookie. */}
-        <Image
-          src={bancada}
-          alt=""
-          sizes="100vw"
-          placeholder="blur"
-          className="block h-[min(75vw,36rem)] w-full object-cover object-[80%_65%] lg:object-[center_65%]"
-        />
+        {/* A conta do topo se montando, no lugar da foto da bancada
+            (`DECISOES.md#d382`). Os números são os do `h1` e da `ContaAberta`. */}
+        {sugerido.ok && (
+          <FaixaDoCusto
+            nome={EXEMPLO.nome}
+            rende={EXEMPLO.rende}
+            parcelas={composicaoDoLote(EXEMPLO.custo).map((s) => ({
+              rotulo: s.rotulo,
+              centavos: Math.round(s.centavos / EXEMPLO.rende),
+              destaque: s.destaque,
+            }))}
+            custo={EXEMPLO.custo.custoUnitario}
+            maquininha={noSugerido.custoTaxas}
+            sobra={noSugerido.lucroUnitario}
+            preco={sugerido.precoArredondado}
+            margem={EXEMPLO.parametros.margemDesejada}
+            taxa={EXEMPLO.parametros.taxaCartaoConsiderada}
+          />
+        )}
 
         <SuaConta />
 

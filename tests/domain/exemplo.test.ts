@@ -59,6 +59,20 @@ describe("o cookie da página de venda", () => {
     });
   });
 
+  // A faixa do custo (`#d382`) tem um passo por parcela, cinco, e soma por
+  // unidade o que o `h1` diz: 312 + 45 + 56 + 18 + 10 = 441. No preço de 850,
+  // a maquininha leva 5% = 42,5 → 43 e sobram 850 − 441 − 43 = 366.
+  it("monta a faixa do custo: 4,41 + 0,43 + 3,66 = 8,50", () => {
+    const porUnidade = composicaoDoLote(EXEMPLO.custo).map((s) =>
+      Math.round(s.centavos / EXEMPLO.rende),
+    );
+    expect(porUnidade).toEqual([312, 45, 56, 18, 10]);
+    expect(porUnidade.reduce((a, b) => a + b, 0)).toBe(441);
+    expect(
+      verificarPreco(850, 441, somaTaxas(EXEMPLO.parametros)),
+    ).toMatchObject({ custoTaxas: 43, lucroUnitario: 366 });
+  });
+
   it("abre em cinco parcelas, com o trabalho dela em destaque", () => {
     const segmentos = composicaoDoLote(EXEMPLO.custo);
     expect(segmentos).toHaveLength(5);
