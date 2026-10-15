@@ -12955,3 +12955,29 @@ cookie (`#d187`).
 mais alta que as duas seções da esquerda, e o `sticky` quase não anda: ela termina um pouco abaixo
 da margem. Encolher os campos para caber presa seria tirar as dicas, que são o que ensina a achar
 cada número.
+
+## D395 · A página de doces tem a tabela do multiplicador e se manda pelo WhatsApp
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 177 · ao lado da `#d317` (o
+compartilhar do cardápio) e da `#d394`.
+
+**Decisão.**
+
+- **Duas tabelas em "Margem e taxas"**, lado a lado a partir de `md` e uma embaixo da outra no
+  celular: "× 1,5 · 2 · 2,5 · 3" com a sobra do preço depois da maquininha (`verificarPreco` sobre
+  um custo de R$ 100,00), e a inversa, "pra sobrar 30 · 40 · 50%", com o divisor (`fracao`) e o
+  multiplicador (`precoSugerido` do `calcularPrecoSugerido` sobre R$ 100,00, antes do
+  arredondamento). Maquininha fixa nos 5% do `EXEMPLO`: a calculadora da 176 é onde ela troca.
+  Os multiplicadores das duas levam o "×", para a coluna ler igual nas duas.
+- **"Mandar pelo WhatsApp" só na página de doces**, secundário, depois das perguntas e antes do
+  convite, que continua com o primário. É a que tem os quatro doces; as de cada doce ganham o
+  mesmo botão se a medição mostrar visitas vindas do WhatsApp.
+- **Um `<a>` para o `wa.me` sem número**, que funciona sem JavaScript; com ele, a folha do
+  aparelho (`navigator.share`) quando existe. O `share` recebe a frase e o endereço separados, e
+  o link do WhatsApp os junta: dar o endereço dentro do `text` e de novo no `url` o repete na
+  mensagem em alguns aparelhos.
+- **WhatsApp, e não "copiar link"**: o grupo de confeiteiras é lá, e a folha do celular já oferece
+  copiar.
+
+**Consequência.** O endereço é o `URL_DO_SITE` da hora do build (a página é estática): no build
+local sai `localhost`. `fracao` passou de `components/site/Artigo.tsx` para `domain/money.ts`, ao lado dos outros formatadores, para o teste prender o divisor; o `Artigo` a reexporta e as páginas não mudaram. Nenhum campo, regra ou dependência.

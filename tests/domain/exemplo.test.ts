@@ -9,7 +9,11 @@ import {
   NO_APLICATIVO,
   POR_BOLO,
 } from "@/lib/domain/exemplo";
-import { percentualDe } from "@/lib/domain/money";
+import {
+  formatarMultiplicador,
+  fracao,
+  percentualDe,
+} from "@/lib/domain/money";
 import {
   calcularPrecoSugerido,
   somaTaxas,
@@ -456,5 +460,49 @@ describe("a tabela da página de doces", () => {
     expect(
       verificarPreco(1700, 910, somaTaxas(NO_APLICATIVO)).lucroUnitario,
     ).toBe(450);
+  });
+});
+
+// As tabelas de multiplicador da página de doces (spec 177), num custo de
+// R$ 100,00 e com os 5% de maquininha do exemplo.
+describe("multiplicou por quanto, sobrou quanto", () => {
+  const taxas = somaTaxas(EXEMPLO.parametros);
+
+  // 150 − 100 − 7,50 = 42,50, 28,33% · 200 − 100 − 10 = 90, 45% ·
+  // 250 − 100 − 12,50 = 137,50, 55% · 300 − 100 − 15 = 185, 61,67%.
+  it("× 1,5, 2, 2,5 e 3 deixam 28%, 45%, 55% e 62%", () => {
+    expect(
+      [1.5, 2, 2.5, 3].map((vezes) =>
+        Math.round(
+          verificarPreco(Math.round(10000 * vezes), 10000, taxas).margemReal,
+        ),
+      ),
+    ).toEqual([28, 45, 55, 62]);
+  });
+
+  it("× 2 em R$ 100: a maquininha leva R$ 10 e sobram R$ 90", () => {
+    const r = verificarPreco(20000, 10000, taxas);
+    expect([r.custoTaxas, r.lucroUnitario]).toEqual([1000, 9000]);
+  });
+
+  it("pra sobrar 30%, 40% e 50%: divida por 0,65, 0,55 e 0,45", () => {
+    expect([30, 40, 50].map((m) => fracao(100 - m - taxas))).toEqual([
+      "0,65",
+      "0,55",
+      "0,45",
+    ]);
+  });
+
+  // 10000 ÷ 0,65 = 15384,6 · 10000 ÷ 0,55 = 18181,8 · 10000 ÷ 0,45 = 22222,2.
+  it("pra sobrar 30%, 40% e 50%: × 1,54, 1,82 e 2,22", () => {
+    expect(
+      [30, 40, 50].map((margemDesejada) => {
+        const r = calcularPrecoSugerido(10000, {
+          ...EXEMPLO.parametros,
+          margemDesejada,
+        });
+        return r.ok && formatarMultiplicador(r.precoSugerido / 10000);
+      }),
+    ).toEqual(["1,54×", "1,82×", "2,22×"]);
   });
 });

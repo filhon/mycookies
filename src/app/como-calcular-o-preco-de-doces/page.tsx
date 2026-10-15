@@ -1,16 +1,18 @@
 import { ArrowRight, TrendingDown } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PAGINAS_DO_PRECO } from "@/app/site";
+import { PAGINAS_DO_PRECO, URL_DO_SITE } from "@/app/site";
 import {
   CabecalhoDoArtigo,
   Convite,
+  fracao,
   Perguntas,
   TITULO_H2,
   Valor,
 } from "@/components/site/Artigo";
 import { FaixaDeComposicao } from "@/components/fichas/FaixaDeComposicao";
 import { CalculadoraDasParcelas } from "@/components/site/CalculadoraDasParcelas";
+import { MandarAPagina } from "@/components/site/MandarAPagina";
 import { Rodape, Topo } from "@/components/site/Moldura";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { composicaoDoLote, type Segmento } from "@/lib/domain/custoFicha";
@@ -23,7 +25,11 @@ import {
   NO_APLICATIVO,
   POR_BOLO,
 } from "@/lib/domain/exemplo";
-import { formatarMoeda, formatarPercentual } from "@/lib/domain/money";
+import {
+  formatarMoeda,
+  formatarMultiplicador,
+  formatarPercentual,
+} from "@/lib/domain/money";
 import {
   calcularPrecoSugerido,
   type ParametrosPreco,
@@ -148,6 +154,30 @@ const O_QUE_MUDA: Record<Exclude<Endereco, typeof ENDERECO>, Linha> = {
   },
 };
 
+/** O custo de referência das tabelas de multiplicador: R$ 100,00. */
+const CEM = 10000;
+
+/** "Multiplicou por quanto, sobrou quanto", sobre um custo de R$ 100 (spec 177). */
+const MULTIPLICOU = [1.5, 2, 2.5, 3].map((vezes) => ({
+  vezes,
+  ...verificarPreco(Math.round(CEM * vezes), CEM, TAXAS),
+}));
+
+/** A inversa: a divisão do `calcularPrecoSugerido`, antes do arredondamento. */
+const PRA_SOBRAR = [30, 40, 50].map((margem) => {
+  const r = calcularPrecoSugerido(CEM, {
+    ...parametros,
+    margemDesejada: margem,
+  });
+  return {
+    margem,
+    divisor: fracao(100 - margem - TAXAS),
+    vezes: r.ok ? r.precoSugerido / CEM : 0,
+  };
+});
+
+const DOBRO = MULTIPLICOU.find((m) => m.vezes === 2)!;
+
 const LINHAS = PAGINAS_DO_PRECO.flatMap((p) =>
   p.endereco === ENDERECO ? [] : [{ ...p, ...O_QUE_MUDA[p.endereco] }],
 );
@@ -230,6 +260,11 @@ const PERGUNTAS: { pergunta: string; resposta: React.ReactNode }[] = [
       "A conta é a mesma, e o que muda é a perda. O doce de encomenda sai vendido; o de pronta entrega que sobra no fim do dia foi feito e pago do mesmo jeito. Se de cada dez sobra um, divida o custo do lote por nove, e não por dez.",
   },
 ];
+
+// As duas tabelas de multiplicador: cabem a 390px sem rolar de lado.
+const TABELA = "w-full border-y border-line text-left";
+const LEGENDA = "mb-3 text-left text-label text-ink-muted";
+const NUMERO = "num py-3 font-semibold text-ink";
 
 /** A unidade embaixo do nome: "o quilo, no bolo de 2 kg". */
 function Unidade({ linha }: { linha: Linha }) {
@@ -477,11 +512,106 @@ export default function PaginaPrecoDeDoces() {
                 </Link>
                 .
               </p>
+
+              <div className="mt-6 grid items-start gap-8 md:grid-cols-2">
+                <table className={TABELA}>
+                  <caption className={LEGENDA}>
+                    {`Com ${parametros.taxaCartaoConsiderada}% de maquininha`}
+                  </caption>
+                  <thead>
+                    <tr className="border-b border-line text-label text-ink-muted">
+                      <th scope="col" className="py-3 pr-4 font-medium">
+                        Você multiplica o custo por
+                      </th>
+                      <th
+                        scope="col"
+                        className="py-3 pl-4 text-right font-medium"
+                      >
+                        Sobra do preço, depois da maquininha
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {MULTIPLICOU.map((m) => (
+                      <tr key={m.vezes}>
+                        <th scope="row" className={`${NUMERO} pr-4 text-left`}>
+                          {`${m.vezes.toLocaleString("pt-BR")}×`}
+                        </th>
+                        <td className={`${NUMERO} pl-4 text-right`}>
+                          {formatarPercentual(m.margemReal, 0)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <table className={TABELA}>
+                  <caption className={LEGENDA}>
+                    {`A conta ao contrário, com ${parametros.taxaCartaoConsiderada}% de maquininha`}
+                  </caption>
+                  <thead>
+                    <tr className="border-b border-line text-label text-ink-muted">
+                      <th scope="col" className="py-3 pr-3 font-medium">
+                        Pra sobrar
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3 text-right font-medium"
+                      >
+                        Divida o custo por
+                      </th>
+                      <th
+                        scope="col"
+                        className="py-3 pl-3 text-right font-medium"
+                      >
+                        É o mesmo que multiplicar por
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {PRA_SOBRAR.map((p) => (
+                      <tr key={p.margem}>
+                        <th scope="row" className={`${NUMERO} pr-3 text-left`}>
+                          {formatarPercentual(p.margem, 0)}
+                        </th>
+                        <td className={`${NUMERO} px-3 text-right`}>
+                          {p.divisor}
+                        </td>
+                        <td className={`${NUMERO} pl-3 text-right`}>
+                          {formatarMultiplicador(p.vezes)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <p className="mt-6 text-body text-ink">
+                Um custo de <Valor centavos={CEM} /> multiplicado por 2 vira{" "}
+                <Valor centavos={CEM * 2} />: a maquininha leva{" "}
+                <Valor centavos={DOBRO.custoTaxas} />, o custo leva{" "}
+                <Valor centavos={CEM} />, e sobram{" "}
+                <Valor centavos={DOBRO.lucroUnitario} />,{" "}
+                {formatarPercentual(DOBRO.margemReal, 0)} do preço, e não os
+                100% que se somaram em cima.
+              </p>
             </section>
           </div>
 
           <div className="max-w-[68ch]">
             <Perguntas perguntas={PERGUNTAS} />
+          </div>
+
+          {/* Secundário: o primário da tela é o do convite (spec 177). */}
+          <div className="mt-12 flex max-w-[68ch] flex-col gap-4 sm:flex-row sm:items-center">
+            <p className="text-subheading font-semibold text-ink">
+              Conhece alguém que chuta o preço?
+            </p>
+            <MandarAPagina
+              titulo={TITULO}
+              texto="A conta do preço de doces, com o cookie, o cento de brigadeiro, o bolo por quilo e o bolo de pote:"
+              url={`${URL_DO_SITE}${ENDERECO}`}
+            />
           </div>
         </article>
 

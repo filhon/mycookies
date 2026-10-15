@@ -96,10 +96,10 @@ o do convite (um por tela).
 
 ## Critérios de aceite
 
-- [ ] As duas tabelas com `caption` e `th scope`, números das funções, presos no teste.
-- [ ] O botão manda o endereço absoluto e o texto, com `share` ou com o WhatsApp.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `package.json` e `firestore.*` intocados.
-- [ ] Decisão registrada; `ESTADO.md` atualizado.
+- [x] As duas tabelas com `caption` e `th scope`, números das funções, presos no teste.
+- [x] O botão manda o endereço absoluto e o texto, com `share` ou com o WhatsApp.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `package.json` e `firestore.*` intocados.
+- [x] Decisão registrada; `ESTADO.md` atualizado.
 
 ---
 

@@ -5,7 +5,7 @@ import { classesBotao } from "@/components/ui/estilosBotao";
 import { DIAS_DE_TESTE } from "@/lib/domain/cadastro";
 import { ROTULO_PARCELA } from "@/lib/domain/custoFicha";
 import type { ExemploDePagina } from "@/lib/domain/exemplo";
-import { formatarMoeda } from "@/lib/domain/money";
+import { formatarMoeda, fracao } from "@/lib/domain/money";
 import { somaTaxas } from "@/lib/domain/precificacao";
 import type { Centavos } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
@@ -19,9 +19,8 @@ import { cn } from "@/lib/utils/cn";
 export const TITULO_H2 =
   "text-balance font-display text-title font-bold tracking-[-0.02em] text-ink lg:text-[1.75rem] lg:leading-[1.2]";
 
-/** 40 → "0,40": a margem e a taxa como entram na divisão. */
-export const fracao = (percentual: number) =>
-  (percentual / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+// Mora no domínio para o teste prender o divisor (spec 177).
+export { fracao };
 
 /** Dinheiro no meio da frase: tabular, em peso de número. */
 export function Valor({ centavos }: { centavos: Centavos }) {

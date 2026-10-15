@@ -94,6 +94,10 @@ export function formatarPercentual(valor: number, casas = 1): string {
   })}%`;
 }
 
+/** 40 → "0,40": a margem e a taxa como entram na divisão. */
+export const fracao = (percentual: number) =>
+  (percentual / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+
 /** 1.56 → "1,56×". O múltiplo do custo, na notação que ela reconhece. */
 export function formatarMultiplicador(valor: number): string {
   return `${valor.toLocaleString("pt-BR", {
