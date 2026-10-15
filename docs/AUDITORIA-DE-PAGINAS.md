@@ -87,7 +87,10 @@ Ao terminar uma página, mude a linha dela aqui (status, data, specs).
 
 - **`/conheca` está parcial** porque a crítica de 2026-09-24 ("crítica da página de venda") é
   anterior ao procedimento com prints e não foi feita com `/frontend-design`; a 067 veio de
-  conversa, não de crítica. Vale refazer com o prompt acima.
+  conversa, não de crítica. Vale refazer com o prompt acima. Em 2026-10-14, fora de spec e sem
+  crítica, a foto da bancada deu lugar à faixa do custo animada (`#d382`) e a página ganhou a
+  abertura em tela cheia, uma vez por sessão (`#d383`): a página continua parcial, e a crítica
+  refeita precisa olhar as duas, inclusive se a abertura ajuda ou atrapalha a venda.
 - **`/fichas/[id]` foi auditada em 2026-10-12** (a crítica dos prints do editor de produto,
   oito itens): 134 a 140, com a 140 em duas sessões (140-A, o preparo no custo; 140-B, o preparo
   no pote). Os roteiros de navegador da 138, da 139 e da 140 seguem por rodar, e a pergunta da 140
