@@ -144,14 +144,14 @@ parada: o mesmo comportamento da `CalculadoraDaPorta` na 040.
 
 ## Critérios de aceite
 
-- [ ] `contaDasParcelas` só compõe funções que já existem, e o teste prende os quatro exemplos.
-- [ ] A calculadora começa no cookie, troca para os quatro exemplos e aceita qualquer número.
-- [ ] O resultado mostra custo, faixa, preço, sobra na porção e, com o preço de hoje, o que ele
+- [x] `contaDasParcelas` só compõe funções que já existem, e o teste prende os quatro exemplos.
+- [x] A calculadora começa no cookie, troca para os quatro exemplos e aceita qualquer número.
+- [x] O resultado mostra custo, faixa, preço, sobra na porção e, com o preço de hoje, o que ele
       deixa; margem + taxas ≥ 100 vira aviso.
-- [ ] Desktop com a coluna da direita usada; celular com a calculadora depois das parcelas.
-- [ ] Nada gravado no aparelho nem no Firestore.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `package.json` e `firestore.*` intocados.
-- [ ] Duas decisões registradas; a nota da 068 ("A calculadora nas páginas novas") marcada como
+- [x] Desktop com a coluna da direita usada; celular com a calculadora depois das parcelas.
+- [x] Nada gravado no aparelho nem no Firestore.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `package.json` e `firestore.*` intocados.
+- [x] Duas decisões registradas; a nota da 068 ("A calculadora nas páginas novas") marcada como
       "em parte, na 176"; `ESTADO.md` atualizado.
 
 ---

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Centavos } from "@/lib/types";
+import type { Centavos, Percentual } from "@/lib/types";
 import { FICHAS_DA_BIBLIOTECA, INSUMOS_DA_BIBLIOTECA } from "./biblioteca";
 import {
   CONFIGURACAO_SUGERIDA,
@@ -9,12 +9,25 @@ import {
 import {
   composicaoDoLote,
   derivarFicha,
+  type CustoFichaCalculado,
   type DerivadosFicha,
   type Segmento,
 } from "./custoFicha";
 import { calcularCustoInsumo } from "./custoInsumo";
-import type { ExemploDePagina } from "./exemplo";
-import { verificarPreco, type VerificacaoPreco } from "./precificacao";
+import {
+  boloDe,
+  EXEMPLO,
+  EXEMPLO_BOLO_DE_POTE,
+  EXEMPLO_BRIGADEIRO,
+  type ExemploDePagina,
+} from "./exemplo";
+import {
+  calcularPrecoSugerido,
+  type ResultadoPreco,
+  somaTaxas,
+  verificarPreco,
+  type VerificacaoPreco,
+} from "./precificacao";
 import { formatarQuantidade, paraBase, unidadeBaseDe } from "./unidades";
 
 /**
@@ -264,5 +277,126 @@ export function exemploDoRascunho(
     custo: derivados.custo,
     parametros: precificacaoSugerida(),
     precoPraticado: precoHoje > 0 ? precoHoje : derivados.precoArredondado,
+  };
+}
+
+/**
+ * A conta sem receita (spec 176): as cinco parcelas em reais, na unidade em que
+ * ela vende, para quem já sabe ou estima o custo de cada uma. A unidade é só
+ * palavra: trocar "cento" não converte nada.
+ */
+export type UnidadeDeVenda = "unidade" | "cento" | "quilo" | "pote";
+
+/** As cinco parcelas, com os nomes do custo da ficha. */
+export type ParcelasDoCusto = Pick<
+  CustoFichaCalculado,
+  | "custoInsumos"
+  | "custoEmbalagem"
+  | "custoMaoDeObra"
+  | "custoEnergiaGas"
+  | "custoIndireto"
+>;
+
+export interface EntradaDasParcelas extends ParcelasDoCusto {
+  margemDesejada: Percentual;
+  /** Maquininha, aplicativo, pagamento online, somados por ela. */
+  taxas: Percentual;
+  precoHoje: Centavos | null;
+}
+
+export interface ContaDasParcelas {
+  /** O custo de uma unidade de venda: a soma das cinco. */
+  custo: Centavos;
+  segmentos: Segmento[];
+  preco: ResultadoPreco;
+  /** O preço arredondado, pela `verificarPreco`. `null` sem preço possível. */
+  sugerido: VerificacaoPreco | null;
+  /** O preço de hoje, pela mesma função. `null` sem preço de hoje. */
+  hoje: VerificacaoPreco | null;
+}
+
+/** Uma parcela do lote do exemplo, na unidade em que ele se vende. */
+function porUnidade({ custo, rende }: ExemploDePagina): ParcelasDoCusto {
+  const por = (centavos: Centavos) => Math.round(centavos / rende);
+  return {
+    custoInsumos: por(custo.custoInsumos),
+    custoEmbalagem: por(custo.custoEmbalagem),
+    custoMaoDeObra: por(custo.custoMaoDeObra),
+    custoEnergiaGas: por(custo.custoEnergiaGas),
+    custoIndireto: por(custo.custoIndireto),
+  };
+}
+
+const doExemplo = (
+  rotulo: string,
+  unidade: UnidadeDeVenda,
+  exemplo: ExemploDePagina,
+) => ({
+  valor: rotulo,
+  rotulo,
+  unidade,
+  parcelas: porUnidade(exemplo),
+  taxas: somaTaxas(exemplo.parametros),
+});
+
+/** Os quatro doces da tabela, por unidade de venda, com as taxas do balcão. */
+export const EXEMPLOS_DAS_PARCELAS = [
+  doExemplo("Cookie", "unidade", EXEMPLO),
+  doExemplo("Brigadeiro", "cento", EXEMPLO_BRIGADEIRO),
+  doExemplo("Bolo", "quilo", boloDe(2)),
+  doExemplo("Bolo de pote", "pote", EXEMPLO_BOLO_DE_POTE),
+] as const;
+
+/** O cookie do `EXEMPLO`, com 40% e 5%: onde a calculadora começa. */
+export function entradaDasParcelas(): EntradaDasParcelas {
+  const [cookie] = EXEMPLOS_DAS_PARCELAS;
+  return {
+    ...cookie.parcelas,
+    margemDesejada: EXEMPLO.parametros.margemDesejada,
+    taxas: cookie.taxas,
+    precoHoje: null,
+  };
+}
+
+/**
+ * Custo, preço e sobra a partir das cinco parcelas. Só compõe o que o app já
+ * faz: `calcularPrecoSugerido` com o método e o arredondamento dos exemplos,
+ * `verificarPreco` no sugerido e no de hoje. Número torto vira zero.
+ */
+export function contaDasParcelas(
+  entrada: EntradaDasParcelas,
+): ContaDasParcelas {
+  const parcelas: ParcelasDoCusto = {
+    custoInsumos: naoNegativo(entrada.custoInsumos),
+    custoEmbalagem: naoNegativo(entrada.custoEmbalagem),
+    custoMaoDeObra: naoNegativo(entrada.custoMaoDeObra),
+    custoEnergiaGas: naoNegativo(entrada.custoEnergiaGas),
+    custoIndireto: naoNegativo(entrada.custoIndireto),
+  };
+  const custo = Object.values(parcelas).reduce((a, b) => a + b, 0);
+  const parametros = {
+    ...EXEMPLO.parametros,
+    margemDesejada: naoNegativo(entrada.margemDesejada),
+    taxaCartaoConsiderada: naoNegativo(entrada.taxas),
+    outrasTaxas: 0,
+  };
+  const taxas = somaTaxas(parametros);
+  const preco = calcularPrecoSugerido(custo, parametros);
+  const precoHoje = naoNegativo(entrada.precoHoje ?? 0);
+
+  return {
+    custo,
+    segmentos: composicaoDoLote({
+      ...parcelas,
+      custoComponentes: 0,
+      custoEscolhas: 0,
+      custoTotalLote: custo,
+      custoUnitario: custo,
+    }),
+    preco,
+    sugerido: preco.ok
+      ? verificarPreco(preco.precoArredondado, custo, taxas)
+      : null,
+    hoje: precoHoje > 0 ? verificarPreco(precoHoje, custo, taxas) : null,
   };
 }

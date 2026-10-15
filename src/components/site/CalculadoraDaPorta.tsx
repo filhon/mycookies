@@ -455,7 +455,7 @@ function PrecoDeHoje({
  * Só o custo e o preço, e só depois que ela para de digitar: anunciar o bloco
  * inteiro a cada tecla seria ruído (spec 040, 3.3). Abrir a página não anuncia.
  */
-function Anuncio({ frase }: { frase: string }) {
+export function Anuncio({ frase }: { frase: string }) {
   const [texto, setTexto] = useState("");
   const ultima = useRef(frase);
 

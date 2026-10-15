@@ -7,6 +7,9 @@ import {
 } from "@/lib/domain/biblioteca";
 import {
   contaDaPorta,
+  contaDasParcelas,
+  entradaDasParcelas,
+  EXEMPLOS_DAS_PARCELAS,
   entradaPadrao,
   exemploDoRascunho,
   lerRascunho,
@@ -26,6 +29,12 @@ import {
   rateioSugerido,
 } from "@/lib/domain/configuracaoSugerida";
 import { derivarFicha } from "@/lib/domain/custoFicha";
+import {
+  boloDe,
+  EXEMPLO,
+  EXEMPLO_BOLO_DE_POTE,
+  EXEMPLO_BRIGADEIRO,
+} from "@/lib/domain/exemplo";
 
 // A página e o app batem (spec 040, 3.5): o mesmo cookie, pelas mesmas funções,
 // dá o mesmo custo e o mesmo preço. É o teste que impede a página de prometer
@@ -333,5 +342,95 @@ describe("montarBiblioteca com a conta da porta", () => {
     expect(
       montarBiblioteca(parametros, entradaPadrao("cookie-classico")),
     ).toEqual(montarBiblioteca(parametros));
+  });
+});
+
+// A conta sem receita (spec 176) e a tabela da página de doces batem: cada
+// exemplo, pelas parcelas por unidade, dá o preço que a tabela mostra.
+describe("contaDasParcelas", () => {
+  const [cookie, brigadeiro, bolo, pote] = EXEMPLOS_DAS_PARCELAS;
+  const comExemplo = ({
+    parcelas,
+    taxas,
+  }: (typeof EXEMPLOS_DAS_PARCELAS)[number]) => {
+    return contaDasParcelas({
+      ...entradaDasParcelas(),
+      ...parcelas,
+      taxas,
+    });
+  };
+
+  it("começa no cookie da página do cookie: R$ 8,50 e R$ 3,66 de sobra", () => {
+    const conta = contaDasParcelas(entradaDasParcelas());
+    expect(conta.custo).toBe(EXEMPLO.custo.custoUnitario);
+    expect(conta.preco).toEqual(
+      calcularPrecoSugerido(EXEMPLO.custo.custoUnitario, EXEMPLO.parametros),
+    );
+    expect(conta.preco.ok && conta.preco.precoArredondado).toBe(850);
+    expect(conta.sugerido?.lucroUnitario).toBe(366);
+    expect(conta.hoje).toBeNull();
+  });
+
+  const pares = [
+    [cookie, EXEMPLO],
+    [brigadeiro, EXEMPLO_BRIGADEIRO],
+    [bolo, boloDe(2)],
+    [pote, EXEMPLO_BOLO_DE_POTE],
+  ] as const;
+  for (const [daCalculadora, exemplo] of pares) {
+    it(`${daCalculadora.rotulo}: o custo e o preço da tabela`, () => {
+      const conta = comExemplo(daCalculadora);
+      const daTabela = calcularPrecoSugerido(
+        exemplo.custo.custoUnitario,
+        exemplo.parametros,
+      );
+      expect(conta.custo).toBe(exemplo.custo.custoUnitario);
+      expect(conta.preco).toEqual(daTabela);
+      expect(conta.sugerido?.lucroUnitario).toBe(
+        daTabela.ok
+          ? verificarPreco(
+              daTabela.precoArredondado,
+              exemplo.custo.custoUnitario,
+              somaTaxas(exemplo.parametros),
+            ).lucroUnitario
+          : NaN,
+      );
+    });
+  }
+
+  it("o cento de brigadeiro sai a R$ 176,50", () => {
+    const { preco } = comExemplo(brigadeiro);
+    expect(preco.ok && preco.precoArredondado).toBe(17650);
+  });
+
+  it("margem + taxas = 100 não tem preço, e nada vira NaN", () => {
+    const conta = contaDasParcelas({
+      ...entradaDasParcelas(),
+      margemDesejada: 60,
+      taxas: 40,
+    });
+    expect(conta.preco).toEqual({ ok: false, motivo: "MARGEM_IMPOSSIVEL" });
+    expect(conta.sugerido).toBeNull();
+    expect(conta.custo).toBe(441);
+  });
+
+  it("o preço de hoje abaixo do custo dá sobra negativa", () => {
+    const conta = contaDasParcelas({ ...entradaDasParcelas(), precoHoje: 200 });
+    expect(conta.hoje?.lucroUnitario).toBe(200 - 441 - 10);
+  });
+
+  it("número torto vira zero", () => {
+    const conta = contaDasParcelas({
+      ...entradaDasParcelas(),
+      custoEmbalagem: Number.NaN,
+      margemDesejada: Number.NaN,
+      taxas: -5,
+    });
+    expect(conta.custo).toBe(441 - 45);
+    expect(conta.preco).toEqual({
+      ok: true,
+      precoSugerido: 396,
+      precoArredondado: 400,
+    });
   });
 });

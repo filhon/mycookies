@@ -10,6 +10,7 @@ import {
   Valor,
 } from "@/components/site/Artigo";
 import { FaixaDeComposicao } from "@/components/fichas/FaixaDeComposicao";
+import { CalculadoraDasParcelas } from "@/components/site/CalculadoraDasParcelas";
 import { Rodape, Topo } from "@/components/site/Moldura";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { composicaoDoLote, type Segmento } from "@/lib/domain/custoFicha";
@@ -213,10 +214,10 @@ const PERGUNTAS: { pergunta: string; resposta: React.ReactNode }[] = [
       <>
         Não. A{" "}
         <Link
-          href="/como-calcular-o-preco-do-cookie#sua-conta"
+          href="#sua-conta"
           className="font-medium underline decoration-line underline-offset-4 hover:decoration-ink"
         >
-          calculadora na página do cookie
+          conta desta página
         </Link>{" "}
         faz a conta com os seus números, e o Rende guarda a conta de cada doce e
         refaz quando um ingrediente sobe.
@@ -305,7 +306,15 @@ export default function PaginaPrecoDeDoces() {
             Para qualquer doce, some ingredientes, embalagem, sua hora, gás e
             energia e uma fatia das despesas fixas, na unidade em que você
             vende: a unidade, o cento, o quilo ou o pote. Depois divida esse
-            custo por 1 menos a margem e menos as taxas.
+            custo por 1 menos a margem e menos as taxas. Ou ponha os seus
+            números{" "}
+            <Link
+              href="#sua-conta"
+              className="font-medium underline decoration-line underline-offset-4 hover:decoration-ink"
+            >
+              na conta, mais abaixo
+            </Link>
+            .
           </CabecalhoDoArtigo>
 
           <section aria-labelledby="o-que-muda" className="mt-16">
@@ -404,8 +413,14 @@ export default function PaginaPrecoDeDoces() {
             </table>
           </section>
 
-          <div className="max-w-[68ch]">
-            <section aria-labelledby="parcelas" className="mt-16">
+          {/* No celular a conta vem depois das parcelas que ela acabou de ler;
+              no desktop, presa ao lado delas e da margem (spec 176). Sem
+              JavaScript, o cookie do exemplo e o resultado dele, parados. */}
+          <div className="mt-16 grid gap-16 lg:grid-cols-[minmax(0,1fr)_26rem] lg:grid-rows-[auto_1fr]">
+            <section
+              aria-labelledby="parcelas"
+              className="max-w-[68ch] lg:col-start-1 lg:row-start-1"
+            >
               <h2 id="parcelas" className={TITULO_H2}>
                 As cinco parcelas
               </h2>
@@ -419,7 +434,23 @@ export default function PaginaPrecoDeDoces() {
               </p>
             </section>
 
-            <section aria-labelledby="margem" className="mt-16">
+            <section
+              id="sua-conta"
+              aria-labelledby="sua-conta-titulo"
+              className="scroll-mt-4 lg:col-start-2 lg:row-span-2 lg:row-start-1"
+            >
+              <div className="lg:sticky lg:top-8">
+                <h2 id="sua-conta-titulo" className={TITULO_H2}>
+                  Faça a conta do seu doce
+                </h2>
+                <CalculadoraDasParcelas className="mt-6" />
+              </div>
+            </section>
+
+            <section
+              aria-labelledby="margem"
+              className="max-w-[68ch] lg:col-start-1 lg:row-start-2"
+            >
               <h2 id="margem" className={TITULO_H2}>
                 Margem e taxas
               </h2>
@@ -447,7 +478,9 @@ export default function PaginaPrecoDeDoces() {
                 .
               </p>
             </section>
+          </div>
 
+          <div className="max-w-[68ch]">
             <Perguntas perguntas={PERGUNTAS} />
           </div>
         </article>

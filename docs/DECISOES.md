@@ -12902,3 +12902,56 @@ dezesseis rótulos repetidos e o preço por último.
 
 **Consequência.** Nenhum campo, regra ou dependência. A tabela de números da spec errava o cookie
 (R$ 4,66 e R$ 1,28); vale a função, R$ 3,66 e R$ 1,66, e o teste prende as oito quantias.
+
+## D393 · A página de doces tem calculadora, pelas cinco parcelas e sem receita
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 176 · reabre em parte o "Fora de
+escopo" da 068 ("A calculadora nas páginas novas"); ao lado da `#d185`.
+
+**Contexto.** A página da pergunta larga ("como precificar doces") era a única do conjunto sem
+conta nenhuma, e "Preciso de planilha?" mandava para a calculadora do cookie. A 068 esperava o
+Search Console para levar a `CalculadoraDaPorta` a outro doce, porque isso pedia receita nova na
+biblioteca, que é também o onboarding.
+
+**Decisão.**
+
+- **Não esperar o Search Console.** Esta não é aquela calculadora: não pede receita na biblioteca.
+- **Os campos são as cinco parcelas em reais, por unidade de venda**, mais margem, taxas (um campo,
+  somado por ela) e o preço de hoje. A dica de cada campo diz como chegar no número; a conta por
+  ingrediente é a do app.
+- **Começa no cookie do `EXEMPLO`**, e "Começar pelo exemplo do" troca as cinco parcelas, a
+  unidade e as taxas pelas de um dos quatro doces da tabela (o pote com as do balcão). Margem e
+  preço de hoje ficam: são dela. As parcelas do exemplo são as do lote divididas pelo `rende`
+  (`EXEMPLOS_DAS_PARCELAS`), e os quatro dão inteiros exatos.
+- **A unidade é só palavra.** Trocar "cento" não converte nada.
+- **`contaDasParcelas`** em `domain/calculadora.ts` soma as cinco e só compõe
+  `calcularPrecoSugerido` (com o método e o arredondamento do `EXEMPLO`), `verificarPreco` e
+  `somaTaxas`. Número torto vira zero, nunca `NaN`. O teste prende os quatro preços da tabela e a
+  sobra do cookie.
+- **Nada guardado**, nem no aparelho: o rascunho da porta (`#d189`) tem forma de receita. Ela
+  pode perder o que digitou ao sair.
+- O aviso de margem + taxas ≥ 100% repete a frase da Configuração. O `Anuncio` da
+  `CalculadoraDaPorta` passou a ser exportado e serve as duas.
+
+**Consequência.** O primeiro JavaScript da página. Nenhum campo, regra ou dependência.
+
+## D394 · A calculadora das parcelas mora ao lado das parcelas
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 176 · segue a grade da página do
+cookie (`#d187`).
+
+**Decisão.**
+
+- **Desktop (`lg`):** a grade `[minmax(0,1fr)_26rem]` da página do cookie. "As cinco parcelas" e
+  "Margem e taxas" à esquerda, a calculadora à direita, `row-span-2` e `sticky top-8`, com
+  `grid-rows-[auto_1fr]` para a altura dela não abrir vão entre as duas seções. As perguntas
+  voltam à coluna de leitura embaixo, sem nada ao lado.
+- **Celular:** a ordem do DOM, depois das parcelas e antes da margem, com o `h2` "Faça a conta do
+  seu doce" e `id="sua-conta"`.
+- A resposta do topo termina com "Ou ponha os seus números na conta, mais abaixo" (`#sua-conta`),
+  depois da resposta inteira (`#d176`); "Preciso de planilha?" aponta para cá.
+
+**Consequência.** A 1280px a calculadora (nove campos, duas linhas de pílulas e o resultado) é
+mais alta que as duas seções da esquerda, e o `sticky` quase não anda: ela termina um pouco abaixo
+da margem. Encolher os campos para caber presa seria tirar as dicas, que são o que ensina a achar
+cada número.
