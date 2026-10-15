@@ -170,19 +170,22 @@ export function FaixaDoCusto({
             <p className="text-label font-semibold text-ink-muted">
               {nome} · rende {rende} unidades
             </p>
-            {/* A altura de duas linhas fica guardada abaixo do `lg`: o título
-                que troca de tamanho não empurra a página. */}
-            <p
-              className={cn(
-                "mt-2 min-h-[2.3em] font-display text-[1.75rem] leading-[1.15] font-bold tracking-[-0.02em] text-balance transition-colors duration-400 ease-quart lg:min-h-[1.15em] lg:text-[2.375rem]",
-                passo === FIM && "text-accent-500",
-              )}
-            >
-              {titulo}
-            </p>
-            <p className="mt-2 min-h-[1.55em] text-body text-ink-muted lg:min-h-[1.4em] lg:text-subheading">
-              {linha}
-            </p>
+            {/* Abaixo do `lg` fica guardada a altura do título em duas linhas
+                mais a linha de baixo: o título que troca de tamanho não empurra
+                a página, e o vão sobra embaixo, e não entre os dois. */}
+            <div className="mt-2 min-h-[6.1rem] lg:min-h-0">
+              <p
+                className={cn(
+                  "font-display text-[1.75rem] leading-[1.15] font-bold tracking-[-0.02em] text-balance transition-colors duration-400 ease-quart lg:text-[2.375rem]",
+                  passo === FIM && "text-accent-500",
+                )}
+              >
+                {titulo}
+              </p>
+              <p className="mt-2 text-body text-ink-muted lg:text-subheading">
+                {linha}
+              </p>
+            </div>
           </div>
           <div className="flex shrink-0 flex-col gap-1 sm:items-end">
             <p className="text-label font-medium text-ink-muted">
@@ -192,8 +195,8 @@ export function FaixaDoCusto({
               <span className="text-heading font-semibold text-ink-muted">
                 R$
               </span>
-              {/* Largura fixa: o número que sobe não mexe no que está do lado. */}
-              <span className="num inline-block w-[4ch] text-right font-display text-[2.5rem] leading-none lg:text-[3.5rem]">
+              {/* Largura mínima: o número que sobe não mexe no que está do lado. */}
+              <span className="num inline-block min-w-[3.3ch] text-right font-display text-[2.5rem] leading-none lg:text-[3.5rem]">
                 {formatarValor(valor)}
               </span>
             </p>

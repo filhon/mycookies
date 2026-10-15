@@ -57,7 +57,7 @@ Tudo em OKLCH; o hex ao lado é leitura, não produção.
 | `--brand-700`  | `oklch(0.38 0.150 266)` | `#1C3891` | **primária**: botão primário, pílula ativa, seleção       |
 | `--brand-600`  | `oklch(0.46 0.160 266)` | `#2D4FB0` | hover do botão e de superfície de marca                   |
 | `--brand-500`  | `oklch(0.56 0.140 266)` | `#4D6FC6` | anel de foco, divisória sobre marca                       |
-| `--brand-400`  | `oklch(0.66 0.100 266)` | `#7590D0` | reservado                                                 |
+| `--brand-400`  | `oklch(0.66 0.100 266)` | `#7590D0` | o trabalho dela na faixa do custo da `/conheca` (`#d382`) |
 | `--brand-300`  | `oklch(0.76 0.070 266)` | `#9CB1DF` | ícone desativado                                          |
 | `--brand-200`  | `oklch(0.87 0.040 266)` | `#C8D4EF` | borda sobre marca; é o `--on-brand-muted`                 |
 | `--brand-100`  | `oklch(0.95 0.018 266)` | `#E9EFFB` | realce frio: opção escolhida, hover terciário, pílula nav |
@@ -339,7 +339,9 @@ Três elementos. Nenhum vira ícone de interface.
    em degraus de `--ink` separadas por cortes de 3px a 8°, o segmento "Seu trabalho" em
    `--brand-as-ink`. Só existe onde existe custo calculado. Nunca decorativa, nunca com
    proporções inventadas (`#d126`). A versão sobre o preço praticado, com maquininha e a sobra
-   em rosa, é spec própria (`#d381`).
+   em rosa, é spec própria (`#d381`). A exceção é a faixa larga da `/conheca`
+   (`FaixaDoCusto`, `#d382`): o cookie do `EXEMPLO` sobre o `--brand-800`, montando-se até o
+   preço sugerido, com o trabalho em `--brand-400` e a sobra em rosa.
 
 A folha do orçamento é da confeiteira, não nossa: o Rende aparece nela como uma linha de
 rodapé (`#d127`).

@@ -12482,3 +12482,58 @@ interface ou regra de negócio muda.
 botão primário sobre a noite mede 1,8:1, abaixo dos 3:1 de interface; o rótulo mede 9,4:1 e é ele
 que identifica o botão, a mesma exceção do contorno do campo. Os contrastes de texto foram
 recomputados dos tokens e estão no `DESIGN.md`.
+
+## D382 · A faixa do custo na `/conheca`, no lugar da foto
+
+**Status:** vigente · decidida e codificada em 2026-10-14, fora de spec, pelo pedido em
+`docs/marca/rende/faixa-custo/PROMPT-FAIXA-CUSTO.md`. Substitui a `#d238`.
+
+**Contexto.** A foto da bancada era decorativa e não dizia número nenhum. Veio uma referência,
+`faixa-custo.js`: um web component em que a barra do custo do cookie se monta parcela a
+parcela, o contador sobe a R$ 4,41, a barra completa até R$ 8,50 e a sobra de R$ 3,66 aparece
+em rosa.
+
+**Decisão.**
+
+- **Componente React, e não o web component** (`site/FaixaDoCusto.tsx`, `"use client"`). O
+  repo não tem nenhum custom element. Os mesmos textos, a mesma ordem e os mesmos tempos
+  (1100 · 1000 · 800 · 900 · 700 · 700 · 1400 · 1500 · 4200 ms), em laço. Nenhuma biblioteca.
+- **Nenhum número escrito no componente** (`#d173`). A página passa as parcelas de
+  `composicaoDoLote` por unidade, o preço de `calcularPrecoSugerido` e a maquininha e a sobra de
+  `verificarPreco`. Se o `EXEMPLO` mudar, a faixa, o `h1` e a `ContaAberta` mudam juntos.
+  `tests/domain/exemplo.test.ts` prende 312 · 45 · 56 · 18 · 10 = 441, 43 e 366, e as cinco
+  parcelas, que são os cinco passos.
+- **Tokens, e não os hex da referência.** Fundo `brand-800` (a referência dizia `#14215C`, que
+  não é token), dentro de `sobre-marca`: o texto é `on-brand` e o apagado `on-brand-muted`. As
+  parcelas são os degraus de `ink` da `FaixaDeComposicao`, que ali dentro viram `on-brand`; o
+  trabalho dela em `brand-400` (o `brand-as-ink` sobre o cobalto seria branco); a maquininha em
+  `ink/15`; a sobra em `accent-500`. `--color-brand-400` entrou no `@theme` por isso. A barra
+  ganhou o corte de 3px a 8° da faixa de composição no lugar do filete da referência.
+- **Familjen Grotesk no título e no contador**, Figtree no resto: a referência pedia Figtree em
+  tudo, e os títulos da página são Familjen desde a `#d381`. Tamanhos fixos por quebra, como os
+  `h2` da página, e não o `clamp` em `cqw` da referência (`DESIGN.md`, Escala).
+- **O rosa da sobra no texto e na barra.** É a versão da faixa que mede o preço, e o rosa marca
+  só a sobra, como pede a `#d381`. A página fica com duas sobras em rosa (a `ContaAberta` no
+  topo e esta), em telas diferentes: o "uma por tela" vale para o que está à vista.
+- **O servidor entrega o quadro final**: barra cheia, R$ 8,50, "Sobram R$ 3,66 pra você". A
+  primeira resposta do `IntersectionObserver` chega com a faixa abaixo da dobra e a esvazia ali;
+  o laço só anda com 35% dela na tela e com a aba à vista. Com movimento reduzido nada se mexe:
+  fica o quadro final.
+- **Sem salto de layout.** A parcela entra por `scale-x`, com o lugar já reservado, e não por
+  largura. Abaixo do `lg` fica guardada a altura do título em duas linhas mais a linha de baixo,
+  e o número do contador tem largura mínima.
+- **`role="img"`** com o resumo em `aria-label`; os textos que trocam ficam fora da leitura.
+- **Fica de fora o `mode="intro"`** (a abertura em tela cheia): só se for pedido.
+
+**Medido** em 2026-10-14, build de produção local, Chrome headless: sem estouro horizontal a
+390 e a 1280px; altura da faixa constante durante o laço; o laço para fora da tela; com
+movimento reduzido, quadro final e nenhum deslocamento; CLS 0 no celular e 0,0004 no desktop
+(o contador, durante a contagem); o LCP continua o texto do topo. O chunk da `/conheca`, com a
+faixa dentro, tem 3,3 KB gzip. Lighthouse mobile, duas rodadas antes e depois: desempenho
+0,62–0,69 nas duas versões, LCP 5,7–6,3 s no texto do topo, CLS 0,001; a página ficou 12–23 KB
+mais leve. A nota baixa é da máquina local e já era assim antes; continua por medir no deploy.
+
+**Consequência.** A referência fica em `docs/marca/rende/faixa-custo/`, fora do `eslint`. A
+`#d238` sai, mas a regra dela sobre o precache fica: o `exclude` do Serwist para imagem
+importada continua em `next.config`. A faixa sobre o preço **praticado**, no editor do app,
+continua spec própria.
