@@ -44,9 +44,7 @@ export function FaixaDeComposicao({
             key={s.rotulo}
             style={{ flex: s.fracao }}
             className={
-              s.destaque
-                ? "bg-brand-ink"
-                : NEUTROS[neutro++ % NEUTROS.length]
+              s.destaque ? "bg-brand-ink" : NEUTROS[neutro++ % NEUTROS.length]
             }
           />
         ))}

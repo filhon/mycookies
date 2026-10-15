@@ -46,7 +46,8 @@ const POSITIVO = "#1A763F";
 
 const CORPO =
   "Figtree,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
-const DISPLAY = "'Familjen Grotesk','Helvetica Neue',Helvetica,Arial,sans-serif";
+const DISPLAY =
+  "'Familjen Grotesk','Helvetica Neue',Helvetica,Arial,sans-serif";
 
 const DOMINIO = new URL(URL_DO_SITE).host.replace(/^www\./, "");
 

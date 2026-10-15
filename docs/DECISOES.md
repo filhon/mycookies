@@ -12540,8 +12540,8 @@ continua spec própria.
 
 ## D383 · A abertura da `/conheca`: a faixa do custo em tela cheia, uma vez por sessão
 
-**Status:** vigente · decidida e codificada em 2026-10-14, fora de spec, o opcional de
-`docs/marca/rende/faixa-custo/PROMPT-FAIXA-CUSTO.md`. Completa a `#d382`.
+**Status:** revogada pela `#d384` em 2026-10-15 · decidida e codificada em 2026-10-14, fora de
+spec, o opcional de `docs/marca/rende/faixa-custo/PROMPT-FAIXA-CUSTO.md`. Completa a `#d382`.
 
 **Contexto.** A referência tem `mode="intro"`: a mesma faixa cobrindo a tela no carregamento,
 em ritmo acelerado, com "Pular" e Esc, uma vez por sessão, sumindo sozinha com esmaecimento, e
@@ -12580,3 +12580,66 @@ não se repetiu nas outras três (230–310 ms, contra 270–640 antes).
 
 **Consequência.** Toda primeira visita da sessão espera a abertura ou toca em "Pular" antes de
 ler a página. Se a conversão cair, ela sai com uma linha na página.
+
+## D384 · A `/conheca` não esconde a si mesma no primeiro quadro
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 168. Revoga a `#d383`.
+
+**Contexto.** A abertura em tela cheia aparecia na primeira visita de cada sessão, que é a
+visitante fria vinda de um link no Instagram ou no WhatsApp: ~7 s, ou achar o "Pular", para ver
+a conta do cookie que a tela seguinte repete. A `#d383` dizia que ela sairia "se a conversão
+cair", mas a página não mede conversão (`#d180` conta visitas, `metricas` conta contas): a
+condição nunca dispararia. O LCP medido era o texto do topo; o que a visitante via era a
+cortina.
+
+**Decisão.**
+
+- **A abertura sai inteira**: `site/abertura.ts` e o script antes da primeira pintura, a
+  `FaixaDoCusto abertura` do topo da página, o ramo `abertura` do componente (o ritmo de 60%, o
+  "Pular", o Esc, o `sessionStorage`, o `data-abertura` no `<html>`) e o bloco
+  `html[data-abertura]` / `.abertura` de `globals.css`.
+- **Fica a faixa no corpo da página**, como a `#d382` a fez.
+- **A regra**: a página não esconde a si mesma no primeiro quadro. Movimento de ambiente na
+  `/conheca` acontece no corpo, sem tirar a leitura (`DESIGN.md`, Ambiente, "o texto do topo
+  chega pronto"). A "entrada orquestrada no carregamento" que o Ambiente permite é a do
+  conteúdo chegando, e não uma cobertura por cima dele.
+
+**Consequência.** Se um dia a página medir conversão, a abertura pode voltar como teste A/B,
+nunca como padrão. O `DESIGN.md` não muda: o § Signature não citava a abertura.
+
+## D385 · O cartão do topo só no desktop, e a calculadora diz o preço do plano
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 168.
+
+**Contexto.** No celular, entre o primeiro quadro e a calculadora, a visitante via o `h1`
+(R$ 4,41 e R$ 8,50), o cartão (R$ 4,41 e R$ 8,50, sobram R$ 3,19) e a faixa (R$ 4,41 e R$ 8,50,
+sobram R$ 3,66): a mesma conta três vezes, com duas sobras rosa diferentes a uma rolagem de
+distância. E a calculadora parava em "são R$ X a mais pra você no preço sugerido", sem dizer o
+que isso paga.
+
+**Decisão.**
+
+- **`LuzDaJanela` com a `ContaAberta` dentro de um `hidden lg:block`.** No celular o topo é o
+  `h1`, a linha, o botão e "Leva um minuto, sem cadastro"; a faixa vem logo depois e mostra a
+  composição. No desktop o cartão é a coluna direita do topo e fica. A âncora `#conta` só existe
+  no desktop, como o próprio menu.
+- **O riscado do `h1` continua** (`#d255`) e continua `aria-hidden`. Como no celular não há mais
+  cartão que diga o preço praticado à leitura de tela, o `h1` ganha `, e não R$ 8,00` em
+  `sr-only lg:hidden`: "Você deveria cobrar R$ 8,50, e não R$ 8,00."
+- **`CalculadoraDaPorta` ganha `mensalDoPlano?: Centavos`.** A `/conheca` passa
+  `precos?.ESSENCIAL.mensal`; a página do preço do cookie não passa nada e nada muda lá. Com
+  `aMaisNoMes >= mensalDoPlano`, depois da frase do "a mais", uma frase: "O Essencial custa
+  R$ 29 por mês." Só o fato, sem "paga-se sozinho": a conta ela faz, a decisão é dela
+  (`PRODUCT.md`, regra de ouro). Abaixo do plano, ou sem Stripe (`#d174`), nada.
+- **O preço do plano em reais redondos quando é redondo** ("R$ 29", como o mês da frase de
+  cima), e com centavos quando tem: arredondar R$ 29,90 para R$ 30 seria mentir para cima.
+- **"Essencial" escrito no componente**, e não `NOME_DO_PACOTE`: `domain/assinatura.ts` traz o
+  `zod` junto, e a calculadora é o chunk da porta.
+- **A página diz que não é só de cookie**: o subtítulo de "Agora a conta do seu cookie" termina
+  em "Aqui a conta é de cookie; no app, de bolo, brigadeiro, salgado e o que mais render
+  unidades.", e "Serve pra bolo, salgado, pão?" sobe para a segunda dúvida.
+- **O menu diz para onde vai**: "O exemplo" (`#conta`) e "Calcule o seu" (`#sua-conta`) no lugar
+  de "A conta" e "Sua conta".
+
+**Consequência.** A `#d382` dizia "duas sobras em rosa, em telas diferentes": no celular agora
+há uma só. Nenhuma linha em `novidades.ts`: nada muda dentro do app.

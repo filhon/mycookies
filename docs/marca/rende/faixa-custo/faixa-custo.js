@@ -3,27 +3,43 @@
 // Abertura (opcional): <rende-faixa-custo mode="intro"></rende-faixa-custo>
 // Atributos: mode="intro" | loop="false"
 const ITEMS = [
-  { k: 'Materiais', v: 3.12, c: '#ECE8E0' },
-  { k: 'Embalagem', v: 0.45, c: '#A7AED0' },
-  { k: 'Seu trabalho', v: 0.56, c: '#7C93FF' },
-  { k: 'Energia e gás', v: 0.18, c: '#C9CDE0' },
-  { k: 'Fatia das despesas fixas', v: 0.10, c: '#8D94B8' },
-  { k: 'Maquininha 5%', v: 0.43, c: '#4B5590' },
-  { k: 'Sobra pra você', v: 3.66, c: '#F59BB0' }
+  { k: "Materiais", v: 3.12, c: "#ECE8E0" },
+  { k: "Embalagem", v: 0.45, c: "#A7AED0" },
+  { k: "Seu trabalho", v: 0.56, c: "#7C93FF" },
+  { k: "Energia e gás", v: 0.18, c: "#C9CDE0" },
+  { k: "Fatia das despesas fixas", v: 0.1, c: "#8D94B8" },
+  { k: "Maquininha 5%", v: 0.43, c: "#4B5590" },
+  { k: "Sobra pra você", v: 3.66, c: "#F59BB0" },
 ];
-const PRECO = 8.5, CUSTO = 4.41, LAST = 8;
+const PRECO = 8.5,
+  CUSTO = 4.41,
+  LAST = 8;
 const DUR = [1100, 1000, 800, 900, 700, 700, 1400, 1500, 4200];
-const INTRO_SCALE = 0.6, INTRO_HOLD = 1800, KEY = 'rende-intro-visto';
-const fmt = n => n.toFixed(2).replace('.', ',');
-const target = s => s === 0 ? 0 : s <= 5 ? ITEMS.slice(0, s).reduce((a, b) => a + b.v, 0) : s === 6 ? CUSTO : PRECO;
-const visible = (i, s) => i < 5 ? s > i : s >= 7;
-const CAPS = s => {
-  if (s >= 1 && s <= 5) return [ITEMS[s - 1].k, '+ R$ ' + fmt(ITEMS[s - 1].v)];
+const INTRO_SCALE = 0.6,
+  INTRO_HOLD = 1800,
+  KEY = "rende-intro-visto";
+const fmt = (n) => n.toFixed(2).replace(".", ",");
+const target = (s) =>
+  s === 0
+    ? 0
+    : s <= 5
+      ? ITEMS.slice(0, s).reduce((a, b) => a + b.v, 0)
+      : s === 6
+        ? CUSTO
+        : PRECO;
+const visible = (i, s) => (i < 5 ? s > i : s >= 7);
+const CAPS = (s) => {
+  if (s >= 1 && s <= 5) return [ITEMS[s - 1].k, "+ R$ " + fmt(ITEMS[s - 1].v)];
   return [
-    ['Quanto custa um cookie?', 'O que entra em cada unidade'], null, null, null, null, null,
-    ['Custo de verdade', 'R$ 4,41 por unidade, com tudo dentro'],
-    ['Preço sugerido', 'Margem 40% + maquininha 5%'],
-    ['Sobram R$ 3,66 pra você', 'Por cookie, depois da maquininha']
+    ["Quanto custa um cookie?", "O que entra em cada unidade"],
+    null,
+    null,
+    null,
+    null,
+    null,
+    ["Custo de verdade", "R$ 4,41 por unidade, com tudo dentro"],
+    ["Preço sugerido", "Margem 40% + maquininha 5%"],
+    ["Sobram R$ 3,66 pra você", "Por cookie, depois da maquininha"],
   ][s];
 };
 
@@ -64,11 +80,14 @@ class RendeFaixaCusto extends HTMLElement {
   connectedCallback() {
     if (this._ready) return;
     this._ready = true;
-    this.intro = this.getAttribute('mode') === 'intro';
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (this.intro && (reduce || sessionStorage.getItem(KEY))) { this.remove(); return; }
+    this.intro = this.getAttribute("mode") === "intro";
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (this.intro && (reduce || sessionStorage.getItem(KEY))) {
+      this.remove();
+      return;
+    }
 
-    const r = this.attachShadow({ mode: 'open' });
+    const r = this.attachShadow({ mode: "open" });
     r.innerHTML = `<style>${CSS}</style>
       <button class="skip" type="button">Pular</button>
       <div class="wrap" role="img" aria-label="O custo de um cookie recheado soma R$ 4,41. Vendido a R$ 8,50, sobram R$ 3,66 por unidade.">
@@ -77,62 +96,105 @@ class RendeFaixaCusto extends HTMLElement {
           <div class="ct"><span class="ctl"></span><span class="ctv"><small>R$</small><b></b></span></div>
         </div>
         <div>
-          <div class="bar">${ITEMS.map(it => `<i class="seg" style="background:${it.c}"></i>`).join('')}</div>
+          <div class="bar">${ITEMS.map((it) => `<i class="seg" style="background:${it.c}"></i>`).join("")}</div>
           <div class="br"><div class="bc">Custo R$ 4,41</div><div class="bs">Sobra R$ 3,66</div></div>
         </div>
-        <ul class="leg">${ITEMS.map(it => `<li><span class="sw" style="background:${it.c}"></span><span class="lk">${it.k}</span><span class="lv">R$ ${fmt(it.v)}</span></li>`).join('')}</ul>
+        <ul class="leg">${ITEMS.map((it) => `<li><span class="sw" style="background:${it.c}"></span><span class="lk">${it.k}</span><span class="lv">R$ ${fmt(it.v)}</span></li>`).join("")}</ul>
       </div>`;
-    const q = s => r.querySelector(s);
-    this.el = { cap: q('.cap'), sub: q('.sub'), ctl: q('.ctl'), ctv: q('.ctv b'), segs: r.querySelectorAll('.seg'), leg: r.querySelectorAll('.leg li'), bc: q('.bc'), bs: q('.bs') };
-    this.cur = 0; this.val = 0;
+    const q = (s) => r.querySelector(s);
+    this.el = {
+      cap: q(".cap"),
+      sub: q(".sub"),
+      ctl: q(".ctl"),
+      ctv: q(".ctv b"),
+      segs: r.querySelectorAll(".seg"),
+      leg: r.querySelectorAll(".leg li"),
+      bc: q(".bc"),
+      bs: q(".bs"),
+    };
+    this.cur = 0;
+    this.val = 0;
 
-    if (reduce) { this.go(LAST, true); return; }
+    if (reduce) {
+      this.go(LAST, true);
+      return;
+    }
     this.go(0, true);
     if (this.intro) {
-      document.documentElement.style.overflow = 'hidden';
-      q('.skip').addEventListener('click', () => this.close());
-      this._esc = e => e.key === 'Escape' && this.close();
-      addEventListener('keydown', this._esc);
+      document.documentElement.style.overflow = "hidden";
+      q(".skip").addEventListener("click", () => this.close());
+      this._esc = (e) => e.key === "Escape" && this.close();
+      addEventListener("keydown", this._esc);
       this.schedule();
     } else {
-      this.io = new IntersectionObserver(([e]) => e.isIntersecting ? this.play() : this.pause(), { threshold: 0.35 });
+      this.io = new IntersectionObserver(
+        ([e]) => (e.isIntersecting ? this.play() : this.pause()),
+        { threshold: 0.35 },
+      );
       this.io.observe(this);
     }
   }
-  disconnectedCallback() { this.pause(); this.io && this.io.disconnect(); cancelAnimationFrame(this.raf); this._esc && removeEventListener('keydown', this._esc); }
-  play() { if (!this.t && !this.done) this.schedule(); }
-  pause() { clearTimeout(this.t); this.t = null; }
+  disconnectedCallback() {
+    this.pause();
+    this.io && this.io.disconnect();
+    cancelAnimationFrame(this.raf);
+    this._esc && removeEventListener("keydown", this._esc);
+  }
+  play() {
+    if (!this.t && !this.done) this.schedule();
+  }
+  pause() {
+    clearTimeout(this.t);
+    this.t = null;
+  }
   schedule() {
-    const d = this.intro ? (this.cur === LAST ? INTRO_HOLD : DUR[this.cur] * INTRO_SCALE) : DUR[this.cur];
+    const d = this.intro
+      ? this.cur === LAST
+        ? INTRO_HOLD
+        : DUR[this.cur] * INTRO_SCALE
+      : DUR[this.cur];
     this.t = setTimeout(() => {
       this.t = null;
       let n = this.cur + 1;
       if (n > LAST) {
         if (this.intro) return this.close();
-        if (this.getAttribute('loop') === 'false') { this.done = true; return; }
+        if (this.getAttribute("loop") === "false") {
+          this.done = true;
+          return;
+        }
         n = 0;
       }
-      this.go(n); this.schedule();
+      this.go(n);
+      this.schedule();
     }, d);
   }
   go(s, instant) {
     this.cur = s;
-    const e = this.el, [cap, sub] = CAPS(s);
-    e.cap.textContent = cap; e.sub.textContent = sub;
-    e.cap.classList.toggle('rosa', s === LAST);
-    e.ctl.textContent = s >= 7 ? 'Preço por unidade' : 'Custo por unidade';
+    const e = this.el,
+      [cap, sub] = CAPS(s);
+    e.cap.textContent = cap;
+    e.sub.textContent = sub;
+    e.cap.classList.toggle("rosa", s === LAST);
+    e.ctl.textContent = s >= 7 ? "Preço por unidade" : "Custo por unidade";
     ITEMS.forEach((it, i) => {
       const on = visible(i, s);
-      e.segs[i].style.width = on ? (it.v / PRECO * 100).toFixed(2) + '%' : '0';
-      e.leg[i].classList.toggle('on', on);
+      e.segs[i].style.width = on
+        ? ((it.v / PRECO) * 100).toFixed(2) + "%"
+        : "0";
+      e.leg[i].classList.toggle("on", on);
     });
-    e.bc.classList.toggle('on', s >= 6);
-    e.bs.classList.toggle('on', s >= 7);
+    e.bc.classList.toggle("on", s >= 6);
+    e.bs.classList.toggle("on", s >= 7);
     cancelAnimationFrame(this.raf);
-    const from = this.val, to = target(s);
-    if (instant) { this.val = to; e.ctv.textContent = fmt(to); return; }
+    const from = this.val,
+      to = target(s);
+    if (instant) {
+      this.val = to;
+      e.ctv.textContent = fmt(to);
+      return;
+    }
     const t0 = performance.now();
-    const f = now => {
+    const f = (now) => {
       const p = Math.min(1, (now - t0) / 600);
       this.val = from + (to - from) * (1 - Math.pow(1 - p, 3));
       e.ctv.textContent = fmt(this.val);
@@ -144,10 +206,14 @@ class RendeFaixaCusto extends HTMLElement {
     if (this._closing) return;
     this._closing = true;
     this.pause();
-    sessionStorage.setItem(KEY, '1');
-    document.documentElement.style.overflow = '';
-    this.classList.add('saindo');
-    setTimeout(() => { this.dispatchEvent(new CustomEvent('faixa:fim', { bubbles: true })); this.remove(); }, 400);
+    sessionStorage.setItem(KEY, "1");
+    document.documentElement.style.overflow = "";
+    this.classList.add("saindo");
+    setTimeout(() => {
+      this.dispatchEvent(new CustomEvent("faixa:fim", { bubbles: true }));
+      this.remove();
+    }, 400);
   }
 }
-if (!customElements.get('rende-faixa-custo')) customElements.define('rende-faixa-custo', RendeFaixaCusto);
+if (!customElements.get("rende-faixa-custo"))
+  customElements.define("rende-faixa-custo", RendeFaixaCusto);

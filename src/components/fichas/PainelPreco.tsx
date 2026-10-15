@@ -222,8 +222,7 @@ function MioloPreco({
           <Porcao>
             <Realce>{formatarMoeda(lucro)}</Realce>
           </Porcao>{" "}
-          por unidade depois da
-          maquininha. É{" "}
+          por unidade depois da maquininha. É{" "}
           <Realce>{formatarPercentual(verificacao.margemReal)}</Realce> do
           preço, ou{" "}
           <Realce>{formatarMultiplicador(verificacao.markupReal)}</Realce> o

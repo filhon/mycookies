@@ -99,16 +99,14 @@ export function CartaoDoMes() {
               strokeWidth={2}
             />
           </>
-        ) : (
-          // A porção rosa é o que rendeu pra ela; prejuízo não se enfeita, e
-          // o caixa do mês sem pedido não é sobra.
-          rendeu !== null ? (
-            <Porcao>
-              <Dinheiro centavos={valor} tamanho="xl" className="text-ink" />
-            </Porcao>
-          ) : (
+        ) : // A porção rosa é o que rendeu pra ela; prejuízo não se enfeita, e
+        // o caixa do mês sem pedido não é sobra.
+        rendeu !== null ? (
+          <Porcao>
             <Dinheiro centavos={valor} tamanho="xl" className="text-ink" />
-          )
+          </Porcao>
+        ) : (
+          <Dinheiro centavos={valor} tamanho="xl" className="text-ink" />
         )}
       </p>
       <p className="text-label font-medium text-ink">

@@ -5,7 +5,7 @@ assinatura", rodado página a página com `/impeccable` e `/frontend-design` sob
 celular e desktop. Cada crítica vira uma série de specs; a página conta como **melhorada**
 quando a série inteira está codificada.
 
-Levantado em 2026-10-12 (atualizado em 2026-10-14) a partir do campo **Origem** das specs e de `docs/ESTADO.md`.
+Levantado em 2026-10-12 (atualizado em 2026-10-14, até a 170) a partir do campo **Origem** das specs e de `docs/ESTADO.md`.
 "Codificada" não quer dizer publicada nem com roteiro de navegador rodado: isso continua em
 `ESTADO.md`.
 
@@ -63,23 +63,23 @@ Ao terminar uma página, mude a linha dela aqui (status, data, specs).
 | Criar conta              | `/cadastro`               | `src/app/(auth)/cadastro/page.tsx`               | ✅ melhorada | 2026-10-14 | 155–156 |
 | Senha nova               | `/redefinir-senha`        | `src/app/(auth)/redefinir-senha/page.tsx`        | ✅ melhorada | 2026-10-14 | 157–158 |
 | Assinatura               | `/assinatura`             | `src/app/(auth)/assinatura/page.tsx`             | ✅ melhorada | 2026-10-14 | 159–162 |
-| Confirmando a assinatura | `/assinatura/confirmando` | `src/app/(auth)/assinatura/confirmando/page.tsx` | ⬜ pendente  |            |         |
-| Termos                   | `/termos`                 | `src/app/(auth)/termos/page.tsx`                 | ⬜ pendente  |            |         |
-| Privacidade              | `/privacidade`            | `src/app/(auth)/privacidade/page.tsx`            | ⬜ pendente  |            |         |
+| Confirmando a assinatura | `/assinatura/confirmando` | `src/app/(auth)/assinatura/confirmando/page.tsx` | ✅ melhorada | 2026-10-14 | 163–164 |
+| Termos                   | `/termos`                 | `src/app/(auth)/termos/page.tsx`                 | ✅ melhorada | 2026-10-14 | 165–166 |
+| Privacidade              | `/privacidade`            | `src/app/(auth)/privacidade/page.tsx`            | ✅ melhorada | 2026-10-14 | 165–166 |
 
 ## Públicas
 
-| Página                         | Rota                                       | Arquivo                                                    | Status       | Crítica    | Specs            |
-| ------------------------------ | ------------------------------------------ | ---------------------------------------------------------- | ------------ | ---------- | ---------------- |
-| Página do Rende (venda)        | `/conheca`                                 | `src/app/conheca/page.tsx`                                 | 🟡 parcial   | 2026-09-24 | 038–040, 067     |
-| Cardápio público               | `/c/[contaId]`                             | `src/app/c/[contaId]/page.tsx`                             | ✅ melhorada | 2026-10-10 | 112–116, 120–124 |
-| Pedido que a cliente acompanha | `/c/[contaId]/pedido/[pedidoId]/[chave]`   | `src/app/c/[contaId]/pedido/[pedidoId]/[chave]/page.tsx`   | ⬜ pendente  |            |                  |
-| Preço de doces                 | `/como-calcular-o-preco-de-doces`          | `src/app/como-calcular-o-preco-de-doces/page.tsx`          | ⬜ pendente  |            |                  |
-| Preço do bolo de pote          | `/como-calcular-o-preco-do-bolo-de-pote`   | `src/app/como-calcular-o-preco-do-bolo-de-pote/page.tsx`   | ⬜ pendente  |            |                  |
-| Preço do bolo por quilo        | `/como-calcular-o-preco-do-bolo-por-quilo` | `src/app/como-calcular-o-preco-do-bolo-por-quilo/page.tsx` | ⬜ pendente  |            |                  |
-| Preço do brigadeiro            | `/como-calcular-o-preco-do-brigadeiro`     | `src/app/como-calcular-o-preco-do-brigadeiro/page.tsx`     | ⬜ pendente  |            |                  |
-| Preço do cookie                | `/como-calcular-o-preco-do-cookie`         | `src/app/como-calcular-o-preco-do-cookie/page.tsx`         | ⬜ pendente  |            |                  |
-| Sem rede                       | `/offline`                                 | `src/app/offline/page.tsx`                                 | ⬜ pendente  |            |                  |
+| Página                         | Rota                                       | Arquivo                                                    | Status       | Crítica    | Specs                 |
+| ------------------------------ | ------------------------------------------ | ---------------------------------------------------------- | ------------ | ---------- | --------------------- |
+| Página do Rende (venda)        | `/conheca`                                 | `src/app/conheca/page.tsx`                                 | 🟡 parcial   | 2026-10-14 | 038–040, 067, 167–170 |
+| Cardápio público               | `/c/[contaId]`                             | `src/app/c/[contaId]/page.tsx`                             | ✅ melhorada | 2026-10-10 | 112–116, 120–124      |
+| Pedido que a cliente acompanha | `/c/[contaId]/pedido/[pedidoId]/[chave]`   | `src/app/c/[contaId]/pedido/[pedidoId]/[chave]/page.tsx`   | ⬜ pendente  |            |                       |
+| Preço de doces                 | `/como-calcular-o-preco-de-doces`          | `src/app/como-calcular-o-preco-de-doces/page.tsx`          | ⬜ pendente  |            |                       |
+| Preço do bolo de pote          | `/como-calcular-o-preco-do-bolo-de-pote`   | `src/app/como-calcular-o-preco-do-bolo-de-pote/page.tsx`   | ⬜ pendente  |            |                       |
+| Preço do bolo por quilo        | `/como-calcular-o-preco-do-bolo-por-quilo` | `src/app/como-calcular-o-preco-do-bolo-por-quilo/page.tsx` | ⬜ pendente  |            |                       |
+| Preço do brigadeiro            | `/como-calcular-o-preco-do-brigadeiro`     | `src/app/como-calcular-o-preco-do-brigadeiro/page.tsx`     | ⬜ pendente  |            |                       |
+| Preço do cookie                | `/como-calcular-o-preco-do-cookie`         | `src/app/como-calcular-o-preco-do-cookie/page.tsx`         | ⬜ pendente  |            |                       |
+| Sem rede                       | `/offline`                                 | `src/app/offline/page.tsx`                                 | ⬜ pendente  |            |                       |
 
 ---
 
@@ -89,8 +89,18 @@ Ao terminar uma página, mude a linha dela aqui (status, data, specs).
   anterior ao procedimento com prints e não foi feita com `/frontend-design`; a 067 veio de
   conversa, não de crítica. Vale refazer com o prompt acima. Em 2026-10-14, fora de spec e sem
   crítica, a foto da bancada deu lugar à faixa do custo animada (`#d382`) e a página ganhou a
-  abertura em tela cheia, uma vez por sessão (`#d383`): a página continua parcial, e a crítica
-  refeita precisa olhar as duas, inclusive se a abertura ajuda ou atrapalha a venda.
+  abertura em tela cheia, uma vez por sessão (`#d383`). A crítica refeita olhou as duas: a
+  abertura saiu em 2026-10-15, com a 168 (`#d384`); a faixa ficou no corpo.
+- **`/conheca` foi auditada de novo em 2026-10-14** (prints de celular 383 px e desktop 1864 px,
+  com o procedimento; comparada a Nuvemshop, Kyte, Anota AI, Conta Azul, Notion e Calendly): 167
+  (o app na porta: a seção "Depois do preço" no ar, com o cardápio de exemplo; trava na conta de
+  demonstração e nas capturas), 168 (a página que vai direto: a abertura sai, revogando a
+  `#d383`; o cartão do topo sai no celular; a calculadora diz o preço do plano; **codificada em
+  2026-10-15**, roteiro por rodar), 169 (quem faz e
+  quem usa: o casal por trás, os depoimentos com número e o WhatsApp; trava nas autorizações e no
+  número) e 170 (o preço que se decide: para quem é cada plano, o que os dois têm, dois meses de
+  graça, os 7 dias de arrependimento à vista). A página fica parcial até as quatro estarem
+  codificadas.
 - **`/fichas/[id]` foi auditada em 2026-10-12** (a crítica dos prints do editor de produto,
   oito itens): 134 a 140, com a 140 em duas sessões (140-A, o preparo no custo; 140-B, o preparo
   no pote). Os roteiros de navegador da 138, da 139 e da 140 seguem por rodar, e a pergunta da 140
@@ -127,9 +137,19 @@ Ao terminar uma página, mude a linha dela aqui (status, data, specs).
   162 (antes de ir embora: o passo antes de cancelar, o Essencial como saída e o motivo no
   portal, já ligado no ao vivo). Os roteiros de navegador de 159 a 162 seguem por rodar. O
   desconto de permanência da 162 não foi decidido e ficou de fora (`#d376`).
+- **`/assinatura/confirmando` foi auditada em 2026-10-14** (crítica com `/impeccable`: a tela
+  dizia "Pagamento recebido" sem ter conferido nada): 163 (o pagamento que se confere sozinho,
+  a volta do Stripe confere a sessão sem esperar o webhook, `#d377`) e 164 (o recibo na volta,
+  `#d378`). Falta o passo 1 da 163 (para onde a volta abre no app instalado, iPhone e Android) e
+  os roteiros das duas.
+- **`/termos` e `/privacidade` foram auditadas juntas em 2026-10-14** (comparadas às de Stripe,
+  Notion, Basecamp, Pinterest, GitHub, Nubank e Hotmart): 165 (os termos que se leem, o "Em
+  resumo" que leva à seção, `#d379`) e 166 (a versão que ela aceitou, o histórico de versões e o
+  aviso da mudança relevante, `#d380`). A redação do resumo e das linhas de versão, e quais
+  mudanças contam como relevantes, esperam quem conduz o projeto; os roteiros seguem por rodar.
 - **Nasceram de spec, nunca foram auditadas:** a página do pedido da cliente (117) e as cinco
   páginas de preço (037, 068).
 - **A ordem sugerida para as pendentes**, pelo que pesa no uso e na venda:
   1. A página do pedido da cliente, que é o Rende visto por quem compra.
   2. As cinco páginas de preço, com a mesma crítica valendo para as cinco.
-  3. `/assinatura/confirmando`, `/termos`, `/privacidade`, `/offline`.
+  3. `/offline`.

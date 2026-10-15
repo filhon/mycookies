@@ -29,7 +29,9 @@
   --accent-500: oklch(0.76 0.12 5); /* #F190A7  a porção */
   --accent-300: oklch(0.86 0.07 5); /* #FABECB */
   --accent-100: oklch(0.94 0.03 5); /* #FEE3E8 */
-  --accent-ink: oklch(0.5 0.15 5); /* #A53458  rosa como tinta, AA sobre canvas */
+  --accent-ink: oklch(
+    0.5 0.15 5
+  ); /* #A53458  rosa como tinta, AA sobre canvas */
   --on-accent: oklch(0.2 0.07 266); /* #071335 */
   /* A luz da janela no topo da página de venda (`#d255`). O realce frio da
      marca, e não o rosa: o rosa é só a sobra. No escuro é transparente: de
@@ -98,7 +100,9 @@
     --ink: oklch(0.955 0.006 85); /* #F2F0EC */
     --ink-muted: oklch(0.76 0.025 266); /* #AAB1C2 */
     --ink-subtle: oklch(0.62 0.03 266); /* #7E8699 */
-    --brand-as-ink: oklch(0.82 0.08 266); /* #ACC4F9  marca como tinta no escuro */
+    --brand-as-ink: oklch(
+      0.82 0.08 266
+    ); /* #ACC4F9  marca como tinta no escuro */
 
     /* Fundo de hover terciário e de opção escolhida. O claro do pacote é
        quase branco e vira um flash sobre o tema escuro. */
@@ -134,7 +138,9 @@
   --ink: oklch(0.955 0.006 85); /* #F2F0EC */
   --ink-muted: oklch(0.76 0.025 266); /* #AAB1C2 */
   --ink-subtle: oklch(0.62 0.03 266); /* #7E8699 */
-  --brand-as-ink: oklch(0.82 0.08 266); /* #ACC4F9  marca como tinta no escuro */
+  --brand-as-ink: oklch(
+    0.82 0.08 266
+  ); /* #ACC4F9  marca como tinta no escuro */
 
   /* Fundo de hover terciário e de opção escolhida. O claro do pacote é
      quase branco e vira um flash sobre o tema escuro. */
@@ -427,20 +433,6 @@
   --ink: var(--on-accent);
   --ink-muted: var(--on-accent);
   --ink-subtle: var(--on-accent);
-}
-
-/**
- * A abertura da `/conheca` (`FaixaDoCusto abertura`, `DECISOES.md#d383`): só
- * existe com `data-abertura` no `<html>`, que o script dela põe antes da
- * primeira pintura. Enquanto ela está, a página não rola por baixo, e a calha
- * da barra de rolagem fica: nada pula de lado quando ela sai.
- */
-html[data-abertura] {
-  overflow: hidden;
-  scrollbar-gutter: stable;
-}
-html:not([data-abertura]) .abertura {
-  display: none;
 }
 
 /**

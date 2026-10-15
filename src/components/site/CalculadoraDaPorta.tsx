@@ -32,13 +32,17 @@ import { guardarRascunho } from "@/lib/utils/rascunhoDaPorta";
  * `@/lib/firebase`: a página é pública e o domínio é puro.
  *
  * O `children` é o que vem depois do resultado: o convite, em `/conheca`.
+ * `mensalDoPlano`, só lá, fecha a conta do mês com o preço do Essencial
+ * (`#d385`); sem ele, ou sem Stripe, a frase não aparece.
  */
 export function CalculadoraDaPorta({
   children,
   className,
+  mensalDoPlano,
 }: {
   children?: ReactNode;
   className?: string;
+  mensalDoPlano?: Centavos;
 }) {
   const [entrada, setEntrada] = useState(() =>
     entradaPadrao("cookie-classico"),
@@ -70,7 +74,11 @@ export function CalculadoraDaPorta({
       />
 
       <div className="flex flex-col gap-6 lg:sticky lg:top-8">
-        <Resultado entrada={entrada} conta={conta} />
+        <Resultado
+          entrada={entrada}
+          conta={conta}
+          mensalDoPlano={mensalDoPlano}
+        />
         {children}
       </div>
     </div>
@@ -240,6 +248,12 @@ const reaisRedondos = new Intl.NumberFormat("pt-BR", {
   maximumFractionDigits: 0,
 });
 
+/** Redondo quando é redondo; com centavos, nunca arredondado para cima. */
+const reaisDoPlano = (centavos: Centavos) =>
+  centavos % 100 === 0
+    ? reaisRedondos.format(centavos / 100)
+    : formatarMoeda(centavos);
+
 function Valor({
   centavos,
   className,
@@ -259,9 +273,11 @@ function Valor({
 function Resultado({
   entrada,
   conta,
+  mensalDoPlano,
 }: {
   entrada: EntradaDaPorta;
   conta: ContaDaPorta;
+  mensalDoPlano?: Centavos;
 }) {
   const { derivados, segmentos, sugerido, hoje, aMaisNoMes } = conta;
   const { custo } = derivados;
@@ -343,8 +359,7 @@ function Resultado({
               <Porcao>
                 <Valor centavos={sugerido.lucroUnitario} />
               </Porcao>{" "}
-              pra você, por
-              cookie, depois da maquininha.
+              pra você, por cookie, depois da maquininha.
             </p>
           </div>
 
@@ -365,6 +380,16 @@ function Resultado({
                     {reaisRedondos.format(aMaisNoMes / 100)}
                   </span>{" "}
                   a mais pra você no preço sugerido.
+                </p>
+              )}
+              {/* Só o fato: a conta ela faz, a decisão é dela (`#d385`). */}
+              {!!mensalDoPlano && aMaisNoMes >= mensalDoPlano && (
+                <p>
+                  O Essencial custa{" "}
+                  <span className="num font-semibold whitespace-nowrap">
+                    {reaisDoPlano(mensalDoPlano)}
+                  </span>{" "}
+                  por mês.
                 </p>
               )}
             </div>

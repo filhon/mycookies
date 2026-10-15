@@ -7,6 +7,7 @@ Copie tudo abaixo da linha e cole no Claude Code, dentro do repositório da land
 Quero substituir a foto estática da landing (a faixa larga logo abaixo do hero, com o cookie no saquinho) por uma animação. A implementação de referência está em `faixa-custo.js`: um web component `<rende-faixa-custo>` sem dependências.
 
 ## O que a animação faz
+
 Uma barra horizontal vai se montando com os custos de um cookie recheado: Materiais R$ 3,12, Embalagem R$ 0,45, Seu trabalho R$ 0,56, Energia e gás R$ 0,18 e Fatia das despesas fixas R$ 0,10. O contador sobe até o custo de R$ 4,41. Depois a barra se completa até o preço de R$ 8,50 (maquininha R$ 0,43) e a sobra de R$ 3,66 aparece em rosa. Fundo navy #14215C, fonte Figtree.
 
 ## Etapas (um commit por etapa, me mostre o plano antes de começar)
@@ -29,9 +30,11 @@ Uma barra horizontal vai se montando com os custos de um cookie recheado: Materi
    - Leitor de tela: a faixa tem `role="img"` e um `aria-label` com o resumo dos números.
 
 ## Regras
+
 - Não mude textos, cores ou espaçamentos do resto da página.
 - Não mexa em lógica de negócio, rotas ou formulários.
 - Os números são do exemplo do hero. Se o hero mudar de exemplo, os dois precisam continuar batendo.
 
 ## Opcional — abertura em tela cheia (só se eu pedir depois)
+
 O mesmo componente tem `mode="intro"`: ocupa a tela toda, roda em ~5 s, tem botão "Pular" (e Esc), aparece uma vez por sessão e some sozinho com fade. Com movimento reduzido, não aparece. A página carrega normalmente por baixo. Se eu pedir a abertura, coloque `<rende-faixa-custo mode="intro"></rende-faixa-custo>` como primeiro filho do `<body>`, sem remover a faixa da posição da foto, e meça de novo o Lighthouse antes e depois.

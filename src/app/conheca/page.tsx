@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { CalculadoraDaPorta } from "@/components/site/CalculadoraDaPorta";
 import { ContaAberta } from "@/components/site/ContaAberta";
-import { SCRIPT_DA_ABERTURA } from "@/components/site/abertura";
 import { FaixaDoCusto } from "@/components/site/FaixaDoCusto";
 import { LuzDaJanela } from "@/components/site/LuzDaJanela";
 import { Rodape, Topo } from "@/components/site/Moldura";
@@ -174,6 +173,12 @@ const DUVIDAS = [
       "Não. O Rende faz a conta e explica em uma frase, do lado do número: quanto custa, quanto cobrar e quanto sobra pra você. O preço quem decide é você.",
   },
   {
+    // Segunda, e não quinta: a página parece de cookie (spec 168).
+    pergunta: "Serve pra bolo, salgado, pão?",
+    resposta:
+      "Serve pra tudo que tem receita e rende um tanto de unidades. O doce muda, a conta é a mesma: material, embalagem, seu trabalho, gás e as despesas fixas.",
+  },
+  {
     pergunta: "Por que pagar todo mês, se o preço eu calculo uma vez?",
     // O aviso da 024 olha material, e não a configuração: a taxa da
     // maquininha não entra na frase.
@@ -189,11 +194,6 @@ const DUVIDAS = [
     pergunta: "Preciso cadastrar tudo pra começar?",
     resposta:
       "Não. Um toque traz os materiais que toda cozinha tem, com preço médio, e dois cookies já com preço. Você corrige o que for diferente do seu.",
-  },
-  {
-    pergunta: "Serve pra bolo, salgado, pão?",
-    resposta:
-      "Serve pra tudo que tem receita e rende um tanto de unidades. O doce muda, a conta é a mesma: material, embalagem, seu trabalho, gás e as despesas fixas.",
   },
   {
     pergunta: "E se não tiver internet na cozinha?",
@@ -218,8 +218,8 @@ const DUVIDAS = [
 ];
 
 const ANCORAS = [
-  { href: "#conta", rotulo: "A conta" },
-  { href: "#sua-conta", rotulo: "Sua conta" },
+  { href: "#conta", rotulo: "O exemplo" },
+  { href: "#sua-conta", rotulo: "Calcule o seu" },
   ...(temTelasDoMes ? [{ href: "#depois", rotulo: "Depois do preço" }] : []),
   { href: "#quem", rotulo: "Quem usa" },
   { href: "#preco", rotulo: "Preço" },
@@ -270,14 +270,6 @@ export default async function PaginaConheca() {
 
   return (
     <>
-      {/* A abertura (`DECISOES.md#d383`): o script decide antes da primeira
-          pintura, e ela vem antes de tudo para ser o primeiro Tab. */}
-      {faixa && (
-        <>
-          <script dangerouslySetInnerHTML={{ __html: SCRIPT_DA_ABERTURA }} />
-          <FaixaDoCusto abertura {...faixa} />
-        </>
-      )}
       <Topo ancoras={ANCORAS} convite />
       <OrigemDoLink />
 
@@ -300,7 +292,8 @@ export default async function PaginaConheca() {
               . Você deveria cobrar{" "}
               <span className="whitespace-nowrap">
                 {/* O preço que ela cobra hoje, corrigido à caneta (`#d255`).
-                    Fora da leitura: o cartão já diz o preço praticado. */}
+                    Fora da leitura: no desktop o cartão diz o preço praticado,
+                    no celular a frase escondida logo depois (`#d385`). */}
                 {temChute && (
                   <>
                     <span aria-hidden className="num relative text-ink-muted">
@@ -319,6 +312,11 @@ export default async function PaginaConheca() {
                   {sugerido.ok && formatarMoeda(sugerido.precoArredondado)}
                 </span>
               </span>
+              {temChute && (
+                <span className="sr-only lg:hidden">
+                  , e não {formatarMoeda(EXEMPLO.precoPraticado)}
+                </span>
+              )}
               .
             </h1>
             <p className="mt-5 max-w-[52ch] text-body text-ink-muted lg:text-subheading">
@@ -344,16 +342,20 @@ export default async function PaginaConheca() {
             </p>
           </section>
 
-          <LuzDaJanela>
-            <ContaAberta />
-          </LuzDaJanela>
+          {/* Só no desktop (`#d385`): no celular a faixa, logo abaixo, faz o
+              papel dele, e as duas sobras ficariam a uma rolagem. */}
+          <div className="hidden lg:block">
+            <LuzDaJanela>
+              <ContaAberta />
+            </LuzDaJanela>
+          </div>
         </div>
 
         {/* A conta do topo se montando, no lugar da foto da bancada
             (`DECISOES.md#d382`). Os números são os do `h1` e da `ContaAberta`. */}
         {faixa && <FaixaDoCusto {...faixa} />}
 
-        <SuaConta />
+        <SuaConta mensalDoPlano={precos?.ESSENCIAL.mensal} />
 
         {temTelasDoMes && <DepoisDoPreco />}
 
@@ -397,7 +399,7 @@ export default async function PaginaConheca() {
  * convite do teste no fim, onde ele faz sentido. O exemplo do topo continua
  * parado, com os 40% + 5% dele; a calculadora diz a margem que usa (`#d186`).
  */
-function SuaConta() {
+function SuaConta({ mensalDoPlano }: { mensalDoPlano?: Centavos }) {
   return (
     <section
       id="sua-conta"
@@ -414,10 +416,14 @@ function SuaConta() {
         </h2>
         <p className="mt-4 max-w-[52ch] text-body text-ink-muted lg:text-subheading">
           Troque o que for diferente na sua cozinha e ponha o preço que você
-          cobra hoje. É a mesma conta que o Rende faz depois que você entra.
+          cobra hoje. Aqui a conta é de cookie; no app, de bolo, brigadeiro,
+          salgado e o que mais render unidades.
         </p>
 
-        <CalculadoraDaPorta className="mt-10 lg:mt-14">
+        <CalculadoraDaPorta
+          className="mt-10 lg:mt-14"
+          mensalDoPlano={mensalDoPlano}
+        >
           <div className="flex flex-col gap-3">
             <Link
               href="/cadastro"

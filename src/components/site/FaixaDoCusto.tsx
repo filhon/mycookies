@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { classesBotao } from "@/components/ui/estilosBotao";
 import { formatarMoeda, formatarValor } from "@/lib/domain/money";
 import type { Centavos } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
-import { CHAVE_DA_ABERTURA } from "./abertura";
 
 /** Os degraus da `FaixaDeComposicao`; dentro de `sobre-marca`, `ink` é `on-brand`. */
 const NEUTROS = ["bg-ink/90", "bg-ink/65", "bg-ink/45", "bg-ink/30"];
@@ -19,10 +17,6 @@ const TEMPOS = [1100, 1000, 800, 900, 700, 700, 1400, 1500, 4200];
 const FIM = TEMPOS.length - 1;
 const PRECO = FIM - 1;
 const CUSTO = FIM - 2;
-/** A abertura corre os passos a 60% e segura a sobra antes de sair, como a referência. */
-const RITMO_DA_ABERTURA = 0.6;
-const SOBRA_NA_ABERTURA = 1800;
-const SAIDA = 400;
 
 /** Parcela `i` à mostra no passo `p`: as do custo uma a uma, a maquininha e a sobra com o preço. */
 const aMostra = (i: number, p: number, parcelas: number) =>
@@ -33,15 +27,10 @@ const aMostra = (i: number, p: number, parcelas: number) =>
  * `EXEMPLO` se montando parcela a parcela até o preço, e a sobra em rosa. Todo
  * número chega pronto da página; aqui só se conta e se desenha. O servidor
  * entrega o quadro final, que é também o do movimento reduzido: a faixa nunca
- * aparece vazia. O laço só anda com ela na tela e com a aba à vista.
- *
- * Com `abertura` (`#d383`) ela cobre a tela no carregamento, corre uma vez e
- * sai sozinha, com "Pular" e Esc. Quem decide se ela aparece é o
- * `SCRIPT_DA_ABERTURA`, antes da primeira pintura; o servidor a entrega no
- * primeiro passo e escondida pelo CSS de `data-abertura`.
+ * aparece vazia. O laço só anda com ela na tela e com a aba à vista. A
+ * abertura em tela cheia saiu (`#d384`): a faixa mora só no corpo da página.
  */
 export function FaixaDoCusto({
-  abertura = false,
   nome,
   rende,
   parcelas,
@@ -52,7 +41,6 @@ export function FaixaDoCusto({
   margem,
   taxa,
 }: {
-  abertura?: boolean;
   nome: string;
   rende: number;
   /** As parcelas de `composicaoDoLote`, por unidade. */
@@ -65,25 +53,12 @@ export function FaixaDoCusto({
   taxa: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const fechar = useRef(() => {});
-  const [passo, setPasso] = useState(abertura ? 0 : FIM);
-  const [valor, setValor] = useState(abertura ? 0 : preco);
-  const [saindo, setSaindo] = useState(false);
+  const [passo, setPasso] = useState(FIM);
+  const [valor, setValor] = useState(preco);
 
   useEffect(() => {
     const el = ref.current;
-    const raiz = document.documentElement;
     if (!el || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    if (abertura) {
-      try {
-        if (sessionStorage.getItem(CHAVE_DA_ABERTURA)) return;
-      } catch {
-        return;
-      }
-      // Já vem do script; aqui é a chegada por navegação do app, em que ele
-      // não roda, e a volta do Strict Mode, que a limpeza desfez.
-      raiz.dataset.abertura = "";
-    }
 
     const alvo = (p: number) =>
       p <= parcelas.length
@@ -91,8 +66,8 @@ export function FaixaDoCusto({
         : p === CUSTO
           ? custo
           : preco;
-    let atual = abertura ? 0 : FIM;
-    let mostrado = abertura ? 0 : preco;
+    let atual = FIM;
+    let mostrado = preco;
     let timer = 0;
     let quadro = 0;
     let naTela = false;
@@ -131,41 +106,6 @@ export function FaixaDoCusto({
       timer = 0;
     };
 
-    if (abertura) {
-      let fechando = false;
-      fechar.current = () => {
-        if (fechando) return;
-        fechando = true;
-        parar();
-        try {
-          sessionStorage.setItem(CHAVE_DA_ABERTURA, "1");
-        } catch {}
-        setSaindo(true);
-        timer = window.setTimeout(() => delete raiz.dataset.abertura, SAIDA);
-      };
-      const seguir = () => {
-        timer = window.setTimeout(
-          () => {
-            if (atual === FIM) return fechar.current();
-            ir(atual + 1);
-            seguir();
-          },
-          atual === FIM
-            ? SOBRA_NA_ABERTURA
-            : TEMPOS[atual]! * RITMO_DA_ABERTURA,
-        );
-      };
-      const esc = (e: KeyboardEvent) => e.key === "Escape" && fechar.current();
-      addEventListener("keydown", esc);
-      seguir();
-      return () => {
-        removeEventListener("keydown", esc);
-        parar();
-        cancelAnimationFrame(quadro);
-        delete raiz.dataset.abertura;
-      };
-    }
-
     const observador = new IntersectionObserver(
       ([e]) => {
         // A primeira resposta chega logo, com a faixa ainda abaixo da dobra:
@@ -189,7 +129,7 @@ export function FaixaDoCusto({
       parar();
       cancelAnimationFrame(quadro);
     };
-  }, [abertura, parcelas, custo, preco]);
+  }, [parcelas, custo, preco]);
 
   let neutro = 0;
   const segmentos = [
@@ -220,29 +160,7 @@ export function FaixaDoCusto({
               ];
 
   return (
-    <div
-      ref={ref}
-      className={cn(
-        "sobre-marca bg-brand-800 text-ink",
-        abertura &&
-          "abertura fixed inset-0 z-50 grid items-center overflow-y-auto transition-opacity duration-400 ease-quart",
-        saindo && "opacity-0",
-      )}
-    >
-      {/* Fora do `role="img"`, que tira da leitura o que tem dentro. */}
-      {abertura && (
-        <button
-          type="button"
-          onClick={() => fechar.current()}
-          className={classesBotao({
-            tamanho: "sm",
-            className:
-              "absolute top-[max(1rem,env(safe-area-inset-top))] right-4",
-          })}
-        >
-          Pular
-        </button>
-      )}
+    <div ref={ref} className="sobre-marca bg-brand-800 text-ink">
       <div
         role="img"
         aria-label={`O custo de um ${nome.toLocaleLowerCase("pt-BR")} soma ${formatarMoeda(custo)}. Vendido a ${formatarMoeda(preco)}, sobram ${formatarMoeda(sobra)} por unidade.`}
