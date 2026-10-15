@@ -5,6 +5,7 @@ import {
   caminhoDoAcompanhamento,
   chavePublicaDe,
   podeAprovar,
+  podePedirDeNovo,
   quandoDoPedido,
   type FichaAcompanhada,
 } from "@/lib/domain/acompanhamento";
@@ -38,6 +39,7 @@ const NEGOCIO = {
   nome: "MyCookie's",
   quem: "Maynara",
   whatsapp: "5581999990000",
+  feitoCom: true,
 };
 const HOJE = "2026-10-10";
 
@@ -171,6 +173,7 @@ describe("acompanhamentoDoPedido", () => {
     );
     expect(Object.keys(visto.negocio).sort()).toEqual([
       "condicoes",
+      "feitoCom",
       "logo",
       "nome",
       "quem",
@@ -423,12 +426,91 @@ describe("acompanhamentoDoPedido", () => {
   it("sem o primeiro nome, o nome da loja; sem WhatsApp, sem a chave", () => {
     const visto = acompanhamentoDoPedido(
       pedido({ status: "ORCAMENTO" }),
-      { nome: "MyCookie's", quem: "" },
+      { nome: "MyCookie's", quem: "", feitoCom: true },
       [],
       HOJE,
     );
     expect(visto.situacao).toBe("A MyCookie's vai confirmar");
-    expect(Object.keys(visto.negocio).sort()).toEqual(["nome", "quem"]);
+    expect(Object.keys(visto.negocio).sort()).toEqual([
+      "feitoCom",
+      "nome",
+      "quem",
+    ]);
+  });
+
+  describe("depois do doce (spec 174)", () => {
+    const comCardapio = (mudancas: Partial<Pedido>, logoVersao?: number) =>
+      acompanhamentoDoPedido(
+        pedido(mudancas),
+        {
+          ...NEGOCIO,
+          instagram: " @mycookies ",
+          cardapio: { endereco: "my cookies", contaId: "conta-1", logoVersao },
+        },
+        [PIX],
+        HOJE,
+      );
+
+    it("o cardápio e o Instagram só no entregue", () => {
+      const entregue = comCardapio({ status: "ENTREGUE", pago: true });
+      expect(entregue.cardapio).toBe("/c/my%20cookies");
+      expect(entregue.negocio.instagram).toBe("mycookies");
+      for (const status of [
+        "ORCAMENTO",
+        "CONFIRMADO",
+        "EM_PRODUCAO",
+        "PRONTO",
+        "CANCELADO",
+      ] as const) {
+        const visto = comCardapio({ status });
+        expect(Object.keys(visto)).not.toContain("cardapio");
+        expect(Object.keys(visto.negocio)).not.toContain("instagram");
+      }
+    });
+
+    it("o logo da prévia pela rota da vitrine, com o contaId", () => {
+      expect(comCardapio({}, 123).negocio.logoDaPrevia).toBe(
+        "/c/conta-1/vitrine/logo?v=123",
+      );
+      // Sem logo, ou sem o cardápio aberto: sem imagem.
+      expect(Object.keys(comCardapio({}).negocio)).not.toContain(
+        "logoDaPrevia",
+      );
+      expect(Object.keys(acompanhar().negocio)).not.toContain("logoDaPrevia");
+    });
+
+    it("feitoCom obedece a caixa", () => {
+      const visto = acompanhamentoDoPedido(
+        pedido(),
+        { ...NEGOCIO, feitoCom: false },
+        [],
+        HOJE,
+      );
+      expect(visto.negocio.feitoCom).toBe(false);
+    });
+
+    it("pedir de novo: cardápio, WhatsApp ou nada; o Pix vence", () => {
+      const pago = { status: "ENTREGUE", pago: true } as const;
+      expect(acaoDaVez(comCardapio(pago))).toBe("pedir");
+      // Sem cardápio, pelo WhatsApp.
+      expect(acaoDaVez(acompanhar(pago))).toBe("pedir");
+      expect(podePedirDeNovo(acompanhar(pago))).toBe(true);
+      // Sem nenhum dos dois, falar (e a página não tem o botão).
+      const sozinha = acompanhamentoDoPedido(
+        pedido(pago),
+        { nome: "MyCookie's", quem: "", feitoCom: true },
+        [],
+        HOJE,
+      );
+      expect(podePedirDeNovo(sozinha)).toBe(false);
+      expect(acaoDaVez(sozinha)).toBe("falar");
+      // Entregue e não pago: o Pix primeiro, pedir de novo segue possível.
+      const devendo = comCardapio({ status: "ENTREGUE" });
+      expect(acaoDaVez(devendo)).toBe("pagar");
+      expect(podePedirDeNovo(devendo)).toBe(true);
+      // Fora do entregue, nunca.
+      expect(podePedirDeNovo(acompanhar({ status: "PRONTO" }))).toBe(false);
+    });
   });
 });
 
@@ -454,9 +536,12 @@ describe("quandoDoPedido (spec 171)", () => {
 
 describe("acaoDaVez (spec 171)", () => {
   it("aprovar, pagar ou falar", () => {
-    expect(acaoDaVez({ podeAprovar: true })).toBe("aprovar");
-    expect(acaoDaVez({ podeAprovar: false, pix: "000201" })).toBe("pagar");
-    expect(acaoDaVez({ podeAprovar: false })).toBe("falar");
+    const base = { passos: [], negocio: NEGOCIO };
+    expect(acaoDaVez({ ...base, podeAprovar: true })).toBe("aprovar");
+    expect(acaoDaVez({ ...base, podeAprovar: false, pix: "000201" })).toBe(
+      "pagar",
+    );
+    expect(acaoDaVez({ ...base, podeAprovar: false })).toBe("falar");
   });
 });
 

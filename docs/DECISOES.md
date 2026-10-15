@@ -12832,3 +12832,45 @@ passo; aqui ele custaria por conversa e falaria por um número que não é o del
 
 **Consequência.** Nenhuma regra, schema ou dependência. O WhatsApp automático e o push para a
 cliente ficam fora (spec 173, "Fora de escopo").
+
+## D391 · O pedido entregue leva à próxima encomenda, e o pé diz "feito com Rende"
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 174 · amplia a `#d320`, a
+`#d388` e a `#d147`. As duas aprovações da spec (o que sai para fora e o Rende na página da
+cliente dela) tomadas como dadas pelo pedido de implementá-la, como na 117 e na 118.
+
+**Contexto.** O link do pedido entregue era um beco: a trilha toda marcada e o WhatsApp. É o
+momento em que a cliente está com o doce na mão, e a página não levava a pedir de novo nem a
+seguir a loja. A prévia do link era só texto, e a página era o único lugar público do Rende sem
+a linha que a folha da mesma encomenda já leva (`#d127`).
+
+**Decisão.**
+
+- **A lista fechada da `#d320` cresce em quatro chaves**: `cardapio` (o caminho `/c/{endereço}`,
+  com o endereço que a cliente abriu, só no entregue e com `configuracao.cardapio.aberto`),
+  `negocio.instagram` (de `contato.instagram`, sem "@", só no entregue), `negocio.feitoCom`
+  (`!ocultarFeitoCom`, sempre) e `negocio.logoDaPrevia`.
+- **"Pedir de novo"** (`podePedirDeNovo`): no entregue, pelo cardápio aberto, ou, sem ele e com
+  WhatsApp, por `mensagemDePedirDeNovo` ("Oi! Quero pedir de novo: 12 × Cookie Red Velvet, …",
+  as linhas com as escolhas do combo e sem preço). Sem nenhum dos dois, sem botão. **Nunca com
+  carrinho preenchido**: o produto pode ter saído e o preço mudado. `acaoDaVez` ganha `"pedir"`,
+  que vence `falar`; `pagar` continua vencendo, e aí "Pedir de novo" fica secundário. O
+  entregue é lido como "o último passo é o atual", e não por uma chave nova de status.
+- **O desvio do texto da spec**: ela pedia que o domínio recebesse `cardapioAberto: boolean`;
+  recebe `cardapio?: { endereco; contaId; logoVersao? }` só quando aberto, porque o caminho
+  precisa do endereço e a rota do logo precisa do `contaId` (`lerImagemDaVitrine` não resolve o
+  apelido, `#d319`).
+- **A prévia com o logo** pela rota da vitrine (`/c/{contaId}/vitrine/logo?v=…`, a mesma versão
+  de `montarCardapio`), `card: "summary"`. Só com o cardápio aberto, que é quando a rota serve;
+  com ele fechado, a prévia continua só texto. Título e descrição sem mudança.
+- **"feito com Rende"** no pé, depois do WhatsApp, centrado, em `micro` `--ink-subtle`, link para
+  `/conheca` em aba nova, com alvo de 44px. Sai com a mesma caixa da folha e do cardápio, cuja
+  frase passa a dizer "da folha, do cardápio e do link do pedido". Sem `?de=`: a origem do
+  cadastro (`#d317`) conhece só a calculadora e o cardápio, e medir o link do pedido é outra
+  decisão.
+- **O Instagram** como terciário "Seguir a {loja} no Instagram", com `ExternalLink` e sem o logo
+  do Instagram (marca de terceiro).
+
+**Consequência.** Nenhuma regra, schema ou dependência. O `contaId` aparece na prévia, como já
+aparece nas rotas de imagem do cardápio. Avaliação, cupom de volta e indicação com recompensa
+ficam fora (spec 174, "Fora de escopo").

@@ -10,6 +10,7 @@ import {
   ExternalLink,
   MapPin,
   MessageCircle,
+  RotateCcw,
   type LucideIcon,
 } from "lucide-react";
 import { AprovarOrcamento } from "@/components/cardapio/AprovarOrcamento";
@@ -20,10 +21,11 @@ import { Qr } from "@/components/ui/Qr";
 import {
   acaoDaVez,
   caminhoDoAcompanhamento,
+  podePedirDeNovo,
   type Acompanhamento,
 } from "@/lib/domain/acompanhamento";
 import { formatarMoeda } from "@/lib/domain/money";
-import { linkDoWhatsApp } from "@/lib/domain/whatsapp";
+import { linkDoWhatsApp, mensagemDePedirDeNovo } from "@/lib/domain/whatsapp";
 import { lerAcompanhamento } from "@/lib/server/cardapio";
 import { cn } from "@/lib/utils/cn";
 import { AtualizaAoVoltar } from "./AtualizaAoVoltar";
@@ -63,14 +65,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const visto = await acompanhamentoDe(contaId, pedidoId, chave);
   if (!visto) return { title: { absolute: "Pedido" } };
   // A prévia do link encaminhado: nada de nome, valor ou data. O `noindex` do
-  // layout raiz continua.
+  // layout raiz continua. O logo só com o cardápio aberto, que é quando a rota
+  // da vitrine serve (spec 174).
   const title = `Seu pedido na ${visto.negocio.nome}`;
   const description = "Acompanhe a sua encomenda.";
+  const imagem = visto.negocio.logoDaPrevia;
   return {
     title: { absolute: title },
     description,
-    openGraph: { title, description, type: "website", locale: "pt_BR" },
-    twitter: { card: "summary", title, description },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      locale: "pt_BR",
+      ...(imagem && { images: [imagem] }),
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+      ...(imagem && { images: [imagem] }),
+    },
   };
 }
 
@@ -81,6 +96,12 @@ export default async function PaginaDoPedido({ params }: Props) {
 
   const { negocio } = visto;
   const acao = acaoDaVez(visto);
+  // O cardápio de hoje, sem carrinho: o produto pode ter saído, o preço
+  // mudado. Sem ele, o pedido em texto para ela responder com o preço.
+  const pedirDeNovo = podePedirDeNovo(visto)
+    ? (visto.cardapio ??
+      linkDoWhatsApp(negocio.whatsapp, mensagemDePedirDeNovo(visto.itens)))
+    : undefined;
 
   return (
     <main className="mx-auto w-full max-w-xl px-4 pb-12 pt-10">
@@ -284,6 +305,40 @@ export default async function PaginaDoPedido({ params }: Props) {
         />
       )}
 
+      {/* O entregue leva à próxima encomenda (spec 174): primário, ou
+          secundário quando o Pix vence. */}
+      {pedirDeNovo && (
+        <a
+          href={pedirDeNovo}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={classesBotao({
+            variante: acao === "pedir" ? "loja" : "secundaria",
+            tamanho: "lg",
+            larguraTotal: true,
+            className: "mt-10",
+          })}
+        >
+          <RotateCcw aria-hidden className="size-5" strokeWidth={1.75} />
+          Pedir de novo
+        </a>
+      )}
+      {/* Sem o logo do Instagram: marca de terceiro. */}
+      {negocio.instagram && (
+        <a
+          href={`https://instagram.com/${encodeURIComponent(negocio.instagram)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={classesBotao({
+            variante: "terciaria",
+            className: pedirDeNovo ? "mt-2" : "mt-10",
+          })}
+        >
+          <ExternalLink aria-hidden className="size-5" strokeWidth={1.75} />
+          Seguir a {negocio.nome} no Instagram
+        </a>
+      )}
+
       {/* Sempre na página, mas primário só quando não há outra coisa a fazer. */}
       {negocio.whatsapp && (
         <a
@@ -297,12 +352,27 @@ export default async function PaginaDoPedido({ params }: Props) {
             variante: acao === "falar" ? "loja" : "secundaria",
             tamanho: "lg",
             larguraTotal: true,
-            className: "mt-10",
+            className: pedirDeNovo || negocio.instagram ? "mt-3" : "mt-10",
           })}
         >
           <MessageCircle aria-hidden className="size-5" strokeWidth={1.75} />
           Falar com a {negocio.quem}
         </a>
+      )}
+
+      {/* Como na folha (`#d127`): uma linha, nunca logo nem cor da marca, e
+          sai com a mesma caixa (`#d147`). É a página dela. */}
+      {negocio.feitoCom && (
+        <p className="mt-10 text-center">
+          <a
+            href="/conheca"
+            target="_blank"
+            rel="noopener"
+            className="inline-flex min-h-11 items-center text-micro text-ink-subtle underline-offset-2 hover:underline focus-visible:underline"
+          >
+            feito com Rende
+          </a>
+        </p>
       )}
 
       <AtualizaAoVoltar />

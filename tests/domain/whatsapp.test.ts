@@ -4,6 +4,7 @@ import { brCodePix } from "@/lib/domain/pix";
 import {
   linkDoWhatsApp,
   mensagemDeCobranca,
+  mensagemDePedirDeNovo,
   mensagemDeVolta,
   mensagemDoPasso,
   mensagemDoPedido,
@@ -516,5 +517,18 @@ describe("mensagemDoPasso", () => {
         undefined,
       );
     }
+  });
+});
+
+describe("mensagemDePedirDeNovo (spec 174)", () => {
+  it("as linhas do pedido em texto, sem preço", () => {
+    expect(
+      mensagemDePedirDeNovo([
+        { quantidade: "12", nome: "Cookie Red Velvet" },
+        { quantidade: "1", nome: "Bolo de pote de ninho" },
+      ]),
+    ).toBe(
+      "Oi! Quero pedir de novo: 12 × Cookie Red Velvet, 1 × Bolo de pote de ninho.",
+    );
   });
 });

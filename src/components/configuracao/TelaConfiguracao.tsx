@@ -1267,7 +1267,8 @@ function ConfiguracaoDaDona() {
                   conta", logo abaixo (spec 028, `#d147`). */}
               {situacao?.tipo === "teste" ? (
                 <p className="text-label text-ink-muted">
-                  Assinantes podem tirar esta linha da folha e do cardápio.
+                  Assinantes podem tirar esta linha da folha, do cardápio e do
+                  link do pedido.
                 </p>
               ) : (
                 <div className="flex min-h-11 items-start gap-3 rounded-md border border-line-strong px-3 py-3">
@@ -1284,8 +1285,8 @@ function ConfiguracaoDaDona() {
                     htmlFor={idOcultarFeitoCom}
                     className="text-label text-ink"
                   >
-                    Tirar a linha &ldquo;feito com Rende&rdquo; da folha e do
-                    cardápio
+                    Tirar a linha &ldquo;feito com Rende&rdquo; da folha, do
+                    cardápio e do link do pedido
                   </label>
                 </div>
               )}

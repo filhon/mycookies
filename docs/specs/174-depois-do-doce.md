@@ -109,11 +109,11 @@ decisão, e não desta spec.
 
 ## Critérios de aceite
 
-- [ ] "Pedir de novo" só no entregue, pelo cardápio ou pelo WhatsApp, nunca com carrinho
+- [x] "Pedir de novo" só no entregue, pelo cardápio ou pelo WhatsApp, nunca com carrinho
       preenchido.
-- [ ] A prévia com o logo quando a rota serve; sem dado pessoal.
-- [ ] "feito com Rende" obedece `ocultarFeitoCom`.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; decisão registrada; `ESTADO.md` e
+- [x] A prévia com o logo quando a rota serve; sem dado pessoal.
+- [x] "feito com Rende" obedece `ocultarFeitoCom`.
+- [x] `lint`, `typecheck`, `test` e `build` passam; decisão registrada; `ESTADO.md` e
       `novidades.ts` atualizados.
 
 ---

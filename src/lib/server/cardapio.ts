@@ -323,6 +323,10 @@ export async function lerAcompanhamento(
     .map((snap) => ({ id: snap.id, ...snap.data() }) as FichaTecnica);
 
   const whatsapp = telefoneParaWhatsApp(configuracao?.contato?.telefone);
+  // A mesma versão que `montarCardapio` dá ao logo, para a prévia (spec 174).
+  const logoVersao = tipoDaFoto(vitrine?.logo)
+    ? (vitrine?.atualizadoEm?.toMillis() ?? 0)
+    : undefined;
   return acompanhamentoDoPedido(
     pedido,
     {
@@ -332,6 +336,11 @@ export async function lerAcompanhamento(
       logo: vitrine?.logo,
       condicoes: configuracao?.condicoes,
       retirada: configuracao?.retirada,
+      instagram: configuracao?.contato?.instagram,
+      feitoCom: !configuracao?.ocultarFeitoCom,
+      ...(configuracao?.cardapio?.aberto
+        ? { cardapio: { endereco, contaId, logoVersao } }
+        : {}),
     },
     configuracao?.formasPagamento ?? [],
     hojeEmBrasilia(new Date()),

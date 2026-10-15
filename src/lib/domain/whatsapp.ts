@@ -200,6 +200,16 @@ export function mensagemDoPasso(
 }
 
 /**
+ * "Pedir de novo" sem o cardápio aberto (spec 174): as linhas do pedido em
+ * texto, sem preço. Ela responde com o de hoje.
+ */
+export function mensagemDePedirDeNovo(
+  itens: { quantidade: string; nome: string }[],
+): string {
+  return `Oi! Quero pedir de novo: ${itens.map((item) => `${item.quantidade} × ${item.nome}`).join(", ")}.`;
+}
+
+/**
  * O resumo do pedido, pronto para colar na conversa.
  *
  * Zero é ausência, a mesma regra do painel financeiro: uma linha

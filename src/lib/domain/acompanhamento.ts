@@ -51,8 +51,18 @@ export interface Acompanhamento {
     logo?: string;
     /** O combinado de sempre, com as linhas dela (`#d356`). */
     condicoes?: string;
+    /** O logo pela rota da vitrine, para a prévia (spec 174): a rota só serve
+     * com o cardápio aberto (`lerImagemDaVitrine`). */
+    logoDaPrevia?: string;
+    /** O usuário do Instagram, sem "@": só no entregue (spec 174). */
+    instagram?: string;
+    /** `!ocultarFeitoCom` (`#d147`): a linha do pé, como na folha. */
+    feitoCom: boolean;
   };
   codigo: string;
+  /** "Pedir de novo" pelo cardápio aberto (spec 174): o caminho, só no
+   * entregue. Sem carrinho preenchido. */
+  cardapio?: string;
   /** Para quem é o orçamento: o nome da cliente, só no orçamento (`#d357`). */
   para?: string;
   /** A frase do pé em que está, na voz da confeiteira. */
@@ -213,14 +223,32 @@ export function quandoDoPedido(
 }
 
 /**
+ * "Pedir de novo" (spec 174): só no entregue, pelo cardápio aberto ou, sem
+ * ele, pelo WhatsApp dela. O último passo atual é o entregue; `cardapio` só
+ * sai nele.
+ */
+export function podePedirDeNovo(
+  visto: Pick<Acompanhamento, "passos" | "cardapio" | "negocio">,
+): boolean {
+  return (
+    !!visto.cardapio ||
+    (!!visto.negocio.whatsapp && !!visto.passos.at(-1)?.atual)
+  );
+}
+
+/**
  * O primário da página (spec 171): aprovar enquanto o orçamento pode, pagar
- * quando há Pix, e falar com ela no resto.
+ * quando há Pix, pedir de novo no entregue (spec 174), e falar com ela no resto.
  */
 export function acaoDaVez(
-  visto: Pick<Acompanhamento, "podeAprovar" | "pix">,
-): "aprovar" | "pagar" | "falar" {
+  visto: Pick<
+    Acompanhamento,
+    "podeAprovar" | "pix" | "passos" | "cardapio" | "negocio"
+  >,
+): "aprovar" | "pagar" | "pedir" | "falar" {
   if (visto.podeAprovar) return "aprovar";
   if (visto.pix) return "pagar";
+  if (podePedirDeNovo(visto)) return "pedir";
   return "falar";
 }
 
@@ -244,8 +272,14 @@ export function pixDoPedido(
 
 export function acompanhamentoDoPedido(
   pedido: PedidoAcompanhado,
-  negocio: Acompanhamento["negocio"] & {
+  negocio: Omit<Acompanhamento["negocio"], "logoDaPrevia"> & {
     retirada?: ConfiguracaoGeral["retirada"];
+    /**
+     * Só com o cardápio aberto (spec 174): o endereço que a cliente abriu, o
+     * `contaId` da rota da vitrine (que não resolve apelido) e a versão do
+     * logo, quando há logo.
+     */
+    cardapio?: { endereco: string; contaId: string; logoVersao?: number };
   },
   formas: FormaPagamento[],
   hojeISO: DataISO,
@@ -273,6 +307,8 @@ export function acompanhamentoDoPedido(
   const endereco = pedido.entrega.endereco?.trim();
   const retirada =
     tipo === "RETIRADA" ? negocio.retirada?.endereco.trim() : undefined;
+  const entregue = pedido.status === "ENTREGUE";
+  const { cardapio } = negocio;
 
   return {
     negocio: {
@@ -281,8 +317,21 @@ export function acompanhamentoDoPedido(
       ...(negocio.whatsapp ? { whatsapp: negocio.whatsapp } : {}),
       ...opcional("logo", negocio.logo),
       ...opcional("condicoes", negocio.condicoes),
+      ...(cardapio?.logoVersao !== undefined
+        ? {
+            logoDaPrevia: `/c/${encodeURIComponent(cardapio.contaId)}/vitrine/logo?v=${cardapio.logoVersao}`,
+          }
+        : {}),
+      ...opcional(
+        "instagram",
+        entregue ? negocio.instagram?.trim().replace(/^@+/, "") : undefined,
+      ),
+      feitoCom: negocio.feitoCom,
     },
     codigo: pedido.codigo,
+    ...(entregue && cardapio
+      ? { cardapio: `/c/${encodeURIComponent(cardapio.endereco)}` }
+      : {}),
     ...opcional("para", orcamento ? pedido.clienteNome : undefined),
     situacao: cancelado
       ? `Este pedido foi cancelado. Fale com a ${quem} se tiver dúvida.`
@@ -293,7 +342,7 @@ export function acompanhamentoDoPedido(
           : orcamento
             ? `A ${quem} vai confirmar`
             : rotuloDoPasso(pedido.status, tipo),
-    ...(cancelado || pedido.status === "ENTREGUE"
+    ...(cancelado || entregue
       ? {}
       : {
           quando: quandoDoPedido(
