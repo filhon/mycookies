@@ -478,7 +478,10 @@ export default function PaginaPrecoDeDoces() {
                 <h2 id="sua-conta-titulo" className={TITULO_H2}>
                   Faça a conta do seu doce
                 </h2>
-                <CalculadoraDasParcelas className="mt-6" />
+                <CalculadoraDasParcelas
+                  url={`${URL_DO_SITE}${ENDERECO}`}
+                  className="mt-6"
+                />
               </div>
             </section>
 

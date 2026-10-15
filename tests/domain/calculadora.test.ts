@@ -8,15 +8,19 @@ import {
 import {
   contaDaPorta,
   contaDasParcelas,
+  enderecoDaConta,
   entradaDasParcelas,
   EXEMPLOS_DAS_PARCELAS,
   entradaPadrao,
   exemploDoRascunho,
+  lerContaDoEndereco,
   lerRascunho,
   RECEITAS_DA_PORTA,
+  textoDaConta,
   trocarReceita,
   VALIDADE_DO_RASCUNHO_MS,
   type EntradaDaPorta,
+  type EntradaDasParcelas,
   type RascunhoDaPorta,
 } from "@/lib/domain/calculadora";
 import {
@@ -449,6 +453,107 @@ describe("contaDasParcelas", () => {
       ok: true,
       precoSugerido: 396,
       precoArredondado: 400,
+    });
+  });
+});
+
+describe("a conta no endereço (spec 180)", () => {
+  for (const e of EXEMPLOS_DAS_PARCELAS) {
+    it(`${e.rotulo} vai e volta pelo endereço`, () => {
+      const entrada = { ...entradaDasParcelas(e.valor), precoHoje: 1234 };
+      expect(lerContaDoEndereco(enderecoDaConta(entrada, e.unidade))).toEqual({
+        entrada,
+        unidade: e.unidade,
+      });
+    });
+  }
+
+  it("margem e taxas com decimal, sem preço de hoje", () => {
+    const entrada = {
+      ...entradaDasParcelas(),
+      margemDesejada: 37.5,
+      taxas: 4.99,
+    };
+    const endereco = enderecoDaConta(entrada, "pote");
+    expect(endereco).toBe("?conta=1-312-45-56-18-10-37.5-4.99-0-pote");
+    expect(lerContaDoEndereco(endereco)).toEqual({ entrada, unidade: "pote" });
+  });
+
+  it("os maiores números válidos cabem num endereço curto", () => {
+    const teto = 10_000_000;
+    const endereco = enderecoDaConta(
+      {
+        custoInsumos: teto,
+        custoEmbalagem: teto,
+        custoMaoDeObra: teto,
+        custoEnergiaGas: teto,
+        custoIndireto: teto,
+        margemDesejada: 99.99,
+        taxas: 99.99,
+        precoHoje: teto,
+      },
+      "unidade",
+    );
+    expect(lerContaDoEndereco(endereco)).not.toBeNull();
+    // Com o domínio e a página mais longa, abaixo de 200 caracteres.
+    expect(
+      `https://rende.vercel.app/como-calcular-o-preco-do-bolo-por-quilo${endereco}`
+        .length,
+    ).toBeLessThan(200);
+  });
+
+  it.each([
+    "",
+    "?outra=1",
+    "?conta=2-180-60-100-41-60-40-5-0-unidade",
+    "?conta=1-180-60-100-41-60-40-5-unidade",
+    "?conta=1-180--60-100-41-60-40-5-0-unidade",
+    "?conta=1-10000001-60-100-41-60-40-5-0-unidade",
+    "?conta=1-180-60-100-41-60-100.5-5-0-unidade",
+    "?conta=1-180-60-100-41-60-40-101-0-unidade",
+    "?conta=1-180-60-100-41-60-4,5-5-0-unidade",
+    "?conta=1-180-60-1e3-41-60-40-5-0-unidade",
+    "?conta=1-180-60-100-41-60-40-5-0-fatia",
+    "?conta=1-180-60-100-41-60-40-5-0-unidade-x",
+  ])("%j não é conta", (endereco) => {
+    expect(lerContaDoEndereco(endereco)).toBeNull();
+  });
+
+  describe("o texto do cento de brigadeiro", () => {
+    const comEspaco = (t: string) => t.replace(/ /g, " ");
+    const texto = (mais: Partial<EntradaDasParcelas> = {}) => {
+      const entrada = { ...entradaDasParcelas("Brigadeiro"), ...mais };
+      return comEspaco(
+        textoDaConta(contaDasParcelas(entrada), entrada, "cento"),
+      );
+    };
+    const topo =
+      "O preço do meu cento, pela conta do Rende:\n" +
+      "custa R$ 97,00 (ingredientes R$ 42,00, embalagem R$ 6,00, minha hora R$ 40,00, gás R$ 4,00, fixas R$ 5,00).\n";
+    const cobrar =
+      "Cobrar R$ 176,50, com 40% de margem e 5% de taxas: sobram R$ 70,67 pra mim.";
+
+    it("o do exemplo", () => {
+      expect(texto()).toBe(topo + cobrar);
+    });
+
+    it("com o preço de hoje", () => {
+      expect(texto({ precoHoje: 15000 })).toBe(
+        `${topo}${cobrar}\nHoje cobro R$ 150,00 e sobram R$ 45,50.`,
+      );
+      expect(texto({ precoHoje: 5000 })).toBe(
+        `${topo}${cobrar}\nHoje cobro R$ 50,00 e perco R$ 49,50 por venda.`,
+      );
+    });
+
+    it("com margem + taxas ≥ 100", () => {
+      expect(texto({ margemDesejada: 95 })).toBe(
+        `${topo}Margem e taxas passam de 100%: falta ajustar.`,
+      );
+    });
+
+    it("margem com decimal sai com vírgula", () => {
+      expect(texto({ margemDesejada: 4.5 })).toContain("com 4,5% de margem");
     });
   });
 });

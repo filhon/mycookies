@@ -100,11 +100,11 @@ passam de 100%: falta ajustar." A sessão passa a redação pela `humanizer`.
 
 ## Critérios de aceite
 
-- [ ] A conta vai e volta pelo endereço, presa no teste.
-- [ ] Endereço inválido nunca quebra a página.
-- [ ] Nada gravado no aparelho nem no Firestore.
-- [ ] `lint`, `typecheck`, `test` e `build` passam; `package.json` e `firestore.*` intocados.
-- [ ] Decisão registrada; `ESTADO.md` atualizado.
+- [x] A conta vai e volta pelo endereço, presa no teste.
+- [x] Endereço inválido nunca quebra a página.
+- [x] Nada gravado no aparelho nem no Firestore.
+- [x] `lint`, `typecheck`, `test` e `build` passam; `package.json` e `firestore.*` intocados.
+- [x] Decisão registrada; `ESTADO.md` atualizado.
 
 ---
 

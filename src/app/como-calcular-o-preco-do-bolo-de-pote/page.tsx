@@ -1,5 +1,6 @@
 import { TrendingDown } from "lucide-react";
 import type { Metadata } from "next";
+import { URL_DO_SITE } from "@/app/site";
 import {
   CabecalhoDoArtigo,
   Convite,
@@ -247,6 +248,7 @@ export default function PaginaPrecoDoBoloDePote() {
                   </h2>
                   <CalculadoraDasParcelas
                     doce="Bolo de pote"
+                    url={`${URL_DO_SITE}${ENDERECO}`}
                     className="mt-6"
                   />
                 </div>

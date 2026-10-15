@@ -28,6 +28,7 @@ import {
   verificarPreco,
   type VerificacaoPreco,
 } from "./precificacao";
+import { formatarMoeda } from "./money";
 import { formatarQuantidade, paraBase, unidadeBaseDe } from "./unidades";
 
 /**
@@ -408,4 +409,117 @@ export function contaDasParcelas(
       : null,
     hoje: precoHoje > 0 ? verificarPreco(precoHoje, custo, taxas) : null,
   };
+}
+
+/**
+ * A conta no endereço (spec 180, `DECISOES.md#d398`): `?conta=` com a versão,
+ * as cinco parcelas em centavos, margem, taxas, o preço de hoje (`0` sem ele)
+ * e a unidade, separados por `-`. Nada guardado no aparelho nem no servidor.
+ */
+const VERSAO_DA_CONTA = "1";
+const ORDEM_DAS_PARCELAS = [
+  "custoInsumos",
+  "custoEmbalagem",
+  "custoMaoDeObra",
+  "custoEnergiaGas",
+  "custoIndireto",
+] as const satisfies readonly (keyof ParcelasDoCusto)[];
+const UNIDADES_DE_VENDA: readonly UnidadeDeVenda[] = [
+  "unidade",
+  "cento",
+  "quilo",
+  "pote",
+];
+/** R$ 100.000,00: acima disso o endereço foi mexido à mão. */
+const TETO_DA_PARCELA = 10_000_000;
+
+export function enderecoDaConta(
+  entrada: EntradaDasParcelas,
+  unidade: UnidadeDeVenda,
+): string {
+  const inteiro = (n: number) => String(Math.round(naoNegativo(n)));
+  return `?conta=${[
+    VERSAO_DA_CONTA,
+    ...ORDEM_DAS_PARCELAS.map((chave) => inteiro(entrada[chave])),
+    String(naoNegativo(entrada.margemDesejada)),
+    String(naoNegativo(entrada.taxas)),
+    inteiro(entrada.precoHoje ?? 0),
+    unidade,
+  ].join("-")}`;
+}
+
+/** `null` para qualquer coisa que `enderecoDaConta` não escreveria. Nunca lança. */
+export function lerContaDoEndereco(
+  texto: string,
+): { entrada: EntradaDasParcelas; unidade: UnidadeDeVenda } | null {
+  const conta = new URLSearchParams(texto).get("conta");
+  const campos = conta?.split("-") ?? [];
+  if (campos.length !== 10 || campos[0] !== VERSAO_DA_CONTA) return null;
+
+  const centavos = (t = "") =>
+    /^\d{1,9}$/.test(t) && Number(t) <= TETO_DA_PARCELA ? Number(t) : null;
+  const percentual = (t = "") =>
+    /^\d{1,3}(\.\d{1,4})?$/.test(t) && Number(t) <= 100 ? Number(t) : null;
+
+  const parcelas = ORDEM_DAS_PARCELAS.map((_, i) => centavos(campos[i + 1]));
+  const margem = percentual(campos[6]);
+  const taxas = percentual(campos[7]);
+  const hoje = centavos(campos[8]);
+  const unidade = UNIDADES_DE_VENDA.find((u) => u === campos[9]);
+  if (
+    parcelas.some((p) => p === null) ||
+    margem === null ||
+    taxas === null ||
+    hoje === null ||
+    !unidade
+  )
+    return null;
+
+  return {
+    entrada: {
+      ...(Object.fromEntries(
+        ORDEM_DAS_PARCELAS.map((chave, i) => [chave, parcelas[i]]),
+      ) as ParcelasDoCusto),
+      margemDesejada: margem,
+      taxas,
+      precoHoje: hoje > 0 ? hoje : null,
+    },
+    unidade,
+  };
+}
+
+const MEU: Record<UnidadeDeVenda, string> = {
+  unidade: "da minha unidade",
+  cento: "do meu cento",
+  quilo: "do meu quilo",
+  pote: "do meu pote",
+};
+
+/** "40%", "4,5%": como ela digitou. */
+const porCento = (n: number) => `${naoNegativo(n).toLocaleString("pt-BR")}%`;
+
+/** A mensagem que vai com o link (spec 180): a conta dela em três ou quatro linhas. */
+export function textoDaConta(
+  conta: ContaDasParcelas,
+  entrada: EntradaDasParcelas,
+  unidade: UnidadeDeVenda,
+): string {
+  const r = (n: number) => formatarMoeda(Math.round(naoNegativo(n)));
+  const linhas = [
+    `O preço ${MEU[unidade]}, pela conta do Rende:`,
+    `custa ${r(conta.custo)} (ingredientes ${r(entrada.custoInsumos)}, embalagem ${r(entrada.custoEmbalagem)}, minha hora ${r(entrada.custoMaoDeObra)}, gás ${r(entrada.custoEnergiaGas)}, fixas ${r(entrada.custoIndireto)}).`,
+    conta.preco.ok && conta.sugerido
+      ? `Cobrar ${r(conta.preco.precoArredondado)}, com ${porCento(entrada.margemDesejada)} de margem e ${porCento(entrada.taxas)} de taxas: sobram ${r(conta.sugerido.lucroUnitario)} pra mim.`
+      : "Margem e taxas passam de 100%: falta ajustar.",
+  ];
+  if (conta.hoje) {
+    const hoje = r(entrada.precoHoje ?? 0);
+    const { lucroUnitario } = conta.hoje;
+    linhas.push(
+      lucroUnitario < 0
+        ? `Hoje cobro ${hoje} e perco ${r(-lucroUnitario)} por venda.`
+        : `Hoje cobro ${hoje} e sobram ${r(lucroUnitario)}.`,
+    );
+  }
+  return linhas.join("\n");
 }

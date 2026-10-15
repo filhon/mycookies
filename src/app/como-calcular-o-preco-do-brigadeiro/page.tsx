@@ -1,5 +1,6 @@
 import { TrendingDown } from "lucide-react";
 import type { Metadata } from "next";
+import { URL_DO_SITE } from "@/app/site";
 import {
   CabecalhoDoArtigo,
   Convite,
@@ -241,7 +242,11 @@ export default function PaginaPrecoDoBrigadeiro() {
                   <h2 id="sua-conta-titulo" className={TITULO_H2}>
                     Faça a conta do seu brigadeiro
                   </h2>
-                  <CalculadoraDasParcelas doce="Brigadeiro" className="mt-6" />
+                  <CalculadoraDasParcelas
+                    doce="Brigadeiro"
+                    url={`${URL_DO_SITE}${ENDERECO}`}
+                    className="mt-6"
+                  />
                 </div>
               </section>
 

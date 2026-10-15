@@ -13060,3 +13060,41 @@ não se veem juntas (a faixa ocupa a largura e a calculadora começa depois), co
 (`#d382`). A faixa é do exemplo e não reage à calculadora; isso é spec própria se vier. O
 `DESIGN.md` § Signature diz que a faixa larga é do site, e não só da `/conheca`. Nenhum campo,
 regra ou dependência.
+
+## D398 · A conta da calculadora das parcelas vai no endereço, e não no aparelho
+
+**Status:** vigente · decidida e codificada em 2026-10-15, spec 180 · estende a `#d393` ("nada
+guardado") e a `#d395` (o `MandarAPagina`).
+
+**Contexto.** A calculadora das parcelas esquecia tudo ao fechar a aba. Ela faz a conta à noite e
+responde a cliente no dia seguinte, no WhatsApp; o que se paga no assunto (app freemium, planilha,
+calculadora que manda por e-mail) guarda a conta.
+
+**Decisão.**
+
+- **A conta mora no link**, `?conta=1-{insumos}-{embalagem}-{hora}-{gás}-{fixas}-{margem}-{taxas}-{hoje}-{unidade}`:
+  centavos inteiros, margem e taxas com ponto, `0` sem preço de hoje, a unidade pelo nome. Nada no
+  aparelho nem no Firestore. O link vive na conversa dela, abre em qualquer aparelho e pode ir
+  para a sócia; o `localStorage` só serviria àquele navegador e pediria um segundo rascunho ao lado
+  do `#d189`. Os números ficam visíveis no link: quem manda é ela, e a mensagem já os diz.
+- **`lerContaDoEndereco` é estrita e nunca lança**: versão que não seja `1`, campo a mais ou a
+  menos, sinal, vírgula, notação científica, parcela ou preço acima de R$ 100.000,00, margem ou
+  taxas acima de 100 e unidade desconhecida dão `null`, e a página abre no exemplo. O endereço mais
+  longo possível, com a página mais longa, tem 146 caracteres.
+- **"Mandar essa conta pra mim"**, secundário, embaixo do resultado, com o texto de `textoDaConta`
+  (custo e as cinco parcelas, o preço com margem e taxas e a sobra, e o preço de hoje quando há) e
+  a linha "O link reabre esta conta com os seus números.". Some sem custo. O `MandarAPagina` ganhou
+  `rotulo`, com "Mandar pelo WhatsApp" como padrão; a página de doces saiu igual. Sem JavaScript,
+  o `href` leva a conta do exemplo, que é a que a tela mostra.
+- **WhatsApp, e não e-mail**: pedir e-mail é cadastro antes do teste, e mandar para si mesma é uma
+  conversa que o WhatsApp tem.
+- **Duas coisas que a spec não previa.** A leitura é `useSyncExternalStore` (o servidor vê `""`, o
+  cliente vê `location.search`) e o ajuste de estado no render, o padrão do `SeuCardapio`, e não
+  `useEffect`: o lint do projeto barra `setState` dentro de efeito. O efeito é o mesmo: depois de
+  hidratar, uma vez, sem `useSearchParams`, e a página continua estática. E a calculadora ganhou a
+  prop `url`: o domínio é o `URL_DO_SITE` do build, que só o servidor conhece (a variável não é
+  `NEXT_PUBLIC_`), e o link sem JavaScript precisa sair pronto no HTML; as quatro páginas passam
+  `URL_DO_SITE + ENDERECO`. Lida a conta na página de doces, nenhuma pílula de exemplo fica marcada.
+
+**Consequência.** O `canonical` de cada página já aponta para ela sem `?conta`. O link de um
+build local sai com `localhost` (`#d395`). Nenhum campo, regra ou dependência.

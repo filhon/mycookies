@@ -14,12 +14,14 @@ export function MandarAPagina({
   titulo,
   texto,
   url,
+  rotulo = "Mandar pelo WhatsApp",
 }: {
   titulo: string;
   /** A frase antes do endereço. O endereço vai separado ao `share`, que o junta sozinho. */
   texto: string;
-  /** Absoluto, sem `?` nem `#`. */
+  /** Absoluto, sem `#`. */
   url: string;
+  rotulo?: string;
 }) {
   function mandar(e: React.MouseEvent<HTMLAnchorElement>) {
     if (typeof navigator.share !== "function") return;
@@ -36,7 +38,7 @@ export function MandarAPagina({
       className={classesBotao({ className: "w-full sm:w-auto" })}
     >
       <Send aria-hidden className="size-5" strokeWidth={1.75} />
-      Mandar pelo WhatsApp
+      {rotulo}
     </a>
   );
 }

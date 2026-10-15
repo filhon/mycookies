@@ -1,18 +1,22 @@
 "use client";
 
 import { TrendingDown, TriangleAlert } from "lucide-react";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { FaixaDeComposicao } from "@/components/fichas/FaixaDeComposicao";
 import { Porcao } from "@/components/marca/Marca";
 import { Anuncio } from "@/components/site/CalculadoraDaPorta";
+import { MandarAPagina } from "@/components/site/MandarAPagina";
 import { Campo } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Dinheiro } from "@/components/ui/Dinheiro";
 import { Pilulas } from "@/components/ui/Pilulas";
 import {
   contaDasParcelas,
+  enderecoDaConta,
   entradaDasParcelas,
   EXEMPLOS_DAS_PARCELAS,
+  lerContaDoEndereco,
+  textoDaConta,
   type ContaDasParcelas,
   type DoceDasParcelas,
   type EntradaDasParcelas,
@@ -27,7 +31,8 @@ import { cn } from "@/lib/utils/cn";
  * A conta sem receita da página de doces (spec 176): as cinco parcelas em
  * reais, na unidade em que ela vende, mais margem, taxas e o preço de hoje. A
  * conta é `contaDasParcelas`; aqui só se desenha. Nada é guardado: o rascunho
- * da porta (`#d189`) tem forma de receita, e esta conta não tem.
+ * da porta (`#d189`) tem forma de receita, e esta conta não tem. Ela leva a
+ * conta no link que manda para si (spec 180).
  */
 
 const UNIDADES: { valor: UnidadeDeVenda; rotulo: string }[] = [
@@ -66,6 +71,8 @@ const CAMPOS: { chave: keyof ParcelasDoCusto; rotulo: string; dica: string }[] =
     },
   ];
 
+const SEM_MUDANCA = () => () => {};
+
 /** "40" e "4,5" como ela digita; a vírgula pode ficar no fim enquanto digita. */
 const textoDe = (n: number) => n.toLocaleString("pt-BR");
 const limpar = (texto: string) =>
@@ -81,9 +88,12 @@ const numeroDe = (texto: string) => Number(texto.replace(",", ".")) || 0;
  */
 export function CalculadoraDasParcelas({
   doce,
+  url,
   className,
 }: {
   doce?: DoceDasParcelas;
+  /** O endereço absoluto da página, sem `?`: o link da conta (spec 180). */
+  url: string;
   className?: string;
 }) {
   const [entrada, setEntrada] = useState(() => entradaDasParcelas(doce));
@@ -97,6 +107,29 @@ export function CalculadoraDasParcelas({
   const [margem, setMargem] = useState(() => textoDe(entrada.margemDesejada));
   const [taxas, setTaxas] = useState(() => textoDe(entrada.taxas));
   const conta = contaDasParcelas(entrada);
+
+  // A conta que ela mandou para si (spec 180, `#d398`): lida uma vez, depois
+  // de hidratar, para a página continuar estática. Inválida, fica o exemplo.
+  const busca = useSyncExternalStore(
+    SEM_MUDANCA,
+    () => window.location.search,
+    () => "",
+  );
+  const [buscaLida, setBuscaLida] = useState("");
+  if (busca !== buscaLida) {
+    setBuscaLida(busca);
+    const lida = lerContaDoEndereco(busca);
+    if (lida) {
+      setEntrada(lida.entrada);
+      setMargem(textoDe(lida.entrada.margemDesejada));
+      setTaxas(textoDe(lida.entrada.taxas));
+      // Com `doce`, a unidade da página vence a do endereço.
+      if (!doce) {
+        setUnidade(lida.unidade);
+        setExemplo("");
+      }
+    }
+  }
 
   const mudar = (parcial: Partial<EntradaDasParcelas>) =>
     setEntrada((atual) => ({ ...atual, ...parcial }));
@@ -195,6 +228,21 @@ export function CalculadoraDasParcelas({
       </div>
 
       <Resultado conta={conta} unidade={unidade} />
+
+      {/* Secundário: o primário da tela é o do convite. */}
+      {conta.custo > 0 && (
+        <div className="-mt-4 flex flex-col gap-2">
+          <MandarAPagina
+            titulo="A conta do preço, no Rende"
+            rotulo="Mandar essa conta pra mim"
+            texto={textoDaConta(conta, entrada, unidade)}
+            url={`${url}${enderecoDaConta(entrada, unidade)}`}
+          />
+          <p className="text-label text-ink-muted">
+            O link reabre esta conta com os seus números.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
