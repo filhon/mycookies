@@ -396,7 +396,7 @@ function SuaConta() {
       aria-labelledby="sua-conta-titulo"
       className="mx-auto max-w-6xl scroll-mt-4 px-4 pb-16 lg:px-10 lg:pb-24"
     >
-      {/* Sem filete: a foto da bancada, logo acima, já separa. */}
+      {/* Sem filete: a faixa do custo, logo acima, já separa. */}
       <div className="pt-16 lg:pt-24">
         <h2
           id="sua-conta-titulo"

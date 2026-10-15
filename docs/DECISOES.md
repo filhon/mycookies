@@ -7070,7 +7070,8 @@ ferramentas não case com o `<header>`.
 
 ## D238 · A foto da bancada na `/conheca`, fora do precache
 
-**Status:** vigente · decidida e codificada em 2026-09-30, fora de spec, a pedido de quem conduz o projeto
+**Status:** **substituída por D382** (a foto saiu; vale ainda a consequência sobre o precache) ·
+decidida e codificada em 2026-09-30, fora de spec, a pedido de quem conduz o projeto
 
 **Contexto.** A página de venda não tinha nenhuma imagem: as telas do mês esperam as capturas
 (`#d181`) e a foto do depoimento espera autorização (`#d175`). Veio uma foto gerada por IA da
