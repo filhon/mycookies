@@ -16,8 +16,12 @@ export interface ResumoDaNota {
   atualizacoes: number;
   /** Quantas ainda não têm nome, preço ou embalagem. */
   incompletas: number;
-  /** Quantas pareadas com o preço por unidade dobrado ou pela metade. */
+  /** Quantas com o preço por unidade dobrado ou pela metade, ainda sem confirmar. */
   saltos: number;
+  /** Quantas pareadas numa unidade que não é a do material (spec 188). */
+  bases: number;
+  /** Quantas seguram o cadastro: incompletas, saltos e bases que as receitas recusam. */
+  bloqueadas: number;
   conferencia: ConferenciaTotal;
   /** O que ela tirou da lista, somado. */
   removido: Centavos;
@@ -29,7 +33,8 @@ export interface ResumoDaNota {
  * A conferência do total **não bloqueia** o cadastro: é o princípio 3 do
  * `PRODUCT.md` aplicado à confiança no próprio leitor — todo número mostra a
  * sua consequência, inclusive o número que o sistema leu errado. O que bloqueia
- * é linha sem preço, que não tem como virar documento.
+ * é linha sem preço, que não tem como virar documento, o preço que saltou sem
+ * ela confirmar, e a unidade que as receitas do material não aceitam (spec 188).
  */
 export function RodapeNota({
   resumo,
@@ -40,14 +45,23 @@ export function RodapeNota({
   salvando: boolean;
   aoCadastrar: () => void;
 }) {
-  const { linhas, atualizacoes, incompletas, saltos, conferencia, removido } =
-    resumo;
+  const {
+    linhas,
+    atualizacoes,
+    incompletas,
+    saltos,
+    bases,
+    bloqueadas,
+    conferencia,
+    removido,
+  } = resumo;
 
   /** A diferença que a remoção não explica. Zero é a nota fechando. */
   const naoExplicado = conferencia.diferenca - removido;
   const tudoCerto =
     incompletas === 0 &&
     saltos === 0 &&
+    bases === 0 &&
     (naoExplicado === 0 || conferencia.total <= 0);
 
   return (
@@ -66,7 +80,7 @@ export function RodapeNota({
           variante="primaria"
           tamanho="lg"
           carregando={salvando}
-          disabled={linhas === 0 || incompletas > 0}
+          disabled={linhas === 0 || bloqueadas > 0}
           onClick={aoCadastrar}
         >
           {linhas === 1
@@ -121,7 +135,7 @@ function Valor({ centavos }: { centavos: Centavos }) {
   );
 }
 
-/** O salto vem depois das incompletas, e antes da conferência do total. */
+/** A unidade e o salto vêm depois das incompletas, e antes da conferência do total. */
 function Frase({
   resumo,
   naoExplicado,
@@ -129,17 +143,30 @@ function Frase({
   resumo: ResumoDaNota;
   naoExplicado: Centavos;
 }) {
-  const { saltos, incompletas, linhas } = resumo;
-  if (saltos === 0 || incompletas > 0 || linhas === 0) {
-    return <FraseDoTotal resumo={resumo} naoExplicado={naoExplicado} />;
-  }
+  const { saltos, bases, incompletas, linhas } = resumo;
+  const total = <FraseDoTotal resumo={resumo} naoExplicado={naoExplicado} />;
+  if (incompletas > 0 || linhas === 0) return total;
   return (
     <>
-      <strong className="num font-semibold text-ink">{saltos}</strong>{" "}
-      {saltos === 1
-        ? "linha com o preço muito diferente do anterior"
-        : "linhas com o preço muito diferente do anterior"}
-      . <FraseDoTotal resumo={resumo} naoExplicado={naoExplicado} />
+      {bases > 0 && (
+        <>
+          <strong className="num font-semibold text-ink">{bases}</strong>{" "}
+          {bases === 1
+            ? "linha numa unidade diferente da do material"
+            : "linhas numa unidade diferente da do material"}
+          .{" "}
+        </>
+      )}
+      {saltos > 0 && (
+        <>
+          <strong className="num font-semibold text-ink">{saltos}</strong>{" "}
+          {saltos === 1
+            ? "linha com o preço muito diferente do anterior: confirme ou corrija"
+            : "linhas com o preço muito diferente do anterior: confirme ou corrija"}
+          .{" "}
+        </>
+      )}
+      {total}
     </>
   );
 }

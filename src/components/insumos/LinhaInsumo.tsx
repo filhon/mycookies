@@ -47,6 +47,7 @@ export function LinhaInsumo({
   hoje,
   aoAbrir,
   produtos,
+  baseNaoBate = false,
   selecionado = false,
   comFicha = false,
 }: {
@@ -57,6 +58,8 @@ export function LinhaInsumo({
   aoAbrir: (insumo: Insumo) => void;
   /** Em quantos produtos entra; ausente enquanto os produtos carregam. */
   produtos?: number;
+  /** Contado numa unidade que as receitas não usam (spec 188). */
+  baseNaoBate?: boolean;
   /** A linha cujo material está na ficha ao lado. Só no desktop. */
   selecionado?: boolean;
   /** A ficha acoplada divide a largura: a tabela espera o `xl`. */
@@ -102,6 +105,14 @@ export function LinhaInsumo({
 
   const selos = (
     <>
+      {baseNaoBate && (
+        <Selo
+          tom="atencao"
+          icone={<TriangleAlert aria-hidden className="size-3.5" />}
+        >
+          A unidade não bate
+        </Selo>
+      )}
       {contagemVencida && (
         <Selo
           tom="atencao"

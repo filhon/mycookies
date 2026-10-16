@@ -2,7 +2,15 @@
 
 import { useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { flushSync } from "react-dom";
-import { CircleAlert, Plus, RefreshCw, TriangleAlert, X } from "lucide-react";
+import {
+  CircleAlert,
+  Package,
+  Plus,
+  RefreshCw,
+  TriangleAlert,
+  X,
+} from "lucide-react";
+import { CaixaDoSalto, FraseDoSalto } from "@/components/insumos/ConfirmaPreco";
 import { formatarReferencia } from "@/components/insumos/FichaDoMaterial";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, Seletor } from "@/components/ui/Campo";
@@ -26,10 +34,12 @@ import {
 import {
   custoDeReferencia,
   GRUPOS_UNIDADE,
+  PLURAL_UNIDADE_BASE,
   ROTULO_UNIDADE_BASE,
   ROTULO_UNIDADE_COMPRA,
+  unidadesCompativeis,
 } from "@/lib/domain/unidades";
-import type { CategoriaInsumo, UnidadeCompra } from "@/lib/types";
+import type { CategoriaInsumo, UnidadeBase, UnidadeCompra } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -42,12 +52,78 @@ import { cn } from "@/lib/utils/cn";
  */
 export interface LinhaEditada extends LinhaRascunho {
   quantidadeTexto: string;
+  /**
+   * O custo por unidade base que ela confirmou com "O preço é esse mesmo".
+   * Guardar o número, e não um sim, faz a confirmação cair sozinha quando o
+   * preço, a quantidade ou a unidade mudam depois.
+   */
+  precoConfirmado?: number;
 }
 
 export function linhaEditada(linha: LinhaRascunho): LinhaEditada {
   return {
     ...linha,
     quantidadeTexto: String(linha.quantidadeCompra),
+  };
+}
+
+/** O que a tela sabe da linha além dela mesma (spec 188). */
+export interface ContextoDaLinha {
+  /** Contra o que o salto se mede: o material pareado, ou o preço da biblioteca. */
+  referencia?: CustoPorBase | null;
+  /** Só na linha pareada: em que unidade o material é contado. */
+  material?: {
+    nome: string;
+    /** A das receitas, quando alguma o usa; senão a dele. */
+    base: UnidadeBase;
+    temReceita: boolean;
+  };
+}
+
+export interface ConferenciaDaLinha {
+  completa: boolean;
+  salto: "subiu" | "caiu" | null;
+  saltoConfirmado: boolean;
+  /** A frase quando a base não é a do material; `null` quando é. */
+  baseErrada: string | null;
+  /** Conta em "para conferir". */
+  paraConferir: boolean;
+  /** Segura o "Cadastrar": incompleta, salto sem confirmar, base que as receitas não aceitam. */
+  bloqueia: boolean;
+}
+
+/** O que a linha deve, de uma vez: a tela, o rodapé e a linha leem daqui. */
+export function conferenciaDaLinha(
+  linha: LinhaEditada,
+  contexto: ContextoDaLinha,
+): ConferenciaDaLinha {
+  const completa = linhaCompleta(linha);
+  const custo = custoDaLinha(linha);
+  const salto =
+    completa && contexto.referencia
+      ? saltoDePreco(contexto.referencia, custo)
+      : null;
+  const saltoConfirmado =
+    !!salto && linha.precoConfirmado === custo.custoUnidadeBase;
+
+  const material = contexto.material;
+  const baseDaLinha = custo.unidadeBase;
+  const baseErrada =
+    material && baseDaLinha !== material.base
+      ? material.temReceita
+        ? `Os produtos medem ${material.nome} em ${PLURAL_UNIDADE_BASE[material.base]}, e esta linha veio em ${PLURAL_UNIDADE_BASE[baseDaLinha]}.`
+        : `${material.nome} é contado em ${PLURAL_UNIDADE_BASE[material.base]}, e esta linha veio em ${PLURAL_UNIDADE_BASE[baseDaLinha]}.`
+      : null;
+  const saltoPendente = !!salto && !saltoConfirmado;
+
+  return {
+    completa,
+    salto,
+    saltoConfirmado,
+    baseErrada,
+    paraConferir: !completa || saltoPendente || !!baseErrada,
+    bloqueia:
+      !completa || saltoPendente || (!!baseErrada && !!material?.temReceita),
   };
 }
 
@@ -68,15 +144,6 @@ function custoDaLinha(linha: LinhaRascunho) {
     unidadeCompra: linha.unidadeCompra,
     perdaPercentual: 0,
   });
-}
-
-/** Incompleta, ou com o preço por unidade dobrado ou pela metade. */
-export function linhaParaConferir(
-  linha: LinhaRascunho,
-  anterior?: CustoPorBase,
-): boolean {
-  if (!linhaCompleta(linha)) return true;
-  return !!anterior && !!saltoDePreco(anterior, custoDaLinha(linha));
 }
 
 /**
@@ -103,7 +170,7 @@ export const COLUNAS_NOTA =
 export function LinhaNota({
   linha,
   par,
-  anterior,
+  contexto,
   aberta,
   aoAbrir,
   aoFechar,
@@ -113,8 +180,8 @@ export function LinhaNota({
   linha: LinhaEditada;
   /** O insumo que esta linha atualiza, quando o pareamento acertou. */
   par?: Pareamento;
-  /** O custo gravado desse insumo, para desconfiar do salto (`#d291`). */
-  anterior?: CustoPorBase;
+  /** O custo de referência e a base do material (`#d291`, spec 188). */
+  contexto: ContextoDaLinha;
   aberta: boolean;
   aoAbrir: () => void;
   aoFechar: () => void;
@@ -126,8 +193,20 @@ export function LinhaNota({
   const painel = useRef<HTMLDivElement>(null);
 
   const custo = custoDaLinha(linha);
-  const completa = linhaCompleta(linha);
-  const salto = completa && anterior ? saltoDePreco(anterior, custo) : null;
+  const { completa, salto, saltoConfirmado, baseErrada } = conferenciaDaLinha(
+    linha,
+    contexto,
+  );
+  const anterior = contexto.referencia;
+
+  // Pareada, só as unidades da base do material, como no editor de produto. A
+  // que está na linha fica na lista mesmo fora dela: um seletor que mostra uma
+  // unidade e guarda outra mente.
+  const unidades = contexto.material
+    ? unidadesCompativeis(contexto.material.base)
+    : null;
+  if (unidades && !unidades.includes(linha.unidadeCompra))
+    unidades.push(linha.unidadeCompra);
 
   const nome = linha.nome.trim() || "Sem nome";
   const impresso = linha.descricao || "Linha sem descrição";
@@ -145,10 +224,29 @@ export function LinhaNota({
 
   const atencao = !completa ? (
     <Atencao icone={CircleAlert}>{faltaNaLinha(linha)}</Atencao>
+  ) : baseErrada ? (
+    <Atencao icone={TriangleAlert}>
+      {baseErrada} Troque a unidade ou corrija o nome.
+    </Atencao>
   ) : salto && anterior ? (
-    // Não bloqueia: preço dobra de verdade. Só troca o detalhe pela dúvida.
-    <Atencao icone={TriangleAlert}>{fraseDoSalto(anterior, custo)}</Atencao>
+    // Preço dobra de verdade: a caixa no painel destrava, e a frase fica.
+    <FraseDoSalto
+      anterior={anterior}
+      novo={custo}
+      confirmado={saltoConfirmado}
+    />
   ) : null;
+
+  const herdada = linha.embalagemHerdada && (
+    <p className="num flex items-start gap-1.5 text-label text-ink-muted">
+      <Package
+        aria-hidden
+        className="mt-0.5 size-4 shrink-0"
+        strokeWidth={1.75}
+      />
+      <span>Embalagem da última compra: {quantidade}. Confira no pacote.</span>
+    </p>
+  );
 
   function alternar() {
     const linhaNaTela = botao.current;
@@ -221,7 +319,9 @@ export function LinhaNota({
                 )}
               </div>
             </div>
-            {atencao && <div className="mt-1">{atencao}</div>}
+            {(atencao || herdada) && (
+              <div className="mt-1">{atencao || herdada}</div>
+            )}
           </div>
 
           {/* ---- computador: a linha da tabela (`#d292`) ---- */}
@@ -273,7 +373,9 @@ export function LinhaNota({
               />
               {destino}
             </p>
-            {atencao && <div className="col-span-full">{atencao}</div>}
+            {(atencao || herdada) && (
+              <div className="col-span-full">{atencao || herdada}</div>
+            )}
           </div>
         </button>
 
@@ -325,6 +427,7 @@ export function LinhaNota({
                 aoMudar({
                   quantidadeTexto: evento.target.value,
                   quantidadeCompra: parseParaNumero(evento.target.value),
+                  embalagemHerdada: false,
                 })
               }
             />
@@ -333,18 +436,27 @@ export function LinhaNota({
               rotulo="Unidade"
               value={linha.unidadeCompra}
               onChange={(evento) =>
-                aoMudar({ unidadeCompra: evento.target.value as UnidadeCompra })
+                aoMudar({
+                  unidadeCompra: evento.target.value as UnidadeCompra,
+                  embalagemHerdada: false,
+                })
               }
             >
-              {GRUPOS_UNIDADE.map((grupo) => (
-                <optgroup key={grupo.grandeza} label={grupo.grandeza}>
-                  {grupo.unidades.map((unidade) => (
+              {unidades
+                ? unidades.map((unidade) => (
                     <option key={unidade} value={unidade}>
                       {unidade} · {ROTULO_UNIDADE_COMPRA[unidade]}
                     </option>
+                  ))
+                : GRUPOS_UNIDADE.map((grupo) => (
+                    <optgroup key={grupo.grandeza} label={grupo.grandeza}>
+                      {grupo.unidades.map((unidade) => (
+                        <option key={unidade} value={unidade}>
+                          {unidade} · {ROTULO_UNIDADE_COMPRA[unidade]}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
-                </optgroup>
-              ))}
             </Seletor>
 
             <Seletor
@@ -362,6 +474,19 @@ export function LinhaNota({
               ))}
             </Seletor>
           </div>
+
+          {salto && (
+            <div className="mt-3">
+              <CaixaDoSalto
+                confirmado={saltoConfirmado}
+                aoMudar={(sim) =>
+                  aoMudar({
+                    precoConfirmado: sim ? custo.custoUnidadeBase : undefined,
+                  })
+                }
+              />
+            </div>
+          )}
 
           {/* A conta é o `ResumoCusto` do formulário de insumo em uma linha, e
               é o que denuncia unidade lida errada: R$ 12,50 divididos por 1
@@ -433,17 +558,6 @@ function faltaNaLinha(linha: LinhaRascunho): string {
   if (linha.nome.trim().length < 2) return "Falta o nome deste item.";
   if (linha.precoCompra <= 0) return "Falta o preço desta linha.";
   return "Falta dizer quanto vem na embalagem.";
-}
-
-/** "O quilo sai a R$ 54,90; era R$ 10,98. Confira a quantidade e a unidade." */
-function fraseDoSalto(anterior: CustoPorBase, novo: CustoPorBase): string {
-  const era = custoDeReferencia(
-    anterior.custoUnidadeBase,
-    anterior.unidadeBase,
-  );
-  const sai = custoDeReferencia(novo.custoUnidadeBase, novo.unidadeBase);
-  const rotulo = sai.rotulo[0]!.toUpperCase() + sai.rotulo.slice(1);
-  return `${rotulo} sai a ${formatarReferencia(sai.centavos, novo.unidadeBase)}; era ${formatarReferencia(era.centavos, anterior.unidadeBase)}. Confira a quantidade e a unidade.`;
 }
 
 function formatarNumero(valor: number): string {

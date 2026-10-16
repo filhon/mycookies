@@ -18,6 +18,13 @@ export const ROTULO_UNIDADE_BASE: Record<UnidadeBase, string> = {
   un: "unidade",
 };
 
+/** "Os produtos medem Açúcar em gramas" (spec 188). */
+export const PLURAL_UNIDADE_BASE: Record<UnidadeBase, string> = {
+  g: "gramas",
+  ml: "mililitros",
+  un: "unidades",
+};
+
 /** Unidades de compra oferecidas, agrupadas por grandeza. */
 export const GRUPOS_UNIDADE: { grandeza: string; unidades: UnidadeCompra[] }[] =
   [

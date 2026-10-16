@@ -35,6 +35,7 @@ import { Pilulas, type OpcaoPilula } from "@/components/ui/Pilulas";
 import { temPrecoMedio } from "@/lib/domain/biblioteca";
 import { custosDeHoje, usoDoMaterial } from "@/lib/domain/custoFicha";
 import {
+  basesQueNaoBatem,
   CATEGORIAS_INSUMO,
   chaveDeBusca,
   ordenarMateriais,
@@ -49,6 +50,7 @@ import type {
   FichaTecnica,
   Fornada,
   Insumo,
+  UnidadeBase,
 } from "@/lib/types";
 import { useAcaoPedida } from "@/lib/acaoPedida";
 import { cn } from "@/lib/utils/cn";
@@ -240,6 +242,14 @@ export default function PaginaInsumos() {
     [fichas.dados, dados],
   );
   const fichasProntas = !fichas.carregando && !fichas.erro;
+  // O que já está quebrado: contado numa base que as receitas não usam.
+  const naoBatem = useMemo(
+    () =>
+      fichasProntas
+        ? basesQueNaoBatem(dados, fichas.dados)
+        : new Map<string, UnidadeBase>(),
+    [fichasProntas, dados, fichas.dados],
+  );
 
   // Onde cada material entra: a coluna "Entra em" e a ordem "Pesa mais". Nulo
   // enquanto os produtos carregam, para a coluna não dizer "nenhum" por pressa.
@@ -524,6 +534,7 @@ export default function PaginaInsumos() {
                     hoje={hoje}
                     aoAbrir={abrirMaterial}
                     produtos={usos?.get(insumo.id)?.length}
+                    baseNaoBate={naoBatem.has(insumo.id)}
                     selecionado={insumo.id === selecionado?.id}
                     comFicha={!!selecionado}
                   />
@@ -545,6 +556,7 @@ export default function PaginaInsumos() {
               custos={custos}
               fornadas={fornadas}
               hoje={hoje}
+              aoEditar={() => editarSelecionado(selecionado)}
             />
           </FichaAcoplada>
         )}
@@ -562,6 +574,7 @@ export default function PaginaInsumos() {
               custos={custos}
               fornadas={fornadas}
               hoje={hoje}
+              aoEditar={() => setModo("editar")}
             />
           ) : undefined
         }

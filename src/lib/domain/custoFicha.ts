@@ -725,7 +725,7 @@ export function refazerCustoPelaConfiguracao(
 /** O que a conta de hoje precisa de um material vivo. `Insumo` serve. */
 export type MaterialDeHoje = Pick<
   Insumo,
-  "id" | "nome" | "custoUnidadeBaseCorrigido"
+  "id" | "nome" | "custoUnidadeBaseCorrigido" | "unidadeBase"
 >;
 
 export interface CustoDeHoje {
@@ -744,6 +744,8 @@ export interface CustoDeHoje {
  * O custo da ficha se ela salvasse agora: o gravado mais o que mudou, linha a
  * linha, com as mesmas funções que gravaram (`#d135`). Material arquivado fica
  * na linha gravada; invisíveis ficam, porque configuração não é material.
+ * Material contado noutra base que a da linha também fica no gravado (spec
+ * 188): 200 g vezes o preço da unidade é o número absurdo, e não o custo.
  */
 export function custoDeHoje(
   ficha: FichaTecnica,
@@ -761,7 +763,7 @@ export function custoDeHoje(
 
   for (const item of ficha.itens) {
     const material = materiais.get(item.insumoId);
-    if (!material) continue;
+    if (!material || material.unidadeBase !== item.unidadeBase) continue;
     const delta =
       custoLinhaItem({
         ...item,
@@ -922,12 +924,13 @@ export interface UsoDoMaterial {
 /**
  * "Onde entra" da ficha do material (`#d222`): as fichas com o id em
  * `insumoIds`, com o que ele pesa em cada uma, a maior parte primeiro. As
- * linhas saem de `custoLinhaItem`, a mesma conta de `custoDeHoje`. Kit que só o
- * usa pelas receitas de dentro não tem o id e não entra.
+ * linhas saem de `custoLinhaItem`, a mesma conta de `custoDeHoje`, e a linha em
+ * outra base fica no gravado como lá. Kit que só o usa pelas receitas de dentro
+ * não tem o id e não entra.
  */
 export function usoDoMaterial(
   fichas: FichaTecnica[],
-  material: Pick<Insumo, "id" | "custoUnidadeBaseCorrigido">,
+  material: Pick<Insumo, "id" | "custoUnidadeBaseCorrigido" | "unidadeBase">,
   custos: Map<string, CustoDeHoje>,
 ): UsoDoMaterial[] {
   return fichas
@@ -938,10 +941,12 @@ export function usoDoMaterial(
         .reduce(
           (soma, item) =>
             soma +
-            custoLinhaItem({
-              ...item,
-              custoUnidadeBaseCorrigido: material.custoUnidadeBaseCorrigido,
-            }),
+            (item.unidadeBase === material.unidadeBase
+              ? custoLinhaItem({
+                  ...item,
+                  custoUnidadeBaseCorrigido: material.custoUnidadeBaseCorrigido,
+                })
+              : item.custoLinha),
           0,
         );
       const custoPorUnidade =

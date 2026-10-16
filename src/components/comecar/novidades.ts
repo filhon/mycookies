@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-16",
+    titulo: "A nota não troca mais a unidade do material",
+    frase:
+      "Linha sem o tamanho da embalagem usa a da sua última compra, preço que dobrou ou caiu pela metade pede a sua confirmação, e material com a unidade trocada aparece marcado em Materiais.",
+    href: "/insumos",
+  },
+  {
+    dataISO: "2026-10-16",
     titulo: "Fechar arrastando para baixo",
     frase:
       "No celular, o que abre de baixo pra cima fecha com o dedo: puxe pelo topo para baixo. O X continua lá.",

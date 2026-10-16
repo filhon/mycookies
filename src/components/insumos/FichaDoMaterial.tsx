@@ -1,9 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
+import {
+  ChevronRight,
+  TrendingDown,
+  TrendingUp,
+  TriangleAlert,
+} from "lucide-react";
 import { usoDoMaterial, type CustoDeHoje } from "@/lib/domain/custoFicha";
-import { comprasDoInsumo, type CompraDoInsumo } from "@/lib/domain/custoInsumo";
+import {
+  basesQueNaoBatem,
+  comprasDoInsumo,
+  type CompraDoInsumo,
+} from "@/lib/domain/custoInsumo";
 import { dataISODe, rotuloDataCompleta, rotuloDia } from "@/lib/domain/datas";
 import { contagemDoInsumo, rotuloDeIdade } from "@/lib/domain/estoque";
 import { formatarCustoUnitario, formatarMoeda } from "@/lib/domain/money";
@@ -12,6 +21,7 @@ import {
   custoDeReferencia,
   formatarQuantidade,
   paraBase,
+  PLURAL_UNIDADE_BASE,
 } from "@/lib/domain/unidades";
 import type {
   DataISO,
@@ -140,13 +150,21 @@ export function FichaDoMaterial({
   custos,
   fornadas,
   hoje,
+  aoEditar,
 }: {
   insumo: Insumo;
   fichas: FichaTecnica[] | null;
   custos: Map<string, CustoDeHoje>;
   fornadas: Fornada[];
   hoje: DataISO;
+  /** Para a frase da unidade que não bate levar ao formulário. */
+  aoEditar?: () => void;
 }) {
+  // Contado numa base que as receitas não usam (spec 188): o custo dos
+  // produtos fica no gravado até ela corrigir a última compra.
+  const baseDasReceitas = fichas
+    ? basesQueNaoBatem([insumo], fichas).get(insumo.id)
+    : undefined;
   const referencia = custoDeReferencia(
     insumo.custoUnidadeBaseCorrigido,
     insumo.unidadeBase,
@@ -163,6 +181,36 @@ export function FichaDoMaterial({
 
   return (
     <div className="space-y-7">
+      {baseDasReceitas && (
+        <div
+          role="alert"
+          className="flex items-start gap-2.5 rounded-lg border border-attention/30 bg-attention-soft px-3 py-2 text-label text-ink"
+        >
+          <TriangleAlert
+            aria-hidden
+            className="mt-0.5 size-4 shrink-0 text-attention"
+            strokeWidth={1.75}
+          />
+          <div className="min-w-0 flex-1">
+            <p>
+              Os produtos medem {insumo.nome} em{" "}
+              {PLURAL_UNIDADE_BASE[baseDasReceitas]}, e a última compra está em{" "}
+              {PLURAL_UNIDADE_BASE[insumo.unidadeBase]}. Corrija a última compra
+              para o custo voltar ao normal.
+            </p>
+            {aoEditar && (
+              <button
+                type="button"
+                onClick={aoEditar}
+                className="toque -mx-2 rounded-md px-2 font-semibold text-brand-ink transition-colors duration-150 ease-quart hover:bg-brand-100"
+              >
+                Editar material
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <section aria-label="O que custa">
         <p className="num text-label text-ink-muted">
           {formatarMoeda(insumo.precoCompra)} por{" "}

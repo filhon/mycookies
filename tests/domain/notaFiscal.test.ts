@@ -12,6 +12,7 @@ import {
   conferirTotal,
   descricaoDaCompra,
   embalagemDoTexto,
+  embalagemParaOMaterial,
   esquemaNotaLida,
   idadeDosPrecos,
   LADO_MAXIMO_PX,
@@ -21,6 +22,7 @@ import {
   normalizarNota,
   parearComInsumos,
   PRECO_ENVELHECE_DIAS,
+  precoDaBiblioteca,
   saltoDePreco,
   somarLinhas,
   TETO_CORPO_BASE64,
@@ -147,10 +149,12 @@ describe("embalagemDoTexto", () => {
     expect(embalagemDoTexto("CX PAPEL KRAFT 6 DOCES C/25", "PCT")).toEqual({
       quantidade: 25,
       unidade: "un",
+      origem: "texto",
     });
     expect(embalagemDoTexto("SACO CELOFANE 10X15 C/ 100", "PCT")).toEqual({
       quantidade: 100,
       unidade: "un",
+      origem: "texto",
     });
   });
 
@@ -158,27 +162,31 @@ describe("embalagemDoTexto", () => {
     expect(embalagemDoTexto("MANTEIGA AVIACAO C/SAL 500G", "UN")).toEqual({
       quantidade: 500,
       unidade: "g",
+      origem: "texto",
     });
   });
 
   it("lê tamanho com vírgula decimal, e não arredonda para 1 kg", () => {
     expect(
       embalagemDoTexto("CHOCOLATE NOBRE MEIO AMARGO 1,01KG", "UN"),
-    ).toEqual({ quantidade: 1.01, unidade: "kg" });
+    ).toEqual({ quantidade: 1.01, unidade: "kg", origem: "texto" });
   });
 
   it("lê as quatro unidades de peso e volume", () => {
     expect(embalagemDoTexto("FARINHA TRIGO DONA BENTA 1KG", "UN")).toEqual({
       quantidade: 1,
       unidade: "kg",
+      origem: "texto",
     });
     expect(embalagemDoTexto("SHAMPOO SEDA 325ML", "UN")).toEqual({
       quantidade: 325,
       unidade: "ml",
+      origem: "texto",
     });
     expect(embalagemDoTexto("SUCO INTEGRAL 2L", "UN")).toEqual({
       quantidade: 2,
       unidade: "l",
+      origem: "texto",
     });
   });
 
@@ -188,6 +196,7 @@ describe("embalagemDoTexto", () => {
     expect(embalagemDoTexto("SACO CELOFANE 10X15", "PCT")).toEqual({
       quantidade: 1,
       unidade: "un",
+      origem: "palpite",
     });
   });
 
@@ -195,6 +204,7 @@ describe("embalagemDoTexto", () => {
     expect(embalagemDoTexto("MANTEIGA 2X500G", "UN")).toEqual({
       quantidade: 500,
       unidade: "g",
+      origem: "texto",
     });
   });
 
@@ -202,6 +212,7 @@ describe("embalagemDoTexto", () => {
     expect(embalagemDoTexto("PAO FRANCES", "UN")).toEqual({
       quantidade: 1,
       unidade: "un",
+      origem: "palpite",
     });
   });
 
@@ -211,6 +222,7 @@ describe("embalagemDoTexto", () => {
     expect(embalagemDoTexto("BANANA PRATA", "KG")).toEqual({
       quantidade: 1,
       unidade: "kg",
+      origem: "coluna",
     });
   });
 });
@@ -752,6 +764,108 @@ describe("saltoDePreco", () => {
   it("base diferente ou sem preço anterior não se compara", () => {
     expect(saltoDePreco(manteiga, lida(10980, 1, "un"))).toBeNull();
     expect(saltoDePreco(lida(0, 1), lida(1098, 1))).toBeNull();
+  });
+});
+
+describe("precoDaBiblioteca · o anterior do material novo (spec 188)", () => {
+  it("o nome exato da biblioteca dá o preço médio dela, sem perda", () => {
+    // Farinha de trigo a R$ 5,50 o quilo: 0,55 centavo o grama.
+    expect(precoDaBiblioteca("FARINHA DE TRIGO")).toMatchObject({
+      custoUnidadeBase: 0.55,
+      unidadeBase: "g",
+    });
+  });
+
+  it("R$ 49,90 o quilo da farinha nova pede conferência; R$ 4,99, não", () => {
+    const media = precoDaBiblioteca("Farinha de trigo")!;
+    const quilo = (precoCompra: number) =>
+      calcularCustoInsumo({
+        precoCompra,
+        quantidadeCompra: 1,
+        unidadeCompra: "kg",
+        perdaPercentual: 0,
+      });
+    expect(saltoDePreco(media, quilo(4990))).toBe("subiu");
+    expect(saltoDePreco(media, quilo(499))).toBeNull();
+  });
+
+  it("sem par exato, nada se compara: prefixo não conta", () => {
+    expect(precoDaBiblioteca("Farinha")).toBeNull();
+    expect(precoDaBiblioteca("Shampoo")).toBeNull();
+  });
+});
+
+describe("embalagemParaOMaterial · a embalagem que a nota não diz (spec 188)", () => {
+  const ACUCAR = {
+    quantidadeCompra: 1,
+    unidadeCompra: "kg",
+    unidadeBase: "g",
+  } as const;
+  const linha = (descricao: string, unidadeTexto = "UN") =>
+    normalizarNota({
+      ...NOTA,
+      linhas: [
+        {
+          descricao,
+          nome: "Açúcar",
+          marca: "",
+          quantidade: "1",
+          unidadeTexto,
+          valorUnitario: "3,59",
+          valorTotal: "3,59",
+        },
+      ],
+    }).linhas[0]!;
+
+  it("o açúcar sem tamanho herda 1 kg da última compra: R$ 3,59 o quilo", () => {
+    const herdada = embalagemParaOMaterial(linha("ACUCAR UNIAO"), ACUCAR);
+    expect(herdada).toMatchObject({
+      quantidadeCompra: 1,
+      unidadeCompra: "kg",
+      embalagemHerdada: true,
+    });
+    expect(custoPorUnidadeBase(herdada).custoUnidadeBase).toBeCloseTo(0.359);
+  });
+
+  it("o tamanho impresso na base do material vale mais que a última compra", () => {
+    expect(
+      embalagemParaOMaterial(linha("ACUCAR UNIAO 5KG"), ACUCAR),
+    ).toMatchObject({
+      quantidadeCompra: 5,
+      unidadeCompra: "kg",
+      embalagemHerdada: false,
+    });
+  });
+
+  it("a coluna em outra base que a do material também herda", () => {
+    expect(
+      embalagemParaOMaterial(linha("ACUCAR UNIAO", "L"), ACUCAR),
+    ).toMatchObject({ unidadeCompra: "kg", embalagemHerdada: true });
+  });
+
+  it("sem material, ou de volta sem par, fica o que o papel disse", () => {
+    const herdada = embalagemParaOMaterial(linha("ACUCAR UNIAO"), ACUCAR);
+    expect(embalagemParaOMaterial(herdada)).toMatchObject({
+      quantidadeCompra: 1,
+      unidadeCompra: "un",
+      embalagemHerdada: false,
+    });
+  });
+
+  it("material já quebrado não passa a base errada adiante", () => {
+    // Contado em `un`, medido em gramas pelas receitas: herdar "1 un" seria
+    // repetir o erro. Fica o palpite, e a tela pede a unidade.
+    const quebrado = {
+      quantidadeCompra: 1,
+      unidadeCompra: "un",
+      unidadeBase: "un",
+    } as const;
+    expect(
+      embalagemParaOMaterial(linha("ACUCAR UNIAO"), quebrado, "g"),
+    ).toMatchObject({ unidadeCompra: "un", embalagemHerdada: false });
+    expect(
+      embalagemParaOMaterial(linha("ACUCAR UNIAO 1KG"), quebrado, "g"),
+    ).toMatchObject({ unidadeCompra: "kg", embalagemHerdada: false });
   });
 });
 

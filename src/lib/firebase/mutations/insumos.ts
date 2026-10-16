@@ -14,7 +14,13 @@ import {
 import { obterDb } from "../client";
 import { colFichas, colInsumos, docInsumo, docResumoGlobal } from "../colecoes";
 import { despachar } from "./despachar";
-import { calcularCustoInsumo, chaveDeBusca } from "@/lib/domain/custoInsumo";
+import {
+  baseAceita,
+  basesDasReceitas,
+  calcularCustoInsumo,
+  chaveDeBusca,
+} from "@/lib/domain/custoInsumo";
+import { unidadeBaseDe } from "@/lib/domain/unidades";
 import { VERSAO_SCHEMA } from "@/lib/types";
 import type {
   CategoriaInsumo,
@@ -226,11 +232,45 @@ export async function criarInsumo(
   return referencia.id;
 }
 
+/**
+ * A base de um material usado em receita não muda por aqui (spec 188).
+ *
+ * As receitas guardam "200" em gramas; o açúcar que a nota passou a contar em
+ * unidades multiplicava 200 pelo preço da unidade. Mudar a unidade de conta é
+ * converter as receitas junto, e esse caminho é outro (191). As telas já só
+ * oferecem a base aceita: isto é para quem chega por um caminho que elas não
+ * previram. Só consulta quando a base muda, e sem rede o `getDocs` lê o cache.
+ */
+export async function guardarBase(
+  contaId: string,
+  anterior: Insumo,
+  dados: DadosInsumo,
+): Promise<void> {
+  const base = unidadeBaseDe(dados.unidadeCompra);
+  if (base === anterior.unidadeBase) return;
+
+  const fichas = await getDocs(
+    query(
+      colFichas(contaId),
+      where("insumoIds", "array-contains", anterior.id),
+    ),
+  );
+  const vivas = fichas.docs
+    .map((ficha) => ficha.data())
+    .filter((ficha) => !ficha.arquivado);
+  if (!baseAceita(base, basesDasReceitas(vivas, anterior.id))) {
+    throw new Error(
+      `${anterior.nome} é medido noutra unidade pelos produtos: a unidade de conta não muda por aqui.`,
+    );
+  }
+}
+
 export async function atualizarInsumo(
   contaId: string,
   anterior: Insumo,
   dados: DadosInsumo,
 ): Promise<void> {
+  await guardarBase(contaId, anterior, dados);
   const momento = agora();
   const virouCompra = precoMudou(anterior, dados);
 

@@ -215,6 +215,71 @@ export function variacaoDaUltimaCompra(
   return ultimaCompraDela(insumo)?.variacao ?? null;
 }
 
+/** O que as bases leem de uma ficha. `FichaTecnica` serve. */
+export interface FichaComItens {
+  itens: { insumoId: string; unidadeBase: UnidadeBase }[];
+}
+
+/**
+ * Em que unidade as receitas medem o material: das linhas de `ficha.itens`, as
+ * mesmas fichas de "Onde entra". Vazio quando nenhuma o usa.
+ */
+export function basesDasReceitas(
+  fichas: FichaComItens[],
+  insumoId: string,
+): Set<UnidadeBase> {
+  const bases = new Set<UnidadeBase>();
+  for (const ficha of fichas) {
+    for (const item of ficha.itens) {
+      if (item.insumoId === insumoId) bases.add(item.unidadeBase);
+    }
+  }
+  return bases;
+}
+
+/**
+ * A base nova serve ao material? (spec 188)
+ *
+ * As receitas guardam "200" com `unidadeBase: "g"`. Um material que passa a ser
+ * contado em unidades multiplica 200 pelo preço da unidade, e o custo de todo
+ * produto com ele dispara. Sem receita, qualquer base serve; com receita, só a
+ * delas, o que também deixa **voltar** para a base certa um material que já
+ * está quebrado. Mudar de base de verdade é converter as receitas junto (191).
+ */
+export function baseAceita(
+  novaBase: UnidadeBase,
+  basesDasReceitas: Set<UnidadeBase>,
+): boolean {
+  return basesDasReceitas.size === 0 || basesDasReceitas.has(novaBase);
+}
+
+/**
+ * Os materiais contados numa base que as receitas não usam, com a base delas.
+ * É o que já está quebrado na conta, e a tela o diz com nome (spec 188).
+ */
+export function basesQueNaoBatem(
+  insumos: { id: string; unidadeBase: UnidadeBase }[],
+  fichas: FichaComItens[],
+): Map<string, UnidadeBase> {
+  const porInsumo = new Map<string, Set<UnidadeBase>>();
+  for (const ficha of fichas) {
+    for (const item of ficha.itens) {
+      const bases = porInsumo.get(item.insumoId) ?? new Set<UnidadeBase>();
+      bases.add(item.unidadeBase);
+      porInsumo.set(item.insumoId, bases);
+    }
+  }
+
+  const resultado = new Map<string, UnidadeBase>();
+  for (const insumo of insumos) {
+    const bases = porInsumo.get(insumo.id);
+    if (bases && !baseAceita(insumo.unidadeBase, bases)) {
+      resultado.set(insumo.id, [...bases][0]!);
+    }
+  }
+  return resultado;
+}
+
 /** As três ordens da lista de materiais (`#d226`). */
 export type OrdemMateriais = "NOME" | "PRECO_MUDOU" | "PESO";
 

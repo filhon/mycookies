@@ -1,5 +1,24 @@
 # Estado do projeto
 
+**2026-10-16, spec 188 codificada (a unidade que a nota não troca), 189 a 191 por fazer.** A
+base de um material usado em receita não muda mais por tela nenhuma (`#d417`): o seletor da nota
+e o do formulário só oferecem a base das receitas, e `guardarBase` recusa em `atualizarInsumo` e
+`importarNota`. A linha pareada sem tamanho herda a embalagem da última compra, com a frase. O
+salto de preço pede "O preço é esse mesmo" na nota e no formulário, e o material novo se compara
+com a biblioteca (`#d418`). O que já está quebrado aparece como "A unidade não bate" em Materiais,
+com a frase na ficha; `custoDeHoje` deixa a linha no gravado, e o editor de produto não salva até
+corrigir. Falta: o roteiro de navegador (os cinco passos da spec) e conferir, pela ficha do
+material, se o açúcar da MyCookie's ainda está em `un` (é o roteiro 5). A próxima é a **189**.
+
+**2026-10-16, specs 188 a 191 escritas (gestão dos materiais), nenhuma codificada.** O açúcar "a
+R$ 3,59 o grama" foi a nota trocando a unidade base do material (`g` → `un`) sem aviso: linha sem
+tamanho cai no palpite `{1, un}`, `saltoDePreco` não compara bases diferentes, e as receitas em
+gramas passam a multiplicar pelo preço da unidade. Ordem: **188** (a base não muda sozinha, a
+embalagem herdada da última compra, o salto confirmado, o selo do que já está quebrado), **189**
+(corrigir a última compra em vez de empilhar, descartar compra, procedência, perda fora do
+histórico), **190** (pareamento com palpite visível, alvo escolhido, a descrição impressa como
+apelido) e **191** (mudar a unidade de conta convertendo as receitas). Uma por sessão, nessa ordem.
+
 **2026-10-16, antes do deploy das 112 a 187:** a folha inferior do `Painel` fecha arrastando pelo
 topo, com a alça centrada numa linha própria e o X mantido (`#d414`). `DEPLOY.md` conferido contra
 produção: o app publicado é o `38a7ddb`; regras, índices e Stripe ao vivo já estão prontos; a § 10

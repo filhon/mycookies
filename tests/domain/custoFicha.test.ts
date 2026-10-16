@@ -616,6 +616,7 @@ const FARINHA: MaterialDeHoje = {
   id: "farinha",
   nome: "Farinha",
   custoUnidadeBaseCorrigido: 1.25,
+  unidadeBase: "g",
 };
 
 function mapaMateriais(
@@ -629,6 +630,7 @@ function mapaMateriais(
         id: "chocolate",
         nome: "Chocolate",
         custoUnidadeBaseCorrigido: chocolate,
+        unidadeBase: "g" as const,
       },
       ...extras,
     ].map((material) => [material.id, material]),
@@ -663,6 +665,30 @@ describe("custoDeHoje", () => {
       custoTotalLote: 2225,
       custoUnitario: 223,
       sobra: 467,
+      culpado: null,
+      caiu: false,
+    });
+  });
+
+  it("material contado noutra base fica no gravado (spec 188)", () => {
+    // O açúcar da nota a R$ 3,59 "o grama" virou `un`: 200 g × 359 seria a
+    // linha de R$ 718,00. A linha em gramas não se mede pelo preço da unidade.
+    const chocolateEmUn = new Map([
+      ["farinha", FARINHA],
+      [
+        "chocolate",
+        {
+          id: "chocolate",
+          nome: "Chocolate",
+          custoUnidadeBaseCorrigido: 359,
+          unidadeBase: "un" as const,
+        },
+      ],
+    ]);
+    expect(custoDeHoje(COOKIE, chocolateEmUn)).toEqual({
+      custoTotalLote: 2425,
+      custoUnitario: 243,
+      sobra: 447,
       culpado: null,
       caiu: false,
     });
@@ -799,8 +825,18 @@ describe("custosDeHoje", () => {
 
     const materiais: MaterialDeHoje[] = [
       FARINHA,
-      { id: "chocolate", nome: "Chocolate", custoUnidadeBaseCorrigido: 6.5 },
-      { id: "caixa", nome: "Caixa", custoUnidadeBaseCorrigido: 200 },
+      {
+        id: "chocolate",
+        nome: "Chocolate",
+        custoUnidadeBaseCorrigido: 6.5,
+        unidadeBase: "g",
+      },
+      {
+        id: "caixa",
+        nome: "Caixa",
+        custoUnidadeBaseCorrigido: 200,
+        unidadeBase: "un",
+      },
     ];
     const resultado = custosDeHoje([cookie, kit], materiais);
 
@@ -883,8 +919,18 @@ describe("custosDeHoje", () => {
       [kit, cookie, recheio],
       [
         FARINHA,
-        { id: "chocolate", nome: "Chocolate", custoUnidadeBaseCorrigido: 4 },
-        { id: "nutella", nome: "Nutella", custoUnidadeBaseCorrigido: 5 },
+        {
+          id: "chocolate",
+          nome: "Chocolate",
+          custoUnidadeBaseCorrigido: 4,
+          unidadeBase: "g",
+        },
+        {
+          id: "nutella",
+          nome: "Nutella",
+          custoUnidadeBaseCorrigido: 5,
+          unidadeBase: "g",
+        },
       ],
     );
 
@@ -950,7 +996,12 @@ describe("custosDeHoje", () => {
 
     const materiais: MaterialDeHoje[] = [
       FARINHA,
-      { id: "chocolate", nome: "Chocolate", custoUnidadeBaseCorrigido: 6.5 },
+      {
+        id: "chocolate",
+        nome: "Chocolate",
+        custoUnidadeBaseCorrigido: 6.5,
+        unidadeBase: "g",
+      },
     ];
     const resultado = custosDeHoje([cookie, combo], materiais);
 
@@ -1008,7 +1059,12 @@ describe("custosDeHoje", () => {
       [cookie, comboSemTorta],
       [
         FARINHA,
-        { id: "chocolate", nome: "Chocolate", custoUnidadeBaseCorrigido: 6.5 },
+        {
+          id: "chocolate",
+          nome: "Chocolate",
+          custoUnidadeBaseCorrigido: 6.5,
+          unidadeBase: "g",
+        },
       ],
     );
     const hoje = resultado.get("combo-torta");
@@ -1042,7 +1098,11 @@ describe("usoDoMaterial", () => {
   const SO_FARINHA = fichaHoje({ id: "pao", insumoIds: ["farinha"] });
 
   it("as fichas que usam o material, com o preço de hoje, a maior parte primeiro", () => {
-    const chocolate = { id: "chocolate", custoUnidadeBaseCorrigido: 6.5 };
+    const chocolate = {
+      id: "chocolate",
+      custoUnidadeBaseCorrigido: 6.5,
+      unidadeBase: "g" as const,
+    };
     const custos = custosDeHoje(
       [COOKIE, BRIGADEIRO],
       [FARINHA, { ...chocolate, nome: "Chocolate" }],
@@ -1067,7 +1127,7 @@ describe("usoDoMaterial", () => {
     expect(
       usoDoMaterial(
         [SO_FARINHA],
-        { id: "chocolate", custoUnidadeBaseCorrigido: 4 },
+        { id: "chocolate", custoUnidadeBaseCorrigido: 4, unidadeBase: "g" },
         new Map(),
       ),
     ).toEqual([]);
@@ -1112,6 +1172,7 @@ describe("efeitoDosPrecosNovos", () => {
     id: "chocolate",
     nome: "Chocolate",
     custoUnidadeBaseCorrigido: custo,
+    unidadeBase: "g",
   });
 
   it("preço sobe: só quem usa, a maior queda primeiro", () => {
@@ -1240,6 +1301,7 @@ describe("efeitoDosPrecosNovos", () => {
       id: "manteiga",
       nome: "Manteiga",
       custoUnidadeBaseCorrigido: 5,
+      unidadeBase: "g" as const,
     };
     expect(
       efeitoDosPrecosNovos(

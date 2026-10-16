@@ -99,7 +99,12 @@ import {
   temPronto,
 } from "@/lib/domain/producao";
 import { DESCRICAO_MAX, esquemaFicha, PREPARO_MAX } from "@/lib/domain/schemas";
-import { paraBase, unidadesCompativeis } from "@/lib/domain/unidades";
+import { basesQueNaoBatem } from "@/lib/domain/custoInsumo";
+import {
+  paraBase,
+  PLURAL_UNIDADE_BASE,
+  unidadesCompativeis,
+} from "@/lib/domain/unidades";
 import {
   CONFIGURACAO_SUGERIDA,
   precificacaoPadraoDaConta,
@@ -452,14 +457,31 @@ export function FormularioFicha({
     [fichas, ficha],
   );
 
+  // O material contado numa base que as receitas não usam (spec 188), com a
+  // base delas: a linha fica nela, e não na do material.
+  const naoBatem = useMemo(
+    () => basesQueNaoBatem(insumos, fichas),
+    [insumos, fichas],
+  );
+
   /** A linha do formulário resolvida contra o insumo de agora. */
   function resolverItem(linha: LinhaItemForm): ItemDaFicha & {
     arquivado: boolean;
     unidades: UnidadeCompra[];
+    /** A frase quando o material está noutra base que a da receita. */
+    baseNaoBate: string | null;
   } {
     const insumo = mapaInsumos.get(linha.insumoId);
     const guardado = snapshotItens.get(linha.insumoId);
-    const unidadeBase = insumo?.unidadeBase ?? guardado?.unidadeBase ?? "un";
+    const esperada = naoBatem.get(linha.insumoId);
+    // Salvar com a base do material gravaria "200 un" na receita: a linha fica
+    // na base gravada, e o custo dela no gravado, como em `custoDeHoje`.
+    const unidadeBase =
+      esperada ?? insumo?.unidadeBase ?? guardado?.unidadeBase ?? "un";
+    const custoGravado =
+      guardado && guardado.unidadeBase === esperada && guardado.quantidade > 0
+        ? guardado.custoLinha / guardado.quantidade
+        : 0;
     const digitada = parseParaNumero(linha.quantidade);
 
     return {
@@ -469,9 +491,15 @@ export function FormularioFicha({
       categoria: insumo?.categoria ?? guardado?.categoria ?? "OUTRO",
       quantidade: paraBase(digitada, linha.unidade),
       unidadeBase,
-      custoUnidadeBaseCorrigido: insumo?.custoUnidadeBaseCorrigido ?? 0,
+      custoUnidadeBaseCorrigido: esperada
+        ? custoGravado
+        : (insumo?.custoUnidadeBaseCorrigido ?? 0),
       arquivado: !insumo,
       unidades: unidadesCompativeis(unidadeBase),
+      baseNaoBate:
+        esperada && insumo
+          ? `Os produtos medem ${insumo.nome} em ${PLURAL_UNIDADE_BASE[esperada]}, e a última compra está em ${PLURAL_UNIDADE_BASE[insumo.unidadeBase]}. Corrija a última compra em Materiais para o custo voltar ao normal.`
+          : null,
     };
   }
 
@@ -699,7 +727,9 @@ export function FormularioFicha({
   function adicionarInsumo(insumoId: string) {
     const insumo = mapaInsumos.get(insumoId);
     if (!insumo) return;
-    const unidades = unidadesCompativeis(insumo.unidadeBase);
+    const unidades = unidadesCompativeis(
+      naoBatem.get(insumoId) ?? insumo.unidadeBase,
+    );
     listaItens.append({
       insumoId,
       quantidade: "",
@@ -818,6 +848,15 @@ export function FormularioFicha({
     ) {
       setFalha(
         "Há um item arquivado neste produto. Tire-o da lista ou reative o cadastro dele: sem preço, ele entraria no custo como zero.",
+      );
+      return;
+    }
+
+    // Um bloqueio raro com a frase que diz o que fazer é mais barato que um
+    // custo errado gravado na receita (spec 188).
+    if (itensResolvidos.some((item) => item.baseNaoBate)) {
+      setFalha(
+        "Um material deste produto está numa unidade diferente da que o produto usa. Corrija a última compra dele em Materiais e salve de novo.",
       );
       return;
     }
@@ -1616,7 +1655,7 @@ export function FormularioFicha({
                     erro={
                       item.arquivado
                         ? "Este material foi arquivado e não tem mais preço. Tire-o do produto ou reative o cadastro."
-                        : erroDaLinha(errosItens, indice)
+                        : (item.baseNaoBate ?? erroDaLinha(errosItens, indice))
                     }
                   />
                 );

@@ -188,6 +188,7 @@ export function EfeitoDoPrecoDigitado({
               id: insumo.id,
               nome: insumo.nome,
               custoUnidadeBaseCorrigido: custo.custoUnidadeBaseCorrigido,
+              unidadeBase: custo.unidadeBase,
             },
           ])
         : [],
@@ -198,6 +199,7 @@ export function EfeitoDoPrecoDigitado({
       insumo.id,
       insumo.nome,
       custo.custoUnidadeBaseCorrigido,
+      custo.unidadeBase,
     ],
   );
 

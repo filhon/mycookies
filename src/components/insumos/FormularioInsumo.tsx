@@ -5,16 +5,25 @@ import { Botao } from "@/components/ui/Botao";
 import { Campo, Seletor } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Painel } from "@/components/ui/Painel";
+import { CaixaDoSalto, FraseDoSalto } from "./ConfirmaPreco";
 import { EfeitoDoPrecoDigitado } from "./EfeitoDoPreco";
 import { ResumoCusto } from "./ResumoCusto";
 import {
+  baseAceita,
+  basesDasReceitas,
   calcularCustoInsumo,
   CATEGORIAS_INSUMO,
 } from "@/lib/domain/custoInsumo";
 import { parseParaNumero } from "@/lib/domain/money";
+import { saltoDePreco } from "@/lib/domain/notaFiscal";
 import { errosPorCampo, esquemaInsumo } from "@/lib/domain/schemas";
-import { GRUPOS_UNIDADE, ROTULO_UNIDADE_COMPRA } from "@/lib/domain/unidades";
-import { Archive, ChevronDown } from "lucide-react";
+import {
+  GRUPOS_UNIDADE,
+  PLURAL_UNIDADE_BASE,
+  ROTULO_UNIDADE_COMPRA,
+  unidadesCompativeis,
+} from "@/lib/domain/unidades";
+import { Archive, ChevronDown, TriangleAlert } from "lucide-react";
 import {
   arquivarInsumo,
   atualizarInsumo,
@@ -25,6 +34,7 @@ import type {
   CategoriaInsumo,
   FichaTecnica,
   Insumo,
+  UnidadeBase,
   UnidadeCompra,
 } from "@/lib/types";
 import { useContaId } from "@/providers/AuthProvider";
@@ -107,6 +117,8 @@ export function FormularioInsumo({
   const [salvando, setSalvando] = useState(false);
   const [falha, setFalha] = useState<string | null>(null);
   const [confirmandoArquivo, setConfirmandoArquivo] = useState(false);
+  /** O custo por unidade base de "O preço é esse mesmo" (spec 188). */
+  const [precoConfirmado, setPrecoConfirmado] = useState<number | null>(null);
 
   // Reinicia o formulário quando o painel abre em outro insumo.
   const [chave, setChave] = useState(insumo?.id ?? "novo");
@@ -117,6 +129,7 @@ export function FormularioInsumo({
     setErros({});
     setFalha(null);
     setConfirmandoArquivo(false);
+    setPrecoConfirmado(null);
   }
 
   // O botão que trocou o modo sai da tela junto com o modo: o foco vai para o
@@ -180,8 +193,36 @@ export function FormularioInsumo({
 
   const podeCalcular = estado.precoCompra > 0 && quantidade > 0;
 
+  // Usado em receita, o material só é contado na base delas (spec 188). Mudar
+  // de base é converter as receitas junto, e esse caminho é outro (191).
+  const bases = useMemo(
+    () =>
+      insumo && fichas
+        ? basesDasReceitas(fichas, insumo.id)
+        : new Set<UnidadeBase>(),
+    [insumo, fichas],
+  );
+  const baseDasReceitas = [...bases][0];
+  const unidades = baseDasReceitas
+    ? unidadesCompativeis(baseDasReceitas)
+    : null;
+  if (unidades && !unidades.includes(estado.unidadeCompra))
+    unidades.push(estado.unidadeCompra);
+  const baseRecusada =
+    !!insumo && !!baseDasReceitas && !baseAceita(custo.unidadeBase, bases);
+  // Já gravado na base errada: o painel abre com o cursor na unidade.
+  const jaQuebrado =
+    !!insumo && !!baseDasReceitas && !baseAceita(insumo.unidadeBase, bases);
+
+  // O salto contra o gravado pede a mesma caixa da nota. Guardar o custo
+  // confirmado faz a confirmação cair quando ela mexe no número depois.
+  const salto = insumo && podeCalcular ? saltoDePreco(insumo, custo) : null;
+  const saltoConfirmado = precoConfirmado === custo.custoUnidadeBase;
+  const bloqueado = baseRecusada || (!!salto && !saltoConfirmado);
+
   async function salvar() {
     setFalha(null);
+    if (bloqueado) return;
 
     const resultado = esquemaInsumo.safeParse({
       nome: estado.nome,
@@ -277,22 +318,40 @@ export function FormularioInsumo({
           : "Cadastre como você compra. O custo por grama o sistema calcula."
       }
       rodape={
-        <div className="flex gap-3">
-          <Botao
-            onClick={aoVoltar ? voltar : aoFechar}
-            className="flex-1"
-            disabled={salvando}
-          >
-            Cancelar
-          </Botao>
-          <Botao
-            variante="primaria"
-            onClick={() => void salvar()}
-            carregando={salvando}
-            className="flex-[1.6]"
-          >
-            {insumo ? "Salvar alterações" : "Cadastrar material"}
-          </Botao>
+        <div className="space-y-3">
+          {salto && insumo && (
+            <div className="space-y-2">
+              <FraseDoSalto
+                anterior={insumo}
+                novo={custo}
+                confirmado={saltoConfirmado}
+              />
+              <CaixaDoSalto
+                confirmado={saltoConfirmado}
+                aoMudar={(sim) =>
+                  setPrecoConfirmado(sim ? custo.custoUnidadeBase : null)
+                }
+              />
+            </div>
+          )}
+          <div className="flex gap-3">
+            <Botao
+              onClick={aoVoltar ? voltar : aoFechar}
+              className="flex-1"
+              disabled={salvando}
+            >
+              Cancelar
+            </Botao>
+            <Botao
+              variante="primaria"
+              onClick={() => void salvar()}
+              carregando={salvando}
+              disabled={bloqueado}
+              className="flex-[1.6]"
+            >
+              {insumo ? "Salvar alterações" : "Cadastrar material"}
+            </Botao>
+          </div>
         </div>
       }
     >
@@ -338,22 +397,54 @@ export function FormularioInsumo({
               />
               <Seletor
                 rotulo="Unidade"
+                autoFocus={jaQuebrado}
                 value={estado.unidadeCompra}
                 onChange={(evento) =>
                   definir("unidadeCompra", evento.target.value as UnidadeCompra)
                 }
               >
-                {GRUPOS_UNIDADE.map((grupo) => (
-                  <optgroup key={grupo.grandeza} label={grupo.grandeza}>
-                    {grupo.unidades.map((unidade) => (
+                {unidades
+                  ? unidades.map((unidade) => (
                       <option key={unidade} value={unidade}>
                         {unidade} · {ROTULO_UNIDADE_COMPRA[unidade]}
                       </option>
+                    ))
+                  : GRUPOS_UNIDADE.map((grupo) => (
+                      <optgroup key={grupo.grandeza} label={grupo.grandeza}>
+                        {grupo.unidades.map((unidade) => (
+                          <option key={unidade} value={unidade}>
+                            {unidade} · {ROTULO_UNIDADE_COMPRA[unidade]}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
-                  </optgroup>
-                ))}
               </Seletor>
             </div>
+
+            {/* Fora da grade: em 7,5rem a frase quebraria palavra a palavra. */}
+            {baseDasReceitas &&
+              (baseRecusada && insumo ? (
+                <p
+                  role="alert"
+                  className="flex items-start gap-1.5 text-label text-attention"
+                >
+                  <TriangleAlert
+                    aria-hidden
+                    className="mt-0.5 size-4 shrink-0"
+                    strokeWidth={1.75}
+                  />
+                  <span>
+                    Os produtos medem {insumo.nome} em{" "}
+                    {PLURAL_UNIDADE_BASE[baseDasReceitas]}, e esta compra está
+                    em {PLURAL_UNIDADE_BASE[custo.unidadeBase]}. Escolha{" "}
+                    {unidadesCompativeis(baseDasReceitas).join(" ou ")}.
+                  </span>
+                </p>
+              ) : (
+                <p className="text-label text-ink-muted">
+                  Para contar de outro jeito, use Mudar a unidade de conta.
+                </p>
+              ))}
           </div>
         </div>
 

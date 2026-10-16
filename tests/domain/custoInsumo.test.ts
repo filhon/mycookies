@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  baseAceita,
+  basesDasReceitas,
+  basesQueNaoBatem,
   calcularCustoInsumo,
   chaveDeBusca,
   comprasDoInsumo,
@@ -253,5 +256,45 @@ describe("ordenarMateriais", () => {
   it("não mexe na lista recebida", () => {
     ordenarMateriais(lista, "NOME", new Map());
     expect(nomes(lista)).toEqual(["leite", "farinha", "creme", "acucar"]);
+  });
+});
+
+describe("a base do material e a das receitas (spec 188)", () => {
+  const item = (insumoId: string, unidadeBase: "g" | "ml" | "un") => ({
+    insumoId,
+    unidadeBase,
+  });
+  const fichas = [
+    { itens: [item("acucar", "g"), item("ovo", "un")] },
+    { itens: [item("acucar", "g"), item("leite", "ml")] },
+  ];
+
+  it("basesDasReceitas lê as linhas das fichas, e é vazio sem uso", () => {
+    expect(basesDasReceitas(fichas, "acucar")).toEqual(new Set(["g"]));
+    expect(basesDasReceitas(fichas, "canela")).toEqual(new Set());
+  });
+
+  it("sem receita, qualquer base serve; com receita, só a delas", () => {
+    expect(baseAceita("un", new Set())).toBe(true);
+    expect(baseAceita("un", new Set(["g"]))).toBe(false);
+    expect(baseAceita("g", new Set(["g"]))).toBe(true);
+  });
+
+  it("o açúcar quebrado em `un` aceita voltar para gramas", () => {
+    const bases = basesDasReceitas(fichas, "acucar");
+    expect(baseAceita("un", bases)).toBe(false);
+    expect(baseAceita("g", bases)).toBe(true);
+  });
+
+  it("basesQueNaoBatem nomeia o que já está quebrado, com a base das receitas", () => {
+    const insumos = [
+      { id: "acucar", unidadeBase: "un" as const },
+      { id: "ovo", unidadeBase: "un" as const },
+      { id: "leite", unidadeBase: "ml" as const },
+      { id: "canela", unidadeBase: "un" as const },
+    ];
+    expect(basesQueNaoBatem(insumos, fichas)).toEqual(
+      new Map([["acucar", "g"]]),
+    );
   });
 });

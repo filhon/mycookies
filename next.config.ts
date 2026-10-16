@@ -27,6 +27,16 @@ const withSerwist = withSerwistInit({
 // Em produção `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` é o domínio do app.
 const projetoFirebase = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
+// A chave Web Push pública tem 87 caracteres e começa com `B`. Colada duas
+// vezes na Vercel ela passou pelo build, e o aviso só dizia "tente mais tarde":
+// o `pushManager.subscribe` recusa a chave. Melhor o build cair.
+const vapid = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+if (vapid && !/^B[\w-]{86}$/.test(vapid)) {
+  throw new Error(
+    `NEXT_PUBLIC_FIREBASE_VAPID_KEY inválida (${vapid.length} caracteres, esperado 87).`,
+  );
+}
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   typedRoutes: true,

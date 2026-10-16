@@ -1,7 +1,9 @@
 import { z } from "zod";
+import { INSUMOS_DA_BIBLIOTECA } from "./biblioteca";
 import { ehEmbalagem } from "./custoFicha";
-import { chaveDeBusca } from "./custoInsumo";
+import { calcularCustoInsumo, chaveDeBusca } from "./custoInsumo";
 import { dataISODe, diasEntre } from "./datas";
+import { unidadeBaseDe } from "./unidades";
 import type {
   CategoriaInsumo,
   CategoriaTransacao,
@@ -329,6 +331,12 @@ function numeroDoTexto(entrada: string): number | null {
 export interface Embalagem {
   quantidade: number;
   unidade: UnidadeCompra;
+  /**
+   * De onde saiu a resposta: o tamanho impresso na descrição, a coluna de
+   * unidade da nota, ou o palpite `{ 1, "un" }`. O palpite perde para a última
+   * compra do material pareado (`embalagemParaOMaterial`).
+   */
+  origem: "texto" | "coluna" | "palpite";
 }
 
 const UNIDADE_DA_NOTA: Record<string, UnidadeCompra> = {
@@ -384,7 +392,7 @@ export function embalagemDoTexto(
   const dentro = DENTRO.exec(semDimensao);
   if (dentro?.[1]) {
     const quantidade = Number(dentro[1]);
-    if (quantidade > 0) return { quantidade, unidade: "un" };
+    if (quantidade > 0) return { quantidade, unidade: "un", origem: "texto" };
   }
 
   let tamanho: RegExpExecArray | null;
@@ -395,13 +403,54 @@ export function embalagemDoTexto(
   if (ultimo?.[1] && ultimo[2]) {
     const quantidade = numeroDoTexto(ultimo[1]);
     const unidade = UNIDADE_DA_NOTA[ultimo[2].toUpperCase()];
-    if (quantidade && quantidade > 0 && unidade) return { quantidade, unidade };
+    if (quantidade && quantidade > 0 && unidade)
+      return { quantidade, unidade, origem: "texto" };
   }
 
   const daColuna = UNIDADE_DA_NOTA[(unidadeTexto ?? "").trim().toUpperCase()];
-  if (daColuna) return { quantidade: 1, unidade: daColuna };
+  if (daColuna) return { quantidade: 1, unidade: daColuna, origem: "coluna" };
 
-  return { quantidade: 1, unidade: "un" };
+  return { quantidade: 1, unidade: "un", origem: "palpite" };
+}
+
+/** O bastante de um material para herdar a embalagem dele. `Insumo` serve. */
+export interface MaterialComEmbalagem {
+  quantidadeCompra: number;
+  unidadeCompra: UnidadeCompra;
+  unidadeBase: UnidadeBase;
+}
+
+/**
+ * A embalagem que a linha pareada usa (spec 188).
+ *
+ * `ACUCAR UNIAO 1 UN 3,59` não diz o tamanho, e o palpite `{ 1, "un" }` fazia
+ * o açúcar custar R$ 3,59 o grama. Quando a embalagem lida é palpite, ou está
+ * numa base que não é a do material, vale a da última compra dele (o
+ * `quantidadeCompra` e o `unidadeCompra` gravados): R$ 3,59 o quilo.
+ *
+ * Parte sempre de `embalagemLida`, e por isso refazer depois de o pareamento
+ * mudar não acumula herança. `base` é a das receitas, quando há: um material já
+ * quebrado (contado em `un`, medido em `g`) não passa a própria base adiante.
+ * Sem material, a linha fica com o que o papel disse.
+ */
+export function embalagemParaOMaterial<L extends LinhaRascunho>(
+  linha: L,
+  material?: MaterialComEmbalagem,
+  base: UnidadeBase | undefined = material?.unidadeBase,
+): L {
+  const lida = linha.embalagemLida;
+  const herda =
+    !!material &&
+    !!base &&
+    (lida.origem === "palpite" || unidadeBaseDe(lida.unidade) !== base) &&
+    unidadeBaseDe(material.unidadeCompra) === base;
+
+  return {
+    ...linha,
+    quantidadeCompra: herda ? material.quantidadeCompra : lida.quantidade,
+    unidadeCompra: herda ? material.unidadeCompra : lida.unidade,
+    embalagemHerdada: herda,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -565,6 +614,10 @@ export interface LinhaRascunho {
   embalagens: number;
   quantidadeCompra: number;
   unidadeCompra: UnidadeCompra;
+  /** A embalagem como o papel a deu, guardada para `embalagemParaOMaterial`. */
+  embalagemLida: Embalagem;
+  /** `quantidadeCompra` e `unidadeCompra` são os da última compra do material. */
+  embalagemHerdada: boolean;
 }
 
 export interface RascunhoNota {
@@ -619,6 +672,8 @@ function normalizarLinha(linha: LinhaLida, indice: number): LinhaRascunho {
     embalagens,
     quantidadeCompra: embalagem.quantidade,
     unidadeCompra: embalagem.unidade,
+    embalagemLida: embalagem,
+    embalagemHerdada: false,
   };
 }
 
@@ -756,9 +811,10 @@ export interface CustoPorBase {
 /**
  * Uma vírgula lida errado (R$ 125,00 por R$ 12,50) ou "1 g" por "1 kg" dão um
  * custo por quilo absurdo; o preço de verdade raramente dobra de uma compra
- * para a outra (`#d291`). Não bloqueia: só pede para conferir. Base diferente
- * (o material era em gramas, a linha veio em unidades) ou sem preço anterior
- * não se compara.
+ * para a outra (`#d291`). A tela pede "O preço é esse mesmo" antes de gravar
+ * (spec 188). Base diferente (o material era em gramas, a linha veio em
+ * unidades) ou sem preço anterior não se compara. O material novo se compara
+ * contra `precoDaBiblioteca`.
  */
 export function saltoDePreco(
   anterior: CustoPorBase,
@@ -771,6 +827,21 @@ export function saltoDePreco(
   if (novo.custoUnidadeBase * FATOR_SALTO <= anterior.custoUnidadeBase)
     return "caiu";
   return null;
+}
+
+/**
+ * O preço médio da biblioteca para a linha que vira material novo, quando o
+ * nome é exatamente o de lá (`nomeBusca`). É o "anterior" de quem não tem
+ * anterior: "Farinha de trigo" a R$ 55,00 o quilo pede conferência mesmo na
+ * primeira compra. Por prefixo não: "Leite" contra "Leite condensado" pediria
+ * conferência de um preço certo. Sem par, nada se compara.
+ */
+export function precoDaBiblioteca(nome: string): CustoPorBase | null {
+  const alvo = chaveDeBusca(nome);
+  const achado = INSUMOS_DA_BIBLIOTECA.find(
+    (insumo) => chaveDeBusca(insumo.nome) === alvo,
+  );
+  return achado ? calcularCustoInsumo({ ...achado, perdaPercentual: 0 }) : null;
 }
 
 // ---------------------------------------------------------------------------

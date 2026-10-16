@@ -13634,3 +13634,73 @@ outro: aparecer melhor na busca e nas respostas dos assistentes de IA.
 `/conheca` pelo guarda do cliente (`#d172`). Levar `/` à página de venda no servidor pede saber,
 sem Firebase no servidor, quem está logado, e mexe no `start_url` e no service worker. Se o
 Search Console mostrar o domínio sem o nome "Rende" nos resultados, é essa a decisão a abrir.
+
+## D416 · O build cai com a chave Web Push malformada
+
+**Contexto.** O aviso de pedido novo nunca ligou em produção: "Avisar neste aparelho" respondia
+"tente de novo mais tarde" e nenhum aparelho chegou a `contas/mycookies/aparelhos`. A
+`NEXT_PUBLIC_FIREBASE_VAPID_KEY` da Vercel estava colada duas vezes (174 caracteres); o
+`pushManager.subscribe` recusa a chave, o `getToken` lança, e o `ativarAviso` só devolve
+`"falhou"`. As APIs do Firebase (Installations, FCM Registrations) respondiam com a chave certa.
+
+**Decisão.** `next.config.ts` confere a chave (`B` mais 86 caracteres base64url) e derruba o build
+quando ela existe e está fora da forma. Vazia continua valendo: a linha some (`DEPLOY.md` § 15).
+
+## D417 · A unidade base de um material só muda pelo caminho que converte as receitas
+
+**Status:** vigente · spec 188, 2026-10-16.
+
+**Contexto.** A nota com `ACUCAR UNIAO 1 UN 3,59` caiu no palpite `{ 1, "un" }`, pareou com
+"Açúcar" e gravou `unidadeCompra: "un"`. As receitas guardam "200" com `unidadeBase: "g"`, e
+`custoDeHoje` passou a multiplicar 200 pelo preço da unidade. O formulário do material tinha o
+mesmo buraco: trocar `kg` por `un` gravava sem pergunta.
+
+**Decisão.**
+
+- **A regra é `baseAceita(novaBase, basesDasReceitas)`**, em `domain/custoInsumo.ts`: sem receita
+  qualquer base serve; com receita, só a delas. Ela também deixa **voltar** para a base certa um
+  material já quebrado. As bases saem de `ficha.itens`, as mesmas fichas de "Onde entra".
+- **As telas só oferecem a base aceita**: o seletor da linha pareada da nota e o do formulário
+  do material mostram `unidadesCompativeis` da base das receitas (ou a do material, sem
+  receita). A unidade que já está gravada fica na lista mesmo fora dela: um seletor que mostra
+  uma e guarda outra mente.
+- **A guarda é `guardarBase`**, em `mutations/insumos.ts`, chamada por `atualizarInsumo` e, antes
+  de qualquer escrita, por `importarNota`. Só consulta as fichas quando a base muda (sem rede, o
+  `getDocs` lê o cache), e lança. As telas nunca devem chegar a ela.
+- **A linha sem tamanho herda a embalagem da última compra** (`embalagemParaOMaterial`): palpite,
+  ou base diferente da do material, vira o `quantidadeCompra`/`unidadeCompra` gravado, com a
+  frase "Embalagem da última compra: 1 kg. Confira no pacote." Parte sempre de `embalagemLida`,
+  para refazer sem acumular quando o pareamento muda. Um material já quebrado não passa a base
+  errada adiante: a herança só vale quando a última compra está na base das receitas.
+- **O que já está quebrado aparece com nome e para de doer**: `basesQueNaoBatem` acende "A unidade
+  não bate" em Materiais e a frase na ficha do material; `custoDeHoje` e `usoDoMaterial` deixam a
+  linha em outra base no gravado (`MaterialDeHoje` ganhou `unidadeBase`); o editor de produto
+  mantém a linha na base gravada, com o custo gravado, e não salva até o material ser corrigido.
+
+**Alternativa rejeitada.** Perguntar "quanto vem no pacote?" em toda linha sem tamanho: seria a
+sexta pergunta da 006 (`#d51`). A última compra acerta quase sempre, e a frase diz de onde o
+número veio.
+
+## D418 · O salto de preço pede "O preço é esse mesmo" antes de gravar
+
+**Status:** vigente · spec 188, 2026-10-16 · muda a `#d291`, em que o salto só avisava.
+
+**Contexto.** O aviso de salto era texto, e o "Cadastrar" passava por cima dele. O erro de vírgula
+custa a sobra de todos os produtos com o material.
+
+**Decisão.**
+
+- **Na nota**, a linha com salto (`saltoDePreco`, dobro ou metade) ganha a caixa no painel aberto.
+  Sem marcar, conta como "para conferir" e segura o "Cadastrar"; marcada, a frase continua, em
+  tom neutro, com "Você confirmou."
+- **No formulário do material**, o salto contra o gravado mostra a frase e a mesma caixa acima do
+  "Salvar alterações", desabilitado até ela marcar.
+- **A confirmação guarda o custo por unidade base confirmado**, e não um sim: mexer no preço, na
+  quantidade ou na unidade depois faz a confirmação cair sozinha.
+- **Material novo se compara contra a biblioteca** (`precoDaBiblioteca`), pelo `nomeBusca` exato.
+  Por prefixo não: "Leite" contra "Leite condensado" pediria conferência de um preço certo.
+  `saltoDePreco` continua com a mesma assinatura; a tela passa o preço da biblioteca como o
+  anterior de quem não tem anterior.
+
+**Por que caixa, e não proibição.** Preço dobra de verdade. Mas o aviso sem bloqueio já falhou
+uma vez.

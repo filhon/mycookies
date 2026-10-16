@@ -11,6 +11,7 @@ import { colFichas, colInsumos, docInsumo, docResumoGlobal } from "../colecoes";
 import {
   corpoDeAtualizacao,
   corpoDeInsumoNovo,
+  guardarBase,
   podarHistorico,
   precoMudou,
   type DadosInsumo,
@@ -97,6 +98,14 @@ export async function importarNota(
       insumoIds: [],
     };
   }
+
+  // Antes de qualquer escrita: uma linha que trocaria a base de um material
+  // usado em receita derruba a nota inteira, e nada fica pela metade.
+  await Promise.all(
+    linhas.flatMap((linha) =>
+      linha.anterior ? [guardarBase(contaId, linha.anterior, linha.dados)] : [],
+    ),
+  );
 
   const momento = Timestamp.now();
   const lote = writeBatch(obterDb());
