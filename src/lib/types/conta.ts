@@ -1,4 +1,5 @@
 import type { Timestamp } from "firebase/firestore";
+import type { RespostasDaPesquisa } from "@/lib/domain/pesquisa";
 import type { DataISO, VersaoSchema } from "./common";
 
 /**
@@ -100,6 +101,12 @@ export interface Conta {
     convidadaPor?: string;
   };
   /**
+   * Quando ela mandou a pesquisa do fim do teste (spec 185). Gravado por
+   * `POST /api/pesquisa` e por mais ninguém, na mesma transação da resposta.
+   * Presente = o preço de fundadora vale para ela (187).
+   */
+  pesquisaRespondidaEm?: Timestamp;
+  /**
    * Meta batida e mês fechado por e-mail (spec 044-B, `DECISOES.md#d207`).
    * Ausente = recebe; escrito pela chave em `/configuracao#avisos`. Não desliga
    * boas-vindas, senha nova nem teste acabando, que são do funcionamento da
@@ -188,6 +195,19 @@ export interface Convite {
   usadoPor?: string;
   /** A `proprietaria` da conta que nasceu. */
   nomeDaConvidada?: string;
+  v: VersaoSchema;
+}
+
+/**
+ * `contas/{id}/pesquisas/fim-do-teste`, a resposta da pesquisa do fim do
+ * teste (spec 185). Uma por conta; escrita só por `POST /api/pesquisa`, a dona
+ * lê. As respostas são as de `esquemaRespostas` (`domain/pesquisa.ts`), sem os
+ * campos vazios.
+ */
+export interface RespostaDaPesquisa extends RespostasDaPesquisa {
+  respondidaEm: Timestamp;
+  /** Dias de calendário de `criadaEm` até a resposta, em Brasília. */
+  diasDeUso: number;
   v: VersaoSchema;
 }
 

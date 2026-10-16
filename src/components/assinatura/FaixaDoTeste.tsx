@@ -13,6 +13,7 @@ import {
 import { formatarMoeda } from "@/lib/domain/money";
 import type { Centavos, Pacote } from "@/lib/types";
 import { useAuth, useContaId } from "@/providers/AuthProvider";
+import { OfertaDaPesquisa } from "@/components/pesquisa/OfertaDaPesquisa";
 import { useOQueRendeu } from "./useOQueRendeu";
 
 /**
@@ -125,6 +126,7 @@ function Faixa({ dias }: { dias: number }) {
         >
           Assinar
         </Link>
+        <OfertaDaPesquisa className="mt-4 border-t border-line pt-4" />
       </div>
     </div>
   );

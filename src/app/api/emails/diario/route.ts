@@ -10,6 +10,7 @@ import {
   diaVizinho,
   hojeEmBrasilia,
 } from "@/lib/domain/datas";
+import { situacaoDaPesquisa } from "@/lib/domain/pesquisa";
 import { calcularPrecoSugerido } from "@/lib/domain/precificacao";
 import {
   mesFechado,
@@ -320,5 +321,9 @@ async function dadosDoTeste(
     pedidos: pedidosSnap.data().count,
     entrou: resumos.reduce((soma, r) => soma + (r?.entradas ?? 0), 0),
     precos,
+    // Meio-dia do `hoje`, que pode ser o simulado (spec 185).
+    pesquisaAberta:
+      situacaoDaPesquisa(conta, Date.parse(`${hoje}T12:00:00-03:00`)) ===
+      "aberta",
   };
 }

@@ -170,12 +170,12 @@ continua o de assinar.
 
 ## Critérios de aceite
 
-- [ ] A pesquisa grava no fim do teste, quando a regra já recusa escrita do cliente.
-- [ ] Uma resposta por conta; a contagem não dobra.
-- [ ] Nenhuma tela trava; a oferta aparece nos quatro lugares.
-- [ ] Depoimento só sai no `depoimentos` com a caixa marcada e a versão.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] Decisões registradas; `ESTADO.md` e `novidades.ts` atualizados.
+- [x] A pesquisa grava no fim do teste, quando a regra já recusa escrita do cliente.
+- [x] Uma resposta por conta; a contagem não dobra.
+- [x] Nenhuma tela trava; a oferta aparece nos quatro lugares.
+- [x] Depoimento só sai no `depoimentos` com a caixa marcada e a versão.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] Decisões registradas; `ESTADO.md` e `novidades.ts` atualizados.
 
 ---
 

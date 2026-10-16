@@ -44,7 +44,8 @@ export async function enviarEmail({
         to: [para],
         reply_to: RESPONSAVEL.email,
         subject: peca.assunto,
-        html: peca.html,
+        // Sem HTML, texto puro: o aviso a quem conduz o projeto (spec 185).
+        ...(peca.html && { html: peca.html }),
         text: peca.texto,
       }),
       signal: AbortSignal.timeout(10_000),

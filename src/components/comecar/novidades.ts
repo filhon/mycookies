@@ -23,6 +23,13 @@ export interface Novidade {
  */
 export const NOVIDADES: readonly Novidade[] = [
   {
+    dataISO: "2026-10-16",
+    titulo: "A pesquisa do beta, que vale o preço de fundadora",
+    frase:
+      "Perto do fim do teste, responda a pesquisa em dois minutos e o seu plano sai com 30% a menos, para sempre. Não quer responder? É só não tocar.",
+    href: "/configuracao#convites",
+  },
+  {
     dataISO: "2026-10-15",
     titulo: "Os seus convites do beta, prontos pra mandar",
     frase:

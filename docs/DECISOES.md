@@ -13386,3 +13386,92 @@ no primeiro cadastro, e a troca de fase precisa chegar sem deploy.
 
 **Consequência.** O número das vagas tem no máximo cinco minutos de atraso, o mesmo do
 `s-maxage` do `GET /api/beta` (`#d402`).
+
+## D408 · A pesquisa do fim do teste grava pelo servidor, numa transação
+
+**Status:** vigente · decidida e codificada em 2026-10-16, spec 185 · estende a `#d400` (a
+transação do servidor) e a `#d399` (`soDoServidor`).
+
+**Contexto.** A resposta chega no fim do teste, quando a regra já recusa a escrita dela
+(`#d144`): gravada pelo cliente, falharia no dia em que mais se precisa dela. E é ela que dá o
+preço de fundadora (187): uma escrita do cliente seria um desconto que qualquer login se daria.
+
+**Decisão.**
+
+- **`contas/{id}/pesquisas/fim-do-teste`, uma por conta, e `pesquisas` em `soDoServidor`.** A
+  dona lê; só `POST /api/pesquisa` escreve. `caminhos.pesquisa(contaId)`, o tipo
+  `RespostaDaPesquisa` e `Conta.pesquisaRespondidaEm`.
+- **A rota: token, `ehDona`, esquema, e uma `runTransaction` do Admin SDK** que lê a conta, a
+  resposta e `plataforma/beta`. Resposta existente: `{ ok: true }` sem escrever (dois toques, duas
+  abas, a contagem não dobra). Senão `situacaoDaPesquisa` tem que dizer `"aberta"` (`409 fora`
+  quando não), e a mesma transação cria a resposta com `respondidaEm`, `diasDeUso` (dias de
+  calendário de Brasília desde `criadaEm`) e `v`, grava `pesquisaRespondidaEm` na conta e soma
+  `pesquisas`. As respostas vazias saem antes (o Admin SDK recusa `undefined`).
+- **Quando a soma chega a `vagas`, `after()` manda a quem conduz o projeto um e-mail de texto
+  puro** (chave `beta/pesquisas-completas`). Avisa, não lança: o lançamento manda e-mail à lista
+  inteira e é um ato dela (186). `enviarEmail` passou a omitir o `html` vazio.
+- **A pesquisa abre por dia de calendário de Brasília**, da meia-noite do dia 3 dias antes de
+  `trialAte` em diante, e não 72 horas antes do instante: o e-mail do teste acabando sai às 9h
+  pelo calendário (`#d205`), e o link dele cairia fechado por algumas horas. O mesmo fuso fixo
+  (−03:00) dos scripts.
+- **O script lê `domain/pesquisa.ts` direto**, e não uma cópia: o Node 22.18+ tira os tipos, e o
+  arquivo não importa valor por `@/`. As perguntas e a regra do NPS não podem ter duas versões.
+  É a primeira exceção ao "o script repete" do `beta.mjs`; `npm run beta` passa a pedir Node
+  22.18+ (a máquina tem 24).
+
+**Consequência.** Uma coleção nova sob a conta e uma palavra na regra (deploy das regras antes
+do app). Nenhum índice: o `npm run beta -- pesquisas` lê o grupo de coleção inteiro.
+
+## D409 · A pesquisa é oferecida com o desconto, e não imposta
+
+**Status:** vigente · decidida por quem conduz o projeto em 2026-10-15 e codificada em
+2026-10-16, spec 185.
+
+**Contexto.** O beta existe para colher retorno e depoimento, e o único retorno estruturado de
+hoje é o motivo do cancelamento no Stripe (`#d376`). Travar o app no fim do teste até ela
+responder arrisca a assinatura no dia em que ela decide pagar.
+
+**Decisão.**
+
+- **Nenhuma tela trava.** A oferta, sempre com a mesma frase (`OFERTA_DA_PESQUISA`), aparece em
+  quatro lugares: no bloco dos três últimos dias da `FaixaDoTeste`, em `/assinatura` acima dos
+  planos (secundário, "Responder e ganhar 30%"; o primário continua o de assinar, `#d373`), no
+  e-mail de 3 dias antes (parágrafo e link depois do botão de assinar) e em "Seus convites". Pular
+  é não tocar.
+- **`OfertaDaPesquisa`** é um componente só, que some para a ajudante, para quem não é fundadora,
+  para a semeada sem `trialAte`, para a encerrada e para quem respondeu.
+- **Sem prazo para fechar.** Quem assina meses depois e responde ainda ganha o desconto.
+- **Quatro obrigatórias** (sumir, nota, o que mudou, continuar), e a do que mudou com 20 a 600
+  caracteres: é a resposta que o desconto paga, e o freio contra três cliques por 30%.
+- **`/pesquisa` em `(auth)`, fora do shell**, como `/assinatura`: a conta vencida também abre. O
+  rascunho mora em `rende:pesquisa`, com o `contaId`, até o envio dar certo; sem rede, a frase
+  "Precisa de internet para mandar. Suas respostas ficam aqui." Os onze números são rádios
+  nativos, em duas linhas (0 a 5, 6 a 10) abaixo de `sm`.
+
+**Consequência.** Algumas respostas vão ser feitas só pelo desconto. O
+`npm run beta -- pesquisas` conta quantas fundadoras passaram do teste sem responder: é essa taxa
+que diz se o incentivo bastou. A oferta em "Seus convites" some com a seção depois do lançamento
+(fase `PUBLICO`); as outras três continuam.
+
+## D410 · A autorização do depoimento é uma caixa com versão, fora do desconto
+
+**Status:** vigente · decidida e codificada em 2026-10-16, spec 185 · estende a `#d175`.
+
+**Contexto.** Depoimento na `/conheca` exige autorização escrita (`#d175`), e pedir por WhatsApp,
+uma a uma, não escala para cem. Depoimento comprado não vale como prova.
+
+**Decisão.**
+
+- **A caixa vem desmarcada e não entra no desconto**: autorizar não dá nada a mais.
+- **O texto mora em `AUTORIZACAO_DO_DEPOIMENTO`, com `versao`**, e a resposta grava
+  `autorizacaoVersao` só com frase e caixa marcada. Mudou o texto, muda a versão: a frase
+  publicada responde ao que ela leu. Sem frase, cidade e nome também não se gravam.
+- **"Como quer ser chamada" vem com a `proprietaria`, e não com "nome, negócio"** como a spec
+  sugeria: o bloco da `/conheca` tem `nome` e `negocio` à parte, e o negócio sai da conta. A
+  dica do campo diz que o negócio vai ao lado.
+- **`npm run beta -- depoimentos`** imprime só as frases autorizadas, no formato de
+  `DEPOIMENTOS` da `/conheca`, com a fundadora, o `contaId` e a versão no comentário. Publicar
+  continua à mão, noutra spec.
+
+**Consequência.** Pedir para tirar é por mensagem, como a lista de espera (`#d403`); o depoimento
+sai da página à mão.

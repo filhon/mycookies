@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { ChevronRight, CircleAlert, CircleCheck, Gift } from "lucide-react";
+import { OfertaDaPesquisa } from "@/components/pesquisa/OfertaDaPesquisa";
 import { MandarAPagina } from "@/components/site/MandarAPagina";
 import { Botao } from "@/components/ui/Botao";
 import { BotaoCopiar } from "@/components/ui/BotaoCopiar";
@@ -197,7 +198,10 @@ function ListaDeConvites({
         </p>
       )}
 
-      <ul className="mt-4 overflow-hidden rounded-lg border border-line bg-surface [&>:first-child]:border-t-0">
+      {/* Enquanto a pesquisa do fim do teste estiver aberta (spec 185). */}
+      <OfertaDaPesquisa className="mt-4" />
+
+      <ul className="mt-4 overflow-hidden rounded-lg border border-line bg-surface *:first:border-t-0">
         {!carregando &&
           visiveis.map((convite) =>
             convite.status === "USADO" ? (

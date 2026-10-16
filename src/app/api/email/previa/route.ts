@@ -55,6 +55,21 @@ const PECAS: Record<string, () => Peca> = {
         COMPLETO: { mensal: 4900, anual: 49000 },
       },
     }),
+  // A mesma, para a fundadora com a pesquisa aberta (spec 185).
+  "teste-acabando-fundadora": () =>
+    testeAcabando({
+      nome: "Carla",
+      negocio: "Doces da Carla",
+      acabaEmISO: "2026-10-09",
+      faltam: 3,
+      diasDeUso: 11,
+      produtos: 6,
+      noVermelho: 0,
+      pedidos: 14,
+      entrou: 184000,
+      precos: null,
+      pesquisaAberta: true,
+    }),
   "meta-batida": () =>
     metaBatida({
       competencia: "2026-09",

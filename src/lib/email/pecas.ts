@@ -469,6 +469,8 @@ export interface DadosTesteAcabando {
   entrou: Centavos;
   /** Do Stripe. Sem ele, os planos saem sem número (`#d174`). */
   precos: Record<Pacote, { mensal: Centavos; anual: Centavos }> | null;
+  /** Fundadora com a pesquisa do fim do teste aberta (spec 185). */
+  pesquisaAberta?: boolean;
 }
 
 const PLANOS: { pacote: Pacote; nome: string; oQueTem: string }[] = [
@@ -485,6 +487,10 @@ const PLANOS: { pacote: Pacote; nome: string; oQueTem: string }[] = [
       "Tudo do essencial, mais a ajudante com login próprio e o cardápio online.",
   },
 ];
+
+/** O parágrafo da fundadora (spec 185): o botão continua o de assinar. */
+const PESQUISA_NO_EMAIL =
+  "Antes de decidir, responda a pesquisa do beta: são 2 minutos, e o seu plano sai com 30% a menos, para sempre.";
 
 export function testeAcabando(d: DadosTesteAcabando): Peca {
   const ate = diaFalado(d.acabaEmISO);
@@ -583,7 +589,13 @@ ${numeros}
     </table>
 
     ${botao(`${URL_DO_SITE}/assinatura`, "Escolher a assinatura")}
-
+${
+  d.pesquisaAberta
+    ? `
+    <p style="margin:20px 0 0;font-size:15px;">${PESQUISA_NO_EMAIL} <a href="${URL_DO_SITE}/pesquisa" style="color:${LINK};font-weight:600;">Responder a pesquisa</a></p>
+`
+    : ""
+}
     <p style="margin:20px 0 0;font-size:14px;line-height:1.5;color:${MUDO};">${semAssinar}</p>
 `,
       pe: escapar(pe),
@@ -607,6 +619,8 @@ ${numeros}
         "Com a assinatura, tudo continua. Os produtos, os pedidos e o caixa ficam do jeito que estão.",
         planosEmTexto,
         `Escolher a assinatura: ${URL_DO_SITE}/assinatura`,
+        !!d.pesquisaAberta &&
+          `${PESQUISA_NO_EMAIL}\nResponder a pesquisa: ${URL_DO_SITE}/pesquisa`,
         semAssinar,
       ],
       pe,

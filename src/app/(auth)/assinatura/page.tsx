@@ -21,6 +21,7 @@ import {
   type ParteDoQueRendeu,
 } from "@/components/assinatura/useOQueRendeu";
 import { MeusDados } from "@/components/conta/MeusDados";
+import { OfertaDaPesquisa } from "@/components/pesquisa/OfertaDaPesquisa";
 import { Simbolo } from "@/components/marca/Marca";
 import { Botao } from "@/components/ui/Botao";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -263,6 +264,12 @@ export default function PaginaAssinatura() {
   // os planos, empilhados em qualquer largura, comparam melhor que lado a lado.
   const escolha = (
     <>
+      {/* A fundadora com a pesquisa aberta (spec 185): acima dos planos, e
+          secundário; o âmbar da tela continua o de assinar (`#d373`). */}
+      <OfertaDaPesquisa
+        rotulo="Responder e ganhar 30%"
+        className="mt-6 rounded-lg border border-line bg-surface px-4 py-4"
+      />
       <Pilulas
         rotulo="Pagar"
         className="mt-8"

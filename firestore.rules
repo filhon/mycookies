@@ -74,8 +74,10 @@ service cloud.firestore {
       // (DECISOES.md#d155). Nem a dona escreve daqui. `convites` (spec 181):
       // o convite de fundadora vira conta na transação do servidor; um
       // convite escrito pelo cliente seria uma vaga que ela mesma se daria.
+      // `pesquisas` (spec 185): a resposta grava no fim do teste, quando a
+      // regra já recusa a escrita dela, e é o que dá o preço de fundadora.
       function soDoServidor(colecao) {
-        return colecao in ['membros', 'convites'];
+        return colecao in ['membros', 'convites', 'pesquisas'];
       }
 
       allow read: if temAcesso();

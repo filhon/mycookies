@@ -26,6 +26,8 @@ export const caminhos = {
   /** O nome da coleção, para `collectionGroup`. */
   grupoConvites: "convites",
   convites: (contaId: string) => `contas/${contaId}/convites`,
+  /** A resposta da pesquisa do fim do teste: uma por conta (spec 185). */
+  pesquisa: (contaId: string) => `contas/${contaId}/pesquisas/fim-do-teste`,
   conta: (contaId: string) => `contas/${contaId}`,
   configuracao: (contaId: string) => `contas/${contaId}/configuracao`,
   configuracaoGeral: (contaId: string) =>
