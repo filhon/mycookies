@@ -1,7 +1,8 @@
 /**
  * O beta por convite (spec 181), para quem conduz o projeto.
  *
- *   npm run beta                            a fase, as vagas e a árvore das fundadoras
+ *   npm run beta                            a fase, as vagas e a árvore das fundadoras,
+ *                                           e as que ficaram sem o preço de fundadora (187)
  *   npm run beta -- semear <contaId> [cota] dá a cota (5) e, sem número, a próxima vaga
  *   npm run beta -- vagas <n>               muda o teto, nunca abaixo das ocupadas
  *   npm run beta -- tirar-da-espera <email> apaga a entrada dela da lista (spec 182)
@@ -22,6 +23,7 @@
 import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import Stripe from "stripe";
 import {
   PERGUNTAS_DO_FIM_DO_TESTE as P,
   resumoDasPesquisas,
@@ -161,6 +163,39 @@ async function mostrar() {
         situação: situacao(conta, agora),
       };
     }),
+  );
+  await semDesconto(fundadoras.docs);
+}
+
+/**
+ * Fundadoras com pesquisa e assinatura, mas sem desconto no Stripe: a rota da
+ * pesquisa falhou ao aplicar o `FUNDADORA` (spec 187). Quem conduz o projeto
+ * aplica pela CLI (`DEPLOY.md`, "Stripe, a cortesia", passo 5).
+ */
+async function semDesconto(fundadoras) {
+  const comAssinatura = fundadoras.filter(
+    (d) => d.get("pesquisaRespondidaEm") && d.get("stripeSubscriptionId"),
+  );
+  if (comAssinatura.length === 0) return;
+  const chave = process.env.STRIPE_SECRET_KEY?.trim();
+  if (!chave) {
+    console.log(
+      "\nSem STRIPE_SECRET_KEY no .env.local: o preço de fundadora não foi conferido.",
+    );
+    return;
+  }
+  const stripe = new Stripe(chave);
+  const faltam = [];
+  for (const snap of comAssinatura) {
+    const id = snap.get("stripeSubscriptionId");
+    const assinatura = await stripe.subscriptions.retrieve(id);
+    if (assinatura.status !== "canceled" && assinatura.discounts.length === 0) {
+      faltam.push(`${snap.id} · ${snap.get("nome")} · ${id}`);
+    }
+  }
+  console.log(
+    `\nFundadoras com pesquisa e sem desconto: ${faltam.length}` +
+      faltam.map((linha) => `\n  ${linha}`).join(""),
   );
 }
 

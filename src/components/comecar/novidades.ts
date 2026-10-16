@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-16",
+    titulo: "O preço de fundadora, já no seu plano",
+    frase:
+      "Respondeu a pesquisa do beta? A tela de assinar mostra o preço com 30% a menos, e se você já assina, o desconto entra na próxima cobrança. Sem código pra digitar.",
+    href: "/assinatura",
+  },
+  {
+    dataISO: "2026-10-16",
     titulo: "A pesquisa do beta, que vale o preço de fundadora",
     frase:
       "Perto do fim do teste, responda a pesquisa em dois minutos e o seu plano sai com 30% a menos, para sempre. Não quer responder? É só não tocar.",

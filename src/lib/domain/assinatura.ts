@@ -266,6 +266,8 @@ export interface ResumoAssinatura {
   final: string | null;
   cancela: boolean;
   emTeste: boolean;
+  /** A assinatura tem o cupom `FUNDADORA` (spec 187). */
+  fundadora: boolean;
 }
 
 /**
@@ -363,14 +365,42 @@ export function valorComDesconto(valor: Centavos, cupons: Cupom[]): Centavos {
   );
 }
 
-/** "Plano Essencial · R$ 39,90 por mês" · com valor zero, "Plano Completo · cortesia". */
+/** O cupom `FUNDADORA` do Stripe (spec 187), como a tela o aplica ao preço da tabela. */
+export const DESCONTO_DE_FUNDADORA: Cupom = {
+  percent_off: 30,
+  amount_off: null,
+};
+
+/** As páginas públicas, na fase `BETA`: sem valor em reais (`#d174`). */
+export const FRASE_DO_PRECO_DE_FUNDADORA =
+  "As fundadoras do beta que respondem a pesquisa do fim do teste assinam com 30% a menos, para sempre.";
+
+/**
+ * Se a conta assina com o preço de fundadora (spec 187): fundadora do beta que
+ * respondeu a pesquisa do fim do teste. Uma regra só, lida no checkout, na
+ * rota da pesquisa e em `/assinatura`.
+ */
+export function temPrecoDeFundadora(conta: {
+  beta?: { fundadora?: number; convites?: number; convidadaPor?: string };
+  pesquisaRespondidaEm?: unknown;
+}): boolean {
+  return !!conta.beta?.fundadora && !!conta.pesquisaRespondidaEm;
+}
+
+/**
+ * "Plano Essencial · R$ 39,90 por mês" · com valor zero, "Plano Completo ·
+ * cortesia" · com o cupom de fundadora, "Plano Completo · preço de fundadora ·
+ * R$ 34,93 por mês".
+ */
 export function fraseDoPlano(
   pacote: Pacote,
-  resumo: Pick<ResumoAssinatura, "valor" | "periodo">,
+  resumo: Pick<ResumoAssinatura, "valor" | "periodo"> &
+    Partial<Pick<ResumoAssinatura, "fundadora">>,
 ): string {
   if (resumo.valor === 0) return `Plano ${NOME_DO_PACOTE[pacote]} · cortesia`;
   const por = resumo.periodo === "anual" ? "por ano" : "por mês";
-  return `Plano ${NOME_DO_PACOTE[pacote]} · ${formatarMoeda(resumo.valor)} ${por}`;
+  const fundadora = resumo.fundadora ? " · preço de fundadora" : "";
+  return `Plano ${NOME_DO_PACOTE[pacote]}${fundadora} · ${formatarMoeda(resumo.valor)} ${por}`;
 }
 
 /**

@@ -42,6 +42,9 @@ import {
   perdaNoEssencial,
   situacaoDaConta,
   sobraQuePagaOPlano,
+  temPrecoDeFundadora,
+  valorComDesconto,
+  DESCONTO_DE_FUNDADORA,
   type FalhaAssinatura,
   type Periodo,
 } from "@/lib/domain/assinatura";
@@ -89,7 +92,8 @@ export default function PaginaAssinatura() {
   const ajudante = papel === "AJUDANTE";
   const router = useRouter();
 
-  const [precos, setPrecos] = useState<Precos | null>(null);
+  // A tabela do Stripe; `precos`, abaixo, é o que ela paga (spec 187).
+  const [tabela, setTabela] = useState<Precos | null>(null);
   const [falhaPrecos, setFalhaPrecos] = useState(false);
   const [enviando, setEnviando] = useState(false);
   // O anual continua sendo a arma contra o churn (roadmap §1).
@@ -121,7 +125,7 @@ export default function PaginaAssinatura() {
         });
         if (!resposta.ok) throw new Error();
         const dados = (await resposta.json()) as Precos;
-        if (!cancelado) setPrecos(dados);
+        if (!cancelado) setTabela(dados);
       } catch {
         if (!cancelado) setFalhaPrecos(true);
       }
@@ -137,6 +141,11 @@ export default function PaginaAssinatura() {
   // uma função impura direto no corpo do componente.
   const agora = new Date().getTime();
   const situacao = conta ? situacaoDaConta(paraSituar(conta), agora) : null;
+
+  // A fundadora que respondeu a pesquisa vê o que o checkout cobra: a tabela
+  // com o cupom `FUNDADORA` (spec 187). O resto da tela lê `precos`.
+  const fundadora = !!conta && temPrecoDeFundadora(conta);
+  const precos = tabela && fundadora ? comPrecoDeFundadora(tabela) : tabela;
 
   // O que rendeu e quem ajuda, só para a dona: a ajudante não vê preço.
   // Leituras que a Hoje e a Configuração já fazem (`#d218`, `#d155`).
@@ -288,6 +297,12 @@ export default function PaginaAssinatura() {
         ]}
       />
 
+      {fundadora && (
+        <p className="mt-4 text-label text-ink">
+          Preço de fundadora: 30% a menos, para sempre.
+        </p>
+      )}
+
       {/* Rádio nativo: setas trocam a opção e o leitor de tela diz a
           escolhida, sem reimplementar o grupo. */}
       <fieldset disabled={enviando} className="mt-4 space-y-3">
@@ -298,6 +313,7 @@ export default function PaginaAssinatura() {
             nome={idPacote}
             pacote={cada}
             precos={precos?.[cada]}
+            cheios={fundadora ? tabela?.[cada] : undefined}
             periodo={periodo}
             escolhido={pacote === cada}
             aoEscolher={() => setEscolhido(cada)}
@@ -521,6 +537,7 @@ function OpcaoDePlano({
   nome,
   pacote,
   precos,
+  cheios,
   periodo,
   escolhido,
   aoEscolher,
@@ -530,6 +547,8 @@ function OpcaoDePlano({
   nome: string;
   pacote: Pacote;
   precos: Record<Periodo, number> | undefined;
+  /** A tabela sem o desconto, riscada ao lado; só no preço de fundadora. */
+  cheios?: Record<Periodo, number>;
   periodo: Periodo;
   escolhido: boolean;
   aoEscolher: () => void;
@@ -601,6 +620,14 @@ function OpcaoDePlano({
           ) : (
             <span className="num text-heading font-semibold text-ink">—</span>
           )}
+          {precos && cheios && (
+            <s className="num text-label text-ink-muted">
+              <span className="sr-only">em vez de </span>
+              {formatarMoeda(
+                anual ? mensalDoAnual(cheios.anual) : cheios.mensal,
+              )}
+            </s>
+          )}
           <span className="text-label text-ink-muted">por mês</span>
         </span>
         {precos && anual && (
@@ -654,6 +681,17 @@ function OpcaoDePlano({
       </ul>
     </div>
   );
+}
+
+/** A tabela com o cupom `FUNDADORA`, pela mesma conta do resumo (`#d314`). */
+function comPrecoDeFundadora(tabela: Precos): Precos {
+  const com = (valor: number) =>
+    valorComDesconto(valor, [DESCONTO_DE_FUNDADORA]);
+  const de = (pacote: Pacote) => ({
+    mensal: com(tabela[pacote].mensal),
+    anual: com(tabela[pacote].anual),
+  });
+  return { ESSENCIAL: de("ESSENCIAL"), COMPLETO: de("COMPLETO") };
 }
 
 /** O padrão de `TelaNota` e `PaginaCadastro`: o corpo diz o código; sem corpo, o status decide. */

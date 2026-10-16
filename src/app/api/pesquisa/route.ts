@@ -1,6 +1,7 @@
 import { after, NextResponse } from "next/server";
-import { Timestamp } from "firebase-admin/firestore";
+import { Timestamp, type DocumentData } from "firebase-admin/firestore";
 import { RESPONSAVEL } from "@/app/(auth)/responsavel";
+import { temPrecoDeFundadora } from "@/lib/domain/assinatura";
 import { diasEntre, hojeEmBrasilia } from "@/lib/domain/datas";
 import {
   esquemaEnvioDaPesquisa,
@@ -15,6 +16,7 @@ import {
   credencialDisponivel,
   ehDona,
 } from "@/lib/server/firebaseAdmin";
+import { aplicarPrecoDeFundadora, stripeDisponivel } from "@/lib/server/stripe";
 import { caminhos, VERSAO_SCHEMA, type EstadoDoBeta } from "@/lib/types";
 
 /**
@@ -59,16 +61,18 @@ export async function POST(requisicao: Request) {
   const plataforma = db.doc(caminhos.plataformaBeta);
   const agora = new Date();
 
+  // A conta como fica depois da transação: é dela que sai o desconto.
   let contada: { n: number; vagas: number } | null;
+  let depois: DocumentData;
   try {
-    contada = await db.runTransaction(async (tx) => {
+    ({ contada, depois } = await db.runTransaction(async (tx) => {
       const [contaSnap, respostaSnap, betaSnap] = await Promise.all([
         tx.get(conta),
         tx.get(resposta),
         tx.get(plataforma),
       ]);
-      if (respostaSnap.exists) return null;
       const dados = contaSnap.data();
+      if (respostaSnap.exists) return { contada: null, depois: dados ?? {} };
       if (!dados || situacaoDaPesquisa(dados, agora.getTime()) !== "aberta") {
         throw new Fora();
       }
@@ -97,14 +101,30 @@ export async function POST(requisicao: Request) {
         { ...estado, pesquisas: n, v: VERSAO_SCHEMA },
         { merge: true },
       );
-      return { n, vagas: estado.vagas };
-    });
+      return {
+        contada: { n, vagas: estado.vagas },
+        depois: { ...dados, pesquisaRespondidaEm: respondidaEm },
+      };
+    }));
   } catch (erro) {
     if (erro instanceof Fora) return falha("fora", 409);
     throw erro;
   }
 
-  // A 187 pendura aqui o desconto de quem já assina.
+  // Quem já assinava ganha o cupom na mesma assinatura (spec 187). Também no
+  // reenvio: é o que conserta uma falha anterior. A resposta já está gravada,
+  // e o Stripe fora não a derruba; `npm run beta` lista quem ficou sem.
+  const assinatura = depois.stripeSubscriptionId as string | undefined;
+  if (assinatura && temPrecoDeFundadora(depois) && stripeDisponivel()) {
+    try {
+      await aplicarPrecoDeFundadora(assinatura);
+    } catch (erro) {
+      console.warn(
+        `Preço de fundadora não aplicado em ${contaId} (${assinatura}):`,
+        erro,
+      );
+    }
+  }
 
   // Na centésima, avisa; não lança (`npm run beta -- lancar`, 186).
   if (contada && contada.n === contada.vagas) {

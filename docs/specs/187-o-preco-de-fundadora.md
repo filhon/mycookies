@@ -115,11 +115,11 @@ Na sandbox:
 
 ## Critérios de aceite
 
-- [ ] Responder a pesquisa dá 30% para sempre, antes ou depois de assinar.
-- [ ] A cortesia da Maynara intacta.
-- [ ] O preço da tela é o que o Stripe cobra.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] Decisão registrada; `ESTADO.md` e `DEPLOY.md` atualizados.
+- [x] Responder a pesquisa dá 30% para sempre, antes ou depois de assinar.
+- [x] A cortesia da Maynara intacta.
+- [x] O preço da tela é o que o Stripe cobra.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] Decisão registrada; `ESTADO.md` e `DEPLOY.md` atualizados.
 
 ---
 

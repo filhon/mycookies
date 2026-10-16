@@ -303,7 +303,27 @@ stripe subscriptions update "$SUB" -d "items[0][id]=$ITEM" \
 #    past_due, e ela tem FOLGA_COBRANCA_DIAS (7) para pôr um pelo portal.
 SUB=sub_…
 stripe subscriptions update "$SUB" -d "discounts="
+
+# 5. O preço de fundadora (spec 187, #d413): 30% para sempre, sem código. O
+#    servidor aplica: no checkout de quem respondeu a pesquisa e na assinatura
+#    de quem já assinava. Uma vez por modo, como o CORTESIA.
+stripe coupons create -d id=FUNDADORA -d "name=Preço de fundadora" \
+  -d percent_off=30 -d duration=forever
+#    Quando a rota não conseguiu aplicar, `npm run beta` lista a fundadora em
+#    "com pesquisa e sem desconto". À mão, só em assinatura SEM desconto:
+SUB=sub_…
+stripe subscriptions update "$SUB" \
+  -d "discounts[0][coupon]=FUNDADORA" -d proration_behavior=none
 ```
+
+> **O `FUNDADORA` no teste, em 2026-10-16**, na sandbox: `discounts` com `allow_promotion_codes`
+> na mesma sessão é recusado ("You may only specify one of these parameters:
+> allow_promotion_codes, discounts."); a sessão com `discounts` e `trial_end` nasce com
+> `amount_total: 0`, `payment_method_collection: "always"` e o cupom; a assinatura em `trialing`
+> com o cupom tem a fatura do fim do teste em R$ 20,30 de R$ 29,00; e a assinatura sem desconto
+> que recebe o cupom por `update` com `proration_behavior=none` não gera fatura, e a próxima sai
+> R$ 20,30. **No ao vivo, criado no mesmo dia** (passo 5, com `--live`): sem ele o checkout da
+> fundadora que respondeu falharia.
 
 - **Avisar antes de tirar é conversa**, não código.
 - **Pelo portal**, a cortesia troca de pacote e continua R$ 0,00: o cupom é da assinatura, e não

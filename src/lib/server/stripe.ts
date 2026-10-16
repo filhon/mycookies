@@ -57,6 +57,13 @@ export function stripeDisponivel(): boolean {
   );
 }
 
+/**
+ * O preço de fundadora (spec 187): 30%, `forever`, criado pela CLI nos dois
+ * modos (`DEPLOY.md`, "Stripe, a cortesia"). Aplicado pelo servidor, nunca
+ * digitado: um código vazaria (`DECISOES.md#d413`).
+ */
+export const CUPOM_DE_FUNDADORA = "FUNDADORA";
+
 let instancia: Stripe | undefined;
 
 /** Singleton, como `adminAuth()`/`adminDb()`. */
@@ -105,6 +112,24 @@ export async function lerPrecos(): Promise<
     precosDe("COMPLETO"),
   ]);
   return { ESSENCIAL, COMPLETO };
+}
+
+/**
+ * O cupom de fundadora na assinatura de quem já assinava antes de responder a
+ * pesquisa (spec 187). **Já tem desconto, nada**: o que ela tem vence, e a
+ * cortesia (`#d314`) nunca é tocada. Da próxima fatura em diante, sem devolver
+ * o que foi pago. Não mexe em `plano`, `pacote` nem `acessoAte`: o webhook
+ * não muda.
+ */
+export async function aplicarPrecoDeFundadora(
+  subscriptionId: string,
+): Promise<void> {
+  const assinatura = await stripe().subscriptions.retrieve(subscriptionId);
+  if (assinatura.discounts.length > 0) return;
+  await stripe().subscriptions.update(subscriptionId, {
+    discounts: [{ coupon: CUPOM_DE_FUNDADORA }],
+    proration_behavior: "none",
+  });
 }
 
 /**

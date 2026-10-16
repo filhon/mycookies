@@ -13534,3 +13534,53 @@ tudo. O script roda fora do app e não importa as peças (`#d141`).
 
 **Consequência.** O lote é constante no código: com o Resend Pro, 1.000 numa linha
 (`DEPLOY.md` § 17). `npm run beta` mostra avisadas e quantas viraram conta pelo e-mail.
+
+## D413 · O preço de fundadora é um cupom aplicado pelo servidor, e a cortesia vence
+
+**Status:** vigente · decidida por quem conduz o projeto em 2026-10-15 (pergunta 1 da 181) e
+codificada em 2026-10-16, spec 187 · estende a `#d314` e a `#d374`.
+
+**Contexto.** A pesquisa da 185 oferece 30% para sempre, e nada no checkout sabia disso. A
+cortesia é por código digitado; um código `FUNDADORA` vazaria em grupo de confeiteira no primeiro
+dia. E quem assinou durante o teste (`#d374`) precisa ganhar o desconto na assinatura que já
+existe.
+
+**Decisão.**
+
+- **Um cupom só, `FUNDADORA`**: id fixo, `percent_off=30`, `duration=forever`, criado pela CLI
+  nos dois modos (`DEPLOY.md`, passo 5 da cortesia). `CUPOM_DE_FUNDADORA` em `server/stripe.ts`.
+- **Uma regra, `temPrecoDeFundadora`** (`domain/assinatura.ts`): `beta.fundadora` e
+  `pesquisaRespondidaEm`. Lida no checkout, na rota da pesquisa e em `/assinatura`. A convidada
+  depois do lançamento não tem `fundadora` (`#d411`), e por isso não tem o preço.
+- **No checkout, `discounts` no lugar de `allow_promotion_codes`.** O Stripe recusa os dois
+  juntos (conferido na sandbox: "You may only specify one of these parameters:
+  allow_promotion_codes, discounts."). A fundadora que respondeu não vê o campo de código; quem
+  não respondeu vê, como sempre. `trial_end` e `payment_method_collection` não mudam: a sessão
+  com `discounts` e `trial_end` nasce com o cupom, e a fatura do fim do teste sai com 30% a menos
+  (R$ 20,30 de R$ 29,00 na sandbox).
+- **Em quem já assina, a rota da pesquisa aplica depois da transação**, por
+  `aplicarPrecoDeFundadora`: lê a assinatura e, **com qualquer desconto, não faz nada**. O
+  desconto que ela já tem vence; somar cupons dá uma conta que ninguém confere, e a cortesia da
+  Maynara (100%) nunca é tocada. Sem desconto, `discounts` com `proration_behavior: "none"`: vale
+  da próxima fatura, nada é devolvido. Roda também no reenvio da pesquisa (a resposta existente),
+  o que conserta uma falha anterior sem script.
+- **Falha do Stripe não derruba a pesquisa**: a resposta já foi gravada, a rota faz
+  `console.warn` e `npm run beta` lista "Fundadoras com pesquisa e sem desconto" (lê o Stripe com
+  a `STRIPE_SECRET_KEY` do `.env.local`, como `metricas`), para aplicar pela CLI.
+- **A tela lê a tabela com o cupom por `valorComDesconto`** (`#d314`) e
+  `DESCONTO_DE_FUNDADORA`: o preço de cada plano com o cheio riscado (o `sr-only` diz "em vez
+  de"), a economia do anual e o botão sobre os valores com desconto. O 30% mora no código duas
+  vezes, no Stripe e na tela; mudar o cupom é mudar a constante.
+- **A Configuração diz "Plano Completo · preço de fundadora · R$ 34,93 por mês"**, e não só
+  "preço de fundadora" como a spec escrevia: a cortesia esconde o valor porque é zero; aqui o
+  valor é o que ela paga, e a linha continua dizendo quanto. `ResumoAssinatura.fundadora` vem do
+  id do cupom. A despesa "Rende" (`#d287`) já vinha com o valor com desconto.
+- **As páginas dizem a regra, sem reais** (`#d174`): "As fundadoras do beta que respondem a
+  pesquisa do fim do teste assinam com 30% a menos, para sempre." sob "Depois do beta" na
+  `/conheca` (fase `BETA`) e embaixo de "14 dias grátis, sem cartão" no convite.
+
+**Consequência.** Nenhum campo, regra, índice ou dependência; o webhook não muda (o desconto não
+mexe em `plano`, `pacote` nem `acessoAte`). **O cupom tem de existir no ao vivo antes do deploy**:
+sem ele, o checkout da fundadora que respondeu falha com `sem-resposta`. Criado no ao vivo em
+2026-10-16. Encerrar a conta perde o
+preço: quem volta depois do lançamento volta como qualquer conta.

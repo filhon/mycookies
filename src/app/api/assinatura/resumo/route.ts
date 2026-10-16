@@ -12,7 +12,11 @@ import {
   conferirToken,
   credencialDisponivel,
 } from "@/lib/server/firebaseAdmin";
-import { stripe, stripeDisponivel } from "@/lib/server/stripe";
+import {
+  CUPOM_DE_FUNDADORA,
+  stripe,
+  stripeDisponivel,
+} from "@/lib/server/stripe";
 import { caminhos, type Conta } from "@/lib/types";
 
 /**
@@ -110,6 +114,7 @@ export async function POST(requisicao: Request) {
     final,
     cancela,
     emTeste: assinatura.status === "trialing",
+    fundadora: cupons.some((cupom) => cupom.id === CUPOM_DE_FUNDADORA),
   };
   return NextResponse.json(resumo);
 }

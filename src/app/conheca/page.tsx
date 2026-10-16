@@ -15,6 +15,7 @@ import { Dinheiro } from "@/components/ui/Dinheiro";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import {
   economiaAnual,
+  FRASE_DO_PRECO_DE_FUNDADORA,
   fraseDosMesesDeGraca,
   mesesDeGraca,
   NOME_DO_PACOTE,
@@ -747,9 +748,15 @@ function Preco({
       </p>
 
       {noBeta && (
-        <h3 className="mt-10 text-heading font-semibold text-ink">
-          Depois do beta
-        </h3>
+        <>
+          <h3 className="mt-10 text-heading font-semibold text-ink">
+            Depois do beta
+          </h3>
+          {/* Sem valor em reais: o desconto depende da pesquisa (spec 187). */}
+          <p className="mt-2 max-w-[60ch] text-body text-ink-muted">
+            {FRASE_DO_PRECO_DE_FUNDADORA}
+          </p>
+        </>
       )}
       <div
         className={cn("grid gap-4 md:grid-cols-2", noBeta ? "mt-4" : "mt-10")}

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   deveCobrarNoFimDoTeste,
   esquemaCheckout,
+  temPrecoDeFundadora,
   type FalhaAssinatura,
 } from "@/lib/domain/assinatura";
 import {
@@ -10,7 +11,12 @@ import {
   conferirToken,
   credencialDisponivel,
 } from "@/lib/server/firebaseAdmin";
-import { PRECOS, stripe, stripeDisponivel } from "@/lib/server/stripe";
+import {
+  CUPOM_DE_FUNDADORA,
+  PRECOS,
+  stripe,
+  stripeDisponivel,
+} from "@/lib/server/stripe";
 import { caminhos, type Conta } from "@/lib/types";
 
 /**
@@ -73,11 +79,16 @@ export async function POST(requisicao: Request) {
       metadata: { contaId, uid: quem.uid },
       ...(noFimDoTeste && { trial_end: Math.floor(trialAteMs / 1000) }),
     },
-    // A cortesia (`#d314`): o código `BETA-…` zera o total, e com total zero
-    // o Stripe não pede cartão. Com `trial_end` hoje é sempre zero, e o
-    // `if_required` deixaria o teste acabar numa assinatura sem cartão: pede
-    // sempre, também na cortesia, que nunca é cobrada (`#d374`).
-    allow_promotion_codes: true,
+    // A fundadora que respondeu a pesquisa leva o cupom, sem digitar (spec
+    // 187). O Stripe recusa `discounts` com `allow_promotion_codes` ("You may
+    // only specify one of these parameters"): para ela, sem o campo do código.
+    // Para as outras, a cortesia (`#d314`): o código `BETA-…` zera o total, e
+    // com total zero o Stripe não pede cartão. Com `trial_end` hoje é sempre
+    // zero, e o `if_required` deixaria o teste acabar numa assinatura sem
+    // cartão: pede sempre, também na cortesia, que nunca é cobrada (`#d374`).
+    ...(conta && temPrecoDeFundadora(conta)
+      ? { discounts: [{ coupon: CUPOM_DE_FUNDADORA }] }
+      : { allow_promotion_codes: true }),
     payment_method_collection: noFimDoTeste ? "always" : "if_required",
     locale: "pt-BR",
     // O Stripe troca o marcador pelo id; a volta confere a sessão (spec 163).

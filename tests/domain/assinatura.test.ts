@@ -36,6 +36,8 @@ import {
   type Situacao,
   unidadesQuePagam,
   valorComDesconto,
+  DESCONTO_DE_FUNDADORA,
+  temPrecoDeFundadora,
 } from "@/lib/domain/assinatura";
 import { formatarMoeda } from "@/lib/domain/money";
 
@@ -513,6 +515,57 @@ describe("valorComDesconto (spec 111)", () => {
     };
     expect(fraseDoPlano("COMPLETO", resumo)).toBe("Plano Completo · cortesia");
     expect(mensalDoPlano(resumo)).toBe(0);
+  });
+});
+
+describe("temPrecoDeFundadora (spec 187)", () => {
+  const respondida = { toMillis: () => 0 };
+
+  it("fundadora com pesquisa tem; sem pesquisa, não", () => {
+    expect(
+      temPrecoDeFundadora({
+        beta: { fundadora: 7, convites: 5, convidadaPor: "a" },
+        pesquisaRespondidaEm: respondida,
+      }),
+    ).toBe(true);
+    expect(temPrecoDeFundadora({ beta: { fundadora: 7 } })).toBe(false);
+  });
+
+  it("quem não é fundadora não tem, mesmo com pesquisa", () => {
+    expect(temPrecoDeFundadora({ pesquisaRespondidaEm: respondida })).toBe(
+      false,
+    );
+    // Convidada depois do lançamento: só `convidadaPor` (`#d411`).
+    expect(
+      temPrecoDeFundadora({
+        beta: { convidadaPor: "a" },
+        pesquisaRespondidaEm: respondida,
+      }),
+    ).toBe(false);
+  });
+
+  it("a semeada segue a mesma regra: sem pesquisa, não", () => {
+    expect(temPrecoDeFundadora({ beta: { fundadora: 1, convites: 5 } })).toBe(
+      false,
+    );
+    expect(
+      temPrecoDeFundadora({
+        beta: { fundadora: 1, convites: 5 },
+        pesquisaRespondidaEm: respondida,
+      }),
+    ).toBe(true);
+  });
+
+  it("30% sobre a tabela, e a frase do plano diz que é de fundadora", () => {
+    expect(valorComDesconto(2900, [DESCONTO_DE_FUNDADORA])).toBe(2030);
+    expect(valorComDesconto(4990, [DESCONTO_DE_FUNDADORA])).toBe(3493);
+    expect(
+      fraseDoPlano("COMPLETO", {
+        valor: 3493,
+        periodo: "mensal",
+        fundadora: true,
+      }).replace(/ /g, " "),
+    ).toBe("Plano Completo · preço de fundadora · R$ 34,93 por mês");
   });
 });
 

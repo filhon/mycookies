@@ -6,6 +6,7 @@ import { FaixaDoCusto } from "@/components/site/FaixaDoCusto";
 import { ListaDeEspera } from "@/components/site/ListaDeEspera";
 import { Rodape, Topo } from "@/components/site/Moldura";
 import { classesBotao } from "@/components/ui/estilosBotao";
+import { FRASE_DO_PRECO_DE_FUNDADORA } from "@/lib/domain/assinatura";
 import { DIAS_DE_TESTE } from "@/lib/domain/cadastro";
 import { fraseDaVaga } from "@/lib/domain/convite";
 import { EXEMPLO, faixaDoExemplo } from "@/lib/domain/exemplo";
@@ -112,6 +113,10 @@ export default async function PaginaDoConvite({ params }: Props) {
               </Link>
               <p className="mt-3 text-label text-ink-muted">
                 {DIAS_DE_TESTE} dias grátis, sem cartão.
+              </p>
+              {/* Sem valor em reais: o desconto depende da pesquisa (spec 187). */}
+              <p className="mt-1 max-w-[52ch] text-label text-ink-muted">
+                {FRASE_DO_PRECO_DE_FUNDADORA}
               </p>
             </section>
           ) : (
