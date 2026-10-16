@@ -112,11 +112,11 @@ Na sandbox, com 130 entradas falsas na lista (e-mails `+n` de uma caixa de teste
 
 ## Critérios de aceite
 
-- [ ] Um comando abre o Rende, sem deploy.
-- [ ] Ninguém da lista recebe o e-mail duas vezes, e a cota do dia é respeitada.
-- [ ] As telas da tabela se comportam como a tabela diz.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] Decisões registradas; `ESTADO.md` e `DEPLOY.md` atualizados.
+- [x] Um comando abre o Rende, sem deploy.
+- [x] Ninguém da lista recebe o e-mail duas vezes, e a cota do dia é respeitada.
+- [x] As telas da tabela se comportam como a tabela diz.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] Decisões registradas; `ESTADO.md` e `DEPLOY.md` atualizados.
 
 ---
 

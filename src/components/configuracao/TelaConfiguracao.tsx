@@ -1345,7 +1345,8 @@ function ConfiguracaoDaDona() {
           {/* Fora do formulário (`#d284`): cada linha age na hora, e a posição
               diz isso. Lista com divisórias, nenhum cartão. */}
           <Parte id="a-sua-conta" titulo="A sua conta">
-            {/* Acima de "Quem te ajuda" (spec 183): some fora do beta e sem cota. */}
+            {/* Acima de "Quem te ajuda" (spec 183): some fora do beta e sem cota;
+                depois do lançamento, a linha da fundadora (186). */}
             <SeusConvites />
             <div className={LISTA}>
               {/* Só em teste e assinante: `livre` não tem o que ver aqui (spec

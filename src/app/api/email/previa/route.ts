@@ -3,6 +3,7 @@ import { RESPONSAVEL } from "@/app/(auth)/responsavel";
 import { URL_DO_SITE } from "@/app/site";
 import {
   boasVindas,
+  lancamento,
   listaDeEspera,
   mesFechado,
   metaBatida,
@@ -28,6 +29,7 @@ const PECAS: Record<string, () => Peca> = {
       acabaEmISO: "2026-10-09",
     }),
   "lista-de-espera": () => listaDeEspera({ nome: "Carla", posicao: 37 }),
+  lancamento: () => lancamento({ nome: "Carla" }),
   "senha-nova": () =>
     senhaNova({
       email: "carla@exemplo.com",

@@ -7,6 +7,9 @@
  *   npm run beta -- tirar-da-espera <email> apaga a entrada dela da lista (spec 182)
  *   npm run beta -- pesquisas <diretório>   o CSV das respostas e o resumo (spec 185)
  *   npm run beta -- depoimentos             as frases autorizadas, no formato da /conheca
+ *   npm run beta -- lancar [--confirmo]     abre o Rende para todas (spec 186)
+ *   npm run beta -- fase BETA               desfaz um lançamento acidental
+ *   npm run beta -- apagar-espera [--confirmo]  apaga a lista, 90 dias depois
  *
  * Os caminhos e o padrão de `plataforma/beta` estão repetidos aqui de
  * propósito, como em `conceder-acesso.mjs`: o script roda fora do app e não
@@ -38,6 +41,10 @@ const PADRAO = {
 };
 /** `CONVITES_POR_FUNDADORA` de `src/lib/domain/convite.ts`. */
 const COTA = 5;
+/** `LOTE_DO_LANCAMENTO` de `src/lib/domain/listaDeEspera.ts`. */
+const LOTE = 60;
+/** O prazo da lista depois do lançamento, da seção 11 da privacidade (`#d403`). */
+const DIAS_DA_LISTA = 90;
 
 const USO =
   "Uso: npm run beta\n" +
@@ -45,7 +52,10 @@ const USO =
   "     npm run beta -- vagas <n>\n" +
   "     npm run beta -- tirar-da-espera <email>\n" +
   "     npm run beta -- pesquisas <diretório>\n" +
-  "     npm run beta -- depoimentos";
+  "     npm run beta -- depoimentos\n" +
+  "     npm run beta -- lancar [--confirmo]\n" +
+  "     npm run beta -- fase BETA\n" +
+  "     npm run beta -- apagar-espera [--confirmo]";
 
 const MS_POR_DIA = 24 * 60 * 60 * 1000;
 /** Brasília não tem horário de verão desde 2019. */
@@ -103,6 +113,17 @@ async function mostrar() {
     `Lista de espera: ${naLista.data().count} na lista · ` +
       `${hoje.data().count} entraram hoje · última posição ${estado.espera}`,
   );
+  if (estado.lancadoEm) {
+    const [avisadas, viraram] = await Promise.all([
+      lista.where("avisadaEm", ">", new Date(0)).count().get(),
+      db.collection("contas").where("origem", "==", "espera").count().get(),
+    ]);
+    console.log(
+      `Lançado em ${estado.lancadoEm.toDate().toLocaleDateString("pt-BR")} · ` +
+        `${avisadas.data().count} avisadas · ` +
+        `${viraram.data().count} viraram conta pelo e-mail`,
+    );
+  }
 
   const porStatus = { ABERTO: 0, USADO: 0, CANCELADO: 0 };
   const usadosPorDona = new Map();
@@ -349,7 +370,109 @@ async function depoimentos() {
   }
 }
 
+/**
+ * O lançamento (spec 186, `#d411`): a fase vira `PUBLICO` e as telas, que já
+ * leem a fase, abrem sozinhas em até 5 minutos. O e-mail da lista sai pelo
+ * cron, em lotes (`#d412`); daqui não sai e-mail nenhum.
+ */
+async function lancar(confirmo) {
+  const [plataforma, naLista, avisadas, fundadoras] = await Promise.all([
+    db.doc(PLATAFORMA_BETA).get(),
+    db.collection(LISTA_DE_ESPERA).count().get(),
+    db
+      .collection(LISTA_DE_ESPERA)
+      .where("avisadaEm", ">", new Date(0))
+      .count()
+      .get(),
+    db.collection("contas").orderBy("beta.fundadora").get(),
+  ]);
+  const estado = { ...PADRAO, ...plataforma.data() };
+  const faltam = naLista.data().count - avisadas.data().count;
+  const semPesquisa = fundadoras.docs.filter(
+    (d) => d.get("status") !== "ENCERRADA" && !d.get("pesquisaRespondidaEm"),
+  ).length;
+
+  console.log(
+    `Fase ${estado.fase} · ${estado.ocupadas} fundadoras · ` +
+      `${estado.pesquisas} pesquisas respondidas`,
+  );
+  console.log(
+    `Lista de espera: ${faltam} por avisar, ${LOTE} por dia pelo cron das 9h: ` +
+      `${Math.ceil(faltam / LOTE)} dias de lotes.`,
+  );
+  console.log(`Fundadoras sem pesquisa: ${semPesquisa}.`);
+
+  if (estado.fase === "PUBLICO") {
+    console.log("\nO Rende já está aberto. Nada mudou.");
+    return;
+  }
+  if (!confirmo) {
+    console.log(
+      "\nNada mudou. Para abrir: npm run beta -- lancar --confirmo\n" +
+        "Quer a lista toda no mesmo dia? Resend Pro e o lote maior antes (DEPLOY.md § 17).",
+    );
+    return;
+  }
+  await db
+    .doc(PLATAFORMA_BETA)
+    .set(
+      { ...estado, fase: "PUBLICO", lancadoEm: new Date(), v: 1 },
+      { merge: true },
+    );
+  console.log(
+    '\nAberto. As páginas mostram "Começar o teste" em até 5 minutos; ' +
+      "o primeiro lote da lista sai no próximo cron, às 9h.",
+  );
+}
+
+/**
+ * Desfaz um lançamento acidental. O e-mail já mandado não volta; `lancadoEm`
+ * fica, e o próximo `lancar` o regrava.
+ */
+async function voltarAoBeta() {
+  await db.doc(PLATAFORMA_BETA).set({ fase: "BETA", v: 1 }, { merge: true });
+  console.log(
+    "Fase BETA. As páginas fecham em até 5 minutos e o cron para de avisar a lista.",
+  );
+}
+
+/**
+ * A lista inteira, como a privacidade da 182 prometeu (`#d403`), e só 90 dias
+ * depois do lançamento. Sem `--confirmo`, só diz quantas apagaria.
+ */
+async function apagarEspera(confirmo) {
+  const [plataforma, naLista] = await Promise.all([
+    db.doc(PLATAFORMA_BETA).get(),
+    db.collection(LISTA_DE_ESPERA).count().get(),
+  ]);
+  const lancadoEm = plataforma.get("lancadoEm");
+  if (!lancadoEm) {
+    console.log("O Rende não foi lançado: a lista fica. Nada apagado.");
+    return;
+  }
+  const pode = new Date(lancadoEm.toMillis() + DIAS_DA_LISTA * MS_POR_DIA);
+  if (Date.now() < pode.getTime()) {
+    console.log(
+      `Ainda não: a lista só pode ser apagada a partir de ` +
+        `${pode.toLocaleDateString("pt-BR")}, ${DIAS_DA_LISTA} dias depois do ` +
+        "lançamento. Nada apagado.",
+    );
+    process.exitCode = 1;
+    return;
+  }
+  if (!confirmo) {
+    console.log(
+      `${naLista.data().count} entradas na lista. Para apagar todas: ` +
+        "npm run beta -- apagar-espera --confirmo",
+    );
+    return;
+  }
+  await db.recursiveDelete(db.collection(LISTA_DE_ESPERA));
+  console.log(`Lista apagada (${naLista.data().count} entradas).`);
+}
+
 const [comando, ...args] = process.argv.slice(2);
+const confirmo = args.includes("--confirmo");
 
 try {
   if (!comando) await mostrar();
@@ -360,6 +483,9 @@ try {
     await tirarDaEspera(args[0]);
   else if (comando === "pesquisas" && args[0]) await pesquisas(args[0]);
   else if (comando === "depoimentos") await depoimentos();
+  else if (comando === "lancar") await lancar(confirmo);
+  else if (comando === "fase" && args[0] === "BETA") await voltarAoBeta();
+  else if (comando === "apagar-espera") await apagarEspera(confirmo);
   else {
     console.error(USO);
     process.exit(1);

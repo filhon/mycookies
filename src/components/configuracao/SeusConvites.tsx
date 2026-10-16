@@ -45,15 +45,31 @@ function linkDo(codigo: string): string {
  * na fase `BETA`. A lista vem do ouvinte, como a de `QuemTeAjuda`: a linha da
  * amiga que entrou vira "entrou em…" sem recarregar. Criar e cancelar são de
  * rota, porque só o servidor escreve convite (`DECISOES.md#d399`).
+ *
+ * Depois do lançamento (spec 186) a lista sai, e a fundadora fica com uma
+ * linha, e com a oferta da pesquisa enquanto ela estiver aberta.
  */
 export function SeusConvites() {
   const { conta } = useAuth();
   const beta = useBeta();
+  const fundadora = conta?.beta?.fundadora;
   const cota = conta?.beta?.convites ?? 0;
-  if (!conta?.beta || cota <= 0 || beta?.fase !== "BETA") return null;
+  if (!fundadora) return null;
+  if (beta?.fase === "PUBLICO") {
+    return (
+      <div>
+        <p className="max-w-[60ch] text-label text-ink-muted">
+          Você foi a fundadora nº{" "}
+          <span className="num font-semibold text-ink">{fundadora}</span>.
+        </p>
+        <OfertaDaPesquisa className="mt-4" />
+      </div>
+    );
+  }
+  if (cota <= 0 || beta?.fase !== "BETA") return null;
   return (
     <ListaDeConvites
-      fundadora={conta.beta.fundadora}
+      fundadora={fundadora}
       cota={cota}
       vagas={beta.vagas}
       restam={beta.restam}

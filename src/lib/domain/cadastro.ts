@@ -25,9 +25,10 @@ export const esquemaCadastro = z.object({
   termos: z.literal(true),
   /**
    * Por onde ela chegou: a calculadora pública com rascunho no aparelho (spec
-   * 040-B, `#d191`) ou o rodapé de um cardápio (spec 114, `#d317`).
+   * 040-B, `#d191`), o rodapé de um cardápio (spec 114, `#d317`) ou o e-mail
+   * do lançamento para a lista de espera (spec 186, `?de=espera`).
    */
-  origem: z.enum(["calculadora", "cardapio"]).optional(),
+  origem: z.enum(["calculadora", "cardapio", "espera"]).optional(),
   /**
    * O código do convite de fundadora, como veio do link ou do aparelho (spec
    * 181). A rota lê com `lerCodigo`; `"convite"` em `Conta.origem` é a rota que

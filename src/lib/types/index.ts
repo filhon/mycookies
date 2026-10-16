@@ -22,6 +22,8 @@ export const caminhos = {
   apelidos: "apelidos",
   apelido: (apelido: string) => `apelidos/${apelido}`,
   plataformaBeta: "plataforma/beta",
+  /** A coleção inteira, que o lote do lançamento lê (spec 186). */
+  esperas: "listaDeEspera",
   listaDeEspera: (id: string) => `listaDeEspera/${id}`,
   /** O nome da coleção, para `collectionGroup`. */
   grupoConvites: "convites",

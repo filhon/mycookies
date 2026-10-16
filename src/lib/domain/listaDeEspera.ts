@@ -1,5 +1,6 @@
 import { z } from "zod";
-import type { OrigemDaEspera } from "@/lib/types";
+import { hojeEmBrasilia } from "@/lib/domain/datas";
+import type { DataISO, OrigemDaEspera } from "@/lib/types";
 
 /**
  * A lista de espera do beta (spec 182): quem chega sem convite deixa nome e
@@ -71,6 +72,32 @@ export async function idDaEspera(email: string): Promise<string> {
   )
     .join("")
     .slice(0, 32);
+}
+
+/**
+ * Quantas da lista o cron avisa por dia depois do lançamento (spec 186,
+ * `#d412`). Deixa espaço na cota grátis do Resend (100 por dia) para os
+ * outros e-mails. `scripts/beta.mjs` repete.
+ */
+// ponytail: constante fixa; com o Resend Pro, sobe para 1.000 nesta linha.
+export const LOTE_DO_LANCAMENTO = 60;
+
+/**
+ * O lote do dia: as ainda não avisadas, por posição, até o que falta para
+ * `lote` no dia `hoje` de Brasília. Chamar o cron duas vezes no mesmo dia não
+ * passa de `lote`; quem falhou fica sem `avisadaEm` e volta na próxima.
+ */
+export function loteDoLancamento<
+  T extends { posicao: number; avisadaEm?: { toMillis(): number } },
+>(entradas: T[], hoje: DataISO, lote = LOTE_DO_LANCAMENTO): T[] {
+  const avisadasHoje = entradas.filter(
+    (e) =>
+      e.avisadaEm && hojeEmBrasilia(new Date(e.avisadaEm.toMillis())) === hoje,
+  ).length;
+  return entradas
+    .filter((e) => !e.avisadaEm)
+    .sort((a, b) => a.posicao - b.posicao)
+    .slice(0, Math.max(0, lote - avisadasHoje));
 }
 
 /** 37 → "37ª"; 1200 → "1.200ª". */

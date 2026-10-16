@@ -635,6 +635,47 @@ que possa trazer mais de 50 pessoas num dia, o plano Pro do Resend.**
 **Sair da lista** é por resposta ao e-mail: `npm run beta -- tirar-da-espera <email>` apaga a
 entrada (`DECISOES.md#d403`).
 
+## 17 · O dia do lançamento (spec 186)
+
+Abrir o Rende é um comando, sem deploy (`DECISOES.md#d411`). As specs 181 a 185 e 187 já estão
+em produção.
+
+1. **Ver o que vai acontecer:**
+
+   ```bash
+   npm run beta -- lancar
+   ```
+
+   Diz quantas da lista faltam avisar, quantos dias de lotes isso dá (60 por dia) e quantas
+   fundadoras ainda não responderam a pesquisa. Não muda nada.
+
+2. **Quer a lista inteira no mesmo dia?** Antes de lançar: o plano Pro do Resend e, em
+   `src/lib/domain/listaDeEspera.ts`, `LOTE_DO_LANCAMENTO` de 60 para 1.000 (e `LOTE` em
+   `scripts/beta.mjs`), com deploy. No grátis, 60 por dia deixam espaço para boas-vindas, senha
+   e os avisos do cron. Com meio segundo entre envios, 1.000 passam do tempo da função: o cron
+   manda o que couber, e `?so=lista` chamado de novo no mesmo dia manda o resto.
+
+3. **Abrir:**
+
+   ```bash
+   npm run beta -- lancar --confirmo
+   ```
+
+   Em até 5 minutos as páginas mostram "Começar o teste", `/cadastro` abre sem convite e
+   `/convite/{codigo}` leva ao cadastro. O primeiro lote da lista sai no próximo cron, às 9h.
+
+**Conferir:** numa aba anônima, a `/conheca` com "Começar o teste" e um cadastro sem convite
+abrindo conta com 14 dias. No dia seguinte, `npm run beta` diz `60 avisadas`.
+
+**Forçar um lote** (o roteiro, ou um lote que falhou): `GET /api/emails/diario?so=lista` com o
+`CRON_SECRET`; `&simular=1` devolve os ids sem mandar, `&hoje=AAAA-MM-DD` conta outro dia.
+
+**Desfazer** um lançamento acidental: `npm run beta -- fase BETA`. As páginas fecham em até 5
+minutos e o cron para de avisar a lista; o e-mail já mandado não volta.
+
+**90 dias depois**, como a privacidade promete: `npm run beta -- apagar-espera --confirmo`. Antes
+do prazo, o script recusa.
+
 ## Limites conhecidos
 
 **O arquivo da nota tem dois tetos, e o menor não é o nosso.** `LIMITE_ARQUIVO_BYTES` é 8 MB

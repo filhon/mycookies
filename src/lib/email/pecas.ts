@@ -237,7 +237,7 @@ export interface DadosBoasVindas {
   email: string;
   /** O dia do fim do teste, em São Paulo. */
   acabaEmISO: DataISO;
-  origem?: "calculadora" | "cardapio";
+  origem?: "calculadora" | "cardapio" | "espera";
 }
 
 export function boasVindas(d: DadosBoasVindas): Peca {
@@ -445,6 +445,53 @@ export function listaDeEspera(d: DadosListaDeEspera): Peca {
     }),
     texto: texto(
       [`Oi, ${d.nome}.`, fila, oQueE, beta, convite],
+      `${pe}\nPrivacidade: ${URL_DO_SITE}/privacidade#secao-11`,
+    ),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Lançamento
+
+export interface DadosLancamento {
+  nome: string;
+}
+
+/**
+ * O aviso do lançamento a quem esperava na lista (spec 186), um só por
+ * pessoa, em lotes pelo cron (`#d412`). O botão leva `?de=espera`, que vira
+ * `origem: "espera"` na conta.
+ */
+export function lancamento(d: DadosLancamento): Peca {
+  const assunto = "O Rende abriu, e você é das primeiras a saber";
+  const preheader = `${DIAS_DE_TESTE} dias grátis, sem cartão. Comece pelo doce que você mais vende.`;
+  const abriu =
+    "Você entrou na fila do Rende e a gente prometeu avisar primeiro. As portas abriram.";
+  const primeiroDia = `São ${DIAS_DE_TESTE} dias grátis, sem cartão. No primeiro dia, faça uma coisa só: escolha o doce que você mais vende, monte a receita e veja o preço dele com tudo o que entra (material, embalagem, a sua hora, a maquininha). Leva uns dez minutos.`;
+  const acao = "Começar o teste";
+  const link = `${URL_DO_SITE}/cadastro?de=espera`;
+  const pe =
+    "Você está recebendo isto porque entrou na lista de espera do Rende. Não vai receber outro.";
+
+  return {
+    assunto,
+    preheader,
+    html: moldura({
+      assunto,
+      preheader,
+      corpo: `
+    ${titulo(`Oi, ${escapar(d.nome)}`, 20)}
+
+    <p style="margin:0 0 16px;">${abriu}</p>
+
+    <p style="margin:0;">${primeiroDia}</p>
+
+    ${botao(link, acao)}
+`,
+      pe: `${pe} <a href="${URL_DO_SITE}/privacidade#secao-11" style="color:${MUDO};">Privacidade</a>.`,
+    }),
+    texto: texto(
+      [`Oi, ${d.nome}.`, abriu, primeiroDia, `${acao}: ${link}`],
       `${pe}\nPrivacidade: ${URL_DO_SITE}/privacidade#secao-11`,
     ),
   };

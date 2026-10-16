@@ -82,21 +82,23 @@ export interface Conta {
    * `DECISOES.md#d191`) e por mais ninguém. `"calculadora"`: havia o rascunho
    * da calculadora pública no aparelho. `"cardapio"`: chegou pelo rodapé
    * "Cardápio feito no Rende" (spec 114, `#d317`). `"convite"`: abriu a conta
-   * com um convite de fundadora (spec 181); o rascunho da calculadora ganha
-   * dele. Ausente = outro caminho.
+   * com um convite de fundadora (spec 181, e depois do lançamento também,
+   * 186); o rascunho da calculadora ganha dele. `"espera"`: veio do e-mail do
+   * lançamento para a lista (spec 186). Ausente = outro caminho.
    */
-  origem?: "calculadora" | "cardapio" | "convite";
+  origem?: "calculadora" | "cardapio" | "convite" | "espera";
   /**
    * A fundadora do beta (spec 181). Gravado pela troca do convite em
    * `/api/conta` e por `npm run beta -- semear`, e por mais ninguém. Ausente =
    * conta que não ocupa vaga: aberta depois do lançamento, ou liberada à mão
-   * e ainda não semeada.
+   * e ainda não semeada. Quem entra por convite depois do lançamento (186)
+   * ganha só `convidadaPor`: nem vaga, nem cota (`#d411`).
    */
   beta?: {
     /** O número da vaga, de 1 ao teto: "fundadora nº 37". */
-    fundadora: number;
+    fundadora?: number;
     /** A cota de convites dela, `CONVITES_POR_FUNDADORA` ao nascer. */
-    convites: number;
+    convites?: number;
     /** O `contaId` de quem convidou. Ausente na semeada. */
     convidadaPor?: string;
   };

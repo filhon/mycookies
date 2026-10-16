@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { DocumentData, Timestamp } from "firebase-admin/firestore";
+import { Timestamp, type DocumentData } from "firebase-admin/firestore";
 import { avisosDoDia, diaEmQueBateu, type Aviso } from "@/lib/domain/avisos";
 import { custosDeHoje, type MaterialDeHoje } from "@/lib/domain/custoFicha";
 import {
@@ -10,15 +10,18 @@ import {
   diaVizinho,
   hojeEmBrasilia,
 } from "@/lib/domain/datas";
+import { loteDoLancamento } from "@/lib/domain/listaDeEspera";
 import { situacaoDaPesquisa } from "@/lib/domain/pesquisa";
 import { calcularPrecoSugerido } from "@/lib/domain/precificacao";
 import {
+  lancamento,
   mesFechado,
   metaBatida,
   testeAcabando,
   type DadosTesteAcabando,
   type Peca,
 } from "@/lib/email/pecas";
+import { lerBeta } from "@/lib/server/beta";
 import { enviarEmail } from "@/lib/server/email";
 import {
   adminAuth,
@@ -32,7 +35,9 @@ import {
   type Conta,
   type DataISO,
   type FichaTecnica,
+  type NaListaDeEspera,
   type ResumoMensal,
+  VERSAO_SCHEMA,
 } from "@/lib/types";
 
 /**
@@ -43,6 +48,9 @@ import {
  * mandar; `?so={contaId}` roda uma conta só, e é obrigatório fora de produção:
  * o projeto do Firebase é um só, e uma prévia sem ele mandaria e-mail a todas
  * as contas de verdade.
+ *
+ * Na fase `PUBLICO`, depois dos avisos, o lote do lançamento para a lista de
+ * espera (spec 186, `#d412`). `?so=lista` roda só o lote, sem conta nenhuma.
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -76,9 +84,12 @@ export async function GET(requisicao: Request) {
   const db = adminDb();
   // ponytail: lê toda conta todo dia, uma a uma. Com centenas de contas, uma
   // consulta por `trialAte` e outra pelos agregados do mês (spec 044).
-  const contas = so
-    ? [await db.doc(caminhos.conta(so)).get()]
-    : (await db.collection("contas").get()).docs;
+  const contas =
+    so === SO_A_LISTA
+      ? []
+      : so
+        ? [await db.doc(caminhos.conta(so)).get()]
+        : (await db.collection("contas").get()).docs;
 
   let precos: Promise<DadosTesteAcabando["precos"]> | undefined;
   const lerPrecosUmaVez = () =>
@@ -118,8 +129,77 @@ export async function GET(requisicao: Request) {
     }
   }
 
+  // Depois dos avisos de sempre: eles não esperam pela cota.
+  let lancamentos: string[] = [];
+  if ((!so || so === SO_A_LISTA) && (await lerBeta()).fase === "PUBLICO") {
+    lancamentos = await avisarALista(hoje, simular, total);
+  }
+
   console.log(`[diario] ${hoje}`, total);
-  return NextResponse.json(simular ? { hoje, simulado } : total);
+  return NextResponse.json(
+    simular ? { hoje, simulado, lancamento: lancamentos } : total,
+  );
+}
+
+const SO_A_LISTA = "lista";
+
+/**
+ * O lote do dia da lista de espera (`loteDoLancamento`). Quem já tem login
+ * (entrou por convite antes) não recebe, e fica avisada do mesmo jeito; quem
+ * falhou fica sem `avisadaEm` e volta no próximo. Devolve os ids do lote.
+ */
+// ponytail: lê a lista inteira todo dia para achar as sem `avisadaEm`
+// (o Firestore não consulta campo ausente). Com dezenas de milhares, gravar
+// `avisadaEm: null` na entrada e consultar por ele.
+async function avisarALista(
+  hoje: DataISO,
+  simular: boolean,
+  total: { enviados: number; repetidos: number; falhas: number },
+): Promise<string[]> {
+  const lista = (await adminDb().collection(caminhos.esperas).get()).docs;
+  const lote = loteDoLancamento(
+    lista.map((snap) => ({ snap, ...(snap.data() as NaListaDeEspera) })),
+    hoje,
+  );
+  if (simular) return lote.map(({ snap }) => snap.id);
+
+  for (const { snap, email, nome } of lote) {
+    try {
+      const resultado = (await temLogin(email))
+        ? "repetido"
+        : await enviarEmail({
+            para: email,
+            peca: lancamento({ nome }),
+            chave: `lancamento/${snap.id}`,
+          });
+      if (resultado === "falhou") {
+        total.falhas++;
+        console.warn(`[diario] o lançamento não saiu para ${snap.id}.`);
+        continue;
+      }
+      if (resultado === "enviado") total.enviados++;
+      else total.repetidos++;
+      await snap.ref.update({ avisadaEm: Timestamp.now(), v: VERSAO_SCHEMA });
+      // O Resend aceita 2 chamadas por segundo; o 429 viraria `falhou`. Se a
+      // função cair no meio, cada avisada já está gravada e o resto volta.
+      await new Promise((pronto) => setTimeout(pronto, 500));
+    } catch (erro) {
+      total.falhas++;
+      console.warn(`[diario] a entrada ${snap.id} da lista falhou:`, erro);
+    }
+  }
+  return lote.map(({ snap }) => snap.id);
+}
+
+async function temLogin(email: string): Promise<boolean> {
+  try {
+    await adminAuth().getUserByEmail(email);
+    return true;
+  } catch (erro) {
+    if ((erro as { code?: string }).code === "auth/user-not-found")
+      return false;
+    throw erro;
+  }
 }
 
 /** contaId → e-mail da dona, pela claim, como `scripts/metricas.mjs` (`#d206`). */

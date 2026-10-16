@@ -13475,3 +13475,62 @@ uma a uma, não escala para cem. Depoimento comprado não vale como prova.
 
 **Consequência.** Pedir para tirar é por mensagem, como a lista de espera (`#d403`); o depoimento
 sai da página à mão.
+
+## D411 · O lançamento é um campo, e as telas já o leem
+
+**Status:** vigente · decidida e codificada em 2026-10-16, spec 186 · estende a `#d401` e a
+`#d406`.
+
+**Contexto.** Abrir o Rende não pode depender de deploy nem de mexer no console, e cada tela do
+beta (181 a 185) já lê `plataforma/beta.fase`.
+
+**Decisão.**
+
+- **`npm run beta -- lancar` descreve e para** (quantas por avisar, quantos dias de lotes,
+  quantas fundadoras sem pesquisa); **com `--confirmo` grava `fase: "PUBLICO"` e `lancadoEm`**.
+  `fase BETA` desfaz e deixa `lancadoEm`; o próximo `lancar` regrava. O e-mail já mandado não
+  volta.
+- **A conferência da tabela da spec achou uma falta, em `POST /api/conta`**: na fase `PUBLICO` o
+  convite era ignorado. Agora o convite que vale ainda passa pela transação da `#d400` e grava
+  `origem: "convite"` e `beta: { convidadaPor }`, e o convite vira `USADO` (a linha "entrou em…"
+  dela continua verdadeira). **Sem vaga, sem número e sem cota**: o teto não vale mais, e quem
+  entra depois não é fundadora (o desconto da 187 também não). O convite que não vale, o usado ou
+  o de conta encerrada só não conta: a conta nasce como qualquer outra, sem recusa.
+- **Por isso `Conta.beta.fundadora` e `beta.convites` passaram a opcionais no tipo.** O
+  documento das fundadoras não muda; quem lê já usava `?.` ou passou a usar.
+- **"Seus convites" dá lugar a uma linha**, "Você foi a fundadora nº {n}.", com a oferta da
+  pesquisa embaixo enquanto ela estiver aberta: a pesquisa não lê a fase.
+- **`?de=espera` no cadastro vira `origem: "espera"`**, pelo mesmo `OrigemDoLink` da 114, agora
+  montado também em `/cadastro`, e pela mesma chave `rende:origem`. O rascunho da calculadora
+  continua ganhando.
+- **`apagar-espera` recusa antes de 90 dias de `lancadoEm`** e, depois, sem `--confirmo` só
+  conta; com ele, `recursiveDelete` na coleção.
+
+**Consequência.** Os quatro lugares da tabela que já liam a fase (as páginas, o cadastro e o
+login, `/convite/[codigo]`, o ⋯) não mudaram de código.
+
+## D412 · O e-mail da lista sai pelo cron diário, em lotes
+
+**Status:** vigente · decidida e codificada em 2026-10-16, spec 186 · estende a `#d205`.
+
+**Contexto.** A lista pode ter centenas de pessoas, e o Resend grátis manda 100 por dia somando
+tudo. O script roda fora do app e não importa as peças (`#d141`).
+
+**Decisão.**
+
+- **No `GET /api/emails/diario`, depois dos avisos de sempre e só na fase `PUBLICO`**, o lote do
+  dia: `loteDoLancamento` (`domain/listaDeEspera.ts`) pega as entradas sem `avisadaEm`, por
+  `posicao`, até `LOTE_DO_LANCAMENTO` (60) **menos as já avisadas no mesmo dia de Brasília**.
+  Chamar o cron duas vezes no mesmo dia não passa de 60; `?hoje=` forçado vira outro dia.
+- **`enviado` ou `repetido` gravam `avisadaEm`**; `falhou` não grava, e a entrada volta no
+  próximo lote. Chave do Resend `lancamento/{id}`.
+- **Quem já tem login não recebe** (`getUserByEmail`), e fica avisada do mesmo jeito.
+- **Meio segundo entre um envio e o próximo**: o Resend aceita 2 chamadas por segundo e o 429
+  viraria `falhou`. Se a função cair no meio, cada avisada já está gravada e o resto volta.
+- **`?so=lista` roda só o lote, sem conta nenhuma**, para o roteiro fora de produção não mandar
+  avisos de dia forçado às contas de verdade. Sem `?so=`, roda nos dois.
+- **A lista inteira é lida a cada cron** (o Firestore não consulta campo ausente). Anotado como
+  `ponytail:`; com dezenas de milhares, gravar `avisadaEm: null` na entrada e consultar por ele.
+
+**Consequência.** O lote é constante no código: com o Resend Pro, 1.000 numa linha
+(`DEPLOY.md` § 17). `npm run beta` mostra avisadas e quantas viraram conta pelo e-mail.

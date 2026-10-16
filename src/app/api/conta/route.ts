@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { after, NextResponse } from "next/server";
-import { Timestamp, type DocumentReference } from "firebase-admin/firestore";
+import {
+  Timestamp,
+  type DocumentReference,
+  type Transaction,
+} from "firebase-admin/firestore";
 import {
   esquemaCadastro,
   fimDoTeste,
@@ -129,10 +133,11 @@ async function garantirConta(uid: string, cadastro: Cadastro): Promise<string> {
     };
     // O portão do beta (spec 181): só aqui, onde a conta ainda não existe, e
     // por isso repetir o POST nunca gasta outro convite nem outra vaga.
-    if ((await lerBeta()).fase === "PUBLICO") {
+    const publico = (await lerBeta()).fase === "PUBLICO";
+    if (publico && !cadastro.convite) {
       await referencia.set(documento);
     } else {
-      await trocarConvite(referencia, documento, cadastro, agora);
+      await trocarConvite(referencia, documento, cadastro, agora, publico);
     }
     // Só quando a conta nasce, e depois da resposta: o cadastro não espera o
     // e-mail (spec 044, `#d202`). A chave segura a volta que repete o POST.
@@ -178,20 +183,37 @@ async function garantirConta(uid: string, cadastro: Cadastro): Promise<string> {
  *
  * Recusa antes de escrever qualquer coisa: o convite que não existe, o
  * cancelado e o de conta encerrada dão a mesma resposta, `convite-invalido`.
+ *
+ * Depois do lançamento (`publico`, spec 186) o convite não é mais porta: o
+ * que vale grava `origem: "convite"` e `beta.convidadaPor`, sem vaga nem cota,
+ * e é marcado `USADO`; o que não vale, ou o teto, só não conta, e a conta nasce
+ * como qualquer outra (`#d411`).
  */
 async function trocarConvite(
   conta: DocumentReference,
   documento: Record<string, unknown>,
   cadastro: Cadastro,
   agora: Timestamp,
+  publico: boolean,
 ): Promise<void> {
-  if (!cadastro.convite) throw new Recusa("sem-convite");
-  const codigo = lerCodigo(cadastro.convite);
-  if (!codigo) throw new Recusa("convite-invalido");
+  const codigo = cadastro.convite && lerCodigo(cadastro.convite);
+  if (!codigo) {
+    if (publico) return void (await conta.set(documento));
+    throw new Recusa(cadastro.convite ? "convite-invalido" : "sem-convite");
+  }
 
   const db = adminDb();
   const plataforma = db.doc(caminhos.plataformaBeta);
   await db.runTransaction(async (tx) => {
+    try {
+      await trocarNaTransacao(tx, codigo);
+    } catch (erro) {
+      if (!(publico && erro instanceof Recusa)) throw erro;
+      tx.create(conta, documento);
+    }
+  });
+
+  async function trocarNaTransacao(tx: Transaction, codigo: string) {
     const estado = comoEstadoDoBeta(
       (await tx.get(plataforma)).data() as Partial<EstadoDoBeta> | undefined,
     );
@@ -212,18 +234,22 @@ async function trocarConvite(
       throw new Recusa("convite-invalido");
     }
     if (status === "USADO") throw new Recusa("convite-usado");
-    if (estado.ocupadas >= estado.vagas) throw new Recusa("sem-vaga");
+    if (!publico && estado.ocupadas >= estado.vagas) {
+      throw new Recusa("sem-vaga");
+    }
 
     tx.create(conta, {
       ...documento,
       // O rascunho da calculadora ganha (`#d317`): a biblioteca e a
       // boas-vindas dependem dele.
       origem: cadastro.origem === "calculadora" ? "calculadora" : "convite",
-      beta: {
-        fundadora: estado.ocupadas + 1,
-        convites: CONVITES_POR_FUNDADORA,
-        convidadaPor: dona.id,
-      },
+      beta: publico
+        ? { convidadaPor: dona.id }
+        : {
+            fundadora: estado.ocupadas + 1,
+            convites: CONVITES_POR_FUNDADORA,
+            convidadaPor: dona.id,
+          },
     });
     tx.update(convite.ref, {
       status: "USADO",
@@ -232,10 +258,12 @@ async function trocarConvite(
       nomeDaConvidada: cadastro.nome,
       v: VERSAO_SCHEMA,
     });
-    tx.set(
-      plataforma,
-      { ...estado, ocupadas: estado.ocupadas + 1, v: VERSAO_SCHEMA },
-      { merge: true },
-    );
-  });
+    if (!publico) {
+      tx.set(
+        plataforma,
+        { ...estado, ocupadas: estado.ocupadas + 1, v: VERSAO_SCHEMA },
+        { merge: true },
+      );
+    }
+  }
 }

@@ -15,6 +15,7 @@ import { BotaoGoogle } from "@/components/auth/BotaoGoogle";
 import { MolduraDeEntrada } from "@/components/auth/MolduraDeEntrada";
 import { ContaAberta } from "@/components/site/ContaAberta";
 import { ListaDeEspera } from "@/components/site/ListaDeEspera";
+import { OrigemDoLink } from "@/components/site/OrigemDoLink";
 import { Botao } from "@/components/ui/Botao";
 import { Campo, CampoSenha, focarPrimeiroErro } from "@/components/ui/Campo";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -223,11 +224,7 @@ export default function PaginaCadastro() {
           nome: nome.trim(),
           negocio: negocio.trim() || undefined,
           termos,
-          origem: daCalculadora
-            ? "calculadora"
-            : doCardapio()
-              ? "cardapio"
-              : undefined,
+          origem: daCalculadora ? "calculadora" : origemDoLink(),
           convite: conviteGuardado(),
         }),
       });
@@ -352,6 +349,7 @@ export default function PaginaCadastro() {
       titulo={deQuem ? "Aceitar o convite" : "Criar minha conta"}
       descricao={
         <>
+          <OrigemDoLink />
           {`${DIAS_DE_TESTE} dias grátis, sem cartão. `}
           {/* No desktop o painel mostra os números dela; no celular, sem
               painel, a frase os diz. */}
@@ -633,12 +631,16 @@ function fraseDasVagas(beta: EstadoDaPorta | null): string {
 
 const semAssinatura = () => () => {};
 
-/** Veio pelo rodapé de um cardápio (spec 114, `#d317`), marcado em `/conheca`. */
-function doCardapio(): boolean {
+/**
+ * Veio pelo rodapé de um cardápio (spec 114, `#d317`), marcado em `/conheca`,
+ * ou pelo e-mail do lançamento (spec 186), marcado aqui por `OrigemDoLink`.
+ */
+function origemDoLink(): "cardapio" | "espera" | undefined {
   try {
-    return localStorage.getItem(CHAVE_DA_ORIGEM) === "cardapio";
+    const origem = localStorage.getItem(CHAVE_DA_ORIGEM);
+    return origem === "cardapio" || origem === "espera" ? origem : undefined;
   } catch {
-    return false;
+    return undefined;
   }
 }
 
