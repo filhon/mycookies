@@ -42,8 +42,6 @@ import {
  * `tests/domain/exemplo.test.ts` prende os números.
  */
 
-const ATUALIZADO_EM = "2026-10-01";
-
 const ENDERECO = "/como-calcular-o-preco-do-brigadeiro" as const;
 
 const TITULO = "Como calcular o preço do brigadeiro: a unidade e o cento";
@@ -208,7 +206,7 @@ export default function PaginaPrecoDoBrigadeiro() {
           <div className="mx-auto mb-10 max-w-6xl px-4 lg:mb-14 lg:px-10">
             <CabecalhoDoArtigo
               titulo="Como calcular o preço do brigadeiro, do cento ao avulso"
-              atualizadoEm={ATUALIZADO_EM}
+              endereco={ENDERECO}
             >
               Some o que o cento custa: ingredientes das quatro receitas, as
               forminhas, as horas de panela e de enrolar, o gás e uma fatia das

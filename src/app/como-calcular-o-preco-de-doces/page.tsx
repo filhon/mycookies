@@ -46,8 +46,6 @@ import type { Centavos } from "@/lib/types";
  * os quatro exemplos, e `tests/domain/exemplo.test.ts` prende os números.
  */
 
-const ATUALIZADO_EM = "2026-10-15";
-
 const ENDERECO = "/como-calcular-o-preco-de-doces" as const;
 
 const TITULO = "Como calcular o preço de doces: a conta que serve pra todos";
@@ -339,7 +337,7 @@ export default function PaginaPrecoDeDoces() {
         <article className="mx-auto max-w-6xl px-4 pt-8 pb-16 lg:px-10 lg:pt-16 lg:pb-24">
           <CabecalhoDoArtigo
             titulo="Como calcular o preço de doces"
-            atualizadoEm={ATUALIZADO_EM}
+            endereco={ENDERECO}
           >
             Para qualquer doce, some ingredientes, embalagem, sua hora, gás e
             energia e uma fatia das despesas fixas, na unidade em que você

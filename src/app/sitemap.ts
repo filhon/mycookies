@@ -8,6 +8,9 @@ import { PAGINAS_DO_PRECO, URL_DO_SITE } from "./site";
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: `${URL_DO_SITE}/conheca` },
-    ...PAGINAS_DO_PRECO.map((p) => ({ url: `${URL_DO_SITE}${p.endereco}` })),
+    ...PAGINAS_DO_PRECO.map((p) => ({
+      url: `${URL_DO_SITE}${p.endereco}`,
+      lastModified: p.atualizadoEm,
+    })),
   ];
 }

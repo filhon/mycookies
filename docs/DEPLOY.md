@@ -20,6 +20,27 @@ O Vercel publica o app. O banco é o mesmo projeto `mycookies-mrc` de sempre, e 
 pé com tudo publicado — ver `ESTADO.md`. Um deploy do app não move regra nem índice, e um
 índice que falte aparece como tela que não carrega, e não como erro de build.
 
+### Onde está, conferido em 2026-10-16
+
+Pelas CLIs (Stripe, Firebase, `gh`), pela API de admin com a conta de serviço e por `curl` em
+produção:
+
+- **O app em produção é o `38a7ddb`** (main, 2026-10-09). Tudo o que veio depois, da spec 112 à
+  187, está só em branch e em prévia: `/api/beta`, `/api/pesquisa`, `/api/lista-de-espera`,
+  `/api/pedido/aprovar` e `/api/entrega/medir` respondem 404 em `www.rendeapp.com.br`.
+- **Regras e índices já são os desta branch**: a regra publicada (2026-10-16 12:44 UTC) é igual a
+  `firestore.rules`, e os índices e as duas isenções batem com `firestore.indexes.json`. A § 16,
+  passo 1, está feita.
+- **Stripe ao vivo confere com as §§ do Stripe**: os dois produtos (o completo com
+  `metadata.pacote=COMPLETO`), os quatro preços do `.env.local` (R$ 29, 290, 49 e 490), o portal
+  `bpc_1ULUAuPrzcZdpSOZjU1oZn0s` com os dois produtos e os oito motivos, os cupons `CORTESIA` e
+  `FUNDADORA`, e um único webhook em `https://www.rendeapp.com.br/…` com os três eventos (o
+  `curl` dá 400; sem `www`, 308).
+- **Por fazer à mão**: a § 10 inteira (o modelo do Firebase ainda é o padrão em inglês, com a URL
+  de ação do `firebaseapp.com` e o domínio do remetente não iniciado; o Resend manda a senha, o
+  modelo é só a reserva); a § 11, passos 2, 3 e 5 (o `authDomain` publicado ainda é o
+  `mycookies-mrc.firebaseapp.com`); e o deploy das specs 112 a 187.
+
 ---
 
 ## 1 · O projeto no Vercel
@@ -39,8 +60,9 @@ o que o `@serwist/next` precisa para emitir o service worker (`next.config.ts`).
 a versão é o painel. Se o build reclamar da faixa, o conserto é uma linha —
 `"node": "24.x"` em `engines`, que é a versão em uso no desenvolvimento.
 
-**Região.** `/api/nota`, `/api/conta`, as três rotas de `/api/assinatura/` e o webhook do
-Stripe rodam no servidor; todo o resto é estático e sai do CDN, perto de quem abre. `gru1`
+**Região.** As rotas de `src/app/api/` (a nota, a conta, a assinatura, o webhook do Stripe, os
+e-mails, o cardápio, o beta) rodam no servidor; o resto é estático ou revalidado, e sai do CDN,
+perto de quem abre. `gru1`
 (São Paulo) continua sendo a escolha certa: é onde está quem paga e quem fotografa a nota.
 No plano gratuito dá para escolher **uma** região.
 
@@ -48,11 +70,10 @@ No plano gratuito dá para escolher **uma** região.
 
 ## 2 · Variáveis de ambiente
 
-No painel: **Settings → Environment Variables**. Marque Production e Preview nas seis
-primeiras; as duas últimas, Production e Preview também, se você quiser a leitura de nota
-funcionando nos previews.
+No painel: **Settings → Environment Variables**. Marque Production e Preview em todas. A
+exceção é `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, que tem um valor por ambiente (§ 11, passo 5).
 
-### As seis do Firebase — públicas, e assadas no build
+### As do Firebase — públicas, e assadas no build
 
 ```
 NEXT_PUBLIC_FIREBASE_API_KEY
@@ -83,6 +104,10 @@ STRIPE_SECRET_KEY
 STRIPE_WEBHOOK_SECRET
 STRIPE_PRICE_MENSAL
 STRIPE_PRICE_ANUAL
+STRIPE_PRICE_COMPLETO_MENSAL   (spec 032)
+STRIPE_PRICE_COMPLETO_ANUAL    (spec 032)
+RESEND_API_KEY         (spec 044; ver § 12)
+CRON_SECRET            (spec 044-B; ver § 12)
 ```
 
 Nenhuma delas leva `NEXT_PUBLIC_`, e é isso que as mantém fora do navegador. Só
@@ -104,9 +129,8 @@ node -e "console.log(Buffer.from(require('fs').readFileSync('./chave-servico.jso
 Sem `FIREBASE_SERVICE_ACCOUNT`, o app inteiro funciona e **só** a leitura de nota não: a tela
 diz "A leitura de nota ainda não está configurada neste servidor", que é a frase certa. Foi
 para isso que a rota passou a distinguir os dois erros (`DECISOES.md#d72`) — antes ela dizia
-que o login dela não abria a conta. Sem `STRIPE_SECRET_KEY` ou os quatro preços (dois desde a
-spec 032),
-`/assinatura` diz o mesmo tipo de frase ("A assinatura ainda não está configurada neste
+que o login dela não abria a conta. Sem `STRIPE_SECRET_KEY` ou um dos quatro preços (os dois
+do completo desde a spec 032), `/assinatura` diz o mesmo tipo de frase ("A assinatura ainda não está configurada neste
 servidor") e o resto do app continua de pé.
 
 ### Stripe, uma vez no painel (spec 028)
@@ -130,7 +154,7 @@ de **teste** primeiro:
 4. **Para o `npm run dev`**, o Stripe CLI substitui o passo 3:
    `stripe listen --forward-to localhost:3000/api/stripe/webhook` imprime um segredo local,
    diferente do de produção.
-5. **Ao ir ao ar de verdade** (modo ao vivo, e não mais teste): os quatro valores trocam pelos
+5. **Ao ir ao ar de verdade** (modo ao vivo, e não mais teste): os seis valores trocam pelos
    equivalentes de produção, inclusive um segundo endpoint de webhook — o do painel de teste
    não recebe eventos do modo ao vivo.
 6. **O recibo de cada cobrança (spec 164).** Configurações › E-mails para clientes ›
@@ -423,7 +447,7 @@ spec no app instalado: sem login, ele abre `/login`, e não a página.
 
 **Antes do primeiro deploy da 036, ligar o Web Analytics** (spec 038, `DECISOES.md#d180`): no
 painel da Vercel, Analytics → o projeto → **Enable**. Sem isso `/_vercel/insights/script.js`
-responde 404 e nada é contado; o código não quebra. O script só é emitido em produção
+responde 404 e nada é contado; o código não quebra (_ligado: responde 200 em produção_). O script só é emitido em produção
 (`VERCEL_ENV`), nas duas páginas públicas e em `/cadastro`. Depois do deploy, o roteiro da 038:
 em `/conheca`, a aba Rede com `script.js` e uma chamada a `/_vercel/insights/view`; nenhuma
 chamada nova depois de criar a conta e cair em `/fichas`.
@@ -448,6 +472,16 @@ trocar depois pede 301 de tudo. Com o domínio:
    ChatGPT e o Copilot se apoiam no índice dele.
 2. **Inspeção de URL** no Search Console, pedindo indexação das duas páginas.
 3. O resto é a seção 5 da spec 037, e é de quem conduz o projeto.
+
+**"Excluída pela tag noindex" no Search Console é esperado** para `/`, `/login`, `/cadastro`,
+`/termos`, `/privacidade`, `/redefinir-senha` e os cardápios: o layout raiz diz `noindex`, e só a
+`/conheca` e as cinco páginas do preço o sobrepõem (`DECISOES.md#d415`). Erro seria uma página do
+sitemap nessa lista.
+
+**Depois do deploy dos dados estruturados (`#d415`):** passar a `/conheca` e uma página do preço
+no [Teste de pesquisa aprimorada](https://search.google.com/test/rich-results) (tem de achar
+`FAQPage`, `Article` e `SoftwareApplication`, sem erro), reenviar o sitemap nos dois consoles (o
+`lastmod` é novo) e, no Bing Webmaster Tools, pedir a reindexação das seis URLs.
 
 ## 9 · Ao publicar a 039: depois do preço, e a prévia
 
@@ -487,6 +521,10 @@ vez da página do Firebase (`DECISOES.md#d196`). No console do Firebase, nesta o
 4. **Com o domínio próprio no ar:** domínio personalizado do remetente (os registros de DNS que
    o console pede). Sem ele o remetente continua `firebaseapp.com` e o spam continua possível.
 
+_Em 2026-10-16, nenhum dos quatro: o modelo está em inglês e com o assunto padrão, a URL de ação
+é `https://mycookies-mrc.firebaseapp.com/__/auth/action` e o domínio do remetente está "não
+iniciado". A tela já está no ar, então o passo 3 não espera mais nada._
+
 Se o domínio do app mudar depois (o domínio próprio chegando), a URL do passo 3 muda junto: é
 uma linha no console. Depois do passo 3, o roteiro da spec 042, §5.
 
@@ -516,6 +554,7 @@ O domínio do app é **`www.rendeapp.com.br`** (o `rendeapp.com.br` sem `www` re
 5. **Vercel → Environment Variables:** `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=www.rendeapp.com.br`,
    sem `https://`, só em Production, e **novo deploy** (a variável é assada no bundle). Em
    Preview fica o `firebaseapp.com`, ou o domínio da prévia com os passos 3 e 4 para ele.
+   _Por fazer: o bundle de produção de 2026-10-16 ainda leva `mycookies-mrc.firebaseapp.com`._
 
 Na prévia da Vercel, o domínio da prévia faz o papel do domínio do app nos passos 3 a 5. Antes
 do deploy de produção: o parágrafo novo de `/privacidade` revisado, e o roteiro de aparelho da
@@ -531,8 +570,10 @@ próprio** (`#d178`): o Resend só manda com o domínio verificado no DNS.
 1. **Resend → Domains → Add domain:** `rendeapp.com.br`, região São Paulo se houver. No DNS, os
    registros que o painel pedir (DKIM em `resend._domainkey`; SPF e MX no subdomínio de envio),
    e mais um TXT em `_dmarc` com `v=DMARC1; p=none;`. Esperar o painel dizer "Verified".
+   _Feito: `verified`, em `sa-east-1`, com o `_dmarc` publicado (conferido em 2026-10-16)._
 2. **No mesmo domínio, Open tracking e Click tracking desligados** (`#d208`): o de clique
-   reescreve os links, e o link da senha carrega um código de uso único.
+   reescreve os links, e o link da senha carrega um código de uso único. _Feito: os dois
+   desligados._
 3. **Vercel → Environment Variables:** `RESEND_API_KEY`, em Production e Preview, e novo deploy.
 4. **A § 10, passo 4** (domínio do remetente no Firebase) continua valendo: o modelo do Firebase
    é a reserva, e é por ele que a senha sai quando o Resend falha (`#d204`).
@@ -628,22 +669,23 @@ chega dá numa porta fechada sem explicação.
    Sem o índice, todo cadastro com convite falha com 500; sem a regra, a dona poderia escrever
    convites pelo cliente.
 
-2. **Semear as duas contas que existem**, cada uma com 5 convites. A da Maynara vira a fundadora
-   nº 1; a de quem conduz o projeto, a nº 2. Se forem dois logins da mesma conta, é uma vaga só.
+2. **Semear as contas que existem**, cada uma com 5 convites (`CONVITES_POR_FUNDADORA`). A da
+   Maynara vira a fundadora nº 1. Dois logins da mesma conta são uma vaga só.
 
    ```bash
    npm run beta -- semear mycookies
-   npm run beta -- semear <contaId da outra>
    npm run beta
    ```
 
-   O último imprime `Fase BETA · 2 de 100 vagas`. Sem `plataforma/beta` o servidor já se
-   comporta como `BETA` com 100 vagas; o `semear` cria o documento.
+   O último imprime `Fase BETA · 1 de 100 vagas`, uma por conta semeada. Sem `plataforma/beta`
+   o servidor já se comporta como `BETA` com 100 vagas; o `semear` cria o documento.
+   _Feito em 2026-10-16: `contas/mycookies` é a única conta, e `plataforma/beta` está com
+   `ocupadas: 1`._
 
 3. **Depois, o deploy do app.**
 
 **Conferir:** numa aba anônima, `/cadastro` sem convite mostra "O Rende está em beta fechado",
-com a lista de espera (182), e nenhuma conta nasce (`npm run beta` continua com 2 ocupadas).
+com a lista de espera (182), e nenhuma conta nasce (`npm run beta` continua com 1 ocupada).
 Entrar na lista mostra a posição, e `npm run beta` passa a dizer `1 na lista · 1 entraram hoje`.
 
 **A cota do Resend (spec 182).** O plano grátis manda **100 e-mails por dia**, somando
@@ -657,8 +699,8 @@ entrada (`DECISOES.md#d403`).
 
 ## 17 · O dia do lançamento (spec 186)
 
-Abrir o Rende é um comando, sem deploy (`DECISOES.md#d411`). As specs 181 a 185 e 187 já estão
-em produção.
+Abrir o Rende é um comando, sem deploy (`DECISOES.md#d411`). **Pressupõe as specs 181 a 185 e
+187 em produção** (§ 16); em 2026-10-16 ainda não estão (ver "Onde está", no topo).
 
 1. **Ver o que vai acontecer:**
 

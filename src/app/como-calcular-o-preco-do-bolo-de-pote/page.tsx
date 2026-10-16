@@ -40,8 +40,6 @@ import {
  * prende os números.
  */
 
-const ATUALIZADO_EM = "2026-10-02";
-
 const ENDERECO = "/como-calcular-o-preco-do-bolo-de-pote" as const;
 
 const TITULO = "Como calcular o preço do bolo de pote, passo a passo";
@@ -209,7 +207,7 @@ export default function PaginaPrecoDoBoloDePote() {
           <div className="mx-auto mb-10 max-w-6xl px-4 lg:mb-14 lg:px-10">
             <CabecalhoDoArtigo
               titulo="Como calcular o preço do bolo de pote"
-              atualizadoEm={ATUALIZADO_EM}
+              endereco={ENDERECO}
             >
               Some o que o lote custa (a massa, o creme e a fruta, os potes com
               tampa, colher e etiqueta, o tempo de montar, o forno e uma fatia

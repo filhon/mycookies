@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { RESPONSAVEL } from "@/app/(auth)/responsavel";
 import { linkDaAjuda } from "@/components/auth/MolduraDeEntrada";
+import { FAQ } from "@/components/site/Artigo";
 import { CalculadoraDaPorta } from "@/components/site/CalculadoraDaPorta";
 import { ContaAberta } from "@/components/site/ContaAberta";
 import { FaixaDoCusto } from "@/components/site/FaixaDoCusto";
@@ -33,7 +34,7 @@ import { lerPrecos, stripeDisponivel } from "@/lib/server/stripe";
 import type { Centavos, Pacote } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 import { DESCRICAO } from "../descricao";
-import { URL_DO_SITE } from "../site";
+import { jsonLd, ORGANIZACAO, URL_DO_SITE } from "../site";
 
 /**
  * A página de venda (spec 036). Pública e indexável, fora de `(app)` e de
@@ -88,7 +89,6 @@ function dadosEstruturados(precos: Precos | null) {
     : [];
 
   return {
-    "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     name: "Rende",
     url: `${URL_DO_SITE}/conheca`,
@@ -96,6 +96,8 @@ function dadosEstruturados(precos: Precos | null) {
     applicationCategory: "BusinessApplication",
     operatingSystem: "Web, Android, iOS",
     inLanguage: "pt-BR",
+    image: `${URL_DO_SITE}/icons/icone-512.png`,
+    publisher: ORGANIZACAO,
     ...(ofertas.length > 0 && { offers: ofertas }),
   };
 }
@@ -420,13 +422,7 @@ export default async function PaginaConheca() {
 
         <script
           type="application/ld+json"
-          // `<` escapado: nenhum texto do objeto fecha a tag `script`.
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(dadosEstruturados(precos)).replace(
-              /</g,
-              "\\u003c",
-            ),
-          }}
+          dangerouslySetInnerHTML={{ __html: jsonLd(dadosEstruturados(precos)) }}
         />
       </main>
 
@@ -942,6 +938,7 @@ function Duvidas() {
       id="duvidas"
       aria-labelledby="duvidas-titulo"
       className="mx-auto max-w-6xl px-4 pb-16 lg:px-10 lg:pb-24"
+      {...FAQ.pagina}
     >
       <h2
         id="duvidas-titulo"
@@ -954,13 +951,22 @@ function Duvidas() {
           <li
             key={d.pergunta}
             className="flex flex-col gap-2 py-6 lg:grid lg:grid-cols-[17.5rem_1fr] lg:gap-10"
+            {...FAQ.pergunta}
           >
-            <h3 className="text-subheading font-semibold text-ink">
+            <h3
+              itemProp="name"
+              className="text-subheading font-semibold text-ink"
+            >
               {d.pergunta}
             </h3>
-            <p className="max-w-[60ch] text-body text-ink-muted">
-              {d.resposta}
-            </p>
+            <div {...FAQ.resposta}>
+              <p
+                itemProp="text"
+                className="max-w-[60ch] text-body text-ink-muted"
+              >
+                {d.resposta}
+              </p>
+            </div>
           </li>
         ))}
       </ul>

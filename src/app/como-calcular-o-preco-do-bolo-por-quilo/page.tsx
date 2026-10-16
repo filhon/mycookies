@@ -36,8 +36,6 @@ import {
  * `boloDe`, e `tests/domain/exemplo.test.ts` prende os números.
  */
 
-const ATUALIZADO_EM = "2026-10-02";
-
 const ENDERECO = "/como-calcular-o-preco-do-bolo-por-quilo" as const;
 
 const TITULO = "Como calcular o preço do bolo por quilo, passo a passo";
@@ -206,7 +204,7 @@ export default function PaginaPrecoDoBoloPorQuilo() {
           <div className="mx-auto mb-10 max-w-6xl px-4 lg:mb-14 lg:px-10">
             <CabecalhoDoArtigo
               titulo="Como calcular o preço do bolo por quilo"
-              atualizadoEm={ATUALIZADO_EM}
+              endereco={ENDERECO}
             >
               Some o que o bolo inteiro custa (ingredientes, a caixa e a base,
               as horas de assar e decorar, o forno e uma fatia das despesas

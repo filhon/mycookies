@@ -33,9 +33,6 @@ import {
  * (`#d173`); `tests/domain/exemplo.test.ts` prende os números.
  */
 
-/** A data que a página mostra, e que diz ao robô que a conta não é antiga. */
-const ATUALIZADO_EM = "2026-09-24";
-
 const ENDERECO = "/como-calcular-o-preco-do-cookie" as const;
 
 const { custo, parametros } = EXEMPLO;
@@ -163,7 +160,7 @@ export default function PaginaComoCalcular() {
           <div className="mx-auto mb-10 max-w-6xl px-4 lg:mb-14 lg:px-10">
             <CabecalhoDoArtigo
               titulo="Como calcular o preço do seu cookie"
-              atualizadoEm={ATUALIZADO_EM}
+              endereco={ENDERECO}
             >
               Some o que cada cookie custa: ingredientes, embalagem, sua hora de
               trabalho, gás e energia e uma fatia das despesas fixas. Depois

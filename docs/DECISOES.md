@@ -13584,3 +13584,53 @@ mexe em `plano`, `pacote` nem `acessoAte`). **O cupom tem de existir no ao vivo 
 sem ele, o checkout da fundadora que respondeu falha com `sem-resposta`. Criado no ao vivo em
 2026-10-16. Encerrar a conta perde o
 preço: quem volta depois do lançamento volta como qualquer conta.
+
+## D414 · A folha inferior fecha arrastando pelo topo, e o X fica
+
+**Status:** vigente · pedida por quem conduz o projeto e codificada em 2026-10-16, fora de spec,
+antes do deploy das 112 a 187 · cumpre o "folha inferior arrastável" do `DESIGN.md`, que o
+`Painel` não fazia.
+
+**Decisão.** No celular, o `Painel` acompanha o dedo a partir da alça e do cabeçalho, e fecha
+passado um quarto da altura ou num peteleco (mais de 24px a mais de 0,5px/ms). Soltar antes volta
+à posição com a transição de 260ms de sempre. A alça saiu da coluna do título e ficou numa linha
+própria, centrada na folha.
+
+- **Só o topo arrasta**, e não o conteúdo: o conteúdo rola, e arrastar a folha de dentro de uma
+  lista que rola briga com a rolagem. `touch-action: none` só no topo.
+- **O X fica**: é a alternativa de um toque para quem não arrasta (WCAG 2.5.7), e o desktop não
+  arrasta (`min-width: 64rem`, o painel lateral).
+- **Sem biblioteca**: Pointer Events e o `translate` inline durante o arraste; ao soltar, a classe
+  volta a mandar.
+
+## D415 · Dados estruturados nas páginas do preço: `Article` e `FAQPage` sobre o próprio HTML
+
+**Status:** vigente · pedida por quem conduz o projeto e codificada em 2026-10-16, fora de spec ·
+reabre a `#d179`, que recusava dados estruturados na página do preço.
+
+**Contexto.** O Search Console lista páginas "excluídas pela tag noindex". São as do app e as de
+acesso (`/`, `/login`, `/cadastro`, `/termos`, `/privacidade`, `/redefinir-senha`, os cardápios),
+de propósito: `robots: { index: false }` no layout raiz, que só a `/conheca` e as cinco páginas
+do preço sobrepõem (`#d172`). Nenhuma delas está no sitemap, então não é erro. O pedido foi
+outro: aparecer melhor na busca e nas respostas dos assistentes de IA.
+
+**Decisão.**
+
+- **`FAQPage` em microdados**, e não em JSON: `Perguntas` (as cinco páginas) e as dúvidas da
+  `/conheca` marcam `Question`, `name`, `acceptedAnswer` e `text` no HTML que já está na tela. O
+  argumento da `#d179` contra ("uma segunda cópia para manter") não vale para microdados: a
+  resposta marcada é a que se lê. O Google não mostra o destaque de FAQ fora de governo e saúde;
+  quem lê isso são o Bing (de onde vêm a busca do ChatGPT e o Copilot) e os assistentes.
+- **`Article` em JSON-LD no `CabecalhoDoArtigo`**: título, endereço, `dateModified`, `pt-BR` e o
+  Rende como autor e editora. O `CabecalhoDoArtigo` recebe o `endereco`, e não mais a data.
+- **A data mora em `PAGINAS_DO_PRECO.atualizadoEm`**: o "Atualizado em" da página, o `lastmod`
+  do sitemap e o `dateModified` saem da mesma linha. A `/conheca` fica sem `lastmod`: nada diz
+  quando ela mudou de verdade, e um `lastmod` que mente faz o Google ignorar todos.
+- **`ORGANIZACAO` e `jsonLd()` em `src/app/site.ts`**: o logotipo é `/icons/icone-512.png` (o
+  Google pede ao menos 112px; o do e-mail tem 90 de altura). O `SoftwareApplication` da `/conheca`
+  ganhou `image` e `publisher`.
+
+**Fica como está.** `/` continua `noindex`: é o app, e o visitante sem login só chega à
+`/conheca` pelo guarda do cliente (`#d172`). Levar `/` à página de venda no servidor pede saber,
+sem Firebase no servidor, quem está logado, e mexe no `start_url` e no service worker. Se o
+Search Console mostrar o domínio sem o nome "Rende" nos resultados, é essa a decisão a abrir.

@@ -1,6 +1,12 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { PAGINAS_DO_PRECO } from "@/app/site";
+import {
+  type EnderecoDoPreco,
+  jsonLd,
+  ORGANIZACAO,
+  PAGINAS_DO_PRECO,
+  URL_DO_SITE,
+} from "@/app/site";
 import { PortaDoBeta } from "@/components/site/PortaDoBeta";
 import { classesBotao } from "@/components/ui/estilosBotao";
 import { DIAS_DE_TESTE } from "@/lib/domain/cadastro";
@@ -44,18 +50,24 @@ export function NaConta({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** O `h1`, a data e a resposta inteira, antes de qualquer conta ou botão. */
+/**
+ * O `h1`, a data e a resposta inteira, antes de qualquer conta ou botão. A data
+ * vem de `PAGINAS_DO_PRECO`, e o `Article` diz à busca e aos assistentes quem
+ * publica e quando a conta mudou (`#d415`).
+ */
 export function CabecalhoDoArtigo({
   titulo,
-  atualizadoEm,
+  endereco,
   children,
 }: {
   titulo: string;
-  /** `AAAA-MM-DD`: diz ao robô que a conta não é antiga. */
-  atualizadoEm: string;
+  endereco: EnderecoDoPreco;
   /** O parágrafo da resposta. */
   children: React.ReactNode;
 }) {
+  const { atualizadoEm } = PAGINAS_DO_PRECO.find(
+    (p) => p.endereco === endereco,
+  )!;
   const atualizado = new Date(`${atualizadoEm}T12:00:00Z`).toLocaleDateString(
     "pt-BR",
     { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" },
@@ -72,6 +84,20 @@ export function CabecalhoDoArtigo({
       <p className="mt-6 text-pretty text-body text-ink lg:text-heading lg:leading-normal lg:font-normal">
         {children}
       </p>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd({
+            "@type": "Article",
+            headline: titulo,
+            url: `${URL_DO_SITE}${endereco}`,
+            dateModified: atualizadoEm,
+            inLanguage: "pt-BR",
+            author: ORGANIZACAO,
+            publisher: ORGANIZACAO,
+          }),
+        }}
+      />
     </header>
   );
 }
@@ -170,23 +196,52 @@ export function Formula({
   );
 }
 
+/**
+ * `FAQPage` em microdados, sobre o próprio HTML (`#d415`): a resposta marcada é
+ * a que está na tela, sem uma segunda cópia em JSON para manter (`#d179`).
+ */
+export const FAQ = {
+  pagina: { itemScope: true, itemType: "https://schema.org/FAQPage" },
+  pergunta: {
+    itemScope: true,
+    itemProp: "mainEntity",
+    itemType: "https://schema.org/Question",
+  },
+  resposta: {
+    itemScope: true,
+    itemProp: "acceptedAnswer",
+    itemType: "https://schema.org/Answer",
+  },
+} as const;
+
 export function Perguntas({
   perguntas,
 }: {
   perguntas: { pergunta: string; resposta: React.ReactNode }[];
 }) {
   return (
-    <section aria-labelledby="perguntas" className="mt-16">
+    <section aria-labelledby="perguntas" className="mt-16" {...FAQ.pagina}>
       <h2 id="perguntas" className={TITULO_H2}>
         Perguntas parecidas
       </h2>
       <ul className="mt-6 divide-y divide-line border-y border-line">
         {perguntas.map((p) => (
-          <li key={p.pergunta} className="flex flex-col gap-2 py-6">
-            <h3 className="text-subheading font-semibold text-ink">
+          <li
+            key={p.pergunta}
+            className="flex flex-col gap-2 py-6"
+            {...FAQ.pergunta}
+          >
+            <h3
+              itemProp="name"
+              className="text-subheading font-semibold text-ink"
+            >
               {p.pergunta}
             </h3>
-            <p className="text-body text-ink">{p.resposta}</p>
+            <div {...FAQ.resposta}>
+              <p itemProp="text" className="text-body text-ink">
+                {p.resposta}
+              </p>
+            </div>
           </li>
         ))}
       </ul>
@@ -199,7 +254,7 @@ export function OutrosDoces({
   endereco,
 }: {
   /** A página que mostra o bloco, e que fica fora dele. */
-  endereco: (typeof PAGINAS_DO_PRECO)[number]["endereco"];
+  endereco: EnderecoDoPreco;
 }) {
   return (
     <section aria-labelledby="outros-doces" className="mt-16">

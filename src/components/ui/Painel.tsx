@@ -7,6 +7,7 @@ import {
   useRef,
   useSyncExternalStore,
   type KeyboardEvent,
+  type PointerEvent,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -17,6 +18,13 @@ const FOCAVEIS =
 
 /** Detecta o cliente sem gravar estado dentro de um efeito. */
 const SEM_INSCRICAO = () => () => {};
+
+/** No `lg` a folha vira painel lateral, e não se arrasta. */
+const LATERAL = "(min-width: 64rem)";
+
+/** Fecha passado um quarto da altura, ou num peteleco para baixo (px/ms). */
+const FRACAO_PARA_FECHAR = 0.25;
+const PETELECO = 0.5;
 
 export interface PainelProps {
   aberto: boolean;
@@ -99,6 +107,50 @@ export function Painel({
     [aoFechar],
   );
 
+  // Arrastar pelo topo leva a folha junto com o dedo, sem transição; ao soltar,
+  // a classe volta a mandar e a transição de 260ms termina o movimento. O "X"
+  // fica: é o caminho de quem não arrasta.
+  const arraste = useRef<{ y: number; t: number; dy: number } | null>(null);
+
+  const comecarArraste = (evento: PointerEvent<HTMLDivElement>) => {
+    const painel = painelRef.current;
+    if (
+      !painel ||
+      evento.button !== 0 ||
+      (evento.target as HTMLElement).closest(FOCAVEIS) ||
+      window.matchMedia(LATERAL).matches
+    ) {
+      return;
+    }
+    arraste.current = { y: evento.clientY, t: evento.timeStamp, dy: 0 };
+    evento.currentTarget.setPointerCapture(evento.pointerId);
+    painel.style.transition = "none";
+  };
+
+  const arrastar = (evento: PointerEvent<HTMLDivElement>) => {
+    const atual = arraste.current;
+    if (!atual || !painelRef.current) return;
+    atual.dy = Math.max(0, evento.clientY - atual.y);
+    painelRef.current.style.translate = `0 ${atual.dy}px`;
+  };
+
+  const soltar = (evento: PointerEvent<HTMLDivElement>) => {
+    const atual = arraste.current;
+    const painel = painelRef.current;
+    arraste.current = null;
+    if (!atual || !painel) return;
+    painel.style.transition = "";
+    painel.style.translate = "";
+    if (evento.type === "pointercancel") return;
+    const velocidade = atual.dy / Math.max(1, evento.timeStamp - atual.t);
+    if (
+      atual.dy > painel.offsetHeight * FRACAO_PARA_FECHAR ||
+      (atual.dy > 24 && velocidade > PETELECO)
+    ) {
+      aoFechar();
+    }
+  };
+
   if (!noCliente) return null;
 
   return createPortal(
@@ -139,28 +191,35 @@ export function Painel({
             : "translate-y-full lg:translate-y-0 lg:translate-x-full",
         )}
       >
-        <header className="flex shrink-0 items-start gap-3 border-b border-line px-5 pb-4 pt-3 lg:pt-5">
-          <div className="min-w-0 flex-1">
-            <div
-              aria-hidden
-              className="mx-auto mb-3 h-1 w-9 rounded-full bg-line-strong lg:hidden"
-            />
-            <h2 className="font-display text-title font-semibold text-ink">
-              {titulo}
-            </h2>
-            {descricao && (
-              <p className="mt-1 text-label text-ink-muted">{descricao}</p>
-            )}
+        <div
+          onPointerDown={comecarArraste}
+          onPointerMove={arrastar}
+          onPointerUp={soltar}
+          onPointerCancel={soltar}
+          className="shrink-0 touch-none border-b border-line lg:touch-auto"
+        >
+          <div aria-hidden className="flex justify-center pb-2 pt-3 lg:hidden">
+            <div className="h-1 w-9 rounded-full bg-line-strong" />
           </div>
-          <button
-            type="button"
-            onClick={aoFechar}
-            aria-label="Fechar"
-            className="toque -mr-2 mt-1 flex items-center justify-center rounded-md text-ink-muted transition-colors duration-150 ease-quart hover:bg-sunken hover:text-ink"
-          >
-            <X aria-hidden className="size-5" strokeWidth={1.75} />
-          </button>
-        </header>
+          <header className="flex items-start gap-3 px-5 pb-4 pt-1 lg:pt-5">
+            <div className="min-w-0 flex-1">
+              <h2 className="font-display text-title font-semibold text-ink">
+                {titulo}
+              </h2>
+              {descricao && (
+                <p className="mt-1 text-label text-ink-muted">{descricao}</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={aoFechar}
+              aria-label="Fechar"
+              className="toque -mr-2 mt-1 flex items-center justify-center rounded-md text-ink-muted transition-colors duration-150 ease-quart hover:bg-sunken hover:text-ink"
+            >
+              <X aria-hidden className="size-5" strokeWidth={1.75} />
+            </button>
+          </header>
+        </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5">
           {children}
