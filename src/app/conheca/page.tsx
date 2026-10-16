@@ -422,7 +422,9 @@ export default async function PaginaConheca() {
 
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: jsonLd(dadosEstruturados(precos)) }}
+          dangerouslySetInnerHTML={{
+            __html: jsonLd(dadosEstruturados(precos)),
+          }}
         />
       </main>
 
