@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-16",
+    titulo: "Mudar como um material é contado",
+    frase:
+      "Cadastrou ovo em unidade e a receita pesa? Em Editar material, Mudar a unidade de conta passa o material para gramas, mililitros ou unidades, e converte junto as receitas e a despensa.",
+    href: "/insumos",
+  },
+  {
+    dataISO: "2026-10-16",
     titulo: "A nota diz quando adivinhou o material",
     frase:
       "Quando a nota só acha um material parecido, a linha avisa para você conferir, e você troca o material ou cria um novo num toque. Da próxima vez, a mesma linha da mesma loja já vem certa.",

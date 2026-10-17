@@ -1,5 +1,19 @@
 # Estado do projeto
 
+**2026-10-16, spec 191 codificada (a unidade de conta que se troca); 188 a 191 todas
+codificadas.** No formulário do material, "Mudar a unidade de conta" abre um passo no mesmo
+painel (`PassoDaUnidade`): a unidade nova, a pergunta do fator (`perguntaDaConversao`, "Uma
+unidade de Ovo pesa quantos gramas?", também indo para `un`, com o fator invertido), a embalagem
+nova já convertida e editável, e o que muda em cada receita e na despensa, antes de gravar.
+`converterUnidadeDeConta` (domínio, com teste) converte só o item na base do material; duas casas
+em `g`/`ml`, inteiro para cima em `un`. `mudarUnidadeDeConta` grava material e receitas
+(arquivadas inclusive, `custoDesatualizado: true`) num `writeBatch` esperado, a terceira exceção
+ao `despachar` (`#d422`); as receitas vêm de `receitasDoMaterial` (`getDocsFromServer`), e sem
+rede a frase e nada gravado. A despensa é convertida e conta de hoje. A lista de compras aberta
+se refaz quando a base da linha difere da do material. Falta: os roteiros de navegador da 188 à
+191 (os quatro desta: ovo de `un` para `g` em dois cookies, sem rede, material sem receita, o
+histórico sem seta entre bases).
+
 **2026-10-16, spec 190 codificada (o material que a nota escolhe), 191 por fazer.** O pareamento
 da nota é em degraus e diz qual (`Pareamento.como`): o alvo escolhido, a descrição impressa já
 gravada no material (`Insumo.descricoesDaNota`, opcional, até dez), o nome exato, o prefixo. O

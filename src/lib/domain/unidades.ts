@@ -110,6 +110,95 @@ export function custoDeReferencia(
   };
 }
 
+/**
+ * A pergunta que dá o fator da troca de unidade de conta (spec 191), e a
+ * unidade da resposta. Para `un` a pergunta vira do avesso: ninguém sabe
+ * quantas unidades de ovo cabem num grama, mas sabe quanto pesa um ovo.
+ * Quem lê a resposta é `fatorDaConversao`.
+ */
+export function perguntaDaConversao(
+  de: UnidadeBase,
+  para: UnidadeBase,
+  nome: string,
+): { texto: string; unidade: UnidadeBase } {
+  const verbo = (unidade: UnidadeBase) =>
+    unidade === "g" ? "pesa quantos gramas" : "tem quantos mililitros";
+  if (de === "un")
+    return { texto: `Uma unidade de ${nome} ${verbo(para)}?`, unidade: para };
+  if (para === "un")
+    return { texto: `Uma unidade de ${nome} ${verbo(de)}?`, unidade: de };
+  return { texto: `1 ${de} de ${nome} ${verbo(para)}?`, unidade: para };
+}
+
+/** Quanto vale uma da unidade atual na nova, a partir da resposta. */
+export function fatorDaConversao(para: UnidadeBase, resposta: number): number {
+  return para === "un" ? 1 / resposta : resposta;
+}
+
+/**
+ * Duas casas em `g` e `ml`; inteiro para cima em `un`, porque meia unidade não
+ * se compra. A folga engole o resto de ponto flutuante (100,0000001 un é 100).
+ */
+export function arredondarNaBase(
+  quantidade: number,
+  base: UnidadeBase,
+): number {
+  if (base === "un") return Math.ceil(quantidade - 1e-6);
+  return Math.round(quantidade * 100) / 100;
+}
+
+interface ItemMedido {
+  insumoId: string;
+  quantidade: number;
+  unidadeBase: UnidadeBase;
+}
+
+/**
+ * Tudo que guarda quantidade do material na base antiga, na nova (spec 191):
+ * os itens de cada receita, a despensa e a embalagem. Só converte o item que
+ * está na base do material: o que já está na nova (o açúcar quebrado da 188)
+ * fica como está. O preço não muda: a mesma conta, noutra unidade.
+ */
+export function converterUnidadeDeConta<I extends ItemMedido>(
+  fator: number,
+  material: {
+    id: string;
+    unidadeBase: UnidadeBase;
+    quantidadeBase: number;
+    estoqueAtual?: number;
+  },
+  para: UnidadeBase,
+  receitas: { itens: I[] }[],
+): {
+  itens: I[][];
+  estoqueAtual?: number;
+  embalagem: { quantidadeCompra: number; unidadeCompra: UnidadeCompra };
+} {
+  const converter = (quantidade: number) =>
+    arredondarNaBase(quantidade * fator, para);
+  return {
+    itens: receitas.map((receita) =>
+      receita.itens.map((item) =>
+        item.insumoId === material.id &&
+        item.unidadeBase === material.unidadeBase
+          ? {
+              ...item,
+              quantidade: converter(item.quantidade),
+              unidadeBase: para,
+            }
+          : item,
+      ),
+    ),
+    ...(material.estoqueAtual !== undefined && material.estoqueAtual !== null
+      ? { estoqueAtual: converter(material.estoqueAtual) }
+      : {}),
+    embalagem: {
+      quantidadeCompra: converter(material.quantidadeBase),
+      unidadeCompra: para,
+    },
+  };
+}
+
 /** Unidades de medida compatíveis para digitar uma quantidade de receita. */
 export function unidadesCompativeis(unidadeBase: UnidadeBase): UnidadeCompra[] {
   if (unidadeBase === "g") return ["g", "kg"];

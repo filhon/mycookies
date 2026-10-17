@@ -7,6 +7,7 @@ import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Painel } from "@/components/ui/Painel";
 import { CaixaDoSalto, FraseDoSalto } from "./ConfirmaPreco";
 import { EfeitoDoPrecoDigitado } from "./EfeitoDoPreco";
+import { PassoDaUnidade } from "./PassoDaUnidade";
 import { ResumoCusto } from "./ResumoCusto";
 import {
   baseAceita,
@@ -124,6 +125,8 @@ export function FormularioInsumo({
   const [precoConfirmado, setPrecoConfirmado] = useState<number | null>(null);
   /** Registrar ou corrigir (spec 189). "Comprei de novo" é o de sempre. */
   const [modo, setModo] = useState<ModoDaEscrita>("COMPRA");
+  /** O passo de "Mudar a unidade de conta", no mesmo painel (spec 191). */
+  const [trocandoUnidade, setTrocandoUnidade] = useState(false);
 
   // Reinicia o formulário quando o painel abre em outro insumo.
   const [chave, setChave] = useState(insumo?.id ?? "novo");
@@ -136,12 +139,13 @@ export function FormularioInsumo({
     setConfirmandoArquivo(false);
     setPrecoConfirmado(null);
     setModo("COMPRA");
+    setTrocandoUnidade(false);
   }
 
   // O botão que trocou o modo sai da tela junto com o modo: o foco vai para o
   // conteúdo do painel, e não para o `body`, fora da armadilha de foco.
   const conteudo = useRef<HTMLDivElement>(null);
-  const lendo = !!leitura;
+  const lendo = leitura ? "leitura" : trocandoUnidade ? "unidade" : "edicao";
   const lendoAntes = useRef(lendo);
   useEffect(() => {
     if (lendoAntes.current === lendo) return;
@@ -156,6 +160,7 @@ export function FormularioInsumo({
     setFalha(null);
     setConfirmandoArquivo(false);
     setModo("COMPRA");
+    setTrocandoUnidade(false);
     aoVoltar?.();
   }
 
@@ -328,6 +333,29 @@ export function FormularioInsumo({
     );
   }
 
+  // O mesmo `Painel` na mesma posição: trocar o conteúdo não fecha nem reabre.
+  if (insumo && trocandoUnidade) {
+    return (
+      <Painel
+        aberto={aberto}
+        aoFechar={aoFechar}
+        titulo="Mudar a unidade de conta"
+        descricao={insumo.nome}
+      >
+        <div ref={conteudo} tabIndex={-1} className="outline-none">
+          <PassoDaUnidade
+            insumo={insumo}
+            aoVoltar={() => setTrocandoUnidade(false)}
+            aoConcluir={() => {
+              setTrocandoUnidade(false);
+              aoFechar();
+            }}
+          />
+        </div>
+      </Painel>
+    );
+  }
+
   return (
     <Painel
       aberto={aberto}
@@ -444,29 +472,35 @@ export function FormularioInsumo({
             </div>
 
             {/* Fora da grade: em 7,5rem a frase quebraria palavra a palavra. */}
-            {baseDasReceitas &&
-              (baseRecusada && insumo ? (
-                <p
-                  role="alert"
-                  className="flex items-start gap-1.5 text-label text-attention"
-                >
-                  <TriangleAlert
-                    aria-hidden
-                    className="mt-0.5 size-4 shrink-0"
-                    strokeWidth={1.75}
-                  />
-                  <span>
-                    Os produtos medem {insumo.nome} em{" "}
-                    {PLURAL_UNIDADE_BASE[baseDasReceitas]}, e esta compra está
-                    em {PLURAL_UNIDADE_BASE[custo.unidadeBase]}. Escolha{" "}
-                    {unidadesCompativeis(baseDasReceitas).join(" ou ")}.
-                  </span>
-                </p>
-              ) : (
-                <p className="text-label text-ink-muted">
-                  Para contar de outro jeito, use Mudar a unidade de conta.
-                </p>
-              ))}
+            {baseDasReceitas && baseRecusada && insumo && (
+              <p
+                role="alert"
+                className="flex items-start gap-1.5 text-label text-attention"
+              >
+                <TriangleAlert
+                  aria-hidden
+                  className="mt-0.5 size-4 shrink-0"
+                  strokeWidth={1.75}
+                />
+                <span>
+                  Os produtos medem {insumo.nome} em{" "}
+                  {PLURAL_UNIDADE_BASE[baseDasReceitas]}, e esta compra está em{" "}
+                  {PLURAL_UNIDADE_BASE[custo.unidadeBase]}. Escolha{" "}
+                  {unidadesCompativeis(baseDasReceitas).join(" ou ")}, ou mude a
+                  unidade de conta.
+                </span>
+              </p>
+            )}
+            {/* Converte receitas e despensa junto; o seletor só troca a compra. */}
+            {insumo && (
+              <Botao
+                variante="terciaria"
+                tamanho="sm"
+                onClick={() => setTrocandoUnidade(true)}
+              >
+                Mudar a unidade de conta
+              </Botao>
+            )}
           </div>
         </div>
 

@@ -8,9 +8,10 @@
  * assim que o agregado do mês perdeu parcela sem ninguém ver.
  *
  * A regra vale para `mutations/` inteiro: nenhuma escrita é esperada dentro de
- * uma mutação. As exceções são duas, cada uma comentada no lugar —
- * `recalcularMes` (`agregado.ts`) e `importarNota` (`notas.ts`). Uma terceira
- * sem comentário dizendo por que espera é regressão.
+ * uma mutação. As exceções são três, cada uma comentada no lugar —
+ * `recalcularMes` (`agregado.ts`), `importarNota` (`notas.ts`) e
+ * `mudarUnidadeDeConta` (`insumos.ts`, `#d422`). Uma quarta sem comentário
+ * dizendo por que espera é regressão.
  *
  * O `catch` está aqui, e não repetido em cada chamada, para que uma escrita
  * recusada de verdade — permissão, documento sumido — não vire

@@ -340,10 +340,15 @@ export function ListaDoMercado({
     );
     if (agora.size !== itens.length) return true;
 
+    // A unidade de conta mudou (spec 191): o pacote pode ser o mesmo, mas a
+    // linha gravada fala na base antiga.
     return itens.some(
-      (item) => agora.get(item.insumoId) !== item.quantidadePacotes,
+      (item) =>
+        agora.get(item.insumoId) !== item.quantidadePacotes ||
+        (porInsumo.get(item.insumoId)?.unidadeBase ?? item.unidadeBase) !==
+          item.unidadeBase,
     );
-  }, [lista, periodoFim, montada, itens]);
+  }, [lista, periodoFim, montada, itens, porInsumo]);
 
   const periodoMudou = !!lista && lista.periodoFim !== periodoFim;
   const algoMarcado = itens.some((item) => item.comprado);
@@ -358,7 +363,7 @@ export function ListaDoMercado({
    * refazem com a mesma entrada gravam o mesmo corpo.
    */
   const assinatura = `${periodoFim}|${montada.linhas
-    .map((l) => `${l.insumoId}:${l.quantidadePacotes}`)
+    .map((l) => `${l.insumoId}:${l.quantidadePacotes}:${l.unidadeBase}`)
     .join(",")}`;
   const despachada = useRef<string | null>(null);
   useEffect(() => {

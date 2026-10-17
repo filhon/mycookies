@@ -13799,3 +13799,52 @@ traduzida e pareada de novo a cada mês.
 **Alternativas rejeitadas.** Coleção à parte para os apelidos: a tela já lê todos os materiais, e
 um índice separado seria mais uma leitura e mais uma coisa para manter em dia. Bloquear o
 palpite: prefixo acerta quase sempre, e toda nota de mercado terminaria em confirmações.
+
+## D422 · Mudar a unidade de conta exige rede, converte tudo num lote, e a despensa conta de hoje
+
+**Status:** vigente · spec 191, 2026-10-16 · terceira exceção ao `despachar()` da `#d104`.
+
+**Contexto.** Depois da `#d417`, um material usado em receita não muda de base pelo formulário.
+Há trocas legítimas (ovo em unidade que a receita pesa, essência em grama que se mede em ml), e a
+única saída era arquivar e refazer cada receita à mão.
+
+**Decisão.**
+
+- **"Mudar a unidade de conta"**, botão terciário abaixo do seletor de unidade, abre um passo no
+  mesmo painel (`PassoDaUnidade`): a unidade nova, a pergunta do fator (`perguntaDaConversao`), a
+  embalagem nova já convertida e editável, e a lista do que muda, linha a linha, antes de gravar.
+- **A pergunta é sempre pelo peso (ou volume) de uma unidade**: indo para `un`, "Uma unidade de Ovo
+  pesa quantos gramas?" e o fator é o inverso (`fatorDaConversao`). Ninguém sabe quantos ovos cabem
+  num grama.
+- **A conta é `converterUnidadeDeConta`**, no domínio, com teste: item × fator, estoque × fator,
+  embalagem = `quantidadeBase` × fator na unidade base nova. Duas casas em `g` e `ml`, inteiro para
+  cima em `un`. Só converte o item que está na base do material: o que já está na nova (o açúcar
+  quebrado da 188) fica. O `custoLinha` gravado não muda, e cada receita fica com
+  `custoDesatualizado: true`, para o recálculo acertar o centavo do arredondamento.
+- **Exige rede.** As receitas saem de `getDocsFromServer` com `array-contains`, arquivadas
+  inclusive (uma receita restaurada na base antiga seria o açúcar de novo). A tela lê ao abrir o
+  passo e passa à mutação as mesmas que mostrou. Sem rede, a frase "Mudar a unidade precisa de
+  internet, para achar todas as receitas que usam este material." e nada é gravado.
+- **Um `writeBatch` esperado**: o material (embalagem nova, derivados, entrada `origem: "MANUAL"`,
+  que é compra como as do formulário, e `ultimaCompraEm` de agora) e cada receita. Depois a poda do
+  histórico, como na nota. Não chama `guardarBase`: este é o caminho que converte.
+- **A despensa continua, convertida, e conta de hoje** (`estoqueContadoEmISO`). A projeção soma o
+  consumo das fornadas depois da contagem, gravado na base antiga (`#d88`); com a contagem de hoje,
+  nenhuma entra (`#d89`). Material nunca contado continua sem contagem.
+
+**O que guarda quantidade em base e não é convertido aqui, e por quê:**
+
+- **`Fornada.consumo` e `doPote[].emIngredientes`**: congelados (`#d88`). A despensa contando de
+  hoje é o que os tira da conta. O teto conhecido: um pedido ainda aberto com fornada registrada
+  antes da troca abate, na lista de compras, `quantidadeJaProduzida` na base antiga até o pedido
+  sair. Raro, e some sozinho.
+- **`ListaCompras.itens`**: cada linha leva a própria `unidadeBase`, então a gravada continua
+  coerente consigo mesma. A lista se refaz na próxima abertura, como já se refazia: `desatualizada`
+  passou a ver também a base da linha diferente da do material (o pacote pode ser o mesmo, 2 caixas
+  de 12 ou 2 de 600 g), e a assinatura do refazer leva a base. Com algo marcado, a faixa "A conta
+  mudou" oferece refazer, como sempre.
+- **`HistoricoPreco`**: cada entrada já sai na base dela, sem seta entre bases (`#d420`).
+
+**Alternativas rejeitadas.** Converter offline com as receitas do cache: acharia só as que o
+aparelho abriu, e errar aqui custa o mesmo que o açúcar. Converter o consumo das fornadas antigas:
+reescreveria documentos congelados.

@@ -3,6 +3,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  getDocsFromServer,
   increment,
   query,
   setDoc,
@@ -24,15 +25,18 @@ import {
   historicoPodado,
   vigenteDoHistorico,
 } from "@/lib/domain/custoInsumo";
-import { unidadeBaseDe } from "@/lib/domain/unidades";
+import { dataISODe } from "@/lib/domain/datas";
+import { converterUnidadeDeConta, unidadeBaseDe } from "@/lib/domain/unidades";
 import { VERSAO_SCHEMA } from "@/lib/types";
 import type {
   CategoriaInsumo,
   Centavos,
   DataISO,
+  FichaTecnica,
   HistoricoPreco,
   Insumo,
   Percentual,
+  UnidadeBase,
   UnidadeCompra,
 } from "@/lib/types";
 
@@ -358,6 +362,79 @@ export async function atualizarInsumo(
   if (custoMudou(anterior, dados)) {
     despachar(marcarFichasDesatualizadas(contaId, anterior.id));
   }
+}
+
+/**
+ * As receitas que usam o material, do servidor, arquivadas inclusive (spec
+ * 191). Do cache poderia faltar uma, e a receita não convertida é o açúcar da
+ * 188 de novo. Sem rede, rejeita: a tela diz que precisa de internet.
+ */
+export async function receitasDoMaterial(
+  contaId: string,
+  insumoId: string,
+): Promise<FichaTecnica[]> {
+  const fichas = await getDocsFromServer(
+    query(colFichas(contaId), where("insumoIds", "array-contains", insumoId)),
+  );
+  return fichas.docs.map((ficha) => ficha.data());
+}
+
+/**
+ * Muda a unidade de conta do material, convertendo junto as receitas e a
+ * despensa, num lote só (`DECISOES.md#d422`).
+ *
+ * **É a terceira exceção ao `despachar()`** (`#d104`): a tela já exigiu rede
+ * para ler as receitas do servidor (`receitasDoMaterial`), e um lote pela
+ * metade deixaria receita numa base e material noutra. As receitas vêm da
+ * tela, as mesmas que ela viu na lista do que muda.
+ *
+ * A despensa recomeça hoje: o consumo das fornadas está congelado na base
+ * antiga (`#d88`), e contar de hoje é o que impede somar as duas. Não chama
+ * `guardarBase`: este é o caminho que converte.
+ */
+export async function mudarUnidadeDeConta(
+  contaId: string,
+  anterior: Insumo,
+  receitas: FichaTecnica[],
+  fator: number,
+  para: UnidadeBase,
+  compra: Pick<
+    DadosInsumo,
+    "precoCompra" | "quantidadeCompra" | "unidadeCompra"
+  >,
+): Promise<void> {
+  if (unidadeBaseDe(compra.unidadeCompra) !== para) {
+    throw new Error("A embalagem nova precisa estar na unidade nova.");
+  }
+  const convertido = converterUnidadeDeConta(fator, anterior, para, receitas);
+  const momento = agora();
+  const dados: DadosInsumo = {
+    ...dadosDoInsumo(anterior),
+    ...compra,
+    ...(convertido.estoqueAtual !== undefined
+      ? {
+          estoqueAtual: convertido.estoqueAtual,
+          estoqueContadoEmISO: dataISODe(new Date()),
+        }
+      : {}),
+  };
+
+  const lote = writeBatch(obterDb());
+  lote.update(
+    docInsumo(contaId, anterior.id),
+    corpoDeAtualizacao(anterior, dados, momento, { origem: "MANUAL" }),
+  );
+  receitas.forEach((receita, indice) => {
+    lote.update(doc(colFichas(contaId), receita.id), {
+      v: VERSAO_SCHEMA,
+      itens: convertido.itens[indice],
+      custoDesatualizado: true,
+      atualizadoEm: momento,
+    });
+  });
+  await lote.commit();
+
+  await podarHistorico(contaId, anterior);
 }
 
 /**

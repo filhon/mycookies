@@ -95,10 +95,10 @@ para cima em `un` (meia unidade não se compra), e a tela mostra o arredondado a
 
 ## Critérios de aceite
 
-- [ ] Um material muda de unidade de conta com todas as receitas convertidas junto.
-- [ ] O custo do produto não muda pela troca em si.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] Decisão registrada; `ESTADO.md` e `novidades.ts` atualizados.
+- [x] Um material muda de unidade de conta com todas as receitas convertidas junto.
+- [x] O custo do produto não muda pela troca em si.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] Decisão registrada; `ESTADO.md` e `novidades.ts` atualizados.
 
 ---
 
