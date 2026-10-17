@@ -7,11 +7,16 @@ import {
   chaveDeBusca,
   comprasDoInsumo,
   custoDeUso,
+  historicoComDescarte,
+  historicoCorrigido,
+  historicoPodado,
   ordenarMateriais,
+  ultimaCompraDela,
   variacaoDaUltimaCompra,
+  vigenteDoHistorico,
   type InsumoComHistorico,
 } from "@/lib/domain/custoInsumo";
-import { PREFIXO_BIBLIOTECA } from "@/lib/domain/biblioteca";
+import { PREFIXO_BIBLIOTECA, temPrecoMedio } from "@/lib/domain/biblioteca";
 
 describe("calcularCustoInsumo", () => {
   it("converte pacote de 1 kg em custo por grama", () => {
@@ -126,7 +131,6 @@ const em = (dia: number) => ({ toMillis: () => dia * DIA });
 function creme(reais: number[], id = "creme"): InsumoComHistorico {
   return {
     id,
-    unidadeBase: "g",
     criadoEm: em(1),
     historicoPrecos: reais.map((valor, i) => ({
       data: em(i + 1),
@@ -296,5 +300,136 @@ describe("a base do material e a das receitas (spec 188)", () => {
     expect(basesQueNaoBatem(insumos, fichas)).toEqual(
       new Map([["acucar", "g"]]),
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spec 189 · a compra que se corrige (`#d419`, `#d420`).
+// ---------------------------------------------------------------------------
+
+describe("a compra que se corrige (spec 189)", () => {
+  /** O creme com a compra do dia `dia` descartada. */
+  function comDescarte(reais: number[], dia: number, id = "creme") {
+    const material = creme(reais, id);
+    material.historicoPrecos = historicoComDescarte(
+      material.historicoPrecos,
+      dia * DIA,
+      em(20),
+    );
+    return material;
+  }
+
+  it("a descartada fica na lista, sem variação, e a seguinte compara com a anterior que conta", () => {
+    const { compras, quantas, variacaoTotal } = comprasDoInsumo(
+      comDescarte([100, 1000, 110], 2),
+    );
+    expect(compras.map((c) => c.descartadaMs)).toEqual([null, 20 * DIA, null]);
+    expect(compras.map((c) => c.variacao)).toEqual([10, null, null]);
+    expect(quantas).toBe(2);
+    expect(variacaoTotal).toBe(10);
+  });
+
+  it("a última que conta pula a descartada", () => {
+    const material = comDescarte([100, 110], 2);
+    expect(ultimaCompraDela(material)?.dataMs).toBe(DIA);
+    expect(vigenteDoHistorico(material.historicoPrecos)?.precoCompra).toBe(
+      10000,
+    );
+  });
+
+  it("desfazer limpa a marca", () => {
+    const material = comDescarte([100, 110], 2);
+    const deVolta = historicoComDescarte(
+      material.historicoPrecos,
+      2 * DIA,
+      null,
+    );
+    expect(deVolta.some((e) => "descartadaEm" in e)).toBe(false);
+    expect(vigenteDoHistorico(deVolta)?.precoCompra).toBe(11000);
+  });
+
+  it("descartável: dela, valendo, e com outra para o material voltar", () => {
+    expect(
+      comprasDoInsumo(creme([100, 110])).compras.map((c) => c.descartavel),
+    ).toEqual([true, true]);
+    expect(
+      comprasDoInsumo(creme([100])).compras.map((c) => c.descartavel),
+    ).toEqual([false]);
+    expect(
+      comprasDoInsumo(comDescarte([100, 110], 2)).compras.map(
+        (c) => c.descartavel,
+      ),
+    ).toEqual([false, false]);
+    // A da biblioteca é para onde voltar, e não se descarta.
+    expect(
+      comprasDoInsumo(
+        creme([70, 100], PREFIXO_BIBLIOTECA + "creme"),
+      ).compras.map((c) => c.descartavel),
+    ).toEqual([true, false]);
+  });
+
+  it("cada entrada na base dela, e nada de variação entre bases", () => {
+    const acucar = creme([5, 5]);
+    acucar.historicoPrecos[1] = {
+      data: em(2),
+      precoCompra: 359,
+      quantidadeCompra: 1,
+      unidadeCompra: "un",
+      custoUnidadeBase: 359,
+    };
+    const { compras, variacaoTotal } = comprasDoInsumo(acucar);
+    expect(compras.map((c) => c.unidadeBase)).toEqual(["un", "g"]);
+    expect(compras.map((c) => c.rotulo)).toEqual(["a unidade", "o quilo"]);
+    expect(compras.map((c) => c.referencia)).toEqual([359, 500]);
+    expect(compras[0]?.variacao).toBeNull();
+    expect(variacaoTotal).toBeNull();
+  });
+
+  const correcao = {
+    precoCompra: 499,
+    quantidadeCompra: 1,
+    unidadeCompra: "kg" as const,
+    custoUnidadeBase: 0.499,
+  };
+
+  it("corrigir reescreve a última compra dela, com a data dela, sem acrescentar", () => {
+    const material = creme([4.99, 49.9]);
+    const corrigido = historicoCorrigido(material, correcao)!;
+    expect(corrigido).toHaveLength(2);
+    expect(corrigido[1]).toMatchObject({ ...correcao, fornecedor: "Atacadão" });
+    expect(corrigido[1]?.data.toMillis()).toBe(2 * DIA);
+    expect(corrigido[0]).toBe(material.historicoPrecos[0]);
+  });
+
+  it("corrigir pula a descartada e acerta a que conta", () => {
+    const corrigido = historicoCorrigido(comDescarte([10, 20], 2), correcao)!;
+    expect(corrigido[0]).toMatchObject(correcao);
+    expect(corrigido[1]?.precoCompra).toBe(2000);
+  });
+
+  it("só o preço médio da biblioteca: nada a corrigir", () => {
+    expect(
+      historicoCorrigido(creme([70], PREFIXO_BIBLIOTECA + "creme"), correcao),
+    ).toBeNull();
+  });
+
+  it("a poda tira as descartadas primeiro, depois as mais velhas", () => {
+    const material = comDescarte([1, 2, 3, 4], 3);
+    const dias = (h: typeof material.historicoPrecos) =>
+      h.map((e) => e.data.toMillis() / DIA);
+    expect(dias(historicoPodado(material.historicoPrecos, 3))).toEqual([
+      1, 2, 4,
+    ]);
+    expect(dias(historicoPodado(material.historicoPrecos, 2))).toEqual([2, 4]);
+    expect(historicoPodado(material.historicoPrecos, 12)).toBe(
+      material.historicoPrecos,
+    );
+  });
+
+  it("temPrecoMedio não conta a descartada", () => {
+    const id = PREFIXO_BIBLIOTECA + "creme";
+    const material = comDescarte([70, 100], 2, id);
+    expect(temPrecoMedio(material as never)).toBe(true);
+    expect(temPrecoMedio(creme([70, 100], id) as never)).toBe(false);
   });
 });

@@ -647,6 +647,7 @@ export function TelaNota() {
         contaId,
         importadas,
         lancarNoCaixa ? lancamento : null,
+        cabecalho.estabelecimento,
       );
 
       // O que entrou, para a oferta de contagem que vem a seguir. `insumoIds`

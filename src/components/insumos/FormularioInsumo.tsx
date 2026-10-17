@@ -13,7 +13,9 @@ import {
   basesDasReceitas,
   calcularCustoInsumo,
   CATEGORIAS_INSUMO,
+  ultimaCompraDela,
 } from "@/lib/domain/custoInsumo";
+import { dataISODe, rotuloDia } from "@/lib/domain/datas";
 import { parseParaNumero } from "@/lib/domain/money";
 import { saltoDePreco } from "@/lib/domain/notaFiscal";
 import { errosPorCampo, esquemaInsumo } from "@/lib/domain/schemas";
@@ -29,6 +31,7 @@ import {
   atualizarInsumo,
   criarInsumo,
   type DadosInsumo,
+  type ModoDaEscrita,
 } from "@/lib/firebase/mutations/insumos";
 import type {
   CategoriaInsumo,
@@ -119,6 +122,8 @@ export function FormularioInsumo({
   const [confirmandoArquivo, setConfirmandoArquivo] = useState(false);
   /** O custo por unidade base de "O preço é esse mesmo" (spec 188). */
   const [precoConfirmado, setPrecoConfirmado] = useState<number | null>(null);
+  /** Registrar ou corrigir (spec 189). "Comprei de novo" é o de sempre. */
+  const [modo, setModo] = useState<ModoDaEscrita>("COMPRA");
 
   // Reinicia o formulário quando o painel abre em outro insumo.
   const [chave, setChave] = useState(insumo?.id ?? "novo");
@@ -130,6 +135,7 @@ export function FormularioInsumo({
     setFalha(null);
     setConfirmandoArquivo(false);
     setPrecoConfirmado(null);
+    setModo("COMPRA");
   }
 
   // O botão que trocou o modo sai da tela junto com o modo: o foco vai para o
@@ -149,6 +155,7 @@ export function FormularioInsumo({
     setErros({});
     setFalha(null);
     setConfirmandoArquivo(false);
+    setModo("COMPRA");
     aoVoltar?.();
   }
 
@@ -220,6 +227,16 @@ export function FormularioInsumo({
   const saltoConfirmado = precoConfirmado === custo.custoUnidadeBase;
   const bloqueado = baseRecusada || (!!salto && !saltoConfirmado);
 
+  // Preço ou embalagem mudou: compra nova ou correção da última dela. Sem
+  // compra dela (só o preço médio da biblioteca), só existe comprar.
+  const ultima = insumo ? ultimaCompraDela(insumo) : null;
+  const escolheModo =
+    !!insumo &&
+    !!ultima &&
+    (estado.precoCompra !== insumo.precoCompra ||
+      quantidade !== insumo.quantidadeCompra ||
+      estado.unidadeCompra !== insumo.unidadeCompra);
+
   async function salvar() {
     setFalha(null);
     if (bloqueado) return;
@@ -257,7 +274,12 @@ export function FormularioInsumo({
           : {}),
       };
       if (insumo) {
-        await atualizarInsumo(contaId, insumo, dados);
+        await atualizarInsumo(
+          contaId,
+          insumo,
+          dados,
+          escolheModo ? modo : "COMPRA",
+        );
       } else {
         await criarInsumo(contaId, dados);
       }
@@ -447,6 +469,50 @@ export function FormularioInsumo({
               ))}
           </div>
         </div>
+
+        {escolheModo && ultima && (
+          <fieldset className="space-y-2">
+            <legend className="mb-2 text-label font-semibold text-ink">
+              O que aconteceu?
+            </legend>
+            {(
+              [
+                {
+                  valor: "COMPRA",
+                  rotulo: "Comprei de novo, por este preço",
+                  dica: "Entra como compra nova, com a data de hoje.",
+                },
+                {
+                  valor: "CORRECAO",
+                  rotulo: "Corrigir a última compra",
+                  dica: `A de ${rotuloDia(dataISODe(new Date(ultima.dataMs)))} passa a ter este preço, e fica com a data dela.`,
+                },
+              ] as const
+            ).map((opcao) => (
+              <label
+                key={opcao.valor}
+                className="flex min-h-11 cursor-pointer items-start gap-3 rounded-md border border-line-strong px-3 py-3"
+              >
+                <input
+                  type="radio"
+                  name="modo-da-escrita"
+                  value={opcao.valor}
+                  checked={modo === opcao.valor}
+                  onChange={() => setModo(opcao.valor)}
+                  className="mt-0.5 size-5 shrink-0"
+                />
+                <span className="min-w-0">
+                  <span className="block text-label text-ink">
+                    {opcao.rotulo}
+                  </span>
+                  <span className="block text-label text-ink-muted">
+                    {opcao.dica}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+        )}
 
         {podeCalcular && <ResumoCusto custo={custo} perdaPercentual={perda} />}
 

@@ -13704,3 +13704,62 @@ custa a sobra de todos os produtos com o material.
 
 **Por que caixa, e não proibição.** Preço dobra de verdade. Mas o aviso sem bloqueio já falhou
 uma vez.
+
+## D419 · Corrigir reescreve a última compra; perda não é compra
+
+**Status:** vigente · spec 189, 2026-10-16.
+
+**Contexto.** Toda escrita que mudava preço, embalagem ou perda (`precoMudou`) fazia `arrayUnion`
+de uma entrada nova com a data de agora. Corrigir R$ 3,59 em 1 g para 1 kg empilhava uma segunda
+"compra" no mesmo dia, com "caiu 99%"; mudar a perda empurrava uma compra com o mesmo preço,
+contra a `#d222`.
+
+**Decisão.**
+
+- **O formulário pergunta, quando preço ou embalagem mudam**: "Comprei de novo, por este preço"
+  (marcada, o de sempre) ou "Corrigir a última compra". `atualizarInsumo(contaId, anterior, dados,
+modo, procedencia)`, com `modo: "COMPRA" | "CORRECAO"`.
+- **A correção reescreve a última compra dela que conta** (`historicoCorrigido`, no domínio, com
+  teste): troca preço, embalagem e custo, e mantém a data, a procedência e o fornecedor. Grava o
+  array inteiro a partir do documento em mãos (uma escritora, `#d104`), com `updateDoc`, offline.
+  `ultimaCompraEm` não muda: corrigir não rejuvenesce o preço (088). Sem poda, porque nada cresce.
+- **Só o preço médio da biblioteca, só "Comprei de novo"**: o preço médio não é compra dela, e
+  `temPrecoMedio` precisa ver duas entradas. A escolha nem aparece; uma opção só não é escolha.
+  Se a correção chegar mesmo assim, vira compra.
+- **`precoMudou` virou dois**: `compraMudou` (preço ou embalagem) decide o histórico; `custoMudou`
+  (isso ou a perda) marca as fichas. Perda mudar continua envelhecendo os produtos e não empurra
+  entrada.
+- **Procedência gravada em toda compra nova**: `origem: "NOTA"` com `estabelecimento` (o nome do
+  cabeçalho, passado a `importarNota`), `"MANUAL"` no formulário e `"MERCADO"` em
+  `corrigirPrecoNaLista`. A da biblioteca e as antigas ficam sem, e a ficha não diz nada nelas.
+
+**Alternativa rejeitada.** Corrigir qualquer compra do meio: refaria a cadeia de variações e não
+muda o preço de hoje. Para a do meio, descartar resolve (`#d420`).
+
+## D420 · Descartar uma compra é marcá-la, nunca tirá-la do array
+
+**Status:** vigente · spec 189, 2026-10-16.
+
+**Decisão.**
+
+- **`descartadaEm` na entrada.** Presente, a compra não conta para nada: nem preço, nem variação,
+  nem "última compra" (`comprasDoInsumo`, `ultimaCompraDela`, `ordenarMateriais`, `PorqueDoItem`,
+  `temPrecoMedio`). Fica na ficha do material, riscada, com "descartada em 16 out" e "Desfazer".
+- **A que vale é `vigenteDoHistorico`**: a mais nova não descartada, a da biblioteca inclusive (é
+  um preço). Descartar ou desfazer que troque a que vale regrava o material com o preço e a
+  embalagem dela, os derivados, `ultimaCompraEm` com a data dela, passa por `guardarBase` e marca
+  as fichas quando o custo muda. Descartar uma do meio só marca.
+- **Descartável** é a compra dela que conta quando sobra outra que conta. Sem outra, a ação não
+  aparece: o que resta é corrigir. Na ficha, ao toque na linha, e em dois passos como "Arquivar".
+- **O teto de doze continua; as descartadas contam nele e saem primeiro na poda**
+  (`historicoPodado`), a mais velha antes.
+- **A compra se acha pelo dia (`data` em ms).** Duas entradas do mesmo material no mesmo
+  milissegundo não acontecem: uma escritora, um `Timestamp.now()` por escrita.
+
+**Por que marcar.** O histórico é auditável (`CLAUDE.md`, "Nunca apagar"); é o arquivar, um nível
+abaixo.
+
+**Junto: cada entrada na base dela.** A ficha formata embalagem e quilo pela base da entrada
+(`unidadeBaseDe(unidadeCompra)`), e não pela do material: o açúcar em `un` de antes da 188 sai em
+unidade. Variação, na linha e no total, só entre entradas da mesma base; entre bases, nenhuma seta,
+e o rodapé diz "N compras desde …, em unidades diferentes".

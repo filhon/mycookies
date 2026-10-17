@@ -12,9 +12,10 @@ import {
   corpoDeAtualizacao,
   corpoDeInsumoNovo,
   guardarBase,
+  custoMudou,
   podarHistorico,
-  precoMudou,
   type DadosInsumo,
+  type Procedencia,
 } from "./insumos";
 import { criarTransacao } from "./transacoes";
 import { VERSAO_SCHEMA } from "@/lib/types";
@@ -88,6 +89,8 @@ export async function importarNota(
    * natureza, e a guarda de duplicidade cuida do resto.
    */
   lancamento: LancamentoDaNota | null = null,
+  /** O nome impresso no cabeçalho: a procedência de cada compra (spec 189). */
+  estabelecimento = "",
 ): Promise<ResultadoImportacao> {
   if (linhas.length === 0) {
     return {
@@ -109,6 +112,7 @@ export async function importarNota(
 
   const momento = Timestamp.now();
   const lote = writeBatch(obterDb());
+  const procedencia: Procedencia = { origem: "NOTA", estabelecimento };
 
   // A referência de cada linha sai antes da escrita, e é o que preserva a
   // ordem: `doc()` sobre a coleção gera o id no cliente, sem ida ao servidor.
@@ -123,10 +127,13 @@ export async function importarNota(
     if (linha.anterior) {
       lote.update(
         referencia,
-        corpoDeAtualizacao(linha.anterior, linha.dados, momento),
+        corpoDeAtualizacao(linha.anterior, linha.dados, momento, procedencia),
       );
     } else {
-      lote.set(referencia, corpoDeInsumoNovo(linha.dados, momento) as Insumo);
+      lote.set(
+        referencia,
+        corpoDeInsumoNovo(linha.dados, momento, procedencia) as Insumo,
+      );
     }
   }
 
@@ -150,10 +157,11 @@ export async function importarNota(
 
   await lote.commit();
 
-  // As compras que de fato mudaram o preço. Só elas envelhecem ficha, e só
-  // elas empurram uma entrada no histórico que pode precisar de poda.
+  // As compras que de fato mudaram o custo. Só elas envelhecem ficha, e só
+  // elas empurram uma entrada no histórico que pode precisar de poda (a nota
+  // não mexe na perda: aqui custo mudou é compra mudou).
   const comPrecoNovo = atualizados.filter((linha) =>
-    precoMudou(linha.anterior, linha.dados),
+    custoMudou(linha.anterior, linha.dados),
   );
 
   const [fichasMarcadas] = await Promise.all([

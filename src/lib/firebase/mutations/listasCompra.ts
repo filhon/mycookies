@@ -303,10 +303,13 @@ export async function corrigirPrecoNaLista(
   lista: Pick<ListaCompras, "id" | "itens"> | null,
 ): Promise<void> {
   despachar(
-    atualizarInsumo(contaId, insumo, {
-      ...dadosDoInsumo(insumo),
-      precoCompra,
-    }),
+    atualizarInsumo(
+      contaId,
+      insumo,
+      { ...dadosDoInsumo(insumo), precoCompra },
+      "COMPRA",
+      { origem: "MERCADO" },
+    ),
   );
 
   if (!lista) return;

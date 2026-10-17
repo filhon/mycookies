@@ -20,7 +20,7 @@ import type { DataISO, Insumo } from "@/lib/types";
  *   ela não contou não pode ser sobrescrito por um caminho que não estava
  *   falando daquilo.
  * - **Não marca ficha nenhuma.** Quem envelhece ficha é preço, embalagem e perda
- *   (`precoMudou`). Contar a despensa não muda o custo de um cookie, e não
+ *   (`custoMudou`). Contar a despensa não muda o custo de um cookie, e não
  *   empurra entrada em `historicoPrecos`.
  */
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   ChevronRight,
@@ -7,6 +8,7 @@ import {
   TrendingUp,
   TriangleAlert,
 } from "lucide-react";
+import { Botao } from "@/components/ui/Botao";
 import { usoDoMaterial, type CustoDeHoje } from "@/lib/domain/custoFicha";
 import {
   basesQueNaoBatem,
@@ -23,14 +25,21 @@ import {
   paraBase,
   PLURAL_UNIDADE_BASE,
 } from "@/lib/domain/unidades";
+import {
+  descartarCompra,
+  restaurarCompra,
+} from "@/lib/firebase/mutations/insumos";
 import type {
   DataISO,
   FichaTecnica,
   Fornada,
   Insumo,
+  OrigemCompra,
   UnidadeBase,
   UnidadeRendimento,
 } from "@/lib/types";
+import { cn } from "@/lib/utils/cn";
+import { useContaId } from "@/providers/AuthProvider";
 
 export const POR_UNIDADE: Record<UnidadeRendimento, string> = {
   un: "por unidade",
@@ -56,83 +65,211 @@ function palavraVariacao(variacao: number | null): string | null {
   return `${variacao > 0 ? "subiu" : "caiu"} ${Math.abs(variacao)}%`;
 }
 
+const PROCEDENCIA: Record<OrigemCompra, string> = {
+  NOTA: "Nota",
+  MANUAL: "À mão",
+  MERCADO: "No mercado",
+};
+
+/** "Nota · Atacadão", "À mão", "No mercado"; nada nas antigas (spec 189). */
+function procedenciaDe(compra: CompraDoInsumo): string | null {
+  if (!compra.origem) return null;
+  return compra.origem === "NOTA" && compra.estabelecimento
+    ? `Nota · ${compra.estabelecimento}`
+    : PROCEDENCIA[compra.origem];
+}
+
 function LinhaCompra({
   compra,
-  unidadeBase,
-  rotulo,
+  insumo,
+  vigente,
 }: {
   compra: CompraDoInsumo;
-  unidadeBase: UnidadeBase;
-  rotulo: string;
+  insumo: Insumo;
+  /** É a compra que vale hoje: descartá-la faz o material voltar. */
+  vigente: boolean;
 }) {
+  const contaId = useContaId();
+  const [aberta, setAberta] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
+  const [gravando, setGravando] = useState(false);
+  const [falha, setFalha] = useState<string | null>(null);
+
+  // Cada entrada na base dela: o açúcar já foi contado em `un` (spec 189).
   const embalagem = formatarQuantidade(
     paraBase(compra.quantidadeCompra, compra.unidadeCompra),
-    unidadeBase,
+    compra.unidadeBase,
   );
-  const referencia = formatarReferencia(compra.referencia, unidadeBase);
+  const referencia = formatarReferencia(compra.referencia, compra.unidadeBase);
   const variacao = palavraVariacao(compra.variacao);
   const Seta = (compra.variacao ?? 0) > 0 ? TrendingUp : TrendingDown;
+  const procedencia = procedenciaDe(compra);
+  // A nota já põe o nome da loja na procedência.
+  const fornecedor =
+    compra.fornecedor !== compra.estabelecimento ? compra.fornecedor : null;
+  const detalhe = [fornecedor, procedencia].filter(Boolean).join(" · ");
+  const descartadaMs = compra.descartadaMs;
+  const quando = rotuloDataCompleta(dia(compra.dataMs));
 
   // O leitor de tela ouve uma frase por compra; a grade é para o olho.
   const frase = compra.daBiblioteca
-    ? `Preço médio da biblioteca, ${referencia} ${rotulo}.`
+    ? `Preço médio da biblioteca, ${referencia} ${compra.rotulo}.`
     : [
-        rotuloDataCompleta(dia(compra.dataMs)),
+        descartadaMs !== null &&
+          `Descartada em ${rotuloDataCompleta(dia(descartadaMs))}`,
+        quando,
         `${formatarMoeda(compra.precoCompra)} por ${embalagem}`,
-        `${referencia} ${rotulo}`,
+        `${referencia} ${compra.rotulo}`,
         variacao,
-        compra.fornecedor,
+        detalhe,
       ]
         .filter(Boolean)
         .join(", ") + ".";
 
+  async function trocar(acao: typeof descartarCompra) {
+    setFalha(null);
+    setGravando(true);
+    try {
+      await acao(contaId, insumo, compra.dataMs);
+      setAberta(false);
+      setConfirmando(false);
+    } catch {
+      setFalha("Não foi possível agora. Tente de novo em instantes.");
+    } finally {
+      setGravando(false);
+    }
+  }
+
+  const riscado =
+    descartadaMs !== null ? "text-ink-muted line-through" : "text-ink";
+  // `span` e não `p`: a grade pode morar dentro de um `button`.
+  const grade = (
+    <span
+      aria-hidden
+      className="grid grid-cols-[4.5rem_1fr_auto] items-baseline gap-x-3"
+    >
+      {compra.daBiblioteca ? (
+        <span className="col-span-2 text-label text-ink-muted">
+          preço médio da biblioteca
+        </span>
+      ) : (
+        <>
+          <span className="num text-label text-ink-muted">
+            {rotuloDia(dia(compra.dataMs))}
+          </span>
+          <span className={cn("num min-w-0 truncate text-label", riscado)}>
+            {formatarMoeda(compra.precoCompra)}
+            <span className="mx-1.5 text-ink-subtle">·</span>
+            {embalagem}
+          </span>
+        </>
+      )}
+      <span className={cn("num text-right text-label font-semibold", riscado)}>
+        {referencia}{" "}
+        <span className="text-micro font-medium text-ink-muted">
+          {compra.rotulo}
+        </span>
+      </span>
+
+      {(variacao || detalhe) && (
+        <span className="col-start-2 col-end-4 mt-0.5 flex min-w-0 items-center gap-1.5 text-label text-ink-muted">
+          {variacao && (
+            <>
+              <Seta className="size-4 shrink-0" strokeWidth={1.75} />
+              <span className="num">{variacao}</span>
+            </>
+          )}
+          {variacao && detalhe && <span className="text-ink-subtle">·</span>}
+          {detalhe && <span className="truncate">{detalhe}</span>}
+        </span>
+      )}
+    </span>
+  );
+
   return (
     <li className="py-2.5">
-      <span className="sr-only">{frase}</span>
-      <div
-        aria-hidden
-        className="grid grid-cols-[4.5rem_1fr_auto] items-baseline gap-x-3"
-      >
-        {compra.daBiblioteca ? (
-          <p className="col-span-2 text-label text-ink-muted">
-            preço médio da biblioteca
-          </p>
-        ) : (
-          <>
-            <p className="num text-label text-ink-muted">
-              {rotuloDia(dia(compra.dataMs))}
-            </p>
-            <p className="num min-w-0 truncate text-label text-ink">
-              {formatarMoeda(compra.precoCompra)}
-              <span className="mx-1.5 text-ink-subtle">·</span>
-              {embalagem}
-            </p>
-          </>
-        )}
-        <p className="num text-right text-label font-semibold text-ink">
-          {referencia}{" "}
-          <span className="text-micro font-medium text-ink-muted">
-            {rotulo}
-          </span>
-        </p>
+      {compra.descartavel ? (
+        // Ao toque, e não sempre à vista: descartar é raro, e a lista é para ler.
+        <button
+          type="button"
+          aria-expanded={aberta}
+          onClick={() => {
+            setAberta(!aberta);
+            setConfirmando(false);
+          }}
+          className="-mx-2 block min-h-11 w-[calc(100%+1rem)] rounded-md px-2 py-1 text-left transition-colors duration-150 ease-quart hover:bg-sunken"
+        >
+          <span className="sr-only">{frase}</span>
+          {grade}
+        </button>
+      ) : (
+        <>
+          <span className="sr-only">{frase}</span>
+          {grade}
+        </>
+      )}
 
-        {(variacao || compra.fornecedor) && (
-          <p className="col-start-2 col-end-4 mt-0.5 flex min-w-0 items-center gap-1.5 text-label text-ink-muted">
-            {variacao && (
-              <>
-                <Seta className="size-4 shrink-0" strokeWidth={1.75} />
-                <span className="num">{variacao}</span>
-              </>
-            )}
-            {variacao && compra.fornecedor && (
-              <span className="text-ink-subtle">·</span>
-            )}
-            {compra.fornecedor && (
-              <span className="truncate">{compra.fornecedor}</span>
-            )}
+      {descartadaMs !== null && (
+        <div className="mt-1 flex items-center justify-between gap-3 pl-[5.25rem]">
+          <p className="text-label text-ink-muted">
+            descartada em {rotuloDia(dia(descartadaMs))}
           </p>
-        )}
-      </div>
+          <Botao
+            tamanho="sm"
+            variante="terciaria"
+            carregando={gravando}
+            onClick={() => void trocar(restaurarCompra)}
+          >
+            Desfazer
+          </Botao>
+        </div>
+      )}
+
+      {aberta &&
+        (confirmando ? (
+          // Dois passos, como "Arquivar", e não modal: a pergunta fica onde a
+          // ação está.
+          <div className="mt-2 rounded-lg border border-negative/30 bg-negative-soft p-3">
+            <p className="text-label text-ink">
+              Descartar a compra de {quando}? Ela fica na lista, riscada, e
+              deixa de contar no preço
+              {vigente ? "; o material volta para a compra anterior" : ""}.
+            </p>
+            <div className="mt-3 flex gap-2">
+              <Botao
+                tamanho="sm"
+                onClick={() => setConfirmando(false)}
+                disabled={gravando}
+              >
+                Cancelar
+              </Botao>
+              <Botao
+                tamanho="sm"
+                variante="perigo"
+                carregando={gravando}
+                onClick={() => void trocar(descartarCompra)}
+              >
+                Descartar mesmo assim
+              </Botao>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-1 pl-[5.25rem]">
+            <Botao
+              tamanho="sm"
+              variante="perigo"
+              onClick={() => setConfirmando(true)}
+            >
+              Descartar esta compra
+            </Botao>
+          </div>
+        ))}
+
+      {falha && (
+        <p role="alert" className="mt-2 text-label text-negative">
+          {falha}
+        </p>
+      )}
     </li>
   );
 }
@@ -170,6 +307,9 @@ export function FichaDoMaterial({
     insumo.unidadeBase,
   );
   const historico = comprasDoInsumo(insumo);
+  const vigenteMs = historico.compras.find(
+    (compra) => compra.descartadaMs === null,
+  )?.dataMs;
   const primeira = historico.primeiraMs
     ? rotuloDataCompleta(dia(historico.primeiraMs))
     : null;
@@ -237,13 +377,14 @@ export function FichaDoMaterial({
         >
           O preço de cada compra
         </h3>
-        <ul className="mt-1 divide-y divide-line">
+        {/* A `key` do material: a linha aberta não passa para o próximo. */}
+        <ul key={insumo.id} className="mt-1 divide-y divide-line">
           {historico.compras.map((compra, indice) => (
             <LinhaCompra
               key={`${compra.dataMs}-${indice}`}
               compra={compra}
-              unidadeBase={insumo.unidadeBase}
-              rotulo={referencia.rotulo}
+              insumo={insumo}
+              vigente={compra.dataMs === vigenteMs}
             />
           ))}
         </ul>
@@ -252,9 +393,11 @@ export function FichaDoMaterial({
             ? "Nenhuma compra sua ainda. Quando você corrigir o preço, ela aparece aqui."
             : historico.quantas === 1
               ? `Uma compra registrada, em ${primeira}. As próximas aparecem aqui.`
-              : historico.variacaoTotal === 0
-                ? `O mesmo preço desde ${primeira}.`
-                : `${(historico.variacaoTotal ?? 0) > 0 ? "Subiu" : "Caiu"} ${Math.abs(historico.variacaoTotal ?? 0)}% desde a primeira compra, em ${primeira}.`}
+              : historico.variacaoTotal === null
+                ? `${historico.quantas} compras desde ${primeira}, em unidades diferentes.`
+                : historico.variacaoTotal === 0
+                  ? `O mesmo preço desde ${primeira}.`
+                  : `${historico.variacaoTotal > 0 ? "Subiu" : "Caiu"} ${Math.abs(historico.variacaoTotal)}% desde a primeira compra, em ${primeira}.`}
         </p>
       </section>
 

@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-16",
+    titulo: "Corrigir um preço sem virar compra nova",
+    frase:
+      "Errou o preço do material? Escolha corrigir a última compra em vez de registrar outra. Compra lançada errada se descarta na ficha do material, e cada compra diz se veio da nota, de você ou do mercado.",
+    href: "/insumos",
+  },
+  {
+    dataISO: "2026-10-16",
     titulo: "A nota não troca mais a unidade do material",
     frase:
       "Linha sem o tamanho da embalagem usa a da sua última compra, preço que dobrou ou caiu pela metade pede a sua confirmação, e material com a unidade trocada aparece marcado em Materiais.",

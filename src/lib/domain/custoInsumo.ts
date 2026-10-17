@@ -3,6 +3,7 @@ import type {
   Centavos,
   CentavosFracionados,
   HistoricoPreco,
+  OrigemCompra,
   Percentual,
   UnidadeBase,
   UnidadeCompra,
@@ -108,12 +109,19 @@ interface Momento {
   toMillis(): number;
 }
 
+/** Uma entrada de `historicoPrecos`, com as datas sem Firebase. */
+export type EntradaDoHistorico = Omit<
+  HistoricoPreco,
+  "data" | "descartadaEm"
+> & { data: Momento; descartadaEm?: Momento };
+
 /** O que a ficha do material lê do histórico. `Insumo` serve. */
-export interface InsumoComHistorico {
+export interface InsumoComHistorico<
+  E extends EntradaDoHistorico = EntradaDoHistorico,
+> {
   id: string;
-  unidadeBase: UnidadeBase;
   criadoEm: Momento;
-  historicoPrecos: (Omit<HistoricoPreco, "data"> & { data: Momento })[];
+  historicoPrecos: E[];
 }
 
 export interface CompraDoInsumo {
@@ -121,12 +129,27 @@ export interface CompraDoInsumo {
   precoCompra: Centavos;
   quantidadeCompra: number;
   unidadeCompra: UnidadeCompra;
+  /** A base **da entrada**, e não a do material: o açúcar já foi contado em `un` (spec 189). */
+  unidadeBase: UnidadeBase;
   /** O quilo, o litro ou a unidade, **sem** perda: perda mudar não é o preço mudar. */
   referencia: CentavosFracionados;
+  rotulo: ReturnType<typeof custoDeReferencia>["rotulo"];
   fornecedor?: string;
+  origem?: OrigemCompra;
+  estabelecimento?: string;
   /** O preço médio com que o material nasceu, e não uma compra dela. */
   daBiblioteca: boolean;
-  /** Em %, contra a compra anterior dela. `null` na primeira e na da biblioteca. */
+  /** Quando ela a descartou; `null` na que conta. */
+  descartadaMs: number | null;
+  /**
+   * Pode ser descartada: é dela, conta, e sobra outra que conta para o
+   * material voltar. Sem outra, o que resta é corrigir.
+   */
+  descartavel: boolean;
+  /**
+   * Em %, contra a compra anterior dela que conta e está na mesma base. `null`
+   * na primeira, na da biblioteca, na descartada e entre bases diferentes.
+   */
   variacao: number | null;
 }
 
@@ -155,57 +178,168 @@ export function variacaoEntre(antes: number, depois: number): number | null {
  * toda variação; sem isso, a primeira compra real sairia "subiu 40%".
  */
 export function comprasDoInsumo(insumo: InsumoComHistorico): ComprasDoInsumo {
-  const criadoMs = insumo.criadoEm?.toMillis();
   const ordenadas = [...(insumo.historicoPrecos ?? [])].sort(
     (a, b) => a.data.toMillis() - b.data.toMillis(),
   );
 
   const compras: CompraDoInsumo[] = [];
-  let primeiraMs: number | null = null;
-  let primeira: number | null = null;
-  let anterior: number | null = null;
+  let primeira: { dataMs: number; custo: number; base: UnidadeBase } | null =
+    null;
+  let anterior: { custo: number; base: UnidadeBase } | null = null;
   let quantas = 0;
-  for (const [indice, entrada] of ordenadas.entries()) {
+  for (const entrada of ordenadas) {
     const dataMs = entrada.data.toMillis();
-    const daBiblioteca =
-      indice === 0 && ehDaBiblioteca(insumo.id) && dataMs === criadoMs;
+    const daBiblioteca = ehEntradaDaBiblioteca(insumo, entrada);
+    const descartadaMs = entrada.descartadaEm?.toMillis() ?? null;
+    const conta = !daBiblioteca && descartadaMs === null;
+    const base = unidadeBaseDe(entrada.unidadeCompra);
+    const custo = entrada.custoUnidadeBase;
+    const referencia = custoDeReferencia(custo, base);
     compras.push({
       dataMs,
       precoCompra: entrada.precoCompra,
       quantidadeCompra: entrada.quantidadeCompra,
       unidadeCompra: entrada.unidadeCompra,
-      referencia: custoDeReferencia(
-        entrada.custoUnidadeBase,
-        insumo.unidadeBase,
-      ).centavos,
+      unidadeBase: base,
+      referencia: referencia.centavos,
+      rotulo: referencia.rotulo,
       ...(entrada.fornecedor ? { fornecedor: entrada.fornecedor } : {}),
+      ...(entrada.origem ? { origem: entrada.origem } : {}),
+      ...(entrada.estabelecimento
+        ? { estabelecimento: entrada.estabelecimento }
+        : {}),
       daBiblioteca,
+      descartadaMs,
+      descartavel: false,
       variacao:
-        daBiblioteca || anterior === null
-          ? null
-          : variacaoEntre(anterior, entrada.custoUnidadeBase),
+        conta && anterior?.base === base
+          ? variacaoEntre(anterior.custo, custo)
+          : null,
     });
-    if (daBiblioteca) continue;
+    if (!conta) continue;
     quantas += 1;
-    primeiraMs ??= dataMs;
-    primeira ??= entrada.custoUnidadeBase;
-    anterior = entrada.custoUnidadeBase;
+    primeira ??= { dataMs, custo, base };
+    anterior = { custo, base };
+  }
+
+  // A da biblioteca também é para onde o material volta: é um preço.
+  const valem = compras.filter((compra) => compra.descartadaMs === null);
+  for (const compra of valem) {
+    compra.descartavel = !compra.daBiblioteca && valem.length > 1;
   }
 
   return {
     compras: compras.reverse(),
     quantas,
-    primeiraMs,
-    variacaoTotal: quantas < 2 ? null : variacaoEntre(primeira!, anterior!),
+    primeiraMs: primeira?.dataMs ?? null,
+    variacaoTotal:
+      quantas < 2 || primeira!.base !== anterior!.base
+        ? null
+        : variacaoEntre(primeira!.custo, anterior!.custo),
   };
 }
 
-/** A última compra dela; `null` sem nenhuma (a entrada da biblioteca não conta). */
+/**
+ * A entrada que nasceu com o documento num id da biblioteca (`#d222`). Pela
+ * data, e não por ser a mais velha: a poda das doze acaba levando-a embora.
+ */
+function ehEntradaDaBiblioteca(
+  insumo: Pick<InsumoComHistorico, "id" | "criadoEm">,
+  entrada: { data: Momento },
+): boolean {
+  return (
+    ehDaBiblioteca(insumo.id) &&
+    entrada.data.toMillis() === insumo.criadoEm?.toMillis()
+  );
+}
+
+/** A última compra dela que conta; `null` sem nenhuma (a da biblioteca não conta). */
 export function ultimaCompraDela(
   insumo: InsumoComHistorico,
 ): CompraDoInsumo | null {
-  const ultima = comprasDoInsumo(insumo).compras[0];
-  return ultima && !ultima.daBiblioteca ? ultima : null;
+  return (
+    comprasDoInsumo(insumo).compras.find(
+      (compra) => !compra.daBiblioteca && compra.descartadaMs === null,
+    ) ?? null
+  );
+}
+
+/**
+ * A entrada que vale para o material: a mais nova que não foi descartada. Pode
+ * ser a da biblioteca, que é um preço; `null` com todas descartadas.
+ */
+export function vigenteDoHistorico<E extends EntradaDoHistorico>(
+  historico: E[],
+): E | null {
+  let vigente: E | null = null;
+  for (const entrada of historico) {
+    if (entrada.descartadaEm) continue;
+    if (!vigente || entrada.data.toMillis() > vigente.data.toMillis())
+      vigente = entrada;
+  }
+  return vigente;
+}
+
+/** O que uma correção troca numa compra: a data e a procedência ficam. */
+export type CorrecaoDaCompra = Pick<
+  HistoricoPreco,
+  "precoCompra" | "quantidadeCompra" | "unidadeCompra" | "custoUnidadeBase"
+>;
+
+/**
+ * O histórico com a última compra dela reescrita, e não uma compra a mais
+ * (`DECISOES.md#d419`). Mantém a data: corrigir não rejuvenesce o preço.
+ * `null` quando não há compra dela que conte (a da biblioteca não é dela).
+ */
+export function historicoCorrigido<E extends EntradaDoHistorico>(
+  insumo: InsumoComHistorico<E>,
+  correcao: CorrecaoDaCompra,
+): E[] | null {
+  const alvo = vigenteDoHistorico(insumo.historicoPrecos);
+  if (!alvo || ehEntradaDaBiblioteca(insumo, alvo)) return null;
+  return insumo.historicoPrecos.map((entrada) =>
+    entrada === alvo ? { ...entrada, ...correcao } : entrada,
+  );
+}
+
+/**
+ * O histórico com a compra do dia `dataMs` descartada em `em`, ou de volta
+ * (`em` nulo). Marca, e nunca tira do array (`DECISOES.md#d420`).
+ */
+export function historicoComDescarte<E extends EntradaDoHistorico>(
+  historico: E[],
+  dataMs: number,
+  em: E["descartadaEm"] | null,
+): E[] {
+  return historico.map((entrada) => {
+    if (entrada.data.toMillis() !== dataMs) return entrada;
+    const copia = { ...entrada };
+    if (em) copia.descartadaEm = em;
+    else delete copia.descartadaEm;
+    return copia;
+  });
+}
+
+/**
+ * Corta o histórico em `limite`. As descartadas saem primeiro, a mais velha
+ * antes; depois, as mais velhas (`#d222`).
+ */
+export function historicoPodado<E extends EntradaDoHistorico>(
+  historico: E[],
+  limite: number,
+): E[] {
+  const sobra = historico.length - limite;
+  if (sobra <= 0) return historico;
+  const saem = new Set(
+    [...historico]
+      .sort(
+        (a, b) =>
+          Number(!a.descartadaEm) - Number(!b.descartadaEm) ||
+          a.data.toMillis() - b.data.toMillis(),
+      )
+      .slice(0, sobra),
+  );
+  return historico.filter((entrada) => !saem.has(entrada));
 }
 
 /** O percentual da última compra dela contra a anterior dela; `null` com menos de duas. */

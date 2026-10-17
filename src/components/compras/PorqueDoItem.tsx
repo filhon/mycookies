@@ -12,7 +12,11 @@ import { Painel } from "@/components/ui/Painel";
 import { listarNomes } from "@/components/producao/FraseDaCapacidade";
 import { fraseDaContagem } from "./LinhaCompra";
 import { pedirAcao } from "@/lib/acaoPedida";
-import { calcularCustoInsumo, comprasDoInsumo } from "@/lib/domain/custoInsumo";
+import {
+  calcularCustoInsumo,
+  comprasDoInsumo,
+  type CompraDoInsumo,
+} from "@/lib/domain/custoInsumo";
 import { dataISODe, rotuloDia, rotuloDiaCurto } from "@/lib/domain/datas";
 import { contagemDoInsumo, rotuloDeIdade } from "@/lib/domain/estoque";
 import {
@@ -521,7 +525,7 @@ function OPreco({
     insumo.unidadeBase,
   );
   const [ultima, anterior] = comprasDoInsumo(insumo).compras.filter(
-    (compra) => !compra.daBiblioteca,
+    (compra) => !compra.daBiblioteca && compra.descartadaMs === null,
   );
 
   const custo = useMemo(
@@ -561,15 +565,11 @@ function OPreco({
             {formatarMoeda(ultima.precoCompra)}
           </span>{" "}
           em {rotuloDia(dataISODe(new Date(ultima.dataMs)))}
-          {anterior && (
+          {/* Bases diferentes não se comparam (spec 189). */}
+          {anterior && anterior.unidadeBase === ultima.unidadeBase && (
             <>
               <span className="mx-1.5 text-ink-subtle">·</span>
-              <Variacao
-                ultima={ultima}
-                anterior={anterior}
-                unidadeBase={insumo.unidadeBase}
-                rotulo={referencia.rotulo}
-              />
+              <Variacao ultima={ultima} anterior={anterior} />
             </>
           )}
         </p>
@@ -608,13 +608,9 @@ function OPreco({
 function Variacao({
   ultima,
   anterior,
-  unidadeBase,
-  rotulo,
 }: {
-  ultima: ReturnType<typeof comprasDoInsumo>["compras"][number];
-  anterior: ReturnType<typeof comprasDoInsumo>["compras"][number];
-  unidadeBase: Insumo["unidadeBase"];
-  rotulo: string;
+  ultima: CompraDoInsumo;
+  anterior: CompraDoInsumo;
 }) {
   const mesmoPacote =
     ultima.quantidadeCompra === anterior.quantidadeCompra &&
@@ -633,7 +629,7 @@ function Variacao({
       {diferenca > 0 ? "subiu" : "caiu"}{" "}
       {mesmoPacote
         ? formatarMoeda(Math.abs(diferenca))
-        : `${formatarReferencia(Math.abs(diferenca), unidadeBase)} ${rotulo}`}{" "}
+        : `${formatarReferencia(Math.abs(diferenca), ultima.unidadeBase)} ${ultima.rotulo}`}{" "}
       desde {desde}
     </span>
   );

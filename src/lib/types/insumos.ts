@@ -20,6 +20,9 @@ import type {
 export type CategoriaInsumo =
   "INGREDIENTE" | "EMBALAGEM" | "ETIQUETA" | "ARMAZENAMENTO" | "OUTRO";
 
+/** De onde a compra veio (spec 189). Ausente nas antigas e na da biblioteca. */
+export type OrigemCompra = "NOTA" | "MANUAL" | "MERCADO";
+
 export interface HistoricoPreco {
   data: Timestamp;
   precoCompra: Centavos;
@@ -27,6 +30,14 @@ export interface HistoricoPreco {
   unidadeCompra: UnidadeCompra;
   custoUnidadeBase: CentavosFracionados;
   fornecedor?: string;
+  origem?: OrigemCompra;
+  /** O nome impresso na nota. Só com `origem: "NOTA"`. */
+  estabelecimento?: string;
+  /**
+   * Presente, a compra não conta para nada: nem preço, nem variação, nem
+   * "última compra". Marcada, e não tirada do array (`DECISOES.md#d420`).
+   */
+  descartadaEm?: Timestamp;
 }
 
 export interface Insumo extends DocumentoBase {

@@ -24,12 +24,17 @@ export function ehDaBiblioteca(id: string): boolean {
   return id.startsWith(PREFIXO_BIBLIOTECA);
 }
 
-/** Insumo da biblioteca que ela ainda não corrigiu: uma compra só no histórico. */
+/**
+ * Insumo da biblioteca que ela ainda não corrigiu: uma compra só no histórico.
+ * A descartada não conta: descartar a única compra dela volta ao preço médio.
+ */
 export function temPrecoMedio(
   insumo: Pick<Insumo, "id" | "historicoPrecos">,
 ): boolean {
   return (
-    ehDaBiblioteca(insumo.id) && (insumo.historicoPrecos?.length ?? 0) <= 1
+    ehDaBiblioteca(insumo.id) &&
+    (insumo.historicoPrecos ?? []).filter((entrada) => !entrada.descartadaEm)
+      .length <= 1
   );
 }
 

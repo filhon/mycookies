@@ -19,6 +19,10 @@ import {
   basesDasReceitas,
   calcularCustoInsumo,
   chaveDeBusca,
+  historicoComDescarte,
+  historicoCorrigido,
+  historicoPodado,
+  vigenteDoHistorico,
 } from "@/lib/domain/custoInsumo";
 import { unidadeBaseDe } from "@/lib/domain/unidades";
 import { VERSAO_SCHEMA } from "@/lib/types";
@@ -110,18 +114,37 @@ function camposDerivados(dados: DadosInsumo) {
   };
 }
 
-function entradaHistorico(
-  dados: DadosInsumo,
-  momento: Timestamp,
-): HistoricoPreco {
-  const custo = calcularCustoInsumo(dados);
+/**
+ * De onde a compra veio (spec 189): a nota com o nome impresso, o formulário ou
+ * a lista de compras. A da biblioteca não leva, e se reconhece por `criadoEm`.
+ */
+export type Procedencia = Pick<HistoricoPreco, "origem" | "estabelecimento">;
+
+/** Registrar uma compra nova, ou corrigir a última dela (`DECISOES.md#d419`). */
+export type ModoDaEscrita = "COMPRA" | "CORRECAO";
+
+function correcaoDe(dados: DadosInsumo) {
   return {
-    data: momento,
     precoCompra: dados.precoCompra,
     quantidadeCompra: dados.quantidadeCompra,
     unidadeCompra: dados.unidadeCompra,
-    custoUnidadeBase: custo.custoUnidadeBase,
+    custoUnidadeBase: calcularCustoInsumo(dados).custoUnidadeBase,
+  };
+}
+
+function entradaHistorico(
+  dados: DadosInsumo,
+  momento: Timestamp,
+  procedencia: Procedencia,
+): HistoricoPreco {
+  return {
+    data: momento,
+    ...correcaoDe(dados),
     ...(dados.fornecedor ? { fornecedor: dados.fornecedor } : {}),
+    ...(procedencia.origem ? { origem: procedencia.origem } : {}),
+    ...(procedencia.estabelecimento?.trim()
+      ? { estabelecimento: procedencia.estabelecimento.trim() }
+      : {}),
   };
 }
 
@@ -136,6 +159,7 @@ function entradaHistorico(
 export function corpoDeInsumoNovo(
   dados: DadosInsumo,
   momento: Timestamp,
+  procedencia: Procedencia = {},
 ): Omit<Insumo, "id"> {
   return {
     v: VERSAO_SCHEMA,
@@ -156,7 +180,7 @@ export function corpoDeInsumoNovo(
       ? { estoqueContadoEmISO: dados.estoqueContadoEmISO }
       : {}),
     ultimaCompraEm: momento,
-    historicoPrecos: [entradaHistorico(dados, momento)],
+    historicoPrecos: [entradaHistorico(dados, momento, procedencia)],
     criadoEm: momento,
     atualizadoEm: momento,
     arquivado: false,
@@ -164,7 +188,35 @@ export function corpoDeInsumoNovo(
 }
 
 /**
- * Os campos de uma atualização, com a entrada de histórico quando o preço
+ * O histórico de uma escrita em que a compra mudou: uma entrada a mais, ou a
+ * última compra dela reescrita. A correção grava o array inteiro a partir do
+ * documento em mãos (uma escritora, `#d104`) e não mexe em `ultimaCompraEm`:
+ * corrigir não rejuvenesce o preço. Sem compra dela para corrigir (só a da
+ * biblioteca), vira compra.
+ */
+function historicoDaEscrita(
+  anterior: Insumo,
+  dados: DadosInsumo,
+  momento: Timestamp,
+  procedencia: Procedencia,
+  modo: ModoDaEscrita,
+) {
+  const corrigido =
+    modo === "CORRECAO"
+      ? historicoCorrigido(anterior, correcaoDe(dados))
+      : null;
+  return corrigido
+    ? { historicoPrecos: corrigido }
+    : {
+        ultimaCompraEm: momento,
+        historicoPrecos: arrayUnion(
+          entradaHistorico(dados, momento, procedencia),
+        ),
+      };
+}
+
+/**
+ * Os campos de uma atualização, com a entrada de histórico quando a compra
  * mudou. Mesmo motivo e mesmo par de chamadores de `corpoDeInsumoNovo`.
  *
  * Quem decide **o que** a nota tem direito de mudar não é esta função: é
@@ -175,6 +227,8 @@ export function corpoDeAtualizacao(
   anterior: Insumo,
   dados: DadosInsumo,
   momento: Timestamp,
+  procedencia: Procedencia,
+  modo: ModoDaEscrita = "COMPRA",
 ) {
   return {
     v: VERSAO_SCHEMA,
@@ -191,21 +245,28 @@ export function corpoDeAtualizacao(
     estoqueAtual: dados.estoqueAtual ?? null,
     estoqueContadoEmISO: dados.estoqueContadoEmISO ?? null,
     atualizadoEm: momento,
-    ...(precoMudou(anterior, dados)
-      ? {
-          ultimaCompraEm: momento,
-          historicoPrecos: arrayUnion(entradaHistorico(dados, momento)),
-        }
+    ...(compraMudou(anterior, dados)
+      ? historicoDaEscrita(anterior, dados, momento, procedencia, modo)
       : {}),
   };
 }
 
-/** O que faz uma escrita virar uma compra: preço, embalagem ou perda. */
-export function precoMudou(anterior: Insumo, dados: DadosInsumo): boolean {
+/**
+ * O que faz uma escrita mexer no histórico: preço ou embalagem. A perda não:
+ * o quilo do histórico é sem perda (`#d222`), e perda mudar não é comprar.
+ */
+export function compraMudou(anterior: Insumo, dados: DadosInsumo): boolean {
   return (
     anterior.precoCompra !== dados.precoCompra ||
     anterior.quantidadeCompra !== dados.quantidadeCompra ||
-    anterior.unidadeCompra !== dados.unidadeCompra ||
+    anterior.unidadeCompra !== dados.unidadeCompra
+  );
+}
+
+/** O que envelhece as fichas: a compra, ou a perda, que muda o custo corrigido. */
+export function custoMudou(anterior: Insumo, dados: DadosInsumo): boolean {
+  return (
+    compraMudou(anterior, dados) ||
     anterior.perdaPercentual !== dados.perdaPercentual
   );
 }
@@ -218,7 +279,12 @@ export async function criarInsumo(
 
   // Id gerado no aparelho: nada aqui espera o servidor (`DECISOES.md#d104`).
   const referencia = doc(colInsumos(contaId));
-  despachar(setDoc(referencia, corpoDeInsumoNovo(dados, momento) as Insumo));
+  despachar(
+    setDoc(
+      referencia,
+      corpoDeInsumoNovo(dados, momento, { origem: "MANUAL" }) as Insumo,
+    ),
+  );
 
   // Contador do agregado global: `increment` entra na fila e funciona offline.
   despachar(
@@ -269,30 +335,106 @@ export async function atualizarInsumo(
   contaId: string,
   anterior: Insumo,
   dados: DadosInsumo,
+  modo: ModoDaEscrita = "COMPRA",
+  procedencia: Procedencia = { origem: "MANUAL" },
 ): Promise<void> {
   await guardarBase(contaId, anterior, dados);
   const momento = agora();
-  const virouCompra = precoMudou(anterior, dados);
 
   despachar(
     updateDoc(
       docInsumo(contaId, anterior.id),
-      corpoDeAtualizacao(anterior, dados, momento),
+      corpoDeAtualizacao(anterior, dados, momento, procedencia, modo),
     ),
   );
 
   // No mesmo tique, sem esperar o `updateDoc`: sem rede a promessa dele não
   // resolve, e o selo de "custo desatualizado" nunca chegava a ser gravado —
   // o preço velho virava orçamento sem aviso (`DECISOES.md#d104`).
-  if (virouCompra) {
+  // A correção não cresce o array, e a poda então não acha o que cortar.
+  if (compraMudou(anterior, dados)) {
     despachar(podarHistorico(contaId, anterior));
+  }
+  if (custoMudou(anterior, dados)) {
+    despachar(marcarFichasDesatualizadas(contaId, anterior.id));
+  }
+}
+
+/**
+ * Descarta uma compra dela, pelo dia (`DECISOES.md#d420`): fica no array,
+ * riscada. Sendo a que vale, o material volta à compra válida anterior.
+ */
+export async function descartarCompra(
+  contaId: string,
+  anterior: Insumo,
+  dataMs: number,
+): Promise<void> {
+  await trocarDescarte(contaId, anterior, dataMs, agora());
+}
+
+/** Desfaz o descarte, e refaz a mesma conta de qual compra vale. */
+export async function restaurarCompra(
+  contaId: string,
+  anterior: Insumo,
+  dataMs: number,
+): Promise<void> {
+  await trocarDescarte(contaId, anterior, dataMs, null);
+}
+
+async function trocarDescarte(
+  contaId: string,
+  anterior: Insumo,
+  dataMs: number,
+  em: Timestamp | null,
+): Promise<void> {
+  const historicoPrecos = historicoComDescarte(
+    anterior.historicoPrecos ?? [],
+    dataMs,
+    em,
+  );
+  const antes = vigenteDoHistorico(anterior.historicoPrecos ?? []);
+  const depois = vigenteDoHistorico(historicoPrecos);
+  // A tela não oferece descartar a única que vale; isto é para quem chegar
+  // por outro caminho.
+  if (!depois) throw new Error("Sem outra compra para o material voltar.");
+
+  const mudouAVigente = antes?.data.toMillis() !== depois.data.toMillis();
+  const dados: DadosInsumo = {
+    ...dadosDoInsumo(anterior),
+    precoCompra: depois.precoCompra,
+    quantidadeCompra: depois.quantidadeCompra,
+    unidadeCompra: depois.unidadeCompra,
+  };
+  if (mudouAVigente) await guardarBase(contaId, anterior, dados);
+
+  const momento = agora();
+  despachar(
+    updateDoc(docInsumo(contaId, anterior.id), {
+      v: VERSAO_SCHEMA,
+      historicoPrecos,
+      atualizadoEm: momento,
+      ...(mudouAVigente
+        ? {
+            precoCompra: dados.precoCompra,
+            quantidadeCompra: dados.quantidadeCompra,
+            unidadeCompra: dados.unidadeCompra,
+            ...camposDerivados(dados),
+            // A idade do preço é a da compra que voltou a valer (088).
+            ultimaCompraEm: depois.data,
+          }
+        : {}),
+    }),
+  );
+
+  if (mudouAVigente && custoMudou(anterior, dados)) {
     despachar(marcarFichasDesatualizadas(contaId, anterior.id));
   }
 }
 
 /**
  * `arrayUnion` não tem teto. Depois de gravar, corta o histórico nas últimas
- * doze compras: o documento precisa continuar barato de ler.
+ * doze entradas, as descartadas saindo primeiro: o documento precisa
+ * continuar barato de ler.
  */
 export async function podarHistorico(
   contaId: string,
@@ -307,10 +449,7 @@ export async function podarHistorico(
 
   despachar(
     updateDoc(docInsumo(contaId, anterior.id), {
-      historicoPrecos: historico
-        .slice()
-        .sort((a, b) => b.data.toMillis() - a.data.toMillis())
-        .slice(0, LIMITE_HISTORICO),
+      historicoPrecos: historicoPodado(historico, LIMITE_HISTORICO),
     }),
   );
 }

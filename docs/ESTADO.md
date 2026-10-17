@@ -1,5 +1,16 @@
 # Estado do projeto
 
+**2026-10-16, spec 189 codificada (a compra que se corrige), 190 e 191 por fazer.** Mudando preço
+ou embalagem, o formulário do material pergunta "Comprei de novo, por este preço" (marcada) ou
+"Corrigir a última compra", que reescreve a última compra dela com a data dela e sem mexer em
+`ultimaCompraEm` (`#d419`). Perda mudar não empurra mais entrada (`compraMudou` para o histórico,
+`custoMudou` para as fichas). Na ficha do material, cada compra dela se descarta ao toque, em dois
+passos: fica riscada com "Desfazer", e descartar a que vale volta o material à anterior
+(`vigenteDoHistorico`, `#d420`). Cada compra nova diz de onde veio ("Nota · Atacadão", "À mão",
+"No mercado"), e cada entrada sai na base dela, sem seta entre bases. `HistoricoPreco` ganhou
+`origem`, `estabelecimento` e `descartadaEm`, todos opcionais. Falta: o roteiro de navegador (os
+sete passos da spec), junto com o da 188. A próxima é a **190**.
+
 **2026-10-16, spec 188 codificada (a unidade que a nota não troca), 189 a 191 por fazer.** A
 base de um material usado em receita não muda mais por tela nenhuma (`#d417`): o seletor da nota
 e o do formulário só oferecem a base das receitas, e `guardarBase` recusa em `atualizarInsumo` e

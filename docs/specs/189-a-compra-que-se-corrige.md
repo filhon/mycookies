@@ -142,12 +142,12 @@ passos, como "Arquivar", sem modal):
 
 ## Critérios de aceite
 
-- [ ] Corrigir um preço não cria compra nova nem muda a idade do preço.
-- [ ] Uma compra errada se descarta, fica visível, e o material volta à anterior.
-- [ ] Perda não cria compra.
-- [ ] Cada compra diz de onde veio, quando gravada depois desta spec.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] Decisões registradas; `ESTADO.md` e `novidades.ts` atualizados.
+- [x] Corrigir um preço não cria compra nova nem muda a idade do preço.
+- [x] Uma compra errada se descarta, fica visível, e o material volta à anterior.
+- [x] Perda não cria compra.
+- [x] Cada compra diz de onde veio, quando gravada depois desta spec.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] Decisões registradas; `ESTADO.md` e `novidades.ts` atualizados.
 
 ---
 
