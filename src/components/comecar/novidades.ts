@@ -24,6 +24,13 @@ export interface Novidade {
 export const NOVIDADES: readonly Novidade[] = [
   {
     dataISO: "2026-10-16",
+    titulo: "A nota diz quando adivinhou o material",
+    frase:
+      "Quando a nota só acha um material parecido, a linha avisa para você conferir, e você troca o material ou cria um novo num toque. Da próxima vez, a mesma linha da mesma loja já vem certa.",
+    href: "/insumos/nota",
+  },
+  {
+    dataISO: "2026-10-16",
     titulo: "Corrigir um preço sem virar compra nova",
     frase:
       "Errou o preço do material? Escolha corrigir a última compra em vez de registrar outra. Compra lançada errada se descarta na ficha do material, e cada compra diz se veio da nota, de você ou do mercado.",

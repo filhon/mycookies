@@ -83,6 +83,13 @@ export interface Insumo extends DocumentoBase {
   ultimaCompraEm?: Timestamp;
 
   /**
+   * As descrições impressas que já foram gravadas neste material, em
+   * `chaveDeBusca`, sem repetir, até dez, a mais velha primeiro. Vencem o nome
+   * no pareamento da nota (`DECISOES.md#d421`).
+   */
+  descricoesDaNota?: string[];
+
+  /**
    * Últimas 12 compras embutidas no próprio documento.
    * Array com teto em vez de subcoleção: o gráfico "preço da farinha subiu?"
    * sai de graça na mesma leitura, sem N reads extras.

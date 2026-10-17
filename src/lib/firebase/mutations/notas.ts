@@ -19,7 +19,10 @@ import {
 } from "./insumos";
 import { criarTransacao } from "./transacoes";
 import { VERSAO_SCHEMA } from "@/lib/types";
-import type { LancamentoDaNota } from "@/lib/domain/notaFiscal";
+import {
+  descricoesDaGravacao,
+  type LancamentoDaNota,
+} from "@/lib/domain/notaFiscal";
 import type { Centavos, Insumo } from "@/lib/types";
 import { Timestamp } from "firebase/firestore";
 
@@ -51,6 +54,8 @@ export interface LinhaImportada {
    * cadastrado chegam aqui já preservados dentro de `dados`.
    */
   anterior?: Insumo;
+  /** O que está impresso na linha: vira apelido do material (`#d421`). */
+  descricao?: string;
 }
 
 export interface ResultadoImportacao {
@@ -91,6 +96,11 @@ export async function importarNota(
   lancamento: LancamentoDaNota | null = null,
   /** O nome impresso no cabeçalho: a procedência de cada compra (spec 189). */
   estabelecimento = "",
+  /**
+   * Os materiais da conta, como a tela os leu: a descrição de cada linha sai
+   * de quem a tinha antes (`descricoesDaGravacao`).
+   */
+  materiais: Insumo[] = [],
 ): Promise<ResultadoImportacao> {
   if (linhas.length === 0) {
     return {
@@ -123,18 +133,48 @@ export async function importarNota(
       : doc(colInsumos(contaId)),
   }));
 
+  // A descrição impressa vira apelido do material, no mesmo lote: a próxima
+  // nota da mesma loja pareia por ela (spec 190).
+  const descricoes = descricoesDaGravacao(
+    alvos.map(({ linha, referencia }) => ({
+      insumoId: referencia.id,
+      descricao: linha.descricao ?? "",
+    })),
+    materiais,
+  );
+  const apelido = (id: string) => {
+    const lista = descricoes.get(id);
+    return lista ? { descricoesDaNota: lista } : {};
+  };
+
   for (const { linha, referencia } of alvos) {
     if (linha.anterior) {
-      lote.update(
-        referencia,
-        corpoDeAtualizacao(linha.anterior, linha.dados, momento, procedencia),
-      );
+      lote.update(referencia, {
+        ...corpoDeAtualizacao(
+          linha.anterior,
+          linha.dados,
+          momento,
+          procedencia,
+        ),
+        ...apelido(referencia.id),
+      });
     } else {
-      lote.set(
-        referencia,
-        corpoDeInsumoNovo(linha.dados, momento, procedencia) as Insumo,
-      );
+      lote.set(referencia, {
+        ...corpoDeInsumoNovo(linha.dados, momento, procedencia),
+        ...apelido(referencia.id),
+      } as Insumo);
     }
+  }
+
+  // Quem perdeu a descrição para outro material, sem estar na nota.
+  const tocados = new Set(alvos.map((alvo) => alvo.referencia.id));
+  for (const [id, lista] of descricoes) {
+    if (tocados.has(id)) continue;
+    lote.update(docInsumo(contaId, id), {
+      v: VERSAO_SCHEMA,
+      descricoesDaNota: lista,
+      atualizadoEm: momento,
+    });
   }
 
   const novos = linhas.filter((linha) => !linha.anterior);

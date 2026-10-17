@@ -11,6 +11,7 @@ import {
   cnpjValido,
   conferirTotal,
   descricaoDaCompra,
+  descricoesDaGravacao,
   embalagemDoTexto,
   embalagemParaOMaterial,
   esquemaNotaLida,
@@ -19,6 +20,8 @@ import {
   ladoParaFotos,
   LIMITE_FOTOS,
   lancamentoDaNota,
+  LIMITE_DESCRICOES,
+  linhasNoMesmoMaterial,
   normalizarNota,
   parearComInsumos,
   PRECO_ENVELHECE_DIAS,
@@ -545,9 +548,204 @@ describe("parearComInsumos", () => {
     expect(pares.get(linha.chave)?.insumoId).toBe("farinha");
   });
 
-  it("corrigir o nome na tela é o que desfaz um pareamento errado", () => {
+  it("corrigir o nome na tela é o que desfaz um pareamento automático", () => {
     const linha = { ...rascunho.linhas[0]!, nome: "Farinha de rosca" };
     expect(parearComInsumos([linha], cadastrados).size).toBe(0);
+  });
+});
+
+describe("os três degraus do pareamento (spec 190)", () => {
+  const linha = normalizarNota(NOTA).linhas[0]!;
+  const acucar: InsumoConhecido = {
+    id: "acucar",
+    nome: "Açúcar",
+    nomeBusca: "acucar",
+    precoCompra: 359,
+  };
+  const comoDe = (l: LinhaRascunho, insumos: InsumoConhecido[]) =>
+    parearComInsumos([l], insumos).get(l.chave);
+
+  it("a descrição impressa já gravada vence o nome", () => {
+    const especial: InsumoConhecido = {
+      id: "especial",
+      nome: "Farinha especial",
+      nomeBusca: "farinha especial",
+      precoCompra: 1500,
+      descricoesDaNota: ["farinha trigo dona benta 1kg"],
+    };
+    const par = comoDe(linha, [
+      {
+        id: "farinha",
+        nome: "Farinha de trigo",
+        nomeBusca: "farinha de trigo",
+        precoCompra: 1190,
+      },
+      especial,
+    ]);
+    expect(par).toMatchObject({ insumoId: "especial", como: "DESCRICAO" });
+  });
+
+  it("nome exato é NOME", () => {
+    const par = comoDe(linha, [
+      {
+        id: "farinha",
+        nome: "Farinha de trigo",
+        nomeBusca: "farinha de trigo",
+        precoCompra: 1190,
+      },
+    ]);
+    expect(par?.como).toBe("NOME");
+  });
+
+  it("prefixo é PALPITE", () => {
+    const par = comoDe({ ...linha, nome: "Farinha" }, [
+      {
+        id: "farinha",
+        nome: "Farinha de trigo",
+        nomeBusca: "farinha de trigo",
+        precoCompra: 1190,
+      },
+    ]);
+    expect(par?.como).toBe("PALPITE");
+  });
+
+  it("açúcar de confeiteiro, sem cadastro, é palpite no açúcar, e não certeza", () => {
+    const confeiteiro = {
+      ...linha,
+      descricao: "ACUCAR CONFEITEIRO",
+      nome: "Açúcar de confeiteiro",
+    };
+    expect(comoDe(confeiteiro, [acucar])).toMatchObject({
+      insumoId: "acucar",
+      como: "PALPITE",
+    });
+  });
+
+  it("o alvo escolhido vence tudo, e o nome não o muda", () => {
+    const escolhida = { ...linha, nome: "Qualquer coisa", alvo: "acucar" };
+    expect(comoDe(escolhida, [acucar])).toMatchObject({
+      insumoId: "acucar",
+      como: "ESCOLHIDO",
+    });
+  });
+
+  it('"Material novo" escolhido não pareia, nem com nome exato', () => {
+    const nova = { ...linha, nome: "Açúcar", alvo: null };
+    expect(comoDe(nova, [acucar])).toBeUndefined();
+  });
+});
+
+describe("linhasNoMesmoMaterial", () => {
+  it("duas linhas no mesmo material contam as duas; a sozinha fica de fora", () => {
+    const pares = new Map([
+      [
+        "a",
+        {
+          insumoId: "manteiga",
+          nome: "Manteiga",
+          precoAnterior: 0,
+          como: "NOME" as const,
+        },
+      ],
+      [
+        "b",
+        {
+          insumoId: "manteiga",
+          nome: "Manteiga",
+          precoAnterior: 0,
+          como: "PALPITE" as const,
+        },
+      ],
+      [
+        "c",
+        {
+          insumoId: "farinha",
+          nome: "Farinha",
+          precoAnterior: 0,
+          como: "NOME" as const,
+        },
+      ],
+    ]);
+    expect([...linhasNoMesmoMaterial(pares)]).toEqual([
+      ["a", 2],
+      ["b", 2],
+    ]);
+  });
+});
+
+describe("descricoesDaGravacao", () => {
+  it("a descrição vai para o material gravado, em chave de busca", () => {
+    const listas = descricoesDaGravacao(
+      [{ insumoId: "novo", descricao: "AÇÚCAR  CONFEITEIRO" }],
+      [{ id: "acucar" }],
+    );
+    expect([...listas]).toEqual([["novo", ["acucar confeiteiro"]]]);
+  });
+
+  it("sem repetir: a repetida vai para o fim", () => {
+    const listas = descricoesDaGravacao(
+      [{ insumoId: "a", descricao: "x" }],
+      [{ id: "a", descricoesDaNota: ["x", "y"] }],
+    );
+    expect(listas.get("a")).toEqual(["y", "x"]);
+  });
+
+  it("até dez, e a mais velha sai", () => {
+    const dez = Array.from({ length: LIMITE_DESCRICOES }, (_, i) => `d${i}`);
+    const listas = descricoesDaGravacao(
+      [{ insumoId: "a", descricao: "nova" }],
+      [{ id: "a", descricoesDaNota: dez }],
+    );
+    expect(listas.get("a")).toHaveLength(LIMITE_DESCRICOES);
+    expect(listas.get("a")?.[0]).toBe("d1");
+    expect(listas.get("a")?.at(-1)).toBe("nova");
+  });
+
+  it("trocar o alvo tira a descrição do material de antes", () => {
+    const listas = descricoesDaGravacao(
+      [{ insumoId: "certo", descricao: "acucar confeiteiro" }],
+      [
+        {
+          id: "errado",
+          descricoesDaNota: ["acucar confeiteiro", "acucar ref"],
+        },
+        { id: "certo" },
+      ],
+    );
+    expect(listas.get("errado")).toEqual(["acucar ref"]);
+    expect(listas.get("certo")).toEqual(["acucar confeiteiro"]);
+  });
+
+  it("duas linhas no mesmo material somam as duas descrições", () => {
+    const listas = descricoesDaGravacao(
+      [
+        { insumoId: "manteiga", descricao: "MANTEIGA A" },
+        { insumoId: "manteiga", descricao: "MANTEIGA B" },
+      ],
+      [{ id: "manteiga" }],
+    );
+    expect(listas.get("manteiga")).toEqual(["manteiga a", "manteiga b"]);
+  });
+
+  it("a segunda nota pareia pela descrição que a primeira gravou", () => {
+    const linha = { ...normalizarNota(NOTA).linhas[0]!, nome: "Outro nome" };
+    const listas = descricoesDaGravacao(
+      [{ insumoId: "farinha", descricao: linha.descricao }],
+      [{ id: "farinha" }],
+    );
+    const par = parearComInsumos(
+      [linha],
+      [
+        {
+          id: "farinha",
+          nome: "Farinha de trigo",
+          nomeBusca: "farinha de trigo",
+          precoCompra: 1190,
+          descricoesDaNota: listas.get("farinha"),
+        },
+      ],
+    ).get(linha.chave);
+    expect(par?.como).toBe("DESCRICAO");
   });
 });
 

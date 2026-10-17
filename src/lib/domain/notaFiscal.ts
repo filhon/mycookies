@@ -618,6 +618,12 @@ export interface LinhaRascunho {
   embalagemLida: Embalagem;
   /** `quantidadeCompra` e `unidadeCompra` são os da última compra do material. */
   embalagemHerdada: boolean;
+  /**
+   * O material que ela escolheu para a linha (spec 190): o id, ou `null` para
+   * "Material novo". Ausente, o pareamento é automático; presente, o nome da
+   * linha deixa de mudá-lo.
+   */
+  alvo?: string | null;
 }
 
 export interface RascunhoNota {
@@ -715,29 +721,39 @@ export interface InsumoConhecido {
   nome: string;
   nomeBusca: string;
   precoCompra: Centavos;
+  descricoesDaNota?: string[];
 }
+
+/**
+ * Como a linha achou o material: pela descrição impressa que já foi gravada
+ * nele, pelo nome exato, por prefixo (o palpite que ela confere), ou porque ela
+ * escolheu (spec 190).
+ */
+export type ComoPareou = "DESCRICAO" | "NOME" | "PALPITE" | "ESCOLHIDO";
 
 export interface Pareamento {
   insumoId: string;
   /** O nome **cadastrado**, e não o lido: é ele que a tela mostra no selo. */
   nome: string;
   precoAnterior: Centavos;
+  como: ComoPareou;
 }
 
 /** Prefixo curto demais casa com meio cadastro. Três letras é o piso. */
 const PREFIXO_MINIMO = 3;
 
 /**
- * Toda linha é pareada contra os insumos já cadastrados, por `nomeBusca`:
- * exato primeiro, prefixo depois, `null` se nenhum.
+ * Toda linha é pareada contra os insumos já cadastrados, em degraus (spec
+ * 190): o alvo que ela escolheu; a descrição impressa entre as
+ * `descricoesDaNota` de um material; o `nomeBusca` exato; o prefixo, que é
+ * palpite. Nada, a linha é material novo.
  *
  * É o item que decide se a funcionalidade ainda serve no segundo mês. Sem ele,
  * a terceira compra do ano deixa a conta com três farinhas, e a ficha do cookie
  * aponta para a primeira.
  *
- * O pareamento sai do **nome atual da linha**, e não do que o modelo leu: como
- * a tela recalcula a cada tecla, corrigir o nome é o jeito de desfazer um
- * pareamento errado, sem nenhum controle a mais na tela.
+ * Sem alvo escolhido, o nome é o **atual da linha**, e não o que o modelo leu:
+ * a tela recalcula a cada tecla. Com alvo, o nome não mexe mais no pareamento.
  */
 export function parearComInsumos(
   linhas: LinhaRascunho[],
@@ -746,23 +762,113 @@ export function parearComInsumos(
   const pares = new Map<string, Pareamento>();
 
   for (const linha of linhas) {
-    const alvo = chaveDeBusca(linha.nome);
-    if (!alvo) continue;
-
-    const escolhido =
-      insumos.find((insumo) => insumo.nomeBusca === alvo) ??
-      melhorPrefixo(alvo, insumos);
-
-    if (escolhido) {
+    const achado = parearLinha(linha, insumos);
+    if (achado) {
+      const [escolhido, como] = achado;
       pares.set(linha.chave, {
         insumoId: escolhido.id,
         nome: escolhido.nome,
         precoAnterior: escolhido.precoCompra,
+        como,
       });
     }
   }
 
   return pares;
+}
+
+function parearLinha(
+  linha: LinhaRascunho,
+  insumos: InsumoConhecido[],
+): [InsumoConhecido, ComoPareou] | undefined {
+  if (linha.alvo !== undefined) {
+    const escolhido = linha.alvo
+      ? insumos.find((insumo) => insumo.id === linha.alvo)
+      : undefined;
+    return escolhido && [escolhido, "ESCOLHIDO"];
+  }
+
+  const impresso = chaveDeBusca(linha.descricao);
+  const pelaDescricao =
+    impresso &&
+    insumos.find((insumo) => insumo.descricoesDaNota?.includes(impresso));
+  if (pelaDescricao) return [pelaDescricao, "DESCRICAO"];
+
+  const alvo = chaveDeBusca(linha.nome);
+  if (!alvo) return undefined;
+
+  const exato = insumos.find((insumo) => insumo.nomeBusca === alvo);
+  if (exato) return [exato, "NOME"];
+
+  const palpite = melhorPrefixo(alvo, insumos);
+  return palpite && [palpite, "PALPITE"];
+}
+
+/**
+ * Quantas linhas atualizam o mesmo material, por linha, só quando passa de
+ * uma. Duas manteigas em linhas separadas gravam duas compras no mesmo lote, e
+ * a última vence: não bloqueia, mas ela confere.
+ */
+export function linhasNoMesmoMaterial(
+  pares: Map<string, Pareamento>,
+): Map<string, number> {
+  const porMaterial = new Map<string, string[]>();
+  for (const [chave, par] of pares) {
+    porMaterial.set(par.insumoId, [
+      ...(porMaterial.get(par.insumoId) ?? []),
+      chave,
+    ]);
+  }
+  return new Map(
+    [...porMaterial.values()]
+      .filter((chaves) => chaves.length > 1)
+      .flatMap((chaves) => chaves.map((chave) => [chave, chaves.length])),
+  );
+}
+
+/** Quantas descrições impressas um material guarda (`#d421`). */
+export const LIMITE_DESCRICOES = 10;
+
+/**
+ * As `descricoesDaNota` que mudam com a gravação da nota, por material.
+ *
+ * A descrição de cada linha vai para o fim da lista do material que ela
+ * atualizou ou criou (a mais nova por último, a mais velha sai passando de
+ * `LIMITE_DESCRICOES`), e sai de qualquer outro material que a tivesse: quem
+ * trocou o alvo de uma linha reconhecida não pode ver a próxima nota voltar ao
+ * material errado.
+ */
+export function descricoesDaGravacao(
+  gravadas: { insumoId: string; descricao: string }[],
+  materiais: { id: string; descricoesDaNota?: string[] }[],
+): Map<string, string[]> {
+  const listas = new Map(
+    materiais.map((material) => [material.id, material.descricoesDaNota ?? []]),
+  );
+  const mudaram = new Set<string>();
+
+  for (const { insumoId, descricao } of gravadas) {
+    const chave = chaveDeBusca(descricao);
+    if (!chave) continue;
+
+    for (const [id, lista] of listas) {
+      if (id !== insumoId && lista.includes(chave)) {
+        listas.set(
+          id,
+          lista.filter((atual) => atual !== chave),
+        );
+        mudaram.add(id);
+      }
+    }
+
+    const lista = (listas.get(insumoId) ?? []).filter(
+      (atual) => atual !== chave,
+    );
+    listas.set(insumoId, [...lista, chave].slice(-LIMITE_DESCRICOES));
+    mudaram.add(insumoId);
+  }
+
+  return new Map([...mudaram].map((id) => [id, listas.get(id) ?? []]));
 }
 
 /**

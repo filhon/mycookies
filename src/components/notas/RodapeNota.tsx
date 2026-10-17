@@ -20,6 +20,10 @@ export interface ResumoDaNota {
   saltos: number;
   /** Quantas pareadas numa unidade que não é a do material (spec 188). */
   bases: number;
+  /** Quantas com o material adivinhado por prefixo, sem confirmar (spec 190). */
+  palpites: number;
+  /** Quantas atualizam um material que outra linha também atualiza. */
+  repetidas: number;
   /** Quantas seguram o cadastro: incompletas, saltos e bases que as receitas recusam. */
   bloqueadas: number;
   conferencia: ConferenciaTotal;
@@ -51,6 +55,8 @@ export function RodapeNota({
     incompletas,
     saltos,
     bases,
+    palpites,
+    repetidas,
     bloqueadas,
     conferencia,
     removido,
@@ -62,6 +68,8 @@ export function RodapeNota({
     incompletas === 0 &&
     saltos === 0 &&
     bases === 0 &&
+    palpites === 0 &&
+    repetidas === 0 &&
     (naoExplicado === 0 || conferencia.total <= 0);
 
   return (
@@ -135,7 +143,10 @@ function Valor({ centavos }: { centavos: Centavos }) {
   );
 }
 
-/** A unidade e o salto vêm depois das incompletas, e antes da conferência do total. */
+/**
+ * O palpite, a linha repetida, a unidade e o salto vêm depois das incompletas,
+ * e antes da conferência do total.
+ */
 function Frase({
   resumo,
   naoExplicado,
@@ -143,11 +154,26 @@ function Frase({
   resumo: ResumoDaNota;
   naoExplicado: Centavos;
 }) {
-  const { saltos, bases, incompletas, linhas } = resumo;
+  const { saltos, bases, palpites, repetidas, incompletas, linhas } = resumo;
   const total = <FraseDoTotal resumo={resumo} naoExplicado={naoExplicado} />;
   if (incompletas > 0 || linhas === 0) return total;
   return (
     <>
+      {palpites > 0 && (
+        <>
+          <strong className="num font-semibold text-ink">{palpites}</strong>{" "}
+          {palpites === 1
+            ? "linha com o material adivinhado: confira se é ele"
+            : "linhas com o material adivinhado: confira se são eles"}
+          .{" "}
+        </>
+      )}
+      {repetidas > 0 && (
+        <>
+          <strong className="num font-semibold text-ink">{repetidas}</strong>{" "}
+          linhas atualizam o mesmo material, e vale a última.{" "}
+        </>
+      )}
       {bases > 0 && (
         <>
           <strong className="num font-semibold text-ink">{bases}</strong>{" "}

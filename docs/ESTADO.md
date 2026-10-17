@@ -1,5 +1,17 @@
 # Estado do projeto
 
+**2026-10-16, spec 190 codificada (o material que a nota escolhe), 191 por fazer.** O pareamento
+da nota é em degraus e diz qual (`Pareamento.como`): o alvo escolhido, a descrição impressa já
+gravada no material (`Insumo.descricoesDaNota`, opcional, até dez), o nome exato, o prefixo. O
+prefixo é palpite: "Parece ser Açúcar. Confira.", conta como "para conferir", não bloqueia, e "É
+Açúcar, sim" confirma num toque. No painel aberto, "Atualiza qual material" (o `BuscaItem` do
+editor de produto, com "Material novo" antes) fixa o alvo em `LinhaRascunho.alvo`, e o nome deixa
+de mudar o pareamento; trocar o alvo refaz a embalagem herdada e derruba a confirmação do salto.
+`importarNota` grava a descrição de cada linha como apelido do material no mesmo lote e a tira de
+quem a tinha antes (`#d421`). Duas linhas no mesmo material: "Duas linhas atualizam Manteiga. Vale
+a última." Falta: o roteiro de navegador (os quatro passos da spec), junto com os da 188 e da 189.
+A próxima é a **191**.
+
 **2026-10-16, spec 189 codificada (a compra que se corrige), 190 e 191 por fazer.** Mudando preço
 ou embalagem, o formulário do material pergunta "Comprei de novo, por este preço" (marcada) ou
 "Corrigir a última compra", que reescreve a última compra dela com a data dela e sem mexer em

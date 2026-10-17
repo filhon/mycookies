@@ -93,10 +93,10 @@ conferir" com "Duas linhas atualizam Manteiga. Vale a última." Não bloqueia.
 
 ## Critérios de aceite
 
-- [ ] Ela vê quando o material foi adivinhado, e troca o alvo sem editar o nome.
-- [ ] A segunda nota da mesma loja pareia pela descrição impressa.
-- [ ] `lint`, `typecheck`, `test` e `build` passam.
-- [ ] Decisão registrada; `ESTADO.md` e `novidades.ts` atualizados.
+- [x] Ela vê quando o material foi adivinhado, e troca o alvo sem editar o nome.
+- [x] A segunda nota da mesma loja pareia pela descrição impressa.
+- [x] `lint`, `typecheck`, `test` e `build` passam.
+- [x] Decisão registrada; `ESTADO.md` e `novidades.ts` atualizados.
 
 ---
 

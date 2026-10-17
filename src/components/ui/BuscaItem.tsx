@@ -1,7 +1,7 @@
 "use client";
 
-import { Plus } from "lucide-react";
-import { useId, useState } from "react";
+import { Plus, type LucideIcon } from "lucide-react";
+import { useId, useState, type ReactNode } from "react";
 import { CampoBusca } from "./CampoBusca";
 import { Selo } from "./Selo";
 import { chaveDeBusca } from "@/lib/domain/custoInsumo";
@@ -32,6 +32,8 @@ export function BuscaItem({
   opcoes,
   aoEscolher,
   semResultado,
+  icone: Icone = Plus,
+  children,
 }: {
   rotulo: string;
   placeholder: string;
@@ -40,6 +42,10 @@ export function BuscaItem({
   aoEscolher: (id: string) => void;
   /** O que dizer quando a busca não acha nada. */
   semResultado: string;
+  /** O ícone de cada resultado: `Plus` quando escolher é adicionar. */
+  icone?: LucideIcon;
+  /** O que vem antes do campo, entre o rótulo e a busca. */
+  children?: ReactNode;
 }) {
   const id = useId();
   const [termo, setTermo] = useState("");
@@ -63,6 +69,8 @@ export function BuscaItem({
       <label htmlFor={id} className="text-label font-medium text-ink">
         {rotulo}
       </label>
+
+      {children}
 
       <CampoBusca
         id={id}
@@ -95,7 +103,7 @@ export function BuscaItem({
                     onClick={() => escolher(opcao.id)}
                     className="flex min-h-14 w-full items-center gap-3 px-3 py-2 text-left transition-colors duration-150 ease-quart hover:bg-sunken active:bg-sunken"
                   >
-                    <Plus
+                    <Icone
                       aria-hidden
                       className="size-5 shrink-0 text-brand-ink"
                       strokeWidth={2}

@@ -1342,7 +1342,7 @@ objetos editáveis, e em 360px isso não cabe numa folha. É a mesma razão pela
 
 ## D51 · Ler a segunda nota é atualizar preço, não cadastrar gêmeo
 
-**Status:** vigente · decidida em 2026-09-02 na spec `006-nota-fiscal`, sessão 6A
+**Status:** vigente · decidida em 2026-09-02 na spec `006-nota-fiscal`, sessão 6A · o pareamento pelo nome foi revisto pela `#d421` (spec 190)
 
 **Contexto.** É o item que decide se a funcionalidade ainda serve no segundo mês. Sem ele, a
 terceira compra do ano deixa a conta com três farinhas, e a ficha do cookie aponta para a
@@ -13763,3 +13763,39 @@ abaixo.
 (`unidadeBaseDe(unidadeCompra)`), e não pela do material: o açúcar em `un` de antes da 188 sai em
 unidade. Variação, na linha e no total, só entre entradas da mesma base; entre bases, nenhuma seta,
 e o rodapé diz "N compras desde …, em unidades diferentes".
+
+## D421 · A descrição impressa vira apelido do material, e vence o nome no pareamento
+
+**Status:** vigente · spec 190, 2026-10-16 · revê a `#d51` na parte de "corrigir o nome desfaz o
+pareamento".
+
+**Contexto.** Sem "Açúcar de confeiteiro" cadastrado, a linha casava por prefixo com "Açúcar" e
+atualizava o refinado, com o mesmo selo de um acerto exato. O único jeito de trocar o alvo era
+editar o nome até o pareamento sair, e toda nota recomeçava do zero: `ACUCAR REF UNIAO 1KG` era
+traduzida e pareada de novo a cada mês.
+
+**Decisão.**
+
+- **`Insumo.descricoesDaNota?: string[]`**, opcional: as descrições impressas já gravadas no
+  material, em `chaveDeBusca`, sem repetir, até dez, a mais nova no fim. `importarNota` acrescenta
+  a descrição de cada linha ao material que ela atualizou ou criou, no mesmo lote
+  (`descricoesDaGravacao`, no domínio, com teste), e **tira** a mesma descrição de qualquer outro
+  material que a tivesse: sem isso, trocar o alvo de uma linha reconhecida não pegaria, e a
+  próxima nota voltaria ao material errado. Por isso `importarNota` recebe os materiais da tela.
+- **O pareamento em degraus**, e `Pareamento.como` diz qual: o alvo que ela escolheu
+  (`ESCOLHIDO`), a descrição impressa (`DESCRICAO`), o `nomeBusca` exato (`NOME`), o prefixo
+  (`PALPITE`). A spec listou três; `ESCOLHIDO` é o quarto, porque confirmar um palpite ou escolher
+  outro material não é nenhum dos três, e o selo de um alvo escolhido é o de acerto.
+- **O alvo mora na linha** (`LinhaRascunho.alvo`): ausente é automático; o id fixa o material;
+  `null` fixa "Material novo". Com alvo, o nome da linha não mexe mais no pareamento. Trocar o
+  alvo, como trocar o par pelo nome, refaz a embalagem herdada (188) e derruba o "O preço é esse
+  mesmo", que tinha sido confirmado contra outro material.
+- **Palpite não bloqueia**: conta em "para conferir" e o selo diz "Parece ser Açúcar. Confira.",
+  com "É Açúcar, sim" ao lado. "Atualiza qual material" é o `BuscaItem` do editor de produto, com
+  "Material novo" antes do campo (o `BuscaItem` ganhou `icone` e `children`).
+- **Duas linhas no mesmo material** (`linhasNoMesmoMaterial`): para conferir, com "Duas linhas
+  atualizam Manteiga. Vale a última." Não bloqueia; as duas descrições viram apelido.
+
+**Alternativas rejeitadas.** Coleção à parte para os apelidos: a tela já lê todos os materiais, e
+um índice separado seria mais uma leitura e mais uma coisa para manter em dia. Bloquear o
+palpite: prefixo acerta quase sempre, e toda nota de mercado terminaria em confirmações.

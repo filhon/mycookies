@@ -23,6 +23,7 @@ import {
 import { Bloco } from "@/components/ui/Bloco";
 import { CabecalhoPagina } from "@/components/layout/CabecalhoPagina";
 import { Botao } from "@/components/ui/Botao";
+import { type OpcaoBusca } from "@/components/ui/BuscaItem";
 import { Campo } from "@/components/ui/Campo";
 import { EfeitoDoPreco } from "@/components/insumos/EfeitoDoPreco";
 import { classesBotao } from "@/components/ui/estilosBotao";
@@ -61,12 +62,14 @@ import {
   lancamentoDaNota,
   LIMITE_FOTOS,
   MENSAGEM_FALHA,
+  linhasNoMesmoMaterial,
   normalizarNota,
   parearComInsumos,
   precoDaBiblioteca,
   somarLinhas,
   type FalhaNota,
   type NotaLida,
+  type Pareamento,
   type RascunhoNota,
 } from "@/lib/domain/notaFiscal";
 import { guardarSemente } from "@/lib/estado/sementeDaContagem";
@@ -278,12 +281,24 @@ export function TelaNota() {
   const hoje = dataISODe(new Date());
   const idade = useMemo(() => idadeDosPrecos(insumos, hoje), [insumos, hoje]);
 
-  // O pareamento sai do nome **atual** da linha, e é refeito a cada tecla:
-  // corrigir o nome é o que desfaz um pareamento errado, sem nenhum controle a
-  // mais na tela.
+  // Refeito a cada tecla: sem alvo escolhido, o nome atual da linha ainda
+  // pareia; com alvo, ou pela descrição impressa, o nome não mexe (spec 190).
   const pares = useMemo(
     () => parearComInsumos(linhas, insumos),
     [linhas, insumos],
+  );
+  const repetidas = useMemo(() => linhasNoMesmoMaterial(pares), [pares]);
+
+  /** As opções de "Atualiza qual material", com o custo que as separa. */
+  const opcoesMaterial: OpcaoBusca[] = useMemo(
+    () =>
+      insumos.map((insumo) => ({
+        id: insumo.id,
+        nome: insumo.nome,
+        nomeBusca: insumo.nomeBusca,
+        detalhe: `${formatarMoeda(insumo.precoCompra)} · ${insumo.quantidadeCompra.toLocaleString("pt-BR")} ${insumo.unidadeCompra}`,
+      })),
+    [insumos],
   );
 
   const porId = useMemo(
@@ -296,12 +311,16 @@ export function TelaNota() {
     return [...basesDasReceitas(fichas, insumoId)][0];
   }
 
-  /** O custo de referência do salto e a base do material de cada linha. */
+  /**
+   * O custo de referência do salto, a base do material de cada linha, e se o
+   * material é palpite ou está em mais de uma linha.
+   */
   function contextoDe(
     linha: LinhaEditada,
-    insumoId: string | undefined,
+    par: Pareamento | undefined,
+    noMesmo: Map<string, number> = repetidas,
   ): ContextoDaLinha {
-    const material = insumoId ? porId.get(insumoId) : undefined;
+    const material = par ? porId.get(par.insumoId) : undefined;
     if (!material) return { referencia: precoDaBiblioteca(linha.nome) };
     const base = baseDasReceitas(material.id);
     return {
@@ -311,6 +330,8 @@ export function TelaNota() {
         base: base ?? material.unidadeBase,
         temReceita: !!base,
       },
+      palpite: par?.como === "PALPITE",
+      repetidas: noMesmo.get(linha.chave),
     };
   }
 
@@ -334,10 +355,7 @@ export function TelaNota() {
   const conferencias = new Map(
     linhas.map((linha) => [
       linha.chave,
-      conferenciaDaLinha(
-        linha,
-        contextoDe(linha, pares.get(linha.chave)?.insumoId),
-      ),
+      conferenciaDaLinha(linha, contextoDe(linha, pares.get(linha.chave))),
     ]),
   );
 
@@ -384,6 +402,8 @@ export function TelaNota() {
     saltos: lista.filter((c) => c.completa && c.salto && !c.saltoConfirmado)
       .length,
     bases: lista.filter((c) => c.completa && c.baseErrada).length,
+    palpites: lista.filter((c) => c.completa && c.palpite).length,
+    repetidas: lista.filter((c) => c.completa && c.repetida).length,
     bloqueadas: lista.filter((c) => c.bloqueia).length,
     conferencia: conferirTotal(linhas, total),
     removido: somarLinhas(removidas),
@@ -469,6 +489,7 @@ export function TelaNota() {
     // compra do material (spec 188).
     const lidas = rascunho.linhas.map(linhaEditada);
     const paresNovos = parearComInsumos(lidas, insumos);
+    const repetidasNovas = linhasNoMesmoMaterial(paresNovos);
     const novas = lidas.map((linha) =>
       reembalar(linha, paresNovos.get(linha.chave)?.insumoId),
     );
@@ -480,7 +501,7 @@ export function TelaNota() {
       (linha) =>
         conferenciaDaLinha(
           linha,
-          contextoDe(linha, paresNovos.get(linha.chave)?.insumoId),
+          contextoDe(linha, paresNovos.get(linha.chave), repetidasNovas),
         ).paraConferir,
     );
     setAberta(primeira?.chave ?? null);
@@ -633,6 +654,7 @@ export function TelaNota() {
         if (anterior) {
           return {
             anterior,
+            descricao: linha.descricao,
             dados: {
               ...dadosDoInsumo(anterior),
               ...atualizacaoDaLinha(anterior, linha, cabecalho.estabelecimento),
@@ -640,7 +662,10 @@ export function TelaNota() {
           };
         }
 
-        return { dados: cadastroDaLinha(linha, cabecalho.estabelecimento) };
+        return {
+          descricao: linha.descricao,
+          dados: cadastroDaLinha(linha, cabecalho.estabelecimento),
+        };
       });
 
       const gravado = await importarNota(
@@ -648,6 +673,7 @@ export function TelaNota() {
         importadas,
         lancarNoCaixa ? lancamento : null,
         cabecalho.estabelecimento,
+        insumos,
       );
 
       // O que entrou, para a oferta de contagem que vem a seguir. `insumoIds`
@@ -853,7 +879,8 @@ export function TelaNota() {
                           key={linha.chave}
                           linha={linha}
                           par={par}
-                          contexto={contextoDe(linha, par?.insumoId)}
+                          contexto={contextoDe(linha, par)}
+                          materiais={opcoesMaterial}
                           aberta={aberta === linha.chave}
                           aoAbrir={() => setAberta(linha.chave)}
                           aoFechar={() => setAberta(null)}
@@ -862,16 +889,24 @@ export function TelaNota() {
                               anteriores.map((atual) => {
                                 if (atual.chave !== linha.chave) return atual;
                                 const nova = { ...atual, ...mudanca };
-                                // Corrigir o nome pode trocar o par, e a
-                                // embalagem herdada era a do par de antes.
-                                if (mudanca.nome === undefined) return nova;
+                                // O nome ou o alvo podem trocar o par, e a
+                                // embalagem herdada e o salto confirmado eram
+                                // os do par de antes.
+                                if (
+                                  mudanca.nome === undefined &&
+                                  !("alvo" in mudanca)
+                                )
+                                  return nova;
                                 const parNovo = parearComInsumos(
                                   [nova],
                                   insumos,
                                 ).get(nova.chave)?.insumoId;
                                 return parNovo === par?.insumoId
                                   ? nova
-                                  : reembalar(nova, parNovo);
+                                  : reembalar(
+                                      { ...nova, precoConfirmado: undefined },
+                                      parNovo,
+                                    );
                               }),
                             )
                           }

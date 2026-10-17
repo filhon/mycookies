@@ -3,7 +3,9 @@
 import { useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import {
+  ArrowRightLeft,
   CircleAlert,
+  CircleHelp,
   Package,
   Plus,
   RefreshCw,
@@ -13,6 +15,7 @@ import {
 import { CaixaDoSalto, FraseDoSalto } from "@/components/insumos/ConfirmaPreco";
 import { formatarReferencia } from "@/components/insumos/FichaDoMaterial";
 import { Botao } from "@/components/ui/Botao";
+import { BuscaItem, type OpcaoBusca } from "@/components/ui/BuscaItem";
 import { Campo, Seletor } from "@/components/ui/Campo";
 import { CampoMoeda } from "@/components/ui/CampoMoeda";
 import { Selo } from "@/components/ui/Selo";
@@ -78,6 +81,10 @@ export interface ContextoDaLinha {
     base: UnidadeBase;
     temReceita: boolean;
   };
+  /** O material saiu por prefixo, e ela ainda não confirmou (spec 190). */
+  palpite?: boolean;
+  /** Quantas linhas atualizam o mesmo material, quando passa de uma. */
+  repetidas?: number;
 }
 
 export interface ConferenciaDaLinha {
@@ -86,6 +93,9 @@ export interface ConferenciaDaLinha {
   saltoConfirmado: boolean;
   /** A frase quando a base não é a do material; `null` quando é. */
   baseErrada: string | null;
+  palpite: boolean;
+  /** "Duas linhas atualizam Manteiga. Vale a última."; `null` quando é a única. */
+  repetida: string | null;
   /** Conta em "para conferir". */
   paraConferir: boolean;
   /** Segura o "Cadastrar": incompleta, salto sem confirmar, base que as receitas não aceitam. */
@@ -115,13 +125,23 @@ export function conferenciaDaLinha(
         : `${material.nome} é contado em ${PLURAL_UNIDADE_BASE[material.base]}, e esta linha veio em ${PLURAL_UNIDADE_BASE[baseDaLinha]}.`
       : null;
   const saltoPendente = !!salto && !saltoConfirmado;
+  const palpite = !!contexto.palpite;
+  const repetidas = contexto.repetidas ?? 0;
+  const repetida =
+    material && repetidas > 1
+      ? `${repetidas === 2 ? "Duas" : repetidas} linhas atualizam ${material.nome}. Vale a última.`
+      : null;
 
   return {
     completa,
     salto,
     saltoConfirmado,
     baseErrada,
-    paraConferir: !completa || saltoPendente || !!baseErrada,
+    palpite,
+    repetida,
+    // Palpite e linha repetida não seguram o "Cadastrar": confirmar é um toque.
+    paraConferir:
+      !completa || saltoPendente || !!baseErrada || palpite || !!repetida,
     bloqueia:
       !completa || saltoPendente || (!!baseErrada && !!material?.temReceita),
   };
@@ -171,6 +191,7 @@ export function LinhaNota({
   linha,
   par,
   contexto,
+  materiais,
   aberta,
   aoAbrir,
   aoFechar,
@@ -182,6 +203,8 @@ export function LinhaNota({
   par?: Pareamento;
   /** O custo de referência e a base do material (`#d291`, spec 188). */
   contexto: ContextoDaLinha;
+  /** Para "Atualiza qual material" (spec 190). */
+  materiais: OpcaoBusca[];
   aberta: boolean;
   aoAbrir: () => void;
   aoFechar: () => void;
@@ -193,10 +216,8 @@ export function LinhaNota({
   const painel = useRef<HTMLDivElement>(null);
 
   const custo = custoDaLinha(linha);
-  const { completa, salto, saltoConfirmado, baseErrada } = conferenciaDaLinha(
-    linha,
-    contexto,
-  );
+  const { completa, salto, saltoConfirmado, baseErrada, palpite, repetida } =
+    conferenciaDaLinha(linha, contexto);
   const anterior = contexto.referencia;
 
   // Pareada, só as unidades da base do material, como no editor de produto. A
@@ -222,11 +243,15 @@ export function LinhaNota({
   const IconeDestino = par ? RefreshCw : Plus;
   const destino = par ? "Atualiza" : "Novo";
 
+  // O palpite vem antes da base e do salto: com o material errado, os dois
+  // falam de outra coisa.
   const atencao = !completa ? (
     <Atencao icone={CircleAlert}>{faltaNaLinha(linha)}</Atencao>
+  ) : palpite && par ? (
+    <Atencao icone={CircleHelp}>Parece ser {par.nome}. Confira.</Atencao>
   ) : baseErrada ? (
     <Atencao icone={TriangleAlert}>
-      {baseErrada} Troque a unidade ou corrija o nome.
+      {baseErrada} Troque a unidade ou o material.
     </Atencao>
   ) : salto && anterior ? (
     // Preço dobra de verdade: a caixa no painel destrava, e a frase fica.
@@ -235,6 +260,8 @@ export function LinhaNota({
       novo={custo}
       confirmado={saltoConfirmado}
     />
+  ) : repetida ? (
+    <Atencao icone={CircleAlert}>{repetida}</Atencao>
   ) : null;
 
   const herdada = linha.embalagemHerdada && (
@@ -411,6 +438,31 @@ export function LinhaNota({
             />
           </div>
 
+          {/* Escolher fixa o alvo: o nome deixa de mudar o pareamento. */}
+          <div className="mt-3">
+            <BuscaItem
+              rotulo="Atualiza qual material"
+              placeholder={par ? "Buscar outro material" : "Buscar material"}
+              opcoes={materiais.filter((opcao) => opcao.id !== par?.insumoId)}
+              aoEscolher={(id) => aoMudar({ alvo: id })}
+              semResultado="Nenhum material com esse nome."
+              icone={ArrowRightLeft}
+            >
+              {par && (
+                <Botao
+                  tamanho="sm"
+                  className="mt-1.5"
+                  onClick={() => aoMudar({ alvo: null })}
+                  iconeInicial={
+                    <Plus aria-hidden className="size-4" strokeWidth={1.75} />
+                  }
+                >
+                  Material novo
+                </Botao>
+              )}
+            </BuscaItem>
+          </div>
+
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <CampoMoeda
               className="col-span-2 sm:col-span-1"
@@ -492,7 +544,22 @@ export function LinhaNota({
               é o que denuncia unidade lida errada: R$ 12,50 divididos por 1
               grama saltam aos olhos. A dúvida já está na linha, acima. */}
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-            {par ? (
+            {par && palpite ? (
+              <>
+                <Selo
+                  tom="atencao"
+                  icone={<CircleHelp aria-hidden className="size-3.5" />}
+                >
+                  Parece ser {par.nome}. Confira.
+                </Selo>
+                <Botao
+                  tamanho="sm"
+                  onClick={() => aoMudar({ alvo: par.insumoId })}
+                >
+                  É {par.nome}, sim
+                </Botao>
+              </>
+            ) : par ? (
               <Selo
                 tom="info"
                 icone={<RefreshCw aria-hidden className="size-3.5" />}
